@@ -29,6 +29,7 @@ import type { IWorkType, IWorkTypeFormData } from "@/types/types.utils"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 interface WorkTypeModalProps {
   isOpen: boolean
@@ -509,9 +510,9 @@ export default function WorkTypesPage() {
                   <WorkTypeDetailsModal isOpen={showDetailsModal} onClose={handleCloseDetailsModal} employeeType={viewingType} />
 
                   {workTypeToDelete && (
-                    <DeleteConfirmationDialog
+                    <ConfirmationDialog
                       description="Are you sure you want to delete this work type? This action cannot be undone."
-                      isDeleting={isDeleting}
+                      disabled={isDeleting}
                       isOpen={!!workTypeToDelete}
                       title={`Delete ${workTypeToDelete.name}`}
                       onConfirm={() => handleDelete(workTypeToDelete)}

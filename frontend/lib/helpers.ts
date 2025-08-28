@@ -8,6 +8,7 @@ import { IMarketPlaceOrder, IPaginatedResponse, IPermission, Permission, Role } 
 import { store } from "@/store";
 import { toast } from "sonner";
 import { ICountry } from "@/types/types.utils";
+import { showErrorToast } from "./utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -85,7 +86,7 @@ export const fetchAndSetData = async <T>(
 
     setFn(data);
   } catch (error) {
-    console.error(errorMsg, error);
+    showErrorToast({error, defaultMessage:errorMsg})
     if (setErrorFn) {
       setErrorFn(errorMsg);
     }
@@ -97,7 +98,6 @@ export async function fetchInstitutionBranchesFromAPI() {
   try {
     return await apiRequest.get(`institution/${getDefaultInstitutionId()}/branch`);
   } catch (error) {
-    console.error("Error fetching Institution's branches:", error);
     throw error;
   }
 }
@@ -106,7 +106,6 @@ export async function fetchInstitutionRoles() {
   try {
     return await apiRequest.get(`user/role/?Institution_id=${getDefaultInstitutionId()}`);
   } catch (error: any) {
-    console.log("Error fetching  Institution roles ");
     throw error;
   }
 }

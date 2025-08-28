@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   title: "PERACOSOFT",
   description: "A comprehensive SaaS solution for organisation management",
   generator: "v0.dev",
+  icons:{
+    icon:'/icon.png'
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

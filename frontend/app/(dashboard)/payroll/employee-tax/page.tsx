@@ -30,6 +30,7 @@ import {DeleteConfirmationDialog} from "@/components/common/dialogs/delete-confi
 import {DropdownMenuLabel} from "@/components/ui/dropdown-menu";
 import {CardHeader} from "@/components/ui/card";
 import {TableSkeleton} from "@/components/common/table-skeleton";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -403,12 +404,12 @@ export default function EmployeeTaxesPage() {
         onTaxCreated={handleTaxTypeCreated}
       />
       {deletingTax && (
-        <DeleteConfirmationDialog
+        <ConfirmationDialog
           isOpen={!!deletingTax}
           onClose={() => setDeletingTax(null)}
           title={`Are you sure you want to delete ${deletingTax.institution_tax.tax_name || ""}`}
           description="This action cannot be undone"
-          isDeleting={isDeleting}
+          disabled={isDeleting}
           onConfirm={handleDelete}
         />
       )}
