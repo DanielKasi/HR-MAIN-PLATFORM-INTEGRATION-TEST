@@ -57,20 +57,17 @@ from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
-from datetime import date
 from django.http import FileResponse
 from payroll.utils import generate_attendance_excel
 from django.utils.encoding import escape_uri_path
-from datetime import datetime
+from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import get_or_create_default_role_with_permissions
 from django.db.models import Q
 from datetime import datetime, date
-from utilities.helpers import parse_date
-
-
+from utilities.helpers import custom_parse_date
 
 
 class EmployeeListAPIView(APIView):
@@ -313,89 +310,28 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # Compute lower case columns for department and position if present
+            if "department" in df.columns:
+                df["department_lower"] = df["department"].apply(
+                    lambda x: str(x).strip().lower() if pd.notna(x) and str(x).strip() else None
+                )
+            if "position" in df.columns:
+                df["position_lower"] = df["position"].apply(
+                    lambda x: str(x).strip().lower() if pd.notna(x) and str(x).strip() else None
+                )
+
             # Define mappings for choice fields
             gender_map = {
                 "male": "male",
                 "female": "female",
                 "other": "other",
-                "Male": "male",
-                "Female": "female",
-                "Other": "other",
             }
             marital_status_map = {
                 "single": "single",
                 "married": "married",
                 "divorced": "divorced",
                 "widowed": "widowed",
-                "Single": "single",
-                "Married": "married",
-                "Divorced": "divorced",
-                "Widowed": "widowed",
             }
-
-            # Cache foreign key mappings and create missing instances
-            print("Fetching and creating foreign key mappings")
-            field_mappings = {
-                "position": JobPosition,
-                "department": Department,
-                "work_type": WorkType,
-                "employee_type": EmployeeType,
-                "payroll_branch": Branch,
-            }
-            mappings = {}
-            instance_mappings = {}  # Store model instances
-            for field, model in field_mappings.items():
-                if field in df.columns:
-                    names = df[field].dropna().str.strip().unique()
-                    if names.size > 0:
-                        # Fetch existing records
-                        existing = model.objects.filter(name__in=names)
-                        print(
-                            f"Database {field} values: {[item.name for item in existing]}"
-                        )
-                        mappings[field] = {
-                            item.name.lower(): item.id for item in existing
-                        }
-                        instance_mappings[field] = {
-                            item.name.lower(): item for item in existing
-                        }
-                        # Create missing records
-                        input_names = [str(name).strip().lower() for name in names]
-                        missing = [
-                            name for name in input_names if name not in mappings[field]
-                        ]
-                        if missing:
-                            print(f"Creating missing {field}s: {missing}")
-                            for name in missing:
-                                # Basic creation with minimal required fields
-                                try:
-                                    if field == "position":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "department":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "work_type":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "employee_type":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "payroll_branch":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    mappings[field][name] = instance.id
-                                    instance_mappings[field][name] = instance
-                                    print(f"Created {field}: {name.title()}")
-                                except Exception as e:
-                                    print(f"Error creating {field} '{name}': {str(e)}")
-                                    # Continue with other records but log error
-                                    continue
 
             # Check for duplicate emails in the input file and existing database
             print("Checking for duplicate emails")
@@ -454,31 +390,308 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Process employees in batches
-            batch_size = 50
-            employees = []
+            # Pre-validate all rows
+            print("Pre-validating all rows")
             errors = []
-            created_count = 0
+            for index, row in df.iterrows():
+                row_errors = {}  # Dict of field: {"error": "msg"} per row
+                user_data = {
+                    "fullname": str(row["user.fullname"]).strip() if pd.notna(row["user.fullname"]) else "",
+                    "email": str(row["user.email"]).strip() if pd.notna(row["user.email"]) else "",
+                }
 
-            print(f"Starting batch processing with batch size {batch_size}")
-            for start_idx in range(0, len(df), batch_size):
-                batch = df[start_idx : start_idx + batch_size]
-                batch_start_time = datetime.now()
-                print(
-                    f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
+                # Basic validation for user data
+                if not user_data["fullname"]:
+                    row_errors["user.fullname"] = {
+                        "error": "This field is required."
+                    }
+                if not user_data["email"]:
+                    row_errors["user.email"] = {
+                        "error": "This field is required."
+                    }
+
+                for column in df.columns:
+                    if column not in ["user.fullname", "user.email", "department_lower", "position_lower"]:
+                        value = row[column]
+                        if pd.isna(value):
+                            continue
+                        value = str(value).strip()
+                        if not value:  # Skip empty strings
+                            continue
+                            
+                        if column == "gender" and value:
+                            mapped = gender_map.get(value.lower())
+                            if mapped is None:
+                                row_errors["gender"] = {
+                                    "error": f'"{value}" is not a valid choice.'
+                                }
+                        elif column == "marital_status" and value:
+                            mapped = marital_status_map.get(value.lower())
+                            if mapped is None:
+                                row_errors["marital_status"] = {
+                                    "error": f'"{value}" is not a valid choice.'
+                                }
+
+                # Additional validations
+                if "date_of_birth" in df.columns and not pd.isna(row.get("date_of_birth")):
+                    value = str(row["date_of_birth"]).strip()
+                    if value:
+                        try:
+                            dob = custom_parse_date(value)
+                            if dob:
+                                msgs = []
+                                if dob > date.today():
+                                    msgs.append(
+                                        "Date of birth cannot be in the future."
+                                    )
+
+                                age = (date.today() - dob).days // 365
+                                if age < 18:
+                                    msgs.append(
+                                        f"Employee must be at least 18 years old. Current age: {age}."
+                                    )
+
+                                if msgs:
+                                    row_errors["date_of_birth"] = {
+                                        "error": " ".join(msgs)
+                                    }
+                        except ValueError as e:
+                            row_errors["date_of_birth"] = {"error": str(e)}
+
+                if "date_of_joining" in df.columns and not pd.isna(row.get("date_of_joining")):
+                    value = str(row["date_of_joining"]).strip()
+                    if value:
+                        try:
+                            datetime.strptime(value, "%Y-%m-%d")
+                        except ValueError:
+                            row_errors["date_of_joining"] = {
+                                "error": "Invalid date format. Use YYYY-MM-DD."
+                            }
+
+                for field in ["experience", "children_count"]:
+                    if field in df.columns and not pd.isna(row.get(field)):
+                        value = str(row[field]).strip()
+                        if value:
+                            try:
+                                int(
+                                    float(
+                                        value.replace(" years", "")
+                                    )
+                                )
+                            except (ValueError, TypeError):
+                                row_errors[field] = {
+                                    "error": "Must be a valid number."
+                                }
+
+                if row_errors:
+                    errors.append(
+                        {
+                            "row": index + 2,
+                            "errors": row_errors,
+                        }
+                    )
+
+            if errors:
+                return Response(
+                    {
+                        "detail": "Validation errors found in the uploaded data. No employees created.",
+                        "created_count": 0,
+                        "errors": errors,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-                with transaction.atomic():
+            # If no validation errors, proceed to creation within a transaction
+            with transaction.atomic():
+                # Cache foreign key mappings and create missing instances
+                print("Fetching and creating foreign key mappings")
+                field_mappings = {
+                    "department": Department,
+                    "work_type": WorkType,
+                    "employee_type": EmployeeType,
+                    "payroll_branch": Branch,
+                }
+                mappings = {}
+                instance_mappings = {}  # Store model instances
+                for field, model in field_mappings.items():
+                    mappings[field] = {}
+                    instance_mappings[field] = {}
+                    
+                    if field in df.columns:
+                        # Get unique non-null, non-empty values
+                        unique_values = df[field].dropna().astype(str).str.strip()
+                        unique_values = unique_values[unique_values != ""].unique()
+                        
+                        if len(unique_values) > 0:
+                            print(f"Processing {field} with values: {unique_values}")
+                            
+                            # Determine if the model has institution field
+                            has_institution = True  # All models have institution
+                            filter_kwargs = {"name__in": unique_values}
+                            if has_institution:
+                                filter_kwargs["institution"] = institution
+                                
+                            # Fetch existing records
+                            existing = model.objects.filter(**filter_kwargs)
+                            print(f"Found existing {field} values: {[item.name for item in existing]}")
+                            
+                            # Create mappings for existing records
+                            for item in existing:
+                                mappings[field][item.name.lower()] = item.id
+                                instance_mappings[field][item.name.lower()] = item
+                            
+                            # Find missing records
+                            existing_names_lower = [item.name.lower() for item in existing]
+                            missing = [
+                                name for name in unique_values 
+                                if name.lower() not in existing_names_lower
+                            ]
+                            
+                            if missing:
+                                print(f"Creating missing {field}s: {missing}")
+                                created_instances = []
+                                for name in missing:
+                                    # Basic creation with minimal required fields
+                                    kwargs = {"name": name.strip()}
+                                    if has_institution:
+                                        kwargs["institution"] = institution
+                                    if field == "department":
+                                        kwargs["description"] = "Auto-created during bulk upload"
+                                    
+                                    try:
+                                        instance = model.objects.create(**kwargs)
+                                        mappings[field][name.lower()] = instance.id
+                                        instance_mappings[field][name.lower()] = instance
+                                        created_instances.append(instance)
+                                        print(f"Created {field}: {name}")
+                                    except Exception as e:
+                                        print(f"Error creating {field} '{name}': {str(e)}")
+                                        raise
+                                
+                                print(f"Successfully created {len(created_instances)} {field} instances")
+
+                # Handle job positions separately, tied to departments
+                print("Handling job positions")
+                position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
+                
+                if 'position' in df.columns:
+                    print("Processing job positions with departments")
+                    
+                    # Get unique department-position pairs from the dataframe
+                    if 'department' in df.columns:
+                        # Filter out rows where position is null or empty
+                        valid_rows = df[
+                            (df['position'].notna()) & 
+                            (df['position'].astype(str).str.strip() != "")
+                        ].copy()
+                        
+                        if len(valid_rows) > 0:
+                            # Get unique department-position pairs
+                            dept_pos_pairs = valid_rows[['department', 'position']].drop_duplicates()
+                            
+                            print(f"Found {len(dept_pos_pairs)} unique department-position pairs")
+                            
+                            for _, row in dept_pos_pairs.iterrows():
+                                dept_name = str(row['department']).strip() if pd.notna(row['department']) else None
+                                pos_name = str(row['position']).strip()
+                                
+                                dept_lower = dept_name.lower() if dept_name else None
+                                pos_lower = pos_name.lower()
+                                
+                                print(f"Processing position: '{pos_name}' for department: '{dept_name}'")
+                                
+                                # Get department instance
+                                dept_instance = None
+                                if dept_lower and dept_lower in instance_mappings.get('department', {}):
+                                    dept_instance = instance_mappings['department'][dept_lower]
+                                    print(f"Found department instance: {dept_instance.name}")
+                                else:
+                                    print(f"Department '{dept_name}' not found in mappings")
+                                
+                                # Check if this exact position already exists for this department
+                                filter_kwargs = {'name__iexact': pos_name}
+                                if dept_instance:
+                                    filter_kwargs['department'] = dept_instance
+                                else:
+                                    filter_kwargs['department__isnull'] = True
+                                
+                                existing_pos = JobPosition.objects.filter(**filter_kwargs).first()
+                                
+                                if existing_pos:
+                                    position_mappings[(dept_lower, pos_lower)] = existing_pos
+                                    print(f"Found existing position: {pos_name} (dept: {dept_name})")
+                                else:
+                                    # Create new position with correct department
+                                    try:
+                                        new_pos = JobPosition.objects.create(
+                                            name=pos_name,
+                                            description="Auto-created during bulk upload",
+                                            department=dept_instance,
+                                        )
+                                        position_mappings[(dept_lower, pos_lower)] = new_pos
+                                        print(f"✓ Created position: '{pos_name}' for department: '{dept_name}'")
+                                    except Exception as e:
+                                        print(f"✗ Error creating position '{pos_name}' for dept '{dept_name}': {str(e)}")
+                                        raise
+                    else:
+                        # No department column, create positions without departments
+                        position_values = df['position'].dropna().astype(str).str.strip()
+                        position_values = position_values[position_values != ""].unique()
+                        
+                        for pos_name in position_values:
+                            pos_lower = pos_name.lower()
+                            
+                            existing_pos = JobPosition.objects.filter(
+                                name__iexact=pos_name,
+                                department__isnull=True
+                            ).first()
+                            
+                            if existing_pos:
+                                position_mappings[(None, pos_lower)] = existing_pos
+                                print(f"Found existing position: {pos_name} (no dept)")
+                            else:
+                                try:
+                                    new_pos = JobPosition.objects.create(
+                                        name=pos_name,
+                                        description="Auto-created during bulk upload",
+                                        department=None,
+                                    )
+                                    position_mappings[(None, pos_lower)] = new_pos
+                                    print(f"Created position: {pos_name} (no dept)")
+                                except Exception as e:
+                                    print(f"Error creating position '{pos_name}': {str(e)}")
+                                    raise
+
+                # Process employees in batches
+                batch_size = 50
+                employees = []
+                created_count = 0
+
+                print(f"Starting batch processing with batch size {batch_size}")
+                for start_idx in range(0, len(df), batch_size):
+                    batch = df[start_idx : start_idx + batch_size]
+                    batch_start_time = datetime.now()
+                    print(
+                        f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
+                    )
+
                     user_objects = []
                     employee_data_list = []
-                    batch_errors = []
 
                     for index, row in batch.iterrows():
-                        row_errors = {}  # Dict of field: {"error": "msg"} per row
                         employee_data = {}
+                        
+                        # Create user data
+                        fullname = str(row["user.fullname"]).strip() if pd.notna(row["user.fullname"]) else ""
+                        email = str(row["user.email"]).strip() if pd.notna(row["user.email"]) else ""
+                        
+                        if not fullname or not email:
+                            print(f"Skipping row {index + 2}: missing fullname or email")
+                            continue
+                            
                         user_data = {
-                            "fullname": str(row["user.fullname"]).strip(),
-                            "email": str(row["user.email"]).strip(),
+                            "fullname": fullname,
+                            "email": email,
                             "password": make_password(generate_compliant_password()),
                             "is_active": True,
                             "is_email_verified": False,
@@ -488,87 +701,57 @@ class EmployeeCreateAPIView(APIView):
                             "updated_at": datetime.now(),
                         }
 
-                        # Basic validation for user data
-                        if not user_data["fullname"]:
-                            row_errors["user.fullname"] = {
-                                "error": "This field is required."
-                            }
-                        if not user_data["email"]:
-                            row_errors["user.email"] = {
-                                "error": "This field is required."
-                            }
-
+                        # Process employee data
                         for column in df.columns:
-                            if column not in ["user.fullname", "user.email"]:
+                            if column not in ["user.fullname", "user.email", "department_lower", "position_lower"]:
                                 value = row[column]
                                 if pd.isna(value):
                                     employee_data[column] = None
                                     continue
+                                    
                                 value = str(value).strip()
-                                if column in field_mappings and value:
-                                    instance = instance_mappings.get(column, {}).get(
-                                        value.lower()
-                                    )
-                                    if instance is None:
-                                        row_errors[column] = {
-                                            "error": f'"{value}" does not exist.'
-                                        }
-                                    else:
-                                        employee_data[column] = instance
-                                elif column == "gender" and value:
-                                    mapped = gender_map.get(value)
-                                    if mapped is None:
-                                        row_errors["gender"] = {
-                                            "error": f'"{value}" is not a valid choice.'
-                                        }
-                                    else:
-                                        employee_data[column] = mapped
-                                elif column == "marital_status" and value:
-                                    mapped = marital_status_map.get(value)
-                                    if mapped is None:
-                                        row_errors["marital_status"] = {
-                                            "error": f'"{value}" is not a valid choice.'
-                                        }
-                                    else:
-                                        employee_data[column] = mapped
+                                if not value:  # Skip empty strings
+                                    employee_data[column] = None
+                                    continue
+                                
+                                if column in field_mappings:
+                                    # Map to foreign key instance
+                                    instance = instance_mappings.get(column, {}).get(value.lower())
+                                    employee_data[column] = instance
+                                elif column == "position":
+                                    # Handle position mapping
+                                    dept_value = str(row.get('department', '')).strip() if pd.notna(row.get('department')) else None
+                                    dept_lower = dept_value.lower() if dept_value else None
+                                    pos_lower = value.lower()
+                                    
+                                    position_instance = position_mappings.get((dept_lower, pos_lower))
+                                    employee_data[column] = position_instance
+                                elif column == "gender":
+                                    employee_data[column] = gender_map.get(value.lower())
+                                elif column == "marital_status":
+                                    employee_data[column] = marital_status_map.get(value.lower())
                                 else:
                                     employee_data[column] = value
 
                         # Set employee email from user email
                         employee_data["email"] = user_data["email"]
 
-                        if "is_active" in employee_data:
+                        # Process boolean fields
+                        if "is_active" in employee_data and employee_data["is_active"] is not None:
                             employee_data["is_active"] = (
                                 str(employee_data["is_active"]).lower() == "true"
                             )
 
+                        # Process date fields
                         if (
                             "date_of_birth" in employee_data
                             and employee_data["date_of_birth"]
                         ):
                             try:
-                                dob = parse_date(employee_data["date_of_birth"])
-                                if dob:
-                                    msgs = []
-                                    if dob > date.today():
-                                        msgs.append(
-                                            "Date of birth cannot be in the future."
-                                        )
-
-                                    age = (date.today() - dob).days // 365
-                                    if age < 18:
-                                        msgs.append(
-                                            f"Employee must be at least 18 years old. Current age: {age}."
-                                        )
-
-                                    if msgs:
-                                        row_errors["date_of_birth"] = {
-                                            "error": " ".join(msgs)
-                                        }
-
-                                    employee_data["date_of_birth"] = dob
-                            except ValueError as e:
-                                row_errors["date_of_birth"] = {"error": str(e)}
+                                employee_data["date_of_birth"] = custom_parse_date(employee_data["date_of_birth"])
+                            except Exception as e:
+                                print(f"Error parsing date_of_birth for row {index + 2}: {e}")
+                                employee_data["date_of_birth"] = None
 
                         if (
                             "date_of_joining" in employee_data
@@ -578,101 +761,56 @@ class EmployeeCreateAPIView(APIView):
                                 employee_data["date_of_joining"] = datetime.strptime(
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
-                            except ValueError:
-                                row_errors["date_of_joining"] = {
-                                    "error": "Invalid date format. Use YYYY-MM-DD."
-                                }
+                            except Exception as e:
+                                print(f"Error parsing date_of_joining for row {index + 2}: {e}")
+                                employee_data["date_of_joining"] = None
 
+                        # Process numeric fields
                         for field in ["experience", "children_count"]:
-                            if field in employee_data and employee_data[field]:
+                            if field in employee_data and employee_data[field] is not None:
                                 try:
                                     employee_data[field] = int(
                                         float(
                                             str(employee_data[field]).replace(
                                                 " years", ""
                                             )
-                                        )  # Handle "11 years"
+                                        )
                                     )
                                 except (ValueError, TypeError):
-                                    row_errors[field] = {
-                                        "error": "Must be a valid number."
-                                    }
                                     employee_data[field] = 0
 
-                        if row_errors:
-                            batch_errors.append(
-                                {
-                                    "row": index + 2,
-                                    "errors": row_errors,
-                                }
-                            )
-                            continue  # Skip this row, but process others
-
-                        # If no errors, add to creation lists
-                        user_objects.append(CustomUser(**user_data))
-                        employee_data["user"] = len(user_objects) - 1  # Temporary index
+                        # Add timestamps
                         employee_data["created_at"] = datetime.now()
                         employee_data["updated_at"] = datetime.now()
+                        
+                        # Add to creation lists
+                        user_objects.append(CustomUser(**user_data))
+                        employee_data["user"] = len(user_objects) - 1  # Temporary index
                         employee_data_list.append(employee_data)
-
-                    # Append batch errors to global
-                    errors.extend(batch_errors)
 
                     if not employee_data_list:
                         print("No valid rows in batch, skipping creation")
                         continue
 
                     # Bulk create users
-                    try:
-                        print(f"Creating {len(user_objects)} users")
-                        created_users = CustomUser.objects.bulk_create(user_objects)
-                        print(f"Created {len(created_users)} users")
-                    except Exception as e:
-                        print(f"Error bulk creating users: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating users: {str(e)}"
-                                }
-                            }
-                        )
-                        continue
+                    print(f"Creating {len(user_objects)} users")
+                    created_users = CustomUser.objects.bulk_create(user_objects)
+                    print(f"Created {len(created_users)} users")
 
-                    # NEW: Bulk create profiles for the new users
-                    try:
-                        profile_objects = [
-                            Profile(user=user, institution=institution, bio="")
-                            for user in created_users
-                        ]
-                        Profile.objects.bulk_create(profile_objects)
-                        print(f"Created {len(profile_objects)} profiles")
-                    except Exception as e:
-                        print(f"Error bulk creating profiles: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating profiles: {str(e)}"
-                                }
-                            }
-                        )
-                        # Optionally rollback or continue, but since atomic, it will rollback on failure
+                    # Bulk create profiles for the new users
+                    profile_objects = [
+                        Profile(user=user, institution=institution, bio="")
+                        for user in created_users
+                    ]
+                    Profile.objects.bulk_create(profile_objects)
+                    print(f"Created {len(profile_objects)} profiles")
 
-                    # NEW: Bulk create user roles
-                    try:
-                        userrole_objects = [
-                            UserRole(user=user, role=role) for user in created_users
-                        ]
-                        UserRole.objects.bulk_create(userrole_objects)
-                        print(f"Created {len(userrole_objects)} user roles")
-                    except Exception as e:
-                        print(f"Error bulk creating user roles: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating user roles: {str(e)}"
-                                }
-                            }
-                        )
+                    # Bulk create user roles
+                    userrole_objects = [
+                        UserRole(user=user, role=role) for user in created_users
+                    ]
+                    UserRole.objects.bulk_create(userrole_objects)
+                    print(f"Created {len(userrole_objects)} user roles")
 
                     # Create Employee instances with actual CustomUser objects
                     employee_objects = []
@@ -684,22 +822,11 @@ class EmployeeCreateAPIView(APIView):
                         employee_objects.append(Employee(**employee_data))
 
                     # Bulk create employees
-                    try:
-                        print(f"Creating {len(employee_objects)} employees")
-                        created_employees = Employee.objects.bulk_create(
-                            employee_objects
-                        )
-                        print(f"Created {len(created_employees)} employees")
-                    except Exception as e:
-                        print(f"Error bulk creating employees: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating employees: {str(e)}"
-                                }
-                            }
-                        )
-                        continue
+                    print(f"Creating {len(employee_objects)} employees")
+                    created_employees = Employee.objects.bulk_create(
+                        employee_objects
+                    )
+                    print(f"Created {len(created_employees)} employees")
 
                     # After bulk create, handle post-creation logic
                     prefix = "EMP"
@@ -731,25 +858,18 @@ class EmployeeCreateAPIView(APIView):
                             employee.payroll_branch = employee.get_default_branch()
 
                         # Sync leave balances and working days
-                        if employee.is_active and employee.department:
-                            employee.sync_leave_balances()
-                        if employee.is_active:
-                            employee.sync_employee_working_days()
+                        try:
+                            if employee.is_active and employee.department:
+                                employee.sync_leave_balances()
+                            if employee.is_active:
+                                employee.sync_employee_working_days()
+                        except Exception as e:
+                            print(f"Error syncing employee data for {employee.user.email}: {e}")
 
                     # Bulk update the updated fields
-                    try:
-                        Employee.objects.bulk_update(
-                            created_employees, fields_to_update
-                        )
-                    except Exception as e:
-                        print(f"Error bulk updating employees: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error updating employees: {str(e)}"
-                                }
-                            }
-                        )
+                    Employee.objects.bulk_update(
+                        created_employees, fields_to_update
+                    )
 
                     # Send password setup emails (non-blocking)
                     for idx, employee in enumerate(created_employees):
@@ -759,16 +879,6 @@ class EmployeeCreateAPIView(APIView):
                             print(
                                 f"Error sending password email for employee {employee.user.email}: {str(e)}"
                             )
-                            errors.append(
-                                {
-                                    "row": start_idx + idx + 2,
-                                    "errors": {
-                                        "non_field_errors": {
-                                            "error": f"Error sending password email: {str(e)}"
-                                        }
-                                    },
-                                }
-                            )
 
                     employees.extend(created_employees)
                     created_count += len(created_employees)
@@ -777,7 +887,7 @@ class EmployeeCreateAPIView(APIView):
                         f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
                     )
 
-            # NEW: Set default employee role if not already set (once after all batches)
+            # Set default employee role if not already set (once after all batches)
             if not institution.default_employee_role:
                 institution.default_employee_role = role
                 institution.save()
@@ -786,42 +896,25 @@ class EmployeeCreateAPIView(APIView):
                 f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
             )
 
-            if created_count == 0 and errors:
-                return Response(
-                    {
-                        "detail": "No employees could be created",
-                        "created_count": created_count,
-                        "errors": errors,
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            elif errors:
-                return Response(
-                    {
-                        "detail": "Some employees created successfully, but others had errors",
-                        "created_count": created_count,
-                        "errors": errors,
-                    },
-                    status=status.HTTP_201_CREATED,
-                )
-            else:
-                return Response(
-                    {
-                        "detail": "All employees created successfully",
-                        "created_count": created_count,
-                        "data": EmployeeSerializer(
-                            employees, many=True, context={"request": request}
-                        ).data,
-                    },
-                    status=status.HTTP_201_CREATED,
-                )
+            return Response(
+                {
+                    "detail": "All employees created successfully",
+                    "created_count": created_count,
+                    "data": EmployeeSerializer(
+                        employees, many=True, context={"request": request}
+                    ).data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
         except Exception as e:
+            import traceback
             print(f"Error processing file: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
             return Response(
                 {
                     "detail": f"Error processing file: {str(e)}",
-                    "created_count": created_count,
+                    "created_count": 0,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

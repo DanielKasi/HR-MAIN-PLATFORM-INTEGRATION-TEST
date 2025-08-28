@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from urllib.parse import urlparse
 from django.utils import timezone
 from django.http import HttpResponseForbidden
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 from users.models import Role, RolePermission, Permission, UserRole
 
 
-def parse_date(value: str):
+def custom_parse_date(value: str):
     if not value:
         return None
 
@@ -129,7 +129,7 @@ def send_activation_confirmation_email(
             "branches": len(branches),
             "departments": len(departments),
             "employees": len(employees),
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
         }
 
         # Render HTML template
@@ -270,7 +270,7 @@ def send_otp_to_user(user, otp):
     context = {
         "user": user,
         "otp_code": otp,
-        "year": datetime.datetime.now().year,
+        "year": datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
     }
 
@@ -320,7 +320,7 @@ def send_password_link_to_user(user, link):
         "link": link,
         "user": user,
         "fullname": user.fullname,
-        "year": datetime.datetime.now().year,
+        "year": datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
     }
     html_message = render_to_string(
@@ -345,7 +345,7 @@ def send_password_reset_link_to_user(user, link):
         context = {
             "link": link,
             "user": user,
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
         }
         html_message = render_to_string("forgot-password/password-reset.html", context)

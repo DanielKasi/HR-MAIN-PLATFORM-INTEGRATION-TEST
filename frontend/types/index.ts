@@ -9,6 +9,15 @@ export interface IProductCategoryDetail {
 
 export type InstitutionApprovalStatus = "pending" | "approved" | "rejected" | "under_review"
 
+export interface IKYCDocument {
+  id: number;
+  institution: number;
+  document_title: string;
+  document_file: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IUserInstitution {
   id: number;
   institution_email: string,
