@@ -3,35 +3,18 @@ from urllib.parse import urlparse
 from django.utils import timezone
 from django.http import HttpResponseForbidden
 from functools import wraps
-from utilities.enums import (
-    CashFlowClassification,
-    IncomeStatementClassification,
-    TransactionType,
-)
-import secrets
 import hashlib
 from users.models import OneTimePassword
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django.conf import settings
 import logging
-from urllib.parse import urlparse
-from django.utils.http import urlencode
 import secrets
-from datetime import timedelta
-from django.utils import timezone
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.conf import settings
 from django.core.mail import send_mail
-import datetime
 
 logger = logging.getLogger(__name__)
 
 from users.models import Role, RolePermission, Permission, UserRole
-
-from datetime import datetime, date
 
 
 def parse_date(value: str):
@@ -146,7 +129,7 @@ def send_activation_confirmation_email(
             "branches": len(branches),
             "departments": len(departments),
             "employees": len(employees),
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
         }
 
         # Render HTML template
@@ -196,7 +179,7 @@ def create_and_institution_otp(user_id, purpose=None, expiry_minutes=15):
     otp = generate_otp()
     otp_hash = hash_otp(user_id, otp)
 
-    expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
+    expiry_time = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
 
     if purpose:
         cleanup_existing_otps(user_id, purpose)
@@ -287,7 +270,7 @@ def send_otp_to_user(user, otp):
     context = {
         "user": user,
         "otp_code": otp,
-        "year": datetime.datetime.now().year,
+        "year": datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
     }
 
@@ -326,7 +309,7 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
         user=user,
         value=token,
         purpose=purpose,
-        expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+        expires_at=timezone.now() + datetime.timedelta(minutes=expiry_minutes),
     )
     return token
 
@@ -337,7 +320,7 @@ def send_password_link_to_user(user, link):
         "link": link,
         "user": user,
         "fullname": user.fullname,
-        "year": datetime.datetime.now().year,
+        "year": datetime.now().year,
         "personalized_greeting": get_personalized_greeting(user),
     }
     html_message = render_to_string(
@@ -362,7 +345,7 @@ def send_password_reset_link_to_user(user, link):
         context = {
             "link": link,
             "user": user,
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
             "personalized_greeting": get_personalized_greeting(user),
         }
         html_message = render_to_string("forgot-password/password-reset.html", context)
