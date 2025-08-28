@@ -114,7 +114,7 @@ class Employee(UtilityBaseModel):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="payroll_employees",
+        related_name="branch_payroll_employees",
     )
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(

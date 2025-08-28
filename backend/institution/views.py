@@ -42,6 +42,7 @@ from .serializers import (
     InstitutionTaxSerializer,
     InstitutionTaxRuleSerializer,
     InstitutionKYCDocumentSerializer,
+    InstitutionKYCDocumentBulkCreateSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -62,6 +63,7 @@ from leave_mgt.models import LeaveApplication
 from payroll.models import Payslip
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.db.models import Value, IntegerField
+from rest_framework import parsers
 
 
 User = get_user_model()
@@ -98,22 +100,25 @@ class DefaultDataAPIView(APIView):
 
 
 class InstitutionKYCDocumentListCreateView(APIView):
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
     @extend_schema(
-        request=InstitutionKYCDocumentSerializer,
-        responses=InstitutionKYCDocumentSerializer,
+        request=InstitutionKYCDocumentBulkCreateSerializer,
+        responses=InstitutionKYCDocumentBulkCreateSerializer,
         description="Create a new KYC document for an institution",
         summary="Create KYC Document",
         tags=["KYC Documents Management"],
     )
     def post(self, request):
-        print("REquest data", request.data)
-        serializer = InstitutionKYCDocumentSerializer(
+
+        print("\n\nrequest.data:", request.data)
+        serializer = InstitutionKYCDocumentBulkCreateSerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            document = serializer.save()
+            documents = serializer.save()
             return Response(
-                InstitutionKYCDocumentSerializer(document).data,
+                InstitutionKYCDocumentSerializer(documents, many=True).data,
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
