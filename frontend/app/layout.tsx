@@ -21,7 +21,7 @@ const font = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PERACOSOFT",
   description: "A comprehensive SaaS solution for organisation management",
-  generator: "v0.dev",
+  
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
