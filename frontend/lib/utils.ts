@@ -109,7 +109,7 @@ import {
 import apiRequest from "./apiRequest";
 import {IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
-import {IUserInstitution, IUserInstitutionFormData, Role} from "@/types";
+import {IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role} from "@/types";
 import {forceUrlToHttps} from "./helpers";
 
 export function cn(...inputs: ClassValue[]) {
@@ -5165,6 +5165,36 @@ export const institutionAPI = {
     const response = await apiRequest.post("/institution/kyc_docs", formData);
     return response.data;
   },
+
+  getKYCDocuments: async (): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get('/institution/kyc_docs');
+    return response.data as IPaginatedResponse<IKYCDocument>;
+  },
+
+  getKYCDocumentsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
+    return response.data as IPaginatedResponse<IKYCDocument>;
+  },
+
+  updateKYCDocument: async ({documentId, data}: {documentId: number; data: {document_title: string; document_file?: File}}) => {
+    const formData = new FormData();
+    formData.append("document_title", data.document_title);
+    if (data.document_file) {
+      formData.append("document_file", data.document_file);
+    }
+    
+    const response = await apiRequest.patch(`/institution/kyc_doc/${documentId}/`, formData);
+    return response.data as IKYCDocument;
+  },
+
+  deleteKYCDocument: async ({documentId}: {documentId: number}): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/institution/kyc_doc/${documentId}/`);
+      return response.status === 204;
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 export const systemAPI = {

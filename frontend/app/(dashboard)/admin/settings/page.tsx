@@ -19,6 +19,7 @@ import { institutionAPI, showErrorToast } from "@/lib/utils"
 import { useDispatch } from "react-redux"
 import { setAttachedInstitutions, setSelectedInstitution } from "@/store/auth/actions"
 import { Upload, FileText, X, Check } from "lucide-react"
+import { DocumentsList } from "@/components/documents-list"
 
 interface DocumentFile {
     id: string;
@@ -35,7 +36,7 @@ export default function SettingsPage() {
         institution_email: "",
         first_phone_number: "",
         location: "",
-        user_inactivity_time: 30,
+
         is_attendance_penalties_enabled: false,
         latitude: 0,
         longitude: 0,
@@ -48,7 +49,7 @@ export default function SettingsPage() {
         institution_email: false,
         first_phone_number: false,
         location: false,
-        user_inactivity_time: false,
+
         is_attendance_penalties_enabled: false,
         logo: false,
         documents: false,
@@ -59,6 +60,7 @@ export default function SettingsPage() {
         description: "",
         onConfirm: () => { },
     })
+    const [documentsRefreshTrigger, setDocumentsRefreshTrigger] = useState(0)
 
     const dispatch = useDispatch();
 
@@ -69,7 +71,7 @@ export default function SettingsPage() {
                 institution_email: institution.institution_email,
                 first_phone_number: institution.first_phone_number,
                 location: institution.location,
-                user_inactivity_time: institution.user_inactivity_time,
+
                 is_attendance_penalties_enabled: institution.is_attendance_penalties_enabled,
                 latitude: institution.latitude,
                 longitude: institution.longitude,
@@ -137,12 +139,13 @@ export default function SettingsPage() {
                     document_file: doc.file!
                 }))
 
-                console.log(kycDocuments)
+                
 
                 await institutionAPI.createKYCDocuments(kycDocuments)
                 
                 setDocuments([]) // Clear documents after successful submission
                 setIsEditing(prev => ({ ...prev, documents: false })) // Close document editing mode
+                setDocumentsRefreshTrigger(prev => prev + 1) // Trigger documents list refresh
                 toast.success("KYC documents uploaded successfully")
             } else {
                 // Handle institution settings update
@@ -153,7 +156,7 @@ export default function SettingsPage() {
                     institution_email: formData.institution_email,
                     first_phone_number: formData.first_phone_number,
                     location: formData.location,
-                    user_inactivity_time: formData.user_inactivity_time,
+
                     is_attendance_penalties_enabled: formData.is_attendance_penalties_enabled,
                     latitude: formData.latitude,
                     longitude: formData.longitude,
@@ -203,15 +206,6 @@ export default function SettingsPage() {
             })
         } else {
             // Validate institution settings
-            if (formData.user_inactivity_time > 180) {
-                toast.error("User inactivity time cannot exceed 3 hours (180 minutes)")
-                return
-            }
-
-            if (formData.user_inactivity_time < 1) {
-                toast.error("User inactivity time must be at least 1 minute")
-                return
-            }
 
             setConfirmationDialog({
                 isOpen: true,
@@ -223,14 +217,7 @@ export default function SettingsPage() {
         }
     }
 
-    const formatTimeout = (minutes: number) => {
-        const hours = Math.floor(minutes / 60)
-        const mins = minutes % 60
-        if (hours > 0) {
-            return `${hours}h ${mins}m`
-        }
-        return `${mins}m`
-    }
+
 
     // Document management functions
     const addDocument = () => {
@@ -478,45 +465,7 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="user_inactivity_time" className="text-sm font-medium text-gray-700">
-                                        Auto Logout Timer
-                                    </Label>
-                                    <p className="text-xs text-gray-500 mb-2">
-                                        Users will be automatically logged out after this period of inactivity (max 3 hours)
-                                    </p>
-                                    <div className="flex items-center space-x-3">
-                                        {isEditing.user_inactivity_time ? (
-                                            <div className="flex-1 flex items-center space-x-2">
-                                                <Input
-                                                    id="user_inactivity_time"
-                                                    type="number"
-                                                    min="1"
-                                                    max="180"
-                                                    value={formData.user_inactivity_time}
-                                                    onChange={(e) =>
-                                                        handleInputChange("user_inactivity_time", Number.parseInt(e.target.value) || 1)
-                                                    }
-                                                    className="w-24 rounded-xl border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                                                />
-                                                <span className="text-sm text-gray-600">minutes</span>
-                                                <span className="text-xs text-gray-500">({formatTimeout(formData.user_inactivity_time)})</span>
-                                            </div>
-                                        ) : (
-                                            <div className="flex-1 px-4 py-3 bg-gray-50 rounded-xl text-gray-900">
-                                                {formData.user_inactivity_time} minutes ({formatTimeout(formData.user_inactivity_time)})
-                                            </div>
-                                        )}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => toggleEdit("user_inactivity_time")}
-                                            className="rounded-xl border-gray-200 hover:bg-gray-50"
-                                        >
-                                            {isEditing.user_inactivity_time ? "Cancel" : "Change"}
-                                        </Button>
-                                    </div>
-                                </div>
+
 
                                 {/* KYC Documents Section */}
                                 <div className="space-y-2">
@@ -655,6 +604,14 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+
+            {/* Documents List Section */}
+            <div className="mt-8">
+                <DocumentsList 
+                    refreshTrigger={documentsRefreshTrigger} 
+                    onDocumentChange={() => setDocumentsRefreshTrigger(prev => prev + 1)}
+                />
             </div>
 
             <ConfirmationDialog
