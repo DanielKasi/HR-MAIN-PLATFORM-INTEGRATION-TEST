@@ -64,7 +64,7 @@ export function GenderDistribution({data, onRefresh, loading}: GenderDistributio
                 <div className="w-2 md:w-3 md:h-3 !aspect-square !inline-block bg-red-500 rounded-full"></div>
                 <p className="text-xs md:text-sm text-gray-600 inline-block"><span> Male </span><span className="!text-xs">({data?.male || 0})</span> </p>
               </div>
-              <p className="text-base font-semibold">{malePercentage}%</p>
+              <p className="text-base font-semibold">{malePercentage || 0}%</p>
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1 md:gap-3">
@@ -73,7 +73,7 @@ export function GenderDistribution({data, onRefresh, loading}: GenderDistributio
                  <span>Female</span>  <span className="text-xs">({data?.female || 0})</span> 
                 </p>
               </div>
-              <p className="text-base font-semibold">{femalePercentage}%</p>
+              <p className="text-base font-semibold">{femalePercentage || 0}%</p>
             </div>
           </div>
         </div>
