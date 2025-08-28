@@ -331,75 +331,7 @@ class EmployeeCreateAPIView(APIView):
                 "married": "married",
                 "divorced": "divorced",
                 "widowed": "widowed",
-                "Single": "single",
-                "Married": "married",
-                "Divorced": "divorced",
-                "Widowed": "widowed",
             }
-
-            # Cache foreign key mappings and create missing instances
-            print("Fetching and creating foreign key mappings")
-            field_mappings = {
-                "position": JobPosition,
-                "department": Department,
-                "work_type": WorkType,
-                "employee_type": EmployeeType,
-                "payroll_branch": Branch,
-            }
-            mappings = {}
-            instance_mappings = {}  # Store model instances
-            for field, model in field_mappings.items():
-                if field in df.columns:
-                    names = df[field].dropna().str.strip().unique()
-                    if names.size > 0:
-                        # Fetch existing records
-                        existing = model.objects.filter(name__in=names)
-                        print(
-                            f"Database {field} values: {[item.name for item in existing]}"
-                        )
-                        mappings[field] = {
-                            item.name.lower(): item.id for item in existing
-                        }
-                        instance_mappings[field] = {
-                            item.name.lower(): item for item in existing
-                        }
-                        # Create missing records
-                        input_names = [str(name).strip().lower() for name in names]
-                        missing = [
-                            name for name in input_names if name not in mappings[field]
-                        ]
-                        if missing:
-                            print(f"Creating missing {field}s: {missing}")
-                            for name in missing:
-                                # Basic creation with minimal required fields
-                                try:
-                                    if field == "position":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "department":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "work_type":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "employee_type":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    elif field == "payroll_branch":
-                                        instance = model.objects.create(
-                                            name=name.title(), institution=institution
-                                        )
-                                    mappings[field][name] = instance.id
-                                    instance_mappings[field][name] = instance
-                                    print(f"Created {field}: {name.title()}")
-                                except Exception as e:
-                                    print(f"Error creating {field} '{name}': {str(e)}")
-                                    # Continue with other records but log error
-                                    continue
 
             # Check for duplicate emails in the input file and existing database
             print("Checking for duplicate emails")
@@ -769,16 +701,7 @@ class EmployeeCreateAPIView(APIView):
                             "updated_at": datetime.now(),
                         }
 
-                        # Basic validation for user data
-                        if not user_data["fullname"]:
-                            row_errors["user.fullname"] = {
-                                "error": "This field is required."
-                            }
-                        if not user_data["email"]:
-                            row_errors["user.email"] = {
-                                "error": "This field is required."
-                            }
-
+                        # Process employee data
                         for column in df.columns:
                             if column not in ["user.fullname", "user.email", "department_lower", "position_lower"]:
                                 value = row[column]
@@ -787,32 +710,26 @@ class EmployeeCreateAPIView(APIView):
                                     continue
                                     
                                 value = str(value).strip()
-                                if column in field_mappings and value:
-                                    instance = instance_mappings.get(column, {}).get(
-                                        value.lower()
-                                    )
-                                    if instance is None:
-                                        row_errors[column] = {
-                                            "error": f'"{value}" does not exist.'
-                                        }
-                                    else:
-                                        employee_data[column] = instance
-                                elif column == "gender" and value:
-                                    mapped = gender_map.get(value)
-                                    if mapped is None:
-                                        row_errors["gender"] = {
-                                            "error": f'"{value}" is not a valid choice.'
-                                        }
-                                    else:
-                                        employee_data[column] = mapped
-                                elif column == "marital_status" and value:
-                                    mapped = marital_status_map.get(value)
-                                    if mapped is None:
-                                        row_errors["marital_status"] = {
-                                            "error": f'"{value}" is not a valid choice.'
-                                        }
-                                    else:
-                                        employee_data[column] = mapped
+                                if not value:  # Skip empty strings
+                                    employee_data[column] = None
+                                    continue
+                                
+                                if column in field_mappings:
+                                    # Map to foreign key instance
+                                    instance = instance_mappings.get(column, {}).get(value.lower())
+                                    employee_data[column] = instance
+                                elif column == "position":
+                                    # Handle position mapping
+                                    dept_value = str(row.get('department', '')).strip() if pd.notna(row.get('department')) else None
+                                    dept_lower = dept_value.lower() if dept_value else None
+                                    pos_lower = value.lower()
+                                    
+                                    position_instance = position_mappings.get((dept_lower, pos_lower))
+                                    employee_data[column] = position_instance
+                                elif column == "gender":
+                                    employee_data[column] = gender_map.get(value.lower())
+                                elif column == "marital_status":
+                                    employee_data[column] = marital_status_map.get(value.lower())
                                 else:
                                     employee_data[column] = value
 
@@ -825,33 +742,16 @@ class EmployeeCreateAPIView(APIView):
                                 str(employee_data["is_active"]).lower() == "true"
                             )
 
+                        # Process date fields
                         if (
                             "date_of_birth" in employee_data
                             and employee_data["date_of_birth"]
                         ):
                             try:
-                                dob = custom_parse_date(employee_data["date_of_birth"])
-                                if dob:
-                                    msgs = []
-                                    if dob > date.today():
-                                        msgs.append(
-                                            "Date of birth cannot be in the future."
-                                        )
-
-                                    age = (date.today() - dob).days // 365
-                                    if age < 18:
-                                        msgs.append(
-                                            f"Employee must be at least 18 years old. Current age: {age}."
-                                        )
-
-                                    if msgs:
-                                        row_errors["date_of_birth"] = {
-                                            "error": " ".join(msgs)
-                                        }
-
-                                    employee_data["date_of_birth"] = dob
-                            except ValueError as e:
-                                row_errors["date_of_birth"] = {"error": str(e)}
+                                employee_data["date_of_birth"] = custom_parse_date(employee_data["date_of_birth"])
+                            except Exception as e:
+                                print(f"Error parsing date_of_birth for row {index + 2}: {e}")
+                                employee_data["date_of_birth"] = None
 
                         if (
                             "date_of_joining" in employee_data
@@ -861,10 +761,9 @@ class EmployeeCreateAPIView(APIView):
                                 employee_data["date_of_joining"] = datetime.strptime(
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
-                            except ValueError:
-                                row_errors["date_of_joining"] = {
-                                    "error": "Invalid date format. Use YYYY-MM-DD."
-                                }
+                            except Exception as e:
+                                print(f"Error parsing date_of_joining for row {index + 2}: {e}")
+                                employee_data["date_of_joining"] = None
 
                         # Process numeric fields
                         for field in ["experience", "children_count"]:
@@ -875,12 +774,9 @@ class EmployeeCreateAPIView(APIView):
                                             str(employee_data[field]).replace(
                                                 " years", ""
                                             )
-                                        )  # Handle "11 years"
+                                        )
                                     )
                                 except (ValueError, TypeError):
-                                    row_errors[field] = {
-                                        "error": "Must be a valid number."
-                                    }
                                     employee_data[field] = 0
 
                         # Add timestamps
@@ -897,56 +793,24 @@ class EmployeeCreateAPIView(APIView):
                         continue
 
                     # Bulk create users
-                    try:
-                        print(f"Creating {len(user_objects)} users")
-                        created_users = CustomUser.objects.bulk_create(user_objects)
-                        print(f"Created {len(created_users)} users")
-                    except Exception as e:
-                        print(f"Error bulk creating users: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating users: {str(e)}"
-                                }
-                            }
-                        )
-                        continue
+                    print(f"Creating {len(user_objects)} users")
+                    created_users = CustomUser.objects.bulk_create(user_objects)
+                    print(f"Created {len(created_users)} users")
 
-                    # NEW: Bulk create profiles for the new users
-                    try:
-                        profile_objects = [
-                            Profile(user=user, institution=institution, bio="")
-                            for user in created_users
-                        ]
-                        Profile.objects.bulk_create(profile_objects)
-                        print(f"Created {len(profile_objects)} profiles")
-                    except Exception as e:
-                        print(f"Error bulk creating profiles: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating profiles: {str(e)}"
-                                }
-                            }
-                        )
-                        # Optionally rollback or continue, but since atomic, it will rollback on failure
+                    # Bulk create profiles for the new users
+                    profile_objects = [
+                        Profile(user=user, institution=institution, bio="")
+                        for user in created_users
+                    ]
+                    Profile.objects.bulk_create(profile_objects)
+                    print(f"Created {len(profile_objects)} profiles")
 
-                    # NEW: Bulk create user roles
-                    try:
-                        userrole_objects = [
-                            UserRole(user=user, role=role) for user in created_users
-                        ]
-                        UserRole.objects.bulk_create(userrole_objects)
-                        print(f"Created {len(userrole_objects)} user roles")
-                    except Exception as e:
-                        print(f"Error bulk creating user roles: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating user roles: {str(e)}"
-                                }
-                            }
-                        )
+                    # Bulk create user roles
+                    userrole_objects = [
+                        UserRole(user=user, role=role) for user in created_users
+                    ]
+                    UserRole.objects.bulk_create(userrole_objects)
+                    print(f"Created {len(userrole_objects)} user roles")
 
                     # Create Employee instances with actual CustomUser objects
                     employee_objects = []
@@ -958,22 +822,11 @@ class EmployeeCreateAPIView(APIView):
                         employee_objects.append(Employee(**employee_data))
 
                     # Bulk create employees
-                    try:
-                        print(f"Creating {len(employee_objects)} employees")
-                        created_employees = Employee.objects.bulk_create(
-                            employee_objects
-                        )
-                        print(f"Created {len(created_employees)} employees")
-                    except Exception as e:
-                        print(f"Error bulk creating employees: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error creating employees: {str(e)}"
-                                }
-                            }
-                        )
-                        continue
+                    print(f"Creating {len(employee_objects)} employees")
+                    created_employees = Employee.objects.bulk_create(
+                        employee_objects
+                    )
+                    print(f"Created {len(created_employees)} employees")
 
                     # After bulk create, handle post-creation logic
                     prefix = "EMP"
@@ -1014,19 +867,9 @@ class EmployeeCreateAPIView(APIView):
                             print(f"Error syncing employee data for {employee.user.email}: {e}")
 
                     # Bulk update the updated fields
-                    try:
-                        Employee.objects.bulk_update(
-                            created_employees, fields_to_update
-                        )
-                    except Exception as e:
-                        print(f"Error bulk updating employees: {str(e)}")
-                        errors.append(
-                            {
-                                "non_field_errors": {
-                                    "error": f"Error updating employees: {str(e)}"
-                                }
-                            }
-                        )
+                    Employee.objects.bulk_update(
+                        created_employees, fields_to_update
+                    )
 
                     # Send password setup emails (non-blocking)
                     for idx, employee in enumerate(created_employees):
@@ -1035,16 +878,6 @@ class EmployeeCreateAPIView(APIView):
                         except Exception as e:
                             print(
                                 f"Error sending password email for employee {employee.user.email}: {str(e)}"
-                            )
-                            errors.append(
-                                {
-                                    "row": start_idx + idx + 2,
-                                    "errors": {
-                                        "non_field_errors": {
-                                            "error": f"Error sending password email: {str(e)}"
-                                        }
-                                    },
-                                }
                             )
 
                     employees.extend(created_employees)

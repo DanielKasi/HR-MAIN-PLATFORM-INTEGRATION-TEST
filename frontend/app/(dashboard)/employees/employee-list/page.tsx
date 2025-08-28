@@ -8,9 +8,9 @@ import { CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
 import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
-import router from "next/router";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 
 export default function EmployeesPage() {
@@ -19,6 +19,7 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const router = useRouter();
 
   const refreshFunctionRef = useRef<(() => void) | null>(null);
 
