@@ -51,17 +51,8 @@ import DepartmentEditorDialog from "@/components/common/dialogs/setup-department
 import JobEditorDialog from "@/components/common/dialogs/setup-job-edit-dialog";
 import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog";
 
-interface DocumentFile {
-  id: string;
-  title: string;
-  file: File | null;
-  fileName: string;
-}
 
-interface DefaultJobPosition {
-  name: string;
-  description: string;
-}
+
 
 
 interface OrganisationFormData {
@@ -73,7 +64,6 @@ interface OrganisationFormData {
   location: string;
   latitude: string;
   longitude: string;
-  documents: DocumentFile[];
   departments: IDepartment[];
 }
 
@@ -88,7 +78,6 @@ const STEPS = [
     title: "Location Details",
     description: "Where is your organisation located",
   },
- 
   {
     id: 3,
     title: "Departments",
@@ -101,7 +90,7 @@ export default function CreateOrganisationWizard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState(""); 
+  const [searchQuery, setSearchQuery] = useState("");
   const [editingDepartmentIndex, setEditingDepartmentIndex] = useState<number | null>(null);
   const [editingJob, setEditingJob] = useState<{ deptIndex: number; jobIndex: number } | null>(
     null,
@@ -109,7 +98,7 @@ export default function CreateOrganisationWizard() {
   const [openDepartmentDialog, setOpenDepartmentDialog] = useState(false);
   const [openJobDialog, setOpenJobDialog] = useState(false);
   const [activeDeptForJob, setActiveDeptForJob] = useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{ type: "dept" | "job"; deptIndex: number; jobIndex?: number, name:string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "dept" | "job"; deptIndex: number; jobIndex?: number, name: string } | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -126,7 +115,6 @@ export default function CreateOrganisationWizard() {
     location: "",
     latitude: "",
     longitude: "",
-    documents: [],
     departments: [],
   });
 
@@ -165,73 +153,41 @@ export default function CreateOrganisationWizard() {
       router.push("/dashboard");
       return;
     }
-    setIsLoading(false);
   }, [router, selectedInstitution]);
 
   useEffect(() => {
-    const fetchDefaultDepartments = async () => {
-      try {
-        const departments = await getDefaultData();
-        if (departments && organizationFormData.departments.length === 0) {
-          const mappedDepartments: IDepartment[] = departments.map((dept) => ({
+    fetchDefaultDepartments();
+  }, []);
+
+  const fetchDefaultDepartments = async () => {
+    try {
+      const departments = await getDefaultData();
+      if (departments && organizationFormData.departments.length === 0) {
+        const mappedDepartments: IDepartment[] = departments.map((dept) => ({
+          id: 0,
+          name: dept.name,
+          description: dept.description ?? "",
+          institution: 0,
+          institution_details: null,
+          job_positions: (dept.job_positions ?? []).map((job) => ({
             id: 0,
-            name: dept.name,
-            description: dept.description ?? "",
-            institution: 0,
-            institution_details: null,
-            job_positions: (dept.job_positions ?? []).map((job) => ({
-              id: 0,
-              name: job.name,
-              description: job.description ?? "",
-              department_id: 0,
-            })),
-          }));
-          setOrganizationFormData((prev) => ({ ...prev, departments: mappedDepartments }));
-        }
-      } catch (error) {
-        toast.error("Failed to fetch default departments.");
+            name: job.name,
+            description: job.description ?? "",
+            department_id: 0,
+          })),
+        }));
+        setOrganizationFormData((prev) => ({ ...prev, departments: mappedDepartments }));
       }
-    };
-    if (currentStep === 4) {
-      fetchDefaultDepartments();
+    } catch (error) {
+      toast.error("Failed to fetch default departments.");
     }
-  }, [currentStep, organizationFormData.departments.length]);
+  };
 
   const updateFormData = (field: keyof OrganisationFormData, value: any) => {
     setOrganizationFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const addDocument = () => {
-    const newDoc: DocumentFile = {
-      id: Date.now().toString(),
-      title: "",
-      file: null,
-      fileName: "",
-    };
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: [...prev.documents, newDoc],
-    }));
-  };
 
-  const updateDocument = (id: string, field: keyof DocumentFile, value: any) => {
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc)),
-    }));
-  };
-
-  const removeDocument = (id: string) => {
-    setOrganizationFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((doc) => doc.id !== id),
-    }));
-  };
-
-  const handleFileChange = (id: string, file: File | null) => {
-    updateDocument(id, "file", file);
-    updateDocument(id, "fileName", file ? file.name : "");
-  };
 
   const removeDepartment = (deptName: string) => {
     setOrganizationFormData((prev) => ({
@@ -246,9 +202,9 @@ export default function CreateOrganisationWizard() {
       departments: prev.departments.map((dept) =>
         dept.name === deptName
           ? {
-              ...dept,
-              job_positions: (dept.job_positions ?? []).filter((job) => job.name !== jobName),
-            }
+            ...dept,
+            job_positions: (dept.job_positions ?? []).filter((job) => job.name !== jobName),
+          }
           : dept,
       ),
     }));
@@ -256,8 +212,8 @@ export default function CreateOrganisationWizard() {
 
   // Add a new department and open it for editing
   const addDepartment = () => {
-  setEditingDepartmentIndex(null);
-  setOpenDepartmentDialog(true);
+    setEditingDepartmentIndex(null);
+    setOpenDepartmentDialog(true);
   };
 
   const updateDepartmentField = (index: number, field: keyof any, value: any) => {
@@ -350,11 +306,6 @@ export default function CreateOrganisationWizard() {
       case 2:
         return !!(organizationFormData.location && organizationFormData.latitude && organizationFormData.longitude);
       case 3:
-        return (
-          organizationFormData.documents.length === 0 ||
-          organizationFormData.documents.every((doc) => doc.title && doc.file)
-        );
-      case 4:
         return organizationFormData.departments.length > 0;
       default:
         return false;
@@ -408,7 +359,7 @@ export default function CreateOrganisationWizard() {
       return;
     }
 
-    if (!validateStep(4)) {
+    if (!validateStep(3)) {
       setErrorMessage("Please complete all required fields and documents.");
       return;
     }
@@ -443,34 +394,24 @@ export default function CreateOrganisationWizard() {
 
       formdata.append("departments", JSON.stringify(backendDepartments));
 
-      const validDocuments = organizationFormData.documents.filter(
-        (doc) => doc.file && doc.title && doc.title.trim(),
-      );
-      validDocuments.forEach((doc) => {
-        if (doc.file && doc.title) {
-          formdata.append("document_files", doc.file);
-          formdata.append("document_titles", doc.title.trim());
-        }
-      });
-
-      const response  = await institutionAPI.createInstitution({data:formdata});
+      const response = await institutionAPI.createInstitution({ data: formdata });
 
       if (response) {
         try {
-          const fetchedUserResponse = await AUTH_API.refreshTokens({refreshToken});
+          const fetchedUserResponse = await AUTH_API.refreshTokens({ refreshToken });
           handleUserRefresh(fetchedUserResponse);
         } catch (refreshError) {
           dispatch(logoutStart());
           toast.error(
             "Organisation created, but failed to refresh user data. Please log in again.",
-          ); 
+          );
         }
       }
 
       toast.success("Organisation created successfully !")
     } catch (error: any) {
       if (error) {
-        showErrorToast({error, defaultMessage:"Failed to create organisation !"})
+        showErrorToast({ error, defaultMessage: "Failed to create organisation !" })
 
         if (error?.detail && typeof error.detail === "object") {
           const errorMessages = Object.entries(error.detail)
@@ -495,10 +436,10 @@ export default function CreateOrganisationWizard() {
           setErrorMessage(error.message);
         } else {
           setErrorMessage(
-            `Error ${error?.status || "" },  Something went wrong !`,
+            `Error ${error?.status || ""},  Something went wrong !`,
           );
         }
-      } 
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -617,9 +558,9 @@ export default function CreateOrganisationWizard() {
           </div>
         );
 
-   
       case 3:
-        const filteredDepartments = formData.departments.filter((dept) => {
+
+        const filteredDepartments = organizationFormData.departments.filter((dept) => {
           const query = searchQuery.toLowerCase();
           const matchesDepartment =
             dept.name.toLowerCase().includes(query) ||
@@ -732,52 +673,52 @@ export default function CreateOrganisationWizard() {
 
                     <div className="space-y-2">
                       <>
-                      <Label className="text-sm font-medium">Job Positions</Label>
-                      {(dept.job_positions?.length ?? 0) === 0 ? (
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">No job positions selected</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {dept.job_positions?.map((job, jobIndex) => (
-                            <div
-                              key={`${deptIndex}-${jobIndex}`}
-                              className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
-                            >
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{job.name}</p>
-                                <p className="text-xs text-muted-foreground">{job.description}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => { setEditingJob({ deptIndex, jobIndex }); setOpenJobDialog(true); }}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setDeleteTarget({ type: "job", deptIndex, jobIndex, name: job.name })}
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                          <div>
-                            <Button type="button" size="sm" onClick={() => addJobPositionToDepartment(deptIndex)}>
-                              Add Job
-                            </Button>
+                        <Label className="text-sm font-medium">Job Positions</Label>
+                        {(dept.job_positions?.length ?? 0) === 0 ? (
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground">No job positions selected</p>
                           </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {dept.job_positions?.map((job, jobIndex) => (
+                              <div
+                                key={`${deptIndex}-${jobIndex}`}
+                                className="flex items-center justify-between bg-muted/50 p-2 rounded-md"
+                              >
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{job.name}</p>
+                                  <p className="text-xs text-muted-foreground">{job.description}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setEditingJob({ deptIndex, jobIndex }); setOpenJobDialog(true); }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setDeleteTarget({ type: "job", deptIndex, jobIndex, name: job.name })}
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div>
+                          <Button type="button" size="sm" onClick={() => addJobPositionToDepartment(deptIndex)}>
+                            Add Job
+                          </Button>
+                        </div>
                       </>
                     </div>
                   </div>
@@ -786,7 +727,7 @@ export default function CreateOrganisationWizard() {
               </div>
             )}
             <div className="w-full">
-                  <Button type="button" onClick={addDepartment}>Add Department</Button>
+              <Button type="button" onClick={addDepartment}>Add Department</Button>
             </div>
           </div>
         );
@@ -799,129 +740,141 @@ export default function CreateOrganisationWizard() {
   const progress = (currentStep / STEPS.length) * 100;
 
   return (
+
     <div className="max-h-[calc(100svh-6rem)] overflow-y-auto h-full w-full">
-      <form
-        encType="multipart/form-data"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (currentStep === STEPS.length) {
-            handleSubmit();
-          } else {
-            nextStep();
-          }
-        }}
-      >
-        <Card className="w-full border-none shadow-none overflow-hidden flex flex-col h-full py-4">
-          <CardHeader className="py-3 px-4 space-y-2 border-b">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Store className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-xlg mb-3">Create Your Organisation</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1]?.title}
-                </p>
-              </div>
-            </div>
 
-            <div className="space-y-1">
-              <Progress value={progress} className="h-1.5" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                {STEPS.map((step) => (
-                  <div key={step.id} className="flex items-center gap-1">
-                    {currentStep > step.id ? (
-                      <Check className="h-3 w-3 text-primary" />
-                    ) : (
-                      <div
-                        className={`h-3 w-3 rounded-full ${currentStep === step.id ? "bg-primary" : "bg-muted"}`}
-                      />
-                    )}
-                    <span className={currentStep === step.id ? "font-medium" : ""}>
-                      {step.title}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardHeader>
+      <>
+        {!selectedInstitution &&
+          <>
 
-          <CardContent className="flex-1 overflow-auto p-4">
-            {errorMessage && (
-              <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md mb-4 whitespace-pre-line">
-                {errorMessage}
-              </div>
-            )}
 
-            <div className="h-full">{renderStepContent()}</div>
-          </CardContent>
-
-          <CardFooter className="border-t p-4 flex justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="flex items-center gap-2"
+            <form
+              encType="multipart/form-data"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (currentStep === STEPS.length) {
+                  handleSubmit();
+                } else {
+                  nextStep();
+                }
+              }}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
+              <Card className="w-full border-none shadow-none overflow-hidden flex flex-col h-full py-4">
+                <CardHeader className="py-3 px-4 space-y-2 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Store className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xlg mb-3">Create Your Organisation</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1]?.title}
+                      </p>
+                    </div>
+                  </div>
 
-            {currentStep < STEPS.length ? (
-              <Button
-                type="submit"
-                disabled={!validateStep(currentStep)}
-                className="flex items-center gap-2"
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isSubmitting || !validateStep(currentStep)}
-                className="flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Create Organisation
-                  </>
-                )}
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      </form>
-      
-      {/* Dialogs */}
-      <DepartmentEditorDialog
-        open={openDepartmentDialog}
-        initial={editingDepartmentIndex !== null ? organizationFormData.departments[editingDepartmentIndex] : null}
-        onClose={() => { setOpenDepartmentDialog(false); setEditingDepartmentIndex(null); }}
-        onSave={handleSaveDepartment}
-      />
-      <JobEditorDialog
-        open={openJobDialog}
-        departmentName={activeDeptForJob !== null ? organizationFormData.departments[activeDeptForJob].name : ""}
-        initial={editingJob ? organizationFormData.departments[editingJob.deptIndex]?.job_positions?.[editingJob.jobIndex] : null}
-        onClose={() => { setOpenJobDialog(false); setEditingJob(null); setActiveDeptForJob(null); }}
-        onSave={handleSaveJob}
-      />
-      <DeleteConfirmationDialog
-        isOpen={!!deleteTarget}
-        onClose={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-        title={(deleteTarget?.type === "dept" ? "Delete Department" : "Delete Job Position") + ` ${deleteTarget?.name || ""}`}
-        description={deleteTarget?.type === "dept" ? `Are you sure you want to delete department ${deleteTarget.name}?` : `Are you sure you want to delete job position ${deleteTarget?.name || ""} ?`}
-        isDeleting={false}
-      />
+                  <div className="space-y-1">
+                    <Progress value={progress} className="h-1.5" />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      {STEPS.map((step) => (
+                        <div key={step.id} className="flex items-center gap-1">
+                          {currentStep > step.id ? (
+                            <Check className="h-3 w-3 text-primary" />
+                          ) : (
+                            <div
+                              className={`h-3 w-3 rounded-full ${currentStep === step.id ? "bg-primary" : "bg-muted"}`}
+                            />
+                          )}
+                          <span className={currentStep === step.id ? "font-medium" : ""}>
+                            {step.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="flex-1 overflow-auto p-4">
+                  {errorMessage && (
+                    <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded-md mb-4 whitespace-pre-line">
+                      {errorMessage}
+                    </div>
+                  )}
+
+                  <div className="h-full">{renderStepContent()}</div>
+                </CardContent>
+
+                <CardFooter className="border-t p-4 flex justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    disabled={currentStep === 1}
+                    className="flex items-center gap-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  {currentStep < STEPS.length ? (
+                    <Button
+                      type="submit"
+                      disabled={!validateStep(currentStep)}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || !validateStep(currentStep)}
+                      className="flex items-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Create Organisation
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            </form>
+
+            {/* Dialogs */}
+            <DepartmentEditorDialog
+              open={openDepartmentDialog}
+              initial={editingDepartmentIndex !== null ? organizationFormData.departments[editingDepartmentIndex] : null}
+              onClose={() => { setOpenDepartmentDialog(false); setEditingDepartmentIndex(null); }}
+              onSave={handleSaveDepartment}
+            />
+            <JobEditorDialog
+              open={openJobDialog}
+              departmentName={activeDeptForJob !== null ? organizationFormData.departments[activeDeptForJob].name : ""}
+              initial={editingJob ? organizationFormData.departments[editingJob.deptIndex]?.job_positions?.[editingJob.jobIndex] : null}
+              onClose={() => { setOpenJobDialog(false); setEditingJob(null); setActiveDeptForJob(null); }}
+              onSave={handleSaveJob}
+            />
+            <DeleteConfirmationDialog
+              isOpen={!!deleteTarget}
+              onClose={handleCancelDelete}
+              onConfirm={handleConfirmDelete}
+              title={(deleteTarget?.type === "dept" ? "Delete Department" : "Delete Job Position") + ` ${deleteTarget?.name || ""}`}
+              description={deleteTarget?.type === "dept" ? `Are you sure you want to delete department ${deleteTarget.name}?` : `Are you sure you want to delete job position ${deleteTarget?.name || ""} ?`}
+              isDeleting={false}
+            />
+          </>
+
+        }
+      </>
+
     </div>
   );
 }
