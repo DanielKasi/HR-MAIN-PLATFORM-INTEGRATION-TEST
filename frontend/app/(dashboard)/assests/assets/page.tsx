@@ -29,8 +29,8 @@ import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
 import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
-import { assetsAPI } from "@/lib/utils";
-import type { IAsset } from "@/types/types.utils";
+import { assetCategoriesAPI, assetsAPI, showErrorToast } from "@/lib/utils";
+import type { IAsset, IAssetCategory } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react"
 
@@ -80,7 +80,7 @@ const AssetsComponent = () => {
   const [editingAsset, setEditingAsset] = useState<IAsset | null>(null);
   const [deletingAsset, setDeletingAsset] = useState<IAsset | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [assetsCategories, setAssetsCategories] = useState<Array<IAssetCategory>>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const refreshTableRef = useRef<(() => void) | null>(null);
 
@@ -119,13 +119,19 @@ const AssetsComponent = () => {
     router.push(`/assests/assets/${asset.id}`);
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-    setCategoryFilter("all");
-  };
+  const handleFetchAssetCategories = async () => {
+    if (!selectedInstitution) return;
+    try {
+      const categories = await assetCategoriesAPI.getPaginated({
+        institutionId: selectedInstitution.id,
+        page: 1,
+      });
+      setAssetsCategories(categories.results);
+    } catch (error) {
+      showErrorToast({error, defaultMessage:"Failed to load asset categories"});
+    }
+  }
 
-  const hasFilters = searchTerm || statusFilter !== "all" || categoryFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -152,25 +158,19 @@ const AssetsComponent = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[110px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent> 
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="allocated">Allocated</SelectItem>
-                  <SelectItem value="maintenance">Under Maintenance</SelectItem>
-                  <SelectItem value="decommissioned">Decommissioned</SelectItem>
-                </SelectContent>
-              </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {/* Categories will be populated from API */}
+                  {
+                    assetsCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.category_name}
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
             </div>
@@ -219,10 +219,9 @@ const AssetsComponent = () => {
 
               // Apply client-side filters (status and category filters)
               const filteredResults = data.results.filter((asset) => {
-                const matchesStatus = statusFilter === "all" || asset.status === statusFilter;
                 const matchesCategory = categoryFilter === "all" || asset.category?.id === parseInt(categoryFilter);
                 
-                return matchesStatus && matchesCategory;
+                return matchesCategory;
               });
 
               if (filteredResults.length === 0) {

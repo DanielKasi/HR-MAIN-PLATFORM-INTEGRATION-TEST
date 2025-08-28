@@ -50,6 +50,7 @@ import { getDefaultData, institutionAPI, showErrorToast } from "@/lib/utils";
 import DepartmentEditorDialog from "@/components/common/dialogs/setup-department-edit-dialog";
 import JobEditorDialog from "@/components/common/dialogs/setup-job-edit-dialog";
 import { DeleteConfirmationDialog } from "@/components/common/dialogs/delete-confirmation-dialog";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 
 
@@ -862,13 +863,13 @@ export default function CreateOrganisationWizard() {
               onClose={() => { setOpenJobDialog(false); setEditingJob(null); setActiveDeptForJob(null); }}
               onSave={handleSaveJob}
             />
-            <DeleteConfirmationDialog
+            <ConfirmationDialog
               isOpen={!!deleteTarget}
               onClose={handleCancelDelete}
               onConfirm={handleConfirmDelete}
               title={(deleteTarget?.type === "dept" ? "Delete Department" : "Delete Job Position") + ` ${deleteTarget?.name || ""}`}
               description={deleteTarget?.type === "dept" ? `Are you sure you want to delete department ${deleteTarget.name}?` : `Are you sure you want to delete job position ${deleteTarget?.name || ""} ?`}
-              isDeleting={false}
+              disabled={false}
             />
           </>
 

@@ -19,6 +19,7 @@ import type { IEmployeeType, IEmployeeTypeFormData, IPaginatedResponse } from "@
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 interface EmployeeTypeModalProps {
   isOpen: boolean
@@ -440,9 +441,9 @@ export default function EmployeeTypeManagement() {
                 <EmployeeTypeDetailsModal isOpen={showDetailsModal} onClose={handleCloseDetailsModal} employeeType={viewingType} />
 
                 {employeeTypeToDelete && (
-                  <DeleteConfirmationDialog
+                  <ConfirmationDialog
                     description="Are you sure you want to delete this employee type? This action cannot be undone."
-                    isDeleting={isDeleting}
+                    disabled={isDeleting}
                     isOpen={!!employeeTypeToDelete}
                     title={`Delete ${employeeTypeToDelete.name}`}
                     onConfirm={() => handleDelete(employeeTypeToDelete)}

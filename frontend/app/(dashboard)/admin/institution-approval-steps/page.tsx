@@ -34,6 +34,7 @@ import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialo
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useSelector } from "react-redux";
 import { capitalizeEachWord } from "@/lib/helpers";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function ShopApprovalStepsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution);
@@ -593,9 +594,9 @@ export default function ShopApprovalStepsPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
+      <ConfirmationDialog
         description="Are you sure you want to delete this approval step? This action cannot be undone."
-        isDeleting={isDeleting}
+        disabled={isDeleting}
         isOpen={deleteDialogOpen}
         title="Delete Approval Step"
         onConfirm={confirmDelete}

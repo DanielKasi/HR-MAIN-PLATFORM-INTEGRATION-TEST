@@ -75,12 +75,12 @@ export function DocumentsList({ className, refreshTrigger, onDocumentChange }: D
   return (
     <Card className={`rounded-2xl border-0 shadow-sm ${className}`}>
       <CardContent className="p-8">
-        <div className="border-b border-gray-200 mb-8">
+        {/* <div className="border-b border-gray-200 mb-8">
           <div className="flex items-center space-x-2 pb-4">
             <Icon icon="hugeicons:file-02" className="w-5 h-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">KYC Documents</h2>
           </div>
-        </div>
+        </div> */}
 
         <PaginatedTableWrapper
           fetchFirstPage={institutionAPI.getKYCDocuments}

@@ -17,6 +17,7 @@ import type { IBankType, IBankTypeFormData } from "@/types/types.utils"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { BankTypeModal } from "@/components/bank-types/create-bank-type-modal"
 import { BankTypeDetailsModal } from "@/components/bank-types/bank-types-details-modal"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 
 
@@ -404,9 +405,9 @@ export default function BankTypeManagement() {
             <BankTypeDetailsModal isOpen={showDetailsModal} onClose={handleCloseDetailsModal} bankType={viewingType} />
 
             {bankTypeToDelete && (
-                <DeleteConfirmationDialog
+                <ConfirmationDialog
                     description="Are you sure you want to delete this bank type? This action cannot be undone."
-                    isDeleting={isDeleting}
+                    disabled={isDeleting}
                     isOpen={!!bankTypeToDelete}
                     title={`Delete ${bankTypeToDelete.bank_fullname}`}
                     onConfirm={() => handleDelete(bankTypeToDelete)}

@@ -117,7 +117,7 @@ axiosJsonInstance.interceptors.response.use(
       // }
     }
 
-    const errorMessage = error.response || error.response?.data?.detail || "Unknown error occurred";
+    const errorMessage = error.response?.data?.detail || error.response?.data?.error ||  error.response  || "An unknown error occurred, please make sure you are connected to a network";
 
     return Promise.reject(new Error(errorMessage));
   },

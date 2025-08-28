@@ -526,11 +526,13 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     setExpandedItems((prev) => ({[title]: !prev[title]}));
   };
 
-  const renderNavigationItem = ({item, isMobileView=false, index}:{item: NavItem, isMobileView:boolean,index:number}) => {
+  const NavItemComponent = ({item, isMobileView=false, index}:{item: NavItem, isMobileView:boolean,index:number}) => {
     const isActive = item.submenu
       ? item.submenu.some((sub) => pathname === sub.href)
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
+    const hoveredTooltipRef = useRef<HTMLSpanElement|null>(null);
+    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
     return (
       <div key={`${item.title}-${index}`} className="w-full py-1">
@@ -539,6 +541,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
           className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
           }`}
+          onMouseEnter={() => {
+            if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true)
+          }}
+          onMouseLeave={() => setIsTooltipVisible(false)}
           onClick={() => {
             if (item.submenu) {
               toggleExpand(item.title);
@@ -551,9 +557,24 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             }
           }}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 relative">
             {item.icon}
-            {isSideBarOpen ? <span>{item.title}</span> : <></>}
+            {isSideBarOpen ? (
+              <span>{item.title}</span>
+            ) : (
+              <></>
+            )}
+
+            {/* Tooltip shown only on hover when sidebar is closed and not mobile */}
+            {/* {!isSideBarOpen && !isMobile && isTooltipVisible && (
+              <span
+                ref={hoveredTooltipRef}
+                role="tooltip"
+                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[9999] pointer-events-none bg-gray-800 text-white text-xs font-medium rounded-sm px-3 py-1 whitespace-nowrap shadow-lg"
+              >
+                {item.title}
+              </span>
+            )} */}
           </div>
           {isSideBarOpen ? (
             item.submenu &&
@@ -607,11 +628,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         >
           <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
             <div className="flex items-center gap-3">
-              <div className="size-11 bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-xl flex items-center justify-center">
+              <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden">
                 {InstitutionLogo ? (
                   <Image
                     alt="Institution Logo"
-                    className="object-cover"
+                    className="object-cover object-center !w-full !h-full"
                     height={32}
                     src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
                     width={32}
@@ -621,14 +642,16 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 )}
               </div>
               {isSideBarOpen && (
-                <span className="font-bold text-[var(--sidebar-foreground)]">
+                <span className="font-bold text-[var(--sidebar-foreground)] line-clamp-1">
                   {InstitutionName}
                 </span>
               )}
             </div>
           </div>
           <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
-            {filteredNavItems.map((item, index) => renderNavigationItem({item, isMobileView:false, index}))}
+            {filteredNavItems.map((item, index) => (
+              <NavItemComponent key={`${item.title}-${index}`} item={item} isMobileView={false} index={index} />
+            ))}
           </div>
         </div>
       )}
@@ -685,7 +708,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
             {/* Navigation Items */}
             <div className="flex-1 overflow-y-auto p-2 pb-20">
-              {filteredNavItems.map((item, idx) => renderNavigationItem({item, isMobileView:true, index:idx}))}
+              {filteredNavItems.map((item, idx) => (
+                <NavItemComponent key={`${item.title}-${idx}`} item={item} isMobileView={true} index={idx} />
+              ))}
             </div>
           </div>
         </>

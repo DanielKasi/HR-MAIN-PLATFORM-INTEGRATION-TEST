@@ -241,26 +241,19 @@ export const createDepartment = async ({departmentData}: {departmentData: Depart
   }
 };
 
-export const getDepartment = async ({departmentId}: {departmentId: number}) => {
-  try {
+export const getDepartment = async ({ departmentId }: { departmentId: number }) => {
     const response = await apiRequest.get(`institution/department/${departmentId}/`);
     return response.data as IDepartment;
-  } catch (error) {
-    throw error;
-  }
+
 };
 
-export const updateDepartment = async ({departmentData}: {departmentData: IDepartment}) => {
-  try {
+export const updateDepartment = async ({ departmentData }: { departmentData: IDepartment }) => {
     const response = await apiRequest.patch(`institution/department/${departmentData.id}/`, {
       name: departmentData.name,
       description: departmentData.description,
       institution: departmentData.institution,
     });
     return response.data as IDepartment;
-  } catch (error) {
-    throw error;
-  }
 };
 
 export const deleteDepartment = async ({departmentId}: {departmentId: number}) => {
@@ -280,6 +273,24 @@ export const getDepartments = async ({institutionId}: {institutionId: number}) =
     throw error;
   }
 };
+
+export const getPaginatedDepartments = async ({ institutionId, page = 1, search }: { institutionId: number, page?: number, search?: string}) => {
+  const params = new URLSearchParams({
+    page: page?.toString() || "1",
+  });
+  params.append("page", page.toString())
+  if (search) {
+    params.append("search", search);
+  }
+    const response = await apiRequest.get(`institution/${institutionId}/department/?${params.toString()}`);
+    return response.data as IPaginatedResponse<IDepartment>;
+};
+
+export const getPaginatedDepartmentsFromUrl = async ({ url}: { url:string}) => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
+    return response.data as IPaginatedResponse<IDepartment>;
+};
+
 
 export const getJobPositions = async ({
   institutionId,
@@ -316,13 +327,12 @@ export const getPaginatedJobPositions = async ({
   const params = new URLSearchParams({
     page: page?.toString() || "1",
   });
-
+  params.append("page", page.toString())
   if (search) {
     params.append("search", search);
   }
-  const response = await apiRequest.get(
-    `recruitment/institution/${institutionId}/job-position/?${params.toString()}`,
-  );
+
+  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
   return response.data as IPaginatedResponse<IJobPosition>;
 };
 
@@ -1435,17 +1445,28 @@ export const getEmployeeDetailId = async ({
   }
 };
 
-export const getOnBoardings = async ({institutionId}: {institutionId: number}) => {
-  try {
+export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
     const response = await apiRequest.get(`on-boarding/list/${institutionId}/`);
-    const data = response.data as PaginatedIOnboardingResponse;
+    const data = response.data as IPaginatedResponse<IOnBoarding>;
+    return data.results;
+};
 
-    // Return the results array instead of the entire response
-    return data.results as IOnBoarding[];
-  } catch (error) {
-    // console.error("Error fetching onboarding records:", error);
-    throw error;
-  }
+export const getPaginatedOnBoardings = async ({ institutionId, search, page=1 }: { institutionId: number, search?:string, page?:number }) => {
+      const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    const response = await apiRequest.get(`on-boarding/list/${institutionId}/?${params.toString()}`);
+    return response.data as IPaginatedResponse<IOnBoarding>;
+};
+
+
+export const getPaginatedOnBoardingsFromUrl = async ({ url}: { url:string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IOnBoarding>;
 };
 
 // Get onboarding record by ID
@@ -5311,13 +5332,8 @@ export const taxAPI = {
 // Asset Category API functions
 export const assetCategoriesAPI = {
   getAll: async (): Promise<IAssetCategory[]> => {
-    try {
       const response = await apiRequest.get("/assets/asset-categories/");
-      return response.data.results || response.data;
-    } catch (error) {
-      console.error("Error fetching asset categories:", error);
-      throw error;
-    }
+      return response.data?.results || response.data;
   },
 
   getPaginated: async ({
