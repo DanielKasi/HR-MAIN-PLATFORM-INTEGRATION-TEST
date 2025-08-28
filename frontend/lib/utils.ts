@@ -5047,6 +5047,11 @@ export const institutionAPI = {
     }
   },
 
+  createInstitution: async ({data}:{data:FormData}) => {
+    const response  = await await apiRequest.post("institution/", data);
+    return response as IUserInstitution
+  },
+
   updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
     const formData = new FormData()
 
@@ -5067,7 +5072,6 @@ export const institutionAPI = {
   createKYCDocuments: async (documents: { document_title: string; document_file: File }[]) => {
     const formData = new FormData()
     
-    console.log("Picked data",documents)
     // Append each document with proper structure
     documents.forEach((doc, index) => {
       formData.append(`documents[${index}].document_title`, doc.document_title)
@@ -5999,7 +6003,6 @@ export async function fetchAttendanceData(
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
-  console.log("\n\n The received error is", error);
   const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
 }
