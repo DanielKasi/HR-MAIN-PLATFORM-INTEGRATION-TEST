@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import {type ClassValue, clsx} from "clsx";
+import {twMerge} from "tailwind-merge";
 import {
   IDepartment,
   CreateDepartmentData,
@@ -107,15 +107,16 @@ import {
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
-import { IEmployee } from "@/types/types.utils";
-import { toast } from "sonner";
-import { IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import {IEmployee} from "@/types/types.utils";
+import {toast} from "sonner";
+import {IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role} from "@/types";
+import {forceUrlToHttps} from "./helpers";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function validatePasswordStrength(password: string): { valid: boolean; errors: string[] } {
+export function validatePasswordStrength(password: string): {valid: boolean; errors: string[]} {
   const errors: string[] = [];
 
   if (password.length < 8) {
@@ -193,7 +194,7 @@ export async function forgotPassword(email: string, frontendUrl?: string): Promi
   const payload: ForgotPasswordRequest = {
     email,
     // Only include frontend_url if provided
-    ...(frontendUrl && { frontend_url: frontendUrl }),
+    ...(frontendUrl && {frontend_url: frontendUrl}),
   };
 
   await apiRequest.post("/user/forgot-password", payload);
@@ -204,7 +205,7 @@ export async function forgotPassword(email: string, frontendUrl?: string): Promi
  * @param token Reset token
  */
 export async function verifyResetToken(token: string): Promise<TokenVerificationResponse> {
-  const response = await apiRequest.post("/user/verify-token", { token });
+  const response = await apiRequest.post("/user/verify-token", {token});
 
   return response.data;
 }
@@ -227,7 +228,7 @@ export async function resetPassword(
   return response.data;
 }
 
-export const createDepartment = async ({ departmentData }: { departmentData: DepartmentFormData }) => {
+export const createDepartment = async ({departmentData}: {departmentData: DepartmentFormData}) => {
   try {
     const response = await apiRequest.post(
       `institution/${departmentData.institution}/department/`,
@@ -240,7 +241,7 @@ export const createDepartment = async ({ departmentData }: { departmentData: Dep
   }
 };
 
-export const getDepartment = async ({ departmentId }: { departmentId: number }) => {
+export const getDepartment = async ({departmentId}: {departmentId: number}) => {
   try {
     const response = await apiRequest.get(`institution/department/${departmentId}/`);
     return response.data as IDepartment;
@@ -249,7 +250,7 @@ export const getDepartment = async ({ departmentId }: { departmentId: number }) 
   }
 };
 
-export const updateDepartment = async ({ departmentData }: { departmentData: IDepartment }) => {
+export const updateDepartment = async ({departmentData}: {departmentData: IDepartment}) => {
   try {
     const response = await apiRequest.patch(`institution/department/${departmentData.id}/`, {
       name: departmentData.name,
@@ -262,7 +263,7 @@ export const updateDepartment = async ({ departmentData }: { departmentData: IDe
   }
 };
 
-export const deleteDepartment = async ({ departmentId }: { departmentId: number }) => {
+export const deleteDepartment = async ({departmentId}: {departmentId: number}) => {
   try {
     await apiRequest.delete(`institution/department/${departmentId}/`);
   } catch (error) {
@@ -270,17 +271,25 @@ export const deleteDepartment = async ({ departmentId }: { departmentId: number 
   }
 };
 
-export const getDepartments = async ({ institutionId }: { institutionId: number }) => {
+export const getDepartments = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(`institution/${institutionId}/department/`);
     const data = response.data as IPaginatedResponse<IDepartment>;
     return data.results;
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 
-export const getJobPositions = async ({ institutionId, page = 1, search }: { institutionId: number, page?: number, search?: string }) => {
+export const getJobPositions = async ({
+  institutionId,
+  page = 1,
+  search,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+}) => {
   const params = new URLSearchParams({
     page: page?.toString() || "1",
   });
@@ -288,13 +297,22 @@ export const getJobPositions = async ({ institutionId, page = 1, search }: { ins
   if (search) {
     params.append("search", search);
   }
-  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
+  const response = await apiRequest.get(
+    `recruitment/institution/${institutionId}/job-position/?${params.toString()}`,
+  );
   const data = response.data as IPaginatedResponse<IJobPosition>;
   return data.results;
 };
 
-
-export const getPaginatedJobPositions = async ({ institutionId, page = 1, search }: { institutionId: number, page?: number, search?: string }) => {
+export const getPaginatedJobPositions = async ({
+  institutionId,
+  page = 1,
+  search,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+}) => {
   const params = new URLSearchParams({
     page: page?.toString() || "1",
   });
@@ -302,24 +320,23 @@ export const getPaginatedJobPositions = async ({ institutionId, page = 1, search
   if (search) {
     params.append("search", search);
   }
-  const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/?${params.toString()}`);
+  const response = await apiRequest.get(
+    `recruitment/institution/${institutionId}/job-position/?${params.toString()}`,
+  );
   return response.data as IPaginatedResponse<IJobPosition>;
 };
 
 export const getPaginatedJobPositionsFromUrl = async (url: string) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IJobPosition>;
 };
-
 
 export const getDefaultData = async (): Promise<IDepartment[] | null> => {
   const response = await apiRequest.get("institution/default-data/");
   return response.data as IDepartment[];
 };
 
-
-
-export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number }) => {
+export const getJobPosition = async ({jobPositionId}: {jobPositionId: number}) => {
   try {
     const response = await apiRequest.get(`recruitment/job-position/${jobPositionId}/`);
     const data = response.data as IJobPosition;
@@ -330,7 +347,7 @@ export const getJobPosition = async ({ jobPositionId }: { jobPositionId: number 
   }
 };
 
-export const deleteJobPosition = async ({ jobPositionId }: { jobPositionId: number }) => {
+export const deleteJobPosition = async ({jobPositionId}: {jobPositionId: number}) => {
   try {
     await apiRequest.delete(`recruitment/job-position/${jobPositionId}/`);
   } catch (error) {
@@ -417,7 +434,7 @@ export const updateJobPosition = async ({
     if ((error as any).response?.data?.apply_salary_to_employees) {
       toast.error(
         (error as any)?.response?.data?.apply_salary_to_employees.join(", ") ||
-        "Failed to update job position/title ",
+          "Failed to update job position/title ",
       );
     } else {
       toast.error("Failed to update job position/title. Please try again.");
@@ -482,10 +499,11 @@ export const getPaginatedJobApplications = async ({
 }): Promise<IPaginatedResponse<JobApplication>> => {
   try {
     const params = new URLSearchParams();
-    params.append('page', page.toString());
-    if (search) params.append('search', search);
-    if (status && status !== 'all') params.append('status', status);
-    if (jobPositionAdvert && jobPositionAdvert !== 'all') params.append('job_position_advert', jobPositionAdvert);
+    params.append("page", page.toString());
+    if (search) params.append("search", search);
+    if (status && status !== "all") params.append("status", status);
+    if (jobPositionAdvert && jobPositionAdvert !== "all")
+      params.append("job_position_advert", jobPositionAdvert);
 
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-application/?${params.toString()}`,
@@ -498,9 +516,11 @@ export const getPaginatedJobApplications = async ({
 };
 
 // Fetch paginated job applications from URL (for direct navigation)
-export const getPaginatedJobApplicationsFromUrl = async (url: string): Promise<IPaginatedResponse<JobApplication>> => {
+export const getPaginatedJobApplicationsFromUrl = async (
+  url: string,
+): Promise<IPaginatedResponse<JobApplication>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<JobApplication>;
   } catch (error) {
     // console.error("Failed to fetch paginated job applications from URL", error);
@@ -509,14 +529,9 @@ export const getPaginatedJobApplicationsFromUrl = async (url: string): Promise<I
 };
 
 // Fetch a single job application by ID
-export const getJobApplicationById = async ({
-  applicationId,
-}: {
-  applicationId: number;
-}) => {
+export const getJobApplicationById = async ({applicationId}: {applicationId: number}) => {
   const response = await apiRequest.get(`recruitment/job-application/${applicationId}/`);
   return response.data as JobApplication;
-
 };
 
 // Update an existing job application
@@ -541,10 +556,7 @@ export const updateJobApplication = async ({
   );
 
   return response.data as JobApplication;
-
 };
-
-
 
 export const updateJobApplicationStatus = async ({
   applicationId,
@@ -586,14 +598,10 @@ export const updateJobApplicationStatus = async ({
   }
 };
 
-export const fetchEmployees = async ({ institutionId }: { institutionId: number }) => {
+export const fetchEmployees = async ({institutionId}: {institutionId: number}) => {
   const response = await apiRequest.get(`employee/${institutionId}/employee/`);
   return response.data as IEmployee[];
-
 };
-
-
-
 
 export const createJobPositionAdvert = async ({
   institutionId,
@@ -624,11 +632,7 @@ export const createJobPositionAdvert = async ({
   }
 };
 
-export const getJobPositionAdverts = async ({
-  institutionId,
-}: {
-  institutionId: number;
-}) => {
+export const getJobPositionAdverts = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-advert/`);
     return response.data as IPaginatedResponse<JobPositionAdvert>;
@@ -642,9 +646,9 @@ export const getPaginatedJobAdverts = async ({
   page = 1,
   search,
   status,
-  branch
+  branch,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -674,9 +678,13 @@ export const getPaginatedJobAdverts = async ({
   }
 };
 
-export const getPaginatedJobAdvertsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<JobPositionAdvert>> => {
+export const getPaginatedJobAdvertsFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<JobPositionAdvert>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<JobPositionAdvert>;
   } catch (error) {
     console.error("Error fetching paginated job adverts from URL:", error);
@@ -724,7 +732,7 @@ export const updateJobPositionAdvert = async ({
   }
 };
 
-export const getInterviews = async ({ institutionId }: { institutionId: number }) => {
+export const getInterviews = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(
       `recruitment/institution/${institutionId}/job-interview/`,
@@ -736,14 +744,13 @@ export const getInterviews = async ({ institutionId }: { institutionId: number }
   }
 };
 
-
 export const getPaginatedInterviews = async ({
   institutionId,
   page = 1,
   search,
-  status
+  status,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -769,9 +776,13 @@ export const getPaginatedInterviews = async ({
   }
 };
 
-export const getPaginatedInterviewsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IInterview>> => {
+export const getPaginatedInterviewsFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IInterview>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IInterview>;
   } catch (error) {
     console.error("Error fetching interviews from URL:", error);
@@ -906,7 +917,6 @@ export const createInterviewStage = async ({
   institutionId: number;
   stageData: IInterviewStageFormData;
 }): Promise<IInterviewStage | null> => {
-
   const formData = new FormData();
   formData.append("name", stageData.name);
   formData.append("level", stageData.level.toString());
@@ -921,7 +931,6 @@ export const createInterviewStage = async ({
     formData,
   );
   return response.data as IInterviewStage;
-
 };
 
 export const upddateInterviewStage = async ({
@@ -940,10 +949,7 @@ export const upddateInterviewStage = async ({
     formData.append("interviewers", interviewerId.toString());
   });
 
-  const response = await apiRequest.post(
-    `recruitment/interview-stage/${stageId}/`,
-    formData,
-  );
+  const response = await apiRequest.post(`recruitment/interview-stage/${stageId}/`, formData);
   return response.data as IInterviewStage;
 };
 
@@ -1057,8 +1063,7 @@ export const downloadPayrollPasslipsReport = async ({
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-  }
-  else {
+  } else {
     const errorText = await response.text();
     //// console.error("Download error response:", errorText);
     throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
@@ -1168,23 +1173,26 @@ export const downloadSinglePayslip = async ({
 export const downloadPayrollDocument = async ({
   accessToken,
   payrollId,
-  payingAccountId
+  payingAccountId,
 }: {
   accessToken: string;
   payrollId: string;
-  payingAccountId: string | number
+  payingAccountId: string | number;
 }): Promise<void> => {
   try {
     const baseURL = process.env.NEXT_PUBLIC_API_URL;
 
     // Create a direct fetch request for file download
-    const response = await fetch(`${baseURL}/payroll/export/?payroll_period_id=${payrollId}&paying_account_id=${payingAccountId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${baseURL}/payroll/export/?payroll_period_id=${payrollId}&paying_account_id=${payingAccountId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1257,8 +1265,12 @@ export const bulkCreateEmployees = async ({
   }
 };
 
-export const getPaginatedEmployees = async ({ institutionId, page = 1, search, }: {
-  institutionId: number,
+export const getPaginatedEmployees = async ({
+  institutionId,
+  page = 1,
+  search,
+}: {
+  institutionId: number;
   page?: number;
   search?: string;
 }) => {
@@ -1274,13 +1286,14 @@ export const getPaginatedEmployees = async ({ institutionId, page = 1, search, }
   return response.data as IPaginatedResponse<IEmployee>;
 };
 
-
-
-export const getPaginatedEmployeesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployee>> => {
-  const response = await apiRequest.get(url);
+export const getPaginatedEmployeesFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IEmployee>> => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IEmployee>;
 };
-
 
 export const createEmployee = async ({
   institutionId,
@@ -1317,9 +1330,9 @@ export const createEmployee = async ({
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create employee",
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create employee",
     );
   }
 };
@@ -1357,7 +1370,7 @@ export const updateEmployee = async ({
 
 export const deleteEmployee = async ({
   employeeId,
-  institutionId
+  institutionId,
 }: {
   employeeId: number;
   institutionId: number;
@@ -1365,22 +1378,22 @@ export const deleteEmployee = async ({
   await apiRequest.delete(`/employee/${institutionId}/${employeeId}/delete/`);
 };
 
-export const getEmployeeById = async ({ employeeId }: { employeeId: number | string }) => {
+export const getEmployeeById = async ({employeeId}: {employeeId: number | string}) => {
   try {
     const response = await apiRequest.get(`/employee/${employeeId}/`);
     return response.data as IEmployee;
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to fetch employee",
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch employee",
     );
   }
 };
 
 // Helper function to get roles for an institution
-export const getRoles = async ({ institutionId }: { institutionId: number }): Promise<Role[]> => {
+export const getRoles = async ({institutionId}: {institutionId: number}): Promise<Role[]> => {
   try {
     const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
     if (response.data && response.data.results) {
@@ -1394,7 +1407,7 @@ export const getRoles = async ({ institutionId }: { institutionId: number }): Pr
 };
 
 // Helper function to get positions for an institution
-export const getPositions = async ({ institutionId }: { institutionId: number }) => {
+export const getPositions = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(`recruitment/institution/${institutionId}/job-position/`);
     const data = response.data as IPaginatedResponse<IJobPosition>;
@@ -1422,7 +1435,7 @@ export const getEmployeeDetailId = async ({
   }
 };
 
-export const getOnBoardings = async ({ institutionId }: { institutionId: number }) => {
+export const getOnBoardings = async ({institutionId}: {institutionId: number}) => {
   try {
     const response = await apiRequest.get(`on-boarding/list/${institutionId}/`);
     const data = response.data as PaginatedIOnboardingResponse;
@@ -1533,9 +1546,12 @@ export const createWorkType = async ({
   }
 };
 
-
-export const getWorkTypes = async ({ institutionId, page = 1, search, }: {
-  institutionId: number,
+export const getWorkTypes = async ({
+  institutionId,
+  page = 1,
+  search,
+}: {
+  institutionId: number;
   page?: number;
   search?: string;
 }) => {
@@ -1546,13 +1562,15 @@ export const getWorkTypes = async ({ institutionId, page = 1, search, }: {
   if (search) {
     params.append("search", search);
   }
-  const response = await apiRequest.get(`employee/work-types/${institutionId}/?${params.toString()}`);
+  const response = await apiRequest.get(
+    `employee/work-types/${institutionId}/?${params.toString()}`,
+  );
   const data = response.data as IPaginatedResponse<IWorkType>;
-  return data
+  return data;
 };
 
-export const getPaginatedWorkTypesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+export const getPaginatedWorkTypesFromUrl = async ({url}: {url: string}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IWorkType>;
 };
 
@@ -1626,15 +1644,17 @@ export const getEmployeeTypes = async ({
     if (search) {
       params.append("search", search);
     }
-    const response = await apiRequest.get(`employee/employee-types/${institutionId}/?${params.toString()}`);
+    const response = await apiRequest.get(
+      `employee/employee-types/${institutionId}/?${params.toString()}`,
+    );
     return response.data as IPaginatedResponse<IEmployeeType>;
   } catch (error) {
     throw error;
   }
 };
 
-export const getPaginatedEmployeeTypesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+export const getPaginatedEmployeeTypesFromUrl = async ({url}: {url: string}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IEmployeeType>;
 };
 
@@ -1821,15 +1841,17 @@ export const getDisciplinaryActions = async ({
     if (employeeId) {
       params.append("employee_id", employeeId);
     }
-    const response = await apiRequest.get(`discipline/disciplinary-actions/?institution=${institutionId}&${params.toString()}`);
+    const response = await apiRequest.get(
+      `discipline/disciplinary-actions/?institution=${institutionId}&${params.toString()}`,
+    );
     return response.data as IPaginatedResponse<IDisciplinaryAction>;
   } catch (error) {
     throw error;
   }
 };
 
-export const getPaginatedDisciplinaryActionsFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+export const getPaginatedDisciplinaryActionsFromUrl = async ({url}: {url: string}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IDisciplinaryAction>;
 };
 
@@ -1843,7 +1865,7 @@ export const updateDisciplinaryAction = async ({
   try {
     const dataToSend =
       "discipline_type" in disciplinaryActionData &&
-        typeof disciplinaryActionData.discipline_type === "string"
+      typeof disciplinaryActionData.discipline_type === "string"
         ? convertFormToApiRequest(disciplinaryActionData as DisciplinaryActionForm)
         : disciplinaryActionData;
 
@@ -1884,7 +1906,9 @@ export const LeaveTypesAPI = {
     searchParams?: URLSearchParams;
   }): Promise<IPaginatedResponse<ILeaveType>> => {
     try {
-      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-types/?${searchParams}`);
+      const response = await apiRequest.get(
+        `leave-mgt/${institutionId}/leave-types/?${searchParams}`,
+      );
       return response.data as IPaginatedResponse<ILeaveType>;
     } catch (error) {
       throw error;
@@ -1930,9 +1954,9 @@ export const LeaveTypesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveType>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ILeaveType>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveType>;
     } catch (error) {
       console.error("Error fetching leave types from URL:", error);
@@ -2178,8 +2202,8 @@ export const deleteLeavePolicy = async ({
 
 // Leave Policies API Namespace
 export const LeavePoliciesAPI = {
-  getAll: async ({ institutionId }: { institutionId: number }): Promise<ILeavePolicy[]> => {
-    return getLeavePolicies({ institutionId });
+  getAll: async ({institutionId}: {institutionId: number}): Promise<ILeavePolicy[]> => {
+    return getLeavePolicies({institutionId});
   },
 
   getPaginated: async ({
@@ -2197,10 +2221,12 @@ export const LeavePoliciesAPI = {
       });
 
       if (search) {
-        params.append('search', search);
+        params.append("search", search);
       }
 
-      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-policies/?${params.toString()}`);
+      const response = await apiRequest.get(
+        `leave-mgt/${institutionId}/leave-policies/?${params.toString()}`,
+      );
       return response.data as IPaginatedResponse<ILeavePolicy>;
     } catch (error) {
       console.error("Error fetching paginated leave policies:", error);
@@ -2208,9 +2234,9 @@ export const LeavePoliciesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeavePolicy>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ILeavePolicy>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeavePolicy>;
     } catch (error) {
       console.error("Error fetching leave policies from URL:", error);
@@ -2234,7 +2260,7 @@ export const LeavePoliciesAPI = {
     institutionId: number;
     leavePolicyData: ILeavePolicyFormData;
   }): Promise<ILeavePolicy | null> => {
-    return createLeavePolicy({ institutionId, leavePolicyData });
+    return createLeavePolicy({institutionId, leavePolicyData});
   },
 
   update: async ({
@@ -2244,11 +2270,11 @@ export const LeavePoliciesAPI = {
     leavePolicyId: string | number;
     leavePolicyData: ILeavePolicyFormData;
   }): Promise<ILeavePolicy | null> => {
-    return updateLeavePolicy({ leavePolicyId, leavePolicyData });
+    return updateLeavePolicy({leavePolicyId, leavePolicyData});
   },
 
   delete: async (leavePolicyId: string | number): Promise<boolean> => {
-    return deleteLeavePolicy({ leavePolicyId });
+    return deleteLeavePolicy({leavePolicyId});
   },
 };
 
@@ -2347,9 +2373,9 @@ export const updateLeaveApplication = async ({
   } catch (error: any) {
     throw new Error(
       error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to update leave application",
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update leave application",
     );
   }
 };
@@ -2440,7 +2466,7 @@ export const getLeaveApplicationsByStatus = async ({
 export const getPendingLeaveApplications = async (
   institutionId: number,
 ): Promise<ILeaveRequest[]> => {
-  return getLeaveApplicationsByStatus({ status: "pending", institutionId });
+  return getLeaveApplicationsByStatus({status: "pending", institutionId});
 };
 
 export const cancelLeaveApplication = async ({
@@ -2452,7 +2478,7 @@ export const cancelLeaveApplication = async ({
 }): Promise<ILeaveRequest | null> => {
   return updateLeaveApplication({
     leaveApplicationId,
-    leaveApplicationData: { status: "cancelled" },
+    leaveApplicationData: {status: "cancelled"},
   });
 };
 
@@ -2528,8 +2554,14 @@ export const bulkApproveRejectLeaveApplications = async ({
 
 // Leave Applications API Namespace
 export const LeaveApplicationsAPI = {
-  getAll: async ({ institutionId, employeeId }: { institutionId: number; employeeId?: string }): Promise<ILeaveRequest[]> => {
-    return getLeaveApplications({ institutionId, employeeId });
+  getAll: async ({
+    institutionId,
+    employeeId,
+  }: {
+    institutionId: number;
+    employeeId?: string;
+  }): Promise<ILeaveRequest[]> => {
+    return getLeaveApplications({institutionId, employeeId});
   },
 
   getPaginated: async ({
@@ -2551,16 +2583,18 @@ export const LeaveApplicationsAPI = {
       });
 
       if (search) {
-        params.append('search', search);
+        params.append("search", search);
       }
-      if (status && status !== 'all') {
-        params.append('status', status);
+      if (status && status !== "all") {
+        params.append("status", status);
       }
-      if (leaveType && leaveType !== 'all') {
-        params.append('leave_type_id', leaveType);
+      if (leaveType && leaveType !== "all") {
+        params.append("leave_type_id", leaveType);
       }
 
-      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-applications/?${params.toString()}`);
+      const response = await apiRequest.get(
+        `leave-mgt/${institutionId}/leave-applications/?${params.toString()}`,
+      );
       return response.data as IPaginatedResponse<ILeaveRequest>;
     } catch (error) {
       console.error("Error fetching paginated leave applications:", error);
@@ -2568,9 +2602,9 @@ export const LeaveApplicationsAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveRequest>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ILeaveRequest>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveRequest>;
     } catch (error) {
       console.error("Error fetching leave applications from URL:", error);
@@ -2594,7 +2628,7 @@ export const LeaveApplicationsAPI = {
     institutionId: number;
     leaveApplicationData: ILeaveRequestFormData;
   }): Promise<ILeaveRequest | null> => {
-    return createLeaveApplication({ institutionId, leaveApplicationData });
+    return createLeaveApplication({institutionId, leaveApplicationData});
   },
 
   update: async ({
@@ -2604,7 +2638,7 @@ export const LeaveApplicationsAPI = {
     leaveApplicationId: number | string;
     leaveApplicationData: Partial<ILeaveRequestFormData>;
   }): Promise<ILeaveRequest | null> => {
-    return updateLeaveApplication({ leaveApplicationId, leaveApplicationData });
+    return updateLeaveApplication({leaveApplicationId, leaveApplicationData});
   },
 
   delete: async (applicationId: number | string): Promise<boolean> => {
@@ -2628,7 +2662,7 @@ export const LeaveApplicationsAPI = {
     return approveRejectLeaveApplication({
       leaveApplicationId,
       institutionId,
-      action: 'approve',
+      action: "approve",
       rejectionReason,
     });
   },
@@ -2645,7 +2679,7 @@ export const LeaveApplicationsAPI = {
     return approveRejectLeaveApplication({
       leaveApplicationId,
       institutionId,
-      action: 'reject',
+      action: "reject",
       rejectionReason,
     });
   },
@@ -2678,9 +2712,7 @@ export const createAllowanceType = async ({
   }
 };
 
-export const getAllowanceTypes = async (
-  institutionId: number,
-) => {
+export const getAllowanceTypes = async (institutionId: number) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/allowance-types/`);
     const data = response.data as IPaginatedResponse<IAllowanceType>;
@@ -2697,9 +2729,9 @@ export const getPaginatedAllowanceTypes = async ({
   institutionId,
   page = 1,
   search,
-  status
+  status,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -2725,9 +2757,13 @@ export const getPaginatedAllowanceTypes = async ({
   }
 };
 
-export const getPaginatedAllowanceTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IAllowanceType>> => {
+export const getPaginatedAllowanceTypesFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IAllowanceType>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAllowanceType>;
   } catch (error) {
     console.error("Error fetching allowance types from URL:", error);
@@ -2735,10 +2771,9 @@ export const getPaginatedAllowanceTypesFromUrl = async ({ url }: { url: string }
   }
 };
 
-
 export const getAllLeaveBalances = async ({
   institutionId,
-  employeeId
+  employeeId,
 }: {
   institutionId: number;
   employeeId?: string;
@@ -2763,12 +2798,12 @@ export const getPaginatedLeaveBalances = async ({
   institutionId,
   employeeId,
   page = 1,
-  search
+  search,
 }: {
   institutionId: number;
   employeeId?: string;
   page?: number;
-  search?: string
+  search?: string;
 }) => {
   const params = new URLSearchParams({
     page: page.toString(),
@@ -2782,17 +2817,16 @@ export const getPaginatedLeaveBalances = async ({
     params.append("employee_id", employeeId);
   }
 
-  const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-balances/?${params.toString()}`);
-  return response.data as IPaginatedResponse<ILeaveBalance>;
-
-};
-
-
-export const getPaginatedLeaveBalancesFromUrl = async ({ url }: { url: string }) => {
-  const response = await apiRequest.get(url);
+  const response = await apiRequest.get(
+    `leave-mgt/${institutionId}/leave-balances/?${params.toString()}`,
+  );
   return response.data as IPaginatedResponse<ILeaveBalance>;
 };
 
+export const getPaginatedLeaveBalancesFromUrl = async ({url}: {url: string}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
+  return response.data as IPaginatedResponse<ILeaveBalance>;
+};
 
 export const createLeaveBalance = async ({
   institutionId,
@@ -2811,7 +2845,7 @@ export const createLeaveBalance = async ({
 };
 
 // Get a specific leave balance by ID
-export const getLeaveBalanceById = async ({ id }: { id: number }) => {
+export const getLeaveBalanceById = async ({id}: {id: number}) => {
   try {
     const endpoint = `leave-mgt/leave-balances/${id}/`;
     const response = await apiRequest.get(endpoint);
@@ -2839,7 +2873,7 @@ export const updateLeaveBalance = async ({
 };
 
 // Delete a leave balance by ID
-export const deleteLeaveBalance = async ({ id }: { id: number }) => {
+export const deleteLeaveBalance = async ({id}: {id: number}) => {
   try {
     const endpoint = `leave-mgt/leave-balances/${id}/`;
     await apiRequest.delete(endpoint);
@@ -2850,8 +2884,14 @@ export const deleteLeaveBalance = async ({ id }: { id: number }) => {
 
 // Leave Balances API Namespace
 export const LeaveBalancesAPI = {
-  getAll: async ({ institutionId, employeeId }: { institutionId: number; employeeId?: string }): Promise<ILeaveBalance[]> => {
-    return getAllLeaveBalances({ institutionId, employeeId });
+  getAll: async ({
+    institutionId,
+    employeeId,
+  }: {
+    institutionId: number;
+    employeeId?: string;
+  }): Promise<ILeaveBalance[]> => {
+    return getAllLeaveBalances({institutionId, employeeId});
   },
 
   getPaginated: async ({
@@ -2869,10 +2909,12 @@ export const LeaveBalancesAPI = {
       });
 
       if (search) {
-        params.append('search', search);
+        params.append("search", search);
       }
 
-      const response = await apiRequest.get(`leave-mgt/${institutionId}/leave-balances/?${params.toString()}`);
+      const response = await apiRequest.get(
+        `leave-mgt/${institutionId}/leave-balances/?${params.toString()}`,
+      );
       return response.data as IPaginatedResponse<ILeaveBalance>;
     } catch (error) {
       console.error("Error fetching paginated leave balances:", error);
@@ -2880,9 +2922,9 @@ export const LeaveBalancesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ILeaveBalance>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ILeaveBalance>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ILeaveBalance>;
     } catch (error) {
       console.error("Error fetching leave balances from URL:", error);
@@ -2906,7 +2948,7 @@ export const LeaveBalancesAPI = {
     institutionId: number;
     leaveBalanceData: Partial<ILeaveBalance>;
   }): Promise<ILeaveBalance | null> => {
-    return createLeaveBalance({ institutionId, leaveBalanceData });
+    return createLeaveBalance({institutionId, leaveBalanceData});
   },
 
   update: async ({
@@ -2916,12 +2958,12 @@ export const LeaveBalancesAPI = {
     balanceId: number;
     leaveBalanceData: Partial<ILeaveBalance>;
   }): Promise<ILeaveBalance | null> => {
-    return updateLeaveBalance({ id: balanceId, leaveBalanceData });
+    return updateLeaveBalance({id: balanceId, leaveBalanceData});
   },
 
   delete: async (balanceId: number): Promise<boolean> => {
     try {
-      await deleteLeaveBalance({ id: balanceId });
+      await deleteLeaveBalance({id: balanceId});
       return true;
     } catch (error) {
       return false;
@@ -2999,9 +3041,7 @@ export const createDeductionType = async ({
   }
 };
 
-export const getDeductionTypes = async (
-  institutionId: number,
-) => {
+export const getDeductionTypes = async (institutionId: number) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/deduction-types/`);
     const data = response.data as IPaginatedResponse<IDeductionType>;
@@ -3017,9 +3057,9 @@ export const getPaginatedDeductionTypes = async ({
   institutionId,
   page = 1,
   search,
-  status
+  status,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -3045,9 +3085,13 @@ export const getPaginatedDeductionTypes = async ({
   }
 };
 
-export const getPaginatedDeductionTypesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IDeductionType>> => {
+export const getPaginatedDeductionTypesFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IDeductionType>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IDeductionType>;
   } catch (error) {
     console.error("Error fetching deduction types from URL:", error);
@@ -3105,8 +3149,6 @@ export const createEmployeeAllowance = async ({
   employeeAllowanceData: Partial<IEmployeeAllowanceFormData>;
 }): Promise<IEmployeeAllowance | null> => {
   try {
-
-
     const response = await apiRequest.post(
       `payroll/${institutionId}/employee-allowances/`,
       employeeAllowanceData,
@@ -3119,9 +3161,7 @@ export const createEmployeeAllowance = async ({
   }
 };
 
-export const getEmployeeAllowances = async (
-  institutionId: number,
-) => {
+export const getEmployeeAllowances = async (institutionId: number) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-allowances/`);
     return response.data.results as IEmployeeAllowance[];
@@ -3136,9 +3176,9 @@ export const getPaginatedEmployeeAllowances = async ({
   page = 1,
   search,
   status,
-  method
+  method,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -3168,9 +3208,13 @@ export const getPaginatedEmployeeAllowances = async ({
   }
 };
 
-export const getPaginatedEmployeeAllowancesFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeAllowance>> => {
+export const getPaginatedEmployeeAllowancesFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IEmployeeAllowance>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IEmployeeAllowance>;
   } catch (error) {
     console.error("Error fetching employee allowances from URL:", error);
@@ -3291,9 +3335,7 @@ export const createEmployeeDeduction = async ({
   }
 };
 
-export const getEmployeeDeductions = async (
-  institutionId: number,
-) => {
+export const getEmployeeDeductions = async (institutionId: number) => {
   try {
     const response = await apiRequest.get(`payroll/${institutionId}/employee-deductions/`);
     return response.data.results as IEmployeeDeduction[];
@@ -3317,7 +3359,7 @@ export const getPaginatedEmployeeDeductions = async ({
   method?: string;
 }): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
   try {
-    const params = new URLSearchParams({ page: page.toString() });
+    const params = new URLSearchParams({page: page.toString()});
     if (search) {
       params.append("search", search);
     }
@@ -3336,9 +3378,13 @@ export const getPaginatedEmployeeDeductions = async ({
   }
 };
 
-export const getPaginatedEmployeeDeductionsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
+export const getPaginatedEmployeeDeductionsFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IEmployeeDeduction>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IEmployeeDeduction>;
   } catch (error) {
     console.error("Error fetching employee deductions from URL:", error);
@@ -3489,7 +3535,7 @@ export const calculateDeductionAmount = (
 
 export const validateDeductionFormData = (
   data: Partial<IEmployeeDeductionFormData>,
-): { isValid: boolean; errors: string[] } => {
+): {isValid: boolean; errors: string[]} => {
   const errors: string[] = [];
 
   if (!data.employee) {
@@ -3575,9 +3621,9 @@ export const getPaginatedPayrollPeriods = async ({
   institutionId,
   page = 1,
   search,
-  status
+  status,
 }: {
-  institutionId: number,
+  institutionId: number;
   page?: number;
   search?: string;
   status?: string;
@@ -3603,9 +3649,13 @@ export const getPaginatedPayrollPeriods = async ({
   }
 };
 
-export const getPaginatedPayrollPeriodsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IPayrollPeriod>> => {
+export const getPaginatedPayrollPeriodsFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IPayrollPeriod>> => {
   try {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IPayrollPeriod>;
   } catch (error) {
     console.error("Error fetching paginated payroll periods from URL:", error);
@@ -3613,7 +3663,11 @@ export const getPaginatedPayrollPeriodsFromUrl = async ({ url }: { url: string }
   }
 };
 
-export const getPayrollPeriod = async ({ payrollPeriodId }: { payrollPeriodId: number | string }): Promise<IPayrollPeriod | null> => {
+export const getPayrollPeriod = async ({
+  payrollPeriodId,
+}: {
+  payrollPeriodId: number | string;
+}): Promise<IPayrollPeriod | null> => {
   try {
     const response = await apiRequest.get(`payroll/payroll-periods/${payrollPeriodId}/`);
     return response.data as IPayrollPeriod;
@@ -3693,13 +3747,13 @@ export const getPayrollPeriodsByStatus = async ({
 export const getUnprocessedPayrollPeriods = async (
   institutionId: number,
 ): Promise<IPayrollPeriod[] | null> => {
-  return getPayrollPeriodsByStatus({ institutionId, isProcessed: false });
+  return getPayrollPeriodsByStatus({institutionId, isProcessed: false});
 };
 
 export const getProcessedPayrollPeriods = async (
   institutionId: number,
 ): Promise<IPayrollPeriod[] | null> => {
-  return getPayrollPeriodsByStatus({ institutionId, isProcessed: true });
+  return getPayrollPeriodsByStatus({institutionId, isProcessed: true});
 };
 
 export const getPayrollPeriodsByDateRange = async ({
@@ -3725,7 +3779,7 @@ export const getPayrollPeriodsByDateRange = async ({
 export const markPayrollPeriodAsProcessed = async (id: number): Promise<IPayrollPeriod | null> => {
   return updatePayrollPeriod({
     id,
-    payrollPeriodData: { is_processed: true },
+    payrollPeriodData: {is_processed: true},
   });
 };
 
@@ -3734,7 +3788,7 @@ export const markPayrollPeriodAsUnprocessed = async (
 ): Promise<IPayrollPeriod | null> => {
   return updatePayrollPeriod({
     id,
-    payrollPeriodData: { is_processed: false },
+    payrollPeriodData: {is_processed: false},
   });
 };
 
@@ -3756,11 +3810,9 @@ export const bulkCreatePayrollPeriods = async ({
   }
 };
 
-
-
 export const validatePayrollPeriodFormData = (
   data: Partial<IPayrollPeriodFormData>,
-): { isValid: boolean; errors: string[] } => {
+): {isValid: boolean; errors: string[]} => {
   const errors: string[] = [];
 
   if (!data.name || data.name.trim().length === 0) {
@@ -3809,7 +3861,7 @@ export const validatePayrollPeriodFormData = (
 
 export function generatePeriodName(startDate: string, endDate: string): string {
   if (!startDate || !endDate) {
-    return '';
+    return "";
   }
 
   const start = new Date(startDate);
@@ -3819,7 +3871,7 @@ export function generatePeriodName(startDate: string, endDate: string): string {
   const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
   // Example logic: If ~7 days, name as "Week X - Month Year"; if ~30 days, "Month Year"
-  const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' });
+  const monthFormatter = new Intl.DateTimeFormat("en-US", {month: "long"});
   const year = start.getFullYear();
 
   if (durationDays <= 10) {
@@ -3844,12 +3896,12 @@ export const checkPeriodOverlap = async ({
   startDate: string;
   endDate: string;
   excludeId?: number;
-}): Promise<{ hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[] }> => {
+}): Promise<{hasOverlap: boolean; overlappingPeriods: IPayrollPeriod[]}> => {
   try {
     const allPeriods = await getPayrollPeriods(institutionId);
 
     if (!allPeriods) {
-      return { hasOverlap: false, overlappingPeriods: [] };
+      return {hasOverlap: false, overlappingPeriods: []};
     }
 
     const filteredPeriods = excludeId
@@ -3872,7 +3924,7 @@ export const checkPeriodOverlap = async ({
     };
   } catch (error) {
     // console.error("Failed to check period overlap:", error);
-    return { hasOverlap: false, overlappingPeriods: [] };
+    return {hasOverlap: false, overlappingPeriods: []};
   }
 };
 
@@ -3947,7 +3999,7 @@ export const getPayslips = async (
     }
 
     const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
 
     const data = response.data as IPaginatedResponse<IPayslip>;
 
@@ -3977,8 +4029,7 @@ export const updatePayslip = async ({
   payslipData: Partial<IPayslipFormData>;
 }) => {
   try {
-    const response = await apiRequest.patch(`payroll/payslips/${id}/`, payslipData, {
-    });
+    const response = await apiRequest.patch(`payroll/payslips/${id}/`, payslipData, {});
     return response.data as IPayslip;
   } catch (error) {
     // console.error("Failed to update payslip:", error);
@@ -3991,7 +4042,7 @@ export const deletePayslip = async (id: number): Promise<boolean> => {
     await apiRequest.delete(`payroll/payslips/${id}/`);
     return true;
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 
@@ -4023,17 +4074,15 @@ export const getPayslipsByEmployee = async (
   institutionId: number,
   employeeId: number,
 ): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { employee: employeeId });
+  return getPayslips(institutionId, {employee: employeeId});
 };
 
-
-
 export const getUnpaidPayslips = async (institutionId: number): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { is_paid: false });
+  return getPayslips(institutionId, {is_paid: false});
 };
 
 export const getPaidPayslips = async (institutionId: number): Promise<IPayslip[] | null> => {
-  return getPayslips(institutionId, { is_paid: true });
+  return getPayslips(institutionId, {is_paid: true});
 };
 
 export const getPayslipItems = async (payslipId: number) => {
@@ -4049,14 +4098,17 @@ export const getPayslipItems = async (payslipId: number) => {
   }
 };
 
-export const getContracts = async ({ institutionId, employeeId, page = 1, search, }: {
-  institutionId: number,
-  employeeId?: number,
+export const getContracts = async ({
+  institutionId,
+  employeeId,
+  page = 1,
+  search,
+}: {
+  institutionId: number;
+  employeeId?: number;
   page?: number;
   search?: string;
 }) => {
-
-
   const params = new URLSearchParams({
     page: page.toString(),
   });
@@ -4064,18 +4116,21 @@ export const getContracts = async ({ institutionId, employeeId, page = 1, search
   if (search) {
     params.append("search", search);
   }
-  if (employeeId) { params.append("employee_id", employeeId.toString()) }
+  if (employeeId) {
+    params.append("employee_id", employeeId.toString());
+  }
 
   const endpoint = `employee/employee-contracts/?${params.toString()}`;
   const response = await apiRequest.get(endpoint);
   return response.data as IPaginatedResponse<IContract>;
-
 };
 
-
-
-export const getPaginatedContractsFromUrl = async ({ url }: { url: string }): Promise<IPaginatedResponse<IContract>> => {
-  const response = await apiRequest.get(url);
+export const getPaginatedContractsFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IContract>> => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
   return response.data as IPaginatedResponse<IContract>;
 };
 
@@ -4120,7 +4175,7 @@ export const updateContract = async ({
   }
 };
 
-export const deleteContract = async ({ contractId }: { contractId: number }): Promise<boolean> => {
+export const deleteContract = async ({contractId}: {contractId: number}): Promise<boolean> => {
   try {
     await apiRequest.delete(`employee/employee-contracts/${contractId}/`);
     return true;
@@ -4328,9 +4383,9 @@ export const TerminationInitiationsAPI = {
   getPaginated: async ({
     institutionId,
     page = 1,
-    search
+    search,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<ITermination>> => {
@@ -4352,9 +4407,9 @@ export const TerminationInitiationsAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ITermination>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ITermination>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ITermination>;
     } catch (error) {
       console.error("Error fetching termination initiations from URL:", error);
@@ -4390,7 +4445,7 @@ export const TerminationInitiationsAPI = {
     }
   },
 
-  delete: async ({ terminationId }: { terminationId: number }): Promise<void> => {
+  delete: async ({terminationId}: {terminationId: number}): Promise<void> => {
     try {
       await apiRequest.delete(`on-boarding/termination-initiations/${terminationId}/`);
     } catch (error) {
@@ -4456,9 +4511,9 @@ export const SeparationPolicyTypesAPI = {
   getPaginated: async ({
     institutionId,
     page = 1,
-    search
+    search,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<ISeparationType>> => {
@@ -4480,9 +4535,13 @@ export const SeparationPolicyTypesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationType>> => {
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<ISeparationType>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ISeparationType>;
     } catch (error) {
       console.error("Error fetching separation policy types from URL:", error);
@@ -4560,9 +4619,9 @@ export const OffboardingStagesAPI = {
   getPaginated: async ({
     institutionId,
     page = 1,
-    search
+    search,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<IOffboardingStage>> => {
@@ -4584,9 +4643,13 @@ export const OffboardingStagesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IOffboardingStage>> => {
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IOffboardingStage>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IOffboardingStage>;
     } catch (error) {
       console.error("Error fetching offboarding stages from URL:", error);
@@ -4644,17 +4707,21 @@ export const OffboardingStagesAPI = {
   },
 };
 
-
-
-
 export const AttendanceAPI = {
   createAttendanceRecord: async (data: IAttendanceFormData) => {
     const response = await apiRequest.post(`/employee/${data.employee}/attendance/`, data);
     return response.data;
   },
 
-  fetchAttendanceRecords: async ({ date, institutionId, search, page = 1 }: {
-    date?: string, institutionId?: number, page?: number;
+  fetchAttendanceRecords: async ({
+    date,
+    institutionId,
+    search,
+    page = 1,
+  }: {
+    date?: string;
+    institutionId?: number;
+    page?: number;
     search?: string;
   }) => {
     const params = new URLSearchParams({
@@ -4665,34 +4732,42 @@ export const AttendanceAPI = {
       params.append("search", search);
     }
     if (date) {
-      params.append("date", date)
+      params.append("date", date);
     }
     const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
-  fetchAttendanceRecordsByEmployee: async ({ employee_id, date, institutionId, search, page = 1 }: {
-    employee_id: number,
-    date?: string, institutionId?: number, page?: number;
+  fetchAttendanceRecordsByEmployee: async ({
+    employee_id,
+    date,
+    institutionId,
+    search,
+    page = 1,
+  }: {
+    employee_id: number;
+    date?: string;
+    institutionId?: number;
+    page?: number;
     search?: string;
   }) => {
     const params = new URLSearchParams({
       page: page.toString(),
-      employee_id: employee_id.toString()
+      employee_id: employee_id.toString(),
     });
 
     if (search) {
       params.append("search", search);
     }
     if (date) {
-      params.append("date", date)
+      params.append("date", date);
     }
     const response = await apiRequest.get(`/employee/attendance/?${params.toString()}`);
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
   fetchAttendanceRecordsFromUrl: async (url: string) => {
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
@@ -4707,7 +4782,7 @@ export const AttendanceAPI = {
     if (startDate) params.push(`start_date=${startDate}`);
     if (endDate) params.push(`end_date=${endDate}`);
     if (params.length) url += `?${params.join("&")}`;
-    const response = await apiRequest.get(url);
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IAttendance>;
   },
 
@@ -4724,101 +4799,102 @@ export const AttendanceAPI = {
   },
 };
 
-
 export const bankTypesAPI = {
   getAll: async (searchParams?: string) => {
     try {
-      const response = await apiRequest.get(`/institution/bank-type/${searchParams ? `${searchParams}` : ''}`,);
-      return response.data as IPaginatedResponse<IBankType>
+      const response = await apiRequest.get(
+        `/institution/bank-type/${searchParams ? `${searchParams}` : ""}`,
+      );
+      return response.data as IPaginatedResponse<IBankType>;
     } catch (error) {
       throw error;
     }
   },
-  getById: async ({ bankTypeId }: { bankTypeId: string }) => {
+  getById: async ({bankTypeId}: {bankTypeId: string}) => {
     try {
-      const response = await apiRequest.get(`/institution/bank-type/${bankTypeId}`,);
-      return response.data as IBankType
+      const response = await apiRequest.get(`/institution/bank-type/${bankTypeId}`);
+      return response.data as IBankType;
     } catch (error) {
       throw error;
     }
   },
-  create: async ({ bankType }: { bankType: IBankTypeFormData }) => {
+  create: async ({bankType}: {bankType: IBankTypeFormData}) => {
     try {
       const response = await apiRequest.post(`/institution/bank-type/`, bankType);
-      return response.data as IBankType
+      return response.data as IBankType;
     } catch (error) {
       throw error;
     }
   },
-  update: async ({ bankTypeId, data }: { bankTypeId: string, data: IBankTypeFormData }) => {
+  update: async ({bankTypeId, data}: {bankTypeId: string; data: IBankTypeFormData}) => {
     try {
       const response = await apiRequest.patch(`/institution/bank-type/${bankTypeId}/`, data);
-      return response.data as IBankType
+      return response.data as IBankType;
     } catch (error) {
       throw error;
     }
   },
-  delete: async ({ bankTypeId }: { bankTypeId: string }) => {
+  delete: async ({bankTypeId}: {bankTypeId: string}) => {
     try {
       await apiRequest.delete(`/institution/bank-type/${bankTypeId}/`);
     } catch (error) {
       throw error;
     }
-  }
-
-}
+  },
+};
 
 export const bankAccountsAPI = {
   getAll: async (searchParams?: string) => {
     try {
-      const url = searchParams ? `/institution/bank-account/${searchParams}` : `/institution/bank-account/`
-      const response = await apiRequest.get(url)
-      return response.data as IPaginatedResponse<IBankAccount>
+      const url = searchParams
+        ? `/institution/bank-account/${searchParams}`
+        : `/institution/bank-account/`;
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<IBankAccount>;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-  getById: async ({ bankAccountId }: { bankAccountId: string }) => {
+  getById: async ({bankAccountId}: {bankAccountId: string}) => {
     try {
-      const response = await apiRequest.get(`/institution/bank-account/${bankAccountId}`)
-      return response.data as IBankAccount
+      const response = await apiRequest.get(`/institution/bank-account/${bankAccountId}`);
+      return response.data as IBankAccount;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-  create: async ({ bankAccount }: { bankAccount: IBankAccountFormData }) => {
+  create: async ({bankAccount}: {bankAccount: IBankAccountFormData}) => {
     try {
-      const response = await apiRequest.post(`/institution/bank-account/`, bankAccount)
-      return response.data as IBankAccount
+      const response = await apiRequest.post(`/institution/bank-account/`, bankAccount);
+      return response.data as IBankAccount;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-  update: async ({ bankAccountId, data }: { bankAccountId: string; data: IBankAccountFormData }) => {
+  update: async ({bankAccountId, data}: {bankAccountId: string; data: IBankAccountFormData}) => {
     try {
-      const response = await apiRequest.patch(`/institution/bank-account/${bankAccountId}/`, data)
-      return response.data as IBankAccount
+      const response = await apiRequest.patch(`/institution/bank-account/${bankAccountId}/`, data);
+      return response.data as IBankAccount;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-  delete: async ({ bankAccountId }: { bankAccountId: string }) => {
+  delete: async ({bankAccountId}: {bankAccountId: string}) => {
     try {
-      await apiRequest.delete(`/institution/bank-account/${bankAccountId}/`)
+      await apiRequest.delete(`/institution/bank-account/${bankAccountId}/`);
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-}
-
+};
 
 // Tax API functions
 export const taxesAPI = {
   // Get all taxes for the institution
   getAll: async (): Promise<ITax[]> => {
     try {
-      const response = await apiRequest.get('/institution/tax/');
-      console.log("Tax response", response)
+      const response = await apiRequest.get("/institution/tax/");
+      console.log("Tax response", response);
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -4838,7 +4914,7 @@ export const taxesAPI = {
   // Create a new tax
   create: async (data: ITaxFormData): Promise<ITax> => {
     try {
-      const response = await apiRequest.post('/institution/tax/', data);
+      const response = await apiRequest.post("/institution/tax/", data);
       return response.data as ITax;
     } catch (error) {
       throw error;
@@ -4870,7 +4946,7 @@ export const taxRulesAPI = {
   // Get all tax rules for the institution
   getAll: async (): Promise<ITaxRule[]> => {
     try {
-      const response = await apiRequest.get('/institution/tax-rule/');
+      const response = await apiRequest.get("/institution/tax-rule/");
       return response.data as ITaxRule[];
     } catch (error) {
       throw error;
@@ -4880,9 +4956,9 @@ export const taxRulesAPI = {
   // Get tax rules for a specific tax
   getByTaxId: async (taxId: number): Promise<ITaxRule[]> => {
     try {
-      const allRules = await apiRequest.get('/institution/tax-rule/');
+      const allRules = await apiRequest.get("/institution/tax-rule/");
       const rules = allRules.data as ITaxRule[];
-      return rules.filter(rule => rule.institution_tax === taxId);
+      return rules.filter((rule) => rule.institution_tax.id === taxId);
     } catch (error) {
       throw error;
     }
@@ -4901,7 +4977,7 @@ export const taxRulesAPI = {
   // Create a new tax rule
   create: async (data: ITaxRuleFormData): Promise<ITaxRule> => {
     try {
-      const response = await apiRequest.post('/institution/tax-rule/', data);
+      const response = await apiRequest.post("/institution/tax-rule/", data);
       return response.data as ITaxRule;
     } catch (error) {
       throw error;
@@ -4929,15 +5005,18 @@ export const taxRulesAPI = {
 };
 
 export const payrollAPI = {
-  getPayslipsByInstitution: async ({ institutionId, params }: {
-    institutionId: number | string,
+  getPayslipsByInstitution: async ({
+    institutionId,
+    params,
+  }: {
+    institutionId: number | string;
     params: {
       employee_id?: number;
       payroll_period?: number;
       is_paid?: boolean;
       page?: number;
-      search?: string
-    }
+      search?: string;
+    };
   }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -4951,23 +5030,30 @@ export const payrollAPI = {
       }
 
       const url = `payroll/${institutionId}/payslips/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IPayslip>;
-
     } catch (error) {
       // console.error("Failed to get payslips:", error);
       throw error;
     }
   },
 
-  getPayslipsByPayrollPeriod: async ({ payrollId, params, institutionId, page = 1, search }: {
-    payrollId: number | string, params?: {
+  getPayslipsByPayrollPeriod: async ({
+    payrollId,
+    params,
+    institutionId,
+    page = 1,
+    search,
+  }: {
+    payrollId: number | string;
+    params?: {
       employee?: number;
       payroll_period?: number;
       is_paid?: boolean;
-    }, institutionId: number,
-    page?: number,
-    search?: string
+    };
+    institutionId: number;
+    page?: number;
+    search?: string;
   }) => {
     try {
       const queryParams = new URLSearchParams();
@@ -4980,12 +5066,12 @@ export const payrollAPI = {
         });
       }
       if (search) {
-        queryParams.append("search", search)
+        queryParams.append("search", search);
       }
-      queryParams.append("page", page.toString())
+      queryParams.append("page", page.toString());
 
       const url = `/payroll/payslips/by-payroll/${payrollId}/${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
 
       const data = response.data as IPaginatedResponse<IPayslip>;
 
@@ -4997,37 +5083,33 @@ export const payrollAPI = {
     }
   },
 
-  getPaginatedPayslipsByPeriollPeriodFromUrl: async ({ url }: { url: string }) => {
-    const response = await apiRequest.get(url);
+  getPaginatedPayslipsByPeriollPeriodFromUrl: async ({url}: {url: string}) => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
     return response.data as IPaginatedResponse<IPayslip>;
   },
-}
-
-
-
+};
 
 export const institutionAPI = {
-
-  getDasboardAnalytics: async ({ institutionId }: { institutionId: number }) => {
+  getDasboardAnalytics: async ({institutionId}: {institutionId: number}) => {
     const response = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
-    return response.data as IInstitutionAnalytics
+    return response.data as IInstitutionAnalytics;
   },
 
   getWorkingDays: async () => {
     try {
-      const response = await apiRequest.get("/institution/working-days/")
-      return response.data as IInstitutionWorkingDays[]
+      const response = await apiRequest.get("/institution/working-days/");
+      return response.data as IInstitutionWorkingDays[];
     } catch (error) {
-      throw error
+      throw error;
     }
   },
 
   createWorkingDays: async (data: IWorkingDaysFormData) => {
     try {
-      const response = await apiRequest.post("/institution/working-days/", data)
-      return response.data as IInstitutionWorkingDays
+      const response = await apiRequest.post("/institution/working-days/", data);
+      return response.data as IInstitutionWorkingDays;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
 
@@ -5035,79 +5117,126 @@ export const institutionAPI = {
     workingDaysId,
     data,
   }: {
-    workingDaysId: number | string,
-    data: IWorkingDaysFormData
+    workingDaysId: number | string;
+    data: IWorkingDaysFormData;
   }) => {
     try {
-      const response = await apiRequest.patch(`/institution/working-days/${workingDaysId}/`, data)
-      return response.data as IInstitutionWorkingDays
+      const response = await apiRequest.patch(`/institution/working-days/${workingDaysId}/`, data);
+      return response.data as IInstitutionWorkingDays;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
 
-  updateInstitution: async ({ institutionId, data }: { institutionId: number, data: Partial<IUserInstitutionFormData> & { institution_logo?: File } }) => {
-    const formData = new FormData()
+  createInstitution: async ({data}: {data: FormData}) => {
+    const response = await await apiRequest.post("institution/", data);
+    return response as IUserInstitution;
+  },
+
+  updateInstitution: async ({
+    institutionId,
+    data,
+  }: {
+    institutionId: number;
+    data: Partial<IUserInstitutionFormData> & {institution_logo?: File};
+  }) => {
+    const formData = new FormData();
 
     // Append all data fields to FormData
     Object.entries(data).forEach(([key, value]) => {
       if (key === "institution_logo" && value instanceof File) {
-        formData.append(key, value)
+        formData.append(key, value);
       } else if (value !== undefined && value !== null) {
-        formData.append(key, String(value))
+        formData.append(key, String(value));
       }
-    })
+    });
     const response = await apiRequest.patch(`/institution/${institutionId}/`, formData);
-    return response.data as IUserInstitution
-  }
-}
+    return response.data as IUserInstitution;
+  },
 
+  createKYCDocuments: async (documents: {document_title: string; document_file: File}[]) => {
+    const formData = new FormData();
+
+    documents.forEach((doc) => {
+      formData.append("document_title", doc.document_title);
+      formData.append("document_file", doc.document_file);
+    });
+
+    const response = await apiRequest.post("/institution/kyc_docs", formData);
+    return response.data;
+  },
+
+  getKYCDocuments: async (): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get('/institution/kyc_docs');
+    return response.data as IPaginatedResponse<IKYCDocument>;
+  },
+
+  getKYCDocumentsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IKYCDocument>> => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
+    return response.data as IPaginatedResponse<IKYCDocument>;
+  },
+
+  updateKYCDocument: async ({documentId, data}: {documentId: number; data: {document_title: string; document_file?: File}}) => {
+    const formData = new FormData();
+    formData.append("document_title", data.document_title);
+    if (data.document_file) {
+      formData.append("document_file", data.document_file);
+    }
+    
+    const response = await apiRequest.patch(`/institution/kyc_doc/${documentId}/`, formData);
+    return response.data as IKYCDocument;
+  },
+
+  deleteKYCDocument: async ({documentId}: {documentId: number}): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/institution/kyc_doc/${documentId}/`);
+      return response.status === 204;
+    } catch (error) {
+      throw error;
+    }
+  }
+};
 
 export const systemAPI = {
   getWorkingDays: async () => {
     try {
-      const response = await apiRequest.get("/settings/system-days/")
-      return response.data as ISystemWorkingDay[]
+      const response = await apiRequest.get("/settings/system-days/");
+      return response.data as ISystemWorkingDay[];
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-}
-
+};
 
 export const taxAPI = {
   create: async (data: Itax) => {
     try {
-      const response = await apiRequest.post("/institution/tax", data)
-      return response.data as Itax
+      const response = await apiRequest.post("/institution/tax", data);
+      return response.data as Itax;
     } catch (error) {
-      throw error
+      throw error;
     }
-
   },
 
   getAll: async () => {
     try {
-
-      const response = await apiRequest.get("/institution/tax")
-      return response.data as Itax[]
-    } catch (error) {
-
-    }
+      const response = await apiRequest.get("/institution/tax");
+      return response.data as Itax[];
+    } catch (error) {}
   },
 
-  getAllEmployeeTaxes: async ({ }) => {
-    const response = await apiRequest.get("/payroll/employee-taxes")
-    return response.data as IPaginatedResponse<Itax>
+  getAllEmployeeTaxes: async ({}) => {
+    const response = await apiRequest.get("/payroll/employee-taxes");
+    return response.data as IPaginatedResponse<Itax>;
   },
 
   getPaginatedEmployeeTaxes: async ({
     institutionId,
     page = 1,
     search,
-    status
+    status,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     status?: string;
@@ -5136,9 +5265,13 @@ export const taxAPI = {
     }
   },
 
-  getPaginatedEmployeeTaxesFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IEmployeeTax>> => {
+  getPaginatedEmployeeTaxesFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IEmployeeTax>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IEmployeeTax>;
     } catch (error) {
       console.error("Error fetching paginated employee taxes from URL:", error);
@@ -5146,30 +5279,34 @@ export const taxAPI = {
     }
   },
 
-  createEmployeeTaxes: async ({ data }: { data: IEmployeeTaxFormData }) => {
-    const response = await apiRequest.post("/payroll/employee-taxes/", data)
-    return response.data as Itax
+  createEmployeeTaxes: async ({data}: {data: IEmployeeTaxFormData}) => {
+    const response = await apiRequest.post("/payroll/employee-taxes/", data);
+    return response.data as Itax;
   },
-  getEmployeeTax: async ({ taxId }: { taxId: number | string }) => {
-    const response = await apiRequest.get(`/payroll/employee-taxes/${taxId}`)
-    return response.data as Itax
+  getEmployeeTax: async ({taxId}: {taxId: number | string}) => {
+    const response = await apiRequest.get(`/payroll/employee-taxes/${taxId}`);
+    return response.data as Itax;
   },
-  updateEmployeeTax: async ({ data, taxId }: { data: Partial<IEmployeeTaxFormData>, taxId: number | string }) => {
-    const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}/`, data)
-    return response.data as Itax
+  updateEmployeeTax: async ({
+    data,
+    taxId,
+  }: {
+    data: Partial<IEmployeeTaxFormData>;
+    taxId: number | string;
+  }) => {
+    const response = await apiRequest.patch(`/payroll/employee-taxes/${taxId}/`, data);
+    return response.data as Itax;
   },
 
   deleteEmployeeTax: async (taxId: number): Promise<boolean> => {
     try {
-      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}/`)
-      return response.status === 204
+      const response = await apiRequest.delete(`/payroll/employee-taxes/${taxId}/`);
+      return response.status === 204;
     } catch (error) {
-      throw error
+      throw error;
     }
   },
-
-
-}
+};
 
 // Asset Category API functions
 export const assetCategoriesAPI = {
@@ -5187,9 +5324,9 @@ export const assetCategoriesAPI = {
     institutionId,
     page = 1,
     search,
-    status
+    status,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     status?: string;
@@ -5215,9 +5352,13 @@ export const assetCategoriesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetCategory>> => {
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IAssetCategory>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetCategory>;
     } catch (error) {
       console.error("Error fetching asset categories from URL:", error);
@@ -5283,9 +5424,9 @@ export const assetsAPI = {
     page = 1,
     search,
     status,
-    category
+    category,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     status?: string;
@@ -5315,9 +5456,9 @@ export const assetsAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAsset>> => {
+  getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<IAsset>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAsset>;
     } catch (error) {
       console.error("Error fetching assets from URL:", error);
@@ -5381,9 +5522,9 @@ export const assetsAPI = {
     page = 1,
     search,
     employeeId,
-    status
+    status,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     status?: string;
@@ -5408,18 +5549,24 @@ export const assetsAPI = {
       const response = await apiRequest.get(endpoint);
       return response.data as IPaginatedResponse<IAssetRequest>;
     } catch (error: any) {
-      if (error?.response?.data?.detail?.includes("has no profile") ||
+      if (
+        error?.response?.data?.detail?.includes("has no profile") ||
         error?.detail?.includes("has no profile") ||
-        error?.message?.includes("has no profile")) {
+        error?.message?.includes("has no profile")
+      ) {
       }
 
       throw error;
     }
   },
 
-  getPaginatedAssetRequestsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetRequest>> => {
+  getPaginatedAssetRequestsFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IAssetRequest>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetRequest>;
     } catch (error) {
       console.error("Error fetching asset requests from URL:", error);
@@ -5447,7 +5594,10 @@ export const assetsAPI = {
     }
   },
 
-  updateAssetRequest: async (id: number, data: Partial<IAssetRequestFormData>): Promise<IAssetRequest> => {
+  updateAssetRequest: async (
+    id: number,
+    data: Partial<IAssetRequestFormData>,
+  ): Promise<IAssetRequest> => {
     try {
       const response = await apiRequest.patch(`/assets/asset-requests/${id}/`, data);
       return response.data;
@@ -5483,9 +5633,9 @@ export const assetsAPI = {
     page = 1,
     search,
     status,
-    employeeId
+    employeeId,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     status?: string;
@@ -5514,9 +5664,13 @@ export const assetsAPI = {
     }
   },
 
-  getPaginatedAssetAllocationsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetAllocation>> => {
+  getPaginatedAssetAllocationsFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IAssetAllocation>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetAllocation>;
     } catch (error) {
       console.error("Error fetching asset allocations from URL:", error);
@@ -5544,7 +5698,10 @@ export const assetsAPI = {
     }
   },
 
-  updateAssetAllocation: async (id: number, data: Partial<IAssetAllocationFormData>): Promise<IAssetAllocation> => {
+  updateAssetAllocation: async (
+    id: number,
+    data: Partial<IAssetAllocationFormData>,
+  ): Promise<IAssetAllocation> => {
     try {
       const response = await apiRequest.patch(`/assets/asset-allocations/${id}/`, data);
       return response.data;
@@ -5564,11 +5721,15 @@ export const assetsAPI = {
     }
   },
 
-  approveAssetAllocation: async (id: number, action: "completed" | "rejected", comment?: string): Promise<any> => {
+  approveAssetAllocation: async (
+    id: number,
+    action: "completed" | "rejected",
+    comment?: string,
+  ): Promise<any> => {
     try {
       const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
         status: action,
-        comment: comment || ""
+        comment: comment || "",
       });
       return response.data;
     } catch (error) {
@@ -5578,13 +5739,15 @@ export const assetsAPI = {
   },
 
   // Asset Request Approval API method
-  approveAssetRequest: async (id: number, new_status: "completed" | "rejected", comment?: string): Promise<any> => {
-
-
+  approveAssetRequest: async (
+    id: number,
+    new_status: "completed" | "rejected",
+    comment?: string,
+  ): Promise<any> => {
     try {
       const response = await apiRequest.patch(`workflow/task/${id}/status/`, {
         status: new_status,
-        comment: comment || ""
+        comment: comment || "",
       });
       return response.data;
     } catch (error) {
@@ -5609,9 +5772,9 @@ export const assetsAPI = {
     institutionId,
     page = 1,
     search,
-    condition
+    condition,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
     condition?: string;
@@ -5637,9 +5800,13 @@ export const assetsAPI = {
     }
   },
 
-  getPaginatedAssetReturnsFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IAssetReturn>> => {
+  getPaginatedAssetReturnsFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<IAssetReturn>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetReturn>;
     } catch (error) {
       console.error("Error fetching asset returns from URL:", error);
@@ -5667,7 +5834,10 @@ export const assetsAPI = {
     }
   },
 
-  updateAssetReturn: async (id: number, data: Partial<IAssetReturnFormData>): Promise<IAssetReturn> => {
+  updateAssetReturn: async (
+    id: number,
+    data: Partial<IAssetReturnFormData>,
+  ): Promise<IAssetReturn> => {
     try {
       const response = await apiRequest.patch(`/assets/asset-returns/${id}/`, data);
       return response.data;
@@ -5688,8 +5858,6 @@ export const assetsAPI = {
   },
 };
 
-
-
 export const employeeAPI = {
   getAll: async (institutionId: number): Promise<IEmployee[]> => {
     try {
@@ -5705,14 +5873,13 @@ export const employeeAPI = {
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
-  getInstitutionCalendar: async ({ year }: { year: number, url?: string }) => {
+  getInstitutionCalendar: async ({year}: {year: number; url?: string}) => {
     const response = await apiRequest.get(`calendar/institutions-calendar/?year=${year}`);
     if (response.status === 200) {
       return response.data as ICalendar;
     } else {
-      throw new Error('Failed to fetch calendar data');
+      throw new Error("Failed to fetch calendar data");
     }
-
   },
 
   // Get all events for an institution
@@ -5721,9 +5888,8 @@ export const calendarAPI = {
     if (response.status === 200) {
       return response.data as IPaginatedResponse<IEvent>;
     } else {
-      throw new Error('Failed to fetch events');
+      throw new Error("Failed to fetch events");
     }
-
   },
 
   // Create a new event
@@ -5737,32 +5903,33 @@ export const calendarAPI = {
     department?: string;
     specific_employees?: string[];
   }) => {
-    const response = await apiRequest.post('calendar/events/', eventData);
+    const response = await apiRequest.post("calendar/events/", eventData);
     if (response.status === 201) {
       return response.data;
     } else {
-      throw new Error('Failed to create event');
+      throw new Error("Failed to create event");
     }
-
   },
 
   // Update an existing event
-  updateEvent: async (eventId: number, eventData: {
-    title?: string;
-    description?: string;
-    date?: string;
-    target_audience?: "all" | "department" | "individual" | "specific_employees";
-    event_mode?: "physical" | "online" | "hybrid";
-    department?: string;
-    specific_employees?: string[];
-  }) => {
+  updateEvent: async (
+    eventId: number,
+    eventData: {
+      title?: string;
+      description?: string;
+      date?: string;
+      target_audience?: "all" | "department" | "individual" | "specific_employees";
+      event_mode?: "physical" | "online" | "hybrid";
+      department?: string;
+      specific_employees?: string[];
+    },
+  ) => {
     const response = await apiRequest.patch(`calendar/events/${eventId}/`, eventData);
     if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error('Failed to update event');
+      throw new Error("Failed to update event");
     }
-
   },
 
   // Delete an event
@@ -5771,9 +5938,8 @@ export const calendarAPI = {
     if (response.status === 204) {
       return true;
     } else {
-      throw new Error('Failed to delete event');
+      throw new Error("Failed to delete event");
     }
-
   },
 
   // Get a specific event by ID
@@ -5782,9 +5948,8 @@ export const calendarAPI = {
     if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error('Failed to fetch event');
+      throw new Error("Failed to fetch event");
     }
-
   },
 
   // Get public holidays for an institution
@@ -5793,62 +5958,58 @@ export const calendarAPI = {
     if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error('Failed to fetch public holidays');
+      throw new Error("Failed to fetch public holidays");
     }
-
   },
 
   // Create a new public holiday
-  createPublicHoliday: async (holidayData: {
-    institution: number;
-    title: string;
-    date: string;
-  }) => {
-    const response = await apiRequest.post('calendar/public-holidays/', holidayData);
+  createPublicHoliday: async (holidayData: {institution: number; title: string; date: string}) => {
+    const response = await apiRequest.post("calendar/public-holidays/", holidayData);
     if (response.status === 201) {
       return response.data;
     } else {
-      throw new Error('Failed to create public holiday');
+      throw new Error("Failed to create public holiday");
     }
-
   },
 
   // Update a public holiday
-  updatePublicHoliday: async (holidayId: number, holidayData: {
-    title?: string;
-    date?: string;
-  }) => {
+  updatePublicHoliday: async (
+    holidayId: number,
+    holidayData: {
+      title?: string;
+      date?: string;
+    },
+  ) => {
     const response = await apiRequest.patch(`calendar/public-holidays/${holidayId}/`, holidayData);
     if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error('Failed to update public holiday');
+      throw new Error("Failed to update public holiday");
     }
-
   },
 
   // Delete a public holiday
   deletePublicHoliday: async (holidayId: number) => {
     const response = await apiRequest.delete(`calendar/public-holidays/${holidayId}/`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     if (response.status === 204) {
       return true;
     } else {
-      throw new Error('Failed to delete public holiday');
+      throw new Error("Failed to delete public holiday");
     }
-
   },
 
   // Get calendar data for a specific month/year
   getMonthCalendar: async (institutionId: number, year: number, month: number) => {
-    const response = await apiRequest.get(`calendar/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`);
+    const response = await apiRequest.get(
+      `calendar/institutions-calendar/?institution=${institutionId}&year=${year}&month=${month}`,
+    );
     if (response.status === 200) {
       return response.data;
     } else {
-      throw new Error('Failed to fetch month calendar');
+      throw new Error("Failed to fetch month calendar");
     }
-
   },
 };
 
@@ -5872,9 +6033,9 @@ export const SeparationPoliciesAPI = {
   getPaginated: async ({
     institutionId,
     page = 1,
-    search
+    search,
   }: {
-    institutionId: number,
+    institutionId: number;
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
@@ -5896,9 +6057,13 @@ export const SeparationPoliciesAPI = {
     }
   },
 
-  getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<ISeparationPolicy>> => {
     try {
-      const response = await apiRequest.get(url);
+      const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<ISeparationPolicy>;
     } catch (error) {
       console.error("Error fetching separation policies from URL:", error);
@@ -5956,18 +6121,15 @@ export const SeparationPoliciesAPI = {
   },
 };
 
-export async function fetchAttendanceData(
-  startDate?: string,
-  endDate?: string
-) {
-  let endpoint = 'employee/attendance-data/';
+export async function fetchAttendanceData(startDate?: string, endDate?: string) {
+  let endpoint = "employee/attendance-data/";
 
   const params = new URLSearchParams();
   if (startDate) {
-    params.append('start_date', startDate);
+    params.append("start_date", startDate);
   }
   if (endDate) {
-    params.append('end_date', endDate);
+    params.append("end_date", endDate);
   }
 
   if (params.toString()) {
@@ -5976,12 +6138,12 @@ export async function fetchAttendanceData(
 
   const response = await apiRequest.get(endpoint);
   return response.data as AttendanceResponse;
-
 }
 
-export const showErrorToast = ({ error, defaultMessage }: { error: any, defaultMessage?: string }) => {
-  console.log("\n\n The received error is", error);
-  const errorMessage = (error?.error && Array.isArray(error?.error)) ? error.error[0] : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
+export const showErrorToast = ({error, defaultMessage}: {error: any; defaultMessage?: string}) => {
+  const errorMessage =
+    error?.error && Array.isArray(error?.error)
+      ? error.error[0]
+      : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
   toast.error(errorMessage);
-}
-
+};

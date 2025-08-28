@@ -1912,7 +1912,7 @@ export default function JobSpecificInterviewPipeline() {
       </div>
 
       {/* Job Position/ Title  Selector */}
-      <Card className="mt-6">
+      <Card className="mt-6 shadow-sm border-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -2037,7 +2037,7 @@ export default function JobSpecificInterviewPipeline() {
 
       {!selectedJobPosition ? (
         /* No job selected state */
-        <Card className="p-6">
+        <Card className="p-6 mt-6 shadow-sm border-none">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />

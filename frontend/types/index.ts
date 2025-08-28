@@ -1,4 +1,4 @@
-import { PERMISSION_CODES } from "./types.utils";
+import { PERMISSION_CODES, IInstitutionDocument } from "./types.utils";
 
 export interface IProductCategoryDetail {
   id: number;
@@ -8,6 +8,15 @@ export interface IProductCategoryDetail {
 }
 
 export type InstitutionApprovalStatus = "pending" | "approved" | "rejected" | "under_review"
+
+export interface IKYCDocument {
+  id: number;
+  institution: number;
+  document_title: string;
+  document_file: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface IUserInstitution {
   id: number;
@@ -27,7 +36,8 @@ export interface IUserInstitution {
   location: string,
   is_attendance_penalties_enabled: boolean,
   user_inactivity_time: number   // In minutes ,
-  country_code: string
+  country_code: string,
+  documents?: IInstitutionDocument[]
 }
 
 export interface IUserInstitutionFormData {

@@ -36,27 +36,27 @@ from institution.models import Institution
 
 
 class EmployeeType(UtilityBaseModel):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, blank=True)
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
-
-
 
 
 class WorkType(UtilityBaseModel):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, blank=True)
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
-
-
 
 
 class Employee(UtilityBaseModel):
@@ -114,7 +114,7 @@ class Employee(UtilityBaseModel):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="payroll_employees",
+        related_name="branch_payroll_employees",
     )
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(
@@ -208,7 +208,9 @@ class Employee(UtilityBaseModel):
             )
             if age < 18:
                 raise ValidationError(
-                    {"error": f"Employee must be at least 18 years old. Current age: {age} years."}
+                    {
+                        "error": f"Employee must be at least 18 years old. Current age: {age} years."
+                    }
                 )
 
         # Prevent future date of birth
@@ -550,8 +552,8 @@ class EmployeeAttendance(UtilityBaseModel):
     )
 
     class Meta:
-        unique_together = ('employee', 'date')
-    
+        unique_together = ("employee", "date")
+
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
@@ -617,8 +619,6 @@ class EmployeeAttendance(UtilityBaseModel):
             if distance <= THRESHOLD_METERS:
                 return True
         return False
-
-        
 
     def save(self, *args, **kwargs):
 
@@ -748,7 +748,9 @@ class EmployeeContract(UtilityBaseModel):
                 original_pages = self.extract_text_with_ocr(original_content)
             if not any(original_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError({"error": f"Cannot extract text from original contract."})
+                raise ValidationError(
+                    {"error": f"Cannot extract text from original contract."}
+                )
 
             # Extract text from signed_contract
             signed_pages = self.extract_text_from_pdf(signed_content)
@@ -758,7 +760,9 @@ class EmployeeContract(UtilityBaseModel):
             if not any(signed_pages):
 
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError({"error": f"Cannot extract text from signed contract."})
+                raise ValidationError(
+                    {"error": f"Cannot extract text from signed contract."}
+                )
 
             # Compare number of pages
             if len(original_pages) != len(signed_pages):

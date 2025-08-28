@@ -2,7 +2,7 @@ from django.db import models
 from institution.models import Institution
 from slugify import slugify
 from django.utils import timezone
-from utilities.utility_base_model import UtilityBaseModel   
+from utilities.utility_base_model import UtilityBaseModel
 
 
 class SystemConfiguration(UtilityBaseModel):

@@ -57,7 +57,7 @@ export default function EditJobAdvertPage() {
     }
 
     if (isNaN(jobAdvertId)) {
-      toast.error("Invalid job advert ID")
+      toast.error("Invalid job opening ID")
       router.push("/job-adverts")
       return
     }
@@ -71,7 +71,7 @@ export default function EditJobAdvertPage() {
     try {
       setIsLoading(true)
 
-      // Fetch job advert details
+      // Fetch job opening details
       const fetchedJobAdvert = await getJobPositionAdvertById({ advertId: jobAdvertId })
 
       if (!fetchedJobAdvert) {
@@ -117,7 +117,7 @@ export default function EditJobAdvertPage() {
       setFormData(formDataToSet);
 
     } catch (error) {
-      toast.error("Failed to load job advert data")
+      toast.error("Failed to load job opening data")
       router.push("/job-adverts")
     } finally {
       setIsLoading(false)
@@ -224,7 +224,7 @@ export default function EditJobAdvertPage() {
         toast.error("Failed to update job position. Please try again.")
       }
     } catch (error) {
-      toast.error("Failed to update job advert. Please try again.")
+      toast.error("Failed to update job opening. Please try again.")
     } finally {
       setIsSubmitting(false)
     }

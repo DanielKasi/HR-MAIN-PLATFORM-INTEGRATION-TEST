@@ -1,7 +1,7 @@
 
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { IPayslip } from '@/types/types.utils';
-import { getCUrrentInstitution } from '@/lib/helpers';
+import { formatCurrency, getCUrrentInstitution } from '@/lib/helpers';
 
 const styles = StyleSheet.create({
   page: {
@@ -87,8 +87,6 @@ interface PayslipPDFProps {
 }
 
 const PayslipPDF = ({ payslip }: PayslipPDFProps) => {
-  const formatCurrency = (amount: string | number) => 
-    ` ${parseFloat(amount.toString()).toLocaleString()}`;
 
   const currentInstitution = getCUrrentInstitution();
 

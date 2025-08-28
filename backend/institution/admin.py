@@ -9,6 +9,7 @@ from .models import (
     InstitutionWorkingDays,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionKYCDocument,
 )
 
 
@@ -35,3 +36,4 @@ admin.site.register(InstitutionBankAccount)
 admin.site.register(InstitutionWorkingDays)
 admin.site.register(InstitutionTax)
 admin.site.register(InstitutionTaxRule)
+admin.site.register(InstitutionKYCDocument)

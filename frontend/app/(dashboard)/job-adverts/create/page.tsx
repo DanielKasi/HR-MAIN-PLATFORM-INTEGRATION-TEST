@@ -872,7 +872,7 @@ export default function JobAdvertsPage() {
   // )
 
   // const handleArchiveJobAdvert = useCallback((advertId: number) => {
-  //   toast.success("Job advert archiving would be implemented here")
+  //   toast.success("Job opening archiving would be implemented here")
   // }, [])
 
   // const handleCloseJobAdvert = useCallback(
@@ -887,7 +887,7 @@ export default function JobAdvertsPage() {
   //       })
 
   //       if (updatedAdvert) {
-  //         toast.success("Job advert closed successfully!")
+  //         toast.success("Job opening closed successfully!")
   //         fetchJobAdverts(true, currentPage, pageSize)
   //       } else {
   //         toast.error("Failed to close job openings")

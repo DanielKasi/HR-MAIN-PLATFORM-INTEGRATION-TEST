@@ -55,8 +55,7 @@ class Institution(UtilityBaseModel):
     zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
     user_inactivity_time = models.PositiveIntegerField(
-        default=15,
-        help_text="User inactivity time in minutes before automatic logout"
+        default=15, help_text="User inactivity time in minutes before automatic logout"
     )
     approval_status = models.CharField(
         max_length=20,
@@ -249,14 +248,12 @@ class Institution(UtilityBaseModel):
             raise Exception(f"Zoom token error: {response.text}")
 
 
-class InstitutionDocument(models.Model):
+class InstitutionKYCDocument(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="documents", on_delete=models.CASCADE
     )
     document_title = models.CharField(max_length=255)
-    document_file = models.FileField(upload_to="institutions/documents/")
-    document_type = models.CharField(max_length=10, blank=True, null=True)
-    document_size = models.PositiveIntegerField(blank=True, null=True)
+    document_file = models.FileField(upload_to="institutions/kyc/documents/")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -264,20 +261,8 @@ class InstitutionDocument(models.Model):
         return f"{self.document_title} - {self.institution.institution_name}"
 
     class Meta:
-        verbose_name = "Shop Document"
-        verbose_name_plural = "Shop Documents"
-
-    def save(self, *args, **kwargs):
-        if self.document_file and not self.pk:
-            self.document_size = self.document_file.size
-            self.document_type = self.document_file.name.split(".")[-1].lower()
-        super().save(*args, **kwargs)
-
-    @property
-    def document_size_mb(self):
-        if self.document_size:
-            return round(self.document_size / (1024 * 1024), 2)
-        return 0
+        verbose_name = "Institution KYC Document"
+        verbose_name_plural = "Institution KYC Documents"
 
 
 class InstitutionBankType(UtilityBaseModel):
@@ -352,7 +337,6 @@ class InstitutionWorkingDays(UtilityBaseModel):
         related_name="working_day",
         blank=True,
     )
-
 
     created_by = models.ForeignKey(
         "users.CustomUser",

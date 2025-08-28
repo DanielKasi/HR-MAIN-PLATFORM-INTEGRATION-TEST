@@ -626,7 +626,7 @@ export default function ApplicationsPage() {
 
   // Helper to format job position label
   const getPositionLabel = useCallback((advert: JobPositionAdvert): string => {
-    return `${advert.job_position_details?.name || `Job Advert #${advert.id}`} - ${advert.job_position_advert_status}`;
+    return `${advert.job_position_details?.name || `Job Opening `} - ${advert.job_position_advert_status}`;
   }, []);
 
   // Fetch job positions paginated with optional server-side search
@@ -1541,7 +1541,7 @@ export default function ApplicationsPage() {
                 <SelectItem value="all">All Jobs</SelectItem>
                 {jobPositionAdverts.map((advert) => (
                   <SelectItem key={advert.id} value={advert.id.toString()}>
-                    {advert.job_position_details?.name || `Job Advert #${advert.id}`}
+                    {advert.job_position_details?.name || `Job Opening `}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -2219,7 +2219,7 @@ export default function ApplicationsPage() {
                                   <div className="flex flex-col">
                                     <span className="font-medium">
                                       {advert.job_position_details?.name ||
-                                        `Job Advert #${advert.id}`}
+                                        `Job Opening `}
                                     </span>
                                   </div>
                                 </div>

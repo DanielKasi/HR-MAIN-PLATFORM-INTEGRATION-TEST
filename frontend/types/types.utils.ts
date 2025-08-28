@@ -430,7 +430,7 @@ export interface JobPositionAdvert {
   advert_type: JobAdvertTypes;
 }
 
-// For creating/updating job adverts
+// For creating/updating job openings
 export interface JobPositionAdvertFormData {
   level: number;
   interviewers: any;
@@ -1743,7 +1743,7 @@ export interface ITaxFormData {
 
 export interface ITaxRule {
   id: number;
-  institution_tax: number;
+  institution_tax: ITax;
   calculation_type: string;
   percentage: string;
   fixed_amount: number;
@@ -2225,3 +2225,15 @@ export interface IInstitutionAnalytics {
   }[];
 }
 
+
+
+
+
+export interface IKYCDocument {
+  id: number;
+  institution: number;
+  document_title: string;
+  document_file: string;
+  created_at: string;
+  updated_at: string;
+}

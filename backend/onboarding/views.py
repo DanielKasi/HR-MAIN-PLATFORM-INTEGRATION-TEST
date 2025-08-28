@@ -689,7 +689,7 @@ class TerminationInitiationListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        queryset = TerminationInitiation.objects.filter(separation__employee_department__institution=institution).order_by("-created_at")
+        queryset = TerminationInitiation.objects.filter(separation__employee__department__institution=institution).order_by("-created_at")
 
         if search_query:
             queryset = queryset.filter(

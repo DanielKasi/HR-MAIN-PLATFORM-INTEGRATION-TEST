@@ -4,17 +4,16 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import apiRequest from "@/lib/apiRequest";
-import { handleApiError } from "@/lib/apiErrorHandler";
+import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
+import { AUTH_API } from "@/utils/authUtils";
+import { maskEmail } from "@/lib/helpers";
 
 export default function VerifyOTPPage() {
   const searchParams = useSearchParams();
@@ -27,8 +26,6 @@ export default function VerifyOTPPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [resendDisabled, setResendDisabled] = useState<boolean>(false);
   const [resendCountdown, setResendCountdown] = useState<number>(0);
-  const [isResendModalOpen, setIsResendModalOpen] = useState<boolean>(false);
-  const [editedEmail, setEditedEmail] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -87,42 +84,16 @@ export default function VerifyOTPPage() {
     }
   };
 
-  const openResendModal = () => {
-    if (resendDisabled || !emailValue) return;
-    setEditedEmail(emailValue);
-    setIsResendModalOpen(true);
-  };
+  const handleResend = async () => {
+    if (resendDisabled || isSubmitting || !emailValue) return;
 
-  const handleConfirmResend = async () => {
-    setIsResendModalOpen(false);
-
-    if (!editedEmail) {
-      setErrorMessage("Email address is required");
-      return;
-    }
-
-    setIsSubmitting(true);
     setResendDisabled(true);
     setResendCountdown(60);
-
     try {
-      if (editedEmail !== emailValue) {
-        const response = await apiRequest.post("user/change-email-and-resend-otp/", {
-          old_email: emailValue,
-          new_email: editedEmail,
-        });
-
-        if (response.status === 200) {
-          setEmailValue(editedEmail);
-          toast.success(`OTP sent to new email: ${editedEmail}`);
-        }
-      } else {
-        await apiRequest.post("user/resend-otp/", { email: emailValue });
-        toast.success(`A new verification code has been sent to ${emailValue}`);
-      }
-
+      await apiRequest.post("user/resend-otp/", { email: emailValue });
       setErrorMessage("");
       setOTP(Array(6).fill(""));
+      toast.success(`A new verification code has been sent to ${emailValue}`);
     } catch (error: any) {
       showErrorToast({ error, defaultMessage: "Failed to resend OTP" });
       setResendDisabled(false);
@@ -132,7 +103,9 @@ export default function VerifyOTPPage() {
     }
   };
 
-  const handleChangeEmail = async () => {
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!emailValue || !newEmail) {
       setErrorMessage("Please enter a new email address");
       return;
@@ -142,18 +115,13 @@ export default function VerifyOTPPage() {
     setErrorMessage("");
 
     try {
-      const response = await apiRequest.post("user/change-email-and-resend-otp/", {
-        old_email: emailValue,
-        new_email: newEmail,
-      });
-
-      if (response.status === 200) {
+      await AUTH_API.changeEmailAndResendOtp({old_email:emailValue, new_email:newEmail })
         setEmailValue(newEmail);
         setNewEmail("");
         setIsEditingEmail(false);
         setOTP(Array(6).fill(""));
         toast.success(`OTP sent to new email: ${newEmail}`);
-      }
+        router.push(`/verify-otp?email=${encodeURIComponent(newEmail)}`)
     } catch (error: any) {
       showErrorToast({ error, defaultMessage: "Failed to change email and resend OTP" });
     } finally {
@@ -169,55 +137,60 @@ export default function VerifyOTPPage() {
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted/40">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md border-none md:border-1 shadow-none md:shadow-none">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <ShoppingCart className="h-10 w-10 text-primary" />
+            <Icon icon="hugeicons:user-check-01" className="!w-10 !h-10 text-primary" />
           </div>
           <CardTitle className="text-2xl text-center">Verify Your Account</CardTitle>
-          <p className="text-center text-sm text-muted-foreground">
+          <div className="py-4">
             {isEditingEmail ? (
-              <>
-                Enter new email to receive OTP
+              <form onSubmit={handleChangeEmail} className="flex flex-col gap-4">
+                <p className="text-base text-center w-full">Enter new email to receive OTP</p>
                 <Input
-                  className="mt-2 w-3/4 mx-auto"
+                  className="h-12 rounded-xl"
                   placeholder="new@example.com"
                   type="email"
+                  required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                 />
-                <div className="flex justify-center gap-2 mt-2">
+                <div className="flex justify-between gap-4 mt-2">
                   <Button
                     variant="outline"
-                    size="sm"
+                    type="button"
+                    className="h-12 rounded-xl"
                     onClick={() => setIsEditingEmail(false)}
                     disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
                   <Button
-                    size="sm"
-                    onClick={handleChangeEmail}
+                    type="submit"
+                    className="h-12 rounded-xl"
                     disabled={isSubmitting || !newEmail}
                   >
                     {isSubmitting ? "Sending..." : "Send OTP to New Email"}
                   </Button>
                 </div>
-              </>
-            ) : (
+              </form>
+          ) : (
               <>
-                Enter the 6-digit code sent to <b>{emailValue}</b>
-                <Button
-                  className="text-primary text-sm mt-2"
-                  variant="link"
-                  onClick={() => setIsEditingEmail(true)}
-                  disabled={isSubmitting}
-                >
-                  Wrong email? Change it
-                </Button>
+                <p className="w-full text-center">Enter the 6-digit code sent to {emailValue ? <b>{maskEmail(emailValue)}</b>: "your email" } </p>
+                <div className="flex items-center justify-center w-full">
+
+                  <Button
+                    className="text-primary text-sm mt-2"
+                    variant="link"
+                    onClick={() => setIsEditingEmail(true)}
+                    disabled={isSubmitting}
+                  >
+                    Wrong email? Change it
+                  </Button>
+                </div>
               </>
             )}
-          </p>
+          </div>
         </CardHeader>
         {!isEditingEmail && (
           <form onSubmit={handleVerify}>
@@ -261,7 +234,7 @@ export default function VerifyOTPPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col">
-              <Button className="w-full" disabled={isSubmitting} type="submit">
+              <Button className="w-full" disabled={isSubmitting || resendDisabled} type="submit">
                 {isSubmitting ? "Verifying..." : "Verify"}
               </Button>
               <p className="mt-4 text-center text-sm text-muted-foreground">
@@ -271,7 +244,7 @@ export default function VerifyOTPPage() {
                   disabled={isSubmitting || resendDisabled}
                   type="button"
                   variant="link"
-                  onClick={openResendModal}
+                  onClick={handleResend}
                 >
                   {resendDisabled ? `Resend code (${resendCountdown}s)` : "Resend code"}
                 </Button>
@@ -280,34 +253,6 @@ export default function VerifyOTPPage() {
           </form>
         )}
       </Card>
-
-      <Dialog open={isResendModalOpen} onOpenChange={setIsResendModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm or Edit Email</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Label htmlFor="edited-email">Email Address</Label>
-            <Input
-              id="edited-email"
-              type="email"
-              value={editedEmail}
-              onChange={(e) => setEditedEmail(e.target.value)}
-            />
-            <p className="text-sm text-muted-foreground">
-              Confirm your email or edit if incorrect. Resending multiple times may be limited to prevent abuse.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsResendModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmResend} disabled={isSubmitting || !editedEmail}>
-              {isSubmitting ? "Sending..." : "Resend"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

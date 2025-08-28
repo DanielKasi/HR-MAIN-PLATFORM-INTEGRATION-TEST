@@ -198,18 +198,12 @@ STORAGES = {
 
 # Email configuration for Baifam Group domain
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_HOST_USER = os.getenv("RESPONSE_EMAIL")
-EMAIL_HOST_PASSWORD = os.getenv("RESPONSE_EMAIL_PASSWORD")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))  
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_HOST_USER = os.environ.get("RESPONSE_EMAIL", None)
+EMAIL_HOST_PASSWORD = os.environ.get("RESPONSE_EMAIL_PASSWORD", None)
+EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = os.getenv("RESPONSE_EMAIL")
-
-
-# Google Auth Settings
-GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_AUTH_REDIRECT_URL = os.getenv("GOOGLE_AUTH_REDIRECT_URL")
+DEFAULT_FROM_EMAIL = os.environ.get("RESPONSE_EMAIL", None)
 
 # Channel layers configuration
 CHANNEL_LAYERS = {
