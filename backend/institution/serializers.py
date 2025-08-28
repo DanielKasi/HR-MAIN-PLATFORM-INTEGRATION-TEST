@@ -26,14 +26,7 @@ from settings.models import SystemDay
 logger = logging.getLogger(__name__)
 
 
-class InstitutionKYCDocumentItemSerializer(serializers.Serializer):
-    document_title = serializers.CharField()
-    document_file = serializers.FileField()
-
-
 class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
-    documents = InstitutionKYCDocumentItemSerializer(many=True, write_only=True)
-
     class Meta:
         model = InstitutionKYCDocument
         fields = [
@@ -43,9 +36,7 @@ class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
             "document_file",
             "created_at",
             "updated_at",
-            "documents",
         ]
-
         read_only_fields = [
             "id",
             "institution",
@@ -53,20 +44,37 @@ class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+
+class InstitutionKYCDocumentBulkCreateSerializer(serializers.Serializer):
+    document_file = serializers.ListField(
+        child=serializers.FileField(), write_only=True, required=True
+    )
+    document_title = serializers.ListField(
+        child=serializers.CharField(max_length=255), write_only=True, required=True
+    )
+
+    def validate(self, data):
+        if len(data["document_file"]) != len(data["document_title"]):
+            raise serializers.ValidationError("Mismatched file and title counts.")
+        return data
+
     def create(self, validated_data):
-        user = self.context.get("request")
+        request = self.context["request"]
+        institution = request.user.profile.institution
 
-        try:
-            institution = Institution.objects.get(id=user.profile.institution.id)
-        except Institution.DoesNotExist:
-            raise serializers.ValidationError({"error": "Institution not found."})
+        document_file = validated_data.pop("document_file", [])
+        document_title = validated_data.pop("document_title", [])
 
-        docs_data = validated_data["documents"]
-
-        docs = [
-            InstitutionKYCDocument(institution=institution, **doc) for doc in docs_data
+        documents = [
+            InstitutionKYCDocument(
+                institution=institution,
+                document_title=title,
+                document_file=file,
+            )
+            for title, file in zip(document_title, document_file)
         ]
-        return InstitutionKYCDocument.objects.bulk_create(docs)
+
+        return InstitutionKYCDocument.objects.bulk_create(documents)
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
