@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from urllib.parse import urlparse
 from django.utils import timezone
 from django.http import HttpResponseForbidden
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 from users.models import Role, RolePermission, Permission, UserRole
 
 
-def parse_date(value: str):
+def custom_parse_date(value: str):
     if not value:
         return None
 

@@ -57,20 +57,17 @@ from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
-from datetime import date
 from django.http import FileResponse
 from payroll.utils import generate_attendance_excel
 from django.utils.encoding import escape_uri_path
-from datetime import datetime
+from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import get_or_create_default_role_with_permissions
 from django.db.models import Q
 from datetime import datetime, date
-from utilities.helpers import parse_date
-
-
+from utilities.helpers import custom_parse_date
 
 
 class EmployeeListAPIView(APIView):
@@ -547,7 +544,7 @@ class EmployeeCreateAPIView(APIView):
                             and employee_data["date_of_birth"]
                         ):
                             try:
-                                dob = parse_date(employee_data["date_of_birth"])
+                                dob = custom_parse_date(employee_data["date_of_birth"])
                                 if dob:
                                     msgs = []
                                     if dob > date.today():
