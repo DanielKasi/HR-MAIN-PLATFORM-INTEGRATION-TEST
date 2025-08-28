@@ -13,6 +13,7 @@ import apiRequest from "@/lib/apiRequest";
 import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
 import { AUTH_API } from "@/utils/authUtils";
+import { maskEmail } from "@/lib/helpers";
 
 export default function VerifyOTPPage() {
   const searchParams = useSearchParams();
@@ -173,9 +174,9 @@ export default function VerifyOTPPage() {
                   </Button>
                 </div>
               </form>
-            ) : (
+          ) : (
               <>
-                <p className="w-full text-center">Enter the 6-digit code sent to <b>{emailValue}</b></p>
+                <p className="w-full text-center">Enter the 6-digit code sent to {emailValue ? <b>{maskEmail(emailValue)}</b>: "your email" } </p>
                 <div className="flex items-center justify-center w-full">
 
                   <Button

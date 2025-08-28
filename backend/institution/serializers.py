@@ -112,6 +112,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
             )
 
         institution_owner = validated_data.pop("institution_owner_id")
+        departments_data = self.context.get("departments", [])
 
         # Log departments data for debugging
         logger.info(f"Creating institution with departments_data: {departments_data}")

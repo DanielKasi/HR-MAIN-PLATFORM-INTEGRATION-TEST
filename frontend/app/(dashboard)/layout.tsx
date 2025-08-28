@@ -234,7 +234,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Analytics", href:"#"},
-        {title: "Recruitment Pipeline", href:"#"},
+        {title: "Recruitment Pipeline", href:"/job-interviews/interview-pipeline"},
         {title: "Recruitment Survey", href:"#"},
         {title: "Candidates", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
@@ -246,19 +246,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
-    },
-
-    {
-      title: "Offboarding",
-      href: "/off-boarding",
-      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Offboarding Stages", href: "/off-boarding/stages"},
-        {title: "Separation Types", href: "/off-boarding/separation-types"},
-        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
-        {title: "Terminations", href: "/off-boarding/terminations"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
       title: "Employees",
@@ -412,7 +399,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       submenu: [
         {title: "Multiple Approvals", href:"#"},
         {title: "Mail Templates", href:"#"},
-        {title: "Mail Automationa", href:"#"},
+        {title: "Mail Automation", href:"#"},
         {title: "Calendar", href: "/events-holidays"},
         {title: "Company Leaves", href:"#"},
         {title: "Restrict Leaves", href:"#"},
@@ -550,7 +537,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
           variant="ghost"
-          className={`w-full !rounded-xl flex items-center justify-between px-4 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
+          className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
           }`}
           onClick={() => {
@@ -583,9 +570,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {item.submenu && isExpanded && (
           <div className="ml-6 flex flex-col mt-2 border-l-2 border-primary/20 bg-gray-200/20">
             {isSideBarOpen &&
-              item.submenu.map((sub) => (
+              item.submenu.map((sub, index) => (
                 <Button
-                  key={sub.href}
+                  key={`${sub.href}-${index}`}
                   variant="ghost"
                   className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
                     pathname === sub.href

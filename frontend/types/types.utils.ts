@@ -1743,7 +1743,7 @@ export interface ITaxFormData {
 
 export interface ITaxRule {
   id: number;
-  institution_tax: number;
+  institution_tax: ITax;
   calculation_type: string;
   percentage: string;
   fixed_amount: number;
