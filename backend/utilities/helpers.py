@@ -1,4 +1,3 @@
-from datetime import datetime
 from urllib.parse import urlparse
 from django.utils import timezone
 from django.http import HttpResponseForbidden
@@ -11,6 +10,7 @@ import secrets
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.mail import send_mail
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +179,7 @@ def create_and_institution_otp(user_id, purpose=None, expiry_minutes=15):
     otp = generate_otp()
     otp_hash = hash_otp(user_id, otp)
 
-    expiry_time = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
+    expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
 
     if purpose:
         cleanup_existing_otps(user_id, purpose)
@@ -309,7 +309,7 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
         user=user,
         value=token,
         purpose=purpose,
-        expires_at=timezone.now() + datetime.timedelta(minutes=expiry_minutes),
+        expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
     )
     return token
 
