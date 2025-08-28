@@ -1,9 +1,9 @@
-import axios, {InternalAxiosRequestConfig} from "axios";
+import axios, { InternalAxiosRequestConfig } from "axios";
 
-import {CustomApiRequestError} from "@/types/types.utils";
-import {store} from "@/store";
-import {logoutStart, setAccessToken, setRefreshToken} from "@/store/auth/actions";
-import {LoginResponse} from "@/utils/authUtils";
+import { CustomApiRequestError } from "@/types/types.utils";
+import { store } from "@/store";
+import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
+import { LoginResponse } from "@/utils/authUtils";
 
 const axiosJsonInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api",
@@ -52,62 +52,69 @@ function addSubscriber(callback: Subscriber) {
 axiosJsonInstance.interceptors.response.use(
   (response) => response,
   async (error: any) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {_retry?: boolean};
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
-      originalRequest._retry = true;
 
-      const refreshToken = store.getState().auth.refreshToken;
-
-      if (!refreshToken || originalRequest.url?.endsWith("/user/token/refresh")) {
-        if (typeof window !== "undefined") {
-          store.dispatch(logoutStart());
-        }
-
-        return Promise.reject(error);
-      }
-
-      if (isRefreshing) {
-        return new Promise((resolve) => {
-          addSubscriber((token: string) => {
-            if (!originalRequest.headers) {
-              originalRequest.headers = new axios.AxiosHeaders();
-            }
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            resolve(axiosJsonInstance(originalRequest));
-          });
-        });
-      }
-      isRefreshing = true;
-      try {
-        const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
-          {refresh: refreshToken},
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
-        );
-
-        const {access, refresh} = (response.data as LoginResponse).tokens;
-
-        store.dispatch(setAccessToken(access));
-        store.dispatch(setRefreshToken(refresh));
-
-        axiosJsonInstance.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-        originalRequest.headers["Authorization"] = `Bearer ${access}`;
-        onRefreshed(access);
-
-        return axiosJsonInstance(originalRequest);
-      } catch (err) {
-        console.log("\n\nError on request : ", err);
+      if (typeof window !== "undefined") {
         store.dispatch(logoutStart());
-
-        return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
       }
+
+      return Promise.reject(error);
+
+      // originalRequest._retry = true;
+
+      // const refreshToken = store.getState().auth.refreshToken;
+
+      // if (!refreshToken || originalRequest.url?.endsWith("/user/token/refresh")) {
+      //   if (typeof window !== "undefined") {
+      //     store.dispatch(logoutStart());
+      //   }
+
+      //   return Promise.reject(error);
+      // }
+
+      // if (isRefreshing) {
+      //   return new Promise((resolve) => {
+      //     addSubscriber((token: string) => {
+      //       if (!originalRequest.headers) {
+      //         originalRequest.headers = new axios.AxiosHeaders();
+      //       }
+      //       originalRequest.headers.Authorization = `Bearer ${token}`;
+      //       resolve(axiosJsonInstance(originalRequest));
+      //     });
+      //   });
+      // }
+      // isRefreshing = true;
+      // try {
+      //   const response = await axios.post(
+      //     `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
+      //     {refresh: refreshToken},
+      //     {
+      //       headers: {
+      //         "Content-Type": "application/json",
+      //       },
+      //     },
+      //   );
+
+      //   const {access, refresh} = (response.data as LoginResponse).tokens;
+
+      //   store.dispatch(setAccessToken(access));
+      //   store.dispatch(setRefreshToken(refresh));
+
+      //   axiosJsonInstance.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+      //   originalRequest.headers["Authorization"] = `Bearer ${access}`;
+      //   onRefreshed(access);
+
+      //   return axiosJsonInstance(originalRequest);
+      // } catch (err) {
+      //   console.log("\n\nError on request : ", err);
+      //   store.dispatch(logoutStart());
+
+      //   return Promise.reject(err);
+      // } finally {
+      //   isRefreshing = false;
+      // }
     }
 
     const errorMessage = error.response || error.response?.data?.detail || "Unknown error occurred";
@@ -144,7 +151,7 @@ export const apiRequest = async (
     return response;
   } else {
     const err: CustomApiRequestError = {
-      message: Array.isArray(response?.data?.error) ? response?.data?.error[0] : typeof(response?.data?.error) === "string" ? response?.data?.error  : response.data?.detail || null,
+      message: Array.isArray(response?.data?.error) ? response?.data?.error[0] : typeof (response?.data?.error) === "string" ? response?.data?.error : response.data?.detail || null,
       status: response.status,
       custom_code: response.data?.custom_code || null,
     };
