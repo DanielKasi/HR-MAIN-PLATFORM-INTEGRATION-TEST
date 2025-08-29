@@ -66,3 +66,17 @@ class EmployeeSpotCheckSerializer(serializers.ModelSerializer):
         data["status"] = EmployeeSpotCheckSerializer(instance.status).data
         return data
 
+class EmployeeSpotCheckInSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+
+    class Meta:
+        model = SpotCheckModels.EmployeeSpotCheck
+        fields = ["id", "employee", "longitude", "latitude", "notes"]
+
+    def to_representation(self, instance):
+        """Override to include employee name in the representation"""
+        data = super().to_representation(instance)
+        data["employee"] = EmployeeSerializer(instance.employee).data
+        data["status"] = EmployeeSpotCheckSerializer(instance.status).data
+        return data
+
