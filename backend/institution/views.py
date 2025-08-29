@@ -28,6 +28,8 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
+    BranchWorkingDays,
+    BranchShift,,
     BranchLocationComaparisonConfig
 )
 from users.serializers import ProfileSerializer
@@ -48,6 +50,8 @@ from .serializers import (
     InstitutionKYCDocumentBulkCreateSerializer,
     InstitutionPenaltyConfigSerializer,
     BranchPenaltyConfigSerializer,
+    BranchWorkingDaysSerializer,
+    BranchShiftSerializer,,
     BranchLocationComparisonConfigSerializer
 )
 from django.shortcuts import get_object_or_404
@@ -103,6 +107,72 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
+
+class BranchWorkingDaysListAPIView(APIView):
+    @extend_schema(
+        responses={200: BranchWorkingDaysSerializer(many=True)},
+        description="Retrieve all working days for a branch.",
+        summary="Get all working days for a branch",
+        tags=["Working Days Management"],
+    )
+    def get(self, request):
+
+        branch_id = request.search_param.get("branch_id")
+
+        working_days = BranchWorkingDays.objects.get(branch=branch_id)
+
+        serializer = BranchWorkingDaysSerializer(working_days, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={201: BranchWorkingDaysSerializer},
+        description="Create a new working days configuration for a branch.",
+        summary="Create working days on a branch level",
+        tags=["Working Days Management"],
+    )
+    def post(self, request):
+        serializer = BranchWorkingDaysSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            working_days = serializer.save()
+            return Response(
+                BranchWorkingDaysSerializer(working_days).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class BranchWorkingDaysDetailView(APIView):
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={200: BranchWorkingDaysSerializer},
+        description="Update the existing Branch Working Days.",
+        summary="Update branch working days",
+        tags=["Working Days Management"],
+    )
+    def patch(self, request, pk):
+        try:
+            branch_working_days = BranchWorkingDays.objects.get(id=pk)
+        except BranchWorkingDays.DoesNotExist:
+            return Response(
+                {"detail": "Working days configuration not found."}, status=404
+            )
+
+        serializer = BranchWorkingDaysSerializer(
+            branch_working_days, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class InstitutionKYCDocumentListCreateView(APIView):
@@ -1816,19 +1886,43 @@ class DashboardView(APIView):
 
 class InstitutionPenaltyConfigListAPIView(APIView):
     @extend_schema(
-        tags=['Penalty Configurations'],
+        tags=["Penalty Configurations"],
         parameters=[
-            OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search by penalty type or value type'),
-            OpenApiParameter(name='penalty_type', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by penalty type (e.g., late_coming)'),
-            OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, required=False, description='Page number'),
-            OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, required=False, description='Number of results per page'),
-        ]
+            OpenApiParameter(
+                name="search",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Search by penalty type or value type",
+            ),
+            OpenApiParameter(
+                name="penalty_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by penalty type (e.g., late_coming)",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Page number",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Number of results per page",
+            ),
+        ],
     )
     def get(self, request):
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
-        penalty_type = request.query_params.get('penalty_type', None)
-        
+        search_query = request.query_params.get("search", None)
+        penalty_type = request.query_params.get("penalty_type", None)
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1845,25 +1939,26 @@ class InstitutionPenaltyConfigListAPIView(APIView):
         
         if penalty_type:
             configs = configs.filter(penalty_type=penalty_type)
-        
+
         if search_query:
             configs = configs.filter(
-                Q(penalty_type__icontains=search_query) |
-                Q(penalty_value_type__icontains=search_query)
+                Q(penalty_type__icontains=search_query)
+                | Q(penalty_value_type__icontains=search_query)
             )
-        
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = InstitutionPenaltyConfigSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def post(self, request):
         serializer = InstitutionPenaltyConfigSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class InstitutionPenaltyConfigDetailAPIView(APIView):
     def get_object(self, pk):
@@ -1872,44 +1967,77 @@ class InstitutionPenaltyConfigDetailAPIView(APIView):
         except InstitutionPenaltyConfig.DoesNotExist:
             raise Http404
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def get(self, request, pk):
         config = self.get_object(pk)
         serializer = InstitutionPenaltyConfigSerializer(config)
         return Response(serializer.data)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def patch(self, request, pk):
         config = self.get_object(pk)
-        serializer = InstitutionPenaltyConfigSerializer(config, data=request.data, partial=True)
+        serializer = InstitutionPenaltyConfigSerializer(
+            config, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def delete(self, request, pk):
         config = self.get_object(pk)
         config.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class BranchPenaltyConfigListAPIView(APIView):
     @extend_schema(
-        tags=['Penalty Configurations'],
+        tags=["Penalty Configurations"],
         parameters=[
-            OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search by penalty type or value type'),
-            OpenApiParameter(name='branch_id', type=int, location=OpenApiParameter.QUERY, required=False, description='Filter by branch ID'),
-            OpenApiParameter(name='penalty_type', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by penalty type (e.g., late_coming)'),
-            OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, required=False, description='Page number'),
-            OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, required=False, description='Number of results per page'),
-        ]
+            OpenApiParameter(
+                name="search",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Search by penalty type or value type",
+            ),
+            OpenApiParameter(
+                name="branch_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by branch ID",
+            ),
+            OpenApiParameter(
+                name="penalty_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by penalty type (e.g., late_coming)",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Page number",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Number of results per page",
+            ),
+        ],
     )
     def get(self, request):
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
-        branch_id = request.query_params.get('branch_id', None)
-        penalty_type = request.query_params.get('penalty_type', None)
-        
+        search_query = request.query_params.get("search", None)
+        branch_id = request.query_params.get("branch_id", None)
+        penalty_type = request.query_params.get("penalty_type", None)
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1925,28 +2053,29 @@ class BranchPenaltyConfigListAPIView(APIView):
         
         if branch_id:
             configs = configs.filter(branch__id=branch_id)
-        
+
         if penalty_type:
             configs = configs.filter(penalty_type=penalty_type)
-        
+
         if search_query:
             configs = configs.filter(
-                Q(penalty_type__icontains=search_query) |
-                Q(penalty_value_type__icontains=search_query)
+                Q(penalty_type__icontains=search_query)
+                | Q(penalty_value_type__icontains=search_query)
             )
-        
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = BranchPenaltyConfigSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def post(self, request):
         serializer = BranchPenaltyConfigSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class BranchPenaltyConfigDetailAPIView(APIView):
     def get_object(self, pk):
@@ -1955,16 +2084,18 @@ class BranchPenaltyConfigDetailAPIView(APIView):
         except BranchPenaltyConfig.DoesNotExist:
             raise Http404
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def get(self, request, pk):
         config = self.get_object(pk)
         serializer = BranchPenaltyConfigSerializer(config)
         return Response(serializer.data)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def patch(self, request, pk):
         config = self.get_object(pk)
-        serializer = BranchPenaltyConfigSerializer(config, data=request.data, partial=True)
+        serializer = BranchPenaltyConfigSerializer(
+            config, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -2027,4 +2158,83 @@ class BranchLocationComparisonConfigDetailAPIView(APIView):
     def delete(self, request, pk):
         config = self.get_object(pk)
         config.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)            
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BranchShiftListCreateView(APIView):
+    @extend_schema(
+        tags=["Branch Shifts"], responses={200, BranchShiftSerializer(many=True)}
+    )
+    def get(self, request):
+        branch_id = request.query_params.get("branch_id", None)
+        search = request.query_params.get("search", None)
+        if not branch_id:
+            return Response(
+                {"detail": "Branch ID is Needed"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            branch = Branch.objects.get(id=branch_id)
+        except Branch.DoesNotExist:
+            return Response(
+                {"detail": "Branch not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        branch_shifts = BranchShift.objects.filter(branch=branch)
+
+        if search:
+            branch_shifts = branch_shifts.filter(Q(name__icontains=search))
+
+        branch_shifts = branch_shifts.order_by("name")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(branch_shifts, request)
+        serializer = BranchShiftSerializer(paginated_qs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        tags=["Branch Shifts"],
+        responses={201, BranchShiftSerializer(many=True)},
+        request=BranchShiftSerializer,
+    )
+    def post(self, request):
+        serializer = BranchShiftSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BranchShiftDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchShift.objects.get(pk=pk)
+        except BranchShift.DoesNotExist:
+            raise Http404
+
+    @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
+    def get(self, request, pk):
+        branch_shift = self.get_object(pk)
+        serializer = BranchShiftSerializer(branch_shift)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Branch Shifts"],
+        responses={200, BranchShiftSerializer},
+        request=BranchShiftSerializer,
+    )
+    def patch(self, request, pk):
+        branch_shift = self.get_object(pk)
+        serializer = BranchShiftSerializer(
+            branch_shift, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(tags=["Branch Shifts"], responses={204: None})
+    def delete(self, request, pk):
+        branch_shift = self.get_object(pk)
+        branch_shift.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

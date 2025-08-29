@@ -15,7 +15,9 @@ from .models import (
     InstitutionTaxRule,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
-    BranchLocationComaparisonConfig
+    BranchWorkingDays,
+    BranchDay,
+    BranchShift,
 )
 import os
 from django.db import transaction
@@ -346,6 +348,45 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         return rep
 
 
+class BranchDaySerializer(serializers.ModelSerializer):
+    day_name = serializers.CharField(source="day.day_name", read_only=True)
+    day_id = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
+    )
+
+    class Meta:
+        model = BranchDay
+        fields = ["id", "day_id", "day_name", "day_type"]
+
+
+class BranchWorkingDaysSerializer(serializers.ModelSerializer):
+    branch_days = BranchDaySerializer(many=True)
+
+    class Meta:
+        model = BranchWorkingDays
+        fields = ["id", "branch", "branch_days"]
+        read_only_fields = ["id", "branch"]
+
+    def update(self, instance, validated_data):
+        branch_days_data = validated_data.pop("branch_days", [])
+
+        for bd_data in branch_days_data:
+            day = bd_data.get("day")
+            day_type = bd_data.get("day_type")
+
+            if not day:
+                continue
+
+            branch_day, created = BranchDay.objects.get_or_create(
+                branch_working_days=instance, day=day
+            )
+            if day_type:
+                branch_day.day_type = day_type
+                branch_day.save()
+
+        return instance
+
+
 class InstitutionTaxSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -663,17 +704,28 @@ class SuccessResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     data = serializers.DictField()
 
+
 class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstitutionPenaltyConfig
-        fields = '__all__'
+        fields = "__all__"
+
 
 class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = BranchPenaltyConfig
-        fields = '__all__'
+        fields = "__all__"
 
-class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+
+class BranchShiftSerializer(serializers.ModelSerializer):
+    shift_day = serializers.PrimaryKeyRelatedField(
+        queryset=BranchDay.objects.all()
+    )
     class Meta:
-        model = BranchLocationComaparisonConfig
-        fields = '__all__'        
+        model = BranchShift
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["shift_day"] = BranchDaySerializer(instance.shift_day).data
+        return ret

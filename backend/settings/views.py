@@ -7,7 +7,6 @@ from .serializers import SystemConfigurationSerializer, SystemDaySerializer
 from utilities.pagination import CustomPageNumberPagination
 from slugify import slugify
 
-
 class SystemDayListVIew(APIView):
     @extend_schema(
         description="Retrieve a list of system days.",

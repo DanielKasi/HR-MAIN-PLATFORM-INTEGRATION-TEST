@@ -12,7 +12,7 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
-    BranchLocationComaparisonConfig
+BranchDay, BranchWorkingDays,BranchShift,
 )
 
 
@@ -42,4 +42,6 @@ admin.site.register(InstitutionTaxRule)
 admin.site.register(InstitutionKYCDocument)
 admin.site.register(InstitutionPenaltyConfig)
 admin.site.register(BranchPenaltyConfig)
-admin.site.register(BranchLocationComaparisonConfig)
+admin.site.register(BranchDay)
+admin.site.register(BranchWorkingDays)
+admin.site.register(BranchShift)

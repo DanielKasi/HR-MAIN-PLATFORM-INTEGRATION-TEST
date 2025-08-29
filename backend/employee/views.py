@@ -14,6 +14,7 @@ from .models import (
     WorkType,
     EmployeeWorkingDays,
     EmployeeContract,
+    EmployeeShift,
 )
 from .serializers import (
     EmployeeAttendanceSerializer,
@@ -24,6 +25,7 @@ from .serializers import (
     EmployeeWorkingDaysSerializer,
     AttendanceReportSerializer,
     AttendanceQueryParamsSerializer,
+    EmployeeShiftSerializer,
 )
 from rest_framework.parsers import MultiPartParser, FormParser
 from institution.utils import generate_compliant_password
@@ -68,7 +70,7 @@ from utilities.helpers import get_or_create_default_role_with_permissions
 from django.db.models import Q
 from datetime import datetime, date
 from utilities.helpers import custom_parse_date
-
+from institution.models import Institution
 
 class EmployeeListAPIView(APIView):
 
@@ -150,6 +152,23 @@ class EmployeeDetailAPIView(APIView):
 
 
 class EmployeeWorkingDaysDetailAPIView(APIView):
+    @extend_schema(
+        responses={200: EmployeeWorkingDaysSerializer, 404: "Employee not found"},
+        description="Retrieve details of a specific employee working days.",
+        tags=["Employee Management"],
+    )
+    def get(self, request, employee_id):
+        try:
+            employee = Employee.objects.get(id=employee_id)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        working_days = EmployeeWorkingDays.objects.get(employee=employee)
+
+        return Response(EmployeeWorkingDaysSerializer(working_days).data)
+
 
     @extend_schema(
         request=EmployeeWorkingDaysSerializer,
@@ -313,11 +332,19 @@ class EmployeeCreateAPIView(APIView):
             # Compute lower case columns for department and position if present
             if "department" in df.columns:
                 df["department_lower"] = df["department"].apply(
-                    lambda x: str(x).strip().lower() if pd.notna(x) and str(x).strip() else None
+                    lambda x: (
+                        str(x).strip().lower()
+                        if pd.notna(x) and str(x).strip()
+                        else None
+                    )
                 )
             if "position" in df.columns:
                 df["position_lower"] = df["position"].apply(
-                    lambda x: str(x).strip().lower() if pd.notna(x) and str(x).strip() else None
+                    lambda x: (
+                        str(x).strip().lower()
+                        if pd.notna(x) and str(x).strip()
+                        else None
+                    )
                 )
 
             # Define mappings for choice fields
@@ -396,29 +423,38 @@ class EmployeeCreateAPIView(APIView):
             for index, row in df.iterrows():
                 row_errors = {}  # Dict of field: {"error": "msg"} per row
                 user_data = {
-                    "fullname": str(row["user.fullname"]).strip() if pd.notna(row["user.fullname"]) else "",
-                    "email": str(row["user.email"]).strip() if pd.notna(row["user.email"]) else "",
+                    "fullname": (
+                        str(row["user.fullname"]).strip()
+                        if pd.notna(row["user.fullname"])
+                        else ""
+                    ),
+                    "email": (
+                        str(row["user.email"]).strip()
+                        if pd.notna(row["user.email"])
+                        else ""
+                    ),
                 }
 
                 # Basic validation for user data
                 if not user_data["fullname"]:
-                    row_errors["user.fullname"] = {
-                        "error": "This field is required."
-                    }
+                    row_errors["user.fullname"] = {"error": "This field is required."}
                 if not user_data["email"]:
-                    row_errors["user.email"] = {
-                        "error": "This field is required."
-                    }
+                    row_errors["user.email"] = {"error": "This field is required."}
 
                 for column in df.columns:
-                    if column not in ["user.fullname", "user.email", "department_lower", "position_lower"]:
+                    if column not in [
+                        "user.fullname",
+                        "user.email",
+                        "department_lower",
+                        "position_lower",
+                    ]:
                         value = row[column]
                         if pd.isna(value):
                             continue
                         value = str(value).strip()
                         if not value:  # Skip empty strings
                             continue
-                            
+
                         if column == "gender" and value:
                             mapped = gender_map.get(value.lower())
                             if mapped is None:
@@ -433,7 +469,9 @@ class EmployeeCreateAPIView(APIView):
                                 }
 
                 # Additional validations
-                if "date_of_birth" in df.columns and not pd.isna(row.get("date_of_birth")):
+                if "date_of_birth" in df.columns and not pd.isna(
+                    row.get("date_of_birth")
+                ):
                     value = str(row["date_of_birth"]).strip()
                     if value:
                         try:
@@ -458,7 +496,9 @@ class EmployeeCreateAPIView(APIView):
                         except ValueError as e:
                             row_errors["date_of_birth"] = {"error": str(e)}
 
-                if "date_of_joining" in df.columns and not pd.isna(row.get("date_of_joining")):
+                if "date_of_joining" in df.columns and not pd.isna(
+                    row.get("date_of_joining")
+                ):
                     value = str(row["date_of_joining"]).strip()
                     if value:
                         try:
@@ -473,15 +513,9 @@ class EmployeeCreateAPIView(APIView):
                         value = str(row[field]).strip()
                         if value:
                             try:
-                                int(
-                                    float(
-                                        value.replace(" years", "")
-                                    )
-                                )
+                                int(float(value.replace(" years", "")))
                             except (ValueError, TypeError):
-                                row_errors[field] = {
-                                    "error": "Must be a valid number."
-                                }
+                                row_errors[field] = {"error": "Must be a valid number."}
 
                 if row_errors:
                     errors.append(
@@ -516,37 +550,42 @@ class EmployeeCreateAPIView(APIView):
                 for field, model in field_mappings.items():
                     mappings[field] = {}
                     instance_mappings[field] = {}
-                    
+
                     if field in df.columns:
                         # Get unique non-null, non-empty values
                         unique_values = df[field].dropna().astype(str).str.strip()
                         unique_values = unique_values[unique_values != ""].unique()
-                        
+
                         if len(unique_values) > 0:
                             print(f"Processing {field} with values: {unique_values}")
-                            
+
                             # Determine if the model has institution field
                             has_institution = True  # All models have institution
                             filter_kwargs = {"name__in": unique_values}
                             if has_institution:
                                 filter_kwargs["institution"] = institution
-                                
+
                             # Fetch existing records
                             existing = model.objects.filter(**filter_kwargs)
-                            print(f"Found existing {field} values: {[item.name for item in existing]}")
-                            
+                            print(
+                                f"Found existing {field} values: {[item.name for item in existing]}"
+                            )
+
                             # Create mappings for existing records
                             for item in existing:
                                 mappings[field][item.name.lower()] = item.id
                                 instance_mappings[field][item.name.lower()] = item
-                            
+
                             # Find missing records
-                            existing_names_lower = [item.name.lower() for item in existing]
+                            existing_names_lower = [
+                                item.name.lower() for item in existing
+                            ]
                             missing = [
-                                name for name in unique_values 
+                                name
+                                for name in unique_values
                                 if name.lower() not in existing_names_lower
                             ]
-                            
+
                             if missing:
                                 print(f"Creating missing {field}s: {missing}")
                                 created_instances = []
@@ -556,19 +595,27 @@ class EmployeeCreateAPIView(APIView):
                                     if has_institution:
                                         kwargs["institution"] = institution
                                     if field == "department":
-                                        kwargs["description"] = "Auto-created during bulk upload"
-                                    
+                                        kwargs["description"] = (
+                                            "Auto-created during bulk upload"
+                                        )
+
                                     try:
                                         instance = model.objects.create(**kwargs)
                                         mappings[field][name.lower()] = instance.id
-                                        instance_mappings[field][name.lower()] = instance
+                                        instance_mappings[field][
+                                            name.lower()
+                                        ] = instance
                                         created_instances.append(instance)
                                         print(f"Created {field}: {name}")
                                     except Exception as e:
-                                        print(f"Error creating {field} '{name}': {str(e)}")
+                                        print(
+                                            f"Error creating {field} '{name}': {str(e)}"
+                                        )
                                         raise
-                                
-                                print(f"Successfully created {len(created_instances)} {field} instances")
+
+                                print(
+                                    f"Successfully created {len(created_instances)} {field} instances"
+                                )
 
                 # Handle job positions separately, tied to departments
                 # Handle job positions separately, tied to departments
@@ -576,52 +623,76 @@ class EmployeeCreateAPIView(APIView):
                 print("Handling job positions")
                 position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
 
-                if 'position' in df.columns:
+                if "position" in df.columns:
                     print("Processing job positions with departments")
-                    
+
                     # Get unique department-position pairs from the dataframe
-                    if 'department' in df.columns:
+                    if "department" in df.columns:
                         # Filter out rows where position is null or empty
                         valid_rows = df[
-                            (df['position'].notna()) & 
-                            (df['position'].astype(str).str.strip() != "")
+                            (df["position"].notna())
+                            & (df["position"].astype(str).str.strip() != "")
                         ].copy()
-                        
+
                         if len(valid_rows) > 0:
                             # Get unique department-position pairs
-                            dept_pos_pairs = valid_rows[['department', 'position']].drop_duplicates()
-                            
-                            print(f"Found {len(dept_pos_pairs)} unique department-position pairs")
-                            
+                            dept_pos_pairs = valid_rows[
+                                ["department", "position"]
+                            ].drop_duplicates()
+
+                            print(
+                                f"Found {len(dept_pos_pairs)} unique department-position pairs"
+                            )
+
                             for _, row in dept_pos_pairs.iterrows():
-                                dept_name = str(row['department']).strip() if pd.notna(row['department']) else None
-                                pos_name = str(row['position']).strip()
-                                
+                                dept_name = (
+                                    str(row["department"]).strip()
+                                    if pd.notna(row["department"])
+                                    else None
+                                )
+                                pos_name = str(row["position"]).strip()
+
                                 dept_lower = dept_name.lower() if dept_name else None
                                 pos_lower = pos_name.lower()
-                                
-                                print(f"Processing position: '{pos_name}' for department: '{dept_name}'")
-                                
+
+                                print(
+                                    f"Processing position: '{pos_name}' for department: '{dept_name}'"
+                                )
+
                                 # Get department instance
                                 dept_instance = None
-                                if dept_lower and dept_lower in instance_mappings.get('department', {}):
-                                    dept_instance = instance_mappings['department'][dept_lower]
-                                    print(f"Found department instance: {dept_instance.name}")
+                                if dept_lower and dept_lower in instance_mappings.get(
+                                    "department", {}
+                                ):
+                                    dept_instance = instance_mappings["department"][
+                                        dept_lower
+                                    ]
+                                    print(
+                                        f"Found department instance: {dept_instance.name}"
+                                    )
                                 else:
-                                    print(f"Department '{dept_name}' not found in mappings")
-                                
+                                    print(
+                                        f"Department '{dept_name}' not found in mappings"
+                                    )
+
                                 # Check if this exact position already exists for this department
-                                filter_kwargs = {'name__iexact': pos_name}
+                                filter_kwargs = {"name__iexact": pos_name}
                                 if dept_instance:
-                                    filter_kwargs['department'] = dept_instance
+                                    filter_kwargs["department"] = dept_instance
                                 else:
-                                    filter_kwargs['department__isnull'] = True
-                                
-                                existing_pos = JobPosition.objects.filter(**filter_kwargs).first()
-                                
+                                    filter_kwargs["department__isnull"] = True
+
+                                existing_pos = JobPosition.objects.filter(
+                                    **filter_kwargs
+                                ).first()
+
                                 if existing_pos:
-                                    position_mappings[(dept_lower, pos_lower)] = existing_pos
-                                    print(f"Found existing position: {pos_name} (dept: {dept_name})")
+                                    position_mappings[(dept_lower, pos_lower)] = (
+                                        existing_pos
+                                    )
+                                    print(
+                                        f"Found existing position: {pos_name} (dept: {dept_name})"
+                                    )
                                 else:
                                     # Create new position with correct department
                                     try:
@@ -630,24 +701,33 @@ class EmployeeCreateAPIView(APIView):
                                             description="Auto-created during bulk upload",
                                             department=dept_instance,
                                         )
-                                        position_mappings[(dept_lower, pos_lower)] = new_pos
-                                        print(f"✓ Created position: '{pos_name}' for department: '{dept_name}'")
+                                        position_mappings[(dept_lower, pos_lower)] = (
+                                            new_pos
+                                        )
+                                        print(
+                                            f"✓ Created position: '{pos_name}' for department: '{dept_name}'"
+                                        )
                                     except Exception as e:
-                                        print(f"✗ Error creating position '{pos_name}' for dept '{dept_name}': {str(e)}")
+                                        print(
+                                            f"✗ Error creating position '{pos_name}' for dept '{dept_name}': {str(e)}"
+                                        )
                                         raise
                     else:
                         # No department column, create positions without departments
-                        position_values = df['position'].dropna().astype(str).str.strip()
-                        position_values = position_values[position_values != ""].unique()
-                        
+                        position_values = (
+                            df["position"].dropna().astype(str).str.strip()
+                        )
+                        position_values = position_values[
+                            position_values != ""
+                        ].unique()
+
                         for pos_name in position_values:
                             pos_lower = pos_name.lower()
-                            
+
                             existing_pos = JobPosition.objects.filter(
-                                name__iexact=pos_name,
-                                department__isnull=True
+                                name__iexact=pos_name, department__isnull=True
                             ).first()
-                            
+
                             if existing_pos:
                                 position_mappings[(None, pos_lower)] = existing_pos
                                 print(f"Found existing position: {pos_name} (no dept)")
@@ -661,7 +741,9 @@ class EmployeeCreateAPIView(APIView):
                                     position_mappings[(None, pos_lower)] = new_pos
                                     print(f"Created position: {pos_name} (no dept)")
                                 except Exception as e:
-                                    print(f"Error creating position '{pos_name}': {str(e)}")
+                                    print(
+                                        f"Error creating position '{pos_name}': {str(e)}"
+                                    )
                                     raise
 
                 # Process employees in batches
@@ -682,15 +764,25 @@ class EmployeeCreateAPIView(APIView):
 
                     for index, row in batch.iterrows():
                         employee_data = {}
-                        
+
                         # Create user data
-                        fullname = str(row["user.fullname"]).strip() if pd.notna(row["user.fullname"]) else ""
-                        email = str(row["user.email"]).strip() if pd.notna(row["user.email"]) else ""
-                        
+                        fullname = (
+                            str(row["user.fullname"]).strip()
+                            if pd.notna(row["user.fullname"])
+                            else ""
+                        )
+                        email = (
+                            str(row["user.email"]).strip()
+                            if pd.notna(row["user.email"])
+                            else ""
+                        )
+
                         if not fullname or not email:
-                            print(f"Skipping row {index + 2}: missing fullname or email")
+                            print(
+                                f"Skipping row {index + 2}: missing fullname or email"
+                            )
                             continue
-                            
+
                         user_data = {
                             "fullname": fullname,
                             "email": email,
@@ -705,33 +797,52 @@ class EmployeeCreateAPIView(APIView):
 
                         # Process employee data
                         for column in df.columns:
-                            if column not in ["user.fullname", "user.email", "department_lower", "position_lower"]:
+                            if column not in [
+                                "user.fullname",
+                                "user.email",
+                                "department_lower",
+                                "position_lower",
+                            ]:
                                 value = row[column]
                                 if pd.isna(value):
                                     employee_data[column] = None
                                     continue
-                                    
+
                                 value = str(value).strip()
                                 if not value:  # Skip empty strings
                                     employee_data[column] = None
                                     continue
-                                
+
                                 if column in field_mappings:
                                     # Map to foreign key instance
-                                    instance = instance_mappings.get(column, {}).get(value.lower())
+                                    instance = instance_mappings.get(column, {}).get(
+                                        value.lower()
+                                    )
                                     employee_data[column] = instance
                                 elif column == "position":
                                     # Handle position mapping
-                                    dept_value = str(row.get('department', '')).strip() if pd.notna(row.get('department')) else None
-                                    dept_lower = dept_value.lower() if dept_value else None
+                                    dept_value = (
+                                        str(row.get("department", "")).strip()
+                                        if pd.notna(row.get("department"))
+                                        else None
+                                    )
+                                    dept_lower = (
+                                        dept_value.lower() if dept_value else None
+                                    )
                                     pos_lower = value.lower()
-                                    
-                                    position_instance = position_mappings.get((dept_lower, pos_lower))
+
+                                    position_instance = position_mappings.get(
+                                        (dept_lower, pos_lower)
+                                    )
                                     employee_data[column] = position_instance
                                 elif column == "gender":
-                                    employee_data[column] = gender_map.get(value.lower())
+                                    employee_data[column] = gender_map.get(
+                                        value.lower()
+                                    )
                                 elif column == "marital_status":
-                                    employee_data[column] = marital_status_map.get(value.lower())
+                                    employee_data[column] = marital_status_map.get(
+                                        value.lower()
+                                    )
                                 else:
                                     employee_data[column] = value
 
@@ -739,7 +850,10 @@ class EmployeeCreateAPIView(APIView):
                         employee_data["email"] = user_data["email"]
 
                         # Process boolean fields
-                        if "is_active" in employee_data and employee_data["is_active"] is not None:
+                        if (
+                            "is_active" in employee_data
+                            and employee_data["is_active"] is not None
+                        ):
                             employee_data["is_active"] = (
                                 str(employee_data["is_active"]).lower() == "true"
                             )
@@ -750,9 +864,13 @@ class EmployeeCreateAPIView(APIView):
                             and employee_data["date_of_birth"]
                         ):
                             try:
-                                employee_data["date_of_birth"] = custom_parse_date(employee_data["date_of_birth"])
+                                employee_data["date_of_birth"] = custom_parse_date(
+                                    employee_data["date_of_birth"]
+                                )
                             except Exception as e:
-                                print(f"Error parsing date_of_birth for row {index + 2}: {e}")
+                                print(
+                                    f"Error parsing date_of_birth for row {index + 2}: {e}"
+                                )
                                 employee_data["date_of_birth"] = None
 
                         if (
@@ -764,12 +882,17 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
                             except Exception as e:
-                                print(f"Error parsing date_of_joining for row {index + 2}: {e}")
+                                print(
+                                    f"Error parsing date_of_joining for row {index + 2}: {e}"
+                                )
                                 employee_data["date_of_joining"] = None
 
                         # Process numeric fields
                         for field in ["experience", "children_count"]:
-                            if field in employee_data and employee_data[field] is not None:
+                            if (
+                                field in employee_data
+                                and employee_data[field] is not None
+                            ):
                                 try:
                                     employee_data[field] = int(
                                         float(
@@ -784,7 +907,7 @@ class EmployeeCreateAPIView(APIView):
                         # Add timestamps
                         employee_data["created_at"] = datetime.now()
                         employee_data["updated_at"] = datetime.now()
-                        
+
                         # Add to creation lists
                         user_objects.append(CustomUser(**user_data))
                         employee_data["user"] = len(user_objects) - 1  # Temporary index
@@ -825,9 +948,7 @@ class EmployeeCreateAPIView(APIView):
 
                     # Bulk create employees
                     print(f"Creating {len(employee_objects)} employees")
-                    created_employees = Employee.objects.bulk_create(
-                        employee_objects
-                    )
+                    created_employees = Employee.objects.bulk_create(employee_objects)
                     print(f"Created {len(created_employees)} employees")
 
                     # After bulk create, handle post-creation logic
@@ -866,12 +987,12 @@ class EmployeeCreateAPIView(APIView):
                             if employee.is_active:
                                 employee.sync_employee_working_days()
                         except Exception as e:
-                            print(f"Error syncing employee data for {employee.user.email}: {e}")
+                            print(
+                                f"Error syncing employee data for {employee.user.email}: {e}"
+                            )
 
                     # Bulk update the updated fields
-                    Employee.objects.bulk_update(
-                        created_employees, fields_to_update
-                    )
+                    Employee.objects.bulk_update(created_employees, fields_to_update)
 
                     # Send password setup emails (non-blocking)
                     for idx, employee in enumerate(created_employees):
@@ -911,6 +1032,7 @@ class EmployeeCreateAPIView(APIView):
 
         except Exception as e:
             import traceback
+
             print(f"Error processing file: {str(e)}")
             print(f"Traceback: {traceback.format_exc()}")
             return Response(
@@ -2248,3 +2370,105 @@ class AttendanceReportGetView(APIView):
                 {"error": "Internal server error while generating report."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class EmployeeShiftListCreateView(APIView):
+    @extend_schema(
+        summary="List all employee shifts or create a new shift",
+        description=(
+                "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
+                "is true, or all shifts for the institution if false. POST creates a shift."
+        ),
+        request=EmployeeShiftSerializer,
+        responses=EmployeeShiftSerializer,
+        tags=["Shifts-Allocations/Requests"],
+    )
+    def get(self, request):
+        user = request.user
+        is_employee_specific = request.query_params.get("is_employee_specific", "true").lower() == "true"
+
+        print(is_employee_specific)
+
+        if is_employee_specific:
+            if hasattr(user, "employee"):
+                shifts = EmployeeShift.objects.filter(employee=user.employee)
+            else:
+                return Response({"detail": "Unrecognized Employee"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            institution = user.profile.institution
+            shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
+
+        paginator = CustomPageNumberPagination()
+        paginated_shifts = paginator.paginate_queryset(shifts, request)
+        serializer = EmployeeShiftSerializer(paginated_shifts, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        summary="Create a new employee shift",
+        description="POST creates a new employee shift. Context controls whether it is a request (logged-in employee) or allocation (employee must be specified).",
+        request=EmployeeShiftSerializer,
+        responses=EmployeeShiftSerializer,
+        tags=["Shifts-Allocations/Requests"],
+    )
+    def post(self, request):
+        serializer = EmployeeShiftSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            shift = serializer.save()
+            return Response(
+                EmployeeShiftSerializer(shift).data, status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmployeeShiftDetailView(APIView):
+    @extend_schema(
+        summary="Retrieve an employee shift",
+        description="GET a shift by its ID",
+        responses=EmployeeShiftSerializer,
+        tags=["Shifts-Allocations/Requests"],
+    )
+    def get(self, request, pk):
+        try:
+            shift = EmployeeShift.objects.get(pk=pk)
+        except EmployeeShift.DoesNotExist:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = EmployeeShiftSerializer(shift)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Update an employee shift",
+        description="PATCH updates fields of an employee shift",
+        request=EmployeeShiftSerializer,
+        responses=EmployeeShiftSerializer,
+        tags=["Shifts-Allocations/Requests"],
+    )
+    def patch(self, request, pk):
+        try:
+            shift = EmployeeShift.objects.get(pk=pk)
+        except EmployeeShift.DoesNotExist:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmployeeShiftSerializer(
+            shift, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            shift = serializer.save()
+            return Response(EmployeeShiftSerializer(shift).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        summary="Delete an employee shift",
+        description="DELETE removes an employee shift by ID",
+        responses={204: None},
+        tags=["Shifts-Allocations/Requests"],
+    )
+    def delete(self, request, pk):
+        try:
+            shift = EmployeeShift.objects.get(pk=pk)
+        except EmployeeShift.DoesNotExist:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        shift.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

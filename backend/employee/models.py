@@ -10,7 +10,8 @@ from utilities.helpers import (
 )
 
 from django.db import models
-from institution.models import Branch, UserBranch
+from datetime import datetime
+from institution.models import Branch, UserBranch, BranchWorkingDays
 from datetime import date, datetime
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -171,8 +172,6 @@ class Employee(SoftDeletableTimeStampedModel):
                 name="unique_active_employee_nin_per_department_institution",
             ),
         ]
-
-       
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -454,7 +453,7 @@ class Employee(SoftDeletableTimeStampedModel):
         try:
             # Add the missing import
             from users.models import OTPModel  # or whatever your Token model is called
-            
+
             def create_and_institution_token(user, purpose, expiry_minutes):
                 token = uuid.uuid4().hex
                 # Use OTPModel instead of Token if that's your model name
@@ -481,7 +480,7 @@ class Employee(SoftDeletableTimeStampedModel):
                 # Add debugging
                 print(f"Attempting to send password link to {user.email}")
                 print(f"Email settings - FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
-                
+
                 try:
                     result = send_mail(
                         subject="Set Your Password",
@@ -500,18 +499,18 @@ class Employee(SoftDeletableTimeStampedModel):
             if not self.user or not self.user.email:
                 logger.error("User or user email is missing")
                 return False
-                
+
             token = create_and_institution_token(
                 user=self.user, purpose="registration", expiry_minutes=15
             )
             password_link = build_password_link(request=request, token=token)
             print(f"Generated password link: {password_link}")
-            
+
             link_sent = send_password_link_to_user(user=self.user, link=password_link)
-            
+
             (f"Link sent status: {link_sent}")
             return link_sent
-            
+
         except Exception as e:
             logger.error(f"Error in create_password_token_and_send_link: {e}")
             return False
@@ -520,8 +519,10 @@ class Employee(SoftDeletableTimeStampedModel):
         """
         Complete password setup process for new employees.
         """
-        print(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
-        
+        print(
+            f"Setting up password for employee: {self.user.email if self.user else 'No user'}"
+        )
+
         if not self.should_generate_password():
             logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
@@ -531,17 +532,17 @@ class Employee(SoftDeletableTimeStampedModel):
             if not self.user:
                 logger.error("No user associated with this employee")
                 return {"success": False, "error": "No user associated with employee"}
-                
+
             if not self.user.email:
                 logger.error("User has no email address")
                 return {"success": False, "error": "User has no email address"}
-            
+
             password = self.generate_and_set_password()
             print(f"Password generated successfully: {bool(password)}")
-            
+
             link_sent = self.create_password_token_and_send_link(request)
             print(f"Password link sent: {link_sent}")
-            
+
             return {
                 "success": True,
                 "password_generated": bool(password),
@@ -603,12 +604,56 @@ class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     days = models.ManyToManyField(
         "settings.SystemDay",
         related_name="employee_working_days",
+        through="EmployeeDay",
         help_text="Must be selected from institution's working days",
     )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
+
+class EmployeeDay(models.Model):
+    employee_working_days = models.ForeignKey(
+        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+    )
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
+        )
+
+    class Meta:
+        unique_together = ("employee_working_days", "day")
+
+class EmployeeShift(models.Model):
+    CONTEXT_TYPES = [
+        ("REQUEST", "Request"),
+        ("ALLOCATION", "Allocation"),
+    ]
+
+    STATUS_CHOICES = [
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+        ("PENDING", "Pending"),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="employee_shift")
+    shift = models.ForeignKey("institution.BranchShift", on_delete=models.CASCADE, related_name="employee_shift")
+    context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
+    shift_status = models.CharField(choices=STATUS_CHOICES, max_length=200, default="PENDING")
+
+    date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser", on_delete=models.CASCADE, related_name="employee_shift"
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - shift {self.context.upper()}"
 
 class EmployeeAttendance(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
