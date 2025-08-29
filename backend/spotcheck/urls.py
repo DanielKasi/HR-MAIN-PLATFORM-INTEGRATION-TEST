@@ -15,7 +15,7 @@ urlpatterns = [
     path("employee/<int:employee_id>/setting/details/", SpotCheckViews.EmployeeSpotCheckSettingDetailView.as_view(), name='branch-spotchecksetting-detail'),
     path("employee/<int:employee_id>/setting/update/", SpotCheckViews.EmployeeSpotCheckSettingUpdateView.as_view(), name='employee-spotchecksetting-update'),
 
-    path("create/", SpotCheckViews.EmployeeSpotCheckCreateView.as_view(), name='employee-spotcheck-create'),
+    path("", SpotCheckViews.EmployeeSpotCheckListCreateAPIView.as_view(), name='employee-spotcheck-create'),
     path("<int:spotcheck_id>/details/", SpotCheckViews.EmployeeSpotCheckDetailView.as_view(), name='employee-spotcheck-detail'),
     path("<int:spotcheck_id>/checkin/", SpotCheckViews.EmployeeSpotCheckInView.as_view(), name='employee-spotcheck-update'),
 ]

@@ -11,9 +11,13 @@ from spotcheck import serializers as SpotCheckSerializers
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
-
+    @extend_schema(
+        request=SpotCheckSerializers.InstitutionSpotCheckSettingSerializer,
+        responses={201: SpotCheckSerializers.InstitutionSpotCheckSettingSerializer, 400: "Bad Request"},
+        summary="Create Institution Setting",
+        description="Create a new institution setting.",
+        tags=["Institution Setting Management"],
+    )
     def post(self, request):
         """Create a institution setting."""
 
@@ -45,9 +49,13 @@ class InstitutionSpotCheckSettingDetailView(APIView):
 
 
 class InstitutionSpotCheckSettingUpdateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
-
+    @extend_schema(
+        request=SpotCheckSerializers.InstitutionSpotCheckSettingSerializer,
+        responses={200: SpotCheckSerializers.InstitutionSpotCheckSettingSerializer, 404: "Institution Setting not found", 400: "Bad Request"},
+        summary="Update Institution Setting",
+        description="Update details of a specific institution setting.",
+        tags=["Institution Setting Management"],
+    )
     def patch(self, request, institution_id):
         """Update details of a specific institution setting."""
         try:
@@ -66,9 +74,14 @@ class InstitutionSpotCheckSettingUpdateView(APIView):
 
 
 class BranchSpotCheckSettingCreateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
 
+    @extend_schema(
+        request=SpotCheckSerializers.BranchSpotCheckSettingSerializer,
+        responses={201: SpotCheckSerializers.BranchSpotCheckSettingSerializer, 400: "Bad Request"},
+        summary="Create Branch Setting",
+        description="Create a new branch setting.",
+        tags=["Branch Setting Management"],
+    )
     def post(self, request):
         """Create a brnach setting."""
 
@@ -100,9 +113,13 @@ class BranchSpotCheckSettingDetailView(APIView):
 
 
 class BranchSpotCheckSettingUpdateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
-
+    @extend_schema(
+        request=SpotCheckSerializers.BranchSpotCheckSettingSerializer,
+        responses={200: SpotCheckSerializers.BranchSpotCheckSettingSerializer, 404: "Branch Setting not found", 400: "Bad Request"},
+        summary="Update Branch Setting",
+        description="Update details of a specific branch setting.",
+        tags=["Branch Setting Management"],
+    )
     def patch(self, request, branch_id):
         """Update details of a specific branch setting."""
         try:
@@ -121,9 +138,14 @@ class BranchSpotCheckSettingUpdateView(APIView):
 
 
 class EmployeeSpotCheckSettingCreateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
 
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSettingSerializer,
+        responses={201: SpotCheckSerializers.EmployeeSpotCheckSettingSerializer, 400: "Bad Request"},
+        summary="Create Employee Setting",
+        description="Create a new employee setting.",
+        tags=["Employee Setting Management"],
+    )
     def post(self, request):
         """Create a employee setting."""
 
@@ -155,9 +177,13 @@ class EmployeeSpotCheckSettingDetailView(APIView):
 
 
 class EmployeeSpotCheckSettingUpdateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
-
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSettingSerializer,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSettingSerializer, 404: "Employee Spot check Setting not found", 400: "Bad Request"},
+        summary="Update Employee Spot check Setting",
+        description="Update details of a specific employee spot check setting.",
+        tags=["Employee spot check Setting Management"],
+    )
     def patch(self, request, employee_id):
         """Update details of a specific employee spot check setting."""
         try:
@@ -174,9 +200,15 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeSpotCheckCreateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
+class EmployeeSpotCheckListCreateAPIView(APIView):
+
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
+        responses={201: SpotCheckSerializers.EmployeeSpotCheckSerializer, 400: "Bad Request"},
+        summary="Create Employee Spot check",
+        description="Create a new employee spot check record.",
+        tags=["Employee spot check Management"],
+    )
 
     def post(self, request):
         """Create a employee spot check record."""
@@ -186,6 +218,21 @@ class EmployeeSpotCheckCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    @extend_schema(
+        request=SpotCheckModels.EmployeeSpotCheck,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found"},
+        description="List all employee spot check records for an institution of authenticated user.",
+        summary="Employee spot check List",
+        tags=["Employee spot check Management"],
+    )
+    def get(self, request):
+        """List all employee spot check records for an institution of authenticated user."""
+        spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
+        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
 class EmployeeSpotCheckDetailView(APIView):
 
@@ -209,9 +256,14 @@ class EmployeeSpotCheckDetailView(APIView):
 
 
 class EmployeeSpotCheckUpdateView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
 
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found", 400: "Bad Request"},
+        summary="Update Employee Spot check",
+        description="Update details of a specific employee spot check.",
+        tags=["Employee spot check Management"],
+    )
     def patch(self, request, spotcheck_id):
         """Update details of a specific employee spot check."""
         try:
@@ -229,9 +281,14 @@ class EmployeeSpotCheckUpdateView(APIView):
 
 
 class EmployeeSpotCheckInView(APIView):
-    permission_classes = [AllowAny]
-    parser_classes = [FormParser]
 
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found", 400: "Bad Request"},
+        summary="Employee Respond to Spot check",
+        description="Record Spot check record when an employee responds to a spot check prompt.",
+        tags=["Employee spot check Management"],
+    )
     def patch(self, request, spotcheck_id):
         """Record Spot check record when an employee responds to a spot check prompt."""
         try:
