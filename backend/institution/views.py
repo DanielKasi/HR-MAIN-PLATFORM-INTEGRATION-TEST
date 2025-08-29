@@ -1838,7 +1838,9 @@ class InstitutionPenaltyConfigListAPIView(APIView):
             )
         
         configs = InstitutionPenaltyConfig.objects.filter(
-            institution=institution
+            institution=institution,
+            deleted_at__isnull=True
+
         )
         
         if penalty_type:
@@ -1917,7 +1919,8 @@ class BranchPenaltyConfigListAPIView(APIView):
             )
         
         configs = BranchPenaltyConfig.objects.filter(
-            branch__institution=institution
+            branch__institution=institution,
+            deleted_at__isnull=True
         )
         
         if branch_id:
@@ -1983,8 +1986,7 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         except AttributeError:
             return Response({"detail": "User has no institution assigned."}, status=400)
 
-        # Filter by institution through branch
-        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution)
+        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution, deleted_at__isnull=True)
 
         if search_query:
             configs = configs.filter(branch__branch_name__icontains=search_query)
