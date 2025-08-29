@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'jsignature',
     'ckeditor',
     'ckeditor_uploader',
+    'approval',
+    'spotcheck',
 
 ]
 

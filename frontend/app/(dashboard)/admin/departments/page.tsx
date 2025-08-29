@@ -1,25 +1,29 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useSelector } from "react-redux"
+import {useState, useEffect, useRef} from "react";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
 import {
   Building2,
   Eye,
   Plus,
   Search,
-  Filter,
   MoreVertical,
   Edit,
   Trash2,
   RefreshCw,
   AlertTriangle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {Skeleton} from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -27,126 +31,77 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getDepartments, deleteDepartment } from "@/lib/utils"
-import { type IDepartment, PERMISSION_CODES } from "@/types/types.utils"
-import { toast } from "sonner"
-import ProtectedComponent from "@/components/ProtectedComponent"
-import { useDocumentTitle } from "@/hooks/use-document-title"
-import RichTextDisplay from "@/components/common/rich-text-display"
+  deleteDepartment,
+  getPaginatedDepartments,
+  getPaginatedDepartmentsFromUrl,
+  showErrorToast,
+} from "@/lib/utils";
+import {type IDepartment, PERMISSION_CODES} from "@/types/types.utils";
+import {toast} from "sonner";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import {useDocumentTitle} from "@/hooks/use-document-title";
+import RichTextDisplay from "@/components/common/rich-text-display";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+
 
 export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<IDepartment[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [error, setError] = useState("")
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [departmentToDelete, setDepartmentToDelete] = useState<IDepartment | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [departmentToDelete, setDepartmentToDelete] = useState<IDepartment | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [departmentsCount, setDepartmentsCount] = useState(0);
+  const refreshFunctionRef = useRef<() => Promise<void> | null>(null);
 
-  useDocumentTitle("DEPARTMENTS")
+  useDocumentTitle("DEPARTMENTS");
 
-  const router = useRouter()
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const selectedBranch = useSelector(selectSelectedBranch)
-
-  useEffect(() => {
-    if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
-    }
-    fetchDepartments()
-  }, [selectedBranch, selectedInstitution, router])
-
-  const fetchDepartments = async (showRefreshLoader = false) => {
-    if (!selectedInstitution) return
-
-    try {
-      if (showRefreshLoader) {
-        setIsRefreshing(true)
-      } else {
-        setIsLoading(true)
-      }
-      setError("")
-
-      const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id })
-      
-      setDepartments(fetchedDepartments)
-      
-    } catch (err) {
-      setError("Failed to fetch departments. Please try again.")
-      toast.error("Failed to load departments")
-    } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }
-
-  const handleRefresh = () => {
-    fetchDepartments(true)
-  }
-
-  const filteredDepartments = Array.isArray(departments)
-    ? departments.filter(
-      (dept) =>
-        dept.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        dept?.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    : []
+  const router = useRouter();
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const selectedBranch = useSelector(selectSelectedBranch);
 
   const handleCreateDepartment = () => {
-    router.push("/admin/departments/create")
-  }
+    router.push("/admin/departments/create");
+  };
 
   const handleEditDepartment = (departmentId: number) => {
-    router.push(`/admin/departments/${departmentId}/edit`)
-  }
+    router.push(`/admin/departments/${departmentId}/edit`);
+  };
 
   const handleViewDepartment = (departmentId: number) => {
-    router.push(`/admin/departments/${departmentId}/view`)
-  }
+    router.push(`/admin/departments/${departmentId}/view`);
+  };
 
   const handleDeleteDepartment = (department: IDepartment) => {
-    setDepartmentToDelete(department)
-    setDeleteModalOpen(true)
-  }
+    setDepartmentToDelete(department);
+    setDeleteModalOpen(true);
+  };
 
   const confirmDelete = async () => {
-    if (!departmentToDelete) return
+    if (!departmentToDelete) return;
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await deleteDepartment({ departmentId: departmentToDelete.id })
-      setDepartments(departments.filter((dept) => dept.id !== departmentToDelete.id))
-      toast.success("Department deleted successfully")
-      setDeleteModalOpen(false)
-      setDepartmentToDelete(null)
+      await deleteDepartment({departmentId: departmentToDelete.id});
+      toast.success("Department deleted successfully");
+      setDeleteModalOpen(false);
+      setDepartmentToDelete(null);
+      refreshFunctionRef.current?.()
     } catch (error) {
-      console.error("Error deleting department:", error)
-      toast.error("Failed to delete department")
+      showErrorToast({error, defaultMessage:"Failed to delete department"})
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   const cancelDelete = () => {
-    setDeleteModalOpen(false)
-    setDepartmentToDelete(null)
-  }
-
-  if (!selectedInstitution || !selectedBranch) {
-    return <div>Loading...</div>
-  }
+    setDeleteModalOpen(false);
+    setDepartmentToDelete(null);
+  };
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
@@ -154,35 +109,38 @@ export default function DepartmentsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Departments</h1>
-          <p className="text-muted-foreground">
-            Manage departments for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
-          </p>
+          {selectedInstitution && selectedBranch && (
+            <p className="text-muted-foreground">
+              Manage departments for {selectedBranch.branch_name} -{" "}
+              {selectedInstitution.institution_name}
+            </p>
+          )}
         </div>
       </div>
 
-       {/* Stats */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 mt-12">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{departments.length}</div>
-              <p className="text-xs text-muted-foreground">Total Departments</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{filteredDepartments.length}</div>
-              <p className="text-xs text-muted-foreground">Filtered Results</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{selectedInstitution.institution_name}</div>
-              <p className="text-xs text-muted-foreground">Current Organization</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
+        <Card className="shadow-sm ">
+          <CardContent className="p-4">
+            <div className="flex items-end justify-start">
+              <div className="flex flex-col justify-start items-start">
+                <div className="text-xl md:text-2xl font-bold">{departmentsCount}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Total Departments</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-end justify-start">
+              <div className="flex flex-col justify-start items-start">
+                <div className="text-xl md:text-2xl font-bold">{departments.length}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Results displayed</p>
+              </div>
+            </div>
+            
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Search and Create Department Button on Same Line */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mb-6 mt-8">
@@ -196,144 +154,182 @@ export default function DepartmentsPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
         </div>
-        
+
         <Button onClick={handleCreateDepartment} className="flex items-center gap-2 flex-shrink-0">
           <Plus className="h-4 w-4" />
           Create Department
         </Button>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 mb-6">
-          {error}
-        </div>
-      )}
 
-      {/* Departments Table */}
-      {isLoading ? (
-        <div className="overflow-x-auto mt-12">
-          <Table className="min-w-[800px]">
-            <TableHeader>
-              <TableRow className="border-b">
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[...Array(5)].map((_, i) => (
-                <TableRow key={i} className="border-b">
-                  <TableCell>
-                    <Skeleton className="h-6 w-3/4" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-full" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-1/2" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : filteredDepartments.length === 0 ? (
-        <div className="p-12 text-center">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No departments found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm
-              ? "No departments match your search criteria."
-              : "Get started by creating your first department."}
-          </p>
-          {!searchTerm && (
-            <Button onClick={handleCreateDepartment} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Department
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table className="min-w-[800px]">
-            <TableHeader>
-              <TableRow className="border-b bg-muted/30">
-                <TableHead className="font-semibold">Name</TableHead>
-                <TableHead className="font-semibold">Description</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDepartments.map((department, index) => (
-                <TableRow
-                  key={department.id}
-                  className="hover:bg-muted/50 transition-colors border-b"
-                >
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">{department.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <RichTextDisplay
-                      className={`text-sm ${!department.description ? 'text-muted-foreground italic' : ''}`}
-                      htmlContent={department.description || "No description"}
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 hover:bg-muted/50"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}>
-                          <DropdownMenuItem
-                            onClick={() => handleViewDepartment(department.id)}
-                            className="hover:bg-muted/50"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}>
-                          <DropdownMenuItem
-                            onClick={() => handleEditDepartment(department.id)}
-                            className="hover:bg-muted/50"
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Department
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteDepartment(department)}
-                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Department
-                          </DropdownMenuItem>
-                        </ProtectedComponent>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+
+      <div className="">
+        <PaginatedTableWrapper<IDepartment>
+          fetchFirstPage={async () => {
+            if (!selectedInstitution) {
+              throw Error("No organization found !");
+            }
+            return await getPaginatedDepartments({
+              institutionId: selectedInstitution.id,
+              search: searchTerm,
+            });
+          }}
+          fetchFromUrl={async (args: {url: string}) =>
+            getPaginatedDepartmentsFromUrl({url: args.url})
+          }
+          deps={[selectedInstitution?.id, searchTerm]}
+          query={searchTerm}
+          onError={(err) =>
+            showErrorToast({error: err, defaultMessage: "Failed to fetch departments"})
+          }
+          className="space-y-4"
+          footerClassName="pt-4"
+        >
+          {({data, loading, refresh}) => {
+            refreshFunctionRef.current = refresh;
+
+            useEffect(() => {
+              if (data) {
+                if (data.results !== departments && !hasLoaded) {
+                  setHasLoaded(!true);
+                }
+                setDepartmentsCount(data.count || 0);
+                setDepartments(data.results);
+              }
+            }, [data]);
+
+            if (hasLoaded && departments.length === 0) {
+              return (
+                <div className="p-12 text-center">
+                  <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No departments found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchTerm
+                      ? "No departments match your search criteria."
+                      : "Get started by creating your first department."}
+                  </p>
+                  {!searchTerm && (
+                    <Button onClick={handleCreateDepartment} className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create First Department
+                    </Button>
+                  )}
+                </div>
+              );
+            }
+
+            if (loading) {
+              return (
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow className="border-b">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...Array(5)].map((_, i) => (
+                      <TableRow key={i} className="border-b">
+                        <TableCell>
+                          <Skeleton className="h-6 w-3/4" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-1/2" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              );
+            }
+
+            return (
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/30">
+                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">Description</TableHead>
+                    <TableHead className="w-[100px] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data?.results.map((department, index) => (
+                    <TableRow
+                      key={department.id}
+                      className="hover:bg-muted/50 transition-colors border-b"
+                    >
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{department.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <RichTextDisplay
+                          className={`text-sm ${!department.description ? "text-muted-foreground italic" : ""}`}
+                          htmlContent={department.description || "No description"}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 hover:bg-muted/50"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <ProtectedComponent
+                              permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}
+                            >
+                              <DropdownMenuItem
+                                onClick={() => handleViewDepartment(department.id)}
+                                className="hover:bg-muted/50"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                            <ProtectedComponent
+                              permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}
+                            >
+                              <DropdownMenuItem
+                                onClick={() => handleEditDepartment(department.id)}
+                                className="hover:bg-muted/50"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Department
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                            <ProtectedComponent
+                              permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}
+                            >
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteDepartment(department)}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Department
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            );
+          }}
+        </PaginatedTableWrapper>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
@@ -345,15 +341,17 @@ export default function DepartmentsPage() {
               </div>
               <div>
                 <DialogTitle>Delete Department</DialogTitle>
-                <DialogDescription className="mt-1">This action cannot be undone.</DialogDescription>
+                <DialogDescription className="mt-1">
+                  This action cannot be undone.
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground">
               Are you sure you want to delete{" "}
-              <span className="font-semibold text-foreground">{departmentToDelete?.name}</span>? This will permanently
-              remove the department and all associated data.
+              <span className="font-semibold text-foreground">{departmentToDelete?.name}</span>?
+              This will permanently remove the department and all associated data.
             </p>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
@@ -382,5 +380,5 @@ export default function DepartmentsPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

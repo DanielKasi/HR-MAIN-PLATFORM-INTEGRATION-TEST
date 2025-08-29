@@ -16,6 +16,7 @@ import { BankAccountFormModal } from "@/components/bank-accounts/create-bank-acc
 import { BankAccountDetailsModal } from "@/components/bank-accounts/bank-account-details-modal"
 import { BankAccountsTable } from "@/components/bank-accounts/bank-accounts-table"
 import { PaginationControls } from "@/components/bank-accounts/pagination-controls"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 export default function BankAccountManagement() {
     const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -274,9 +275,9 @@ export default function BankAccountManagement() {
             />
 
             {bankAccountToDelete && (
-                <DeleteConfirmationDialog
+                <ConfirmationDialog
                     description="Are you sure you want to delete this bank account? This action cannot be undone."
-                    isDeleting={isDeleting}
+                    disabled={isDeleting}
                     isOpen={!!bankAccountToDelete}
                     title={`Delete ${bankAccountToDelete.account_name}`}
                     onConfirm={() => handleDelete(bankAccountToDelete)}

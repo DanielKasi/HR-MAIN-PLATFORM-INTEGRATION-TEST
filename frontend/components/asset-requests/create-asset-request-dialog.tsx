@@ -114,7 +114,7 @@ export const CreateAssetRequestDialog = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <Package className="h-5 w-5" />
+            
             <span>Create Asset Request</span>
           </DialogTitle>
           <DialogDescription>
@@ -197,19 +197,12 @@ export const CreateAssetRequestDialog = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="rounded-xl"
-          >
-            Cancel
-          </Button>
+        <div className="flex items-center justify-end space-x-3 pt-4">
+         
                       <Button
               onClick={handleSubmit}
               disabled={isSubmitting || !formData.asset_id}
-              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+              className="bg-primary hover:bg-primary text-white  w-full rounded-full"
             >
             {isSubmitting ? "Creating..." : "Create Request"}
           </Button>

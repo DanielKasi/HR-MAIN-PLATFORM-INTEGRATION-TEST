@@ -944,5 +944,149 @@
       "name": "Can View Task Timesheets",
       "description": "Allows viewing task timesheet entries"
     }
+  ],
+
+  "Onboarding & Offboarding": [
+    {
+      "code": "can_create_onboarding_records",
+      "name": "Can Create Onboarding Records",
+      "description": "Allows creating new onboarding records for job applications"
+    },
+    {
+      "code": "can_view_onboarding_records",
+      "name": "Can View Onboarding Records",
+      "description": "Allows viewing onboarding records and details"
+    },
+    {
+      "code": "can_edit_onboarding_records",
+      "name": "Can Edit Onboarding Records",
+      "description": "Allows editing onboarding record details and status"
+    },
+    
+    {
+      "code": "can_create_offboarding_stages",
+      "name": "Can Create Offboarding Stages",
+      "description": "Allows creating new offboarding stages"
+    },
+    {
+      "code": "can_view_offboarding_stages",
+      "name": "Can View Offboarding Stages",
+      "description": "Allows viewing offboarding stage listings and details"
+    },
+    {
+      "code": "can_edit_offboarding_stages",
+      "name": "Can Edit Offboarding Stages",
+      "description": "Allows editing offboarding stage details"
+    },
+    {
+      "code": "can_delete_offboarding_stages",
+      "name": "Can Delete Offboarding Stages",
+      "description": "Allows deleting offboarding stages"
+    },
+    {
+      "code": "can_create_separation_types",
+      "name": "Can Create Separation Types",
+      "description": "Allows creating new employee separation types"
+    },
+    {
+      "code": "can_view_separation_types",
+      "name": "Can View Separation Types",
+      "description": "Allows viewing separation type listings and details"
+    },
+    {
+      "code": "can_edit_separation_types",
+      "name": "Can Edit Separation Types",
+      "description": "Allows editing separation type details"
+    },
+    {
+      "code": "can_delete_separation_types",
+      "name": "Can Delete Separation Types",
+      "description": "Allows deleting separation types"
+    },
+    {
+      "code": "can_create_separation_policies",
+      "name": "Can Create Separation Policies",
+      "description": "Allows creating new separation policies"
+    },
+    {
+      "code": "can_view_separation_policies",
+      "name": "Can View Separation Policies",
+      "description": "Allows viewing separation policy listings and details"
+    },
+    {
+      "code": "can_edit_separation_policies",
+      "name": "Can Edit Separation Policies",
+      "description": "Allows editing separation policy details"
+    },
+    {
+      "code": "can_delete_separation_policies",
+      "name": "Can Delete Separation Policies",
+      "description": "Allows deleting separation policies"
+    },
+    {
+      "code": "can_create_resignation_requests",
+      "name": "Can Create Resignation Requests",
+      "description": "Allows creating resignation requests"
+    },
+    {
+      "code": "can_view_resignation_requests",
+      "name": "Can View Resignation Requests",
+      "description": "Allows viewing resignation request listings and details"
+    },
+    {
+      "code": "can_edit_resignation_requests",
+      "name": "Can Edit Resignation Requests",
+      "description": "Allows editing resignation request details"
+    },
+    {
+      "code": "can_delete_resignation_requests",
+      "name": "Can Delete Resignation Requests",
+      "description": "Allows deleting resignation requests"
+    },
+    {
+      "code": "can_view_own_resignation_requests",
+      "name": "Can View Own Resignation Requests",
+      "description": "Allows viewing own resignation requests"
+    },
+    {
+      "code": "can_create_termination_initiations",
+      "name": "Can Create Termination Initiations",
+      "description": "Allows initiating employee termination processes"
+    },
+    {
+      "code": "can_view_termination_initiations",
+      "name": "Can View Termination Initiations",
+      "description": "Allows viewing termination initiation listings and details"
+    },
+    {
+      "code": "can_edit_termination_initiations",
+      "name": "Can Edit Termination Initiations",
+      "description": "Allows editing termination initiation details"
+    },
+    {
+      "code": "can_delete_termination_initiations",
+      "name": "Can Delete Termination Initiations",
+      "description": "Allows deleting termination initiations"
+    },
+    {
+      "code": "can_create_retirement_requests",
+      "name": "Can Create Retirement Requests",
+      "description": "Allows creating retirement requests"
+    },
+    {
+      "code": "can_view_retirement_requests",
+      "name": "Can View Retirement Requests",
+      "description": "Allows viewing retirement request listings and details"
+    },
+    {
+      "code": "can_edit_retirement_requests",
+      "name": "Can Edit Retirement Requests",
+      "description": "Allows editing retirement request details"
+    },
+    {
+      "code": "can_delete_retirement_requests",
+      "name": "Can Delete Retirement Requests",
+      "description": "Allows deleting retirement requests"
+    }
   ]
 }

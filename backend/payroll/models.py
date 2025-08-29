@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from institution.models import Institution
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.exceptions import ValidationError
 
 
@@ -57,7 +57,7 @@ class BaseModel(models.Model):
         super().clean()
 
 
-class AllowanceType(BaseModel, UtilityBaseModel):
+class AllowanceType(BaseModel, SoftDeletableTimeStampedModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -77,15 +77,12 @@ class AllowanceType(BaseModel, UtilityBaseModel):
         ordering = ["name"]
 
 
-class DeductionType(BaseModel, UtilityBaseModel):
+class DeductionType(BaseModel, SoftDeletableTimeStampedModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
 
-    ATTENDANCE_DEDUCTION_CHOICES = [
-        ("late", "Lateness"),
-        ("absentism", "Absentism"),
-    ]
+
 
     institution = models.ForeignKey(
         "institution.Institution",
@@ -94,37 +91,6 @@ class DeductionType(BaseModel, UtilityBaseModel):
     )
     is_mandatory = models.BooleanField(default=False)
 
-    attendance_penalty_for = models.CharField(
-        max_length=100,
-        choices=ATTENDANCE_DEDUCTION_CHOICES,
-        blank=True,
-        null=True,
-        help_text="If set, deduction is applied when employee attendance check matches this condition",
-    )
-
-    def clean(self):
-        super().clean()
-
-        if self.attendance_penalty_for:
-            if self.is_recurring:
-                raise ValidationError(
-                    {
-                        {"error": "Attendance-related deductions cannot be recurring."}
-                    }
-                )
-            if self.frequency:
-                raise ValidationError(
-                    {
-                        "error": "Attendance-related deductions must not have a frequency."
-                    }
-                )
-
-            if not self.institution.is_attendance_penalties_enabled:
-                raise ValidationError(
-                    {
-                        "error": f"Institution '{self.institution.institution_name}' does not allow attendance penalties."
-                    }
-                )
 
     def __str__(self):
         return self.name
@@ -133,7 +99,7 @@ class DeductionType(BaseModel, UtilityBaseModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(UtilityBaseModel):
+class EmployeeAllowance(SoftDeletableTimeStampedModel):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -264,7 +230,7 @@ class EmployeeAllowance(UtilityBaseModel):
         return recurrence_count
 
 
-class EmployeeDeduction(UtilityBaseModel):
+class EmployeeDeduction(SoftDeletableTimeStampedModel):
     """
     Employee-specific deductions
     """
@@ -393,7 +359,7 @@ class EmployeeDeduction(UtilityBaseModel):
         return recurrence_count
 
 
-class EmployeeTax(UtilityBaseModel):
+class EmployeeTax(SoftDeletableTimeStampedModel):
     """
     Employee-specific tax details
     """
@@ -467,7 +433,7 @@ class EmployeeTax(UtilityBaseModel):
         return Decimal(0.00)
 
 
-class PayrollPeriod(UtilityBaseModel):
+class PayrollPeriod(SoftDeletableTimeStampedModel):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
@@ -490,7 +456,7 @@ class PayrollPeriod(UtilityBaseModel):
         ordering = ["-start_date"]
 
 
-class Payslip(UtilityBaseModel):
+class Payslip(SoftDeletableTimeStampedModel):
     """
     Individual employee payslip for a specific period
     """
@@ -523,72 +489,72 @@ class Payslip(UtilityBaseModel):
     is_paid = models.BooleanField(default=False)
     paid_date = models.DateField(blank=True, null=True)
 
-    def _calculate_attendance_deductions(self):
-        """
-        Returns total deductions and detailed items for lateness/absenteeism
-        within the payroll period.
-        """
+    # def _calculate_attendance_deductions(self):
+    #     """
+    #     Returns total deductions and detailed items for lateness/absenteeism
+    #     within the payroll period.
+    #     """
 
-        from .utils import get_employee_attendance_status_for_date
+    #     from .utils import get_employee_attendance_status_for_date
 
-        employee = self.employee
-        payroll_period = self.payroll_period
-        deduction_items = []
-        total_deduction = Decimal("0.00")
+    #     employee = self.employee
+    #     payroll_period = self.payroll_period
+    #     deduction_items = []
+    #     total_deduction = Decimal("0.00")
 
-        attendance_deduction_types = DeductionType.objects.filter(
-            institution=employee.payroll_branch.institution,
-            attendance_penalty_for__isnull=False,
-        )
+    #     attendance_deduction_types = DeductionType.objects.filter(
+    #         institution=employee.payroll_branch.institution,
+    #         attendance_penalty_for__isnull=False,
+    #     )
 
-        if not attendance_deduction_types.exists():
-            return total_deduction, deduction_items
+    #     if not attendance_deduction_types.exists():
+    #         return total_deduction, deduction_items
 
-        current_date = payroll_period.start_date
-        while current_date <= payroll_period.end_date:
-            status = get_employee_attendance_status_for_date(employee.id, current_date)
+    #     current_date = payroll_period.start_date
+    #     while current_date <= payroll_period.end_date:
+    #         status = get_employee_attendance_status_for_date(employee.id, current_date)
 
-            for d_type in attendance_deduction_types:
+    #         for d_type in attendance_deduction_types:
 
-                emp_deduction = EmployeeDeduction.objects.get(
-                    employee=employee, deduction_type=d_type
-                )
+    #             emp_deduction = EmployeeDeduction.objects.get(
+    #                 employee=employee, deduction_type=d_type
+    #             )
 
-                if d_type.attendance_penalty_for == "late" and status == "P-past-T":
-                    amount = emp_deduction.get_calculated_amount()
-                    total_deduction += amount
-                    deduction_items.append(
-                        {
-                            "name": d_type.name,
-                            "amount": amount,
-                            "date": current_date,
-                            "reason": "Late",
-                        }
-                    )
+    #             if d_type.attendance_penalty_for == "late" and status == "P-past-T":
+    #                 amount = emp_deduction.get_calculated_amount()
+    #                 total_deduction += amount
+    #                 deduction_items.append(
+    #                     {
+    #                         "name": d_type.name,
+    #                         "amount": amount,
+    #                         "date": current_date,
+    #                         "reason": "Late",
+    #                     }
+    #                 )
 
-                elif (
-                    d_type.attendance_penalty_for == "absentism" and status == "absent"
-                ):
-                    amount = emp_deduction.get_calculated_amount()
-                    total_deduction += amount
-                    deduction_items.append(
-                        {
-                            "name": d_type.name,
-                            "amount": amount,
-                            "date": current_date,
-                            "reason": "Absent",
-                        }
-                    )
+    #             elif (
+    #                 d_type.attendance_penalty_for == "absentism" and status == "absent"
+    #             ):
+    #                 amount = emp_deduction.get_calculated_amount()
+    #                 total_deduction += amount
+    #                 deduction_items.append(
+    #                     {
+    #                         "name": d_type.name,
+    #                         "amount": amount,
+    #                         "date": current_date,
+    #                         "reason": "Absent",
+    #                     }
+    #                 )
 
-            current_date += timedelta(days=1)
+    #         current_date += timedelta(days=1)
 
-        return total_deduction, deduction_items
+    #     return total_deduction, deduction_items
 
-    def get_attendance_deductions(self):
-        """Fetch attendance deductions for this payslip."""
-        if not self.payroll_period.institution.is_attendance_penalties_enabled:
-            return 0, []
-        return self._calculate_attendance_deductions()
+    # def get_attendance_deductions(self):
+    #     """Fetch attendance deductions for this payslip."""
+    #     if not self.payroll_period.institution.is_attendance_penalties_enabled:
+    #         return 0, []
+    #     return self._calculate_attendance_deductions()
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
@@ -626,7 +592,7 @@ class Payslip(UtilityBaseModel):
         deductions = 0
         for deduction in (
             self.employee.deductions.filter(is_active=True)
-            .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
+            # .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
             .filter(
                 effective_from__lte=self.payroll_period.end_date,
             )
@@ -638,9 +604,9 @@ class Payslip(UtilityBaseModel):
             recurrence = deduction.get_recurrence_count(self.payroll_period)
             deductions += deduction.get_calculated_amount() * recurrence
 
-        # Attendance-based deductions
-        attendance_total, _ = self.get_attendance_deductions()
-        deductions += attendance_total
+        # # Attendance-based deductions
+        # attendance_total, _ = self.get_attendance_deductions()
+        # deductions += attendance_total
 
         # Calculate tax from EmployeeTax model (already no recurrence)
         tax_total = 0
@@ -724,9 +690,10 @@ class PayslipItem(models.Model):
                     )
                 )
 
-        for deduction in payslip.employee.deductions.filter(is_active=True).exclude(
-            deduction_type__attendance_penalty_for__in=["late", "absentism"]
-        ):
+        # for deduction in payslip.employee.deductions.filter(is_active=True).exclude(
+        #     deduction_type__attendance_penalty_for__in=["late", "absentism"]
+        # ):
+        for deduction in payslip.employee.deductions.filter(is_active=True):
             if deduction.effective_from <= payslip.payroll_period.end_date and (
                 not deduction.effective_to
                 or deduction.effective_to >= payslip.payroll_period.start_date
@@ -774,16 +741,16 @@ class PayslipItem(models.Model):
                         )
                     )
 
-        _, attendance_items = payslip.get_attendance_deductions()
-        for item in attendance_items:
-            items_to_create.append(
-                PayslipItem(
-                    payslip=payslip,
-                    item_type="deduction",
-                    name=item["name"],
-                    amount=item["amount"],
-                    description=f"{item['reason']} on {item['date']}",
-                )
-            )
+        # _, attendance_items = payslip.get_attendance_deductions()
+        # for item in attendance_items:
+        #     items_to_create.append(
+        #         PayslipItem(
+        #             payslip=payslip,
+        #             item_type="deduction",
+        #             name=item["name"],
+        #             amount=item["amount"],
+        #             description=f"{item['reason']} on {item['date']}",
+        #         )
+        #     )
 
         PayslipItem.objects.bulk_create(items_to_create)

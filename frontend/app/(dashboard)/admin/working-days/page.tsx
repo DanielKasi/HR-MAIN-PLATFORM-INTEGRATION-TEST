@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { WorkingDaysSkeleton } from "@/components/working-days-skeleton"
 import { DaySelectionCard } from "@/components/day-selection-card"
 import { CurrentWorkingDaysDisplay } from "@/components/current-working-days-display"
-import { Calendar, Save, RotateCcw, AlertCircle, CheckCircle2, Settings } from "lucide-react"
+import { WorkingDaysManager } from "@/components/working-days-manager"
+import { Calendar, Save, RotateCcw, AlertCircle, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -145,6 +146,50 @@ export default function InstitutionWorkingDays() {
     }
   }
 
+  const handleWorkingDaysUpdate = async (dayIds: number[]) => {
+    if (!selectedInstitution) {
+      toast.error("No institution selected")
+      return
+    }
+
+    if (dayIds.length === 0) {
+      toast.error("Please select at least one working day")
+      return
+    }
+
+    try {
+      setIsSaving(true)
+
+      const formData: IWorkingDaysFormData = {
+        days: dayIds,
+      }
+
+      let updatedWorkingDays: IInstitutionWorkingDays
+
+      if (institutionWorkingDays) {
+        // Update existing working days
+        updatedWorkingDays = await institutionAPI.updateWorkingDays({
+          workingDaysId: institutionWorkingDays.id,
+          data: formData,
+        })
+      } else {
+        // Create new working days
+        updatedWorkingDays = await institutionAPI.createWorkingDays(formData)
+      }
+
+      setInstitutionWorkingDays(updatedWorkingDays)
+      setSelectedDays(dayIds)
+      setHasChanges(false)
+    } catch (error: any) {
+      console.error("Error saving working days:", error)
+      const errorMessage = error?.message || error?.detail || "Failed to save working days"
+      toast.error(errorMessage)
+      throw error // Re-throw so the component can handle it
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 max-w-7xl">
@@ -199,95 +244,13 @@ export default function InstitutionWorkingDays() {
         </CardHeader>
       </Card>
 
-      {/* Current Working Days Display */}
-      <CurrentWorkingDaysDisplay workingDays={institutionWorkingDays} />
-
-      {/* Working Days Configuration */}
-      <Card className="shadow-none border-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Configure Working Days
-          </CardTitle>
-          <CardDescription>
-            Select the days when your institution operates. You can choose multiple days from the available options.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Selection Summary */}
-          {selectedDays.length > 0 && (
-            <Alert>
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
-                <strong>{selectedDays.length}</strong> working days selected:{" "}
-                {selectedSystemDays.map((day) => day.day_name).join(", ")}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Day Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Select Working Days</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                disabled={isSaving}
-                className="text-sm bg-transparent"
-              >
-                {selectedDays.length === systemWorkingDays.length ? "Deselect All" : "Select All"}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {systemWorkingDays.map((day) => (
-                <DaySelectionCard
-                  key={day.id}
-                  day={day}
-                  isSelected={selectedDays.includes(day.id)}
-                  onToggle={handleDayToggle}
-                  disabled={isSaving}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-4 border-t">
-            <Button
-              onClick={handleSave}
-              disabled={!hasChanges || selectedDays.length === 0 || isSaving}
-              className="bg-primary hover:bg-primary/90"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {institutionWorkingDays ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {institutionWorkingDays ? "Update Working Days" : "Create Working Days"}
-                </>
-              )}
-            </Button>
-
-            {hasChanges && (
-              <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-            )}
-
-            <div className="text-sm text-gray-500 ml-auto">
-              {selectedDays.length === 0
-                ? "Select at least one working day"
-                : `${selectedDays.length} day${selectedDays.length === 1 ? "" : "s"} selected`}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Working Days Manager */}
+      <WorkingDaysManager 
+        workingDays={institutionWorkingDays}
+        systemWorkingDays={systemWorkingDays}
+        onUpdate={handleWorkingDaysUpdate}
+        isSaving={isSaving}
+      />
     </div>
   )
 }

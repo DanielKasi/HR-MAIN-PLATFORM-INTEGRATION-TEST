@@ -270,7 +270,7 @@ export default function AdminPage() {
                   <span>Document Types</span>
                 </Link>
                 <Link
-                  href="/documents/templates"
+                  href="/documents/documents_templates"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
                   <BookAIcon className="w-5 h-5 text-gray-500" />

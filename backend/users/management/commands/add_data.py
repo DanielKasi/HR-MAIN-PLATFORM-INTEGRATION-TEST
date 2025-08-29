@@ -5,6 +5,7 @@ from django.conf import settings
 
 from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
+from approval.models import Action 
 from discipline.models import DisciplineType
 from institution.models import (
     Institution,
@@ -19,7 +20,7 @@ from settings.models import SystemDay
 
 class Command(BaseCommand):
     help = (
-        "Add/sync permissions, workflows, systems, and discipline types from JSON files"
+        "Add/sync permissions, workflows, systems, discipline types, and approval actions from JSON files"
     )
 
     def handle(self, *args, **kwargs):
@@ -27,6 +28,7 @@ class Command(BaseCommand):
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_workflows()
+        self.sync_approval_actions()  # Add this line
         self.create_default_system_days()
         self.create_default_bank_info()
 
@@ -282,6 +284,91 @@ class Command(BaseCommand):
             self.style.NOTICE(f"  🧹 Removed Workflow Categories: {deleted_categories}")
         )
         self.stdout.write(self.style.SUCCESS("\n🎉 Workflows synced successfully!"))
+
+    def sync_approval_actions(self):
+        """
+        Create default approval actions (create, update, delete)
+        """
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n")
+        )
+
+        default_actions = [
+            {
+                "name": "create",
+                "description": "Action for creating new records that require approval",
+            },
+            {
+                "name": "update", 
+                "description": "Action for updating existing records that require approval",
+            },
+            {
+                "name": "delete",
+                "description": "Action for deleting records that require approval",
+            },
+            # {
+            #     "name": "activate",
+            #     "description": "Action for activating records that require approval", 
+            # },
+            # {
+            #     "name": "deactivate",
+            #     "description": "Action for deactivating records that require approval",
+            # },
+            # {
+            #     "name": "publish",
+            #     "description": "Action for publishing records that require approval",
+            # },
+            # {
+            #     "name": "archive",
+            #     "description": "Action for archiving records that require approval",
+            # },
+        ]
+
+        valid_action_names = set()
+        created_count = 0
+        updated_count = 0
+
+        for action_data in default_actions:
+            action, created = Action.objects.update_or_create(
+                name=action_data["name"],
+                defaults={
+                    "description": action_data["description"],
+                },
+            )
+            valid_action_names.add(action_data["name"])
+
+            if created:
+                created_count += 1
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"  ✅ Created approval action: {action.name} (Code: {action.code})"
+                    )
+                )
+            else:
+                updated_count += 1
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"  ♻️  Updated approval action: {action.name} (Code: {action.code})"
+                    )
+                )
+
+        # Optional: Remove actions that are no longer in the default list
+        # Uncomment the following lines if you want to remove actions not in the default list
+        # deleted_actions, _ = Action.objects.exclude(
+        #     name__in=valid_action_names
+        # ).delete()
+
+        self.stdout.write(
+            "\n" + self.style.MIGRATE_LABEL("📋 Approval Actions Summary")
+        )
+        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ♻️  Updated: {updated_count}"))
+        # self.stdout.write(
+        #     self.style.NOTICE(f"  🧹 Removed: {deleted_actions}")
+        # )
+        self.stdout.write(
+            self.style.SUCCESS("\n🎉 Approval actions synced successfully!")
+        )
 
     # Create default system days
     # This method creates default system days if they do not already exist.

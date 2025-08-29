@@ -15,26 +15,12 @@ import { useRouter } from "next/navigation";
 
 export default function EmployeesPage() {
   const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const router = useRouter();
 
   const refreshFunctionRef = useRef<(() => void) | null>(null);
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600">{error}</p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
 
     const clearFilters = () => {

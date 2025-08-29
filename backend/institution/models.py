@@ -12,12 +12,14 @@ from recruitment.models import JobPosition
 import json
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 logger = logging.getLogger(__name__)
 
 
-class Institution(UtilityBaseModel):
+class Institution(SoftDeletableTimeStampedModel):
     APPROVAL_STATUS_CHOICES = [
         ("pending", "Pending Approval"),
         ("approved", "Approved"),
@@ -265,7 +267,7 @@ class InstitutionKYCDocument(models.Model):
         verbose_name_plural = "Institution KYC Documents"
 
 
-class InstitutionBankType(UtilityBaseModel):
+class InstitutionBankType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
@@ -291,7 +293,7 @@ class InstitutionBankType(UtilityBaseModel):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
 
 
-class InstitutionBankAccount(UtilityBaseModel):
+class InstitutionBankAccount(SoftDeletableTimeStampedModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
@@ -327,7 +329,7 @@ class InstitutionBankAccount(UtilityBaseModel):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
 
 
-class InstitutionWorkingDays(UtilityBaseModel):
+class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
@@ -357,7 +359,7 @@ class InstitutionWorkingDays(UtilityBaseModel):
         return f"Working Days for {self.institution.institution_name}"
 
 
-class InstitutionTax(UtilityBaseModel):
+class InstitutionTax(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
@@ -387,7 +389,7 @@ class InstitutionTax(UtilityBaseModel):
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(UtilityBaseModel):
+class InstitutionTaxRule(SoftDeletableTimeStampedModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -425,7 +427,7 @@ class InstitutionTaxRule(UtilityBaseModel):
         return self.tax_rule_name
 
 
-class Branch(UtilityBaseModel):
+class Branch(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -538,7 +540,7 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(UtilityBaseModel):
+class Department(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -561,3 +563,117 @@ class Department(UtilityBaseModel):
 
     def __str__(self):
         return self.name
+
+
+PENALTY_TYPES = [
+    ("late_coming", "Late Coming"),
+    ("early_leaving", "Early Leaving"),
+    ("absent", "Absent"),
+    ("no_response_spotcheck", "No Response for Spotcheck"),
+    ("late_spotcheck_response", "Late Spotcheck Response"),
+]
+
+PENALTY_VALUE_TYPES = [
+    ('fixed', 'Fixed Amount'),
+    ('percentage', 'Percentage of Salary'),
+]
+
+class InstitutionPenaltyConfig(UtilityBaseModel):
+    """Default penalty configuration at institution level"""
+    institution = models.OneToOneField(
+        Institution, related_name="penalty_config", on_delete=models.CASCADE
+    )
+    penalty_type = models.CharField(
+        max_length=50, choices=PENALTY_TYPES, default="late_coming"
+    )
+    penalty_value = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        validators=[MinValueValidator(0)]
+    )
+    penalty_value_type = models.CharField(
+        max_length=50, choices=PENALTY_VALUE_TYPES, default='fixed'
+    )
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
+        blank=True,
+        help_text="Percentage value when penalty_value_type is 'percentage'"
+    )
+
+
+
+    def __str__(self):
+        return f"Penalty Config for {self.institution.institution_name} - {self.get_penalty_type_display()}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        
+        if self.penalty_value_type == 'percentage':
+            if not self.percentage or self.percentage <= 0:
+                raise ValidationError("Percentage must be provided and greater than 0 when penalty type is percentage")
+        elif self.penalty_value_type == 'fixed':
+            if self.penalty_value <= 0:
+                raise ValidationError("Penalty value must be greater than 0 when penalty type is fixed")
+
+class BranchPenaltyConfig(UtilityBaseModel):
+    """Branch-level penalty configuration (overrides institution defaults)"""
+    branch = models.ForeignKey(
+        Branch,
+        on_delete=models.CASCADE,
+        related_name="penalty_configs"
+    )
+    penalty_type = models.CharField(
+        max_length=50,
+        choices=PENALTY_TYPES
+    )
+    penalty_value = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        validators=[MinValueValidator(0)]
+    )
+    penalty_value_type = models.CharField(
+        max_length=20,
+        choices=PENALTY_VALUE_TYPES,
+        default='fixed'
+    )
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
+        blank=True,
+        help_text="Percentage value when penalty_value_type is 'percentage'"
+    )
+
+
+
+
+    def __str__(self):
+        return f"{self.get_penalty_type_display()} - {self.branch.branch_name}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        
+        if self.penalty_value_type == 'percentage':
+            if not self.percentage or self.percentage <= 0:
+                raise ValidationError("Percentage must be provided and greater than 0 when penalty type is percentage")
+        elif self.penalty_value_type == 'fixed':
+            if self.penalty_value <= 0:
+                raise ValidationError("Penalty value must be greater than 0 when penalty type is fixed")
+
+    def get_calculated_amount(self, employee_salary):
+        """Calculate penalty amount based on method"""
+        if self.penalty_value_type == "percentage":
+            if not employee_salary or employee_salary <= 0:
+                return 0.00
+            if not self.percentage or self.percentage <= 0:
+                return 0.00
+            calculated = (employee_salary * self.percentage) / 100
+            return calculated
+        
+        return self.penalty_value     
