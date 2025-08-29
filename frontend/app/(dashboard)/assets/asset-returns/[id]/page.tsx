@@ -27,6 +27,8 @@ import {
   MessageSquare,
   RotateCcw
 } from 'lucide-react';
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,7 +118,7 @@ const AssetReturnDetailPage = () => {
 
   const handleDeleteSuccess = () => {
     toast.success("Return deleted successfully");
-    router.push("/assests/asset-returns");
+    router.push("/assets/asset-returns");
   };
 
   const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
@@ -163,7 +165,7 @@ const AssetReturnDetailPage = () => {
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Return Not Found</h2>
           <p className="text-gray-600 mb-4">The return you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => router.push("/assests/asset-returns")}>
+          <Button onClick={() => router.push("/assets/asset-returns")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Returns
           </Button>
@@ -181,7 +183,7 @@ const AssetReturnDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/assests/asset-returns")}
+              onClick={() => router.push("/assets/asset-returns")}
               className="p-2 hover:bg-gray-100 rounded-full border"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -353,35 +355,39 @@ const AssetReturnDetailPage = () => {
                         )}
                         {task.status === 'pending' && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                            <Button 
-                              className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !w-[100px] !h-[20px] !rounded-full"
-                              onClick={() => handleApproval(task.id, 'completed')}
-                              disabled={isApproving}
-                            >
-                              {isApproving ? (
-                                <>
-                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                  Approving...
-                                </>
-                              ) : (
-                                'Approve'
-                              )}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="text-red-600 border-red-300 text-xs !w-[100px] !h-[20px] !rounded-full"
-                              onClick={() => handleApproval(task.id, 'rejected')}
-                              disabled={isApproving}
-                            >
-                              {isApproving ? (
-                                <>
-                                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                                  Rejecting...
-                                </>
-                              ) : (
-                                'Reject'
-                              )}
-                            </Button>
+                            {hasPermission(PERMISSION_CODES.CAN_APPROVE_ASSET_RETURNS) && (
+                              <Button 
+                                className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !w-[100px] !h-[20px] !rounded-full"
+                                onClick={() => handleApproval(task.id, 'completed')}
+                                disabled={isApproving}
+                              >
+                                {isApproving ? (
+                                  <>
+                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                    Approving...
+                                  </>
+                                ) : (
+                                  'Approve'
+                                )}
+                              </Button>
+                            )}
+                            {hasPermission(PERMISSION_CODES.CAN_CANCEL_ASSET_RETURNS) && (
+                              <Button 
+                                variant="outline" 
+                                className="text-red-600 border-red-300 text-xs !w-[100px] !h-[20px] !rounded-full"
+                                onClick={() => handleApproval(task.id, 'rejected')}
+                                disabled={isApproving}
+                              >
+                                {isApproving ? (
+                                  <>
+                                    <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                                    Rejecting...
+                                  </>
+                                ) : (
+                                  'Reject'
+                                )}
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>

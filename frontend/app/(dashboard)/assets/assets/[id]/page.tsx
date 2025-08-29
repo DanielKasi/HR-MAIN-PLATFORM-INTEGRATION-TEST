@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, RefreshCw, Package, User, History, CheckCircle, Clock, ArrowDown } from "lucide-react"
+import { PERMISSION_CODES } from "@/types/types.utils"
+import { hasPermission } from "@/lib/helpers"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -114,7 +116,7 @@ const AssetDetailPage = () => {
 
   const handleDeleteSuccess = () => {
     toast.success("Asset deleted successfully")
-    router.push("/assests/assets")
+    router.push("/assets/assets")
   }
 
   const handleAssetReturn = () => {
@@ -241,7 +243,7 @@ const AssetDetailPage = () => {
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Asset Not Found</h2>
           <p className="text-gray-600 mb-4">The asset you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => router.push("/assests/assets")}>
+          <Button onClick={() => router.push("/assets/assets")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Assets
           </Button>
@@ -259,7 +261,7 @@ const AssetDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/assests/assets")}
+              onClick={() => router.push("/assets/assets")}
               className="p-2 hover:bg-gray-100 rounded-full"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -533,36 +535,44 @@ const AssetDetailPage = () => {
 
             {/* Action Buttons */}
             <div className="mt-6 space-y-3">
-              <Button
-                onClick={handleAssignAsset}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={asset.status !== "available"}
-              >
-                Assign Asset
-              </Button>
-              <Button
-                onClick={handleReturnAsset}
-                variant="outline"
-                className="w-full"
-                disabled={asset.status !== "allocated"}
-              >
-                Return Asset
-              </Button>
-              <div className="grid grid-cols-2 gap-3">
+              {hasPermission(PERMISSION_CODES.CAN_ALLOCATE_ASSETS) && (
                 <Button
-                  onClick={handleEditAsset}
+                  onClick={handleAssignAsset}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={asset.status !== "available"}
+                >
+                  Assign Asset
+                </Button>
+              )}
+              {hasPermission(PERMISSION_CODES.CAN_RETURN_ASSETS) && (
+                <Button
+                  onClick={handleReturnAsset}
                   variant="outline"
                   className="w-full"
+                  disabled={asset.status !== "allocated"}
                 >
-                  Edit
+                  Return Asset
                 </Button>
-                <Button
-                  onClick={handleDeleteAsset}
-                  variant="outline"
-                  className="w-full text-red-600 border-red-300 hover:bg-red-50"
-                >
-                  Delete
-                </Button>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {hasPermission(PERMISSION_CODES.CAN_EDIT_ASSETS) && (
+                  <Button
+                    onClick={handleEditAsset}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Edit
+                  </Button>
+                )}
+                {hasPermission(PERMISSION_CODES.CAN_DELETE_ASSETS) && (
+                  <Button
+                    onClick={handleDeleteAsset}
+                    variant="outline"
+                    className="w-full text-red-600 border-red-300 hover:bg-red-50"
+                  >
+                    Delete
+                  </Button>
+                )}
               </div>
             </div>
           </div>

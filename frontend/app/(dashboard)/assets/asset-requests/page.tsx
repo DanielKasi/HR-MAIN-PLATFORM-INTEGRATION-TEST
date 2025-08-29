@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
@@ -16,39 +16,44 @@ import {
   XCircle,
   AlertCircle,
   FileText,
-  Users
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+} from "lucide-react";
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog";
-import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
-import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
-import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation } from "@/types/types.utils";
-import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
-
-
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {toast} from "sonner";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {CreateAssetRequestDialog} from "@/components/asset-requests/create-asset-request-dialog";
+import {EditAssetRequestDialog} from "@/components/asset-requests/edit-asset-request-dialog";
+import {DeleteAssetRequestDialog} from "@/components/asset-requests/delete-asset-request-dialog";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {useRouter} from "next/navigation";
+import {assetsAPI} from "@/lib/utils";
+import type {IAssetRequest} from "@/types/types.utils";
+import {useMobile} from "@/hooks/use-mobile";
+import ProtectedPage from "@/components/ProtectedPage";
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case "pending":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "allocated":
+    case "approved":
       return "bg-green-100 text-green-800 border-green-200";
     case "rejected":
       return "bg-red-100 text-red-800 border-red-200";
@@ -63,8 +68,8 @@ const getStatusDisplay = (status: string) => {
   switch (status) {
     case "pending":
       return "Pending";
-    case "allocated":
-      return "Allocated";
+    case "approved":
+      return "Approved";
     case "rejected":
       return "Rejected";
     case "cancelled":
@@ -78,7 +83,7 @@ const getStatusIcon = (status: string) => {
   switch (status) {
     case "pending":
       return <Clock className="h-4 w-4 text-yellow-500" />;
-    case "allocated":
+    case "approved":
       return <CheckCircle className="h-4 w-4 text-green-500" />;
     case "rejected":
       return <XCircle className="h-4 w-4 text-red-500" />;
@@ -97,56 +102,52 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const AssetAllocationsComponent = () => {
+const AssetRequestsComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingAllocation, setEditingAllocation] = useState<IAssetAllocation | null>(null);
-  const [deletingAllocation, setDeletingAllocation] = useState<IAssetAllocation | null>(null);
+  const [editingRequest, setEditingRequest] = useState<IAssetRequest | null>(null);
+  const [deletingRequest, setDeletingRequest] = useState<IAssetRequest | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const refreshTableRef = useRef<(() => void) | null>(null);
-
-
-
-
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
-  const handleCreateSuccess = (newAllocation: IAssetAllocation) => {
+  const handleCreateSuccess = (newRequest: IAssetRequest) => {
     setIsCreateDialogOpen(false);
-    toast.success("Asset allocation created successfully");
+    toast.success("Asset request created successfully");
     refreshTableRef.current?.();
   };
 
-  const handleUpdateSuccess = (updatedAllocation: IAssetAllocation) => {
+  const handleUpdateSuccess = (updatedRequest: IAssetRequest) => {
     setIsEditDialogOpen(false);
-    setEditingAllocation(null);
-    toast.success("Asset allocation updated successfully");
+    setEditingRequest(null);
+    toast.success("Asset request updated successfully");
     refreshTableRef.current?.();
   };
 
   const handleDeleteSuccess = (deletedId: number) => {
     setIsDeleteDialogOpen(false);
-    setDeletingAllocation(null);
-    toast.success("Asset allocation deleted successfully");
+    setDeletingRequest(null);
+    toast.success("Asset request deleted successfully");
     refreshTableRef.current?.();
   };
 
-  const handleEditAllocation = (allocation: IAssetAllocation) => {
-    setEditingAllocation(allocation);
+  const handleEditRequest = (request: IAssetRequest) => {
+    setEditingRequest(request);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteAllocation = (allocation: IAssetAllocation) => {
-    setDeletingAllocation(allocation);
+  const handleDeleteRequest = (request: IAssetRequest) => {
+    setDeletingRequest(request);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleViewAllocationDetails = (allocation: IAssetAllocation) => {
-    router.push(`/assests/asset-allocations/${allocation.id}`);
+  const handleViewRequestDetails = (request: IAssetRequest) => {
+    router.push(`/assets/asset-requests/${request.id}`);
   };
 
   const clearFilters = () => {
@@ -160,96 +161,105 @@ const AssetAllocationsComponent = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white rounded-lg border shadow-sm min-h-screen">
-        <div className="p-6 ">
+        <div className="px-6 py-3 ">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Asset Allocations</h1>
-            
+              <h1 className="text-3xl font-bold text-gray-900">Asset Requests</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage and track asset requests from employees
+              </p>
             </div>
+
+            <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_REQUEST_ASSETS]}>
+                <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className=""
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
+              </Button>
+              </ProtectedPage>
             
+                                                
           </div>
         </div>
 
         {/* Filters */}
-        <div className="p-6">
-          <div className="">
-            <div className="flex items-center gap-4 justify-between">
-              <div className="relative flex justify-between">
+        <div className="px-6 py-3 ">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search allocations..."
+                  placeholder="Search requests..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[130px] border-none shadow-none">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="allocated">Allocated</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-primary text-white rounded-[11px]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Allocation
-            </Button>
-              
             </div>
-            
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <PaginatedTableWrapper<IAssetAllocation>
+          <PaginatedTableWrapper<IAssetRequest>
             fetchFirstPage={async () => {
               if (!selectedInstitution) throw new Error("No institution selected");
-              return await assetsAPI.getPaginatedAssetAllocations({
+              return await assetsAPI.getPaginatedAssetRequests({
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
               });
             }}
-            fetchFromUrl={assetsAPI.getPaginatedAssetAllocationsFromUrl}
+            fetchFromUrl={assetsAPI.getPaginatedAssetRequestsFromUrl}
             deps={[selectedInstitution?.id, searchTerm]}
             className="space-y-4"
             footerClassName="pt-4"
           >
             {({data, loading, refresh}) => {
+              // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
               }, [refresh]);
+
               if (loading) {
-                return <TableSkeleton rows={10} columns={6} />;
+                return <TableSkeleton rows={10} columns={7} />;
               }
 
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No allocations found matching your search criteria" : "No asset allocations found"}
+                    {searchTerm
+                      ? "No requests found matching your search criteria"
+                      : "No asset requests found"}
                   </div>
                 );
               }
 
               // Apply client-side filters (status filter)
-              const filteredResults = data.results.filter((allocation) => {
-                const matchesStatus = statusFilter === "all" || allocation.allocation_status === statusFilter;
+              const filteredResults = data.results.filter((request) => {
+                const matchesStatus =
+                  statusFilter === "all" || request.asset_request_status === statusFilter;
                 return matchesStatus;
               });
 
               if (filteredResults.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    No allocations found matching the selected status filter.
+                    No requests found matching the selected status filter.
                   </div>
                 );
               }
@@ -261,60 +271,70 @@ const AssetAllocationsComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Allocation Code</TableHead>
+
+                          <TableHead>Reference</TableHead>
                           <TableHead>Asset</TableHead>
-                          <TableHead>Allocated To</TableHead>
-                          <TableHead>Allocated By</TableHead>
+                          <TableHead>Requester</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
                           <TableHead className="w-12">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredResults.map((allocation) => (
-                          <TableRow key={allocation.id}>
+                        {filteredResults.map((request) => (
+                          <TableRow key={request.id}>
+
                             <TableCell className="font-mono text-sm">
-                              {allocation.alloc_code}
+                              {request.request_reference_code}
                             </TableCell>
                             <TableCell className="font-medium">
-                              {allocation.asset?.asset_name || 'Unknown Asset'}
+                              {request.asset?.asset_name || "Unknown Asset"}
                             </TableCell>
                             <TableCell>
-                              {allocation.allocated_to?.user.fullname || 'Unknown User'}
-                            </TableCell>
-                            <TableCell>
-                              {allocation.allocated_by?.user.fullname || 'Unknown User'}
+                              {request.requester?.user?.fullname || "Unknown User"}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                {getStatusIcon(allocation.allocation_status)}
-                                <Badge className={getStatusColor(allocation.allocation_status)}>
-                                  {getStatusDisplay(allocation.allocation_status)}
+                                {getStatusIcon(request.asset_request_status)}
+                                <Badge className={getStatusColor(request.asset_request_status)}>
+                                  {getStatusDisplay(request.asset_request_status)}
                                 </Badge>
                               </div>
                             </TableCell>
+                            <TableCell>{formatDate(request.created_at)}</TableCell>
                             <TableCell>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">
-                                    <Icon icon="hugeicons:more-horizontal-circle-01" className="!h-4 !w-4 text-dark" />
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewRequestDetails(request)}
+                                  >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteAllocation(allocation)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                 
+
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteRequest(request)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                  
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -326,37 +346,37 @@ const AssetAllocationsComponent = () => {
 
                   {/* Mobile Cards */}
                   <div className="sm:hidden space-y-3">
-                    {filteredResults.map((allocation) => (
-                      <div key={allocation.id} className="bg-gray-50 rounded-lg p-4 border">
+                    {filteredResults.map((request) => (
+                      <div key={request.id} className="bg-gray-50 rounded-lg p-4 border">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <Users className="h-4 w-4 text-gray-500" />
+                              <Package className="h-4 w-4 text-gray-500" />
                               <h3 className="font-semibold text-gray-900">
-                                {allocation.asset?.asset_name || 'Unknown Asset'}
+                                {request.asset?.asset_name || "Unknown Asset"}
                               </h3>
                             </div>
                             <div className="space-y-1 mb-2">
                               <p className="text-sm text-gray-600 font-mono">
-                                Code: {allocation.alloc_code}
+                                Ref: {request.request_reference_code}
                               </p>
                               <p className="text-sm text-gray-600">
-                                To: {allocation.allocated_to?.user.fullname || 'Unknown User'}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                By: {allocation.allocated_by?.user.fullname || 'Unknown User'}
+                                Requester: {request.requester?.user?.fullname || "Unknown User"}
                               </p>
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center space-x-2">
-                                  {getStatusIcon(allocation.allocation_status)}
-                                  <Badge className={getStatusColor(allocation.allocation_status)}>
-                                    {getStatusDisplay(allocation.allocation_status)}
+                                  {getStatusIcon(request.asset_request_status)}
+                                  <Badge className={getStatusColor(request.asset_request_status)}>
+                                    {getStatusDisplay(request.asset_request_status)}
                                   </Badge>
                                 </div>
                                 <span className="text-sm text-gray-500">
-                                  Created: {formatDate(allocation.created_at)}
+                                  Created: {formatDate(request.created_at)}
                                 </span>
                               </div>
+                              {request.notes && (
+                                <p className="text-sm text-gray-600 mt-1">{request.notes}</p>
+                              )}
                             </div>
                           </div>
                           <DropdownMenu>
@@ -366,21 +386,27 @@ const AssetAllocationsComponent = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewAllocationDetails(allocation)}>
+                              <DropdownMenuItem onClick={() => handleViewRequestDetails(request)}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteAllocation(allocation)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteRequest(request)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -395,31 +421,31 @@ const AssetAllocationsComponent = () => {
       </div>
 
       {/* Dialogs */}
-      <CreateAssetAllocationDialog
+      <CreateAssetRequestDialog
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
         onSuccess={handleCreateSuccess}
       />
 
-      {editingAllocation && (
-        <EditAssetAllocationDialog
-          allocation={editingAllocation}
+      {editingRequest && (
+        <EditAssetRequestDialog
+          request={editingRequest}
           isOpen={isEditDialogOpen}
           onClose={() => {
             setIsEditDialogOpen(false);
-            setEditingAllocation(null);
+            setEditingRequest(null);
           }}
           onSuccess={handleUpdateSuccess}
         />
       )}
 
-      {deletingAllocation && (
-        <DeleteAssetAllocationDialog
-          allocation={deletingAllocation}
+      {deletingRequest && (
+        <DeleteAssetRequestDialog
+          request={deletingRequest}
           isOpen={isDeleteDialogOpen}
           onClose={() => {
             setIsDeleteDialogOpen(false);
-            setDeletingAllocation(null);
+            setDeletingRequest(null);
           }}
           onSuccess={handleDeleteSuccess}
         />
@@ -428,4 +454,4 @@ const AssetAllocationsComponent = () => {
   );
 };
 
-export default AssetAllocationsComponent;
+export default AssetRequestsComponent;
