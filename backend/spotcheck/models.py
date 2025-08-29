@@ -1,9 +1,10 @@
 from django.db import models
 from utilities.utility_base_model import SoftDeletableTimeStampedModel, TimeStampedModel
 from payroll.models import EmployeePenalty
+from datetime import datetime
 
 # spotcheck settings
-class InstitutionSPotCheckSetting(SoftDeletableTimeStampedModel):
+class InstitutionSpotCheckSetting(SoftDeletableTimeStampedModel):
     institution = models.OneToOneField(
         "institution.Institution",
         on_delete=models.PROTECT,
