@@ -435,20 +435,21 @@ class Employee(SoftDeletableTimeStampedModel):
             digits = string.digits
             special = string.punctuation
 
-        password = [
-            random.choice(lowercase),
-            random.choice(uppercase),
-            random.choice(digits),
-            random.choice(special),
-        ]
+            password = [
+                random.choice(lowercase),
+                random.choice(uppercase),
+                random.choice(digits),
+                random.choice(special),
+            ]
 
-        all_characters = lowercase + uppercase + digits + special
-        for _ in range(length - 4):
-            password.append(random.choice(all_characters))
+            all_characters = lowercase + uppercase + digits + special
+            for _ in range(length - 4):
+                password.append(random.choice(all_characters))
 
-        random.shuffle(password)
-        return "".join(password)
+            random.shuffle(password)
+            return "".join(password)
 
+        # This was incorrectly indented in your original code
         random_password = generate_compliant_password()
         self.user.set_password(random_password)
         self.user.is_password_verified = False
@@ -457,58 +458,104 @@ class Employee(SoftDeletableTimeStampedModel):
 
     def create_password_token_and_send_link(self, request):
         """Create token and send password link to user."""
-        from django.urls import reverse
-        from django.core.mail import send_mail
-        import uuid
-        from datetime import timedelta
+        try:
+            # Add the missing import
+            from users.models import OTPModel  # or whatever your Token model is called
+            
+            def create_and_institution_token(user, purpose, expiry_minutes):
+                token = uuid.uuid4().hex
+                # Use OTPModel instead of Token if that's your model name
+                OTPModel.objects.create(
+                    user=user,
+                    value=token,  # Make sure this matches your model field name
+                    purpose=purpose,
+                    expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+                )
+                return token
 
-        def create_and_institution_token(user, purpose, expiry_minutes):
-            token = uuid.uuid4().hex
-            Token.objects.create(
-                user=user,
-                token=token,
-                purpose=purpose,
-                expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+            def build_password_link(request, token):
+                try:
+                    return request.build_absolute_uri(
+                        reverse("set_password", kwargs={"token": token})
+                    )
+                except Exception as e:
+                    logger.error(f"Error building password link: {e}")
+                    # Fallback URL construction
+                    base_url = f"{request.scheme}://{request.get_host()}"
+                    return f"{base_url}/set-password/{token}"
+
+            def send_password_link_to_user(user, link):
+                # Add debugging
+                print(f"Attempting to send password link to {user.email}")
+                print(f"Email settings - FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
+                
+                try:
+                    result = send_mail(
+                        subject="Set Your Password",
+                        message=f"Please use the following link to set your password: {link}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
+                    )
+                    print(f"Email send result: {result}")
+                    return result > 0
+                except Exception as email_error:
+                    logger.error(f"Failed to send email: {email_error}")
+                    raise email_error
+
+            # Check if user has email
+            if not self.user or not self.user.email:
+                logger.error("User or user email is missing")
+                return False
+                
+            token = create_and_institution_token(
+                user=self.user, purpose="registration", expiry_minutes=15
             )
-            return token
-
-        def build_password_link(request, token):
-            return request.build_absolute_uri(
-                reverse("set_password", kwargs={"token": token})
-            )
-
-        def send_password_link_to_user(user, link):
-            send_mail(
-                subject="Set Your Password",
-                message=f"Please use the following link to set your password: {link}",
-                from_email="no-reply@yourinstitution.com",
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-
-        token = create_and_institution_token(
-            user=self.user, purpose="registration", expiry_minutes=15
-        )
-        password_link = build_password_link(request=request, token=token)
-        send_password_link_to_user(user=self.user, link=password_link)
-        return True
+            password_link = build_password_link(request=request, token=token)
+            print(f"Generated password link: {password_link}")
+            
+            link_sent = send_password_link_to_user(user=self.user, link=password_link)
+            
+            (f"Link sent status: {link_sent}")
+            return link_sent
+            
+        except Exception as e:
+            logger.error(f"Error in create_password_token_and_send_link: {e}")
+            return False
 
     def setup_employee_password(self, request):
         """
         Complete password setup process for new employees.
         """
+        print(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
+        
         if not self.should_generate_password():
+            logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
 
         try:
+            # Check if user exists and has email
+            if not self.user:
+                logger.error("No user associated with this employee")
+                return {"success": False, "error": "No user associated with employee"}
+                
+            if not self.user.email:
+                logger.error("User has no email address")
+                return {"success": False, "error": "User has no email address"}
+            
             password = self.generate_and_set_password()
+            print(f"Password generated successfully: {bool(password)}")
+            
             link_sent = self.create_password_token_and_send_link(request)
+            print(f"Password link sent: {link_sent}")
+            
             return {
                 "success": True,
                 "password_generated": bool(password),
                 "link_sent": link_sent,
             }
         except Exception as e:
+            logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
 
 
@@ -547,9 +594,22 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         ],
         default="pending",
     )
+    attendance_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("late", "Late"),
+            ("early_checkout", "Early Checkout"),
+            ("overtime", "Overtime"),
+            ("on_time", "On Time"),
+            ("absent", "Absent"),
+        ],
+        default="pending",
+    )
     overtime_hours = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
     )
+    late_minutes = models.IntegerField(default=0, null=True, blank=True)
+    early_checkout_minutes = models.IntegerField(default=0, null=True, blank=True)
 
     class Meta:
         unique_together = ("employee", "date")
@@ -558,7 +618,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-
         if (
             self.date
             and self.check_out_time
@@ -566,15 +625,70 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             and self.employee.payroll_branch
         ):
             branch_end_time = self.employee.payroll_branch.branch_closing_time
-
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
-                hours = round(overtime_duration.total_seconds() / 3600, 2)
-                return hours
+                return round(overtime_duration.total_seconds() / 3600, 2)
         return 0.0
+
+    def calculate_late_minutes(self):
+        if (
+            self.date
+            and self.check_in_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_start_time = self.employee.payroll_branch.branch_opening_time
+            datetime_checkin = datetime.combine(self.date, self.check_in_time)
+            datetime_start = datetime.combine(self.date, branch_start_time)
+
+            if datetime_checkin > datetime_start:
+                delay = datetime_checkin - datetime_start
+                return int(delay.total_seconds() / 60)
+        return 0
+
+    def calculate_early_checkout_minutes(self):
+        if (
+            self.date
+            and self.check_out_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_end_time = self.employee.payroll_branch.branch_closing_time
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            datetime_end = datetime.combine(self.date, branch_end_time)
+
+            if datetime_checkout < datetime_end:
+                early_leave = datetime_end - datetime_checkout
+                return int(early_leave.total_seconds() / 60)
+        return 0
+
+    def update_attendance_status(self):
+        # If no check-in and check-out => absent
+        if not self.check_in_time and not self.check_out_time:
+            self.attendance_status = "absent"
+        else:
+            self.overtime_hours = self.calculate_overtime_hours()
+            self.late_minutes = self.calculate_late_minutes()
+            self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+
+            if self.late_minutes > 0:
+                self.attendance_status = "late"
+            elif self.early_checkout_minutes > 0:
+                self.attendance_status = "early_checkout"
+            elif self.overtime_hours > 0:
+                self.attendance_status = "overtime"
+            else:
+                self.attendance_status = "on_time"
+
+        self.save()
+
+    def save(self, *args, **kwargs):
+        """Override save so status updates automatically"""
+        super().save(*args, **kwargs)
+        self.update_attendance_status()
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):

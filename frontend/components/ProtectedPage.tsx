@@ -22,6 +22,8 @@ export default function ProtectedPage({permissionCode, children}: ProtectedPageP
   const temporaryPermissions = useSelector(selectTemporaryPermissions);
   const dispatch = useDispatch();
 
+  
+
   // Convert single permission code to array for consistent handling
   const requiredPermissionCodes = Array.isArray(permissionCode) ? permissionCode : [permissionCode];
 

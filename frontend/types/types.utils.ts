@@ -208,6 +208,66 @@ export enum PERMISSION_CODES {
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
   CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
   CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
+
+  //assets management
+  CAN_CREATE_ASSET_CATEGORIES = "can_create_asset_categories",
+  CAN_VIEW_ASSET_CATEGORIES = "can_view_asset_categories",
+  CAN_EDIT_ASSET_CATEGORIES = "can_edit_asset_categories",
+  CAN_DELETE_ASSET_CATEGORIES = "can_delete_asset_categories",
+  CAN_CREATE_ASSETS = "can_create_assets",
+  CAN_VIEW_ASSETS = "can_view_assets",
+  CAN_EDIT_ASSETS = "can_edit_assets",
+  CAN_DELETE_ASSETS = "can_delete_assets",
+  CAN_REQUEST_ASSETS = "can_request_assets",
+  CAN_VIEW_ASSET_REQUESTS = "can_view_asset_requests",
+  CAN_EDIT_ASSET_REQUESTS = "can_edit_asset_requests",
+  CAN_DELETE_ASSET_REQUESTS = "can_delete_asset_requests",
+  CAN_APPROVE_ASSET_REQUESTS = "can_approve_asset_requests",
+  CAN_CANCEL_ASSET_REQUESTS = "can_cancel_asset_requests",
+  CAN_ALLOCATE_ASSETS = "can_allocate_assets",
+  CAN_VIEW_ASSET_ALLOCATIONS = "can_view_asset_allocations",
+  CAN_EDIT_ASSET_ALLOCATIONS = "can_edit_asset_allocations",
+  CAN_DELETE_ASSET_ALLOCATIONS = "can_delete_asset_allocations",
+  CAN_APPROVE_ASSET_ALLOCATIONS = "can_approve_asset_allocations",
+  CAN_CANCEL_ASSET_ALLOCATIONS = "can_cancel_asset_allocations",
+  CAN_RETURN_ASSETS = "can_return_assets",
+  CAN_VIEW_ASSET_RETURNS = "can_view_asset_returns",
+  CAN_EDIT_ASSET_RETURNS = "can_edit_asset_returns",
+  CAN_DELETE_ASSET_RETURNS = "can_delete_asset_returns",
+  CAN_VIEW_ASSET_HISTORY = "can_view_asset_history",
+  CAN_VIEW_ASSET_STATUSES = "can_view_asset_statuses",
+  CAN_VIEW_ASSET_WORKFLOWS = "can_view_asset_workflows",
+
+  //onboarding & offboarding management
+  CAN_CREATE_ONBOARDING_RECORDS = "can_create_onboarding_records",
+  CAN_VIEW_ONBOARDING_RECORDS = "can_view_onboarding_records",
+  CAN_EDIT_ONBOARDING_RECORDS = "can_edit_onboarding_records",
+  CAN_CREATE_OFFBOARDING_STAGES = "can_create_offboarding_stages",
+  CAN_VIEW_OFFBOARDING_STAGES = "can_view_offboarding_stages",
+  CAN_EDIT_OFFBOARDING_STAGES = "can_edit_offboarding_stages",
+  CAN_DELETE_OFFBOARDING_STAGES = "can_delete_offboarding_stages",
+  CAN_CREATE_SEPARATION_TYPES = "can_create_separation_types",
+  CAN_VIEW_SEPARATION_TYPES = "can_view_separation_types",
+  CAN_EDIT_SEPARATION_TYPES = "can_edit_separation_types",
+  CAN_DELETE_SEPARATION_TYPES = "can_delete_separation_types",
+  CAN_CREATE_SEPARATION_POLICIES = "can_create_separation_policies",
+  CAN_VIEW_SEPARATION_POLICIES = "can_view_separation_policies",
+  CAN_EDIT_SEPARATION_POLICIES = "can_edit_separation_policies",
+  CAN_DELETE_SEPARATION_POLICIES = "can_delete_separation_policies",
+  CAN_CREATE_RESIGNATION_REQUESTS = "can_create_resignation_requests",
+  CAN_VIEW_RESIGNATION_REQUESTS = "can_view_resignation_requests",
+  CAN_EDIT_RESIGNATION_REQUESTS = "can_edit_resignation_requests",
+  CAN_DELETE_RESIGNATION_REQUESTS = "can_delete_resignation_requests",
+  CAN_VIEW_OWN_RESIGNATION_REQUESTS = "can_view_own_resignation_requests",
+  CAN_CREATE_TERMINATION_INITIATIONS = "can_create_termination_initiations",
+  CAN_VIEW_TERMINATION_INITIATIONS = "can_view_termination_initiations",
+  CAN_EDIT_TERMINATION_INITIATIONS = "can_edit_termination_initiations",
+  CAN_DELETE_TERMINATION_INITIATIONS = "can_delete_termination_initiations",
+  CAN_CREATE_RETIREMENT_REQUESTS = "can_create_retirement_requests",
+  CAN_VIEW_RETIREMENT_REQUESTS = "can_view_retirement_requests",
+  CAN_EDIT_RETIREMENT_REQUESTS = "can_edit_retirement_requests",
+  CAN_DELETE_RETIREMENT_REQUESTS = "can_delete_retirement_requests",
+  
 }
 
 export type ContextType = "employee" | "department" | "job_position";
@@ -2236,4 +2296,26 @@ export interface IKYCDocument {
   document_file: string;
   created_at: string;
   updated_at: string;
+}
+
+
+export interface ISpotCheck {
+  id: number;
+  location: ILocation;
+  time: string;
+  spotchecktime: string;
+  status: ISpotCheckStatus;
+  duration: string;
+}
+
+export interface ISpotCheckStatus {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+}
+
+export interface ILocation {
+  lat: number;
+  lon: number
 }

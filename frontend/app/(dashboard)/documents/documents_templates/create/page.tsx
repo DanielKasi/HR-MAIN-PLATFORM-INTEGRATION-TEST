@@ -140,7 +140,7 @@ export default function CreateTemplatePage() {
       <div className="mb-8">
         <div className="flex items-center justify-start gap-6">
           <Link
-            href="/documents/templates"
+            href="/documents/documents_templates"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <Button variant={"ghost"} className="rounded-full aspect-square">
