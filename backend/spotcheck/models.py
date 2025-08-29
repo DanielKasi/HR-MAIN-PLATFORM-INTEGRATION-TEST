@@ -1,7 +1,7 @@
 from django.db import models
 from utilities.utility_base_model import SoftDeletableTimeStampedModel, TimeStampedModel
 from payroll.models import EmployeePenalty
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # spotcheck settings
 class InstitutionSpotCheckSetting(SoftDeletableTimeStampedModel):
