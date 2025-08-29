@@ -62,7 +62,6 @@ class EmployeeSpotCheckSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Override to include employee name in the representation"""
         data = super().to_representation(instance)
-        data["employee"] = EmployeeSerializer(instance.employee).data
-        data["status"] = EmployeeSpotCheckSerializer(instance.status).data
+        data["status"] = SpotCheckStatusSerializer(instance.status).data
         return data
 

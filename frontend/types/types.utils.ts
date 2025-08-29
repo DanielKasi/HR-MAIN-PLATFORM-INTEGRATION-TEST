@@ -2316,8 +2316,8 @@ export interface ISpotCheckStatus {
 }
 
 export interface ILocation {
-  lat: number;
-  lon: number
+  latitude: number;
+  longitude: number
 }
 
 export interface IInstitutionPenaltyConfig {
