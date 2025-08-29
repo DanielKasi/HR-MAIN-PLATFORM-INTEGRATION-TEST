@@ -76,3 +76,6 @@ class EmployeeSpotCheck(TimeStampedModel):
 
     def __str__(self):
         return f"SpotCheck for {self.employee.user.fullname} at {self.spotcheck_time}"
+
+    def check_if_location_is_valid(self):
+        pass
