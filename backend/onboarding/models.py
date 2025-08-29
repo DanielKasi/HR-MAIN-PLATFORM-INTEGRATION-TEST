@@ -9,10 +9,10 @@ from io import BytesIO
 from weasyprint import HTML
 from django.db.models import UniqueConstraint, Q
 from django.core.exceptions import ValidationError
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class OnBoarding(UtilityBaseModel):
+class OnBoarding(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
         ("initial", "Initial"),
         ("training", "Training"),
@@ -51,7 +51,7 @@ class OnBoarding(UtilityBaseModel):
 
 
 
-class OffboardingStage(UtilityBaseModel):
+class OffboardingStage(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -74,7 +74,7 @@ class OffboardingStage(UtilityBaseModel):
         ]
 
 
-class InstitutionEmployeeSeparationTypes(UtilityBaseModel):
+class InstitutionEmployeeSeparationTypes(SoftDeletableTimeStampedModel):
 
     SEPARATION_CATEGORY_CHOICES = [
         ("resignation", "Resignation"),
@@ -106,7 +106,7 @@ class InstitutionEmployeeSeparationTypes(UtilityBaseModel):
         return f"{self.institution.institution_name} - {self.separation_type}"
 
 
-class InstitutionSeparationPolicy(UtilityBaseModel):
+class InstitutionSeparationPolicy(SoftDeletableTimeStampedModel):
     separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -199,7 +199,7 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
 
-class ResignationRequest(UtilityBaseModel):
+class ResignationRequest(SoftDeletableTimeStampedModel):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
@@ -271,7 +271,7 @@ class ResignationRequest(UtilityBaseModel):
             )
 
 
-class TerminationInitiation(UtilityBaseModel):
+class TerminationInitiation(SoftDeletableTimeStampedModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,

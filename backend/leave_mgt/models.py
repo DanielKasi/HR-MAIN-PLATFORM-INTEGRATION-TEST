@@ -5,10 +5,10 @@ from decimal import Decimal
 from users.models import CustomUser
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class LeaveType(UtilityBaseModel):
+class LeaveType(SoftDeletableTimeStampedModel):
     """Leave types like Annual, Sick, Maternity, etc."""
 
     LEAVE_CATEGORIES = [
@@ -141,7 +141,7 @@ class LeaveType(UtilityBaseModel):
         return synced_count
 
 
-class LeaveBalance(UtilityBaseModel):
+class LeaveBalance(SoftDeletableTimeStampedModel):
     """Track leave balances for each employee per leave type per year"""
 
     institution = models.ForeignKey(
@@ -185,7 +185,7 @@ class LeaveBalance(UtilityBaseModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
 
 
-class LeaveApplication(UtilityBaseModel):
+class LeaveApplication(SoftDeletableTimeStampedModel):
     """Leave application requests"""
 
     STATUS_CHOICES = [
@@ -249,7 +249,7 @@ class LeaveApplication(UtilityBaseModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
 
-class LeavePolicy(UtilityBaseModel):
+class LeavePolicy(SoftDeletableTimeStampedModel):
     """Company leave policies and rules"""
 
     institution = models.ForeignKey(

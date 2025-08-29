@@ -4,10 +4,10 @@ from institution.models import Institution
 from django_ckeditor_5.fields import CKEditor5Field
 from markdownx.models import MarkdownxField
 from ckeditor_uploader.fields import RichTextUploadingField
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class DocumentType(UtilityBaseModel):
+class DocumentType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True, editable=False)
@@ -31,7 +31,7 @@ class DocumentType(UtilityBaseModel):
         super().save(*args, **kwargs)
 
 
-class DocumentTemplate(UtilityBaseModel):
+class DocumentTemplate(SoftDeletableTimeStampedModel):
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     template_type = models.CharField(max_length=50, choices=[

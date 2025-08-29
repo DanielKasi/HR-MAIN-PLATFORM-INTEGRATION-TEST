@@ -2,10 +2,10 @@ from django.db import models
 from datetime import timedelta, date
 from dateutil.relativedelta import relativedelta
 from utilities.holiday_manager import HolidayManager
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class PublicHoliday(UtilityBaseModel):
+class PublicHoliday(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -45,7 +45,7 @@ class PublicHoliday(UtilityBaseModel):
 
 
 # Preferably Zoom
-class OnlineMeeting(UtilityBaseModel):
+class OnlineMeeting(SoftDeletableTimeStampedModel):
     event = models.OneToOneField(
         "Event", on_delete=models.CASCADE, related_name="online_event_details"
     )
@@ -61,7 +61,7 @@ class OnlineMeeting(UtilityBaseModel):
         return f"Online Meeting for {self.topic} at {self.start_time}"
 
 
-class Event(UtilityBaseModel):
+class Event(SoftDeletableTimeStampedModel):
     TARGET_AUDIENCE_CHOICES = [
         ("all", "All Employees"),
         ("department", "Specific Department"),
@@ -258,7 +258,7 @@ class EventOccurrence(models.Model):
         return f"{self.event.title} on {self.date}"
 
 
-class Calendar(UtilityBaseModel):
+class Calendar(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,

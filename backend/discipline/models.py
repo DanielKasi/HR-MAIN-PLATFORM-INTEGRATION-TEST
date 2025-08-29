@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import MinLengthValidator
 from employee.models import Employee
 from users.models import CustomUser
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
 class DisciplineType(models.Model):
@@ -28,7 +28,7 @@ class DisciplineType(models.Model):
         ordering = ["severity", "name"]
 
 
-class DisciplinaryAction(UtilityBaseModel):
+class DisciplinaryAction(SoftDeletableTimeStampedModel):
     """Main disciplinary action record"""
 
     STATUS_CHOICES = [

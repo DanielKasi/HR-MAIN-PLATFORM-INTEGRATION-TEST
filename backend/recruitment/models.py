@@ -8,13 +8,13 @@ from rest_framework.exceptions import ValidationError
 from users.models import Profile
 from django.utils import timezone
 from django.db import transaction
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 
 
-class RequiredDocument(UtilityBaseModel):
+class RequiredDocument(SoftDeletableTimeStampedModel):
     """
     A generic model to define a document requirement for any other model.
     """
@@ -34,7 +34,7 @@ class RequiredDocument(UtilityBaseModel):
         )
 
 
-class JobPosition(UtilityBaseModel):
+class JobPosition(SoftDeletableTimeStampedModel):
     JOB_POSITION_STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
@@ -176,7 +176,7 @@ class JobPosition(UtilityBaseModel):
             )
 
 
-class JobPositionAdvert(UtilityBaseModel):
+class JobPositionAdvert(SoftDeletableTimeStampedModel):
     status_choices = [
         ("pending_approval", "Pending Approval"),
         ("expired", "Expired"),
@@ -289,7 +289,7 @@ class JobPositionAdvert(UtilityBaseModel):
         ]
 
 
-class JobAdvertApplication(UtilityBaseModel):
+class JobAdvertApplication(SoftDeletableTimeStampedModel):
     status_choices = [
         ("new", "New"),
         ("reviewed", "Reviewed"),
@@ -470,7 +470,7 @@ class InterviewStage(models.Model):
         super().save(*args, **kwargs)
 
 
-class JobInterview(UtilityBaseModel):
+class JobInterview(SoftDeletableTimeStampedModel):
     status_choices = [
         ("scheduled", "Scheduled"),
         ("completed", "Completed"),

@@ -31,11 +31,11 @@ from difflib import Differ, SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
 
 
-class EmployeeType(UtilityBaseModel):
+class EmployeeType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -47,7 +47,7 @@ class EmployeeType(UtilityBaseModel):
         return self.name
 
 
-class WorkType(UtilityBaseModel):
+class WorkType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -59,7 +59,7 @@ class WorkType(UtilityBaseModel):
         return self.name
 
 
-class Employee(UtilityBaseModel):
+class Employee(SoftDeletableTimeStampedModel):
     """
     Employee model to store employee details in the system.
     """
@@ -512,7 +512,7 @@ class Employee(UtilityBaseModel):
             return {"success": False, "error": str(e)}
 
 
-class EmployeeWorkingDays(UtilityBaseModel):
+class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     employee = models.OneToOneField(
         Employee, on_delete=models.CASCADE, related_name="custom_working_days"
     )
@@ -527,7 +527,7 @@ class EmployeeWorkingDays(UtilityBaseModel):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
 
-class EmployeeAttendance(UtilityBaseModel):
+class EmployeeAttendance(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
@@ -631,7 +631,7 @@ class EmployeeAttendance(UtilityBaseModel):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(UtilityBaseModel):
+class EmployeeContract(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
