@@ -14,7 +14,8 @@ from .models import (
     InstitutionTax,
     InstitutionTaxRule,
     InstitutionPenaltyConfig,
-    BranchPenaltyConfig
+    BranchPenaltyConfig,
+    BranchLocationComaparisonConfig
 )
 import os
 from django.db import transaction
@@ -671,3 +672,8 @@ class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = BranchPenaltyConfig
         fields = '__all__'
+
+class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BranchLocationComaparisonConfig
+        fields = '__all__'        
