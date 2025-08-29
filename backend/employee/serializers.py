@@ -378,6 +378,96 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         
         return data
 
+    def create(self, validated_data):
+        """
+        Create a new attendance record and calculate status after creation.
+        """
+        print(f"[SERIALIZER] Creating new attendance record...")
+        
+        # Create the instance without triggering status calculation in save()
+        instance = EmployeeAttendance(**validated_data)
+        
+        # Save first to establish the record and relationships
+        super(EmployeeAttendance, instance).save()
+        
+        # Now calculate and update the attendance status
+        self._calculate_and_update_status(instance)
+        
+        print(f"[SERIALIZER] Created attendance record: {instance}")
+        return instance
+
+    def update(self, instance, validated_data):
+        """
+        Update an existing attendance record and recalculate status.
+        """
+        print(f"[SERIALIZER] Updating attendance record: {instance}")
+        
+        # Update the instance fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        # Save the updated data
+        super(EmployeeAttendance, instance).save()
+        
+        # Recalculate and update the attendance status
+        self._calculate_and_update_status(instance)
+        
+        print(f"[SERIALIZER] Updated attendance record: {instance}")
+        return instance
+
+    def _calculate_and_update_status(self, instance):
+        """
+        Calculate attendance status, update the instance, and create penalties if needed.
+        """
+        try:
+            # Ensure we have the employee relationship loaded
+            if not hasattr(instance, 'employee') or not instance.employee:
+                print("[SERIALIZER] No employee relationship found")
+                return
+                
+            # Check if employee has payroll_branch
+            if not hasattr(instance.employee, 'payroll_branch') or not instance.employee.payroll_branch:
+                print(f"[SERIALIZER] Employee {instance.employee} has no payroll_branch")
+                return
+            
+            print(f"[SERIALIZER] Calculating status for {instance}")
+            
+            # Store the old status to check if it changed
+            old_status = instance.attendance_status
+            
+            # Use the model's calculation method
+            instance.update_attendance_status()
+            
+            # Save the calculated status
+            instance.save(update_fields=[
+                'attendance_status', 
+                'overtime_hours', 
+                'late_minutes', 
+                'early_checkout_minutes'
+            ])
+            
+            print(f"[SERIALIZER] Status updated: {instance.attendance_status}")
+            
+            # Create penalty if status changed and warrants a penalty
+            if old_status != instance.attendance_status or old_status == 'pending':
+                self._create_penalty_if_needed(instance)
+            
+        except Exception as e:
+            print(f"[SERIALIZER] Error calculating status: {e}")
+            # Don't fail the entire operation if status calculation fails
+            pass
+
+    def _create_penalty_if_needed(self, instance):
+        """
+        Update or create penalty for attendance record based on status.
+        """
+        try:
+            from payroll.models import EmployeePenalty  
+            EmployeePenalty.update_or_remove_penalty_for_attendance(instance)
+                
+        except Exception as e:
+            pass
+
 
 class EmployeeActivationSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
