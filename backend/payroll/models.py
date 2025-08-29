@@ -476,8 +476,6 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
     @classmethod
     def create_from_attendance(cls, attendance):  
         """Create penalty based on attendance status"""
-        print(f"[PENALTY] Creating penalty for attendance: {attendance}")
-        
         employee = attendance.employee
         penalty_type = None  
 
@@ -489,7 +487,6 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
             penalty_type = 'absent'   
 
         if not penalty_type:
-            print(f"[PENALTY] No penalty type for status: {attendance.attendance_status}")
             return None
 
         # Check if penalty already exists
@@ -500,12 +497,10 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
         ).first()
         
         if existing:
-            print(f"[PENALTY] Penalty already exists: {existing}")
             return existing
 
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
-            print(f"[PENALTY] No penalty config found for {penalty_type}")
             return None 
 
         employee_salary = getattr(employee, 'salary', 0.00)
@@ -520,7 +515,7 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
             notes=f"Penalty for {penalty_type} on {attendance.date}"
         )
         
-        print(f"[PENALTY] Created penalty: {penalty} - Amount: {amount}")
+
         return penalty
 
     @classmethod
@@ -528,7 +523,6 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
         """
         Update or remove existing penalty when attendance status changes
         """
-        print(f"[PENALTY] Updating penalties for attendance: {attendance}")
         
         # Get all existing penalties for this attendance
         existing_penalties = cls.objects.filter(attendance=attendance)
@@ -550,8 +544,6 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
             existing_penalties.exclude(penalty_type=required_penalty_type).delete()
             
         else:
-            # Should not have any penalty - remove all
-            print(f"[PENALTY] Removing penalties for good attendance: {attendance.attendance_status}")
             existing_penalties.delete()
 
     @classmethod
@@ -578,7 +570,6 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
     @classmethod
     def _get_penalty_config(cls, employee, penalty_type):
         """Get penalty config: branch > institution"""
-        print(f"[PENALTY] Looking for config: {penalty_type} for employee {employee}")
         
         branch = employee.payroll_branch
         config = None
@@ -589,17 +580,15 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
             config = BranchPenaltyConfig.objects.filter(
                 branch=branch, penalty_type=penalty_type
             ).first()
-            print(f"[PENALTY] Branch config: {config}")
+
 
         if not config:
             # Fall back to institution config
             institution = branch.institution if branch else employee.institution
             if institution:
-                from .models import InstitutionPenaltyConfig  # Import here to avoid circular imports
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
                 ).first()
-                print(f"[PENALTY] Institution config: {config}")
         
         return config      
 

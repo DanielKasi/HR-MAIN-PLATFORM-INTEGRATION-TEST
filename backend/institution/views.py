@@ -29,7 +29,7 @@ from .models import (
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
     BranchWorkingDays,
-    BranchShift,,
+    BranchShift,
     BranchLocationComaparisonConfig
 )
 from users.serializers import ProfileSerializer
@@ -51,7 +51,7 @@ from .serializers import (
     InstitutionPenaltyConfigSerializer,
     BranchPenaltyConfigSerializer,
     BranchWorkingDaysSerializer,
-    BranchShiftSerializer,,
+    BranchShiftSerializer,
     BranchLocationComparisonConfigSerializer
 )
 from django.shortcuts import get_object_or_404
