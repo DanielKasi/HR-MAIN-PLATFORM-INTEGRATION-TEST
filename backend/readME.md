@@ -66,6 +66,14 @@ Ensure you have the following installed:
    daphne core.asgi:application
    ```
 
+11. **Celery commands**
+   ```bash
+   celery -A core worker -l info
+   ```
+
+   ```bash
+   celery -A core beat -l info
+   ```
 ## Code Formatting
 This project uses [Black](https://black.readthedocs.io/en/stable/) for code formatting.
 
@@ -81,3 +89,4 @@ The project uses [redis](https://redis.io/docs/latest/operate/oss_and_stack/inst
 - Sales Processing
 - Customer Management
 - Reports & Analytics
+
