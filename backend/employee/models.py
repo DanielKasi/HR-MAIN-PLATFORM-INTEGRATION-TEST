@@ -585,6 +585,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
     check_in_longitude = models.FloatField(null=True, blank=True)
     check_out_latitude = models.FloatField(null=True, blank=True)
     check_out_longitude = models.FloatField(null=True, blank=True)
+
     status = models.CharField(
         max_length=20,
         choices=[
@@ -594,6 +595,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         ],
         default="pending",
     )
+
     attendance_status = models.CharField(
         max_length=20,
         choices=[
@@ -602,20 +604,24 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             ("overtime", "Overtime"),
             ("on_time", "On Time"),
             ("absent", "Absent"),
+            ("pending", "Pending"),
         ],
         default="pending",
     )
-    overtime_hours = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
-    )
-    late_minutes = models.IntegerField(default=0, null=True, blank=True)
-    early_checkout_minutes = models.IntegerField(default=0, null=True, blank=True)
+
+    overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    late_minutes = models.IntegerField(default=0)
+    early_checkout_minutes = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("employee", "date")
 
     def __str__(self):
-        return f"{self.employee.user.fullname} - {self.date} - {self.status}"
+        user = getattr(self.employee, "user", None)
+        if user and hasattr(user, "fname") and hasattr(user, "lname"):
+            return f"{user.fname} {user.lname} - {self.date} - {self.status}"
+        return f"{self.employee} - {self.date} - {self.status}"
+
 
     def calculate_overtime_hours(self):
         if (
@@ -665,10 +671,14 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
                 return int(early_leave.total_seconds() / 60)
         return 0
 
-    def update_attendance_status(self):
-        # If no check-in and check-out => absent
+
+    def update_attendance_status(self, commit=True):
+        # Absent if no check-in and check-out
         if not self.check_in_time and not self.check_out_time:
             self.attendance_status = "absent"
+            self.overtime_hours = 0
+            self.late_minutes = 0
+            self.early_checkout_minutes = 0
         else:
             self.overtime_hours = self.calculate_overtime_hours()
             self.late_minutes = self.calculate_late_minutes()
@@ -683,12 +693,19 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             else:
                 self.attendance_status = "on_time"
 
-        self.save()
+        if commit:
+            super().save(update_fields=[
+                "attendance_status",
+                "overtime_hours",
+                "late_minutes",
+                "early_checkout_minutes"
+            ])
+
 
     def save(self, *args, **kwargs):
-        """Override save so status updates automatically"""
+        # Calculate before persisting
+        self.update_attendance_status(commit=False)
         super().save(*args, **kwargs)
-        self.update_attendance_status()
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):

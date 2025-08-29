@@ -580,7 +580,7 @@ PENALTY_VALUE_TYPES = [
 
 class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
     """Default penalty configuration at institution level"""
-    institution = models.OneToOneField(
+    institution = models.ForeignKey(
         Institution, related_name="penalty_config", on_delete=models.CASCADE
     )
     penalty_type = models.CharField(

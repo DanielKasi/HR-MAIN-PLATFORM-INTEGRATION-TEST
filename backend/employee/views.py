@@ -5,7 +5,7 @@ from institution.models import Branch, UserBranch, Department
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from .models import (
     Employee,
@@ -128,7 +128,7 @@ class EmployeeListAPIView(APIView):
 
 
 class EmployeeDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=EmployeeSerializer,
@@ -181,7 +181,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 
 
 class EmployeeCreateAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
@@ -923,7 +923,7 @@ class EmployeeCreateAPIView(APIView):
 
 
 class EmployeeTemplateDownloadAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses={200: None},
@@ -1039,7 +1039,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
 
 class EmployeeUpdateAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
@@ -1146,7 +1146,7 @@ class EmployeeUpdateAPIView(APIView):
 
 
 class EmployeeDeleteAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses={204: "No Content", 404: "Not Found"},
@@ -1595,7 +1595,7 @@ class EmployeeBranchDetailAPIView(APIView):
 
 @extend_schema(tags=["Employee Attendance"])
 class EmployeeAttendanceListCreateAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
@@ -1689,7 +1689,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
 
 @extend_schema(tags=["Employee Attendance"])
 class EmployeeAttendanceDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         return get_object_or_404(EmployeeAttendance, pk=pk)
@@ -1948,7 +1948,7 @@ class WorkTypeDetailAPIView(APIView):
 
 
 class EmployeeContractListAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses=EmployeeContractSerializer(many=True),
@@ -2005,7 +2005,7 @@ class EmployeeContractListAPIView(APIView):
 
 
 class EmployeeContractDetailAPIView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         return get_object_or_404(EmployeeContract, pk=pk)
