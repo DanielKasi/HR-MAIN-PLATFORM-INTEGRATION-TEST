@@ -1855,6 +1855,7 @@ class InstitutionPenaltyConfigListAPIView(APIView):
 
     @extend_schema(tags=['Penalty Configurations'])
     def post(self, request):
+        
         serializer = InstitutionPenaltyConfigSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

@@ -16,6 +16,7 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -578,7 +579,7 @@ PENALTY_VALUE_TYPES = [
     ('percentage', 'Percentage of Salary'),
 ]
 
-class InstitutionPenaltyConfig(UtilityBaseModel):
+class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
     """Default penalty configuration at institution level"""
     institution = models.OneToOneField(
         Institution, related_name="penalty_config", on_delete=models.CASCADE
@@ -618,7 +619,7 @@ class InstitutionPenaltyConfig(UtilityBaseModel):
             if self.penalty_value <= 0:
                 raise ValidationError("Penalty value must be greater than 0 when penalty type is fixed")
 
-class BranchPenaltyConfig(UtilityBaseModel):
+class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
     branch = models.ForeignKey(
         Branch,

@@ -106,6 +106,10 @@ import {
   IEvent,
   ISpotCheck,
   ISpotCheckStatus,
+  IInstitutionPenaltyConfig,
+  IInstitutionPenaltyConfigFormData,
+  IBranchPenaltyConfig,
+  IBranchPenaltyConfigFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6396,6 +6400,155 @@ export const spotcheckAPI = {
       return response.status === 204;
     } catch (error) {
       console.error("Error deleting spotcheck:", error);
+      throw error;
+    }
+  },
+};
+
+// Penalty Configuration API functions
+export const penaltyConfigAPI = {
+  // Institution Penalty Config
+  getInstitutionPenaltyConfigs: async ({
+    institutionId,
+    page = 1,
+    search,
+    penalty_type,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+    penalty_type?: string;
+  }): Promise<IPaginatedResponse<IInstitutionPenaltyConfig>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (penalty_type && penalty_type !== "all") {
+        params.append("penalty_type", penalty_type);
+      }
+
+      const endpoint = `/institution/institution-penalties/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IInstitutionPenaltyConfig>;
+    } catch (error) {
+      console.warn("Error fetching institution penalty configs:", error);
+      throw error;
+    }
+  },
+
+  getInstitutionPenaltyConfigsFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<IInstitutionPenaltyConfig>> => {
+    try {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<IInstitutionPenaltyConfig>;
+    } catch (error) {
+      console.warn("Error fetching institution penalty configs from URL:", error);
+      throw error;
+    }
+  },
+
+  createInstitutionPenaltyConfig: async (data: IInstitutionPenaltyConfigFormData): Promise<IInstitutionPenaltyConfig> => {
+    try {
+      const response = await apiRequest.post("/institution/institution-penalties/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating institution penalty config:", error);
+      throw error;
+    }
+  },
+
+  updateInstitutionPenaltyConfig: async (id: number, data: Partial<IInstitutionPenaltyConfigFormData>): Promise<IInstitutionPenaltyConfig> => {
+    try {
+      const response = await apiRequest.patch(`/institution/institution-penalties/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating institution penalty config:", error);
+      throw error;
+    }
+  },
+
+  deleteInstitutionPenaltyConfig: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/institution/institution-penalties/${id}/`);
+      return response.marital_status;
+    } catch (error) {
+      console.error("Error deleting institution penalty config:", error);
+      throw error;
+    }
+  },
+
+  // Branch Penalty Config
+  getBranchPenaltyConfigs: async ({
+    branchId,
+    page = 1,
+    search,
+    penalty_type,
+  }: {
+    branchId: number;
+    page?: number;
+    search?: string;
+    penalty_type?: string;
+  }): Promise<IPaginatedResponse<IBranchPenaltyConfig>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+      if (penalty_type && penalty_type !== "all") {
+        params.append("penalty_type", penalty_type);
+      }
+
+      const endpoint = `/institution/branch-penalties/?branch=${branchId}&${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IBranchPenaltyConfig>;
+    } catch (error) {
+      console.warn("Error fetching branch penalty configs:", error);
+      throw error;
+    }
+  },
+
+  createBranchPenaltyConfig: async (data: IBranchPenaltyConfigFormData): Promise<IBranchPenaltyConfig> => {
+    try {
+      const response = await apiRequest.post("/institution/branch-penalties/", data);
+      return response.data;
+    } catch (error) {
+      console.warn("Error creating branch penalty config:", error);
+      throw error;
+    }
+  },
+
+  updateBranchPenaltyConfig: async (id: number, data: Partial<IBranchPenaltyConfigFormData>): Promise<IBranchPenaltyConfig> => {
+    try {
+      const response = await apiRequest.patch(`/institution/branch-penalties/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating branch penalty config:", error);
+      throw error;
+    }
+  },
+
+  deleteBranchPenaltyConfig: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/institution/branch-penalties/${id}/`);
+      return response.status === 204;
+    } catch (error) {
+      console.error("Error deleting branch penalty config:", error);
+      throw error;
+    }
+  },
+
+  getBranchPenaltyConfigsFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<IBranchPenaltyConfig>> => {
+    try {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<IBranchPenaltyConfig>;
+    } catch (error) {
+      console.warn("Error fetching branch penalty configs from URL:", error);
       throw error;
     }
   },

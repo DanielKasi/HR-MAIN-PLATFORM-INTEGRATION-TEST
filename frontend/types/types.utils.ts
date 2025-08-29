@@ -2319,3 +2319,41 @@ export interface ILocation {
   lat: number;
   lon: number
 }
+
+export interface IInstitutionPenaltyConfig {
+  id: number;
+  institution: number;
+  penalty_type: string;
+  penalty_value: number;
+  penalty_value_type: string;
+  percentage: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IInstitutionPenaltyConfigFormData {
+  penalty_type: string;
+  penalty_value: number;
+  penalty_value_type: string;
+  percentage?: number;
+  institution: number;
+}
+
+export interface IBranchPenaltyConfig {
+  id: number;
+  branch: number;
+  penalty_type: string;
+  penalty_value: number;
+  penalty_value_type: string;
+  percentage: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IBranchPenaltyConfigFormData {
+  branch: number;
+  penalty_type: string;
+  penalty_value: number;
+  penalty_value_type: string;
+  percentage?: number;
+}
