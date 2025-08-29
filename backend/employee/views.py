@@ -750,6 +750,7 @@ class EmployeeCreateAPIView(APIView):
                 batch_size = 50
                 employees = []
                 created_count = 0
+                password_email_queue = [] 
 
                 print(f"Starting batch processing with batch size {batch_size}")
                 for start_idx in range(0, len(df), batch_size):
@@ -761,6 +762,7 @@ class EmployeeCreateAPIView(APIView):
 
                     user_objects = []
                     employee_data_list = []
+                    batch_passwords = []
 
                     for index, row in batch.iterrows():
                         employee_data = {}
@@ -783,10 +785,13 @@ class EmployeeCreateAPIView(APIView):
                             )
                             continue
 
+                        plain_password = generate_compliant_password()
+                        batch_passwords.append(plain_password)
+
                         user_data = {
                             "fullname": fullname,
                             "email": email,
-                            "password": make_password(generate_compliant_password()),
+                            "password": make_password(plain_password),
                             "is_active": True,
                             "is_email_verified": False,
                             "is_password_verified": False,
@@ -996,12 +1001,12 @@ class EmployeeCreateAPIView(APIView):
 
                     # Send password setup emails (non-blocking)
                     for idx, employee in enumerate(created_employees):
-                        try:
-                            employee.setup_employee_password(request)
-                        except Exception as e:
-                            print(
-                                f"Error sending password email for employee {employee.user.email}: {str(e)}"
-                            )
+                        password_email_queue.append({
+                            'user_id': employee.user.id,
+                            'password': batch_passwords[idx],
+                            'employee_name': employee.user.fullname,
+                            'employee_email': employee.user.email
+                        })
 
                     employees.extend(created_employees)
                     created_count += len(created_employees)
@@ -1009,6 +1014,11 @@ class EmployeeCreateAPIView(APIView):
                     print(
                         f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
                     )
+
+                    if password_email_queue:
+                        from .tasks import send_bulk_employee_passwords
+                        print(f"Queueing password emails for {len(password_email_queue)} employees")
+                        send_bulk_employee_passwords.delay(password_email_queue)
 
             # Set default employee role if not already set (once after all batches)
             if not institution.default_employee_role:
@@ -1042,6 +1052,33 @@ class EmployeeCreateAPIView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+def generate_compliant_password(length=12):
+    """Generate a password that meets Django's validation requirements"""
+    import string
+    import secrets
+    
+    lowercase = string.ascii_lowercase
+    uppercase = string.ascii_uppercase
+    digits = string.digits
+    special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    
+    # Ensure we have at least one character from each required set
+    password_chars = [
+        secrets.choice(lowercase),
+        secrets.choice(uppercase),
+        secrets.choice(digits),
+        secrets.choice(special),
+    ]
+    
+    # Fill the rest of the password length
+    all_characters = lowercase + uppercase + digits + special
+    for _ in range(length - 4):
+        password_chars.append(secrets.choice(all_characters))
+    
+    # Shuffle to avoid predictable patterns
+    secrets.SystemRandom().shuffle(password_chars)
+    return "".join(password_chars)            
 
 
 class EmployeeTemplateDownloadAPIView(APIView):

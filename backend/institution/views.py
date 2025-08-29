@@ -28,10 +28,10 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
-    BranchLocationComparisonConfig
+    BranchLocationComparisonConfig,
     BranchWorkingDays,
     BranchShift,
-    BranchLocationComaparisonConfig
+    
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
