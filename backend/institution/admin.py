@@ -11,7 +11,8 @@ from .models import (
     InstitutionTaxRule,
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
-    BranchPenaltyConfig
+    BranchPenaltyConfig,
+    BranchLocationComaparisonConfig
 )
 
 
@@ -41,3 +42,4 @@ admin.site.register(InstitutionTaxRule)
 admin.site.register(InstitutionKYCDocument)
 admin.site.register(InstitutionPenaltyConfig)
 admin.site.register(BranchPenaltyConfig)
+admin.site.register(BranchLocationComaparisonConfig)
