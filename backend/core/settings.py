@@ -232,3 +232,6 @@ SPOTCHECK_BATCH_SIZE = int(os.getenv("SPOTCHECK_BATCH_SIZE", 50))
 #     },
 # }
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://peracosoft.com/")
