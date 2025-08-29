@@ -29,7 +29,8 @@ from .models import (
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
     BranchWorkingDays,
-    BranchShift,
+    BranchShift,,
+    BranchLocationComaparisonConfig
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -50,7 +51,8 @@ from .serializers import (
     InstitutionPenaltyConfigSerializer,
     BranchPenaltyConfigSerializer,
     BranchWorkingDaysSerializer,
-    BranchShiftSerializer,
+    BranchShiftSerializer,,
+    BranchLocationComparisonConfigSerializer
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -1928,9 +1930,13 @@ class InstitutionPenaltyConfigListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        
+        configs = InstitutionPenaltyConfig.objects.filter(
+            institution=institution,
+            deleted_at__isnull=True
 
-        configs = InstitutionPenaltyConfig.objects.filter(institution=institution)
-
+        )
+        
         if penalty_type:
             configs = configs.filter(penalty_type=penalty_type)
 
@@ -2039,9 +2045,12 @@ class BranchPenaltyConfigListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        configs = BranchPenaltyConfig.objects.filter(branch__institution=institution)
-
+        
+        configs = BranchPenaltyConfig.objects.filter(
+            branch__institution=institution,
+            deleted_at__isnull=True
+        )
+        
         if branch_id:
             configs = configs.filter(branch__id=branch_id)
 
@@ -2092,7 +2101,60 @@ class BranchPenaltyConfigDetailAPIView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(tags=["Penalty Configurations"])
+    @extend_schema(tags=['Penalty Configurations'])
+    def delete(self, request, pk):
+        config = self.get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)    
+
+class BranchLocationComparisonConfigListAPIView(APIView):
+    def get(self, request):
+        search_query = request.query_params.get("search", None)
+        user = request.user.profile
+
+        try:
+            institution = user.institution
+        except AttributeError:
+            return Response({"detail": "User has no institution assigned."}, status=400)
+
+        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution, deleted_at__isnull=True)
+
+        if search_query:
+            configs = configs.filter(branch__branch_name__icontains=search_query)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = BranchLocationComparisonConfigSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+    def post(self, request):
+        serializer = BranchLocationComparisonConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BranchLocationComparisonConfigDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchLocationComaparisonConfig.objects.get(pk=pk)
+        except BranchLocationComaparisonConfig.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def delete(self, request, pk):
         config = self.get_object(pk)
         config.delete()

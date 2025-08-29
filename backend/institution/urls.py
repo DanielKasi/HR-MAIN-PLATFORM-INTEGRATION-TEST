@@ -32,6 +32,8 @@ from .views import (
     InstitutionPenaltyConfigListAPIView,
     BranchPenaltyConfigListAPIView,
     BranchPenaltyConfigDetailAPIView,
+    BranchLocationComparisonConfigListAPIView,
+    BranchLocationComparisonConfigDetailAPIView,
     BranchWorkingDaysListAPIView,
     BranchWorkingDaysDetailView,
     BranchShiftDetailView,
@@ -188,5 +190,15 @@ urlpatterns = [
         "branch-shifts/<int:pk>/",
         BranchShiftDetailView.as_view(),
         name="branch-shift-detail",
+    ),
+    path(
+        "branch-location-comparison/",
+        BranchLocationComparisonConfigListAPIView.as_view(),
+        name="branch-location-comparison-config-list",
+    ),
+    path(
+        "branch-location-comparison/<int:pk>/",
+        BranchLocationComparisonConfigDetailAPIView.as_view(),
+        name="branch-location-comparison-config-detail",
     ),
 ]

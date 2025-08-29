@@ -606,10 +606,7 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
-        serializer = AssetAllocationSerializer(
-            data=request.data, context={"request": request}
-        )
+        serializer = AssetAllocationSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -880,7 +877,6 @@ class AssetReturnListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
         serializer = AssetReturnSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
