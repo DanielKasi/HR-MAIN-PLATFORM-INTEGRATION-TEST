@@ -934,7 +934,7 @@ def generate_payslip_pdf(payslip):
     # Fetch regular deductions (excluding attendance penalties)
     deductions = (
         employee.deductions.filter(is_active=True)
-        .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
+        # .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
         .filter(
             effective_from__lte=payslip.payroll_period.end_date,
         )
@@ -951,12 +951,12 @@ def generate_payslip_pdf(payslip):
             regular_deductions.append({'name': deduction.deduction_type.name, 'amount': Decimal(str(amount))})
 
     # Fetch attendance deductions
-    attendance_total, deduction_items = payslip.get_attendance_deductions()
-    attendance_ded_group = defaultdict(Decimal)
-    for item in deduction_items:
-        if item['amount'] is not None and isinstance(item['amount'], (Decimal, int, float)):
-            attendance_ded_group[item['name']] += Decimal(str(item['amount']))
-    attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
+    # attendance_total, deduction_items = payslip.get_attendance_deductions()
+    # attendance_ded_group = defaultdict(Decimal)
+    # for item in deduction_items:
+    #     if item['amount'] is not None and isinstance(item['amount'], (Decimal, int, float)):
+    #         attendance_ded_group[item['name']] += Decimal(str(item['amount']))
+    # attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
 
     # Fetch relevant taxes
     taxes = employee.taxes.filter(
@@ -972,7 +972,9 @@ def generate_payslip_pdf(payslip):
             taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': Decimal(str(amount))})
 
     # Combine all deductions
-    deductions_data = regular_deductions + attendance_deductions + taxes_data
+    # deductions_data = regular_deductions + attendance_deductions + taxes_data
+    deductions_data = regular_deductions + taxes_data
+
     deductions_data.sort(key=lambda x: x['name'])
 
     # Filter out zero-amount items

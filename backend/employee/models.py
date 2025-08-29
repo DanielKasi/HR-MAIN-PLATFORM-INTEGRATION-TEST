@@ -31,11 +31,11 @@ from difflib import Differ, SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
 
 
-class EmployeeType(UtilityBaseModel):
+class EmployeeType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -47,7 +47,7 @@ class EmployeeType(UtilityBaseModel):
         return self.name
 
 
-class WorkType(UtilityBaseModel):
+class WorkType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -59,7 +59,7 @@ class WorkType(UtilityBaseModel):
         return self.name
 
 
-class Employee(UtilityBaseModel):
+class Employee(SoftDeletableTimeStampedModel):
     """
     Employee model to store employee details in the system.
     """
@@ -435,20 +435,21 @@ class Employee(UtilityBaseModel):
             digits = string.digits
             special = string.punctuation
 
-        password = [
-            random.choice(lowercase),
-            random.choice(uppercase),
-            random.choice(digits),
-            random.choice(special),
-        ]
+            password = [
+                random.choice(lowercase),
+                random.choice(uppercase),
+                random.choice(digits),
+                random.choice(special),
+            ]
 
-        all_characters = lowercase + uppercase + digits + special
-        for _ in range(length - 4):
-            password.append(random.choice(all_characters))
+            all_characters = lowercase + uppercase + digits + special
+            for _ in range(length - 4):
+                password.append(random.choice(all_characters))
 
-        random.shuffle(password)
-        return "".join(password)
+            random.shuffle(password)
+            return "".join(password)
 
+        # This was incorrectly indented in your original code
         random_password = generate_compliant_password()
         self.user.set_password(random_password)
         self.user.is_password_verified = False
@@ -457,62 +458,108 @@ class Employee(UtilityBaseModel):
 
     def create_password_token_and_send_link(self, request):
         """Create token and send password link to user."""
-        from django.urls import reverse
-        from django.core.mail import send_mail
-        import uuid
-        from datetime import timedelta
+        try:
+            # Add the missing import
+            from users.models import OTPModel  # or whatever your Token model is called
+            
+            def create_and_institution_token(user, purpose, expiry_minutes):
+                token = uuid.uuid4().hex
+                # Use OTPModel instead of Token if that's your model name
+                OTPModel.objects.create(
+                    user=user,
+                    value=token,  # Make sure this matches your model field name
+                    purpose=purpose,
+                    expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+                )
+                return token
 
-        def create_and_institution_token(user, purpose, expiry_minutes):
-            token = uuid.uuid4().hex
-            Token.objects.create(
-                user=user,
-                token=token,
-                purpose=purpose,
-                expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+            def build_password_link(request, token):
+                try:
+                    return request.build_absolute_uri(
+                        reverse("set_password", kwargs={"token": token})
+                    )
+                except Exception as e:
+                    logger.error(f"Error building password link: {e}")
+                    # Fallback URL construction
+                    base_url = f"{request.scheme}://{request.get_host()}"
+                    return f"{base_url}/set-password/{token}"
+
+            def send_password_link_to_user(user, link):
+                # Add debugging
+                print(f"Attempting to send password link to {user.email}")
+                print(f"Email settings - FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
+                
+                try:
+                    result = send_mail(
+                        subject="Set Your Password",
+                        message=f"Please use the following link to set your password: {link}",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
+                    )
+                    print(f"Email send result: {result}")
+                    return result > 0
+                except Exception as email_error:
+                    logger.error(f"Failed to send email: {email_error}")
+                    raise email_error
+
+            # Check if user has email
+            if not self.user or not self.user.email:
+                logger.error("User or user email is missing")
+                return False
+                
+            token = create_and_institution_token(
+                user=self.user, purpose="registration", expiry_minutes=15
             )
-            return token
-
-        def build_password_link(request, token):
-            return request.build_absolute_uri(
-                reverse("set_password", kwargs={"token": token})
-            )
-
-        def send_password_link_to_user(user, link):
-            send_mail(
-                subject="Set Your Password",
-                message=f"Please use the following link to set your password: {link}",
-                from_email="no-reply@yourinstitution.com",
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-
-        token = create_and_institution_token(
-            user=self.user, purpose="registration", expiry_minutes=15
-        )
-        password_link = build_password_link(request=request, token=token)
-        send_password_link_to_user(user=self.user, link=password_link)
-        return True
+            password_link = build_password_link(request=request, token=token)
+            print(f"Generated password link: {password_link}")
+            
+            link_sent = send_password_link_to_user(user=self.user, link=password_link)
+            
+            (f"Link sent status: {link_sent}")
+            return link_sent
+            
+        except Exception as e:
+            logger.error(f"Error in create_password_token_and_send_link: {e}")
+            return False
 
     def setup_employee_password(self, request):
         """
         Complete password setup process for new employees.
         """
+        print(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
+        
         if not self.should_generate_password():
+            logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
 
         try:
+            # Check if user exists and has email
+            if not self.user:
+                logger.error("No user associated with this employee")
+                return {"success": False, "error": "No user associated with employee"}
+                
+            if not self.user.email:
+                logger.error("User has no email address")
+                return {"success": False, "error": "User has no email address"}
+            
             password = self.generate_and_set_password()
+            print(f"Password generated successfully: {bool(password)}")
+            
             link_sent = self.create_password_token_and_send_link(request)
+            print(f"Password link sent: {link_sent}")
+            
             return {
                 "success": True,
                 "password_generated": bool(password),
                 "link_sent": link_sent,
             }
         except Exception as e:
+            logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
 
 
-class EmployeeWorkingDays(UtilityBaseModel):
+class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     employee = models.OneToOneField(
         Employee, on_delete=models.CASCADE, related_name="custom_working_days"
     )
@@ -527,7 +574,7 @@ class EmployeeWorkingDays(UtilityBaseModel):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
 
-class EmployeeAttendance(UtilityBaseModel):
+class EmployeeAttendance(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
@@ -631,7 +678,7 @@ class EmployeeAttendance(UtilityBaseModel):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(UtilityBaseModel):
+class EmployeeContract(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),

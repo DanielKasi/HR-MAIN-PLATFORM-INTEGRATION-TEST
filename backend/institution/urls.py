@@ -28,6 +28,10 @@ from .views import (
     DashboardView,
     InstitutionKYCDocumentListCreateView,
     InstitutionKYCDocumentDetailView,
+    InstitutionPenaltyConfigDetailAPIView,
+    InstitutionPenaltyConfigListAPIView,
+    BranchPenaltyConfigListAPIView,
+    BranchPenaltyConfigDetailAPIView
 )
 
 urlpatterns = [
@@ -140,5 +144,25 @@ urlpatterns = [
         "<int:institution_id>/dashboard-analytics/",
         DashboardView.as_view(),
         name="dash-analytics",
+    ),
+        path(
+        "institution-penalties/",
+        InstitutionPenaltyConfigListAPIView.as_view(),
+        name="institution-penalty-config-list",
+    ),
+    path(
+        "institution-penalties/<int:pk>/",
+        InstitutionPenaltyConfigDetailAPIView.as_view(),
+        name="institution-penalty-config-detail",
+    ),
+    path(
+        "branch-penalties/",
+        BranchPenaltyConfigListAPIView.as_view(),
+        name="branch-penalty-config-list",
+    ),
+    path(
+        "branch-penalties/<int:pk>/",
+        BranchPenaltyConfigDetailAPIView.as_view(),
+        name="branch-penalty-config-detail",
     ),
 ]

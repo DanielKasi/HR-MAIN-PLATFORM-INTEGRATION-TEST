@@ -13,7 +13,7 @@ from jsignature.fields import JSignatureField
 from django import forms
 from jsignature.forms import JSignatureField as JSignatureFormField
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from datetime import timedelta
 from django.conf import settings
 
@@ -36,7 +36,7 @@ class UserType(TextChoices):
     STAFF = "STAFF", "Staff"
 
 
-class CustomUser(AbstractBaseUser, PermissionsMixin, UtilityBaseModel):
+class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedModel):
     email = models.EmailField(unique=True)
     fullname = models.CharField(max_length=255)
     # is_active = models.BooleanField(default=True)
@@ -155,7 +155,7 @@ class Profile(models.Model):
         return f"Profile of {self.user.email}"
 
 
-class PermissionCategory(UtilityBaseModel):
+class PermissionCategory(SoftDeletableTimeStampedModel):
     permission_category_name = models.CharField(max_length=255)
     permission_category_description = models.TextField()
 
@@ -175,7 +175,7 @@ class PermissionCategory(UtilityBaseModel):
 
 # many to many relationship between roles and permissions
 # Role - RolePermission - Permission
-class Permission(UtilityBaseModel):
+class Permission(SoftDeletableTimeStampedModel):
     permission_code = models.CharField(max_length=255)
     permission_name = models.CharField(max_length=255)
     permission_description = models.TextField(blank=True, null=True)
@@ -200,7 +200,7 @@ class Permission(UtilityBaseModel):
             )
         ]
 
-class Role(UtilityBaseModel):
+class Role(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(

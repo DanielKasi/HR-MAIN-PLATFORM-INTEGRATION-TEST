@@ -6,10 +6,10 @@ from .utils.history import create_asset_history
 from django.db import transaction
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class AssetCategory(UtilityBaseModel):
+class AssetCategory(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -108,7 +108,7 @@ class AssetCategory(UtilityBaseModel):
 
 
 
-class Asset(UtilityBaseModel):
+class Asset(SoftDeletableTimeStampedModel):
     ASSET_ALLOCATION_CHOICES = [
         ("available", "Available"),
         ("allocated", "Allocated"),
@@ -179,7 +179,7 @@ class Asset(UtilityBaseModel):
             )
 
 
-class AssetRequest(UtilityBaseModel):
+class AssetRequest(SoftDeletableTimeStampedModel):
 
     ASSET_REQUEST_STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -277,7 +277,7 @@ class AssetRequest(UtilityBaseModel):
             )
 
 
-class AssetAllocation(UtilityBaseModel):
+class AssetAllocation(SoftDeletableTimeStampedModel):
 
     ASSET_ALLOCATION_STATUS_CHOICES = [
         ("cancelled", "Cancelled"),
@@ -398,7 +398,7 @@ class AssetAllocation(UtilityBaseModel):
             )
 
 
-class AssetReturn(UtilityBaseModel):
+class AssetReturn(SoftDeletableTimeStampedModel):
     ASSET_CONDITION_CHOICES = [
         ("good", "Good"),
         ("damaged", "Damaged"),
@@ -446,7 +446,7 @@ class AssetReturn(UtilityBaseModel):
             self.asset.save(update_fields=["status", "current_holder"])
 
 
-class AssetHistory(UtilityBaseModel):
+class AssetHistory(SoftDeletableTimeStampedModel):
     EVENT_TYPE_CHOICES = [
         ("allocated", "Allocated"),
         ("returned", "Returned"),

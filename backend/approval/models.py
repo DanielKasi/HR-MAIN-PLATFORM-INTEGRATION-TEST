@@ -1,12 +1,12 @@
 from django.db import models
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from institution.models import Institution
 from users.models import Role, Profile, CustomUser
 import uuid
 
-class Action(UtilityBaseModel):
+class Action(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True, editable=False)
     description = models.TextField(blank=True, null=True)
@@ -23,7 +23,7 @@ class Action(UtilityBaseModel):
     class Meta:
         ordering = ['name']    
 
-class ApproverGroup(UtilityBaseModel):
+class ApproverGroup(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)   
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -38,7 +38,7 @@ class ApproverGroup(UtilityBaseModel):
     class Meta:
         unique_together = ['institution', 'name']     
 
-class ApproverGroupRole(UtilityBaseModel):
+class ApproverGroupRole(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
@@ -54,7 +54,7 @@ class ApproverGroupUser(models.Model):
     def __str__(self):
         return f"{self.approver_group.name} - {self.user.user.fullname}"
 
-class ApprovalDocument(UtilityBaseModel):  
+class ApprovalDocument(SoftDeletableTimeStampedModel):  
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -116,7 +116,7 @@ class Approval(models.Model):
     def __str__(self):
         return f"Approval {self.public_id} - {self.status}"
 
-class ApprovalTask(UtilityBaseModel):
+class ApprovalTask(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
         ('not_started', 'Not Started'),
         ('pending', 'Pending'),
@@ -193,7 +193,7 @@ class ApprovalTask(UtilityBaseModel):
                 self.approval.content_object.finish_workflow(self.approval)
 
 
-class BaseApprovableModel(UtilityBaseModel):
+class BaseApprovableModel(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
         ('under_creation', 'Under Creation'),
         ('under_update', 'Under Update'),
