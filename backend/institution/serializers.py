@@ -732,6 +732,7 @@ class BranchShiftSerializer(serializers.ModelSerializer):
         return ret
 
 class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = BranchLocationComaparisonConfig
         fields = "__all__"        
