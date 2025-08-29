@@ -599,7 +599,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             ("absent", "Absent"),
             ("pending", "Pending"),
         ],
-        default="pending",
+        default="pending"  # Added default value
     )
 
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -681,46 +681,44 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         print("    No early checkout")
         return 0
 
-    def update_attendance_status(self, commit=True):
+    def update_attendance_status(self):
+        """Calculate and set attendance status based on check-in/out times"""
         print(f"[DEBUG] Updating attendance status for {self} ...")
 
+        # Check for absence first
         if not self.check_in_time and not self.check_out_time:
             print("    Absent (no check-in or check-out)")
             self.attendance_status = "absent"
             self.overtime_hours = 0
             self.late_minutes = 0
             self.early_checkout_minutes = 0
+            return
+
+        # Calculate metrics
+        self.overtime_hours = self.calculate_overtime_hours()
+        self.late_minutes = self.calculate_late_minutes()
+        self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+
+        # Determine status with priority order
+        if self.late_minutes > 0:
+            self.attendance_status = "late"
+        elif self.early_checkout_minutes > 0:
+            self.attendance_status = "early_checkout"
+        elif self.overtime_hours > 0:
+            self.attendance_status = "overtime"
         else:
-            self.overtime_hours = self.calculate_overtime_hours()
-            self.late_minutes = self.calculate_late_minutes()
-            self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+            self.attendance_status = "on_time"
 
-            if self.late_minutes > 0:
-                self.attendance_status = "late"
-            elif self.early_checkout_minutes > 0:
-                self.attendance_status = "early_checkout"
-            elif self.overtime_hours > 0:
-                self.attendance_status = "overtime"
-            else:
-                self.attendance_status = "on_time"
-
-            print(f"    Status = {self.attendance_status}, "
-                  f"Overtime = {self.overtime_hours}, "
-                  f"Late = {self.late_minutes}, "
-                  f"Early checkout = {self.early_checkout_minutes}")
-
-        if commit:
-            print("    Saving attendance with updated values...")
-            super().save(update_fields=[
-                "attendance_status",
-                "overtime_hours",
-                "late_minutes",
-                "early_checkout_minutes"
-            ])
+        print(f"    Final Status = {self.attendance_status}, "
+              f"Overtime = {self.overtime_hours}, "
+              f"Late = {self.late_minutes}, "
+              f"Early checkout = {self.early_checkout_minutes}")
 
     def save(self, *args, **kwargs):
+        """
+        Simplified save method - status calculation is now handled by serializer.
+        """
         print(f"[DEBUG] Saving attendance record for {self} ...")
-        self.update_attendance_status(commit=False)
         super().save(*args, **kwargs)
         print(f"    Saved {self}")
 
