@@ -1,10 +1,10 @@
 from django.db import models
 from institution.models import Institution
 from django.utils import timezone
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class PerformancePolicy(UtilityBaseModel):
+class PerformancePolicy(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()

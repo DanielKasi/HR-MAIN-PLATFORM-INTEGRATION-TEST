@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from institution.models import Institution
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.exceptions import ValidationError
 
 
@@ -57,7 +57,7 @@ class BaseModel(models.Model):
         super().clean()
 
 
-class AllowanceType(BaseModel, UtilityBaseModel):
+class AllowanceType(BaseModel, SoftDeletableTimeStampedModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -77,7 +77,7 @@ class AllowanceType(BaseModel, UtilityBaseModel):
         ordering = ["name"]
 
 
-class DeductionType(BaseModel, UtilityBaseModel):
+class DeductionType(BaseModel, SoftDeletableTimeStampedModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
@@ -133,7 +133,7 @@ class DeductionType(BaseModel, UtilityBaseModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(UtilityBaseModel):
+class EmployeeAllowance(SoftDeletableTimeStampedModel):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -264,7 +264,7 @@ class EmployeeAllowance(UtilityBaseModel):
         return recurrence_count
 
 
-class EmployeeDeduction(UtilityBaseModel):
+class EmployeeDeduction(SoftDeletableTimeStampedModel):
     """
     Employee-specific deductions
     """
@@ -393,7 +393,7 @@ class EmployeeDeduction(UtilityBaseModel):
         return recurrence_count
 
 
-class EmployeeTax(UtilityBaseModel):
+class EmployeeTax(SoftDeletableTimeStampedModel):
     """
     Employee-specific tax details
     """
@@ -467,7 +467,7 @@ class EmployeeTax(UtilityBaseModel):
         return Decimal(0.00)
 
 
-class PayrollPeriod(UtilityBaseModel):
+class PayrollPeriod(SoftDeletableTimeStampedModel):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
@@ -490,7 +490,7 @@ class PayrollPeriod(UtilityBaseModel):
         ordering = ["-start_date"]
 
 
-class Payslip(UtilityBaseModel):
+class Payslip(SoftDeletableTimeStampedModel):
     """
     Individual employee payslip for a specific period
     """
