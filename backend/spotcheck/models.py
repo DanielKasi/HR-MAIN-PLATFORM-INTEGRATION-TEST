@@ -78,7 +78,7 @@ class EmployeeSpotCheck(TimeStampedModel):
 
 
     def check_if_location_is_valid(self):
-        pass
+        return self.employee._is_location_valid(self.latitude, self.longitude)
 
     def update_penalty(self):    
         employee = self.employee

@@ -196,10 +196,10 @@ class EmployeeStopCheckDetailView(APIView):
         summary="Employee spot check Detail",
         tags=["Employee spot check Management"],
     )
-    def get(self, request, employee_id):
+    def get(self, request, spotcheck_id):
         """Retrieve details of a specific emplpyee spot check setting."""
         try:
-            setting = StopCheckModels.EmployeeSpotCheck.object.get(id=employee_id, deleted_at=None)
+            setting = StopCheckModels.EmployeeSpotCheck.object.get(id=spotcheck_id, deleted_at=None)
             serializer = StopCheckSerializers.EmployeeSpotCheckSerializer(setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except StopCheckModels.EmployeeSpotCheck.DoesNotExist:
@@ -212,10 +212,10 @@ class EmployeeStopCheckUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
-    def patch(self, request, employee_id):
+    def patch(self, request, spotcheck_id):
         """Update details of a specific employee spot check."""
         try:
-            setting = StopCheckModels.EmployeeSpotCheck.object.get(id=employee_id, deleted_at=None)
+            setting = StopCheckModels.EmployeeSpotCheck.object.get(id=spotcheck_id, deleted_at=None)
         except StopCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
                 {"detail": "Employee spot check not found."}, status=status.HTTP_404_NOT_FOUND
@@ -224,5 +224,38 @@ class EmployeeStopCheckUpdateView(APIView):
         serializer = StopCheckSerializers.EmployeeSpotCheckSerializer(instance=setting, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmployeeStopCheckInView(APIView):
+    permission_classes = [AllowAny]
+    parser_classes = [FormParser]
+
+    def patch(self, request, spotcheck_id):
+        """Record Spot check record when an employee responds to a spot check prompt."""
+        try:
+            setting = StopCheckModels.EmployeeSpotCheck.object.get(id=spotcheck_id, deleted_at=None)
+        except StopCheckModels.EmployeeSpotCheck.DoesNotExist:
+            return Response(
+                {"detail": "Employee spot check not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = StopCheckSerializers.EmployeeSpotCheckSerializer(instance=setting, data=request.data, partial=True)
+        if serializer.is_valid():
+            spotcheck = serializer.save()
+
+            valid_status, _ = StopCheckModels.SpotCheckStatus.objects.get_or_create("VALID", "VALID")
+            invalid_status, _ = StopCheckModels.SpotCheckStatus.objects.get_or_create("INVALID", "INVALID")
+
+            # confirm that employee is within allowed range
+            if spotcheck.check_if_location_is_valid():
+                spotcheck.status = valid_status
+            else:
+                spotcheck.status = invalid_status
+                spotcheck.issue_penalty()
+
+            spotcheck.save()
+
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
