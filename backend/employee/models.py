@@ -162,24 +162,24 @@ class Employee(UtilityBaseModel):
 
     class Meta:
         constraints = [
-            # A OneToOneField is essentially a ForeignKey with unique=True
-            # To make it conditional, we use a UniqueConstraint.
             UniqueConstraint(
-                fields=["user"],
+                fields=["department", "user"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_user",
+                name="unique_active_employee_user_per_department_institution",
             ),
             UniqueConstraint(
-                fields=["email"],
+                fields=["department", "email"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_email",
+                name="unique_active_employee_email_per_department_institution",
             ),
             UniqueConstraint(
-                fields=["nin"],
+                fields=["department", "nin"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_nin",
+                name="unique_active_employee_nin_per_department_institution",
             ),
         ]
+
+       
 
     def clean(self):
         """Custom validation for the Employee model"""
