@@ -15,6 +15,7 @@ from .models import (
     Payslip,
     PayslipItem,
     EmployeeTax,
+    EmployeePenalty
 )
 from .serializers import (
     EmployeeAllowanceSerializer,
@@ -28,6 +29,7 @@ from .serializers import (
     EmployeeTaxSerializer,
     AttendanceReportSerializer,
     PayslipsExcelReportSerializer,
+    EmployeePenaltySerializer,
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_excel
@@ -833,5 +835,96 @@ class DownloadPayslipPDFView(APIView):
             print(f"Error generating PDF for payslip {payslip_id}: {e}")
             return Response(
                 {"error": "An internal server error occurred while generating the PDF."},
+              
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+class EmployeePenaltyListAPIView(APIView):
+    @extend_schema(
+        tags=['Employee Penalties'],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        employee_id = request.query_params.get('employee_id', None)
+        penalty_type = request.query_params.get('penalty_type', None)
+        date_from = request.query_params.get('date_from', None)
+        date_to = request.query_params.get('date_to', None)
+        
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        penalties = EmployeePenalty.objects.filter(
+            employee__payroll_branch__institution=institution  # Assuming employee -> payroll_branch -> institution
+        )
+        
+        if employee_id:
+            penalties = penalties.filter(employee__id=employee_id)
+        
+        if penalty_type:
+            penalties = penalties.filter(penalty_type=penalty_type)
+        
+        if date_from:
+            penalties = penalties.filter(date__gte=date_from)
+        
+        if date_to:
+            penalties = penalties.filter(date__lte=date_to)
+        
+        if search_query:
+            penalties = penalties.filter(
+                Q(penalty_type__icontains=search_query) |
+                Q(notes__icontains=search_query)
+            )
+        
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(penalties, request)
+        serializer = EmployeePenaltySerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(tags=['Employee Penalties'])
+    def post(self, request):
+        serializer = EmployeePenaltySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmployeePenaltyDetailAPIView(APIView):
+    @extend_schema(tags=["Employee Penalties"])
+    def get(self, request, pk):
+        try:
+            penalty = EmployeePenalty.objects.get(pk=pk)
+        except EmployeePenalty.DoesNotExist:
+            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmployeePenaltySerializer(penalty)
+        return Response(serializer.data)
+
+    @extend_schema(tags=["Employee Penalties"])
+    def patch(self, request, pk):
+        try:
+            penalty = EmployeePenalty.objects.get(pk=pk)
+        except EmployeePenalty.DoesNotExist:
+            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EmployeePenaltySerializer(penalty, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(tags=["Employee Penalties"])
+    def delete(self, request, pk):
+        try:
+            penalty = EmployeePenalty.objects.get(pk=pk)
+        except EmployeePenalty.DoesNotExist:
+            return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        penalty.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

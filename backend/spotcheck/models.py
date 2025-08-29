@@ -48,7 +48,6 @@ class EmployeeSpotCheckSetting(SoftDeletableTimeStampedModel):
 
 class SpotCheckStatus(TimeStampedModel):
     status_name = models.CharField(max_length=255)
-    status_code = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -76,3 +75,35 @@ class EmployeeSpotCheck(TimeStampedModel):
 
     def __str__(self):
         return f"SpotCheck for {self.employee.user.fullname} at {self.spotcheck_time}"
+
+
+    def check_if_location_is_valid(self):
+        pass
+
+    def update_penalty(self):    
+        employee = self.employee
+        setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
+        if not setting:
+            branch = employee.payroll_branch  
+            setting = BranchSpotCheckSetting.objects.filter(branch=branch).first()
+        if not setting:
+            institution = branch.institution if branch else employee.department.institution
+            setting = InstitutionSpotCheckSetting.objects.filter(institution=institution).first()
+
+        if not setting:
+            return    
+
+        expiry_time = self.spotcheck_time + timedelta(minutes=setting.expires_after_minutes)
+        late_time = self.spotcheck_time + timedelta(minutes=setting.late_starts_after_minutes)
+
+        now = datetime.now()  
+
+        if self.responded_at:
+            if self.responded_at <= expiry_time:
+                EmployeePenalty.create_from_spotcheck(self, 'late_spotcheck_response')
+
+        else:   
+            if now > expiry_time:
+                EmployeePenalty.create_from_spotcheck(self, 'no_response_spotcheck')
+        
+        self.save()     

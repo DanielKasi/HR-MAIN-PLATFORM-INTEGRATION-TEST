@@ -11,6 +11,7 @@ from .models import (
     Payslip,
     PayslipItem,
     EmployeeTax,
+    EmployeePenalty,
 )
 from employee.models import Employee, EmployeeAttendance
 from institution.models import Institution, Department
@@ -31,6 +32,12 @@ class BaseModelSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["institution"] = InstitutionSerializer(instance.institution).data
         return rep
+
+class EmployeePenaltySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EmployeePenalty
+        fields = "__all__"        
 
 
 class AllowanceTypeSerializer(BaseModelSerializer):

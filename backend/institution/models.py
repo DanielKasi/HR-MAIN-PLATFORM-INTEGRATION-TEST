@@ -581,7 +581,7 @@ PENALTY_VALUE_TYPES = [
 
 class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
     """Default penalty configuration at institution level"""
-    institution = models.OneToOneField(
+    institution = models.ForeignKey(
         Institution, related_name="penalty_config", on_delete=models.CASCADE
     )
     penalty_type = models.CharField(
@@ -618,6 +618,18 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
         elif self.penalty_value_type == 'fixed':
             if self.penalty_value <= 0:
                 raise ValidationError("Penalty value must be greater than 0 when penalty type is fixed")
+
+    def get_calculated_amount(self, employee_salary):
+        """Calculate penalty amount based on method"""
+        if self.penalty_value_type == "percentage":
+            if not employee_salary or employee_salary <= 0:
+                return 0.00
+            if not self.percentage or self.percentage <= 0:
+                return 0.00
+            calculated = (employee_salary * self.percentage) / 100
+            return calculated
+        
+        return self.penalty_value            
 
 class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
@@ -677,4 +689,15 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
             calculated = (employee_salary * self.percentage) / 100
             return calculated
         
-        return self.penalty_value     
+        return self.penalty_value 
+
+class BranchLocationComaparisonConfig(SoftDeletableTimeStampedModel):
+    radius_in_meters = models.IntegerField(default=100)
+    branch = models.OneToOneField(
+        Branch,
+        on_delete=models.CASCADE,
+        related_name="location_comparison_settings"
+    )
+
+    def __str__(self):
+        return f"Location Comparison Settings for {self.branch.branch_name}"            

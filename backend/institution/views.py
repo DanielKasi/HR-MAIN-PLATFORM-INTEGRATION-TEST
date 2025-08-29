@@ -27,7 +27,8 @@ from .models import (
     InstitutionTaxRule,
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
-    BranchPenaltyConfig
+    BranchPenaltyConfig,
+    BranchLocationComaparisonConfig
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -46,7 +47,8 @@ from .serializers import (
     InstitutionKYCDocumentSerializer,
     InstitutionKYCDocumentBulkCreateSerializer,
     InstitutionPenaltyConfigSerializer,
-    BranchPenaltyConfigSerializer
+    BranchPenaltyConfigSerializer,
+    BranchLocationComparisonConfigSerializer
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -1970,4 +1972,58 @@ class BranchPenaltyConfigDetailAPIView(APIView):
     def delete(self, request, pk):
         config = self.get_object(pk)
         config.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)        
+        return Response(status=status.HTTP_204_NO_CONTENT)    
+
+class BranchLocationComparisonConfigListAPIView(APIView):
+    def get(self, request):
+        search_query = request.query_params.get("search", None)
+        user = request.user.profile
+
+        try:
+            institution = user.institution
+        except AttributeError:
+            return Response({"detail": "User has no institution assigned."}, status=400)
+
+        # Filter by institution through branch
+        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution)
+
+        if search_query:
+            configs = configs.filter(branch__branch_name__icontains=search_query)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = BranchLocationComparisonConfigSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+    def post(self, request):
+        serializer = BranchLocationComparisonConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BranchLocationComparisonConfigDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchLocationComaparisonConfig.objects.get(pk=pk)
+        except BranchLocationComaparisonConfig.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        config = self.get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)            

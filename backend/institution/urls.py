@@ -31,7 +31,9 @@ from .views import (
     InstitutionPenaltyConfigDetailAPIView,
     InstitutionPenaltyConfigListAPIView,
     BranchPenaltyConfigListAPIView,
-    BranchPenaltyConfigDetailAPIView
+    BranchPenaltyConfigDetailAPIView,
+    BranchLocationComparisonConfigListAPIView,
+    BranchLocationComparisonConfigDetailAPIView
 )
 
 urlpatterns = [
@@ -164,5 +166,15 @@ urlpatterns = [
         "branch-penalties/<int:pk>/",
         BranchPenaltyConfigDetailAPIView.as_view(),
         name="branch-penalty-config-detail",
+    ),
+    path(
+        "branch-location-comparison/",
+        BranchLocationComparisonConfigListAPIView.as_view(),
+        name="branch-location-comparison-config-list",
+    ),
+    path(
+        "branch-location-comparison/<int:pk>/",
+        BranchLocationComparisonConfigDetailAPIView.as_view(),
+        name="branch-location-comparison-config-detail",
     ),
 ]
