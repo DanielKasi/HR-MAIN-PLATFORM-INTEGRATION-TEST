@@ -79,5 +79,8 @@ urlpatterns = [
         DownloadPayslipPDFView.as_view(),
         name="payslip-pdf-download",
     ),
+    path("penalties/", EmployeePenaltyListAPIView.as_view(), name="employee-penalty-list"),
+    path("penalties/<int:pk>/", EmployeePenaltyDetailAPIView.as_view(), name="employee-penalty-detail"),
+
 
 ]
