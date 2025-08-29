@@ -7,11 +7,11 @@ from institution.models import Institution, Branch
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
 
-class InstitutionSpotCheckSettingSerializer(serializers.ModelSerializer);
+class InstitutionSpotCheckSettingSerializer(serializers.ModelSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
-        model = SpotCheckModels.InstitutionSPotCheckSetting
+        model = SpotCheckModels.InstitutionSpotCheckSetting
         fields = "__all__"
 
     def to_representation(self, instance):

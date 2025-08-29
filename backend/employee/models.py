@@ -704,7 +704,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return f"{self.employee} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-        print(f"[DEBUG] Calculating overtime for {self} ...")
+
         if (
             self.date
             and self.check_out_time
@@ -726,7 +726,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return 0.0
 
     def calculate_late_minutes(self):
-        print(f"[DEBUG] Calculating late minutes for {self} ...")
         if (
             self.date
             and self.check_in_time
@@ -748,7 +747,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return 0
 
     def calculate_early_checkout_minutes(self):
-        print(f"[DEBUG] Calculating early checkout for {self} ...")
         if (
             self.date
             and self.check_out_time
@@ -771,7 +769,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
 
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
-        print(f"[DEBUG] Updating attendance status for {self} ...")
+
 
         # Check for absence first
         if not self.check_in_time and not self.check_out_time:
@@ -806,9 +804,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         """
         Simplified save method - status calculation is now handled by serializer.
         """
-        print(f"[DEBUG] Saving attendance record for {self} ...")
         super().save(*args, **kwargs)
-        print(f"    Saved {self}")
 
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
