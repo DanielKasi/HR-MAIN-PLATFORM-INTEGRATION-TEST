@@ -1,19 +1,22 @@
 from django.db import models
 from django.utils import timezone
 
+
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True
+
+
 class SoftDeletableTimeStampedModel(TimeStampedModel):
     deleted_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True
-    
+
     def delete(self, *args, **kwargs):
         """Soft-deletes the record by setting the deleted_at timestamp."""
         self.deleted_at = timezone.now()

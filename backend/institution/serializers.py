@@ -13,6 +13,8 @@ from .models import (
     InstitutionBankAccount,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionPenaltyConfig,
+    BranchPenaltyConfig
 )
 import os
 from django.db import transaction
@@ -659,3 +661,13 @@ class SuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     message = serializers.CharField()
     data = serializers.DictField()
+
+class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstitutionPenaltyConfig
+        fields = '__all__'
+
+class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BranchPenaltyConfig
+        fields = '__all__'
