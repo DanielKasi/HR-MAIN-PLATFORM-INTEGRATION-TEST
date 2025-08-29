@@ -18,7 +18,7 @@ from .models import (
     BranchWorkingDays,
     BranchDay,
     BranchShift,
-    BranchLocationComaparisonConfig
+    BranchLocationComparisonConfig
 )
 import os
 from django.db import transaction
@@ -734,5 +734,5 @@ class BranchShiftSerializer(serializers.ModelSerializer):
 class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
     
     class Meta:
-        model = BranchLocationComaparisonConfig
+        model = BranchLocationComparisonConfig
         fields = "__all__"        

@@ -579,11 +579,10 @@ class Employee(SoftDeletableTimeStampedModel):
 
     def _is_location_valid(self, latitude, longitude):
         """
-        Check if the given location is within 100 meters of any attached branch.
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
         """
-
-        THRESHOLD_METERS = 500
-
         attached_branches = self.get_all_branches()
         if not attached_branches.exists():
             return False
@@ -591,11 +590,21 @@ class Employee(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            if distance <= THRESHOLD_METERS:
+            
+            if distance <= threshold_meters:
                 return True
+                
         return False
 
 class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
@@ -834,11 +843,10 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
 
     def _is_location_valid(self, latitude, longitude):
         """
-        Check if the given location is within 100 meters of any attached branch.
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
         """
-
-        THRESHOLD_METERS = 500
-
         attached_branches = self.employee.get_all_branches()
         if not attached_branches.exists():
             return False
@@ -846,11 +854,21 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            if distance <= THRESHOLD_METERS:
+            
+            if distance <= threshold_meters:
                 return True
+                
         return False
 
     def save(self, *args, **kwargs):
