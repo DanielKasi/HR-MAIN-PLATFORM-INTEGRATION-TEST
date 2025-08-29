@@ -594,9 +594,22 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         ],
         default="pending",
     )
+    attendance_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("late", "Late"),
+            ("early_checkout", "Early Checkout"),
+            ("overtime", "Overtime"),
+            ("on_time", "On Time"),
+            ("absent", "Absent"),
+        ],
+        default="pending",
+    )
     overtime_hours = models.DecimalField(
         max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
     )
+    late_minutes = models.IntegerField(default=0, null=True, blank=True)
+    early_checkout_minutes = models.IntegerField(default=0, null=True, blank=True)
 
     class Meta:
         unique_together = ("employee", "date")
@@ -605,7 +618,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return f"{self.employee.user.fullname} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-
         if (
             self.date
             and self.check_out_time
@@ -613,15 +625,70 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             and self.employee.payroll_branch
         ):
             branch_end_time = self.employee.payroll_branch.branch_closing_time
-
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
-                hours = round(overtime_duration.total_seconds() / 3600, 2)
-                return hours
+                return round(overtime_duration.total_seconds() / 3600, 2)
         return 0.0
+
+    def calculate_late_minutes(self):
+        if (
+            self.date
+            and self.check_in_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_start_time = self.employee.payroll_branch.branch_opening_time
+            datetime_checkin = datetime.combine(self.date, self.check_in_time)
+            datetime_start = datetime.combine(self.date, branch_start_time)
+
+            if datetime_checkin > datetime_start:
+                delay = datetime_checkin - datetime_start
+                return int(delay.total_seconds() / 60)
+        return 0
+
+    def calculate_early_checkout_minutes(self):
+        if (
+            self.date
+            and self.check_out_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_end_time = self.employee.payroll_branch.branch_closing_time
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            datetime_end = datetime.combine(self.date, branch_end_time)
+
+            if datetime_checkout < datetime_end:
+                early_leave = datetime_end - datetime_checkout
+                return int(early_leave.total_seconds() / 60)
+        return 0
+
+    def update_attendance_status(self):
+        # If no check-in and check-out => absent
+        if not self.check_in_time and not self.check_out_time:
+            self.attendance_status = "absent"
+        else:
+            self.overtime_hours = self.calculate_overtime_hours()
+            self.late_minutes = self.calculate_late_minutes()
+            self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+
+            if self.late_minutes > 0:
+                self.attendance_status = "late"
+            elif self.early_checkout_minutes > 0:
+                self.attendance_status = "early_checkout"
+            elif self.overtime_hours > 0:
+                self.attendance_status = "overtime"
+            else:
+                self.attendance_status = "on_time"
+
+        self.save()
+
+    def save(self, *args, **kwargs):
+        """Override save so status updates automatically"""
+        super().save(*args, **kwargs)
+        self.update_attendance_status()
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
