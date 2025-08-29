@@ -19,7 +19,18 @@ def trigger_spotchecks():
         spot_checks__spotcheck_time__date=now.date()
     )[:settings.SPOTCHECK_BATCH_SIZE]
 
+    status, _ = SpotCheckStatus.objects.get_or_create(status_name="SENT")
+
     for emp in employees:
+
+
+        spotcheck = EmployeeSpotCheck.objects.create(
+            employee=emp,
+            spotcheck_time=now,
+            status=status,
+            initiated_by="system",
+        )
+
         try:
             send_mail(
                 subject="Spot Check",
@@ -28,14 +39,11 @@ def trigger_spotchecks():
                 recipient_list=[emp.user.email],
                 fail_silently=False,
             )
-
-            # Store spotcheck record
-            EmployeeSpotCheck.objects.create(
-                employee=emp,
-                spotcheck_time=now,
-                status=SpotCheckStatus.objects.get(name="Pending"),
-                initiated_by="system",
-            )
         except Exception as e:
-            # log error (e.g. Sentry / logger)
-            print(f"Failed to send to {emp}: {e}")
+            # delete the spotcheck if email fails
+            print(f"Failed to send email to {emp.user.email}: {e}")
+            spotcheck.delete()
+            continue
+
+
+

@@ -1,7 +1,6 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
-from datetime import datetime
 from institution.utils import generate_compliant_password
 from utilities.helpers import (
     build_password_link,
@@ -11,23 +10,17 @@ from utilities.helpers import (
 )
 
 from django.db import models
-from datetime import datetime
 from institution.models import Branch, UserBranch
 from datetime import date, datetime
-from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.core.files import File
-import os
 from django.conf import settings
-import hashlib
 from django.core.exceptions import ValidationError
 import PyPDF2
 from pdf2image import convert_from_bytes
 import pytesseract
-from django.core.files.base import ContentFile
 import io
 from io import BytesIO
-from difflib import Differ, SequenceMatcher
+from difflib import SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
