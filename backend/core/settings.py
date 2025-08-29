@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'approval',
     'spotcheck',
-
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -225,9 +225,10 @@ CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 SPOTCHECK_INTERVAL_MINUTES = int(os.getenv("SPOTCHECK_INTERVAL_MINUTES", 15))
 SPOTCHECK_BATCH_SIZE = int(os.getenv("SPOTCHECK_BATCH_SIZE", 50))
-CELERY_BEAT_SCHEDULE = {
-    "run-spotchecks": {
-        "task": "spotcheck.tasks.trigger_spotchecks",
-        "schedule": SPOTCHECK_INTERVAL_MINUTES * 60,
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     "run-spotchecks": {
+#         "task": "spotcheck.tasks.trigger_spotchecks",
+#         "schedule": SPOTCHECK_INTERVAL_MINUTES * 60,
+#     },
+# }
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
