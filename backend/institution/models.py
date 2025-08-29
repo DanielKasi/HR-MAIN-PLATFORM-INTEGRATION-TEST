@@ -653,7 +653,7 @@ class Department(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
-        Institution, related_name="departments", on_delete=models.CASCADE
+        Institution, related_name="departments", on_delete=models.PROTECT
     )
     # head_of_department = models.OneToOneField(
     #     "employee.Employee",
