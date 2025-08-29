@@ -578,7 +578,7 @@ PENALTY_VALUE_TYPES = [
     ('percentage', 'Percentage of Salary'),
 ]
 
-class InstitutionPenaltyConfig(UtilityBaseModel):
+class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
     """Default penalty configuration at institution level"""
     institution = models.OneToOneField(
         Institution, related_name="penalty_config", on_delete=models.CASCADE
@@ -618,7 +618,19 @@ class InstitutionPenaltyConfig(UtilityBaseModel):
             if self.penalty_value <= 0:
                 raise ValidationError("Penalty value must be greater than 0 when penalty type is fixed")
 
-class BranchPenaltyConfig(UtilityBaseModel):
+    def get_calculated_amount(self, employee_salary):
+        """Calculate penalty amount based on method"""
+        if self.penalty_value_type == "percentage":
+            if not employee_salary or employee_salary <= 0:
+                return 0.00
+            if not self.percentage or self.percentage <= 0:
+                return 0.00
+            calculated = (employee_salary * self.percentage) / 100
+            return calculated
+        
+        return self.penalty_value            
+
+class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
     branch = models.ForeignKey(
         Branch,
