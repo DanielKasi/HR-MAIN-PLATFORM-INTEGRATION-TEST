@@ -551,6 +551,49 @@ class Employee(SoftDeletableTimeStampedModel):
             logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
 
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
+        if None in (lat1, lon1, lat2, lon2):
+            return float("inf")
+
+        R = 6371000  # Earth radius in meters
+
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        )
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def _is_location_valid(self, latitude, longitude):
+        """
+        Check if the given location is within 100 meters of any attached branch.
+        """
+
+        THRESHOLD_METERS = 500
+
+        attached_branches = self.get_all_branches()
+        if not attached_branches.exists():
+            return False
+
+        for branch in attached_branches:
+            if branch.branch_latitude is None or branch.branch_longitude is None:
+                continue
+            distance = self._haversine_distance(
+                latitude, longitude, branch.branch_latitude, branch.branch_longitude
+            )
+            if distance <= THRESHOLD_METERS:
+                return True
+        return False
 
 class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     employee = models.OneToOneField(
