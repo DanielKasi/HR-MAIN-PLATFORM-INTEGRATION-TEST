@@ -14,9 +14,10 @@ from .models import (
     InstitutionTax,
     InstitutionTaxRule,
     InstitutionPenaltyConfig,
-    BranchPenaltyConfig
+    BranchPenaltyConfig,
     BranchWorkingDays,
     BranchDay,
+    BranchShift,
 )
 import os
 from django.db import transaction
@@ -703,12 +704,28 @@ class SuccessResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     data = serializers.DictField()
 
+
 class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstitutionPenaltyConfig
-        fields = '__all__'
+        fields = "__all__"
+
 
 class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = BranchPenaltyConfig
-        fields = '__all__'
+        fields = "__all__"
+
+
+class BranchShiftSerializer(serializers.ModelSerializer):
+    shift_day = serializers.PrimaryKeyRelatedField(
+        queryset=BranchDay.objects.all()
+    )
+    class Meta:
+        model = BranchShift
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["shift_day"] = BranchDaySerializer(instance.shift_day).data
+        return ret
