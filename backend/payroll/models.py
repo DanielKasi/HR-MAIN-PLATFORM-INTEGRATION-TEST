@@ -2,12 +2,12 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 from datetime import datetime
-from employee.models import Employee
+from employee.models import Employee, EmployeeAttendance
 from django.utils import timezone
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from institution.models import Institution
+from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.exceptions import ValidationError
@@ -431,6 +431,116 @@ class EmployeeTax(SoftDeletableTimeStampedModel):
         )
 
         return Decimal(0.00)
+
+class EmployeePenalty(SoftDeletableTimeStampedModel):
+    PENALTY_STATUS_CHOICES = [
+        ("waived", "Waived"),
+        ("applied", "Applied"),
+    ]    
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="penalties"
+    )  
+    attendance = models.ForeignKey(
+        EmployeeAttendance, on_delete=models.SET_NULL, null=True, blank=True, related_name="penalties"
+    )
+    spot_check = models.ForeignKey(
+        'spotcheck.EmployeeSpotCheck', on_delete=models.SET_NULL, null=True, blank=True, related_name="penalties"
+    )  
+    date = models.DateField()  
+    penalty_type = models.CharField(
+        max_length=50, choices=PENALTY_TYPES
+    )
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        validators=[MinValueValidator(0)]
+    )
+    notes = models.TextField(null=True, blank=True)
+    status = models.CharField(
+        max_length=50, choices=PENALTY_STATUS_CHOICES, default="applied"
+    )
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.get_penalty_type_display()} on {self.date}"
+
+    def save(self, *args, **kwargs):
+        if not self.date:
+            if self.attendance:
+                self.date = self.attendance.date
+            elif self.spot_check:
+                self.date = self.spot_check.spotcheck_time.date()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def create_from_attendance(cls, attendance):  
+        employee = attendance.employee
+        penalty_type = None  
+
+        if attendance.attendance_status == 'late':
+            penalty_type = 'late_coming'
+
+        elif attendance.attendance_status == 'early_checkout':
+            penalty_type = 'early_leaving'
+
+        elif attendance.attendance_status == 'absent':
+            penalty_type = 'absent'   
+
+        if not penalty_type:
+            return None
+
+        config = cls._get_penalty_config(employee, penalty_type)
+        if not config:
+            return None 
+
+        employee_salary = employee.salary if hasattr(employee, 'salary') else 0.00
+        amount = config.get_calculated_amount(employee_salary)  
+
+        return cls.objects.create(
+            employee=employee,
+            attendance=attendance,
+            date=attendance.date,
+            penalty_type=penalty_type,
+            amount=amount,
+            notes=f"Penalty attendance: {penalty_type}"
+        )    
+
+    @classmethod
+    def create_from_spotcheck(cls, spotcheck, penalty_type):    
+        if penalty_type not in ['no_response_spotcheck', 'late_spotcheck_response']:
+            return None
+
+        employee = spotcheck.employee
+        config = cls._get_penalty_config(employee, penalty_type)
+        if not config:
+            return None
+
+        employee_salary = employee.salary if hasattr(employee, 'salary') else 0.00  # Adjust
+        amount = config.get_calculated_amount(employee_salary)
+
+        return cls.objects.create(
+            employee=employee,
+            spot_check=spotcheck,
+            penalty_type=penalty_type,
+            amount=amount,
+            notes=f"Penalty for spotcheck: {penalty_type}"
+        )
+
+    @classmethod
+    def _get_penalty_config(cls, employee, penalty_type):
+        """Get config: branch > institution"""
+        branch = employee.payroll_branch
+        config = BranchPenaltyConfig.objects.filter(
+            branch=branch, penalty_type=penalty_type
+        ).first()
+
+        if not config:
+            institution = branch.institution if branch else employee.institution  # Adjust
+            config = InstitutionPenaltyConfig.objects.filter(
+                institution=institution, penalty_type=penalty_type
+            ).first()
+        return config        
 
 
 class PayrollPeriod(SoftDeletableTimeStampedModel):
