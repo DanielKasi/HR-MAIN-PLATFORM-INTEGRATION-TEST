@@ -83,6 +83,7 @@ class Employee(SoftDeletableTimeStampedModel):
     )
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    # TODO: Make position non-nullable in future. There is no way to track employee's institution without position or department
     position = models.ForeignKey(
         "recruitment.JobPosition",
         on_delete=models.PROTECT,
@@ -96,6 +97,7 @@ class Employee(SoftDeletableTimeStampedModel):
         blank=True,
         null=True,
     )
+    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
         on_delete=models.SET_NULL,

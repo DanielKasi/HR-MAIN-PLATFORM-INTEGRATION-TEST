@@ -200,7 +200,7 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeSpotCheckCreateView(APIView):
+class EmployeeSpotCheckListCreateAPIView(APIView):
 
     @extend_schema(
         request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
@@ -218,6 +218,21 @@ class EmployeeSpotCheckCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    @extend_schema(
+        request=SpotCheckModels.EmployeeSpotCheck,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found"},
+        description="List all employee spot check records for an institution of authenticated user.",
+        summary="Employee spot check List",
+        tags=["Employee spot check Management"],
+    )
+    def get(self, request):
+        """List all employee spot check records for an institution of authenticated user."""
+        spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
+        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
 class EmployeeSpotCheckDetailView(APIView):
 
