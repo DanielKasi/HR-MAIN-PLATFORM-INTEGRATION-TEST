@@ -44,7 +44,7 @@ class InstitutionSpotCheckSettingDetailView(APIView):
             )
 
 
-class InstitutionStopCheckSettingUpdateView(APIView):
+class InstitutionSpotCheckSettingUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -65,7 +65,7 @@ class InstitutionStopCheckSettingUpdateView(APIView):
 
 
 
-class BranchStopCheckSettingCreateView(APIView):
+class BranchSpotCheckSettingCreateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -78,7 +78,7 @@ class BranchStopCheckSettingCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class BranchStopCheckSettingDetailView(APIView):
+class BranchSpotCheckSettingDetailView(APIView):
 
     @extend_schema(
         request=SpotCheckModels.BranchSpotCheckSetting,
@@ -99,7 +99,7 @@ class BranchStopCheckSettingDetailView(APIView):
             )
 
 
-class BranchStopCheckSettingUpdateView(APIView):
+class BranchSpotCheckSettingUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -120,7 +120,7 @@ class BranchStopCheckSettingUpdateView(APIView):
 
 
 
-class EmployeeStopCheckSettingCreateView(APIView):
+class EmployeeSpotCheckSettingCreateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -133,7 +133,7 @@ class EmployeeStopCheckSettingCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EmployeeStopCheckSettingDetailView(APIView):
+class EmployeeSpotCheckSettingDetailView(APIView):
 
     @extend_schema(
         request=SpotCheckModels.EmployeeSpotCheckSetting,
@@ -154,7 +154,7 @@ class EmployeeStopCheckSettingDetailView(APIView):
             )
 
 
-class EmployeeStopCheckSettingUpdateView(APIView):
+class EmployeeSpotCheckSettingUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -174,7 +174,7 @@ class EmployeeStopCheckSettingUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeStopCheckCreateView(APIView):
+class EmployeeSpotCheckCreateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -187,7 +187,7 @@ class EmployeeStopCheckCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EmployeeStopCheckDetailView(APIView):
+class EmployeeSpotCheckDetailView(APIView):
 
     @extend_schema(
         request=SpotCheckModels.EmployeeSpotCheck,
@@ -208,7 +208,7 @@ class EmployeeStopCheckDetailView(APIView):
             )
 
 
-class EmployeeStopCheckUpdateView(APIView):
+class EmployeeSpotCheckUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
@@ -228,7 +228,7 @@ class EmployeeStopCheckUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeStopCheckInView(APIView):
+class EmployeeSpotCheckInView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
 
