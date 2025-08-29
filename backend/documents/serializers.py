@@ -76,7 +76,6 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
                                     line_html = f'<p>{line_html}</p>'
                                 html_content += line_html + "\n"
                 doc.close()
-                print("Raw PDF HTML content:", html_content)
                 return self._clean_html(html_content)
 
             elif template_type == "word":
