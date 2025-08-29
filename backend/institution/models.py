@@ -457,6 +457,7 @@ class Branch(SoftDeletableTimeStampedModel):
     )
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding
         if not self.paying_bank_account:
             first_account = (
                 InstitutionBankAccount.objects.filter(
@@ -470,6 +471,9 @@ class Branch(SoftDeletableTimeStampedModel):
 
         super().save(*args, **kwargs)
 
+        if is_new:
+            BranchWorkingDays.objects.create(branch=self)
+
     def __str__(self):
         return (
             self.branch_location
@@ -478,6 +482,59 @@ class Branch(SoftDeletableTimeStampedModel):
             + " - "
             + self.branch_name
         )
+
+
+class BranchWorkingDays(models.Model):
+    branch = models.OneToOneField(
+        "Branch", on_delete=models.CASCADE, related_name="working_days"
+    )
+    days = models.ManyToManyField(
+        "settings.SystemDay",
+        through="BranchDay",
+        related_name="branch_working_days",
+    )
+
+    def __str__(self):
+        return f"Branch Working days for: {self.branch.branch_name}"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+
+        if is_new:
+            self._create_branch_days()
+
+    def _create_branch_days(self):
+        inst_working_days = InstitutionWorkingDays.objects.get(
+            institution=self.branch.institution
+        )
+
+        # copy all institution days into branch days
+        for day in inst_working_days.days.all():
+            BranchDay.objects.create(
+                branch_working_days=self,
+                day=day,
+            )
+
+
+class BranchDay(models.Model):
+    branch_working_days = models.ForeignKey(
+        BranchWorkingDays, on_delete=models.CASCADE, related_name="branch_days"
+    )
+
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+
+    DAY_TYPE_CHOICES = (
+        ("REMOTE", "Remote"),
+        ("PHYSICAL", "Physical"),
+    )
+
+    day_type = models.CharField(
+        choices=DAY_TYPE_CHOICES, max_length=255, default="PHYSICAL"
+    )
+
+    def __str__(self):
+        return f"{self.branch_working_days.branch.branch_name} - {self.day.name}"
 
 
 # Many to many relationship between branches and users

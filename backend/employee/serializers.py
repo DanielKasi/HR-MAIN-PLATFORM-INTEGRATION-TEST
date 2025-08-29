@@ -3,7 +3,7 @@ from .models import (
     EmployeeAttendance,
     EmployeeType,
     WorkType,
-    EmployeeContract,
+    EmployeeContract, EmployeeDay,
 )
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
@@ -246,6 +246,18 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         return data
 
+class EmployeeDaySerializer(serializers.ModelSerializer):
+    day = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all()
+    )
+    class Meta:
+        model = EmployeeDay
+        fields=["id", "day", "start_time", "end_time"]
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["day"] = SystemDaySerializer(instance.day).data
+        return rep
 
 class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
     days = serializers.PrimaryKeyRelatedField(
@@ -263,28 +275,24 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
         instance = self.instance
         employee = data.get("employee") or (instance.employee if instance else None)
 
-        if (
-            not employee
-            or not employee.department
-            or not employee.department.institution
-        ):
-            raise serializers.ValidationError(
-                {"error": f"Employee must belong to a department and institution."}
-            )
 
-        institution = employee.department.institution
+        if employee.payroll_branch and hasattr(employee.payroll_branch, "working_days"):
+            allowed_days = employee.payroll_branch.working_days.days.all()
 
-        if not hasattr(institution, "working_days"):
-            raise serializers.ValidationError(
-                {"error": f"Institution does not have working days defined."}
-            )
+        else:
+            institution = employee.department.institution
 
-        allowed_days = institution.working_days.days.all()
+            if not hasattr(institution, "working_days"):
+                raise serializers.ValidationError(
+                    {"error": f"Institution does not have working days defined."}
+                )
+
+            allowed_days = institution.working_days.days.all()
 
         for day in selected_days:
             if day not in allowed_days:
                 raise serializers.ValidationError(
-                    {"error": f"{day.day_name} is not a valid working day for this institution."}
+                    {"error": f"{day.day_name} is not a valid working day for this institution/branch."}
                 )
 
         return data
@@ -303,7 +311,7 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["days"] = SystemDaySerializer(instance.days.all(), many=True).data
+        rep["days"] = EmployeeDaySerializer(instance.days.all(), many=True).data
         return rep
 
 

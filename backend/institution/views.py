@@ -28,6 +28,7 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig
+    BranchWorkingDays,
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -47,6 +48,7 @@ from .serializers import (
     InstitutionKYCDocumentBulkCreateSerializer,
     InstitutionPenaltyConfigSerializer,
     BranchPenaltyConfigSerializer
+    BranchWorkingDaysSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -101,6 +103,72 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
+
+class BranchWorkingDaysListAPIView(APIView):
+    @extend_schema(
+        responses={200: BranchWorkingDaysSerializer(many=True)},
+        description="Retrieve all working days for a branch.",
+        summary="Get all working days for a branch",
+        tags=["Working Days Management"],
+    )
+    def get(self, request):
+
+        branch_id = request.search_param.get("branch_id")
+
+        working_days = BranchWorkingDays.objects.get(branch=branch_id)
+
+        serializer = BranchWorkingDaysSerializer(working_days, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={201: BranchWorkingDaysSerializer},
+        description="Create a new working days configuration for a branch.",
+        summary="Create working days on a branch level",
+        tags=["Working Days Management"],
+    )
+    def post(self, request):
+        serializer = BranchWorkingDaysSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            working_days = serializer.save()
+            return Response(
+                BranchWorkingDaysSerializer(working_days).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class BranchWorkingDaysDetailView(APIView):
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={200: BranchWorkingDaysSerializer},
+        description="Update the existing Branch Working Days.",
+        summary="Update branch working days",
+        tags=["Working Days Management"],
+    )
+    def patch(self, request, pk):
+        try:
+            branch_working_days = BranchWorkingDays.objects.get(id=pk)
+        except BranchWorkingDays.DoesNotExist:
+            return Response(
+                {"detail": "Working days configuration not found."}, status=404
+            )
+
+        serializer = BranchWorkingDaysSerializer(
+            branch_working_days, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class InstitutionKYCDocumentListCreateView(APIView):

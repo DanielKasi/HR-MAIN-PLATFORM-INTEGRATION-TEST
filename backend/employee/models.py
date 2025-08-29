@@ -12,7 +12,7 @@ from utilities.helpers import (
 
 from django.db import models
 from datetime import datetime
-from institution.models import Branch, UserBranch
+from institution.models import Branch, UserBranch, BranchWorkingDays
 from datetime import date, datetime
 from weasyprint import HTML
 from django.template.loader import render_to_string
@@ -178,8 +178,6 @@ class Employee(SoftDeletableTimeStampedModel):
                 name="unique_active_employee_nin_per_department_institution",
             ),
         ]
-
-       
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -567,11 +565,29 @@ class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     days = models.ManyToManyField(
         "settings.SystemDay",
         related_name="employee_working_days",
+        through="EmployeeDay",
         help_text="Must be selected from institution's working days",
     )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
+
+
+class EmployeeDay(models.Model):
+    employee_working_days = models.ForeignKey(
+        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+    )
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
+        )
+
+    class Meta:
+        unique_together = ("employee_working_days", "day")
 
 
 class EmployeeAttendance(SoftDeletableTimeStampedModel):

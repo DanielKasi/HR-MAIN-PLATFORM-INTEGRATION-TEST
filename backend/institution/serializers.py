@@ -15,6 +15,8 @@ from .models import (
     InstitutionTaxRule,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig
+    BranchWorkingDays,
+    BranchDay,
 )
 import os
 from django.db import transaction
@@ -343,6 +345,45 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["days"] = SystemDaySerializer(instance.days, many=True).data
         return rep
+
+
+class BranchDaySerializer(serializers.ModelSerializer):
+    day_name = serializers.CharField(source="day.day_name", read_only=True)
+    day_id = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
+    )
+
+    class Meta:
+        model = BranchDay
+        fields = ["id", "day_id", "day_name", "day_type"]
+
+
+class BranchWorkingDaysSerializer(serializers.ModelSerializer):
+    branch_days = BranchDaySerializer(many=True)
+
+    class Meta:
+        model = BranchWorkingDays
+        fields = ["id", "branch", "branch_days"]
+        read_only_fields = ["id", "branch"]
+
+    def update(self, instance, validated_data):
+        branch_days_data = validated_data.pop("branch_days", [])
+
+        for bd_data in branch_days_data:
+            day = bd_data.get("day")
+            day_type = bd_data.get("day_type")
+
+            if not day:
+                continue
+
+            branch_day, created = BranchDay.objects.get_or_create(
+                branch_working_days=instance, day=day
+            )
+            if day_type:
+                branch_day.day_type = day_type
+                branch_day.save()
+
+        return instance
 
 
 class InstitutionTaxSerializer(serializers.ModelSerializer):
