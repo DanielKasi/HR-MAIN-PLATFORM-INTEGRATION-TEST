@@ -6605,7 +6605,7 @@ export const branchLocationComparisonConfigAPI = {
 
   updateBranchLocationComparisonConfig: async (id: number, data: IBranchLocationComparisonConfigFormData): Promise<IBranchLocationComparisonConfig> => {
     try {
-      const response = await apiRequest.put(`/institution/branch-location-comparison/${id}/`, data);
+      const response = await apiRequest.patch(`/institution/branch-location-comparison/${id}/`, data);
       return response.data as IBranchLocationComparisonConfig;
     } catch (error) {
       console.warn("Error updating branch location comparison config:", error);
