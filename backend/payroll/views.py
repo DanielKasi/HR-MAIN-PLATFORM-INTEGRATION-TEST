@@ -860,7 +860,9 @@ class EmployeePenaltyListAPIView(APIView):
             )
         
         penalties = EmployeePenalty.objects.filter(
-            employee__payroll_branch__institution=institution  # Assuming employee -> payroll_branch -> institution
+            employee__payroll_branch__institution=institution,
+            deleted_at__isnull=True
+
         )
         
         if employee_id:

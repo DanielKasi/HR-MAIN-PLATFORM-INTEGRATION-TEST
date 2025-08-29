@@ -1,8 +1,10 @@
 from django.db import models
 from utilities.utility_base_model import SoftDeletableTimeStampedModel, TimeStampedModel
+from payroll.models import EmployeePenalty
+from datetime import datetime, timedelta
 
 # spotcheck settings
-class InstitutionSPotCheckSetting(SoftDeletableTimeStampedModel):
+class InstitutionSpotCheckSetting(SoftDeletableTimeStampedModel):
     institution = models.OneToOneField(
         "institution.Institution",
         on_delete=models.PROTECT,
@@ -78,9 +80,9 @@ class EmployeeSpotCheck(TimeStampedModel):
 
 
     def check_if_location_is_valid(self):
-        pass
+        return self.employee._is_location_valid(self.latitude, self.longitude)
 
-    def update_penalty(self):    
+    def issue_penalty(self):    
         employee = self.employee
         setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
         if not setting:

@@ -10,7 +10,8 @@ from utilities.helpers import (
 )
 
 from django.db import models
-from institution.models import Branch, UserBranch
+from datetime import datetime
+from institution.models import Branch, UserBranch, BranchWorkingDays
 from datetime import date, datetime
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -82,6 +83,7 @@ class Employee(SoftDeletableTimeStampedModel):
     )
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    # TODO: Make position non-nullable in future. There is no way to track employee's institution without position or department
     position = models.ForeignKey(
         "recruitment.JobPosition",
         on_delete=models.PROTECT,
@@ -95,6 +97,7 @@ class Employee(SoftDeletableTimeStampedModel):
         blank=True,
         null=True,
     )
+    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
         on_delete=models.SET_NULL,
@@ -171,8 +174,6 @@ class Employee(SoftDeletableTimeStampedModel):
                 name="unique_active_employee_nin_per_department_institution",
             ),
         ]
-
-       
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -454,7 +455,7 @@ class Employee(SoftDeletableTimeStampedModel):
         try:
             # Add the missing import
             from users.models import OTPModel  # or whatever your Token model is called
-            
+
             def create_and_institution_token(user, purpose, expiry_minutes):
                 token = uuid.uuid4().hex
                 # Use OTPModel instead of Token if that's your model name
@@ -481,7 +482,7 @@ class Employee(SoftDeletableTimeStampedModel):
                 # Add debugging
                 print(f"Attempting to send password link to {user.email}")
                 print(f"Email settings - FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
-                
+
                 try:
                     result = send_mail(
                         subject="Set Your Password",
@@ -500,18 +501,18 @@ class Employee(SoftDeletableTimeStampedModel):
             if not self.user or not self.user.email:
                 logger.error("User or user email is missing")
                 return False
-                
+
             token = create_and_institution_token(
                 user=self.user, purpose="registration", expiry_minutes=15
             )
             password_link = build_password_link(request=request, token=token)
             print(f"Generated password link: {password_link}")
-            
+
             link_sent = send_password_link_to_user(user=self.user, link=password_link)
-            
+
             (f"Link sent status: {link_sent}")
             return link_sent
-            
+
         except Exception as e:
             logger.error(f"Error in create_password_token_and_send_link: {e}")
             return False
@@ -520,8 +521,10 @@ class Employee(SoftDeletableTimeStampedModel):
         """
         Complete password setup process for new employees.
         """
-        print(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
-        
+        print(
+            f"Setting up password for employee: {self.user.email if self.user else 'No user'}"
+        )
+
         if not self.should_generate_password():
             logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
@@ -531,17 +534,17 @@ class Employee(SoftDeletableTimeStampedModel):
             if not self.user:
                 logger.error("No user associated with this employee")
                 return {"success": False, "error": "No user associated with employee"}
-                
+
             if not self.user.email:
                 logger.error("User has no email address")
                 return {"success": False, "error": "User has no email address"}
-            
+
             password = self.generate_and_set_password()
             print(f"Password generated successfully: {bool(password)}")
-            
+
             link_sent = self.create_password_token_and_send_link(request)
             print(f"Password link sent: {link_sent}")
-            
+
             return {
                 "success": True,
                 "password_generated": bool(password),
@@ -551,6 +554,49 @@ class Employee(SoftDeletableTimeStampedModel):
             logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
 
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
+        if None in (lat1, lon1, lat2, lon2):
+            return float("inf")
+
+        R = 6371000  # Earth radius in meters
+
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        )
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def _is_location_valid(self, latitude, longitude):
+        """
+        Check if the given location is within 100 meters of any attached branch.
+        """
+
+        THRESHOLD_METERS = 500
+
+        attached_branches = self.get_all_branches()
+        if not attached_branches.exists():
+            return False
+
+        for branch in attached_branches:
+            if branch.branch_latitude is None or branch.branch_longitude is None:
+                continue
+            distance = self._haversine_distance(
+                latitude, longitude, branch.branch_latitude, branch.branch_longitude
+            )
+            if distance <= THRESHOLD_METERS:
+                return True
+        return False
 
 class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     employee = models.OneToOneField(
@@ -560,12 +606,56 @@ class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     days = models.ManyToManyField(
         "settings.SystemDay",
         related_name="employee_working_days",
+        through="EmployeeDay",
         help_text="Must be selected from institution's working days",
     )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
+
+class EmployeeDay(models.Model):
+    employee_working_days = models.ForeignKey(
+        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+    )
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
+        )
+
+    class Meta:
+        unique_together = ("employee_working_days", "day")
+
+class EmployeeShift(models.Model):
+    CONTEXT_TYPES = [
+        ("REQUEST", "Request"),
+        ("ALLOCATION", "Allocation"),
+    ]
+
+    STATUS_CHOICES = [
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+        ("PENDING", "Pending"),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="employee_shift")
+    shift = models.ForeignKey("institution.BranchShift", on_delete=models.CASCADE, related_name="employee_shift")
+    context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
+    shift_status = models.CharField(choices=STATUS_CHOICES, max_length=200, default="PENDING")
+
+    date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser", on_delete=models.CASCADE, related_name="employee_shift"
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - shift {self.context.upper()}"
 
 class EmployeeAttendance(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
@@ -599,7 +689,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             ("absent", "Absent"),
             ("pending", "Pending"),
         ],
-        default="pending",
+        default="pending"  # Added default value
     )
 
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -616,7 +706,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return f"{self.employee} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
-        print(f"[DEBUG] Calculating overtime for {self} ...")
+
         if (
             self.date
             and self.check_out_time
@@ -638,7 +728,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return 0.0
 
     def calculate_late_minutes(self):
-        print(f"[DEBUG] Calculating late minutes for {self} ...")
         if (
             self.date
             and self.check_in_time
@@ -660,7 +749,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         return 0
 
     def calculate_early_checkout_minutes(self):
-        print(f"[DEBUG] Calculating early checkout for {self} ...")
         if (
             self.date
             and self.check_out_time
@@ -681,48 +769,44 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         print("    No early checkout")
         return 0
 
-    def update_attendance_status(self, commit=True):
-        print(f"[DEBUG] Updating attendance status for {self} ...")
+    def update_attendance_status(self):
+        """Calculate and set attendance status based on check-in/out times"""
 
+
+        # Check for absence first
         if not self.check_in_time and not self.check_out_time:
             print("    Absent (no check-in or check-out)")
             self.attendance_status = "absent"
             self.overtime_hours = 0
             self.late_minutes = 0
             self.early_checkout_minutes = 0
+            return
+
+        # Calculate metrics
+        self.overtime_hours = self.calculate_overtime_hours()
+        self.late_minutes = self.calculate_late_minutes()
+        self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+
+        # Determine status with priority order
+        if self.late_minutes > 0:
+            self.attendance_status = "late"
+        elif self.early_checkout_minutes > 0:
+            self.attendance_status = "early_checkout"
+        elif self.overtime_hours > 0:
+            self.attendance_status = "overtime"
         else:
-            self.overtime_hours = self.calculate_overtime_hours()
-            self.late_minutes = self.calculate_late_minutes()
-            self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+            self.attendance_status = "on_time"
 
-            if self.late_minutes > 0:
-                self.attendance_status = "late"
-            elif self.early_checkout_minutes > 0:
-                self.attendance_status = "early_checkout"
-            elif self.overtime_hours > 0:
-                self.attendance_status = "overtime"
-            else:
-                self.attendance_status = "on_time"
-
-            print(f"    Status = {self.attendance_status}, "
-                  f"Overtime = {self.overtime_hours}, "
-                  f"Late = {self.late_minutes}, "
-                  f"Early checkout = {self.early_checkout_minutes}")
-
-        if commit:
-            print("    Saving attendance with updated values...")
-            super().save(update_fields=[
-                "attendance_status",
-                "overtime_hours",
-                "late_minutes",
-                "early_checkout_minutes"
-            ])
+        print(f"    Final Status = {self.attendance_status}, "
+              f"Overtime = {self.overtime_hours}, "
+              f"Late = {self.late_minutes}, "
+              f"Early checkout = {self.early_checkout_minutes}")
 
     def save(self, *args, **kwargs):
-        print(f"[DEBUG] Saving attendance record for {self} ...")
-        self.update_attendance_status(commit=False)
+        """
+        Simplified save method - status calculation is now handled by serializer.
+        """
         super().save(*args, **kwargs)
-        print(f"    Saved {self}")
 
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):

@@ -475,36 +475,76 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
 
     @classmethod
     def create_from_attendance(cls, attendance):  
+        """Create penalty based on attendance status"""
         employee = attendance.employee
         penalty_type = None  
 
         if attendance.attendance_status == 'late':
             penalty_type = 'late_coming'
-
         elif attendance.attendance_status == 'early_checkout':
             penalty_type = 'early_leaving'
-
         elif attendance.attendance_status == 'absent':
             penalty_type = 'absent'   
 
         if not penalty_type:
             return None
 
+        # Check if penalty already exists
+        existing = cls.objects.filter(
+            employee=employee,
+            attendance=attendance,
+            penalty_type=penalty_type
+        ).first()
+        
+        if existing:
+            return existing
+
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
             return None 
 
-        employee_salary = employee.salary if hasattr(employee, 'salary') else 0.00
+        employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)  
 
-        return cls.objects.create(
+        penalty = cls.objects.create(
             employee=employee,
             attendance=attendance,
             date=attendance.date,
             penalty_type=penalty_type,
             amount=amount,
-            notes=f"Penalty attendance: {penalty_type}"
-        )    
+            notes=f"Penalty for {penalty_type} on {attendance.date}"
+        )
+        
+
+        return penalty
+
+    @classmethod
+    def update_or_remove_penalty_for_attendance(cls, attendance):
+        """
+        Update or remove existing penalty when attendance status changes
+        """
+        
+        # Get all existing penalties for this attendance
+        existing_penalties = cls.objects.filter(attendance=attendance)
+        
+        # Determine what penalty should exist based on current status
+        required_penalty_type = None
+        if attendance.attendance_status == 'late':
+            required_penalty_type = 'late_coming'
+        elif attendance.attendance_status == 'early_checkout':
+            required_penalty_type = 'early_leaving'
+        elif attendance.attendance_status == 'absent':
+            required_penalty_type = 'absent'
+        
+        if required_penalty_type:
+            # Should have a penalty - create or update
+            penalty = cls.create_from_attendance(attendance)
+            
+            # Remove any other penalty types for this attendance
+            existing_penalties.exclude(penalty_type=required_penalty_type).delete()
+            
+        else:
+            existing_penalties.delete()
 
     @classmethod
     def create_from_spotcheck(cls, spotcheck, penalty_type):    
@@ -516,7 +556,7 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
         if not config:
             return None
 
-        employee_salary = employee.salary if hasattr(employee, 'salary') else 0.00  # Adjust
+        employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)
 
         return cls.objects.create(
@@ -529,18 +569,27 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
 
     @classmethod
     def _get_penalty_config(cls, employee, penalty_type):
-        """Get config: branch > institution"""
+        """Get penalty config: branch > institution"""
+        
         branch = employee.payroll_branch
-        config = BranchPenaltyConfig.objects.filter(
-            branch=branch, penalty_type=penalty_type
-        ).first()
+        config = None
+        
+        if branch:
+
+            config = BranchPenaltyConfig.objects.filter(
+                branch=branch, penalty_type=penalty_type
+            ).first()
+
 
         if not config:
-            institution = branch.institution if branch else employee.institution  # Adjust
-            config = InstitutionPenaltyConfig.objects.filter(
-                institution=institution, penalty_type=penalty_type
-            ).first()
-        return config        
+            # Fall back to institution config
+            institution = branch.institution if branch else employee.institution
+            if institution:
+                config = InstitutionPenaltyConfig.objects.filter(
+                    institution=institution, penalty_type=penalty_type
+                ).first()
+        
+        return config      
 
 
 class PayrollPeriod(SoftDeletableTimeStampedModel):
@@ -584,6 +633,9 @@ class Payslip(SoftDeletableTimeStampedModel):
     total_deductions = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )
+    total_penalties = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00
+    )
     taxable_allowances = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00
     )
@@ -599,72 +651,6 @@ class Payslip(SoftDeletableTimeStampedModel):
     is_paid = models.BooleanField(default=False)
     paid_date = models.DateField(blank=True, null=True)
 
-    # def _calculate_attendance_deductions(self):
-    #     """
-    #     Returns total deductions and detailed items for lateness/absenteeism
-    #     within the payroll period.
-    #     """
-
-    #     from .utils import get_employee_attendance_status_for_date
-
-    #     employee = self.employee
-    #     payroll_period = self.payroll_period
-    #     deduction_items = []
-    #     total_deduction = Decimal("0.00")
-
-    #     attendance_deduction_types = DeductionType.objects.filter(
-    #         institution=employee.payroll_branch.institution,
-    #         attendance_penalty_for__isnull=False,
-    #     )
-
-    #     if not attendance_deduction_types.exists():
-    #         return total_deduction, deduction_items
-
-    #     current_date = payroll_period.start_date
-    #     while current_date <= payroll_period.end_date:
-    #         status = get_employee_attendance_status_for_date(employee.id, current_date)
-
-    #         for d_type in attendance_deduction_types:
-
-    #             emp_deduction = EmployeeDeduction.objects.get(
-    #                 employee=employee, deduction_type=d_type
-    #             )
-
-    #             if d_type.attendance_penalty_for == "late" and status == "P-past-T":
-    #                 amount = emp_deduction.get_calculated_amount()
-    #                 total_deduction += amount
-    #                 deduction_items.append(
-    #                     {
-    #                         "name": d_type.name,
-    #                         "amount": amount,
-    #                         "date": current_date,
-    #                         "reason": "Late",
-    #                     }
-    #                 )
-
-    #             elif (
-    #                 d_type.attendance_penalty_for == "absentism" and status == "absent"
-    #             ):
-    #                 amount = emp_deduction.get_calculated_amount()
-    #                 total_deduction += amount
-    #                 deduction_items.append(
-    #                     {
-    #                         "name": d_type.name,
-    #                         "amount": amount,
-    #                         "date": current_date,
-    #                         "reason": "Absent",
-    #                     }
-    #                 )
-
-    #         current_date += timedelta(days=1)
-
-    #     return total_deduction, deduction_items
-
-    # def get_attendance_deductions(self):
-    #     """Fetch attendance deductions for this payslip."""
-    #     if not self.payroll_period.institution.is_attendance_penalties_enabled:
-    #         return 0, []
-    #     return self._calculate_attendance_deductions()
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
@@ -677,6 +663,8 @@ class Payslip(SoftDeletableTimeStampedModel):
     def calculate_totals(self):
         taxable_allowances = 0
         non_taxable_allowances = 0
+        total_penalties = 0
+
 
         allowances = (
             self.employee.allowances.filter(is_active=True)
@@ -698,11 +686,19 @@ class Payslip(SoftDeletableTimeStampedModel):
             else:
                 non_taxable_allowances += amount
 
+        penalties = self.employee.penalties.filter(
+            status='applied',  # Only applied penalties
+            date__gte=self.payroll_period.start_date,
+            date__lte=self.payroll_period.end_date
+        )
+
+        for penalty in penalties:
+            total_penalties += penalty.amount        
+
         # Now get total deductions excluding tax (for clarity)
         deductions = 0
         for deduction in (
             self.employee.deductions.filter(is_active=True)
-            # .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
             .filter(
                 effective_from__lte=self.payroll_period.end_date,
             )
@@ -714,9 +710,6 @@ class Payslip(SoftDeletableTimeStampedModel):
             recurrence = deduction.get_recurrence_count(self.payroll_period)
             deductions += deduction.get_calculated_amount() * recurrence
 
-        # # Attendance-based deductions
-        # attendance_total, _ = self.get_attendance_deductions()
-        # deductions += attendance_total
 
         # Calculate tax from EmployeeTax model (already no recurrence)
         tax_total = 0
@@ -729,16 +722,54 @@ class Payslip(SoftDeletableTimeStampedModel):
 
         self.total_allowances = taxable_allowances + non_taxable_allowances
         self.total_deductions = deductions + tax_total
-
+        self.total_penalties = total_penalties
         self.basic_salary = self.basic_salary or self.employee.salary or 0
 
         gross = self.basic_salary + taxable_allowances
-        net = gross - tax_total + non_taxable_allowances - deductions
+        net = gross - tax_total + non_taxable_allowances - deductions - - total_penalties
 
         self.gross_salary = gross
         self.net_salary = net
 
         self.save()
+
+
+    def get_penalty_breakdown(self):
+        """Get detailed breakdown of penalties for this payroll period"""
+        penalties = self.employee.penalties.filter(
+            status='applied',
+            date__gte=self.payroll_period.start_date,
+            date__lte=self.payroll_period.end_date
+        ).select_related('attendance', 'spot_check')
+        
+        breakdown = {}
+        for penalty in penalties:
+            penalty_type = penalty.get_penalty_type_display()
+            if penalty_type not in breakdown:
+                breakdown[penalty_type] = {
+                    'count': 0,
+                    'total_amount': 0,
+                    'details': []
+                }
+            
+            breakdown[penalty_type]['count'] += 1
+            breakdown[penalty_type]['total_amount'] += penalty.amount
+            breakdown[penalty_type]['details'].append({
+                'date': penalty.date,
+                'amount': penalty.amount,
+                'notes': penalty.notes,
+                'source': 'attendance' if penalty.attendance else 'spotcheck'
+            })
+        
+        return breakdown
+
+    def get_applied_penalties(self):
+        """Get all applied penalties for this payroll period"""
+        return self.employee.penalties.filter(
+            status='applied',
+            date__gte=self.payroll_period.start_date,
+            date__lte=self.payroll_period.end_date
+        ).order_by('date')    
 
     class Meta:
         ordering = ["-payroll_period__start_date"]
@@ -800,9 +831,19 @@ class PayslipItem(models.Model):
                     )
                 )
 
-        # for deduction in payslip.employee.deductions.filter(is_active=True).exclude(
-        #     deduction_type__attendance_penalty_for__in=["late", "absentism"]
-        # ):
+        for penalty in payslip.employee.penalties.filter(is_active=True):
+            if penalty.status == 'applied' and penalty.date >= payslip.payroll_period.start_date and penalty.date <= payslip.payroll_period.end_date:
+                items_to_create.append(
+                    PayslipItem(
+                        payslip=payslip,
+                        item_type="penalty",
+                        name=f"Penalty - {penalty.get_penalty_type_display()}",
+                        amount=penalty.amount,
+                        description=penalty.notes or f"Penalty applied on {penalty.date}",
+                    )
+                )        
+
+
         for deduction in payslip.employee.deductions.filter(is_active=True):
             if deduction.effective_from <= payslip.payroll_period.end_date and (
                 not deduction.effective_to

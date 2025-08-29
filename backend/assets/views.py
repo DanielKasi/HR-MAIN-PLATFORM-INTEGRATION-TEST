@@ -30,7 +30,11 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from users.models import Profile, CustomUser, UserRole
 from django.contrib.contenttypes.models import ContentType
-from workflows.models import ApprovalTask, InstitutionApprovalStepApprovorRole, InstitutionApprovalStepApprovorUser
+from workflows.models import (
+    ApprovalTask,
+    InstitutionApprovalStepApprovorRole,
+    InstitutionApprovalStepApprovorUser,
+)
 from django.db.models import Q
 from employee.models import Employee
 
@@ -73,9 +77,8 @@ class AssetCategoryListCreateView(APIView):
     def get(self, request):
 
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
 
-        
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -85,17 +88,15 @@ class AssetCategoryListCreateView(APIView):
             )
 
         categories = AssetCategory.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
-            )
+            institution=institution, deleted_at__isnull=True
+        )
 
         if search_query:
             categories = categories.filter(
-                Q(category_name__icontains=search_query) | 
-                Q(category_description__icontains=search_query) |
-                Q(code__icontains=search_query)
+                Q(category_name__icontains=search_query)
+                | Q(category_description__icontains=search_query)
+                | Q(code__icontains=search_query)
             )
-
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(categories, request)
@@ -184,7 +185,6 @@ class AssetListCreateView(APIView):
     )
     def post(self, request):
         data = request.data.copy()
-        
 
         user_profile = get_object_or_404(Profile, user=request.user)
         data["created_by"] = user_profile.id
@@ -208,8 +208,8 @@ class AssetListCreateView(APIView):
 
         user = request.user.profile if request and hasattr(request, "user") else None
 
-        search_query = request.query_params.get('search', None)
-        
+        search_query = request.query_params.get("search", None)
+
         if not user:
             return Response(
                 {"detail": "User profile not found."},
@@ -222,16 +222,13 @@ class AssetListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        assets = Asset.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
-            )
+        assets = Asset.objects.filter(institution=institution, deleted_at__isnull=True)
 
         if search_query:
             assets = assets.filter(
-                Q(asset_name__icontains=search_query) | 
-                Q(batch_number__icontains=search_query) |
-                Q(serial_number__icontains=search_query)
+                Q(asset_name__icontains=search_query)
+                | Q(batch_number__icontains=search_query)
+                | Q(serial_number__icontains=search_query)
             )
 
         paginator = CustomPageNumberPagination()
@@ -354,7 +351,7 @@ class AssetRequestListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         asset_requests = AssetRequest.objects.filter(
             asset__institution=institution,
             deleted_at__isnull=True,
@@ -370,29 +367,29 @@ class AssetRequestListCreateView(APIView):
                     {"detail": f"Employee with ID {employee_id} not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-            
+
             # Step 2: Check if employee has a user
             if not employee.user:
                 return Response(
                     {"detail": f"Employee {employee_id} has no associated user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Step 3: Check if user has a profile
             try:
                 profile = employee.user.profile
             except Profile.DoesNotExist:
-  
+
                 return Response(
                     {"detail": f"User for employee {employee_id} has no profile."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             employee_asset_requests = asset_requests.filter(requester=profile)
-            
+
             all_requests = AssetRequest.objects.filter(asset__institution=institution)
 
             for req in all_requests[:5]:  # Just first 5 for debugging
-            
+
                 asset_requests = employee_asset_requests
 
         if requester_id:
@@ -400,16 +397,15 @@ class AssetRequestListCreateView(APIView):
 
         if search_query:
             asset_requests = asset_requests.filter(
-                Q(request_reference_code__icontains=search_query) |
-                Q(asset_request_status__icontains=search_query) |
-                Q(notes__icontains=search_query) |
-                Q(asset__asset_name__icontains=search_query) |
-                Q(asset__batch_number__icontains=search_query) |
-                Q(requester__user__fullname__icontains=search_query) |
-                Q(requester__user__email__icontains=search_query)
+                Q(request_reference_code__icontains=search_query)
+                | Q(asset_request_status__icontains=search_query)
+                | Q(notes__icontains=search_query)
+                | Q(asset__asset_name__icontains=search_query)
+                | Q(asset__batch_number__icontains=search_query)
+                | Q(requester__user__fullname__icontains=search_query)
+                | Q(requester__user__email__icontains=search_query)
             )
 
-        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
         serializer = AssetRequestWorkflowSerializer(paginated_qs, many=True)
@@ -452,7 +448,7 @@ class AssetRequestDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
-        asset_request.delete() # Custom delete that handles a soft delete
+        asset_request.delete()  # Custom delete that handles a soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -514,21 +510,19 @@ class AssetRequestDetailView(APIView):
         if action not in ["approve", "reject"]:
             return Response(
                 {"error": "Invalid action. Must be 'approve' or 'reject'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Get the current user's approval tasks for this request
         content_type = ContentType.objects.get_for_model(AssetRequest)
         pending_tasks = ApprovalTask.objects.filter(
-            content_type=content_type,
-            object_id=asset_request.id,
-            status="pending"
+            content_type=content_type, object_id=asset_request.id, status="pending"
         ).order_by("step__level")
 
         if not pending_tasks.exists():
             return Response(
                 {"error": "No pending approval tasks found for this request"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         current_task = pending_tasks.first()
@@ -556,7 +550,7 @@ class AssetRequestDetailView(APIView):
         ):
             return Response(
                 {"error": "You are not authorized to approve this request"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Update the current task
@@ -571,7 +565,7 @@ class AssetRequestDetailView(APIView):
             remaining_tasks = ApprovalTask.objects.filter(
                 content_type=content_type,
                 object_id=asset_request.id,
-                status__in=["not_started", "pending"]
+                status__in=["not_started", "pending"],
             ).exclude(id=current_task.id)
 
             if remaining_tasks.exists():
@@ -586,7 +580,7 @@ class AssetRequestDetailView(APIView):
                 except Exception as e:
                     return Response(
                         {"error": f"Error finishing workflow: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
 
         # Return updated request with workflow information
@@ -612,8 +606,9 @@ class AssetAllocationListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
-        serializer = AssetAllocationSerializer(data=request.data, context={"request": request})
+        serializer = AssetAllocationSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -634,9 +629,9 @@ class AssetAllocationListCreateView(APIView):
     )
     def get(self, request):
         user = request.user.profile
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         employee_id = request.query_params.get("employee_id")
-        user  = request.user
+        user = request.user
         try:
             institution = Institution.objects.get(id=user.profile.institution.id)
         except Institution.DoesNotExist:
@@ -645,8 +640,7 @@ class AssetAllocationListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         asset_allocations = AssetAllocation.objects.filter(
-            asset__institution=institution,
-            deleted_at__isnull=True
+            asset__institution=institution, deleted_at__isnull=True
         )
 
         if employee_id:
@@ -658,32 +652,32 @@ class AssetAllocationListCreateView(APIView):
                     {"detail": f"Employee with ID {employee_id} not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-            
+
             # Step 2: Check if employee has a user
             if not employee.user:
                 return Response(
                     {"detail": f"Employee {employee_id} has no associated user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
+
             # Step 3: Check if user has a profile
             try:
                 profile = employee.user.profile
             except Profile.DoesNotExist:
-  
+
                 return Response(
                     {"detail": f"User for employee {employee_id} has no profile."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            employee_asset_allocations = asset_allocations.filter(allocated_to=profile)        
+            employee_asset_allocations = asset_allocations.filter(allocated_to=profile)
 
         if search_query:
             asset_allocations = asset_allocations.filter(
-                Q(asset__asset_name__icontains=search_query) | 
-                Q(asset__batch_number__icontains=search_query) |
-                Q(asset__serial_number__icontains=search_query) |
-                Q(allocated_to__user__fullname__icontains=search_query) |
-                Q(allocated_to__user__email__icontains=search_query)
+                Q(asset__asset_name__icontains=search_query)
+                | Q(asset__batch_number__icontains=search_query)
+                | Q(asset__serial_number__icontains=search_query)
+                | Q(allocated_to__user__fullname__icontains=search_query)
+                | Q(allocated_to__user__email__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_allocations, request)
@@ -727,7 +721,7 @@ class AssetAllocationDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        asset_allocation.delete() # Custom delete method to handle soft delete
+        asset_allocation.delete()  # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -789,21 +783,19 @@ class AssetAllocationDetailView(APIView):
         if action not in ["approve", "reject"]:
             return Response(
                 {"error": "Invalid action. Must be 'approve' or 'reject'"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Get the current user's approval tasks for this allocation
         content_type = ContentType.objects.get_for_model(AssetAllocation)
         pending_tasks = ApprovalTask.objects.filter(
-            content_type=content_type,
-            object_id=asset_allocation.id,
-            status="pending"
+            content_type=content_type, object_id=asset_allocation.id, status="pending"
         ).order_by("step__level")
 
         if not pending_tasks.exists():
             return Response(
                 {"error": "No pending approval tasks found for this allocation"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         current_task = pending_tasks.first()
@@ -831,7 +823,7 @@ class AssetAllocationDetailView(APIView):
         ):
             return Response(
                 {"error": "You are not authorized to approve this allocation"},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # Update the current task
@@ -846,7 +838,7 @@ class AssetAllocationDetailView(APIView):
             remaining_tasks = ApprovalTask.objects.filter(
                 content_type=content_type,
                 object_id=asset_allocation.id,
-                status__in=["not_started", "pending"]
+                status__in=["not_started", "pending"],
             ).exclude(id=current_task.id)
 
             if remaining_tasks.exists():
@@ -861,7 +853,7 @@ class AssetAllocationDetailView(APIView):
                 except Exception as e:
                     return Response(
                         {"error": f"Error finishing workflow: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST
+                        status=status.HTTP_400_BAD_REQUEST,
                     )
 
         # Return updated allocation with workflow information
@@ -887,7 +879,6 @@ class AssetReturnListCreateView(APIView):
         tags=["Asset Mgt"],
     )
     def post(self, request):
-        print(f"request {request.data}")
         serializer = AssetReturnSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -906,7 +897,6 @@ class AssetReturnListCreateView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile if request and hasattr(request, "user") else None
-        
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -916,15 +906,14 @@ class AssetReturnListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         asset_returns = AssetReturn.objects.filter(
-            asset__institution=institution,
-            deleted_at__isnull=True
+            asset__institution=institution, deleted_at__isnull=True
         )
 
         if search_query:
             asset_returns = asset_returns.filter(
-                Q(asset__asset_name__icontains=search_query) | 
-                Q(allocation__allocated_to__user__fullname__icontains=search_query) |
-                Q(condition__icontains=search_query)
+                Q(asset__asset_name__icontains=search_query)
+                | Q(allocation__allocated_to__user__fullname__icontains=search_query)
+                | Q(condition__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_returns, request)
@@ -968,7 +957,7 @@ class AssetReturnDetailView(APIView):
     )
     def delete(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
-        asset_return.delete() # Custom delete method to handle soft delete
+        asset_return.delete()  # Custom delete method to handle soft delete
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -1017,16 +1006,15 @@ class AssetHistoryListView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         asset_histories = AssetHistory.objects.filter(
-            asset__institution=institution,
-            deleted_at__is_null=True
+            asset__institution=institution, deleted_at__is_null=True
         )
 
         if search_query:
             asset_histories = asset_histories.filter(
-                Q(asset__asset_name__icontains=search_query) |
-                Q(performed_by__user__fullname__icontains=search_query) |
-                Q(affected_user__user__fullname__icontains=search_query) |
-                Q(event_type__icontains=search_query)
+                Q(asset__asset_name__icontains=search_query)
+                | Q(performed_by__user__fullname__icontains=search_query)
+                | Q(affected_user__user__fullname__icontains=search_query)
+                | Q(event_type__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_histories, request)

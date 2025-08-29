@@ -41,9 +41,10 @@ class JobPosition(SoftDeletableTimeStampedModel):
     ]
     name = models.CharField(max_length=255)
     description = models.TextField()
+    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name="job_positions",
         null=True,
     )
