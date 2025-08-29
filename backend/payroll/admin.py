@@ -11,6 +11,7 @@ from .models import (
     Payslip,
     PayslipItem,
     EmployeeTax,
+    EmployeePenalty,
 )
 
 admin.site.register(AllowanceType)
@@ -21,3 +22,4 @@ admin.site.register(PayrollPeriod)
 admin.site.register(Payslip)
 admin.site.register(PayslipItem)
 admin.site.register(EmployeeTax)
+admin.site.register(EmployeePenalty)

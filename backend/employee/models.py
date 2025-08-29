@@ -1,7 +1,6 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
-from datetime import datetime
 from institution.utils import generate_compliant_password
 from utilities.helpers import (
     build_password_link,
@@ -11,23 +10,17 @@ from utilities.helpers import (
 )
 
 from django.db import models
-from datetime import datetime
 from institution.models import Branch, UserBranch
 from datetime import date, datetime
-from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.core.files import File
-import os
 from django.conf import settings
-import hashlib
 from django.core.exceptions import ValidationError
 import PyPDF2
 from pdf2image import convert_from_bytes
 import pytesseract
-from django.core.files.base import ContentFile
 import io
 from io import BytesIO
-from difflib import Differ, SequenceMatcher
+from difflib import SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
@@ -585,6 +578,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
     check_in_longitude = models.FloatField(null=True, blank=True)
     check_out_latitude = models.FloatField(null=True, blank=True)
     check_out_longitude = models.FloatField(null=True, blank=True)
+
     status = models.CharField(
         max_length=20,
         choices=[
@@ -594,6 +588,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         ],
         default="pending",
     )
+
     attendance_status = models.CharField(
         max_length=20,
         choices=[
@@ -602,22 +597,26 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             ("overtime", "Overtime"),
             ("on_time", "On Time"),
             ("absent", "Absent"),
+            ("pending", "Pending"),
         ],
         default="pending",
     )
-    overtime_hours = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
-    )
-    late_minutes = models.IntegerField(default=0, null=True, blank=True)
-    early_checkout_minutes = models.IntegerField(default=0, null=True, blank=True)
+
+    overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    late_minutes = models.IntegerField(default=0)
+    early_checkout_minutes = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("employee", "date")
 
     def __str__(self):
-        return f"{self.employee.user.fullname} - {self.date} - {self.status}"
+        user = getattr(self.employee, "user", None)
+        if user and hasattr(user, "fname") and hasattr(user, "lname"):
+            return f"{user.fname} {user.lname} - {self.date} - {self.status}"
+        return f"{self.employee} - {self.date} - {self.status}"
 
     def calculate_overtime_hours(self):
+        print(f"[DEBUG] Calculating overtime for {self} ...")
         if (
             self.date
             and self.check_out_time
@@ -628,12 +627,18 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
+            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
+
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
-                return round(overtime_duration.total_seconds() / 3600, 2)
+                hours = round(overtime_duration.total_seconds() / 3600, 2)
+                print(f"    Overtime hours = {hours}")
+                return hours
+        print("    No overtime")
         return 0.0
 
     def calculate_late_minutes(self):
+        print(f"[DEBUG] Calculating late minutes for {self} ...")
         if (
             self.date
             and self.check_in_time
@@ -644,12 +649,18 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             datetime_checkin = datetime.combine(self.date, self.check_in_time)
             datetime_start = datetime.combine(self.date, branch_start_time)
 
+            print(f"    Branch start: {datetime_start}, Check-in: {datetime_checkin}")
+
             if datetime_checkin > datetime_start:
                 delay = datetime_checkin - datetime_start
-                return int(delay.total_seconds() / 60)
+                minutes = int(delay.total_seconds() / 60)
+                print(f"    Late minutes = {minutes}")
+                return minutes
+        print("    Not late")
         return 0
 
     def calculate_early_checkout_minutes(self):
+        print(f"[DEBUG] Calculating early checkout for {self} ...")
         if (
             self.date
             and self.check_out_time
@@ -660,15 +671,25 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
+            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
+
             if datetime_checkout < datetime_end:
                 early_leave = datetime_end - datetime_checkout
-                return int(early_leave.total_seconds() / 60)
+                minutes = int(early_leave.total_seconds() / 60)
+                print(f"    Early checkout minutes = {minutes}")
+                return minutes
+        print("    No early checkout")
         return 0
 
-    def update_attendance_status(self):
-        # If no check-in and check-out => absent
+    def update_attendance_status(self, commit=True):
+        print(f"[DEBUG] Updating attendance status for {self} ...")
+
         if not self.check_in_time and not self.check_out_time:
+            print("    Absent (no check-in or check-out)")
             self.attendance_status = "absent"
+            self.overtime_hours = 0
+            self.late_minutes = 0
+            self.early_checkout_minutes = 0
         else:
             self.overtime_hours = self.calculate_overtime_hours()
             self.late_minutes = self.calculate_late_minutes()
@@ -683,12 +704,26 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             else:
                 self.attendance_status = "on_time"
 
-        self.save()
+            print(f"    Status = {self.attendance_status}, "
+                  f"Overtime = {self.overtime_hours}, "
+                  f"Late = {self.late_minutes}, "
+                  f"Early checkout = {self.early_checkout_minutes}")
+
+        if commit:
+            print("    Saving attendance with updated values...")
+            super().save(update_fields=[
+                "attendance_status",
+                "overtime_hours",
+                "late_minutes",
+                "early_checkout_minutes"
+            ])
 
     def save(self, *args, **kwargs):
-        """Override save so status updates automatically"""
+        print(f"[DEBUG] Saving attendance record for {self} ...")
+        self.update_attendance_status(commit=False)
         super().save(*args, **kwargs)
-        self.update_attendance_status()
+        print(f"    Saved {self}")
+
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
