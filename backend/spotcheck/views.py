@@ -153,7 +153,6 @@ class EmployeeStopCheckSettingDetailView(APIView):
                 {"detail": "Employee spot check setting not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-
 class EmployeeStopCheckSettingUpdateView(APIView):
     permission_classes = [AllowAny]
     parser_classes = [FormParser]
@@ -173,6 +172,26 @@ class EmployeeStopCheckSettingUpdateView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class EmployeeStopCheckListView(APIView):
+    @extend_schema(
+        request=SpotCheckModels.EmployeeSpotCheck,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found"},
+        description="Retrieve details of a specific employee spot check.",
+        summary="Employee spot check Detail",
+        tags=["Employee spot check Management"],
+    )
+    def get(self, request):
+        """Retrieve details of spot check."""
+        try:
+            setting = SpotCheckModels.EmployeeSpotCheck.object.get(deleted_at=None)
+            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(setting)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
+            return Response(
+                {"detail": "Employee spot check not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
 class EmployeeStopCheckCreateView(APIView):
     permission_classes = [AllowAny]
