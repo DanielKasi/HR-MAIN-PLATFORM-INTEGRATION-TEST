@@ -2357,3 +2357,21 @@ export interface IBranchPenaltyConfigFormData {
   penalty_value_type: string;
   percentage?: number;
 }
+
+export interface IBranchLocationComparisonConfig {
+  id: number;
+  branch: number;
+  branch_name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IBranchLocationComparisonConfigFormData {
+  branch: number;
+  latitude: number;
+  longitude: number;
+  radius: number;
+}

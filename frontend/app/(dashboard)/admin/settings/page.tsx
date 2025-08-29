@@ -24,8 +24,8 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/c
 import {Badge} from "@/components/ui/badge";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {TableSkeleton} from "@/components/common/table-skeleton";
-import {penaltyConfigAPI} from "@/lib/utils";
-import type {IInstitutionPenaltyConfig, IInstitutionPenaltyConfigFormData, IBranchPenaltyConfig, IBranchPenaltyConfigFormData} from "@/types/types.utils";
+import {penaltyConfigAPI, branchLocationComparisonConfigAPI} from "@/lib/utils";
+import type {IInstitutionPenaltyConfig, IInstitutionPenaltyConfigFormData, IBranchPenaltyConfig, IBranchPenaltyConfigFormData, IBranchLocationComparisonConfig, IBranchLocationComparisonConfigFormData} from "@/types/types.utils";
 
 interface DocumentFile {
   id: string;
@@ -37,7 +37,7 @@ interface DocumentFile {
 export default function SettingsPage() {
   const institution = useSelector(selectSelectedInstitution);
   const attachedInstitutions = useSelector(selectAttachedInstitutions);
-  const [activeTab, setActiveTab] = useState<'institution' | 'kyc' | 'penalties' | 'branch_penalties'>('institution');
+  const [activeTab, setActiveTab] = useState<'institution' | 'kyc' | 'penalties' | 'branch_penalties' | 'location_comparison'>('institution');
   const [formData, setFormData] = useState({
     institution_name: "",
     institution_email: "",
@@ -98,10 +98,24 @@ export default function SettingsPage() {
   const [branchPenaltyTypeFilter, setBranchPenaltyTypeFilter] = useState<string>("all");
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   
+  // Location Comparison Config state
+  const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<IBranchLocationComparisonConfig[]>([]);
+  const [locationComparisonFormData, setLocationComparisonFormData] = useState<IBranchLocationComparisonConfigFormData>({
+    branch: 0,
+    latitude: 0,
+    longitude: 0,
+    radius: 100,
+  });
+  const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false);
+  const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] = useState<IBranchLocationComparisonConfig | null>(null);
+  const [locationComparisonSearchTerm, setLocationComparisonSearchTerm] = useState("");
+  const [selectedLocationComparisonBranchId, setSelectedLocationComparisonBranchId] = useState<number | null>(null);
+  
   // Refs for table refresh functions
   const institutionPenaltyRefreshRef = useRef<(() => void) | null>(null);
   const branchPenaltyRefreshRef = useRef<(() => void) | null>(null);
- 
+  const locationComparisonRefreshRef = useRef<(() => void) | null>(null);
+
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -481,6 +495,83 @@ export default function SettingsPage() {
       return `${config.percentage}%`;
     }
     return `$${Number(config.penalty_value).toFixed(2)}`;
+  };
+
+  // Location Comparison Config helper functions
+  const handleLocationComparisonInputChange = (field: keyof IBranchLocationComparisonConfigFormData, value: string | number) => {
+    setLocationComparisonFormData((prev) => ({...prev, [field]: value}));
+  };
+
+  const resetLocationComparisonForm = () => {
+    setLocationComparisonFormData({
+      branch: selectedLocationComparisonBranchId || 0,
+      latitude: 0,
+      longitude: 0,
+      radius: 100,
+    });
+    setEditingLocationComparisonConfig(null);
+    setIsLocationComparisonFormOpen(false);
+  };
+
+  const handleCreateLocationComparisonConfig = () => {
+    if (!selectedLocationComparisonBranchId) {
+      toast.error("Please select a branch first");
+      return;
+    }
+    resetLocationComparisonForm();
+    setIsLocationComparisonFormOpen(true);
+  };
+
+  const handleEditLocationComparisonConfig = (config: IBranchLocationComparisonConfig) => {
+    setLocationComparisonFormData({
+      branch: config.branch,
+      latitude: config.latitude,
+      longitude: config.longitude,
+      radius: config.radius,
+    });
+    setEditingLocationComparisonConfig(config);
+    setIsLocationComparisonFormOpen(true);
+  };
+
+  const handleSaveLocationComparisonConfig = async () => {
+    if (!selectedLocationComparisonBranchId) return;
+
+    setIsLoading(true);
+    try {
+      if (editingLocationComparisonConfig) {
+        await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(editingLocationComparisonConfig.id, locationComparisonFormData);
+        toast.success("Location comparison configuration updated successfully");
+      } else {
+        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(locationComparisonFormData);
+        toast.success("Location comparison configuration created successfully");
+      }
+      resetLocationComparisonForm();
+      // Trigger table refresh
+      locationComparisonRefreshRef.current?.();
+    } catch (error) {
+      showErrorToast({error, defaultMessage: "Failed to save location comparison configuration"});
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteLocationComparisonConfig = async (config: IBranchLocationComparisonConfig) => {
+    setConfirmationDialog({
+      isOpen: true,
+      title: "Delete Location Comparison Configuration",
+      description: `Are you sure you want to delete the location comparison configuration for ${config.branch_name}?`,
+      onConfirm: async () => {
+        try {
+          await branchLocationComparisonConfigAPI.deleteBranchLocationComparisonConfig(config.id);
+          toast.success("Location comparison configuration deleted successfully");
+          // Trigger table refresh
+          locationComparisonRefreshRef.current?.();
+        } catch (error) {
+          showErrorToast({error, defaultMessage: "Failed to delete location comparison configuration"});
+        }
+        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
+      },
+    });
   };
 
   const renderInstitutionSettings = () => (
@@ -1044,7 +1135,7 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={resetPenaltyForm}
-                disabled={isLoading}
+                    disabled={isLoading}
                 className="flex-1 rounded-full"
               >
                 Cancel
@@ -1192,7 +1283,7 @@ export default function SettingsPage() {
                             {formatBranchPenaltyValue(config)}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1287,8 +1378,8 @@ export default function SettingsPage() {
                     onChange={(e) => handleBranchPenaltyInputChange("penalty_value", parseFloat(e.target.value) || 0)}
                     placeholder="Enter penalty amount"
                   />
-                </div>
-              ) : (
+                      </div>
+                    ) : (
                 <div>
                   <Label htmlFor="branch_percentage">Percentage (%)</Label>
                   <Input
@@ -1320,6 +1411,223 @@ export default function SettingsPage() {
                 className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
               >
                 {isLoading ? "Saving..." : editingBranchPenaltyConfig ? "Update" : "Create"}
+                  </Button>
+                </div>
+              </div>
+        </div>
+      )}
+      </div>
+  );
+
+  const renderLocationComparisonConfigurations = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-900">Branch Location Comparison Configurations</h2>
+        <Button
+          onClick={handleCreateLocationComparisonConfig}
+          className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+          disabled={!selectedLocationComparisonBranchId}
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Location Config</span>
+        </Button>
+      </div>
+
+      {/* Branch Selection */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-center space-x-3">
+          <Icon icon="hugeicons:info-circle" className="w-5 h-5 text-green-600" />
+          <div>
+            <h3 className="font-medium text-green-900">Select Branch</h3>
+            <p className="text-sm text-green-700">
+              Choose a branch to manage its location comparison settings. Each branch can have different location parameters.
+            </p>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Select value={selectedLocationComparisonBranchId?.toString() || ""} onValueChange={(value) => setSelectedLocationComparisonBranchId(parseInt(value))}>
+            <SelectTrigger className="w-[300px]">
+              <SelectValue placeholder="Select a branch" />
+            </SelectTrigger>
+            <SelectContent>
+              {institution?.branches?.map((branch) => (
+                <SelectItem key={branch.id} value={branch.id.toString()}>
+                  {branch.branch_name}
+                </SelectItem>
+              )) || []}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {selectedLocationComparisonBranchId && (
+        <>
+          {/* Search */}
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1 max-w-sm">
+              <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by branch name..."
+                value={locationComparisonSearchTerm}
+                onChange={(e) => setLocationComparisonSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Location Comparison Configurations Table */}
+          <div className="bg-white rounded-lg border">
+            <PaginatedTableWrapper<IBranchLocationComparisonConfig>
+              fetchFirstPage={async () => {
+                if (!institution) throw new Error("No institution selected");
+                return await branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigs({
+                  institutionId: institution.id,
+                  page: 1,
+                  search: locationComparisonSearchTerm || undefined,
+                });
+              }}
+              fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
+              deps={[institution?.id, locationComparisonSearchTerm]}
+              className="space-y-4"
+              footerClassName="pt-4"
+            >
+              {({data, loading, refresh}) => {
+                // Store refresh function in ref when component mounts/updates
+                useEffect(() => {
+                  locationComparisonRefreshRef.current = refresh;
+                }, [refresh]);
+
+                if (loading) {
+                  return <TableSkeleton rows={5} columns={5} />;
+                }
+
+                if (!data || data.results.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      {locationComparisonSearchTerm ? "No location comparison configurations found matching your search criteria" : "No location comparison configurations found"}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Branch Name</TableHead>
+                        <TableHead>Latitude</TableHead>
+                        <TableHead>Longitude</TableHead>
+                        <TableHead>Radius (meters)</TableHead>
+                        <TableHead className="w-24">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.results.map((config) => (
+                        <TableRow key={config.id}>
+                          <TableCell className="font-medium">{config.branch_name}</TableCell>
+                          <TableCell>{config.latitude.toFixed(6)}</TableCell>
+                          <TableCell>{config.longitude.toFixed(6)}</TableCell>
+                          <TableCell>{config.radius}m</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditLocationComparisonConfig(config)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteLocationComparisonConfig(config)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                );
+              }}
+            </PaginatedTableWrapper>
+          </div>
+        </>
+      )}
+
+      {/* Location Comparison Configuration Form Modal */}
+      {isLocationComparisonFormOpen && selectedLocationComparisonBranchId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                {editingLocationComparisonConfig ? "Edit Location Comparison Configuration" : "Add Location Comparison Configuration"}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetLocationComparisonForm}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <Icon icon="hugeicons:close-01" className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="0.000001"
+                  value={locationComparisonFormData.latitude}
+                  onChange={(e) => handleLocationComparisonInputChange("latitude", parseFloat(e.target.value) || 0)}
+                  placeholder="Enter latitude"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="0.000001"
+                  value={locationComparisonFormData.longitude}
+                  onChange={(e) => handleLocationComparisonInputChange("longitude", parseFloat(e.target.value) || 0)}
+                  placeholder="Enter longitude"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="radius">Radius (meters)</Label>
+                <Input
+                  id="radius"
+                  type="number"
+                  min="1"
+                  value={locationComparisonFormData.radius}
+                  onChange={(e) => handleLocationComparisonInputChange("radius", parseInt(e.target.value) || 100)}
+                  placeholder="Enter radius in meters"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={resetLocationComparisonForm}
+                disabled={isLoading}
+                className="flex-1 rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveLocationComparisonConfig}
+                disabled={isLoading}
+                className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
+              >
+                {isLoading ? "Saving..." : editingLocationComparisonConfig ? "Update" : "Create"}
               </Button>
             </div>
           </div>
@@ -1457,6 +1765,34 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </button>
+
+              <button
+                onClick={() => setActiveTab('location_comparison')}
+                className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
+                  activeTab === 'location_comparison'
+                    ? 'bg-green-50 border border-green-200'
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                <Icon 
+                  icon="hugeicons:location-01" 
+                  className={`w-5 h-5 ${
+                    activeTab === 'location_comparison' ? 'text-primary' : 'text-gray-500'
+                  }`} 
+                />
+                <div>
+                  <div className={`font-medium ${
+                    activeTab === 'location_comparison' ? 'text-primary' : 'text-gray-900'
+                  }`}>
+                    Location Comparison
+                  </div>
+                  <div className={`text-sm ${
+                    activeTab === 'location_comparison' ? 'text-[#6B7280]' : 'text-[#6B7280]'
+                  }`}>
+                    Manage branch location comparison settings
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -1466,7 +1802,8 @@ export default function SettingsPage() {
           {activeTab === 'institution' ? renderInstitutionSettings() : 
            activeTab === 'kyc' ? renderKYCDocuments() : 
            activeTab === 'penalties' ? renderPenaltyConfigurations() :
-           renderBranchPenaltyConfigurations()}
+           activeTab === 'branch_penalties' ? renderBranchPenaltyConfigurations() :
+           renderLocationComparisonConfigurations()}
         </div>
       </div>
 

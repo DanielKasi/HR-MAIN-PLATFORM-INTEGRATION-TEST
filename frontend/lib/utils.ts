@@ -110,6 +110,8 @@ import {
   IInstitutionPenaltyConfigFormData,
   IBranchPenaltyConfig,
   IBranchPenaltyConfigFormData,
+  IBranchLocationComparisonConfig,
+  IBranchLocationComparisonConfigFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6549,6 +6551,82 @@ export const penaltyConfigAPI = {
       return response.data as IPaginatedResponse<IBranchPenaltyConfig>;
     } catch (error) {
       console.warn("Error fetching branch penalty configs from URL:", error);
+      throw error;
+    }
+  },
+};
+
+// Branch Location Comparison Config API functions
+export const branchLocationComparisonConfigAPI = {
+  getBranchLocationComparisonConfigs: async ({
+    institutionId,
+    page = 1,
+    search,
+  }: {
+    institutionId: number;
+    page?: number;
+    search?: string;
+  }): Promise<IPaginatedResponse<IBranchLocationComparisonConfig>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        page_size: "10",
+      });
+
+      if (search) {
+        params.append("search", search);
+      }
+
+      const response = await apiRequest.get(`/institution/branch-location-comparison/?${params.toString()}`);
+      return response.data as IPaginatedResponse<IBranchLocationComparisonConfig>;
+    } catch (error) {
+      console.warn("Error fetching branch location comparison configs:", error);
+      // Return dummy data for development
+      return {
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      };
+    }
+  },
+
+  getBranchLocationComparisonConfigsFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<IBranchLocationComparisonConfig>> => {
+    try {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<IBranchLocationComparisonConfig>;
+    } catch (error) {
+      console.warn("Error fetching branch location comparison configs from URL:", error);
+      throw error;
+    }
+  },
+
+  createBranchLocationComparisonConfig: async (data: IBranchLocationComparisonConfigFormData): Promise<IBranchLocationComparisonConfig> => {
+    try {
+      const response = await apiRequest.post("/institution/branch-location-comparison/", data);
+      return response.data as IBranchLocationComparisonConfig;
+    } catch (error) {
+      console.warn("Error creating branch location comparison config:", error);
+      throw error;
+    }
+  },
+
+  updateBranchLocationComparisonConfig: async (id: number, data: IBranchLocationComparisonConfigFormData): Promise<IBranchLocationComparisonConfig> => {
+    try {
+      const response = await apiRequest.put(`/institution/branch-location-comparison/${id}/`, data);
+      return response.data as IBranchLocationComparisonConfig;
+    } catch (error) {
+      console.warn("Error updating branch location comparison config:", error);
+      throw error;
+    }
+  },
+
+  deleteBranchLocationComparisonConfig: async (id: number): Promise<boolean> => {
+    try {
+      const response = await apiRequest.delete(`/institution/branch-location-comparison/${id}/`);
+      return response;
+    } catch (error) {
+      console.warn("Error deleting branch location comparison config:", error);
       throw error;
     }
   },
