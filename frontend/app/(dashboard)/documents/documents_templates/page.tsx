@@ -20,10 +20,11 @@ import { Plus, Search, MoreVertical, Edit, Download, Trash2, FileText, File, Loa
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils"
-import { IDocumentTemplate } from "@/types/types.utils"
+import { IDocumentTemplate, PERMISSION_CODES } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import RichTextDisplay from "@/components/common/rich-text-display"
+import ProtectedPage from "@/components/ProtectedPage"
 
 
 
@@ -139,12 +140,15 @@ export default function DocumentTemplatesPage() {
           <h1 className="text-3xl font-bold">Document Templates</h1>
           <p className="text-muted-foreground mt-2">Manage your document templates for generating documents</p>
         </div>
-        <Link href="/documents/templates/create">
+        <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_CREATE_ASSETS]}>
+          <Link href="/documents/documents_templates/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             Create Template
           </Button>
         </Link>
+        </ProtectedPage>
+        
       </div>
 
       <div className="mb-6">
@@ -174,22 +178,32 @@ export default function DocumentTemplatesPage() {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
+                  
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => router.push(`templates/${template.id}/edit`)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
+                    <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_CREATE_ASSETS]}>
+                      <DropdownMenuItem onClick={() => router.push(`templates/${template.id}/edit`)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                    </ProtectedPage>
+                    
+                    
                     <DropdownMenuItem onClick={() => handleDownload(template)}>
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setDeleteDialog({ open: true, template })}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
+
+                    <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_CREATE_ASSETS]}>
+                      <DropdownMenuItem
+                        onClick={() => setDeleteDialog({ open: true, template })}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </ProtectedPage>
+                    
+                    
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

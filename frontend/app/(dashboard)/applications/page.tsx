@@ -92,12 +92,9 @@ import {
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
-import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
 import {
   createInterviewStage,
   getInterviewStages,
-  fetchEmployees,
   createInterview,
 } from "@/lib/utils";
 import type {
@@ -109,6 +106,8 @@ import type {
 import { EmployeeSearchableSelect } from "@/components/ui/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 
 
 const statusColors = {
@@ -1497,6 +1496,7 @@ export default function ApplicationsPage() {
             Manage and track all job applications for {selectedBranch.branch_name} -
           </p>
         </div>
+        
         <Button
           onClick={() => setIsCreateDialogOpen(true)}
           className="flex items-center sm:mt-15 lg:mt-0"
@@ -1504,6 +1504,8 @@ export default function ApplicationsPage() {
           <Plus className="mr-2 h-4 w-4" />
           Create Application
         </Button>
+        
+        
       </div>
 
       {/* Enhanced Filter Section */}
