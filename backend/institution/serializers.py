@@ -18,6 +18,7 @@ from .models import (
     BranchWorkingDays,
     BranchDay,
     BranchShift,
+    BranchLocationComaparisonConfig
 )
 import os
 from django.db import transaction
@@ -729,3 +730,8 @@ class BranchShiftSerializer(serializers.ModelSerializer):
         ret = super().to_representation(instance)
         ret["shift_day"] = BranchDaySerializer(instance.shift_day).data
         return ret
+
+class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BranchLocationComaparisonConfig
+        fields = "__all__"        
