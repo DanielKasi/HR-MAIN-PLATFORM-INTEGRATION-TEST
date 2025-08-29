@@ -306,22 +306,22 @@ class Command(BaseCommand):
                 "name": "delete",
                 "description": "Action for deleting records that require approval",
             },
-            {
-                "name": "activate",
-                "description": "Action for activating records that require approval", 
-            },
-            {
-                "name": "deactivate",
-                "description": "Action for deactivating records that require approval",
-            },
-            {
-                "name": "publish",
-                "description": "Action for publishing records that require approval",
-            },
-            {
-                "name": "archive",
-                "description": "Action for archiving records that require approval",
-            },
+            # {
+            #     "name": "activate",
+            #     "description": "Action for activating records that require approval", 
+            # },
+            # {
+            #     "name": "deactivate",
+            #     "description": "Action for deactivating records that require approval",
+            # },
+            # {
+            #     "name": "publish",
+            #     "description": "Action for publishing records that require approval",
+            # },
+            # {
+            #     "name": "archive",
+            #     "description": "Action for archiving records that require approval",
+            # },
         ]
 
         valid_action_names = set()
