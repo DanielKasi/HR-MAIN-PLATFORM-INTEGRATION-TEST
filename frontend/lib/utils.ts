@@ -112,6 +112,7 @@ import {
   IBranchPenaltyConfigFormData,
   IBranchLocationComparisonConfig,
   IBranchLocationComparisonConfigFormData,
+  ILocation,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6195,7 +6196,6 @@ export const spotcheckAPI = {
     search?: string;
     status?: string;
   }): Promise<IPaginatedResponse<ISpotCheck>> => {
-    try {
       const params = new URLSearchParams({
         page: page.toString(),
       });
@@ -6210,111 +6210,7 @@ export const spotcheckAPI = {
       const endpoint = `/spotcheck/?${params.toString()}`;
       const response = await apiRequest.get(endpoint);
       return response.data as IPaginatedResponse<ISpotCheck>;
-    } catch (error) {
-      console.warn("Error fetching paginated spotchecks:", error);
-      // Return dummy data for now
-      const dummyData: ISpotCheck[] = [
-        {
-          id: 1,
-          location: { lat: 40.7128, lon: -74.0060 },
-          time: "2024-01-15T09:00:00Z",
-          spotchecktime: "2024-01-15T09:00:00Z",
-          status: { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-          duration: "45"
-        },
-        {
-          id: 2,
-          location: { lat: 40.7589, lon: -73.9851 },
-          time: "2024-01-15T14:30:00Z",
-          spotchecktime: "2024-01-15T14:30:00Z",
-          status: { id: 2, code: "missed", name: "Missed", description: "Spot check was missed" },
-          duration: "30"
-        },
-        {
-          id: 3,
-          location: { lat: 40.7505, lon: -73.9934 },
-          time: "2024-01-16T08:15:00Z",
-          spotchecktime: "2024-01-16T08:15:00Z",
-          status: { id: 3, code: "pending", name: "Pending", description: "Spot check is pending" },
-          duration: "60"
-        },
-        {
-          id: 4,
-          location: { lat: 40.7614, lon: -73.9776 },
-          time: "2024-01-16T11:45:00Z",
-          spotchecktime: "2024-01-16T11:45:00Z",
-          status: { id: 4, code: "in_progress", name: "In Progress", description: "Spot check is currently in progress" },
-          duration: "25"
-        },
-        {
-          id: 5,
-          location: { lat: 40.7282, lon: -73.7949 },
-          time: "2024-01-17T10:20:00Z",
-          spotchecktime: "2024-01-17T10:20:00Z",
-          status: { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-          duration: "50"
-        },
-        {
-          id: 6,
-          location: { lat: 40.6892, lon: -74.0445 },
-          time: "2024-01-17T16:00:00Z",
-          spotchecktime: "2024-01-17T16:00:00Z",
-          status: { id: 2, code: "missed", name: "Missed", description: "Spot check was missed" },
-          duration: "35"
-        },
-        {
-          id: 7,
-          location: { lat: 40.7505, lon: -73.9934 },
-          time: "2024-01-18T07:30:00Z",
-          spotchecktime: "2024-01-18T07:30:00Z",
-          status: { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-          duration: "40"
-        },
-        {
-          id: 8,
-          location: { lat: 40.7614, lon: -73.9776 },
-          time: "2024-01-18T13:15:00Z",
-          spotchecktime: "2024-01-18T13:15:00Z",
-          status: { id: 3, code: "pending", name: "Pending", description: "Spot check is pending" },
-          duration: "55"
-        },
-        {
-          id: 9,
-          location: { lat: 40.7128, lon: -74.0060 },
-          time: "2024-01-19T09:45:00Z",
-          spotchecktime: "2024-01-19T09:45:00Z",
-          status: { id: 4, code: "in_progress", name: "In Progress", description: "Spot check is currently in progress" },
-          duration: "20"
-        },
-        {
-          id: 10,
-          location: { lat: 40.7589, lon: -73.9851 },
-          time: "2024-01-19T15:30:00Z",
-          spotchecktime: "2024-01-19T15:30:00Z",
-          status: { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-          duration: "65"
-        }
-      ];
 
-      // Filter data based on search and status
-      let filteredData = dummyData;
-      if (search) {
-        filteredData = filteredData.filter(item => 
-          item.id.toString().includes(search) ||
-          item.status.name.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-      if (status && status !== "all") {
-        filteredData = filteredData.filter(item => item.status.code === status);
-      }
-
-      return {
-        count: filteredData.length,
-        next: null,
-        previous: null,
-        results: filteredData
-      } as IPaginatedResponse<ISpotCheck>;
-    }
   },
 
   getPaginatedFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<ISpotCheck>> => {
@@ -6376,24 +6272,14 @@ export const spotcheckAPI = {
     }
   },
 
-  create: async (data: any): Promise<ISpotCheck> => {
-    try {
-      const response = await apiRequest.post("/spotcheck/", data);
+  checkin: async ({spotCheckId, data}:{spotCheckId:number, data:ILocation}): Promise<ISpotCheck> => {
+      const response = await apiRequest.post(`/spotcheck/${spotCheckId}/checkin/`, data);
       return response.data;
-    } catch (error) {
-      console.error("Error creating spotcheck:", error);
-      throw error;
-    }
   },
 
   update: async (id: number, data: any): Promise<ISpotCheck> => {
-    try {
       const response = await apiRequest.patch(`/spotcheck/${id}/`, data);
       return response.data;
-    } catch (error) {
-      console.error("Error updating spotcheck:", error);
-      throw error;
-    }
   },
 
   delete: async (id: number): Promise<boolean> => {

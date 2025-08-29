@@ -47,6 +47,7 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
     emptyMessage?: string;
     searchPlaceholder?: string;
     hideSelectedFromList?: boolean;
+    setParentItems?: (items: PaginatedSelectItem<T>[]) => void;
 }
 
 export function PaginatedSearchableSelect<T, Q = unknown>({
@@ -72,6 +73,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     emptyMessage = "No items found.",
     searchPlaceholder = "Search items...",
     hideSelectedFromList = false,
+    setParentItems,
 }: PaginatedSearchableSelectProps<T, Q>) {
     const [open, setOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
@@ -92,6 +94,14 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
             setSelectedItem(itemMatch)
         }
     }, [staticItems, selectedItems, multiple, data])
+
+    React.useEffect(() => {
+        if (setParentItems) {
+                if (data && data.results) {
+                    setParentItems(data.results);
+                }
+        }
+    }, [data])
 
 
 
