@@ -20,6 +20,8 @@ from .views import (
     EmployeeWorkingDaysDetailAPIView,
     ExportAttendanceExcelView,
     AttendanceReportGetView,
+    EmployeeShiftDetailView,
+    EmployeeShiftListCreateView,
 )
 
 urlpatterns = [
@@ -84,10 +86,14 @@ urlpatterns = [
         name="employee-type-detail",
     ),
     path(
-        "work-types/<int:institution_id>/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
+        "work-types/<int:institution_id>/",
+        WorkTypeListCreateAPIView.as_view(),
+        name="work-type-list-create",
     ),
     path(
-        "work-types/detail/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
+        "work-types/detail/<int:pk>/",
+        WorkTypeDetailAPIView.as_view(),
+        name="work-type-detail",
     ),
     path(
         "employee-contracts/<int:pk>/",
@@ -110,4 +116,14 @@ urlpatterns = [
         name="export-attendance-2-excel",
     ),
     path("attendance-data/", AttendanceReportGetView.as_view(), name="attendance-data"),
+    path(
+        "employee-shifts",
+        EmployeeShiftListCreateView.as_view(),
+        name="employee-shifts-list",
+    ),
+    path(
+        "employee-shifts-detail/<int:pk>/",
+        EmployeeShiftDetailView.as_view(),
+        name="employee-shifts-detail",
+    ),
 ]

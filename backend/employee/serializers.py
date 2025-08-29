@@ -3,7 +3,7 @@ from .models import (
     EmployeeAttendance,
     EmployeeType,
     WorkType,
-    EmployeeContract,
+    EmployeeContract, EmployeeDay,EmployeeShift
 )
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
@@ -34,8 +34,7 @@ from settings.models import SystemDay
 from .models import EmployeeWorkingDays
 from institution.models import Department
 from recruitment.models import JobPosition
-from datetime import date, timedelta
-
+from datetime import date, timedelta, datetime
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -246,6 +245,18 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         return data
 
+class EmployeeDaySerializer(serializers.ModelSerializer):
+    day = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all()
+    )
+    class Meta:
+        model = EmployeeDay
+        fields=["id", "day", "start_time", "end_time"]
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep["day"] = SystemDaySerializer(instance.day).data
+        return rep
 
 class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
     days = serializers.PrimaryKeyRelatedField(
@@ -263,28 +274,24 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
         instance = self.instance
         employee = data.get("employee") or (instance.employee if instance else None)
 
-        if (
-            not employee
-            or not employee.department
-            or not employee.department.institution
-        ):
-            raise serializers.ValidationError(
-                {"error": f"Employee must belong to a department and institution."}
-            )
 
-        institution = employee.department.institution
+        if employee.payroll_branch and hasattr(employee.payroll_branch, "working_days"):
+            allowed_days = employee.payroll_branch.working_days.days.all()
 
-        if not hasattr(institution, "working_days"):
-            raise serializers.ValidationError(
-                {"error": f"Institution does not have working days defined."}
-            )
+        else:
+            institution = employee.department.institution
 
-        allowed_days = institution.working_days.days.all()
+            if not hasattr(institution, "working_days"):
+                raise serializers.ValidationError(
+                    {"error": f"Institution does not have working days defined."}
+                )
+
+            allowed_days = institution.working_days.days.all()
 
         for day in selected_days:
             if day not in allowed_days:
                 raise serializers.ValidationError(
-                    {"error": f"{day.day_name} is not a valid working day for this institution."}
+                    {"error": f"{day.day_name} is not a valid working day for this institution/branch."}
                 )
 
         return data
@@ -303,7 +310,7 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["days"] = SystemDaySerializer(instance.days.all(), many=True).data
+        rep["days"] = EmployeeDaySerializer(instance.employee_days.all(), many=True).data
         return rep
 
 
@@ -670,11 +677,9 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
     def validate(self, data):
         today = date.today()
 
-        # Set defaults if missing
         data["end_date"] = data.get("end_date", today)
         data["start_date"] = data.get("start_date", today - timedelta(days=30))
 
-        # Optional: Ensure start <= end
         if data["start_date"] > data["end_date"]:
             raise serializers.ValidationError({"error": f"start_date cannot be after end_date."})
 
@@ -686,3 +691,61 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
             "target_departments": self.validated_data.get("target_departments", []),
             "target_job_positions": self.validated_data.get("target_job_positions", []),
         }
+
+class EmployeeShiftSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeShift
+        fields = [
+            "id",
+            "employee",
+            "shift",
+            "context",
+            "shift_status",
+            "date",
+            "created_at",
+            "created_by",
+        ]
+        read_only_fields = ["created_at", "created_by", "shift_status"]
+
+    def validate(self, data):
+        request_user = self.context["request"].user
+        context = data.get("context")
+        shift = data.get("shift")
+        date_selected = data.get("date")
+        employee = data.get("employee")
+
+        if context == "REQUEST":
+            if not hasattr(request_user, "employee"):
+                raise serializers.ValidationError("Logged-in user is not an employee.")
+            data["employee"] = request_user.employee
+            employee = data["employee"]
+        elif context == "ALLOCATION":
+            if employee is None:
+                raise serializers.ValidationError("Employee must be provided for ALLOCATION context.")
+
+        if shift.branch != employee.payroll_branch:
+            raise serializers.ValidationError(
+                f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
+            )
+
+        python_weekday = date_selected.weekday()
+        level = python_weekday + 1
+        if shift.shift_day.day.level != level:
+            raise serializers.ValidationError(
+                f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
+                f"but the selected date is '{date_selected.strftime('%A')}'."
+            )
+
+        branch_open = employee.payroll_branch.branch_opening_time
+        branch_close = employee.payroll_branch.branch_closing_time
+        if shift.start_time < branch_open or shift.end_time > branch_close:
+            raise serializers.ValidationError(
+                f"Shift '{shift.name}' must be within branch working hours "
+                f"({branch_open} - {branch_close})."
+            )
+
+        return data
+
+    def create(self, validated_data):
+        validated_data["created_by"] = self.context["request"].user
+        return super().create(validated_data)

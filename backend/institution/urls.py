@@ -33,7 +33,11 @@ from .views import (
     BranchPenaltyConfigListAPIView,
     BranchPenaltyConfigDetailAPIView,
     BranchLocationComparisonConfigListAPIView,
-    BranchLocationComparisonConfigDetailAPIView
+    BranchLocationComparisonConfigDetailAPIView,
+    BranchWorkingDaysListAPIView,
+    BranchWorkingDaysDetailView,
+    BranchShiftDetailView,
+    BranchShiftListCreateView,
 )
 
 urlpatterns = [
@@ -147,7 +151,7 @@ urlpatterns = [
         DashboardView.as_view(),
         name="dash-analytics",
     ),
-        path(
+    path(
         "institution-penalties/",
         InstitutionPenaltyConfigListAPIView.as_view(),
         name="institution-penalty-config-list",
@@ -166,6 +170,26 @@ urlpatterns = [
         "branch-penalties/<int:pk>/",
         BranchPenaltyConfigDetailAPIView.as_view(),
         name="branch-penalty-config-detail",
+    ),
+    path(
+        "branch-working-days/",
+        BranchWorkingDaysListAPIView.as_view(),
+        name="branch-working-days",
+    ),
+    path(
+        "branch-working-day-detail/<int:id>/",
+        BranchWorkingDaysDetailView.as_view(),
+        name="branch-working-day-detail",
+    ),
+    path(
+        "branch-shifts/",
+        BranchShiftListCreateView.as_view(),
+        name="branch-shift-list-create",
+    ),
+    path(
+        "branch-shifts/<int:pk>/",
+        BranchShiftDetailView.as_view(),
+        name="branch-shift-detail",
     ),
     path(
         "branch-location-comparison/",
