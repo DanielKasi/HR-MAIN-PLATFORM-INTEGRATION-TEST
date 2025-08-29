@@ -691,7 +691,7 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
         
         return self.penalty_value 
 
-class BranchLocationComaparisonConfig(SoftDeletableTimeStampedModel):
+class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
     radius_in_meters = models.IntegerField(default=100)
     branch = models.OneToOneField(
         Branch,

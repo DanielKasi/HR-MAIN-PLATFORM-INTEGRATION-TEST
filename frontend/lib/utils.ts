@@ -6567,28 +6567,20 @@ export const branchLocationComparisonConfigAPI = {
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<IBranchLocationComparisonConfig>> => {
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        page_size: "10",
-      });
+   
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: "10",
+    });
 
-      if (search) {
-        params.append("search", search);
-      }
-
-      const response = await apiRequest.get(`/institution/branch-location-comparison/?${params.toString()}`);
-      return response.data as IPaginatedResponse<IBranchLocationComparisonConfig>;
-    } catch (error) {
-      console.warn("Error fetching branch location comparison configs:", error);
-      // Return dummy data for development
-      return {
-        count: 0,
-        next: null,
-        previous: null,
-        results: [],
-      };
+    if (search) {
+      params.append("search", search);
     }
+
+    const response = await apiRequest.get(`/institution/branch-location-comparison/?${params.toString()}`);
+    
+    return response.data as IPaginatedResponse<IBranchLocationComparisonConfig>;
+   
   },
 
   getBranchLocationComparisonConfigsFromUrl: async ({url}: {url: string}): Promise<IPaginatedResponse<IBranchLocationComparisonConfig>> => {

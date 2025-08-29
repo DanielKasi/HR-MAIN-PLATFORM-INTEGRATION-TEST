@@ -28,7 +28,7 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
-    BranchLocationComaparisonConfig
+    BranchLocationComparisonConfig
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -1993,6 +1993,7 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = BranchLocationComparisonConfigSerializer(paginated_qs, many=True)
+        print("serialized data", serializer.data)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -2006,8 +2007,8 @@ class BranchLocationComparisonConfigListAPIView(APIView):
 class BranchLocationComparisonConfigDetailAPIView(APIView):
     def get_object(self, pk):
         try:
-            return BranchLocationComaparisonConfig.objects.get(pk=pk)
-        except BranchLocationComaparisonConfig.DoesNotExist:
+            return BranchLocationComparisonConfig.objects.get(pk=pk)
+        except BranchLocationComparisonConfig.DoesNotExist:
             raise Http404
 
     def get(self, request, pk):

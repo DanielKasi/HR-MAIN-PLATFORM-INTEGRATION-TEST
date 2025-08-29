@@ -102,9 +102,7 @@ export default function SettingsPage() {
   const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<IBranchLocationComparisonConfig[]>([]);
   const [locationComparisonFormData, setLocationComparisonFormData] = useState<IBranchLocationComparisonConfigFormData>({
     branch: 0,
-    latitude: 0,
-    longitude: 0,
-    radius: 100,
+    radius_in_meters: 100,
   });
   const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false);
   const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] = useState<IBranchLocationComparisonConfig | null>(null);
@@ -505,9 +503,7 @@ export default function SettingsPage() {
   const resetLocationComparisonForm = () => {
     setLocationComparisonFormData({
       branch: selectedLocationComparisonBranchId || 0,
-      latitude: 0,
-      longitude: 0,
-      radius: 100,
+      radius_in_meters: 100,
     });
     setEditingLocationComparisonConfig(null);
     setIsLocationComparisonFormOpen(false);
@@ -525,9 +521,7 @@ export default function SettingsPage() {
   const handleEditLocationComparisonConfig = (config: IBranchLocationComparisonConfig) => {
     setLocationComparisonFormData({
       branch: config.branch,
-      latitude: config.latitude,
-      longitude: config.longitude,
-      radius: config.radius,
+      radius_in_meters: config.radius_in_meters,
     });
     setEditingLocationComparisonConfig(config);
     setIsLocationComparisonFormOpen(true);
@@ -538,11 +532,16 @@ export default function SettingsPage() {
 
     setIsLoading(true);
     try {
+      const configData = {
+        branch: selectedLocationComparisonBranchId,
+        radius_in_meters: locationComparisonFormData.radius_in_meters,
+      };
+
       if (editingLocationComparisonConfig) {
-        await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(editingLocationComparisonConfig.id, locationComparisonFormData);
+        await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(editingLocationComparisonConfig.id, configData);
         toast.success("Location comparison configuration updated successfully");
       } else {
-        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(locationComparisonFormData);
+        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(configData);
         toast.success("Location comparison configuration created successfully");
       }
       resetLocationComparisonForm();
@@ -1501,6 +1500,8 @@ export default function SettingsPage() {
                   return <TableSkeleton rows={5} columns={5} />;
                 }
 
+                console.log("Location", data)
+
                 if (!data || data.results.length === 0) {
                   return (
                     <div className="text-center py-8 text-gray-500">
@@ -1514,8 +1515,6 @@ export default function SettingsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Branch Name</TableHead>
-                        <TableHead>Latitude</TableHead>
-                        <TableHead>Longitude</TableHead>
                         <TableHead>Radius (meters)</TableHead>
                         <TableHead className="w-24">Actions</TableHead>
                       </TableRow>
@@ -1524,9 +1523,7 @@ export default function SettingsPage() {
                       {data.results.map((config) => (
                         <TableRow key={config.id}>
                           <TableCell className="font-medium">{config.branch_name}</TableCell>
-                          <TableCell>{config.latitude.toFixed(6)}</TableCell>
-                          <TableCell>{config.longitude.toFixed(6)}</TableCell>
-                          <TableCell>{config.radius}m</TableCell>
+                          <TableCell>{config.radius_in_meters}m</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
                               <Button
@@ -1577,37 +1574,13 @@ export default function SettingsPage() {
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="latitude">Latitude</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="0.000001"
-                  value={locationComparisonFormData.latitude}
-                  onChange={(e) => handleLocationComparisonInputChange("latitude", parseFloat(e.target.value) || 0)}
-                  placeholder="Enter latitude"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="0.000001"
-                  value={locationComparisonFormData.longitude}
-                  onChange={(e) => handleLocationComparisonInputChange("longitude", parseFloat(e.target.value) || 0)}
-                  placeholder="Enter longitude"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="radius">Radius (meters)</Label>
                 <Input
                   id="radius"
                   type="number"
                   min="1"
-                  value={locationComparisonFormData.radius}
-                  onChange={(e) => handleLocationComparisonInputChange("radius", parseInt(e.target.value) || 100)}
+                  value={locationComparisonFormData.radius_in_meters}
+                  onChange={(e) => handleLocationComparisonInputChange("radius_in_meters", parseInt(e.target.value) || 100)}
                   placeholder="Enter radius in meters"
                 />
               </div>
