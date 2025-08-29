@@ -229,7 +229,7 @@ class EmployeeSpotCheckListCreateAPIView(APIView):
     )
     def get(self, request):
         """List all employee spot check records for an institution of authenticated user."""
-        spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
+        spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
