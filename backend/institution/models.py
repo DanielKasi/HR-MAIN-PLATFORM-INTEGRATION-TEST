@@ -16,6 +16,7 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
+
 logger = logging.getLogger(__name__)
 
 
