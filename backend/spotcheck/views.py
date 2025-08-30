@@ -8,7 +8,6 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.parsers import FormParser
 from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
-from utilities.pagination import CustomPageNumberPagination
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
@@ -201,18 +200,31 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeSpotCheckListCreateAPIView(APIView):
 
+class EmployeeStopCheckListView(APIView):
     @extend_schema(
-        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
-        responses={201: SpotCheckSerializers.EmployeeSpotCheckSerializer, 400: "Bad Request"},
-        summary="Create Employee Spot check",
-        description="Create a new employee spot check record.",
+        request=SpotCheckModels.EmployeeSpotCheck,
+        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found"},
+        description="Retrieve details of a specific employee spot check.",
+        summary="Employee spot check Detail",
         tags=["Employee spot check Management"],
     )
+    def get(self, request):
+        """Retrieve details of spot check."""
+        try:
+            spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
+            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
+            return Response(
+                {"detail": "Employee spot check not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+class EmployeeSpotCheckCreateView(APIView):
+    parser_classes = [FormParser]
 
     def post(self, request):
-        """Create a employee spot check record."""
+        """Create a employee spot checkplease share the sale reports record."""
 
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request.data)
         if serializer.is_valid():
@@ -220,21 +232,6 @@ class EmployeeSpotCheckListCreateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-    @extend_schema(
-        request=SpotCheckModels.EmployeeSpotCheck,
-        responses={200: SpotCheckSerializers.EmployeeSpotCheckSerializer, 404: "Employee Spot check not found"},
-        description="List all employee spot check records for an institution of authenticated user.",
-        summary="Employee spot check List",
-        tags=["Employee spot check Management"],
-    )
-    def get(self, request):
-        """List all employee spot check records for an institution of authenticated user."""
-        spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
-        paginator = CustomPageNumberPagination()
-        paginated_spotchecks = paginator.paginate_queryset(spotchecks, request)
-        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(paginated_spotchecks, many=True)
-        return paginator.get_paginated_response(serializer.data)
     
 
 class EmployeeSpotCheckDetailView(APIView):
