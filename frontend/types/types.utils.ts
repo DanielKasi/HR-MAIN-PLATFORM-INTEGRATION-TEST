@@ -2469,10 +2469,6 @@ export interface IBranchShiftFormData {
   description?: string | null;
 }
 
-export interface IBranchWorkingDays {
-  branch: Branch;
-  days: ISystemWorkingDay[];
-}
 
 export type IPenaltyType  = "late_coming" | "early_leaving" | "absent" | "no_response_spotcheck" | "late_spotcheck_response";
 export type IEmployeePenaltyStatus = "waived" | "applied";  
@@ -2529,8 +2525,3 @@ export interface IBranchDay {
   day_type: string;
 }
 
-export interface IBranchWorkingDays {
-  id: number;
-  branch: number;
-  branch_days: IBranchDay[];
-}
