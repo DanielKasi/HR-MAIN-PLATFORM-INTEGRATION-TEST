@@ -65,9 +65,3 @@ class EmployeeSpotCheckSerializer(serializers.ModelSerializer):
         data["status"] = SpotCheckStatusSerializer(instance.status).data
         return data
 
-class EmployeeSpotCheckCreateSerializer(serializers.ModelSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
-
-    class Meta:
-        model = SpotCheckModels.EmployeeSpotCheck
-        fiels = ["employee"]
