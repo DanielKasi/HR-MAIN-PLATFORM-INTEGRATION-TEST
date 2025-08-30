@@ -16,7 +16,6 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -191,6 +190,8 @@ class Institution(SoftDeletableTimeStampedModel):
                     created_by=self.created_by,
                 )
 
+                self._create_institution_working_days()
+
                 Branch.objects.create(
                     institution=self,
                     branch_name=f"{self.institution_name} Main Branch",
@@ -200,8 +201,6 @@ class Institution(SoftDeletableTimeStampedModel):
                     created_by=self.created_by,
                     paying_bank_account=bank_account,
                 )
-
-                self._create_institution_working_days()
 
     def _create_institution_working_days(self):
         from settings.models import SystemDay
@@ -473,7 +472,7 @@ class Branch(SoftDeletableTimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_new:
-            BranchWorkingDays.objects.create(branch=self)
+            BranchWorkingDays.objects.get_or_create(branch=self)
 
     def __str__(self):
         return (
@@ -503,20 +502,37 @@ class BranchWorkingDays(models.Model):
         super().save(*args, **kwargs)
 
         if is_new:
-            pass
-            # self._create_branch_days()
+            self._create_branch_days()
+
+        else:
+            if not self.branch_days:
+                self._update_branch_days()
 
     def _create_branch_days(self):
         inst_working_days = InstitutionWorkingDays.objects.get(
             institution=self.branch.institution
         )
 
-        # copy all institution days into branch days
         for day in inst_working_days.days.all():
             BranchDay.objects.create(
                 branch_working_days=self,
                 day=day,
             )
+
+    def _update_branch_days(self):
+        inst_working_days = InstitutionWorkingDays.objects.get(
+            institution=self.branch.institution
+        )
+
+        self.days.clear()
+
+        for day in inst_working_days.days.all():
+            BranchDay.objects.create(
+                branch_working_days=self,
+                day=day,
+            )
+
+        self.days.set(inst_working_days.days.all())
 
 
 class BranchDay(models.Model):
@@ -688,8 +704,10 @@ PENALTY_VALUE_TYPES = [
     ("percentage", "Percentage of Salary"),
 ]
 
+
 class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
     """Default penalty configuration at institution level"""
+
     institution = models.ForeignKey(
         Institution, related_name="penalty_config", on_delete=models.CASCADE
     )
@@ -729,7 +747,6 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
                     "Penalty value must be greater than 0 when penalty type is fixed"
                 )
 
-
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""
         if self.penalty_value_type == "percentage":
@@ -739,8 +756,9 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
                 return 0.00
             calculated = (employee_salary * self.percentage) / 100
             return calculated
-        
-        return self.penalty_value            
+
+        return self.penalty_value
+
 
 class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
@@ -791,16 +809,15 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
                 return 0.00
             calculated = (employee_salary * self.percentage) / 100
             return calculated
-        
-        return self.penalty_value 
+
+        return self.penalty_value
+
 
 class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
     radius_in_meters = models.IntegerField(default=100)
     branch = models.OneToOneField(
-        Branch,
-        on_delete=models.CASCADE,
-        related_name="location_comparison_settings"
+        Branch, on_delete=models.CASCADE, related_name="location_comparison_settings"
     )
 
     def __str__(self):
-        return f"Location Comparison Settings for {self.branch.branch_name}"            
+        return f"Location Comparison Settings for {self.branch.branch_name}"

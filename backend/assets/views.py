@@ -37,6 +37,7 @@ from workflows.models import (
 )
 from django.db.models import Q
 from employee.models import Employee
+from django.db import transaction
 
 
 class AssetCategoryListCreateView(APIView):
@@ -56,12 +57,14 @@ class AssetCategoryListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = AssetCategorySerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -78,6 +81,8 @@ class AssetCategoryListCreateView(APIView):
 
         user = request.user.profile
         search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        status_filter = request.query_params.get("status", None)  
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -97,6 +102,14 @@ class AssetCategoryListCreateView(APIView):
                 | Q(category_description__icontains=search_query)
                 | Q(code__icontains=search_query)
             )
+
+        if created_at:
+            categories = categories.filter(created_at=created_at)   
+
+        if status_filter == "active":
+            categories = categories.filter(is_active=True)
+        elif status_filter == "inactive":
+            categories = categories.filter(is_active=False)     
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(categories, request)
@@ -127,9 +140,9 @@ class AssetCategoryDetailView(APIView):
 
     @extend_schema(
         responses={
-            204: OpenApiResponse(
+            200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
-                description="Asset category deleted successfully.",
+                description="Asset category marked for deletion and sent for approval.",
             ),
             404: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
@@ -138,11 +151,22 @@ class AssetCategoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
-        # Custom delete method on the model instance, which handles the soft deletion.
-        category.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # Soft delete workflow: mark under_deletion
+        category.approval_status = 'under_deletion'
+        category.save(update_fields=['approval_status'])
+
+        # Trigger workflow
+        category.confirm_delete()
+
+        return Response(
+            {"message": "Asset category submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
 
     @extend_schema(
         responses={
@@ -157,11 +181,14 @@ class AssetCategoryDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         category = get_object_or_404(AssetCategory, pk=pk)
+        category.approval_status = 'under_update'
         serializer = AssetCategorySerializer(category, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            category.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -183,6 +210,7 @@ class AssetListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def post(self, request):
         data = request.data.copy()
 
@@ -191,7 +219,8 @@ class AssetListCreateView(APIView):
 
         serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -204,17 +233,19 @@ class AssetListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    
     def get(self, request):
-
         user = request.user.profile if request and hasattr(request, "user") else None
 
         search_query = request.query_params.get("search", None)
+        category_id = request.query_params.get("category", None)  # Get category filter from query params
 
         if not user:
             return Response(
                 {"detail": "User profile not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -222,8 +253,11 @@ class AssetListCreateView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        # Start with all assets for this institution
         assets = Asset.objects.filter(institution=institution, deleted_at__isnull=True)
 
+        # Apply search filter
         if search_query:
             assets = assets.filter(
                 Q(asset_name__icontains=search_query)
@@ -231,6 +265,11 @@ class AssetListCreateView(APIView):
                 | Q(serial_number__icontains=search_query)
             )
 
+        # Apply category filter
+        if category_id:
+            assets = assets.filter(category_id=category_id)
+
+        # Paginate results
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(assets, request)
         serializer = AssetSerializer(paginated_qs, many=True)
@@ -271,10 +310,12 @@ class AssetDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
-        # Custom delete method that handles a soft delete
-        asset.delete()
+        asset.approval_status = 'under_deletion'
+        asset.save(update_fields=['approval_status'])
+        asset.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -292,9 +333,11 @@ class AssetDetailView(APIView):
     )
     def patch(self, request, pk):
         asset = get_object_or_404(Asset, pk=pk)
+        asset.approval_status = 'under_update'
         serializer = AssetSerializer(asset, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            asset.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -316,12 +359,15 @@ class AssetRequestListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
+
     def post(self, request):
         serializer = AssetRequestSerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -340,9 +386,10 @@ class AssetRequestListCreateView(APIView):
     )
     def get(self, request):
         user = request.user.profile if request and hasattr(request, "user") else None
-        employee_id = request.query_params.get("employee_id")
+        employee_id = request.query_params.get("employee_id", None)
         search_query = request.query_params.get("search", None)
         requester_id = request.query_params.get("requester_id", None)
+        status = request.query_params.get("status", None)
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -395,6 +442,9 @@ class AssetRequestListCreateView(APIView):
         if requester_id:
             asset_requests = asset_requests.filter(requester__id=requester_id)
 
+        if status:
+            asset_requests = asset_requests.filter(status=asset_request_status)    
+
         if search_query:
             asset_requests = asset_requests.filter(
                 Q(request_reference_code__icontains=search_query)
@@ -446,9 +496,12 @@ class AssetRequestDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
-        asset_request.delete()  # Custom delete that handles a soft delete
+        asset_request.approval_status = 'under_deletion'
+        asset_request.save(update_fields=['approval_status'])
+        assset_request.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -464,128 +517,19 @@ class AssetRequestDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
+        asset_request.approval_status = 'under_update'
         serializer = AssetRequestSerializer(
             asset_request, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            asset_request.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
 
-    @extend_schema(
-        request={
-            "application/json": {
-                "type": "object",
-                "properties": {
-                    "action": {"type": "string", "enum": ["approve", "reject"]},
-                    "comment": {"type": "string", "required": False},
-                },
-                "required": ["action"],
-            }
-        },
-        responses={
-            200: OpenApiResponse(
-                response=AssetRequestWorkflowSerializer,
-                description="Asset request approval action completed successfully.",
-            ),
-            400: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="Bad request, validation errors.",
-            ),
-            403: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="User not authorized to approve this request.",
-            ),
-        },
-        tags=["Asset Mgt"],
-    )
-    def post(self, request, pk):
-        """Handle approval/rejection of asset request tasks"""
-        asset_request = get_object_or_404(AssetRequest, pk=pk)
-        action = request.data.get("action")
-        comment = request.data.get("comment", "")
-
-        if action not in ["approve", "reject"]:
-            return Response(
-                {"error": "Invalid action. Must be 'approve' or 'reject'"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Get the current user's approval tasks for this request
-        content_type = ContentType.objects.get_for_model(AssetRequest)
-        pending_tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=asset_request.id, status="pending"
-        ).order_by("step__level")
-
-        if not pending_tasks.exists():
-            return Response(
-                {"error": "No pending approval tasks found for this request"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        current_task = pending_tasks.first()
-        user = request.user
-        user_roles = user.user_roles.values_list("role_id", flat=True)
-
-        # Check if user can approve this task
-        step_role_ids = set(
-            InstitutionApprovalStepApprovorRole.objects.filter(
-                step=current_task.step
-            ).values_list("approver_role_id", flat=True)
-        )
-        approver_user_ids = set(
-            InstitutionApprovalStepApprovorUser.objects.filter(
-                step=current_task.step
-            ).values_list("approver_user__user__id", flat=True)
-        )
-
-        matching_role = next((x for x in step_role_ids if x in user_roles), None)
-
-        if (
-            matching_role is None
-            and not request.user.id in approver_user_ids
-            and request.user.id != current_task.step.institution.institution_owner.id
-        ):
-            return Response(
-                {"error": "You are not authorized to approve this request"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Update the current task
-        current_task.status = "completed" if action == "approve" else "rejected"
-        current_task.comment = comment
-        current_task.approved_by = user.profile
-        current_task.save()
-
-        # If approved, check if there are more steps or if workflow is complete
-        if action == "approve":
-            # Check if there are more pending tasks
-            remaining_tasks = ApprovalTask.objects.filter(
-                content_type=content_type,
-                object_id=asset_request.id,
-                status__in=["not_started", "pending"],
-            ).exclude(id=current_task.id)
-
-            if remaining_tasks.exists():
-                # Activate the next task
-                next_task = remaining_tasks.order_by("step__level").first()
-                next_task.status = "pending"
-                next_task.save()
-            else:
-                # All tasks completed, finish the workflow
-                try:
-                    asset_request.finish_workflow()
-                except Exception as e:
-                    return Response(
-                        {"error": f"Error finishing workflow: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-        # Return updated request with workflow information
-        serializer = AssetRequestWorkflowSerializer(asset_request)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AssetAllocationListCreateView(APIView):
@@ -605,12 +549,14 @@ class AssetAllocationListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = AssetAllocationSerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -630,7 +576,8 @@ class AssetAllocationListCreateView(APIView):
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get("search", None)
-        employee_id = request.query_params.get("employee_id")
+        employee_id = request.query_params.get("employee_id", None)
+        status = request.query_params.get("status", None)
         user = request.user
         try:
             institution = Institution.objects.get(id=user.profile.institution.id)
@@ -679,6 +626,9 @@ class AssetAllocationListCreateView(APIView):
                 | Q(allocated_to__user__fullname__icontains=search_query)
                 | Q(allocated_to__user__email__icontains=search_query)
             )
+
+        if status:
+            asset_allocations = asset_allocations.filter(status=allocation_status)    
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_allocations, request)
         serializer = AssetAllocationWorkflowSerializer(paginated_qs, many=True)
@@ -719,9 +669,12 @@ class AssetAllocationDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        asset_allocation.delete()  # Custom delete method to handle soft delete
+        asset_allocation.approval_status = 'under_deletion'
+        asset_allocation.save(update_fields=['approval_status'])
+        asset_allocation.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -737,128 +690,19 @@ class AssetAllocationDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
+        asset_allocation.approval_status = 'under_update'
         serializer = AssetAllocationSerializer(
             asset_allocation, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            asset_allocation.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
 
-    @extend_schema(
-        request={
-            "application/json": {
-                "type": "object",
-                "properties": {
-                    "action": {"type": "string", "enum": ["approve", "reject"]},
-                    "comment": {"type": "string", "required": False},
-                },
-                "required": ["action"],
-            }
-        },
-        responses={
-            200: OpenApiResponse(
-                response=AssetAllocationWorkflowSerializer,
-                description="Asset allocation approval action completed successfully.",
-            ),
-            400: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="Bad request, validation errors.",
-            ),
-            403: OpenApiResponse(
-                response=OpenApiTypes.OBJECT,
-                description="User not authorized to approve this allocation.",
-            ),
-        },
-        tags=["Asset Mgt"],
-    )
-    def post(self, request, pk):
-        """Handle approval/rejection of asset allocation tasks"""
-        asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        action = request.data.get("action")
-        comment = request.data.get("comment", "")
-
-        if action not in ["approve", "reject"]:
-            return Response(
-                {"error": "Invalid action. Must be 'approve' or 'reject'"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Get the current user's approval tasks for this allocation
-        content_type = ContentType.objects.get_for_model(AssetAllocation)
-        pending_tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=asset_allocation.id, status="pending"
-        ).order_by("step__level")
-
-        if not pending_tasks.exists():
-            return Response(
-                {"error": "No pending approval tasks found for this allocation"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        current_task = pending_tasks.first()
-        user = request.user
-        user_roles = user.user_roles.values_list("role_id", flat=True)
-
-        # Check if user can approve this task
-        step_role_ids = set(
-            InstitutionApprovalStepApprovorRole.objects.filter(
-                step=current_task.step
-            ).values_list("approver_role_id", flat=True)
-        )
-        approver_user_ids = set(
-            InstitutionApprovalStepApprovorUser.objects.filter(
-                step=current_task.step
-            ).values_list("approver_user__user__id", flat=True)
-        )
-
-        matching_role = next((x for x in step_role_ids if x in user_roles), None)
-
-        if (
-            matching_role is None
-            and not request.user.id in approver_user_ids
-            and request.user.id != current_task.step.institution.institution_owner.id
-        ):
-            return Response(
-                {"error": "You are not authorized to approve this allocation"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        # Update the current task
-        current_task.status = "completed" if action == "approve" else "rejected"
-        current_task.comment = comment
-        current_task.approved_by = user.profile
-        current_task.save()
-
-        # If approved, check if there are more steps or if workflow is complete
-        if action == "approve":
-            # Check if there are more pending tasks
-            remaining_tasks = ApprovalTask.objects.filter(
-                content_type=content_type,
-                object_id=asset_allocation.id,
-                status__in=["not_started", "pending"],
-            ).exclude(id=current_task.id)
-
-            if remaining_tasks.exists():
-                # Activate the next task
-                next_task = remaining_tasks.order_by("step__level").first()
-                next_task.status = "pending"
-                next_task.save()
-            else:
-                # All tasks completed, finish the workflow
-                try:
-                    asset_allocation.finish_workflow()
-                except Exception as e:
-                    return Response(
-                        {"error": f"Error finishing workflow: {str(e)}"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-        # Return updated allocation with workflow information
-        serializer = AssetAllocationWorkflowSerializer(asset_allocation)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AssetReturnListCreateView(APIView):
@@ -878,10 +722,12 @@ class AssetReturnListCreateView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = AssetReturnSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -897,6 +743,7 @@ class AssetReturnListCreateView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile if request and hasattr(request, "user") else None
+        condition = request.query_params.get("condition", None)
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -915,6 +762,9 @@ class AssetReturnListCreateView(APIView):
                 | Q(allocation__allocated_to__user__fullname__icontains=search_query)
                 | Q(condition__icontains=search_query)
             )
+
+        if condition:
+            asset_returns = asset_returns.filter(condition=condition)    
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_returns, request)
         serializer = AssetReturnSerializer(paginated_qs, many=True)
@@ -955,9 +805,12 @@ class AssetReturnDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
-        asset_return.delete()  # Custom delete method to handle soft delete
+        asset_return.approval_status = 'under_deletion'
+        asset_return.save(update_fields=['approval_status'])
+        asset_return.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
@@ -973,13 +826,16 @@ class AssetReturnDetailView(APIView):
         },
         tags=["Asset Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         asset_return = get_object_or_404(AssetReturn, pk=pk)
+        asset_return.approval_status = 'under_update'
         serializer = AssetReturnSerializer(
             asset_return, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            asset_return.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -998,6 +854,7 @@ class AssetHistoryListView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
+        status = request.query_params.get("status", None)
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1008,6 +865,9 @@ class AssetHistoryListView(APIView):
         asset_histories = AssetHistory.objects.filter(
             asset__institution=institution, deleted_at__is_null=True
         )
+
+        if status:
+            asset_histories = AssetHistory.filter(status=event_type)
 
         if search_query:
             asset_histories = asset_histories.filter(
