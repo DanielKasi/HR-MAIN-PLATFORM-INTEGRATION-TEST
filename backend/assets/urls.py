@@ -12,6 +12,18 @@ from .views import (
     AssetDetailView,
     AssetHistoryListView,
     AssetHistoryDetailView,
+
+
+    # Asset Analytics
+    AssetCategoryAnalyticsViewSet,
+    AssetStatusAnalyticsViewSet,
+    AssetAllocationAnalyticsViewSet,
+    AssetRequestAnalyticsViewSet,
+    AssetReturnAnalyticsViewSet,
+    AssetHistoryAnalyticsViewSet,
+    AssetUtilizationAnalyticsViewSet,
+    AssetMaintenanceAnalyticsViewSet,
+    AssetDecommissionAnalyticsViewSet,
 )
 
 
@@ -68,4 +80,18 @@ urlpatterns = [
         AssetHistoryDetailView.as_view(),
         name="asset-history-detail",
     ),
+
+
+
+    # Asset Analytics
+    path('assets/<int:institution_id>/categories/', AssetCategoryAnalyticsViewSet.as_view(), name='asset-category-analytics'),
+    path('assets/<int:institution_id>/status/', AssetStatusAnalyticsViewSet.as_view(), name='asset-status-analytics'),
+    path('assets/<int:institution_id>/allocations/', AssetAllocationAnalyticsViewSet.as_view(), name='asset-allocation-analytics'),
+    path('assets/<int:institution_id>/requests/', AssetRequestAnalyticsViewSet.as_view(), name='asset-request-analytics'),
+    path('assets/<int:institution_id>/returns/', AssetReturnAnalyticsViewSet.as_view(), name='asset-return-analytics'),
+    path('assets/<int:institution_id>/history/', AssetHistoryAnalyticsViewSet.as_view(), name='asset-history-analytics'),
+    path('assets/<int:institution_id>/utilization/', AssetUtilizationAnalyticsViewSet.as_view(), name='asset-utilization-analytics'),
+    path('assets/<int:institution_id>/maintenance/', AssetMaintenanceAnalyticsViewSet.as_view(), name='asset-maintenance-analytics'),
+    path('assets/<int:institution_id>/decommission/', AssetDecommissionAnalyticsViewSet.as_view(), name='asset-decommission-analytics'),
+
 ]
