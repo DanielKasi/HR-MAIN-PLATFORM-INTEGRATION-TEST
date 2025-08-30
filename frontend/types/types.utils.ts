@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
+import {ReactNode} from "react";
+import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -267,7 +267,6 @@ export enum PERMISSION_CODES {
   CAN_VIEW_RETIREMENT_REQUESTS = "can_view_retirement_requests",
   CAN_EDIT_RETIREMENT_REQUESTS = "can_edit_retirement_requests",
   CAN_DELETE_RETIREMENT_REQUESTS = "can_delete_retirement_requests",
-  
 }
 
 export type ContextType = "employee" | "department" | "job_position";
@@ -324,9 +323,8 @@ export interface IDepartment {
   description?: string | null;
   institution: number;
   institution_details?: IUserInstitution | null;
-  job_positions?: { id: number; name: string; description: string; department_id: number }[];
+  job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
-
 
 export interface PaginatedEmployeeResponse {
   count: number;
@@ -614,8 +612,7 @@ export interface IInterviewStage {
   candidates_count: number;
 }
 
-export type IInterviewType = "online" | "in_person"
-
+export type IInterviewType = "online" | "in_person";
 
 export interface IInterview {
   updated_at: any;
@@ -633,7 +630,6 @@ export interface IInterview {
   interview_time: string;
   interview_type: IInterviewType;
 }
-
 
 export interface IInterviewFormData {
   job_position_application: number;
@@ -712,7 +708,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
-  emergency_contact_phone_country_code?: string
+  emergency_contact_phone_country_code?: string;
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
@@ -835,8 +831,6 @@ export interface IBulkOnBoardingResponse {
     total_requested: number;
   };
 }
-
-
 
 export interface IWorkTypeFormData {
   name: string;
@@ -1061,9 +1055,7 @@ export interface IDisciplinaryAction {
   notes: string;
 }
 
-export const transformDisciplinaryActionData = (
-  apiData: IDisciplinaryAction[] | null,
-) => {
+export const transformDisciplinaryActionData = (apiData: IDisciplinaryAction[] | null) => {
   if (!apiData) return [];
 
   return apiData.map((action) => {
@@ -1114,8 +1106,6 @@ export const transformDisciplinaryActionData = (
     }
   });
 };
-
-
 
 export interface ILeaveTypeFormData {
   name: string;
@@ -1195,7 +1185,6 @@ export interface ILeavePolicyResponse extends ILeavePolicy {
 export type LeaveRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export type DurationType = "full_day" | "half_day" | "multiple_days";
-
 
 export interface ILeaveRequest {
   id?: number | string;
@@ -1381,11 +1370,11 @@ export interface IPayrollPeriodFormData {
 export interface IPayslipFormData {
   employee: number;
   payroll_period: number;
-  basic_salary: string|number;
-  total_allowances: string|number;
-  total_deductions: string|number;
-  gross_salary: string|number;
-  net_salary: string|number;
+  basic_salary: string | number;
+  total_allowances: string | number;
+  total_deductions: string | number;
+  gross_salary: string | number;
+  net_salary: string | number;
   days_worked: number;
   is_paid: boolean;
   paid_date: string | null;
@@ -1490,9 +1479,9 @@ export interface IGeneratedDocumentTemplate {
 }
 
 export interface ICountry {
-  name: { common: string };
+  name: {common: string};
   cca2: string;
-  idd?: { root?: string; suffixes?: string[] };
+  idd?: {root?: string; suffixes?: string[]};
 }
 
 export type ApprovalStepApprover = {
@@ -1820,8 +1809,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax { }
-export interface ItaxRules extends ITaxRule { }
+export interface Itax extends ITax {}
+export interface ItaxRules extends ITaxRule {}
 
 export interface IAssetCategory {
   id: number;
@@ -1868,12 +1857,12 @@ export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
   event_type:
-  | "allocated"
-  | "returned"
-  | "maintenance"
-  | "decommissioned"
-  | "created"
-  | "reassigned";
+    | "allocated"
+    | "returned"
+    | "maintenance"
+    | "decommissioned"
+    | "created"
+    | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;
@@ -2184,7 +2173,6 @@ export interface ICalendarEvent {
   updated_at: string;
 }
 
-
 export interface AttendanceEmployee {
   id: number;
   full_name: string;
@@ -2212,7 +2200,6 @@ export interface AttendanceResponse {
   employees: AttendanceEmployeeData[];
 }
 
-
 // export interface PublicHoliday {
 //   id: number
 //   institution: number
@@ -2221,8 +2208,6 @@ export interface AttendanceResponse {
 //   created_at: string
 //   updated_at: string
 // }
-
-
 
 // export interface EventOccurrence {
 //   id: number
@@ -2242,10 +2227,9 @@ export interface AttendanceResponse {
 
 export type IBasicDasboardDataCounts = {
   employee_count: number;
-    department_count: number;
-    on_leave_count: number;
-}
-
+  department_count: number;
+  on_leave_count: number;
+};
 
 export interface IInstitutionAnalytics {
   basic_counts: IBasicDasboardDataCounts;
@@ -2275,10 +2259,6 @@ export interface IInstitutionAnalytics {
   }[];
 }
 
-
-
-
-
 export interface IKYCDocument {
   id: number;
   institution: number;
@@ -2298,19 +2278,19 @@ export interface ISpotCheck {
   address: string;
   latitude: number|null;
   longitude: number|null;
-  initiated_by: ISpotCheckInitiator,
+  initiated_by: ISpotCheckInitiator;
   spotcheck_time: string|null;
   status: ISpotCheckStatus;
   duration: string|null;
-  notes:string|null
+  notes: string|null;
 }
 
 export interface ISpotCheckFormData {
   employee: number;
   latitude: number;
   longitude: number;
-  initiated_by: ISpotCheckInitiator,
-  notes:string
+  initiated_by: ISpotCheckInitiator;
+  notes: string;
 }
 
 export interface ISpotCheckStatus {
@@ -2322,7 +2302,7 @@ export interface ISpotCheckStatus {
 
 export interface ILocation {
   latitude: number;
-  longitude: number
+  longitude: number;
 }
 
 export interface IInstitutionPenaltyConfig {
@@ -2426,3 +2406,46 @@ export interface IBranchWorkingDays {
   days: ISystemWorkingDay[];
 }
 
+
+
+export interface IBranchDay {
+  id: number;
+  day_id: number;
+  day_name: string;
+  day_type: "PHYSICAL" | "REMOTE";
+}
+
+export interface IBranchShift {
+  id: number;
+  branch: number;
+  name: string;
+  shift_day: IBranchDay;
+  start_time: string;
+  end_time: string;
+  description: string;
+}
+
+export interface IBranchWorkingDays {
+  id: number;
+  branch: number;
+  branch_days: IBranchDay[];
+}
+
+export interface IShiftFormData {
+  name: string;
+  shift_day: number;
+  start_time: string;
+  end_time: string;
+  description: string;
+}
+
+export interface IShiftRequest {
+  id: string;
+  employee: IEmployee;
+  shift: IBranchShift;
+  context: "REQUEST" | "ALLOCATION";
+  shift_status: "PENDING" | "APPROVED" | "REJECTED";
+  date: string;
+  created_at: string;
+  created_by: IUser;
+}

@@ -66,7 +66,10 @@ from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
-from utilities.helpers import get_or_create_default_role_with_permissions, custom_parse_date
+from utilities.helpers import (
+    get_or_create_default_role_with_permissions,
+    custom_parse_date,
+)
 from django.db.models import Q
 from datetime import datetime, date
 from institution.models import Institution
@@ -82,6 +85,7 @@ from .tasks import send_employee_welcome_email
 import string
 import secrets
 
+
 def generate_compliant_password(length=12):
     """Generate a password that meets Django's validation requirements"""
     # Define character sets (excluding problematic special characters)
@@ -90,7 +94,7 @@ def generate_compliant_password(length=12):
     digits = string.digits
     # Use a safer subset of special characters to avoid validation issues
     special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    
+
     # Ensure we have at least one character from each required set
     password_chars = [
         secrets.choice(lowercase),
@@ -98,15 +102,16 @@ def generate_compliant_password(length=12):
         secrets.choice(digits),
         secrets.choice(special),
     ]
-    
+
     # Fill the rest of the password length
     all_characters = lowercase + uppercase + digits + special
     for _ in range(length - 4):
         password_chars.append(secrets.choice(all_characters))
-    
+
     # Shuffle to avoid predictable patterns
     secrets.SystemRandom().shuffle(password_chars)
     return "".join(password_chars)
+
 
 class EmployeeListAPIView(APIView):
 
@@ -204,7 +209,6 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         working_days = EmployeeWorkingDays.objects.get(employee=employee)
 
         return Response(EmployeeWorkingDaysSerializer(working_days).data)
-
 
     @extend_schema(
         request=EmployeeWorkingDaysSerializer,
@@ -1043,7 +1047,7 @@ class EmployeeCreateAPIView(APIView):
                             send_employee_welcome_email.delay_on_commit(
                                 employee.user.email,
                                 employee.user.fullname,
-                                plain_passwords[idx]
+                                plain_passwords[idx],
                             )
                         except Exception as e:
                             print(
@@ -2423,8 +2427,8 @@ class EmployeeShiftListCreateView(APIView):
     @extend_schema(
         summary="List all employee shifts or create a new shift",
         description=(
-                "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
-                "is true, or all shifts for the institution if false. POST creates a shift."
+            "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
+            "is true, or all shifts for the institution if false. POST creates a shift."
         ),
         request=EmployeeShiftSerializer,
         responses=EmployeeShiftSerializer,
@@ -2432,7 +2436,9 @@ class EmployeeShiftListCreateView(APIView):
     )
     def get(self, request):
         user = request.user
-        is_employee_specific = request.query_params.get("is_employee_specific", "true").lower() == "true"
+        is_employee_specific = (
+            request.query_params.get("is_employee_specific", "true").lower() == "true"
+        )
 
         print(is_employee_specific)
 
@@ -2440,10 +2446,15 @@ class EmployeeShiftListCreateView(APIView):
             if hasattr(user, "employee"):
                 shifts = EmployeeShift.objects.filter(employee=user.employee)
             else:
-                return Response({"detail": "Unrecognized Employee"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"detail": "Unrecognized Employee"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             institution = user.profile.institution
-            shifts = EmployeeShift.objects.filter(shift__branch__institution__id=institution_id)
+            shifts = EmployeeShift.objects.filter(
+                shift__branch__institution=institution
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)
@@ -2521,30 +2532,52 @@ class EmployeeShiftDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 class EmployeeAnalyticsAPI(APIView):
     """
     API view for employee analytics and workforce composition.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee demographics and workforce composition analytics",
                 response=inline_serializer(
-                    name='EmployeeAnalyticsResponse',
+                    name="EmployeeAnalyticsResponse",
                     fields={
-                        'headcount': serializers.IntegerField(help_text="Total number of active employees."),
-                        'headcount_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by department."),
-                        'headcount_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by job position."),
-                        'headcount_by_gender': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by gender."),
-                        'headcount_by_employee_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by employee type."),
-                        'headcount_by_work_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by work type."),
-                        'age_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by age bracket."),
-                    }
+                        "headcount": serializers.IntegerField(
+                            help_text="Total number of active employees."
+                        ),
+                        "headcount_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by department.",
+                        ),
+                        "headcount_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by job position.",
+                        ),
+                        "headcount_by_gender": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by gender.",
+                        ),
+                        "headcount_by_employee_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by employee type.",
+                        ),
+                        "headcount_by_work_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by work type.",
+                        ),
+                        "age_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by age bracket.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No employee data found for this institution."),
+            404: OpenApiResponse(
+                description="No employee data found for this institution."
+            ),
         },
         summary="Get Employee Analytics",
         description="Provides key analytics on the workforce composition and demographics.",
@@ -2553,7 +2586,10 @@ class EmployeeAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_demographics_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No employee data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No employee data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2562,21 +2598,32 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     API view for employee attendance and productivity analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee attendance and productivity analytics",
                 response=inline_serializer(
-                    name='AttendanceAnalyticsResponse',
+                    name="AttendanceAnalyticsResponse",
                     fields={
-                        'total_hours_worked': serializers.FloatField(help_text="Total hours worked."),
-                        'total_late_minutes': serializers.IntegerField(help_text="Total minutes late."),
-                        'total_overtime_hours': serializers.FloatField(help_text="Total overtime hours."),
-                        'attendance_metrics': serializers.DictField(help_text="Counts and rates for attendance statuses."),
-                    }
+                        "total_hours_worked": serializers.FloatField(
+                            help_text="Total hours worked."
+                        ),
+                        "total_late_minutes": serializers.IntegerField(
+                            help_text="Total minutes late."
+                        ),
+                        "total_overtime_hours": serializers.FloatField(
+                            help_text="Total overtime hours."
+                        ),
+                        "attendance_metrics": serializers.DictField(
+                            help_text="Counts and rates for attendance statuses."
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No attendance data found for this institution."),
+            404: OpenApiResponse(
+                description="No attendance data found for this institution."
+            ),
         },
         summary="Get Employee Attendance Analytics",
         description="Provides key analytics on employee attendance.",
@@ -2585,7 +2632,10 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_attendance_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No attendance data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No attendance data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2594,21 +2644,36 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     API view for employee salary and compensation analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee salary and compensation analytics",
                 response=inline_serializer(
-                    name='SalaryAnalyticsResponse',
+                    name="SalaryAnalyticsResponse",
                     fields={
-                        'average_salary_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by department."),
-                        'average_salary_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by position."),
-                        'salary_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by salary bracket."),
-                        'gender_pay_gap': serializers.DictField(child=serializers.FloatField(), help_text="Average salary breakdown by gender."),
-                    }
+                        "average_salary_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by department.",
+                        ),
+                        "average_salary_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by position.",
+                        ),
+                        "salary_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by salary bracket.",
+                        ),
+                        "gender_pay_gap": serializers.DictField(
+                            child=serializers.FloatField(),
+                            help_text="Average salary breakdown by gender.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No salary data found for this institution."),
+            404: OpenApiResponse(
+                description="No salary data found for this institution."
+            ),
         },
         summary="Get Employee Salary Analytics",
         description="Provides key analytics on employee salaries and a gender pay gap analysis.",
@@ -2617,5 +2682,8 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_salary_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No salary data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No salary data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
