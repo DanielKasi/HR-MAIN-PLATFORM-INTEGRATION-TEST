@@ -81,6 +81,15 @@ urlpatterns = [
     ),
     path("penalties/", EmployeePenaltyListAPIView.as_view(), name="employee-penalty-list"),
     path("penalties/<int:pk>/", EmployeePenaltyDetailAPIView.as_view(), name="employee-penalty-detail"),
-
+    path(
+        'institutions/<int:institution_id>/payroll-analytics/',
+        PayrollAnalyticsAPI.as_view(),
+        name='payroll-analytics'
+    ),
+    path(
+        'institutions/<int:institution_id>/payroll-analytics/<int:payroll_period_id>/',
+        PayrollAnalyticsAPI.as_view(),
+        name='payroll-analytics-period'
+    ),
 
 ]

@@ -2189,13 +2189,8 @@ class BranchShiftListCreateView(APIView):
     @extend_schema(
         tags=["Branch Shifts"], responses={200, BranchShiftSerializer(many=True)}
     )
-    def get(self, request):
-        branch_id = request.query_params.get("branch_id", None)
+    def get(self, request, branch_id):
         search = request.query_params.get("search", None)
-        if not branch_id:
-            return Response(
-                {"detail": "Branch ID is Needed"}, status=status.HTTP_404_NOT_FOUND
-            )
 
         try:
             branch = Branch.objects.get(id=branch_id)
@@ -2221,7 +2216,7 @@ class BranchShiftListCreateView(APIView):
         responses={201, BranchShiftSerializer(many=True)},
         request=BranchShiftSerializer,
     )
-    def post(self, request):
+    def post(self, request, branch_id):
         serializer = BranchShiftSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -2230,15 +2225,15 @@ class BranchShiftListCreateView(APIView):
 
 
 class BranchShiftDetailView(APIView):
-    def get_object(self, pk):
+    def get_object(self, shift_id):
         try:
-            return BranchShift.objects.get(pk=pk)
+            return BranchShift.objects.get(pk=shift_id)
         except BranchShift.DoesNotExist:
             raise Http404
 
     @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
-    def get(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def get(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         serializer = BranchShiftSerializer(branch_shift)
         return Response(serializer.data)
 
@@ -2247,8 +2242,8 @@ class BranchShiftDetailView(APIView):
         responses={200, BranchShiftSerializer},
         request=BranchShiftSerializer,
     )
-    def patch(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def patch(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         serializer = BranchShiftSerializer(
             branch_shift, data=request.data, partial=True
         )
@@ -2258,7 +2253,7 @@ class BranchShiftDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(tags=["Branch Shifts"], responses={204: None})
-    def delete(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def delete(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         branch_shift.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

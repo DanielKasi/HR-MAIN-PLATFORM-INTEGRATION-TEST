@@ -5,7 +5,6 @@ from django.conf import settings
 from django.template.loader import render_to_string
 import os
 from rest_framework.exceptions import ValidationError
-from users.models import Profile
 from django.utils import timezone
 from django.db import transaction
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
@@ -705,6 +704,8 @@ class JobInterview(SoftDeletableTimeStampedModel):
     def _create_interview_event(self):
         from calendar2.models import Event
         from datetime import datetime
+        from users.models import Profile
+        
 
         application = self.job_position_application
         applicant_name = application.applicant_name

@@ -2296,13 +2296,13 @@ export interface ISpotCheck {
   updated_at: string;
   responded_at: string | null;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude: number|null;
+  longitude: number|null;
   initiated_by: ISpotCheckInitiator,
-  spotcheck_time: string;
+  spotcheck_time: string|null;
   status: ISpotCheckStatus;
-  duration: string;
-  notes:string
+  duration: string|null;
+  notes:string|null
 }
 
 export interface ISpotCheckFormData {
@@ -2377,3 +2377,52 @@ export interface IBranchLocationComparisonConfigFormData {
   branch: number;
   radius_in_meters: number;
 }
+
+export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
+export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
+
+export interface IEmployeeShift {
+  id: number;
+  employee: IEmployee;
+  shift: IBranchShift;
+  context: IEmployeeShiftContext;
+  shift_status: IEmployeeShiftStatus;
+  date: string;
+  created_at: string;
+  created_by: number;
+}
+
+export interface IEmployeeShiftFormData {
+  employee: number;
+  shift: number;
+  context: IEmployeeShiftContext;
+  shift_status: IEmployeeShiftStatus;
+  date: string;
+}
+
+export interface IBranchShift {
+  id: number;
+  branch: Branch;
+  name: string;
+  shift_day: IBranchWorkingDays | null;
+  start_time: string;
+  end_time: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IBranchShiftFormData {
+  branch: number;
+  name: string;
+  shift_day?: number | null;
+  start_time: string;
+  end_time: string;
+  description?: string | null;
+}
+
+export interface IBranchWorkingDays {
+  branch: Branch;
+  days: ISystemWorkingDay[];
+}
+
