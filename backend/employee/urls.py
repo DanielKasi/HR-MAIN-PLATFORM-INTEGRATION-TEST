@@ -120,12 +120,12 @@ urlpatterns = [
     ),
     path("attendance-data/", AttendanceReportGetView.as_view(), name="attendance-data"),
     path(
-        "employee-shifts",
+        "employee-shifts/",
         EmployeeShiftListCreateView.as_view(),
         name="employee-shifts-list",
     ),
     path(
-        "employee-shifts-detail/<int:pk>/",
+        "employee-shifts/detail/<int:pk>/",
         EmployeeShiftDetailView.as_view(),
         name="employee-shifts-detail",
     ),
