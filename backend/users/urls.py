@@ -21,6 +21,8 @@ from .views import (
     GoogleAuthCallbackView,
     UserDetailsWithInstitutions,
     CountryListAPIView,
+    ChangeEmailAndResendOTPAPIView,
+    LogoutView
 )
 
 
@@ -32,14 +34,15 @@ urlpatterns = [
         UserInstitutionsListAPIView.as_view(),
         name="user-attached-institutions",
     ),
+    path('change-email-and-resend-otp/', ChangeEmailAndResendOTPAPIView.as_view(), name='change-email-and-resend-otp'),
     path("verify-otp/", VerifyOTPAPIView.as_view(), name="verify-otp"),
-    # path("resend-otp/", ResendOTPView.as_view(), name="resend-otp"),
     path(
         "reset-password/", VerifyPasswordResetAPIView.as_view(), name="reset-password"
     ),
     path("resend-otp/", ResendOTPAPIView.as_view(), name="resend-otp"),
     path("login/", LoginView.as_view(), name="user-login"),
     path("token/refresh/", CustomTokenRefreshView.as_view(), name="token-refresh"),
+    path("logout/", LogoutView.as_view(), name="user-logout"),
     path("role/", RoleListAPIView.as_view(), name="role-list"),
     path("role/<int:role_id>/", RoleDetailAPIView.as_view(), name="role-detail"),
     path(
@@ -59,7 +62,7 @@ urlpatterns = [
         name="permission-detail",
     ),
     path("forgot-password", ForgotPasswordAPIView.as_view(), name="forgot-password"),
-    path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
+    # path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
     path("reset-password", ResetPasswordAPIView.as_view(), name="reset-password"),
     # Continue with Google URLs
     path("auth/google/url/", GoogleAuthURLView.as_view(), name="google_auth_url"),

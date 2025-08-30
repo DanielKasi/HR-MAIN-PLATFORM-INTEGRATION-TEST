@@ -26,13 +26,15 @@ import { selectSelectedInstitution } from "@/store/auth/selectors"
 interface CreateDeductionTypeDialogProps {
   onSuccess: (newDeductionType: any) => void
   disabled?: boolean
-  isEmbedded?: boolean
+  isEmbedded?: boolean,
+  isTriggerLabelHidden?: boolean
 }
 
 export function CreateDeductionTypeDialog({
   onSuccess,
   disabled = false,
   isEmbedded = false,
+  isTriggerLabelHidden = false,
 }: CreateDeductionTypeDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,7 +115,7 @@ export function CreateDeductionTypeDialog({
       <DialogTrigger asChild>
         <Button variant={isEmbedded ? "outline" : "default"} className="flex items-center gap-2" disabled={disabled}>
           <Plus className="h-4 w-4" />
-          {!isEmbedded ? "Create Deduction Type" : ""}
+          {!isEmbedded && !isTriggerLabelHidden ? "Create Deduction Type" : ""}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[34rem] md:max-w-[42rem] rounded-2xl border-0 shadow-2xl">

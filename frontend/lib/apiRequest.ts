@@ -1,9 +1,9 @@
-import axios, {InternalAxiosRequestConfig} from "axios";
+import axios, { InternalAxiosRequestConfig } from "axios";
 
-import {CustomApiRequestError} from "@/types/types.utils";
-import {store} from "@/store";
-import {logoutStart, setAccessToken, setRefreshToken} from "@/store/auth/actions";
-import {LoginResponse} from "@/utils/authUtils";
+import { CustomApiRequestError } from "@/types/types.utils";
+import { store } from "@/store";
+import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
+import { LoginResponse } from "@/utils/authUtils";
 
 const axiosJsonInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api",
@@ -52,9 +52,11 @@ function addSubscriber(callback: Subscriber) {
 axiosJsonInstance.interceptors.response.use(
   (response) => response,
   async (error: any) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {_retry?: boolean};
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+
+
       originalRequest._retry = true;
 
       const refreshToken = store.getState().auth.refreshToken;
@@ -63,7 +65,6 @@ axiosJsonInstance.interceptors.response.use(
         if (typeof window !== "undefined") {
           store.dispatch(logoutStart());
         }
-
         return Promise.reject(error);
       }
 
@@ -110,7 +111,7 @@ axiosJsonInstance.interceptors.response.use(
       }
     }
 
-    const errorMessage = error.response || error.response?.data?.detail || "Unknown error occurred";
+    const errorMessage = error.response?.data?.detail || error.response?.data?.error ||  error.response  || "An unknown error occurred, please make sure you are connected to a network";
 
     return Promise.reject(new Error(errorMessage));
   },
@@ -144,7 +145,7 @@ export const apiRequest = async (
     return response;
   } else {
     const err: CustomApiRequestError = {
-      message: response.data?.detail || null,
+      message: Array.isArray(response?.data?.error) ? response?.data?.error[0] : typeof (response?.data?.error) === "string" ? response?.data?.error : response.data?.detail || null,
       status: response.status,
       custom_code: response.data?.custom_code || null,
     };

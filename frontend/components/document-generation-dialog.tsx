@@ -1,10 +1,10 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {FileText} from "lucide-react";
-import {PDFDownloadLink} from "@react-pdf/renderer";
+import { useState, useEffect } from "react";
+import { FileText } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import DocumentPreviewPDF from "./document-preview-pdf";
-import {Button} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Skeleton} from "@/components/ui/skeleton";
-import {toast} from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import {
   getDocumentTemplates,
   generateDocument,
@@ -32,11 +32,11 @@ import {
   getDocumentPreview,
   sendDocuments,
 } from "@/lib/document-utils";
-import {IDocumentTemplate, IGeneratedDocumentTemplate} from "@/types/types.utils";
+import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/types/types.utils";
 
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {number} from "framer-motion";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { number } from "framer-motion";
 import RichTextDisplay from "./common/rich-text-display";
 import PdfPreview from "./common/pdf-preview";
 
@@ -68,17 +68,24 @@ export function DocumentGenerationDialog({
   useEffect(() => {
     if (open) {
       loadTemplates();
+    } else {
+      setTemplates([]);
+      setSelectedTemplate("");
+      setPlaceholders({});
+      setGeneratedTemplate(null);
+      setGeneratedDocumentId(null);
+      setPreviewContent(null);
+      setCanSendDocument(false);
     }
   }, [open]);
 
   const loadTemplates = async () => {
-    console.log("\n\n Loading document templates...");
     if (!currentInstitution) {
       return;
     }
     setLoading(true);
     try {
-      const data = await getDocumentTemplates({institutionId: currentInstitution.id});
+      const data = await getDocumentTemplates({ institutionId: currentInstitution.id });
       if (data) {
         setTemplates(data);
       }
@@ -97,7 +104,7 @@ export function DocumentGenerationDialog({
 
       if (response?.placeholders) {
         setGeneratedTemplate(response);
-        const initialPlaceholders: {[key: string]: string} = {};
+        const initialPlaceholders: { [key: string]: string } = {};
         Object.keys(response.placeholders).forEach((key) => {
           if (response.placeholders && response.placeholders[key]) {
             initialPlaceholders[key] = response.placeholders[key].value || "";
@@ -122,11 +129,11 @@ export function DocumentGenerationDialog({
         contextId,
         placeholders,
       );
-      
+
       if (response?.status === "success" && response.document_id) {
         setGeneratedDocumentId(response.document_id);
         setCanSendDocument(true);
-        
+
         const preview = await getDocumentPreview(response.document_id);
         if (preview) {
           setPreviewContent(preview);
@@ -150,8 +157,9 @@ export function DocumentGenerationDialog({
     }
     setLoading(true);
     try {
-      await sendDocuments({documentId: generatedDocumentId, context, contextId});
+      await sendDocuments({ documentId: generatedDocumentId, context, contextId });
       toast.success("Document sent successfully");
+      onOpenChange(false);
     } catch (error) {
       toast.error("Failed to send document");
     } finally {
@@ -216,7 +224,7 @@ export function DocumentGenerationDialog({
               <div className="border rounded-lg p-4 bg-muted/50 mb-8">
                 <Label className="mb-2 block">Document Preview</Label>
                 <div className="prose prose-sm min-h-32 overflow-y-auto">
-                  <RichTextDisplay htmlContent={previewContent}/>
+                  <RichTextDisplay htmlContent={previewContent} />
                 </div>
               </div>
               {/* <PDFDownloadLink

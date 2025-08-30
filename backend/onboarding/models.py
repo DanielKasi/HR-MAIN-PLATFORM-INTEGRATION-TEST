@@ -9,10 +9,10 @@ from io import BytesIO
 from weasyprint import HTML
 from django.db.models import UniqueConstraint, Q
 from django.core.exceptions import ValidationError
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class OnBoarding(models.Model):
+class OnBoarding(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
         ("initial", "Initial"),
         ("training", "Training"),
@@ -32,8 +32,7 @@ class OnBoarding(models.Model):
     attended = models.BooleanField(default=False)
     remarks = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="initial")
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
         return f"OnBoarding for {self.application.applicant_name}"
@@ -52,7 +51,7 @@ class OnBoarding(models.Model):
 
 
 
-class OffboardingStage(UtilityBaseModel):
+class OffboardingStage(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -75,7 +74,7 @@ class OffboardingStage(UtilityBaseModel):
         ]
 
 
-class InstitutionEmployeeSeparationTypes(UtilityBaseModel):
+class InstitutionEmployeeSeparationTypes(SoftDeletableTimeStampedModel):
 
     SEPARATION_CATEGORY_CHOICES = [
         ("resignation", "Resignation"),
@@ -107,7 +106,7 @@ class InstitutionEmployeeSeparationTypes(UtilityBaseModel):
         return f"{self.institution.institution_name} - {self.separation_type}"
 
 
-class InstitutionSeparationPolicy(UtilityBaseModel):
+class InstitutionSeparationPolicy(SoftDeletableTimeStampedModel):
     separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -200,7 +199,7 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
 
-class ResignationRequest(UtilityBaseModel):
+class ResignationRequest(SoftDeletableTimeStampedModel):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
@@ -236,7 +235,7 @@ class ResignationRequest(UtilityBaseModel):
     @transaction.atomic
     def approve(self):
         if self.request_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.request_status = "approved"
         self.save()
@@ -272,7 +271,7 @@ class ResignationRequest(UtilityBaseModel):
             )
 
 
-class TerminationInitiation(UtilityBaseModel):
+class TerminationInitiation(SoftDeletableTimeStampedModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -306,12 +305,12 @@ class TerminationInitiation(UtilityBaseModel):
     def clean(self):
         if self.separation.employee_separation_type.category != "termination":
             raise ValidationError(
-                "TerminationInitiation must be linked to a termination type separation."
+                {"error": "TerminationInitiation must be linked to a termination type separation."}
             )
 
     def approve(self):
         if self.initiation_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.initiation_status = "approved"
 
@@ -384,12 +383,12 @@ class RetirementRequest(models.Model):
     def clean(self):
         if self.separation.employee_separation_type.category != "retirement":
             raise ValidationError(
-                "RetirementRequest must be linked to a retirement type separation."
+                {"error": "RetirementRequest must be linked to a retirement type separation."}
             )
 
     def approve(self):
         if self.request_status != "submitted":
-            raise ValidationError("Only submitted requests can be approved.")
+            raise ValidationError({"error": "Only submitted requests can be approved."})
 
         self.request_status = "approved"
         self.save()

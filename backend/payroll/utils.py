@@ -3,15 +3,127 @@ from datetime import timedelta, date, datetime
 from decimal import Decimal
 from .models import AllowanceType, DeductionType, PayrollPeriod, Payslip, PayslipItem
 from employee.models import Employee
-from institution.models import Institution, InstitutionBankAccount, InstitutionBankType
+from institution.models import (
+    Institution,
+    InstitutionBankAccount,
+    InstitutionBankType,
+    Department,
+)
 from django.shortcuts import get_object_or_404
-
-
+from io import BytesIO
 import io
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 from .models import Payslip, PayrollPeriod
+
+from datetime import date
+from employee.models import Employee, EmployeeAttendance
+from leave_mgt.models import LeaveApplication
+from settings.models import SystemDay
+from recruitment.models import JobPosition
+from collections import defaultdict
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from decimal import Decimal
+from django.db.models import Prefetch
+import django.db.models as models
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+from django.utils import timezone
+from io import BytesIO
+from weasyprint import HTML
+from decimal import Decimal
+from payroll.models import AllowanceType, DeductionType
+
+
+
+DAY_CODE_TO_WEEKDAY = {
+    "MON": 0,
+    "TUE": 1,
+    "WED": 2,
+    "THU": 3,
+    "FRI": 4,
+    "SAT": 5,
+    "SUN": 6,
+}
+
+
+def get_employee_institution_working_days(employee_id):
+
+    employee = Employee.objects.get(id=employee_id)
+
+    if hasattr(employee, "custom_working_days"):
+        working_days = employee.custom_working_days.days.values_list(
+            "day_code", flat=True
+        )
+    else:
+        institution = employee.payroll_branch.institution
+        working_days = institution.working_days.days.values_list("day_code", flat=True)
+
+    weekday_integers = {
+        DAY_CODE_TO_WEEKDAY.get(day_code.upper())
+        for day_code in working_days
+        if day_code.upper() in DAY_CODE_TO_WEEKDAY
+    }
+
+    if not weekday_integers:
+        raise ValueError("Working days are empty or invalid for employee/institution.")
+
+    return weekday_integers
+
+
+def get_employee_attendance_status_for_date(employee_id, target_date: date) -> str:
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        raise Employee.DoesNotExist(f"Employee with ID {employee_id} does not exist.")
+
+    weekday = target_date.weekday()
+    working_weekdays = get_employee_institution_working_days(employee_id)
+
+    if weekday not in working_weekdays:
+        return "N-W-D"
+
+    leave = LeaveApplication.objects.filter(
+        employee=employee,
+        status="approved",
+        start_date__lte=target_date,
+        end_date__gte=target_date,
+    ).first()
+
+    if leave:
+        category = leave.leave_type.category
+        return {
+            "annual": "A-L",
+            "sick": "S-L",
+            "maternity": "M-L",
+            "paternity": "P-L",
+            "compassionate": "C-L",
+            "study": "Sty-L",
+            "unpaid": "UN-P-L",
+        }.get(category, "L")
+
+    attendance = EmployeeAttendance.objects.filter(
+        employee=employee,
+        status="approved",
+        date=target_date,
+    ).first()
+
+    if attendance:
+        if not attendance.check_in_time:
+            return "absent"
+
+        branch_open_time = getattr(employee.payroll_branch, "branch_opening_time", None)
+
+        if not branch_open_time:
+            raise ValueError("Branch opening time is not set for this employee.")
+
+        if attendance.check_in_time <= branch_open_time:
+            return "P-on-T"
+        else:
+            return "P-past-T"
+
+    return "absent"
 
 
 def generate_eft_excel(payroll_period_id: int, paying_account_id: int):
@@ -477,3 +589,715 @@ def process_monthly_payroll(year=None, month=None, employee_ids=None):
         "payslips_generated": len(payslips),
         "payslips": payslips,
     }
+
+
+FILL_PRESENT = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+FILL_LATE = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+FILL_ABSENT = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+FILL_ANNUAL = PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid")
+FILL_SICK = PatternFill(start_color="D9D2E9", end_color="D9D2E9", fill_type="solid")
+FILL_OTHER_LEAVE = PatternFill(
+    start_color="E0E0E0", end_color="E0E0E0", fill_type="solid"
+)
+FILL_NON_WORKING = PatternFill(
+    start_color="F2F2F2", end_color="F2F2F2", fill_type="solid"
+)
+FILL_ERROR = PatternFill(start_color="A93226", end_color="A93226", fill_type="solid")
+
+FONT_WHITE = Font(color="FFFFFF")
+FONT_GRAY = Font(color="808080")
+BOLD_FONT = Font(bold=True)
+
+
+def generate_attendance_excel(
+    start_date: date, end_date: date, context: dict
+) -> BytesIO:
+    employee_qs = Employee.objects.filter(is_active=True).select_related("user")
+
+    target_ids = context.get("target_employees")
+    target_departments = context.get("target_departments")
+    target_positions = context.get("target_job_positions")
+
+    if target_ids:
+        employee_qs = employee_qs.filter(id__in=target_ids)
+    elif target_departments:
+        employee_qs = employee_qs.filter(department__in=target_departments)
+    elif target_positions:
+        employee_qs = employee_qs.filter(position__in=target_positions)
+
+    employees = employee_qs.order_by("user__fullname")
+    if not employees.exists():
+        raise ValueError("No employees found for the provided filters.")
+
+    num_days = (end_date - start_date).days + 1
+    date_list = [start_date + timedelta(days=i) for i in range(num_days)]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attendance Report"
+
+    center_align = Alignment(horizontal="center", vertical="center")
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+    header_fill = PatternFill(
+        start_color="D9E1F2", end_color="D9E1F2", fill_type="solid"
+    )
+
+    legend_data = [
+        ("P-on-T", "Present on Time", FILL_PRESENT),
+        ("P-past-T", "Present but Late", FILL_LATE),
+        ("absent", "Absent (no check-in)", FILL_ABSENT),
+        ("A-L", "Annual Leave", FILL_ANNUAL),
+        ("S-L", "Sick Leave", FILL_SICK),
+        ("M-L", "Maternity Leave", FILL_OTHER_LEAVE),
+        ("P-L", "Paternity Leave", FILL_OTHER_LEAVE),
+        ("C-L", "Compassionate Leave", FILL_OTHER_LEAVE),
+        ("Sty-L", "Study Leave", FILL_OTHER_LEAVE),
+        ("UN-P-L", "Unpaid Leave", FILL_OTHER_LEAVE),
+        ("N-W-D", "Not a Working Day", FILL_NON_WORKING),
+        ("ERR", "Error fetching status", FILL_ERROR),
+    ]
+
+    for idx, (code, description, fill) in enumerate(legend_data, start=1):
+        ws.cell(row=idx, column=1, value=code).fill = fill
+        ws.cell(row=idx, column=1).font = BOLD_FONT
+        ws.cell(row=idx, column=2, value=description).alignment = Alignment(
+            wrap_text=True
+        )
+        if code == "ERR":
+            ws.cell(row=idx, column=1).font = FONT_WHITE
+
+    start_data_row = len(legend_data) + 2
+
+    headers = [
+        "Employee ID",
+        "Full Name",
+        "Present",
+        "Absent",
+        "Late",
+        "Leave",
+        "Total Days",
+    ]
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=start_data_row, column=col_num, value=header)
+        cell.font = BOLD_FONT
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = 15
+
+    for col_num, current_date in enumerate(date_list, start=len(headers) + 1):
+        cell = ws.cell(
+            row=start_data_row, column=col_num, value=current_date.strftime("%d-%b")
+        )
+        cell.font = BOLD_FONT
+        cell.fill = header_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = 12
+
+    for row_offset, employee in enumerate(employees, start=start_data_row + 1):
+        present_count = 0
+        absent_count = 0
+        late_count = 0
+        leave_count = 0
+        total_working_days = 0
+
+        ws.cell(row=row_offset, column=1, value=employee.id).border = thin_border
+        full_name = employee.user.fullname if employee.user else "N/A"
+        ws.cell(row=row_offset, column=2, value=full_name).border = thin_border
+
+        for col_offset, current_date in enumerate(date_list, start=len(headers) + 1):
+            try:
+                status = get_employee_attendance_status_for_date(
+                    employee.id, current_date
+                )
+            except Exception:
+                status = "ERR"
+
+            if status == "P-on-T":
+                present_count += 1
+                total_working_days += 1
+            elif status == "P-past-T":
+                late_count += 1
+                total_working_days += 1
+            elif status == "absent":
+                absent_count += 1
+                total_working_days += 1
+            elif status in ["A-L", "S-L", "M-L", "P-L", "C-L", "Sty-L", "UN-P-L"]:
+                leave_count += 1
+                total_working_days += 1
+
+            cell = ws.cell(row=row_offset, column=col_offset, value=status)
+            cell.border = thin_border
+            cell.alignment = center_align
+
+            if status == "P-on-T":
+                cell.fill = FILL_PRESENT
+            elif status == "P-past-T":
+                cell.fill = FILL_LATE
+            elif status == "absent":
+                cell.fill = FILL_ABSENT
+            elif status == "A-L":
+                cell.fill = FILL_ANNUAL
+            elif status == "S-L":
+                cell.fill = FILL_SICK
+            elif status in ["M-L", "P-L", "C-L", "Sty-L", "UN-P-L"]:
+                cell.fill = FILL_OTHER_LEAVE
+            elif status == "N-W-D":
+                cell.fill = FILL_NON_WORKING
+                cell.font = FONT_GRAY
+            elif status == "ERR":
+                cell.fill = FILL_ERROR
+                cell.font = FONT_WHITE
+
+        summary = [
+            present_count,
+            absent_count,
+            late_count,
+            leave_count,
+            total_working_days,
+        ]
+        for idx, value in enumerate(summary, start=3):
+            cell = ws.cell(row=row_offset, column=idx, value=value)
+            cell.border = thin_border
+
+    ws.freeze_panes = ws.cell(row=start_data_row + 1, column=len(headers) + 1)
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
+    # Handle both PayrollPeriod object and ID
+    if isinstance(payroll_period_id, PayrollPeriod):
+        payroll_period = payroll_period_id
+        payroll_period_id = payroll_period.id
+    else:
+        payroll_period = get_object_or_404(PayrollPeriod, id=payroll_period_id)
+    
+    payslips = Payslip.objects.filter(
+        payroll_period_id=payroll_period_id
+    ).prefetch_related(
+        Prefetch("items"),
+        "employee__user",
+        "employee__penalties",  # Add penalties prefetch
+    )
+
+    if not payslips.exists():
+        raise ValueError("No payslips found for the given payroll period.")
+
+    allowance_names = set()
+    deduction_names = set()
+    penalty_names = set()
+
+    # Collect all unique allowance, deduction, and penalty names
+    for payslip in payslips:
+        # Get allowances and deductions from payslip items
+        for item in payslip.items.all():
+            if item.item_type == "allowance":
+                allowance_names.add(item.name)
+            elif item.item_type == "deduction":
+                deduction_names.add(item.name)
+        
+        # Get penalties from the EmployeePenalty model for this period
+        employee_penalties = payslip.employee.penalties.filter(
+            date__gte=payroll_period.start_date,
+            date__lte=payroll_period.end_date,
+            status='applied'  # Only include applied penalties
+        )
+        
+        for penalty in employee_penalties:
+            penalty_names.add(penalty.get_penalty_type_display())
+
+    allowance_names = sorted(allowance_names)
+    deduction_names = sorted(deduction_names)
+    penalty_names = sorted(penalty_names)
+
+    base_headers = [
+        "Full Name",
+        "Basic Salary",
+        "Gross Salary",
+        "Net Salary",
+    ]
+    deduction_headers = [f"Deduction - {name}" for name in deduction_names]
+    allowance_headers = [f"Allowance - {name}" for name in allowance_names]
+    penalty_headers = [f"Penalty - {name}" for name in penalty_names]
+    
+    final_headers = base_headers + deduction_headers + allowance_headers + penalty_headers
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Payslips"
+
+    # Styling
+    bold_font = Font(bold=True)
+    center_align = Alignment(horizontal="center")
+    header_fill = PatternFill(
+        start_color="D9E1F2", end_color="D9E1F2", fill_type="solid"
+    )
+    total_fill = PatternFill(
+        start_color="E2EFDA", end_color="E2EFDA", fill_type="solid"
+    )
+    penalty_fill = PatternFill(
+        start_color="FFEBEE", end_color="FFEBEE", fill_type="solid"
+    )
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
+    )
+
+    totals = defaultdict(Decimal)
+
+    # Write header in row 2
+    for col_idx, header in enumerate(final_headers, start=1):
+        cell = ws.cell(row=2, column=col_idx, value=header)
+        cell.font = bold_font
+        cell.alignment = center_align
+        
+        # Different styling for penalty columns
+        if header.startswith("Penalty"):
+            cell.fill = penalty_fill
+        else:
+            cell.fill = header_fill
+            
+        cell.border = thin_border
+        ws.column_dimensions[cell.column_letter].width = max(15, len(header) + 2)
+
+    # Process each payslip
+    for row_idx, payslip in enumerate(payslips, start=3):
+        employee = payslip.employee
+        employee_name = employee.user.fullname if employee.user else "N/A"
+
+        base_row = [
+            employee_name,
+            float(payslip.basic_salary),
+            float(payslip.gross_salary),
+            float(payslip.net_salary),
+        ]
+
+        # Process deductions and allowances from payslip items
+        deduction_map = defaultdict(lambda: Decimal("0.00"))
+        allowance_map = defaultdict(lambda: Decimal("0.00"))
+
+        for item in payslip.items.all():
+            if item.item_type == "deduction":
+                deduction_map[item.name] += item.amount
+            elif item.item_type == "allowance":
+                allowance_map[item.name] += item.amount
+
+        # Process penalties from EmployeePenalty model
+        penalty_map = defaultdict(lambda: Decimal("0.00"))
+        employee_penalties = employee.penalties.filter(
+            date__gte=payroll_period.start_date,
+            date__lte=payroll_period.end_date,
+            status='applied'
+        )
+        
+        for penalty in employee_penalties:
+            penalty_display_name = penalty.get_penalty_type_display()
+            penalty_map[penalty_display_name] += penalty.amount
+
+        # Build the complete row
+        row = base_row
+        
+        # Add deduction columns
+        for name in deduction_names:
+            row.append(float(deduction_map.get(name, 0.00)))
+
+        # Add allowance columns
+        for name in allowance_names:
+            row.append(float(allowance_map.get(name, 0.00)))
+            
+        # Add penalty columns
+        for name in penalty_names:
+            row.append(float(penalty_map.get(name, 0.00)))
+
+        # Write row to Excel
+        for col_idx, value in enumerate(row, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.alignment = center_align
+            cell.border = thin_border
+
+            # Add light penalty background for penalty columns
+            if col_idx > len(base_headers) + len(deduction_names) + len(allowance_names):
+                if isinstance(value, (int, float)) and value > 0:
+                    cell.fill = penalty_fill
+
+            if isinstance(value, (int, float)):
+                totals[col_idx] += Decimal(str(value))
+
+    # Write totals row (row 1)
+    for col_idx in range(1, len(final_headers) + 1):
+        value = totals.get(col_idx)
+        if value is not None:
+            cell = ws.cell(row=1, column=col_idx, value=float(value))
+            cell.font = bold_font
+            cell.alignment = center_align
+            cell.fill = total_fill
+            cell.border = thin_border
+
+    ws.cell(row=1, column=1, value="TOTALS").font = bold_font
+
+    # Freeze panes at row 3 (after totals and headers)
+    ws.freeze_panes = ws["A3"]
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_payslip_pdf(payslip):
+    """
+    Generates a structured payslip PDF with a detailed breakdown of the employee's
+    specific allowances, deductions, penalties, and taxes, only including items applicable to the employee.
+    """
+
+    # Safely get institution and company name
+    institution = None
+    company_name = 'N/A'
+    currency = 'UGX'
+    if payslip.employee and payslip.employee.department and payslip.employee.department.institution:
+        institution = payslip.employee.department.institution
+        company_name = institution.institution_name
+        if hasattr(institution, 'currency') and institution.currency:
+            currency = institution.currency
+
+    # Get the employee's specific allowances, deductions, penalties, and taxes
+    employee = payslip.employee
+
+    # Fetch relevant allowances
+    allowances = (
+        employee.allowances.filter(is_active=True)
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
+    allowances_data = []
+    for allowance in allowances:
+        recurrence = allowance.get_recurrence_count(payslip.payroll_period)
+        amount = allowance.get_calculated_amount() * recurrence
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            allowances_data.append({'name': allowance.allowance_type.name, 'amount': Decimal(str(amount))})
+
+    # Fetch penalties within the payroll period with 'applied' status
+    penalties = (
+        employee.penalties.filter(
+            date__gte=payslip.payroll_period.start_date,
+            date__lte=payslip.payroll_period.end_date,
+            status='applied'  # Only include applied penalties
+        )
+    )
+    penalties_data = []
+    for penalty in penalties:
+        if penalty.amount is not None and isinstance(penalty.amount, (Decimal, int, float)) and penalty.amount > 0:
+            penalties_data.append({
+                'name': penalty.get_penalty_type_display(), 
+                'amount': Decimal(str(penalty.amount)),
+                'date': penalty.date
+            })
+
+    # Fetch regular deductions (excluding attendance penalties)
+    deductions = (
+        employee.deductions.filter(is_active=True)
+        .filter(
+            effective_from__lte=payslip.payroll_period.end_date,
+        )
+        .filter(
+            models.Q(effective_to__gte=payslip.payroll_period.start_date)
+            | models.Q(effective_to__isnull=True)
+        )
+    )
+    regular_deductions = []
+    for deduction in deductions:
+        recurrence = deduction.get_recurrence_count(payslip.payroll_period)
+        amount = deduction.get_calculated_amount() * recurrence
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            regular_deductions.append({'name': deduction.deduction_type.name, 'amount': Decimal(str(amount))})
+
+    # Fetch relevant taxes
+    taxes = employee.taxes.filter(
+        effective_from__lte=payslip.payroll_period.end_date,
+    ).filter(
+        models.Q(effective_to__gte=payslip.payroll_period.start_date)
+        | models.Q(effective_to__isnull=True)
+    )
+    taxes_data = []
+    for tax in taxes:
+        amount = tax.get_tax_amount()
+        if amount is not None and isinstance(amount, (Decimal, int, float)):
+            taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': Decimal(str(amount))})
+
+    # Combine all deductions (regular deductions + penalties + taxes)
+    deductions_data = regular_deductions + penalties_data + taxes_data
+    deductions_data.sort(key=lambda x: x['name'])
+
+    # Filter out zero-amount items
+    allowances_data = [item for item in allowances_data if item['amount'] > 0]
+    deductions_data = [item for item in deductions_data if item['amount'] > 0]
+    penalties_data = [item for item in penalties_data if item['amount'] > 0]
+
+    # Get the month and year for the header
+    pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
+
+    # Safely get employee and position details
+    employee_name = payslip.employee.user.fullname if payslip.employee and payslip.employee.user else 'N/A'
+    employee_id = payslip.employee.employee_id if payslip.employee else 'N/A'
+    department_name = payslip.employee.department.name if payslip.employee and payslip.employee.department else 'N/A'
+    position_name = payslip.employee.position.name if payslip.employee and payslip.employee.position else 'N/A'
+
+    # Format decimal values for HTML
+    def format_currency(value):
+        if value is None or not isinstance(value, (Decimal, int, float)):
+            return "0"
+        # Convert to integer to remove decimals and format with commas
+        return f"{int(Decimal(str(value))):,}"
+
+    # Generate HTML rows for allowances, deductions, and penalties
+    allowances_rows = "".join([
+        f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
+        for item in allowances_data
+    ])
+    deductions_rows = "".join([
+        f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
+        for item in deductions_data
+    ])
+    
+    # Generate penalties section if there are any penalties
+    penalties_section = ""
+    if penalties_data:
+        penalties_rows = "".join([
+            f'<tr><td>{item["name"]} ({item["date"].strftime("%d-%b")})</td><td>{format_currency(item["amount"])}</td></tr>'
+            for item in penalties_data
+        ])
+        penalties_section = f"""
+        <h2>Penalties</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {penalties_rows}
+            </tbody>
+        </table>
+        """
+
+    # Calculate total penalties for summary
+    total_penalties = sum(item['amount'] for item in penalties_data)
+
+    html_template = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Payslip</title>
+        <style>
+            @page {{
+                size: A4;
+                margin: 40px;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 10px;
+                line-height: 1.4;
+                color: #333;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
+            }}
+            .company-name {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }}
+            .period-details {{
+                font-size: 12px;
+                color: #7f8c8d;
+            }}
+            h2 {{
+                font-size: 16px;
+                font-weight: bold;
+                border-bottom: 2px solid #34495e;
+                padding-bottom: 5px;
+                margin-top: 30px;
+                margin-bottom: 15px;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }}
+            .info-table td {{
+                padding: 5px;
+            }}
+            .info-table td:nth-child(odd) {{
+                font-weight: bold;
+                width: 30%;
+            }}
+            .financial-table {{
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table th {{
+                background-color: #ecf0f1;
+                font-weight: bold;
+                padding: 10px;
+                text-align: left;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td {{
+                padding: 8px 10px;
+                border: 1px solid #bdc3c7;
+            }}
+            .financial-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table {{
+                margin-top: 20px;
+                width: 100%;
+            }}
+            .summary-table td {{
+                padding: 8px 10px;
+                font-weight: bold;
+                border: 1px solid #bdc3c7;
+            }}
+            .summary-table tr:last-child {{
+                font-size: 14px;
+                background-color: #e0f2f1;
+            }}
+            .summary-table td:last-child {{
+                text-align: right;
+            }}
+            .summary-table .label {{
+                font-weight: normal;
+                width: 60%;
+            }}
+            .penalties-highlight {{
+                background-color: #ffebee;
+            }}
+            .footer {{
+                clear: both;
+                padding-top: 20px;
+                text-align: center;
+                font-style: italic;
+                font-size: 9px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="company-name">{company_name}</div>
+            <div class="period-details">
+                Payslip for {pay_period_month}
+            </div>
+            <div class="period-details">
+                Period: {payslip.payroll_period.start_date.strftime('%d-%b-%Y')} to {payslip.payroll_period.end_date.strftime('%d-%b-%Y')}
+            </div>
+        </div>
+
+        <h2>Employee Information</h2>
+        <table class="info-table">
+            <tr>
+                <td>Employee Name:</td>
+                <td>{employee_name}</td>
+                <td>Employee ID:</td>
+                <td>{employee_id}</td>
+            </tr>
+            <tr>
+                <td>Department:</td>
+                <td>{department_name}</td>
+                <td>Position:</td>
+                <td>{position_name}</td>
+            </tr>
+            <tr>
+                <td>Days Worked:</td>
+                <td>{payslip.days_worked}</td>
+                <td>Pay Date:</td>
+                <td>{payslip.payroll_period.pay_date.strftime('%d-%b-%Y')}</td>
+            </tr>
+        </table>
+        
+        <h2>Summary</h2>
+        <table class="summary-table">
+            <tbody>
+                <tr>
+                    <td class="label">Gross Salary:</td>
+                    <td>{format_currency(payslip.gross_salary)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Allowances:</td>
+                    <td>{format_currency(payslip.total_allowances)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total Deductions:</td>
+                    <td>{format_currency(payslip.total_deductions)}</td>
+                </tr>
+                {f'<tr class="penalties-highlight"><td class="label">Total Penalties:</td><td>{format_currency(total_penalties)}</td></tr>' if total_penalties > 0 else ''}
+                <tr>
+                    <td class="label">Net Salary:</td>
+                    <td>{format_currency(payslip.net_salary)}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Allowances</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Basic Salary</td>
+                    <td>{format_currency(payslip.basic_salary)}</td>
+                </tr>
+                {allowances_rows}
+            </tbody>
+        </table>
+
+        <h2>Deductions</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {deductions_rows}
+            </tbody>
+        </table>
+        
+        {penalties_section}
+        
+        <div class="footer">
+            This is a computer-generated document and does not require a signature.
+        </div>
+    </body>
+    </html>
+    """
+    
+    html_doc = HTML(string=html_template)
+    pdf_buffer = BytesIO()
+    html_doc.write_pdf(target=pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return pdf_buffer

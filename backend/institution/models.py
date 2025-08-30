@@ -12,12 +12,15 @@ from recruitment.models import JobPosition
 import json
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+
 
 logger = logging.getLogger(__name__)
 
 
-class Institution(UtilityBaseModel):
+class Institution(SoftDeletableTimeStampedModel):
     APPROVAL_STATUS_CHOICES = [
         ("pending", "Pending Approval"),
         ("approved", "Approved"),
@@ -45,6 +48,7 @@ class Institution(UtilityBaseModel):
         blank=True,
         null=True,
     )
+    is_attendance_penalties_enabled = models.BooleanField(default=False)
     setup = models.BooleanField(default=False)
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)
@@ -53,6 +57,9 @@ class Institution(UtilityBaseModel):
     zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
     zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
+    user_inactivity_time = models.PositiveIntegerField(
+        default=15, help_text="User inactivity time in minutes before automatic logout"
+    )
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_STATUS_CHOICES,
@@ -82,7 +89,7 @@ class Institution(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_owner", "institution_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_institution_name_per_institution_owner"
+                name="unique_active_institution_name_per_institution_owner",
             )
         ]
 
@@ -244,14 +251,12 @@ class Institution(UtilityBaseModel):
             raise Exception(f"Zoom token error: {response.text}")
 
 
-class InstitutionDocument(models.Model):
+class InstitutionKYCDocument(models.Model):
     institution = models.ForeignKey(
         Institution, related_name="documents", on_delete=models.CASCADE
     )
     document_title = models.CharField(max_length=255)
-    document_file = models.FileField(upload_to="institutions/documents/")
-    document_type = models.CharField(max_length=10, blank=True, null=True)
-    document_size = models.PositiveIntegerField(blank=True, null=True)
+    document_file = models.FileField(upload_to="institutions/kyc/documents/")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -259,23 +264,11 @@ class InstitutionDocument(models.Model):
         return f"{self.document_title} - {self.institution.institution_name}"
 
     class Meta:
-        verbose_name = "Shop Document"
-        verbose_name_plural = "Shop Documents"
-
-    def save(self, *args, **kwargs):
-        if self.document_file and not self.pk:
-            self.document_size = self.document_file.size
-            self.document_type = self.document_file.name.split(".")[-1].lower()
-        super().save(*args, **kwargs)
-
-    @property
-    def document_size_mb(self):
-        if self.document_size:
-            return round(self.document_size / (1024 * 1024), 2)
-        return 0
+        verbose_name = "Institution KYC Document"
+        verbose_name_plural = "Institution KYC Documents"
 
 
-class InstitutionBankType(UtilityBaseModel):
+class InstitutionBankType(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
@@ -301,7 +294,7 @@ class InstitutionBankType(UtilityBaseModel):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
 
 
-class InstitutionBankAccount(UtilityBaseModel):
+class InstitutionBankAccount(SoftDeletableTimeStampedModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
@@ -329,7 +322,7 @@ class InstitutionBankAccount(UtilityBaseModel):
             UniqueConstraint(
                 fields=["institution_bank", "account_number"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_account_number_per_instititution_bank"
+                name="unique_active_account_number_per_instititution_bank",
             )
         ]
 
@@ -337,7 +330,7 @@ class InstitutionBankAccount(UtilityBaseModel):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
 
 
-class InstitutionWorkingDays(models.Model):
+class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
@@ -348,8 +341,6 @@ class InstitutionWorkingDays(models.Model):
         blank=True,
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
         "users.CustomUser",
         related_name="created_institution_working_days",
@@ -369,7 +360,7 @@ class InstitutionWorkingDays(models.Model):
         return f"Working Days for {self.institution.institution_name}"
 
 
-class InstitutionTax(UtilityBaseModel):
+class InstitutionTax(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
@@ -399,7 +390,7 @@ class InstitutionTax(UtilityBaseModel):
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(UtilityBaseModel):
+class InstitutionTaxRule(SoftDeletableTimeStampedModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -437,7 +428,7 @@ class InstitutionTaxRule(UtilityBaseModel):
         return self.tax_rule_name
 
 
-class Branch(UtilityBaseModel):
+class Branch(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -467,6 +458,7 @@ class Branch(UtilityBaseModel):
     )
 
     def save(self, *args, **kwargs):
+        is_new = self._state.adding
         if not self.paying_bank_account:
             first_account = (
                 InstitutionBankAccount.objects.filter(
@@ -480,6 +472,9 @@ class Branch(UtilityBaseModel):
 
         super().save(*args, **kwargs)
 
+        if is_new:
+            BranchWorkingDays.objects.create(branch=self)
+
     def __str__(self):
         return (
             self.branch_location
@@ -490,8 +485,113 @@ class Branch(UtilityBaseModel):
         )
 
 
-# Many to many relationship between branches and users
-# user can have multiple branches and branches can have multiple users
+class BranchWorkingDays(models.Model):
+    branch = models.OneToOneField(
+        "Branch", on_delete=models.CASCADE, related_name="working_days"
+    )
+    days = models.ManyToManyField(
+        "settings.SystemDay",
+        through="BranchDay",
+        related_name="branch_working_days",
+    )
+
+    def __str__(self):
+        return f"Branch Working days for: {self.branch.branch_name}"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+
+        if is_new:
+            pass
+            # self._create_branch_days()
+
+    def _create_branch_days(self):
+        inst_working_days = InstitutionWorkingDays.objects.get(
+            institution=self.branch.institution
+        )
+
+        # copy all institution days into branch days
+        for day in inst_working_days.days.all():
+            BranchDay.objects.create(
+                branch_working_days=self,
+                day=day,
+            )
+
+
+class BranchDay(models.Model):
+    branch_working_days = models.ForeignKey(
+        BranchWorkingDays, on_delete=models.CASCADE, related_name="branch_days"
+    )
+
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+
+    DAY_TYPE_CHOICES = (
+        ("REMOTE", "Remote"),
+        ("PHYSICAL", "Physical"),
+    )
+
+    day_type = models.CharField(
+        choices=DAY_TYPE_CHOICES, max_length=255, default="PHYSICAL"
+    )
+
+    def __str__(self):
+        return f"{self.branch_working_days.branch.branch_name} - {self.day.day_name}"
+
+    class Meta:
+        ordering = ("day__level",)
+
+
+class BranchShift(models.Model):
+    branch = models.ForeignKey(
+        "Branch", on_delete=models.CASCADE, related_name="shifts"
+    )
+    name = models.CharField(max_length=255)
+
+    shift_day = models.ForeignKey(
+        "BranchDay",
+        on_delete=models.CASCADE,
+        related_name="shifts",
+        help_text="The day this shift occurs",
+        # Will be deleted later
+        blank=True,
+        null=True,
+    )
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        branch_opening_time = self.branch.branch_opening_time
+        branch_closing_time = self.branch.branch_closing_time
+
+        if self.start_time < branch_opening_time:
+            raise ValidationError(
+                f"Shift start time ({self.start_time}) cannot be before branch opening time ({branch_opening_time})."
+            )
+        if self.end_time > branch_closing_time:
+            raise ValidationError(
+                f"Shift end time ({self.end_time}) cannot be after branch closing time ({branch_closing_time})."
+            )
+        if self.start_time >= self.end_time:
+            raise ValidationError("Shift start time must be before end time.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        unique_together = ("branch", "name")
+        ordering = (
+            "shift_day__day__level",
+            "name",
+        )
+
+
 class UserBranch(models.Model):
     user = models.ForeignKey(
         "users.CustomUser", related_name="attached_branches", on_delete=models.CASCADE
@@ -550,11 +650,11 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(UtilityBaseModel):
+class Department(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
-        Institution, related_name="departments", on_delete=models.CASCADE
+        Institution, related_name="departments", on_delete=models.PROTECT
     )
     # head_of_department = models.OneToOneField(
     #     "employee.Employee",
@@ -570,6 +670,137 @@ class Department(UtilityBaseModel):
         null=True,
         blank=True,
     )
-    
+
     def __str__(self):
         return self.name
+
+
+PENALTY_TYPES = [
+    ("late_coming", "Late Coming"),
+    ("early_leaving", "Early Leaving"),
+    ("absent", "Absent"),
+    ("no_response_spotcheck", "No Response for Spotcheck"),
+    ("late_spotcheck_response", "Late Spotcheck Response"),
+]
+
+PENALTY_VALUE_TYPES = [
+    ("fixed", "Fixed Amount"),
+    ("percentage", "Percentage of Salary"),
+]
+
+class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
+    """Default penalty configuration at institution level"""
+    institution = models.ForeignKey(
+        Institution, related_name="penalty_config", on_delete=models.CASCADE
+    )
+    penalty_type = models.CharField(
+        max_length=50, choices=PENALTY_TYPES, default="late_coming"
+    )
+    penalty_value = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, validators=[MinValueValidator(0)]
+    )
+    penalty_value_type = models.CharField(
+        max_length=50, choices=PENALTY_VALUE_TYPES, default="fixed"
+    )
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
+        blank=True,
+        help_text="Percentage value when penalty_value_type is 'percentage'",
+    )
+
+    def __str__(self):
+        return f"Penalty Config for {self.institution.institution_name} - {self.get_penalty_type_display()}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.penalty_value_type == "percentage":
+            if not self.percentage or self.percentage <= 0:
+                raise ValidationError(
+                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                )
+        elif self.penalty_value_type == "fixed":
+            if self.penalty_value <= 0:
+                raise ValidationError(
+                    "Penalty value must be greater than 0 when penalty type is fixed"
+                )
+
+
+    def get_calculated_amount(self, employee_salary):
+        """Calculate penalty amount based on method"""
+        if self.penalty_value_type == "percentage":
+            if not employee_salary or employee_salary <= 0:
+                return 0.00
+            if not self.percentage or self.percentage <= 0:
+                return 0.00
+            calculated = (employee_salary * self.percentage) / 100
+            return calculated
+        
+        return self.penalty_value            
+
+class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
+    """Branch-level penalty configuration (overrides institution defaults)"""
+
+    branch = models.ForeignKey(
+        Branch, on_delete=models.CASCADE, related_name="penalty_configs"
+    )
+    penalty_type = models.CharField(max_length=50, choices=PENALTY_TYPES)
+    penalty_value = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00, validators=[MinValueValidator(0)]
+    )
+    penalty_value_type = models.CharField(
+        max_length=20, choices=PENALTY_VALUE_TYPES, default="fixed"
+    )
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        null=True,
+        blank=True,
+        help_text="Percentage value when penalty_value_type is 'percentage'",
+    )
+
+    def __str__(self):
+        return f"{self.get_penalty_type_display()} - {self.branch.branch_name}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.penalty_value_type == "percentage":
+            if not self.percentage or self.percentage <= 0:
+                raise ValidationError(
+                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                )
+        elif self.penalty_value_type == "fixed":
+            if self.penalty_value <= 0:
+                raise ValidationError(
+                    "Penalty value must be greater than 0 when penalty type is fixed"
+                )
+
+    def get_calculated_amount(self, employee_salary):
+        """Calculate penalty amount based on method"""
+        if self.penalty_value_type == "percentage":
+            if not employee_salary or employee_salary <= 0:
+                return 0.00
+            if not self.percentage or self.percentage <= 0:
+                return 0.00
+            calculated = (employee_salary * self.percentage) / 100
+            return calculated
+        
+        return self.penalty_value 
+
+class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
+    radius_in_meters = models.IntegerField(default=100)
+    branch = models.OneToOneField(
+        Branch,
+        on_delete=models.CASCADE,
+        related_name="location_comparison_settings"
+    )
+
+    def __str__(self):
+        return f"Location Comparison Settings for {self.branch.branch_name}"            

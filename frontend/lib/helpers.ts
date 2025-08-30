@@ -4,10 +4,11 @@ import { format } from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import { IMarketPlaceOrder, IPaginatedResponse, IPermission, IUser, Permission, Role } from "@/types";
+import { IMarketPlaceOrder, IPaginatedResponse, IPermission, Permission, Role } from "@/types";
 import { store } from "@/store";
 import { toast } from "sonner";
 import { ICountry } from "@/types/types.utils";
+import { showErrorToast } from "./utils";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,6 +20,35 @@ export function capitalizeEachWord(str: string) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+
+export const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+export const formatNumberByMagnitude = (value: number) => {
+    if (value >= 1000000000) {
+      return `${(value / 1000000000).toFixed(1)}B`;
+    }
+    else if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)}M`;
+    }
+    else if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return `${value}`;
+  };
+
+export  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
 
 export function getDefaultInstitutionId() {
   if (typeof window !== "undefined") {
@@ -56,7 +86,7 @@ export const fetchAndSetData = async <T>(
 
     setFn(data);
   } catch (error) {
-    console.error(errorMsg, error);
+    showErrorToast({error, defaultMessage:errorMsg})
     if (setErrorFn) {
       setErrorFn(errorMsg);
     }
@@ -68,7 +98,6 @@ export async function fetchInstitutionBranchesFromAPI() {
   try {
     return await apiRequest.get(`institution/${getDefaultInstitutionId()}/branch`);
   } catch (error) {
-    console.error("Error fetching Institution's branches:", error);
     throw error;
   }
 }
@@ -77,7 +106,6 @@ export async function fetchInstitutionRoles() {
   try {
     return await apiRequest.get(`user/role/?Institution_id=${getDefaultInstitutionId()}`);
   } catch (error: any) {
-    console.log("Error fetching  Institution roles ");
     throw error;
   }
 }
@@ -115,7 +143,6 @@ export function formatCurrency(amount: number | string): string {
 export function formatTransactionDate(dateString: any) {
   try {
     const date = new Date(dateString);
-
     return format(date, "MMMM dd, yyyy h:mm a");
   } catch {
     return dateString;
@@ -278,3 +305,27 @@ export const getCurrentUserLocation = async (callback: (position:GeolocationPosi
   navigator.geolocation.getCurrentPosition(callback);
 
 }
+
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+
+  if (!domain) {
+    throw new Error("Invalid email format");
+  }
+
+  // keep first 3 characters (or fewer if local part is short)
+  const visible = local.slice(0, 3);
+  const hiddenLength = Math.max(0, local.length - visible.length);
+  const hidden = "*".repeat(hiddenLength);
+
+  return `${visible}${hidden}@${domain}`;
+}
+
+export function forceUrlToHttps(url:string) {
+  const  FORCE_HTTPS = process.env.NEXT_PUBLIC_FORCE_HTTPS ? process.env.NEXT_PUBLIC_FORCE_HTTPS === "true" : true;
+  if(!FORCE_HTTPS){ return url}
+  return url.replace(/^http:\/\//i, "https://");
+}
+
+
+

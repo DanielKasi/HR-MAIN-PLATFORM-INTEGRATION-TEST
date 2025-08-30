@@ -1,7 +1,6 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
-from datetime import datetime
 from institution.utils import generate_compliant_password
 from utilities.helpers import (
     build_password_link,
@@ -12,75 +11,49 @@ from utilities.helpers import (
 
 from django.db import models
 from datetime import datetime
-from institution.models import Branch, UserBranch
+from institution.models import Branch, UserBranch, BranchWorkingDays
 from datetime import date, datetime
-from weasyprint import HTML
 from django.template.loader import render_to_string
-from django.core.files import File
-import os
 from django.conf import settings
-import hashlib
 from django.core.exceptions import ValidationError
 import PyPDF2
 from pdf2image import convert_from_bytes
 import pytesseract
-from django.core.files.base import ContentFile
 import io
 from io import BytesIO
-from difflib import Differ, SequenceMatcher
+from difflib import SequenceMatcher
 import re
 from django.db.models import UniqueConstraint, Q
 import math
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from institution.models import Institution
 
 
-class EmployeeType(UtilityBaseModel):
+class EmployeeType(SoftDeletableTimeStampedModel):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
-    
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_name"
-            ),
-            UniqueConstraint(
-                fields=["code"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_type_code"
-            )
-        ]
 
 
-class WorkType(UtilityBaseModel):
+class WorkType(SoftDeletableTimeStampedModel):
+    institution = models.ForeignKey(
+        Institution, on_delete=models.CASCADE, null=True, blank=True
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=10, blank=True, null=True)
 
     def __str__(self):
         return self.name
-    
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["name"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_name"
-            ),
-            UniqueConstraint(
-                fields=["code"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_work_type_code"
-            )
-        ]
 
 
-class Employee(UtilityBaseModel):
+class Employee(SoftDeletableTimeStampedModel):
     """
     Employee model to store employee details in the system.
     """
@@ -110,6 +83,7 @@ class Employee(UtilityBaseModel):
     )
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    # TODO: Make position non-nullable in future. There is no way to track employee's institution without position or department
     position = models.ForeignKey(
         "recruitment.JobPosition",
         on_delete=models.PROTECT,
@@ -123,42 +97,44 @@ class Employee(UtilityBaseModel):
         blank=True,
         null=True,
     )
+    # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
     payroll_branch = models.ForeignKey(
         "institution.Branch",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="payroll_employees",
+        related_name="branch_payroll_employees",
     )
     date_of_birth = models.DateField(blank=True, null=True)
     work_type = models.ForeignKey(
         WorkType,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
     employee_type = models.ForeignKey(
         EmployeeType,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True,
         related_name="employees",
     )
-    date_of_joining = models.DateField(default=timezone.now)
+    date_of_joining = models.DateField(default=timezone.now, null=True, blank=True)
     address = models.TextField(blank=True, null=True)
     country = models.CharField(max_length=50, blank=True, null=True)
     nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
     tin = models.CharField(max_length=12, blank=True, null=True)
     bank = models.CharField(max_length=50, blank=True, null=True)
+    # bank_account_name = models.CharField(max_length=100, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     experience = models.PositiveIntegerField(default=0)
     qualifications = models.TextField(blank=True, null=True)
@@ -179,25 +155,23 @@ class Employee(UtilityBaseModel):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
-    
+
     class Meta:
         constraints = [
-            # A OneToOneField is essentially a ForeignKey with unique=True
-            # To make it conditional, we use a UniqueConstraint.
             UniqueConstraint(
-                fields=["user"],
+                fields=["department", "user"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_user",
+                name="unique_active_employee_user_per_department_institution",
             ),
             UniqueConstraint(
-                fields=["email"],
+                fields=["department", "email"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_email",
+                name="unique_active_employee_email_per_department_institution",
             ),
             UniqueConstraint(
-                fields=["nin"],
+                fields=["department", "nin"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_nin",
+                name="unique_active_employee_nin_per_department_institution",
             ),
         ]
 
@@ -212,9 +186,7 @@ class Employee(UtilityBaseModel):
                 existing = existing.exclude(pk=self.pk)
             if existing.exists():
                 raise ValidationError(
-                    
-                        "An employee with this phone number already exists."
-                    
+                    {"error": f"An employee with this phone number already exists."}
                 )
 
         # ✅ Validate minimum age of 18 years
@@ -229,11 +201,15 @@ class Employee(UtilityBaseModel):
                 )
             )
             if age < 18:
-                raise ValidationError(f"Employee must be at least 18 years old. Current age: {age} years.")
+                raise ValidationError(
+                    {
+                        "error": f"Employee must be at least 18 years old. Current age: {age} years."
+                    }
+                )
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
-            raise ValidationError("Date of birth cannot be in the future.")
+            raise ValidationError({"error": f"Date of birth cannot be in the future."})
 
     @property
     def age(self):
@@ -285,8 +261,9 @@ class Employee(UtilityBaseModel):
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
 
-        if self.position and hasattr(self.position, "salary"):
-            self.salary = self.position.salary
+        # 🔧 FIX: Check for salary_min instead of salary, and ensure it's not already set
+        if self.position and hasattr(self.position, "salary_min") and not self.salary:
+            self.salary = self.position.salary_min
 
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
@@ -440,165 +417,192 @@ class Employee(UtilityBaseModel):
         except AttributeError:
             return False
 
+
     def generate_and_set_password(self):
         """Generate and set a compliant password for the user."""
         from django.contrib.auth.hashers import make_password
         import string
-        import random
+        import secrets
+        import logging
+
+        logger = logging.getLogger(__name__)
 
         def generate_compliant_password(length=12):
+            """Generate a password that meets Django's validation requirements"""
             lowercase = string.ascii_lowercase
             uppercase = string.ascii_uppercase
             digits = string.digits
-            special = string.punctuation
+            special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+            
+            # Ensure we have at least one character from each required set
+            password_chars = [
+                secrets.choice(lowercase),
+                secrets.choice(uppercase),
+                secrets.choice(digits),
+                secrets.choice(special),
+            ]
+            
+            # Fill the rest of the password length
+            all_characters = lowercase + uppercase + digits + special
+            for _ in range(length - 4):
+                password_chars.append(secrets.choice(all_characters))
+            
+            # Shuffle to avoid predictable patterns
+            secrets.SystemRandom().shuffle(password_chars)
+            return "".join(password_chars)
 
-        password = [
-            random.choice(lowercase),
-            random.choice(uppercase),
-            random.choice(digits),
-            random.choice(special)
-        ]
+        try:
+            # Generate the password
+            random_password = generate_compliant_password()
+            
+            # Set the password using Django's built-in method (this handles hashing)
+            self.user.set_password(random_password)
+            self.user.is_password_verified = False
+            self.user.save()
+            
+            return random_password
+            
+        except Exception as e:
+            logger.error(f"Error generating password for user {self.user.email}: {e}")
+            raise e
 
-        all_characters = lowercase + uppercase + digits + special
-        for _ in range(length - 4):
-            password.append(random.choice(all_characters))
-
-        random.shuffle(password)
-        return "".join(password) 
-
-        random_password = generate_compliant_password()
-        self.user.set_password(random_password)
-        self.user.is_password_verified = False
-        self.user.save()
-        return random_password
-   
-    
-
-    def create_password_token_and_send_link(self, request):
-        """Create token and send password link to user."""
-        from django.urls import reverse
-        from django.core.mail import send_mail
-        import uuid
-        from datetime import timedelta
-
-        def create_and_institution_token(user, purpose, expiry_minutes):
-            token = uuid.uuid4().hex
-            Token.objects.create(
-                user=user,
-                token=token,
-                purpose=purpose,
-                expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
-            )
-            return token
-
-        def build_password_link(request, token):
-            return request.build_absolute_uri(
-                reverse("set_password", kwargs={"token": token})
-            )
-
-        def send_password_link_to_user(user, link):
-            send_mail(
-                subject="Set Your Password",
-                message=f"Please use the following link to set your password: {link}",
-                from_email="no-reply@yourinstitution.com",
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-
-        token = create_and_institution_token(
-            user=self.user, purpose="registration", expiry_minutes=15
+    def send_password_email_async(self, password):
+        """Send password via email using Celery task"""
+        from .tasks import send_employee_password_email
+        
+        if not self.user or not self.user.email:
+            return False
+        
+        # Queue the email task
+        send_employee_password_email.delay(
+            user_id=self.user.id,
+            password=password,
+            employee_name=self.user.fullname,
+            employee_email=self.user.email
         )
-        password_link = build_password_link(request=request, token=token)
-        send_password_link_to_user(user=self.user, link=password_link)
         return True
 
-    def setup_employee_password(self, request):
-        """
-        Complete password setup process for new employees.
-        """
+    def setup_employee_password(self, use_async=True):
+        """Complete password setup process for new employees."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
+
         if not self.should_generate_password():
+            logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
 
         try:
-            password = self.generate_and_set_password()
-            link_sent = self.create_password_token_and_send_link(request)
+            # Validate user and email
+            if not self.user:
+                logger.error("No user associated with this employee")
+                return {"success": False, "error": "No user associated with employee"}
+
+            if not self.user.email:
+                logger.error("User has no email address")
+                return {"success": False, "error": "User has no email address"}
+
+            # Generate password
+            try:
+                password = self.generate_and_set_password()
+                logger.info("Password generated successfully")
+            except Exception as pwd_error:
+                logger.error(f"Failed to generate password: {pwd_error}")
+                return {"success": False, "error": f"Password generation failed: {str(pwd_error)}"}
+
+            # Send password email
+            try:
+                if use_async:
+                    email_sent = self.send_password_email_async(password)
+                else:
+                    email_sent = self.send_password_email_sync(password)
+                
+                logger.info(f"Password email queued/sent: {email_sent}")
+            except Exception as email_error:
+                logger.error(f"Failed to send password email: {email_error}")
+                return {
+                    "success": True,  # Password was generated successfully
+                    "password_generated": True,
+                    "email_sent": False,
+                    "email_error": str(email_error)
+                }
+
             return {
                 "success": True,
-                "password_generated": bool(password),
-                "link_sent": link_sent,
+                "password_generated": True,
+                "email_sent": email_sent,
             }
+
         except Exception as e:
+            logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
 
+    def send_password_email_sync(self, password):
+        """Send password email synchronously (fallback)"""
+        from django.core.mail import send_mail
+        from django.conf import settings
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            subject = "Your Account Password - Welcome to the Team"
+            
+            # Get user's full name safely
+            user_name = getattr(self.user, 'fullname', None) or \
+                    getattr(self.user, 'full_name', None) or \
+                    f"{getattr(self.user, 'first_name', '')} {getattr(self.user, 'last_name', '')}".strip() or \
+                    self.user.email
+            
+            # Get institution name if available
+            institution_name = "the System"
+            try:
+                if hasattr(self, 'department') and self.department and hasattr(self.department, 'institution'):
+                    institution_name = self.department.institution.name
+            except:
+                pass
+            
+            message = f"""
+    Hello {user_name},
 
-class EmployeeWorkingDays(models.Model):
-    employee = models.OneToOneField(
-        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
-    )
+    Welcome to {institution_name}! Your employee account has been created successfully.
 
-    days = models.ManyToManyField(
-        "settings.SystemDay",
-        related_name="employee_working_days",
-        help_text="Must be selected from institution's working days",
-    )
-    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    Here are your login credentials:
+    Email: {self.user.email}
+    Password: {password}
 
-    def __str__(self):
-        return f"{self.employee.user.fullname} - Custom Working Days"
+    IMPORTANT SECURITY NOTICE:
+    - Please change your password after your first login
+    - Keep your login credentials secure and confidential
+    - Do not share your password with anyone
 
+    You can log in to the system using these credentials. If you have any questions or need assistance, please contact your system administrator.
 
-class EmployeeAttendance(UtilityBaseModel):
-    employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="attendance_records"
-    )
-    date = models.DateField(auto_now_add=True)
-    check_in_time = models.TimeField(null=True, blank=True)
-    check_out_time = models.TimeField(null=True, blank=True)
-    check_in_latitude = models.FloatField(null=True, blank=True)
-    check_in_longitude = models.FloatField(null=True, blank=True)
-    check_out_latitude = models.FloatField(null=True, blank=True)
-    check_out_longitude = models.FloatField(null=True, blank=True)
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("approved", "Approved"),
-            ("rejected", "Rejected"),
-            ("pending", "Pending"),
-        ],
-        default="pending",
-    )
-    overtime_hours = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.00, null=True, blank=True
-    )
+    Best regards,
+    The {institution_name} Team
+            """
+            
+            result = send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[self.user.email],
+                fail_silently=False,
+            )
+            
+            logger.info(f"Password email sent successfully to {self.user.email}")
+            return result > 0
+            
+        except Exception as email_error:
+            logger.error(f"Failed to send password email to {self.user.email}: {email_error}")
+            return False
 
-    def __str__(self):
-        return f"{self.employee.user.fullname} - {self.date} - {self.status}"
-
-    def calculate_overtime_hours(self):
-
-        if (
-            self.date
-            and self.check_out_time
-            and self.employee
-            and self.employee.payroll_branch
-        ):
-            branch_end_time = self.employee.payroll_branch.branch_closing_time
-
-            datetime_checkout = datetime.combine(self.date, self.check_out_time)
-            datetime_end = datetime.combine(self.date, branch_end_time)
-
-            if datetime_checkout > datetime_end:
-                overtime_duration = datetime_checkout - datetime_end
-                hours = round(overtime_duration.total_seconds() / 3600, 2)
-                return hours
-        return 0.0
-
-    def _haversine_distance(self, lat1,lon1, lat2, lon2):
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
-            return float('inf')
+            return float("inf")
 
-        R = 6371000 # Earth radius in meters
+        R = 6371000  # Earth radius in meters
 
         # Convert to radians
         lat1_rad = math.radians(lat1)
@@ -609,18 +613,284 @@ class EmployeeAttendance(UtilityBaseModel):
         dlat = lat2_rad - lat1_rad
         dlon = lon2_rad - lon1_rad
 
-        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        )
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
         return R * c
 
     def _is_location_valid(self, latitude, longitude):
         """
-        Check if the given location is within 100 meters of any attached branch.
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
         """
+        attached_branches = self.get_all_branches()
+        if not attached_branches.exists():
+            return False
 
-        THRESHOLD_METERS = 500
+        for branch in attached_branches:
+            if branch.branch_latitude is None or branch.branch_longitude is None:
+                continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
+            distance = self._haversine_distance(
+                latitude, longitude, branch.branch_latitude, branch.branch_longitude
+            )
+            
+            if distance <= threshold_meters:
+                return True
+                
+        return False
 
+class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
+    employee = models.OneToOneField(
+        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
+    )
+
+    days = models.ManyToManyField(
+        "settings.SystemDay",
+        related_name="employee_working_days",
+        through="EmployeeDay",
+        help_text="Must be selected from institution's working days",
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - Custom Working Days"
+
+
+class EmployeeDay(models.Model):
+    employee_working_days = models.ForeignKey(
+        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+    )
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"{self.employee_working_days.employee.user.fullname} - {self.day.day_name}"
+        )
+
+    class Meta:
+        unique_together = ("employee_working_days", "day")
+
+class EmployeeShift(models.Model):
+    CONTEXT_TYPES = [
+        ("REQUEST", "Request"),
+        ("ALLOCATION", "Allocation"),
+    ]
+
+    STATUS_CHOICES = [
+        ("APPROVED", "Approved"),
+        ("REJECTED", "Rejected"),
+        ("PENDING", "Pending"),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="employee_shift")
+    shift = models.ForeignKey("institution.BranchShift", on_delete=models.CASCADE, related_name="employee_shift")
+    context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
+    shift_status = models.CharField(choices=STATUS_CHOICES, max_length=200, default="PENDING")
+
+    date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        "users.CustomUser", on_delete=models.CASCADE, related_name="employee_shift"
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - shift {self.context.upper()}"
+
+class EmployeeAttendance(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="attendance_records"
+    )
+    date = models.DateField(auto_now_add=True)
+    check_in_time = models.TimeField(null=True, blank=True)
+    check_out_time = models.TimeField(null=True, blank=True)
+    check_in_latitude = models.FloatField(null=True, blank=True)
+    check_in_longitude = models.FloatField(null=True, blank=True)
+    check_out_latitude = models.FloatField(null=True, blank=True)
+    check_out_longitude = models.FloatField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("approved", "Approved"),
+            ("rejected", "Rejected"),
+            ("pending", "Pending"),
+        ],
+        default="pending",
+    )
+
+    attendance_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("late", "Late"),
+            ("early_checkout", "Early Checkout"),
+            ("overtime", "Overtime"),
+            ("on_time", "On Time"),
+            ("absent", "Absent"),
+            ("pending", "Pending"),
+        ],
+        default="pending"  # Added default value
+    )
+
+    overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    late_minutes = models.IntegerField(default=0)
+    early_checkout_minutes = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ("employee", "date")
+
+    def __str__(self):
+        user = getattr(self.employee, "user", None)
+        if user and hasattr(user, "fname") and hasattr(user, "lname"):
+            return f"{user.fname} {user.lname} - {self.date} - {self.status}"
+        return f"{self.employee} - {self.date} - {self.status}"
+
+    def calculate_overtime_hours(self):
+
+        if (
+            self.date
+            and self.check_out_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_end_time = self.employee.payroll_branch.branch_closing_time
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            datetime_end = datetime.combine(self.date, branch_end_time)
+
+            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
+
+            if datetime_checkout > datetime_end:
+                overtime_duration = datetime_checkout - datetime_end
+                hours = round(overtime_duration.total_seconds() / 3600, 2)
+                print(f"    Overtime hours = {hours}")
+                return hours
+        print("    No overtime")
+        return 0.0
+
+    def calculate_late_minutes(self):
+        if (
+            self.date
+            and self.check_in_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_start_time = self.employee.payroll_branch.branch_opening_time
+            datetime_checkin = datetime.combine(self.date, self.check_in_time)
+            datetime_start = datetime.combine(self.date, branch_start_time)
+
+            print(f"    Branch start: {datetime_start}, Check-in: {datetime_checkin}")
+
+            if datetime_checkin > datetime_start:
+                delay = datetime_checkin - datetime_start
+                minutes = int(delay.total_seconds() / 60)
+                print(f"    Late minutes = {minutes}")
+                return minutes
+        print("    Not late")
+        return 0
+
+    def calculate_early_checkout_minutes(self):
+        if (
+            self.date
+            and self.check_out_time
+            and self.employee
+            and self.employee.payroll_branch
+        ):
+            branch_end_time = self.employee.payroll_branch.branch_closing_time
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            datetime_end = datetime.combine(self.date, branch_end_time)
+
+            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
+
+            if datetime_checkout < datetime_end:
+                early_leave = datetime_end - datetime_checkout
+                minutes = int(early_leave.total_seconds() / 60)
+                print(f"    Early checkout minutes = {minutes}")
+                return minutes
+        print("    No early checkout")
+        return 0
+
+    def update_attendance_status(self):
+        """Calculate and set attendance status based on check-in/out times"""
+
+
+        # Check for absence first
+        if not self.check_in_time and not self.check_out_time:
+            print("    Absent (no check-in or check-out)")
+            self.attendance_status = "absent"
+            self.overtime_hours = 0
+            self.late_minutes = 0
+            self.early_checkout_minutes = 0
+            return
+
+        # Calculate metrics
+        self.overtime_hours = self.calculate_overtime_hours()
+        self.late_minutes = self.calculate_late_minutes()
+        self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+
+        # Determine status with priority order
+        if self.late_minutes > 0:
+            self.attendance_status = "late"
+        elif self.early_checkout_minutes > 0:
+            self.attendance_status = "early_checkout"
+        elif self.overtime_hours > 0:
+            self.attendance_status = "overtime"
+        else:
+            self.attendance_status = "on_time"
+
+        print(f"    Final Status = {self.attendance_status}, "
+              f"Overtime = {self.overtime_hours}, "
+              f"Late = {self.late_minutes}, "
+              f"Early checkout = {self.early_checkout_minutes}")
+
+    def save(self, *args, **kwargs):
+        """
+        Simplified save method - status calculation is now handled by serializer.
+        """
+        super().save(*args, **kwargs)
+
+
+    def _haversine_distance(self, lat1, lon1, lat2, lon2):
+        if None in (lat1, lon1, lat2, lon2):
+            return float("inf")
+
+        R = 6371000  # Earth radius in meters
+
+        # Convert to radians
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        a = (
+            math.sin(dlat / 2) ** 2
+            + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        )
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def _is_location_valid(self, latitude, longitude):
+        """
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
+        """
         attached_branches = self.employee.get_all_branches()
         if not attached_branches.exists():
             return False
@@ -628,42 +898,35 @@ class EmployeeAttendance(UtilityBaseModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            if distance <= THRESHOLD_METERS:
+            
+            if distance <= threshold_meters:
                 return True
+                
         return False
-
-    def clean(self):
-        super().clean()
-
-        # Validate check-in location if provided
-        if self.check_in_time and (self.check_in_latitude is not None or self.check_in_longitude is not None):
-            if self.check_in_latitude is None or self.check_in_longitude is None:
-                raise ValidationError("Both check-in latitude and longitude must be provided if one is set.")
-            if not self._is_location_valid(self.check_in_latitude, self.check_in_longitude):
-                raise ValidationError("Check-in location does not match any attached branch location.")
-
-        # Validate check-out location if provided
-        if self.check_out_time and (self.check_out_latitude is not None or self.check_out_longitude is not None):
-            if self.check_out_latitude is None or self.check_out_longitude is None:
-                raise ValidationError("Both check-out latitude and longitude must be provided if one is set.")
-            if not self._is_location_valid(self.check_out_latitude, self.check_out_longitude):
-                raise ValidationError("Check-out location does not match any attached branch location.")                    
 
     def save(self, *args, **kwargs):
 
         if self.date is None:
             self.date = datetime.today().date()
 
-        self.full_clean()    
+        self.full_clean()
 
         self.overtime_hours = self.calculate_overtime_hours()
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(UtilityBaseModel):
+class EmployeeContract(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -684,9 +947,7 @@ class EmployeeContract(UtilityBaseModel):
         null=True,
         blank=True,
     )
-    contract_reference = models.CharField(
-        max_length=20, blank=True, null=True
-    )
+    contract_reference = models.CharField(max_length=20, blank=True, null=True)
     original_contract = models.FileField(
         upload_to="contracts/original/", blank=True, null=True
     )
@@ -704,13 +965,13 @@ class EmployeeContract(UtilityBaseModel):
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["contract_reference"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_contract_reference"
+                name="unique_active_contract_reference",
             )
         ]
 
@@ -759,7 +1020,7 @@ class EmployeeContract(UtilityBaseModel):
                 pages_text.append(normalized_text)
             return pages_text
         except Exception as e:
-            raise ValidationError(f"OCR failed: {str(e)}")
+            raise ValidationError({"error": f"OCR failed: {str(e)}"})
 
     def compare_contracts(self):
         """Compare original_contract and signed_contract, setting status."""
@@ -778,11 +1039,12 @@ class EmployeeContract(UtilityBaseModel):
 
             original_pages = self.extract_text_from_pdf(original_content)
             if not any(original_pages):
-                print("No text extracted from original_contract, trying OCR")
                 original_pages = self.extract_text_with_ocr(original_content)
             if not any(original_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError("Cannot extract text from original contract.")
+                raise ValidationError(
+                    {"error": f"Cannot extract text from original contract."}
+                )
 
             # Extract text from signed_contract
             signed_pages = self.extract_text_from_pdf(signed_content)
@@ -792,7 +1054,9 @@ class EmployeeContract(UtilityBaseModel):
             if not any(signed_pages):
 
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
-                raise ValidationError("Cannot extract text from signed contract.")
+                raise ValidationError(
+                    {"error": f"Cannot extract text from signed contract."}
+                )
 
             # Compare number of pages
             if len(original_pages) != len(signed_pages):
@@ -807,7 +1071,6 @@ class EmployeeContract(UtilityBaseModel):
                 zip(original_pages, signed_pages), 1
             ):
                 if orig_text != sign_text:
-                    print(f"Page {page_num} differs")
                     matcher = SequenceMatcher(
                         None, orig_text.split(), sign_text.split()
                     )
@@ -848,7 +1111,7 @@ class EmployeeContract(UtilityBaseModel):
             raise e
         except Exception as e:
             self.status = "NOT_MATCHED_NEEDS_REVIEW"
-            raise ValidationError(f"Error comparing contracts: {str(e)}")
+            raise ValidationError({"error": f"Error comparing contracts: {str(e)}"})
 
     def save(self, *args, **kwargs):
         if not self.contract_reference:

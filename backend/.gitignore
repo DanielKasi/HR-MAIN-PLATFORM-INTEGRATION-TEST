@@ -6,3 +6,7 @@ db.sqlite3
 media
 /staticfiles
 staticfiles
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+/.idea

@@ -94,7 +94,6 @@ export function SimpleCalendarWidget() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const institutionId = selectedInstitution?.id;
 
-  console.log("Calendar", calendar)
 
   const fetchCalendar = async (year: number) => {
     try {
@@ -243,7 +242,7 @@ export function SimpleCalendarWidget() {
 
   return (
     <div className="relative">
-      <Card className="w-full h-full">
+      <Card className="w-full h-full shadow-sm border-none rounded-3xl">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => navigateMonth("prev")}>
@@ -285,7 +284,7 @@ export function SimpleCalendarWidget() {
                     h-10 p-1 rounded-md text-xs flex items-center justify-center relative cursor-pointer transition-all duration-200
                     ${
                       isToday(day)
-                        ? "bg-blue-600 text-white font-medium"
+                        ? "bg-primary/60 text-white font-medium"
                         : hasEvents
                           ? "bg-slate-100 text-slate-900 hover:bg-slate-200"
                           : "text-slate-700 hover:bg-slate-50"

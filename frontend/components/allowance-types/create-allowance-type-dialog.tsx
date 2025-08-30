@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Plus, Loader2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import {
@@ -20,21 +20,25 @@ import { toast } from "sonner"
 import { IAllowanceTypeFormData, ALLOWANCE_FREQUENCIES } from "@/types/types.utils"
 import { createAllowanceType } from "@/lib/utils"
 import { Checkbox } from "../ui/checkbox"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+import { useSelector } from "react-redux"
 
 interface CreateAllowanceTypeDialogProps {
-  institutionId: number
   onSuccess: (newAllowanceType: any) => void
   disabled?: boolean,
-  isEmbeded?:boolean
+  isEmbeded?:boolean,
+  isOpen: boolean,
+  onOpenChange: (open: boolean) => void
 }
 
 export function CreateAllowanceTypeDialog({
-  institutionId,
   onSuccess,
   disabled = false,
   isEmbeded = false,
+  isOpen,
+  onOpenChange
 }: CreateAllowanceTypeDialogProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const currentInstitution = useSelector(selectSelectedInstitution);
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<IAllowanceTypeFormData>({
     name: "",
@@ -55,6 +59,7 @@ export function CreateAllowanceTypeDialog({
   }
 
   const handleSubmit = async () => {
+    if(!currentInstitution) {return}
     if (!formData.name || !formData.description) {
       toast.error("Please fill in all required fields")
       return
@@ -80,7 +85,7 @@ export function CreateAllowanceTypeDialog({
       }
 
       const newAllowanceType = await createAllowanceType({
-        institutionId,
+        institutionId:currentInstitution.id,
         allowanceTypeData,
       })
 
@@ -88,7 +93,7 @@ export function CreateAllowanceTypeDialog({
         onSuccess(newAllowanceType)
         toast.success("Allowance type created successfully")
         resetFormData()
-        setIsOpen(false)
+        onOpenChange(false)
       } else {
         toast.error("Failed to create allowance type")
       }
@@ -100,21 +105,15 @@ export function CreateAllowanceTypeDialog({
     }
   }
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open)
-    if (!open) {
+  useEffect(() => { 
+    if (!isOpen) {
       resetFormData()
     }
-  }
+  }, [isOpen])
+
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant={isEmbeded ? "outline":"default"} className="flex items-center gap-2" disabled={disabled}>
-          <Plus className="h-4 w-4" />
-          {!isEmbeded ? "Create Allowance Type":""}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[650px] rounded-2xl border-0 shadow-2xl">
         <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
           <DialogTitle className="text-2xl font-bold text-gray-900">Add Allowance Type</DialogTitle>
@@ -243,7 +242,7 @@ export function CreateAllowanceTypeDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button

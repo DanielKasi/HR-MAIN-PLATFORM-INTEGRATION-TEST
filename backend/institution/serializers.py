@@ -7,12 +7,18 @@ from .models import (
     Institution,
     Branch,
     UserBranch,
-    InstitutionDocument,
+    InstitutionKYCDocument,
     InstitutionBankType,
     InstitutionWorkingDays,
     InstitutionBankAccount,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionPenaltyConfig,
+    BranchPenaltyConfig,
+    BranchWorkingDays,
+    BranchDay,
+    BranchShift,
+    BranchLocationComparisonConfig
 )
 import os
 from django.db import transaction
@@ -26,35 +32,55 @@ from settings.models import SystemDay
 logger = logging.getLogger(__name__)
 
 
-class InstitutionDocumentSerializer(serializers.ModelSerializer):
-
+class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InstitutionDocument
+        model = InstitutionKYCDocument
         fields = [
             "id",
             "institution",
             "document_title",
             "document_file",
-            "document_type",
-            "document_size",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "institution",
             "created_at",
             "updated_at",
         ]
 
-    def validate_file(self, value):
-        if value:
-            # Check file size (10MB limit)
-            if value.document_size > 10 * 1024 * 1024:
-                raise serializers.ValidationError("File size cannot exceed 10MB.")
 
-            # Check file extension
-            allowed_extensions = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"]
-            ext = os.path.splitext(value.document_title)[1].lower()
-            if ext not in allowed_extensions:
-                raise serializers.ValidationError(
-                    f"File type {ext} not allowed. Allowed types: {', '.join(allowed_extensions)}"
-                )
-        return value
+class InstitutionKYCDocumentBulkCreateSerializer(serializers.Serializer):
+    document_file = serializers.ListField(
+        child=serializers.FileField(), write_only=True, required=True
+    )
+    document_title = serializers.ListField(
+        child=serializers.CharField(max_length=255), write_only=True, required=True
+    )
+
+    def validate(self, data):
+        if len(data["document_file"]) != len(data["document_title"]):
+            raise serializers.ValidationError("Mismatched file and title counts.")
+        return data
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        institution = request.user.profile.institution
+
+        document_file = validated_data.pop("document_file", [])
+        document_title = validated_data.pop("document_title", [])
+
+        documents = [
+            InstitutionKYCDocument(
+                institution=institution,
+                document_title=title,
+                document_file=file,
+            )
+            for title, file in zip(document_title, document_file)
+        ]
+
+        return InstitutionKYCDocument.objects.bulk_create(documents)
 
 
 class InstitutionSerializer(serializers.ModelSerializer):
@@ -62,19 +88,10 @@ class InstitutionSerializer(serializers.ModelSerializer):
         queryset=CustomUser.objects.all()
     )
     institution_logo = serializers.ImageField(required=False, allow_null=True)
-    documents = InstitutionDocumentSerializer(many=True, read_only=True)
     approval_status_display = serializers.CharField(
         source="get_approval_status_display", read_only=True
     )
-    document_files = serializers.ListField(
-        child=serializers.FileField(), write_only=True, required=False, allow_empty=True
-    )
-    document_titles = serializers.ListField(
-        child=serializers.CharField(max_length=255),
-        write_only=True,
-        required=False,
-        allow_empty=True,
-    )
+
     branches = serializers.SerializerMethodField()
 
     class Meta:
@@ -95,23 +112,20 @@ class InstitutionSerializer(serializers.ModelSerializer):
             "approval_status",
             "approval_status_display",
             "approval_date",
-            "documents",
-            "document_files",
-            "document_titles",
             "branches",
             "is_active",
+            "user_inactivity_time",
+            "is_attendance_penalties_enabled",
         ]
 
     def create(self, validated_data):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create an Institution."
+                {"error": "User must be authenticated to create an Institution."}
             )
 
         institution_owner = validated_data.pop("institution_owner_id")
-        document_files = validated_data.pop("document_files", [])
-        document_titles = validated_data.pop("document_titles", [])
         departments_data = self.context.get("departments", [])
 
         # Log departments data for debugging
@@ -142,15 +156,9 @@ class InstitutionSerializer(serializers.ModelSerializer):
                         department=department,
                         job_position_status="active",
                         created_at=timezone.now(),
+                        salary_min=job_data.get("salary_min", 50000),
+                        salary_max=job_data.get("salary_max", 100000),
                     )
-
-            # Create InstitutionDocuments
-            for file, title in zip(document_files, document_titles):
-                InstitutionDocument.objects.create(
-                    institution=institution,
-                    file=file,
-                    title=title,
-                )
 
         logger.info(
             f"Institution {institution.institution_name} created successfully with {len(departments_data)} departments"
@@ -204,13 +212,13 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
 
         if not user:
             raise serializers.ValidationError(
-                "User must be authenticated to create a bank type."
+                {"error": "User must be authenticated to create a bank type."}
             )
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         validated_data["institution"] = institution
         return super().create(validated_data)
@@ -292,19 +300,19 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has not profile")
+            raise serializers.ValidationError({"error": "User has not profile"})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         try:
             existing_working_days = InstitutionWorkingDays.objects.get(
                 institution=institution
             )
             raise serializers.ValidationError(
-                "Working days already exist for this institution."
+                {"error": "Working days already exist for this institution."}
             )
         except InstitutionWorkingDays.DoesNotExist:
             pass
@@ -324,7 +332,7 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
 
         if not user:
             raise serializers.ValidationError(
-                "User must be authenticated to update working days."
+                {"error": "User must be authenticated to update working days."}
             )
 
         instance.days.set(validated_data.get("days", instance.days.all()))
@@ -339,6 +347,45 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep["days"] = SystemDaySerializer(instance.days, many=True).data
         return rep
+
+
+class BranchDaySerializer(serializers.ModelSerializer):
+    day_name = serializers.CharField(source="day.day_name", read_only=True)
+    day_id = serializers.PrimaryKeyRelatedField(
+        queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
+    )
+
+    class Meta:
+        model = BranchDay
+        fields = ["id", "day_id", "day_name", "day_type"]
+
+
+class BranchWorkingDaysSerializer(serializers.ModelSerializer):
+    branch_days = BranchDaySerializer(many=True)
+
+    class Meta:
+        model = BranchWorkingDays
+        fields = ["id", "branch", "branch_days"]
+        read_only_fields = ["id", "branch"]
+
+    def update(self, instance, validated_data):
+        branch_days_data = validated_data.pop("branch_days", [])
+
+        for bd_data in branch_days_data:
+            day = bd_data.get("day")
+            day_type = bd_data.get("day_type")
+
+            if not day:
+                continue
+
+            branch_day, created = BranchDay.objects.get_or_create(
+                branch_working_days=instance, day=day
+            )
+            if day_type:
+                branch_day.day_type = day_type
+                branch_day.save()
+
+        return instance
 
 
 class InstitutionTaxSerializer(serializers.ModelSerializer):
@@ -371,12 +418,12 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            raise serializers.ValidationError("Institution not found.")
+            raise serializers.ValidationError({"error": "Institution not found."})
 
         validated_data["institution"] = institution
         validated_data["created_by"] = request.user
@@ -387,7 +434,7 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         instance.updated_by = request.user
 
@@ -445,12 +492,16 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
 
         if not tax_rule_percentage and not tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
+                {
+                    "error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
+                }
             )
 
         if tax_rule_percentage and tax_rule_fixed_amount:
             raise serializers.ValidationError(
-                "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
+                {
+                    "error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
+                }
             )
 
         return attrs
@@ -460,11 +511,11 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         institution_tax = validated_data.get("institution_tax")
         if not institution_tax:
-            raise serializers.ValidationError("Institution tax is required.")
+            raise serializers.ValidationError({"error": "Institution tax is required."})
 
         validated_data["created_by"] = request.user
         return super().create(validated_data)
@@ -474,7 +525,7 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
         user = request.user.profile if request.user else None
 
         if not user:
-            raise serializers.ValidationError("User has no profile.")
+            raise serializers.ValidationError({"error": "User has no profile."})
 
         instance.updated_by = request.user
 
@@ -540,7 +591,7 @@ class BranchSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create a branch."
+                {"error": "User must be authenticated to create a branch."}
             )
         validated_data["created_by"] = request.user
         return super().create(validated_data)
@@ -586,7 +637,7 @@ class UserBranchSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError(
-                "User must be authenticated to create a user branch."
+                {"error": "User must be authenticated to create a user branch."}
             )
         return UserBranch.objects.create(created_by=request.user, **validated_data)
 
@@ -653,3 +704,40 @@ class SuccessResponseSerializer(serializers.Serializer):
     success = serializers.BooleanField()
     message = serializers.CharField()
     data = serializers.DictField()
+
+
+class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstitutionPenaltyConfig
+        fields = "__all__"
+
+
+class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BranchPenaltyConfig
+        fields = "__all__"
+
+
+class BranchShiftSerializer(serializers.ModelSerializer):
+    shift_day = serializers.PrimaryKeyRelatedField(
+        queryset=BranchDay.objects.all()
+    )
+    class Meta:
+        model = BranchShift
+        fields = "__all__"
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["shift_day"] = BranchDaySerializer(instance.shift_day).data
+        return ret
+
+class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+    branch_name = serializers.CharField(source='branch.branch_name', read_only=True)
+
+    class Meta:
+        model = BranchLocationComparisonConfig
+        fields = "__all__"
+
+
+
+                  

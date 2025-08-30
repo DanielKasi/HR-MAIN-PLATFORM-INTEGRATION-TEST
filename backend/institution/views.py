@@ -1,5 +1,5 @@
 from datetime import datetime
-from employee.models import Employee
+from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -25,6 +25,13 @@ from .models import (
     InstitutionWorkingDays,
     InstitutionTax,
     InstitutionTaxRule,
+    InstitutionKYCDocument,
+    InstitutionPenaltyConfig,
+    BranchPenaltyConfig,
+    BranchLocationComparisonConfig,
+    BranchWorkingDays,
+    BranchShift,
+    
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -40,18 +47,35 @@ from .serializers import (
     InstitutionWorkingDaysSerializer,
     InstitutionTaxSerializer,
     InstitutionTaxRuleSerializer,
+    InstitutionKYCDocumentSerializer,
+    InstitutionKYCDocumentBulkCreateSerializer,
+    InstitutionPenaltyConfigSerializer,
+    BranchPenaltyConfigSerializer,
+    BranchWorkingDaysSerializer,
+    BranchShiftSerializer,
+    BranchLocationComparisonConfigSerializer
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from django.db.models import Q
+from django.db.models import Count, Sum, Q, F
 from django.contrib.auth import get_user_model
 import logging
 from django.db import transaction
 from utilities.default_data import default_data
 import json
 import uuid
+import json
+import os
+from decimal import Decimal
+from django.utils import timezone
+from leave_mgt.models import LeaveApplication
+from payroll.models import Payslip
+from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db.models import Value, IntegerField
+from rest_framework import parsers
+
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -65,7 +89,6 @@ class DefaultDataAPIView(APIView):
         tags=["Institution Management"],
     )
     def get(self, request):
-        # Add unique IDs to default data
         modified_data = [
             {
                 "id": str(uuid.uuid4()),
@@ -76,6 +99,8 @@ class DefaultDataAPIView(APIView):
                         "id": str(uuid.uuid4()),
                         "name": job["name"],
                         "description": job["description"],
+                        "salary_min": job["salary_min"],
+                        "salary_max": job["salary_max"],
                     }
                     for job in dept["job_positions"]
                 ],
@@ -83,6 +108,154 @@ class DefaultDataAPIView(APIView):
             for dept in default_data
         ]
         return Response(modified_data, status=status.HTTP_200_OK)
+
+
+class BranchWorkingDaysListAPIView(APIView):
+    @extend_schema(
+        responses={200: BranchWorkingDaysSerializer(many=True)},
+        description="Retrieve all working days for a branch.",
+        summary="Get all working days for a branch",
+        tags=["Working Days Management"],
+    )
+    def get(self, request):
+
+        branch_id = request.search_param.get("branch_id")
+
+        working_days = BranchWorkingDays.objects.get(branch=branch_id)
+
+        serializer = BranchWorkingDaysSerializer(working_days, many=True)
+
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={201: BranchWorkingDaysSerializer},
+        description="Create a new working days configuration for a branch.",
+        summary="Create working days on a branch level",
+        tags=["Working Days Management"],
+    )
+    def post(self, request):
+        serializer = BranchWorkingDaysSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            working_days = serializer.save()
+            return Response(
+                BranchWorkingDaysSerializer(working_days).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class BranchWorkingDaysDetailView(APIView):
+    @extend_schema(
+        request=BranchWorkingDaysSerializer,
+        responses={200: BranchWorkingDaysSerializer},
+        description="Update the existing Branch Working Days.",
+        summary="Update branch working days",
+        tags=["Working Days Management"],
+    )
+    def patch(self, request, pk):
+        try:
+            branch_working_days = BranchWorkingDays.objects.get(id=pk)
+        except BranchWorkingDays.DoesNotExist:
+            return Response(
+                {"detail": "Working days configuration not found."}, status=404
+            )
+
+        serializer = BranchWorkingDaysSerializer(
+            branch_working_days, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(
+            {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class InstitutionKYCDocumentListCreateView(APIView):
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+
+    @extend_schema(
+        request=InstitutionKYCDocumentBulkCreateSerializer,
+        responses=InstitutionKYCDocumentBulkCreateSerializer,
+        description="Create a new KYC document for an institution",
+        summary="Create KYC Document",
+        tags=["KYC Documents Management"],
+    )
+    def post(self, request):
+
+        print("\n\nrequest.data:", request.data)
+        serializer = InstitutionKYCDocumentBulkCreateSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            documents = serializer.save()
+            return Response(
+                InstitutionKYCDocumentSerializer(documents, many=True).data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        responses={200: InstitutionKYCDocumentSerializer},
+        description="Retrieve all KYC documents for an institution",
+        summary="Get KYC Documents",
+        tags=["KYC Documents Management"],
+    )
+    def get(self, request):
+        user = request.user.profile if request.user.is_authenticated else None
+
+        institution = user.institution
+
+        kyc_documents = InstitutionKYCDocument.objects.filter(institution=institution)
+
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(kyc_documents, request)
+        serializer = InstitutionKYCDocumentSerializer(paginator_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class InstitutionKYCDocumentDetailView(APIView):
+    @extend_schema(
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Get KYC Document Detail",
+    )
+    def get(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        serializer = InstitutionKYCDocumentSerializer(document)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=InstitutionKYCDocumentSerializer,
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Update KYC Document",
+    )
+    def patch(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        serializer = InstitutionKYCDocumentSerializer(
+            document, data=request.data, partial=True, context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        request=InstitutionKYCDocumentSerializer,
+        responses={200: InstitutionKYCDocumentSerializer},
+        tags=["KYC Documents Management"],
+        summary="Delete KYC Document",
+    )
+    def delete(self, request, document_id):
+        document = get_object_or_404(InstitutionKYCDocument, id=document_id)
+        document.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InstitutionListAPIView(APIView):
@@ -124,12 +297,167 @@ class InstitutionListAPIView(APIView):
                 "departments": departments_data,
             },
         )
+
         if serializer.is_valid():
-            institution = serializer.save()
-            return Response(
-                InstitutionSerializer(institution, context={"user": request.user}).data,
-                status=status.HTTP_201_CREATED,
-            )
+            try:
+                institution = serializer.save()
+                logger.info(
+                    f"Institution created: {institution.institution_name}, Country: {institution.country_code}"
+                )
+
+                # Load defaults from JSON file
+                current_dir = os.path.dirname(__file__)  # institution folder
+                backend_dir = os.path.dirname(current_dir)  # backend folder
+                defaults_path = os.path.join(backend_dir, "utilities", "tax_rules.json")
+                defaults = {}
+
+                try:
+                    with open(defaults_path, "r") as f:
+                        defaults = json.load(f)
+                    logger.info(f"Successfully loaded defaults from {defaults_path}")
+                except FileNotFoundError:
+                    logger.error(f"Tax rules file not found at: {defaults_path}")
+                    return Response(
+                        {
+                            "detail": f"Tax rules configuration file not found at {defaults_path}"
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid JSON in tax rules file: {str(e)}")
+                    return Response(
+                        {"detail": "Invalid tax rules configuration file format"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+
+                # Create global defaults (employee types and work types)
+                global_data = defaults.get("global", {})
+                logger.info(f"Global data found: {bool(global_data)}")
+
+                # Create Employee Types
+                employee_types_data = global_data.get("employee_types", [])
+                logger.info(f"Creating {len(employee_types_data)} employee types")
+
+                for et_data in employee_types_data:
+                    try:
+                        employee_type = EmployeeType.objects.create(
+                            institution=institution, **et_data
+                        )
+                        logger.info(f"Created employee type: {employee_type.name}")
+                    except Exception as e:
+                        logger.error(
+                            f"Error creating employee type {et_data.get('name', 'Unknown')}: {str(e)}"
+                        )
+
+                # Create Work Types
+                work_types_data = global_data.get("work_types", [])
+                logger.info(f"Creating {len(work_types_data)} work types")
+
+                for wt_data in work_types_data:
+                    try:
+                        work_type = WorkType.objects.create(
+                            institution=institution, **wt_data
+                        )
+                        logger.info(f"Created work type: {work_type.name}")
+                    except Exception as e:
+                        logger.error(
+                            f"Error creating work type {wt_data.get('name', 'Unknown')}: {str(e)}"
+                        )
+
+                # Create country-specific taxes if available
+                country = institution.country_code
+                logger.info(f"Institution country code: {country}")
+
+                if country and country in defaults:
+                    country_data = defaults[country]
+                    taxes_data = country_data.get("taxes", [])
+                    logger.info(
+                        f"Creating {len(taxes_data)} taxes for country {country}"
+                    )
+
+                    for tax_data in taxes_data:
+                        try:
+                            tax = InstitutionTax.objects.create(
+                                institution=institution,
+                                tax_name=tax_data["tax_name"],
+                                tax_status=tax_data["tax_status"],
+                                created_by=request.user,  # Add created_by
+                            )
+                            logger.info(f"Created tax: {tax.tax_name}")
+
+                            # Create tax rules
+                            rules_data = tax_data.get("rules", [])
+
+                            for rule_data in rules_data:
+                                try:
+                                    # Create a copy to avoid modifying the original data
+                                    rule_data_copy = rule_data.copy()
+
+                                    # Convert string values to Decimal where applicable
+                                    decimal_fields = [
+                                        "tax_rule_percentage",
+                                        "tax_rule_fixed_amount",
+                                        "salary_from",
+                                        "salary_to",
+                                    ]
+                                    for field in decimal_fields:
+                                        if (
+                                            field in rule_data_copy
+                                            and rule_data_copy[field] is not None
+                                        ):
+                                            try:
+                                                rule_data_copy[field] = Decimal(
+                                                    str(rule_data_copy[field])
+                                                )
+                                            except (ValueError, TypeError) as e:
+                                                logger.error(
+                                                    f"Error converting {field} to Decimal: {str(e)}"
+                                                )
+                                                rule_data_copy[field] = None
+
+                                    tax_rule = InstitutionTaxRule.objects.create(
+                                        institution_tax=tax,
+                                        created_by=request.user,  # Add created_by
+                                        **rule_data_copy,
+                                    )
+
+                                except Exception as e:
+                                    logger.error(
+                                        f"Error creating tax rule {rule_data.get('tax_rule_name', 'Unknown')}: {str(e)}"
+                                    )
+
+                        except Exception as e:
+                            logger.error(
+                                f"Error creating tax {tax_data.get('tax_name', 'Unknown')}: {str(e)}"
+                            )
+                else:
+                    if not country:
+                        logger.warning(
+                            f"No country code determined for institution {institution.institution_name}"
+                        )
+                    else:
+                        logger.warning(
+                            f"No tax defaults found for country '{country}'. Available countries: {list(defaults.keys())}"
+                        )
+
+                return Response(
+                    InstitutionSerializer(
+                        institution, context={"user": request.user}
+                    ).data,
+                    status=status.HTTP_201_CREATED,
+                )
+
+            except Exception as e:
+                logger.error(f"Error creating institution: {str(e)}")
+                import traceback
+
+                logger.error(f"Full traceback: {traceback.format_exc()}")
+                return Response(
+                    {
+                        "detail": "An error occurred while creating the institution. Please try again."
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -182,6 +510,7 @@ class InstitutionDetailAPIView(APIView):
         tags=["Institution Management"],
     )
     def patch(self, request, institution_id):
+        print(f"Request data {request.data}")
         try:
             institution = Institution.objects.get(id=institution_id)
             if institution.institution_owner != request.user:
@@ -222,6 +551,7 @@ class InstitutionBankTypeListAPIView(APIView):
         tags=["Bank Type Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -230,8 +560,15 @@ class InstitutionBankTypeListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_types = InstitutionBankType.objects.filter(
-            institution=institution
+            institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            bank_types = bank_types.filter(
+                Q(bank_fullname__icontains=search_query)
+                | Q(bank_code__icontains=search_query)
+                | Q(br_code__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_types, request)
@@ -322,6 +659,7 @@ class InstitutionBankAccountListAPIView(APIView):
         tags=["Bank Account Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -330,8 +668,15 @@ class InstitutionBankAccountListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         bank_accounts = InstitutionBankAccount.objects.filter(
-            institution_bank__institution=institution
+            institution_bank__institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:
+            bank_accounts = bank_accounts.filter(
+                Q(account_name__icontains=search_query)
+                | Q(account_number__icontains=search_query)
+                | Q(institution_bank__bank_fullname__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_accounts, request)
@@ -429,7 +774,9 @@ class InstitutionWorkingDaysListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        working_days = InstitutionWorkingDays.objects.filter(institution=institution)
+        working_days = InstitutionWorkingDays.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
 
         serializer = InstitutionWorkingDaysSerializer(working_days, many=True)
 
@@ -492,6 +839,7 @@ class InstitutionTaxListAPIView(APIView):
         tags=["Tax Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -499,7 +847,12 @@ class InstitutionTaxListAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
-        taxes = InstitutionTax.objects.filter(institution=institution)
+        taxes = InstitutionTax.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            taxes = taxes.filter(Q(tax_name__icontains=search_query))
 
         serializer = InstitutionTaxSerializer(taxes, many=True)
 
@@ -588,6 +941,7 @@ class InstitutionTaxRuleListAPIView(APIView):
         tags=["Tax Rule Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
 
         try:
@@ -596,8 +950,15 @@ class InstitutionTaxRuleListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         tax_rules = InstitutionTaxRule.objects.filter(
-            institution_tax__institution=institution
+            institution_tax__institution=institution, deleted_at__isnull=True
         )
+
+        if search_query:
+            tax_rules = tax_rules.filter(
+                Q(tax_rule_name__icontains=search_query)
+                | Q(institution_tax__name__icontains=search_query)
+                | Q(institution_tax__tax_name__icontains=search_query)
+            )
 
         serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
 
@@ -705,14 +1066,20 @@ class BranchListAPIView(APIView):
         tags=["Branch Management"],
     )
     def get(self, request):
-        if request.user.is_staff:
-            branches = Branch.objects.all()
-        else:
-            branches = Branch.objects.filter(
-                institution__institution_owner=request.user
-            )
+        search_query = request.query_params.get("search", None)
 
-        branches = branches.order_by("-created_at")
+        branches = Branch.objects.filter(deleted_at__isnull=True).order_by(
+            "-created_at"
+        )
+
+        if not request.user.is_staff:
+            branches = branches.filter(institution__institution_owner=request.user)
+
+        if search_query:
+            branches = branches.filter(
+                Q(branch_name__icontains=search_query)
+                | Q(branch_location__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(branches, request)
@@ -943,8 +1310,6 @@ class UserBranchListCreateView(APIView):
         if serializer.is_valid():
             user_branch = serializer.save()
 
-            from employee.models import Employee
-
             try:
                 employee = Employee.objects.get(user=user_branch.user)
                 if user_branch.is_default:
@@ -1034,9 +1399,13 @@ class DepartmentListAPIView(APIView):
         tags=["Department Management"],
     )
     def get(self, request, institution_id=None):
-        departments = Department.objects.filter(institution_id=institution_id).order_by(
-            "-created_at"
-        )
+        search_query = request.query_params.get("search", None)
+        departments = Department.objects.filter(
+            institution_id=institution_id, deleted_at__isnull=True
+        ).order_by("-created_at")
+
+        if search_query:
+            departments = departments.filter(Q(name__icontains=search_query))
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(departments, request)
         serializer = DepartmentSerializer(paginator_qs, many=True)
@@ -1393,3 +1762,482 @@ class SystemActivationView(APIView):
                 {"error": "Failed to activate HR system", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class DashboardView(APIView):
+    def get(self, request, institution_id):
+        year = request.query_params.get("year", timezone.now().year)
+        try:
+            year = int(year)
+        except ValueError:
+            return Response(
+                {"error": "Invalid year"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        prev_year = year - 1
+        today = timezone.now().date()
+
+        employee_count = Employee.objects.filter(
+            is_active=True, department__institution_id=institution_id
+        ).count()
+
+        dep_count = Department.objects.filter(
+            is_active=True, institution_id=institution_id
+        ).count()
+
+        on_leave_count = (
+            LeaveApplication.objects.filter(
+                status="approved",
+                start_date__lte=today,
+                end_date__gte=today,
+                employee__department__institution_id=institution_id,
+            )
+            .values("employee")
+            .distinct()
+            .count()
+        )
+
+        basic_counts = {
+            "employee_count": employee_count,
+            "department_count": dep_count,
+            "on_leave_count": on_leave_count,
+        }
+
+        current_year_payslips = (
+            Payslip.objects.filter(
+                payroll_period__start_date__year=year,
+                employee__department__institution_id=institution_id,
+            )
+            .annotate(month=ExtractMonth("payroll_period__start_date"))
+            .values("month")
+            .annotate(payroll=Sum("net_salary"))
+            .order_by("month")
+        )
+
+        current_monthly = [
+            {"month": f"{item['month']:02d}", "payroll": item["payroll"] or 0}
+            for item in current_year_payslips
+        ]
+
+        for m in range(1, 13):
+            if not any(x["month"] == f"{m:02d}" for x in current_monthly):
+                current_monthly.append({"month": f"{m:02d}", "payroll": 0})
+        current_monthly.sort(key=lambda x: x["month"])
+
+        past_total = (
+            Payslip.objects.filter(
+                payroll_period__start_date__year=prev_year,
+                employee__department__institution_id=institution_id,
+            ).aggregate(total=Sum("net_salary"))["total"]
+            or 0
+        )
+
+        payroll_data = {"current": current_monthly, "past": {"total": past_total}}
+
+        employees_per_dept = (
+            Employee.objects.filter(
+                date_of_joining__year=year,
+                is_active=True,
+                department__institution_id=institution_id,
+            )
+            .values("department__name")
+            .annotate(
+                count=Count("id"),
+                dept_name=F("department__name"),
+                year=Value(year, output_field=IntegerField()),
+            )
+            .values("dept_name", "count", "year")
+        )
+
+        employees_per_dept_list = list(employees_per_dept)
+
+        gender_data = Employee.objects.filter(
+            is_active=True,
+            department__institution_id=institution_id,
+            date_of_joining__year=year,
+        ).aggregate(
+            employees_count=Count("id"),
+            male=Count("id", filter=Q(gender="male")),
+            female=Count("id", filter=Q(gender="female")),
+            other=Count("id", filter=Q(gender="other")),
+        )
+
+        payroll_by_dept = (
+            Payslip.objects.filter(
+                employee__department__institution_id=institution_id,
+                payroll_period__start_date__year=year,
+            )
+            .values("employee__department__name")
+            .annotate(payroll=Sum("net_salary"), dept=F("employee__department__name"))
+            .values("dept", "payroll")
+        )
+
+        payroll_by_dept_list = list(payroll_by_dept)
+
+        data = {
+            "basic_counts": basic_counts,
+            "payroll_summary": payroll_data,
+            "employees_per_department": employees_per_dept_list,
+            "gender_distribution": gender_data,
+            "payroll_by_department": payroll_by_dept_list,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class InstitutionPenaltyConfigListAPIView(APIView):
+    @extend_schema(
+        tags=["Penalty Configurations"],
+        parameters=[
+            OpenApiParameter(
+                name="search",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Search by penalty type or value type",
+            ),
+            OpenApiParameter(
+                name="penalty_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by penalty type (e.g., late_coming)",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Page number",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Number of results per page",
+            ),
+        ],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        penalty_type = request.query_params.get("penalty_type", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        configs = InstitutionPenaltyConfig.objects.filter(
+            institution=institution,
+            deleted_at__isnull=True
+
+        )
+        
+        if penalty_type:
+            configs = configs.filter(penalty_type=penalty_type)
+
+        if search_query:
+            configs = configs.filter(
+                Q(penalty_type__icontains=search_query)
+                | Q(penalty_value_type__icontains=search_query)
+            )
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = InstitutionPenaltyConfigSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def post(self, request):
+        
+        serializer = InstitutionPenaltyConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class InstitutionPenaltyConfigDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return InstitutionPenaltyConfig.objects.get(pk=pk)
+        except InstitutionPenaltyConfig.DoesNotExist:
+            raise Http404
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def get(self, request, pk):
+        config = self.get_object(pk)
+        serializer = InstitutionPenaltyConfigSerializer(config)
+        return Response(serializer.data)
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def patch(self, request, pk):
+        config = self.get_object(pk)
+        serializer = InstitutionPenaltyConfigSerializer(
+            config, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def delete(self, request, pk):
+        config = self.get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BranchPenaltyConfigListAPIView(APIView):
+    @extend_schema(
+        tags=["Penalty Configurations"],
+        parameters=[
+            OpenApiParameter(
+                name="search",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Search by penalty type or value type",
+            ),
+            OpenApiParameter(
+                name="branch_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by branch ID",
+            ),
+            OpenApiParameter(
+                name="penalty_type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by penalty type (e.g., late_coming)",
+            ),
+            OpenApiParameter(
+                name="page",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Page number",
+            ),
+            OpenApiParameter(
+                name="page_size",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Number of results per page",
+            ),
+        ],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        branch_id = request.query_params.get("branch_id", None)
+        penalty_type = request.query_params.get("penalty_type", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        configs = BranchPenaltyConfig.objects.filter(
+            branch__institution=institution,
+            deleted_at__isnull=True
+        )
+        
+        if branch_id:
+            configs = configs.filter(branch__id=branch_id)
+
+        if penalty_type:
+            configs = configs.filter(penalty_type=penalty_type)
+
+        if search_query:
+            configs = configs.filter(
+                Q(penalty_type__icontains=search_query)
+                | Q(penalty_value_type__icontains=search_query)
+            )
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = BranchPenaltyConfigSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def post(self, request):
+        serializer = BranchPenaltyConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BranchPenaltyConfigDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchPenaltyConfig.objects.get(pk=pk)
+        except BranchPenaltyConfig.DoesNotExist:
+            raise Http404
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def get(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchPenaltyConfigSerializer(config)
+        return Response(serializer.data)
+
+    @extend_schema(tags=["Penalty Configurations"])
+    def patch(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchPenaltyConfigSerializer(
+            config, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(tags=['Penalty Configurations'])
+    def delete(self, request, pk):
+        config = self.get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)    
+
+class BranchLocationComparisonConfigListAPIView(APIView):
+    def get(self, request):
+        search_query = request.query_params.get("search", None)
+        user = request.user.profile
+
+        try:
+            institution = user.institution
+        except AttributeError:
+            return Response({"detail": "User has no institution assigned."}, status=400)
+
+        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution, deleted_at__isnull=True)
+
+        if search_query:
+            configs = configs.filter(branch__branch_name__icontains=search_query)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = BranchLocationComparisonConfigSerializer(paginated_qs, many=True)
+        print("serialized data", serializer.data)
+        return paginator.get_paginated_response(serializer.data)
+
+
+    def post(self, request):
+        serializer = BranchLocationComparisonConfigSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class BranchLocationComparisonConfigDetailAPIView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchLocationComparisonConfig.objects.get(pk=pk)
+        except BranchLocationComparisonConfig.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        config = self.get_object(pk)
+        serializer = BranchLocationComparisonConfigSerializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        config = self.get_object(pk)
+        config.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BranchShiftListCreateView(APIView):
+    @extend_schema(
+        tags=["Branch Shifts"], responses={200, BranchShiftSerializer(many=True)}
+    )
+    def get(self, request):
+        branch_id = request.query_params.get("branch_id", None)
+        search = request.query_params.get("search", None)
+        if not branch_id:
+            return Response(
+                {"detail": "Branch ID is Needed"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            branch = Branch.objects.get(id=branch_id)
+        except Branch.DoesNotExist:
+            return Response(
+                {"detail": "Branch not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        branch_shifts = BranchShift.objects.filter(branch=branch)
+
+        if search:
+            branch_shifts = branch_shifts.filter(Q(name__icontains=search))
+
+        branch_shifts = branch_shifts.order_by("name")
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(branch_shifts, request)
+        serializer = BranchShiftSerializer(paginated_qs, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    @extend_schema(
+        tags=["Branch Shifts"],
+        responses={201, BranchShiftSerializer(many=True)},
+        request=BranchShiftSerializer,
+    )
+    def post(self, request):
+        serializer = BranchShiftSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BranchShiftDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return BranchShift.objects.get(pk=pk)
+        except BranchShift.DoesNotExist:
+            raise Http404
+
+    @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
+    def get(self, request, pk):
+        branch_shift = self.get_object(pk)
+        serializer = BranchShiftSerializer(branch_shift)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Branch Shifts"],
+        responses={200, BranchShiftSerializer},
+        request=BranchShiftSerializer,
+    )
+    def patch(self, request, pk):
+        branch_shift = self.get_object(pk)
+        serializer = BranchShiftSerializer(
+            branch_shift, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(tags=["Branch Shifts"], responses={204: None})
+    def delete(self, request, pk):
+        branch_shift = self.get_object(pk)
+        branch_shift.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,35 +1,78 @@
-import datetime
 from urllib.parse import urlparse
 from django.utils import timezone
 from django.http import HttpResponseForbidden
 from functools import wraps
-from utilities.enums import (
-    CashFlowClassification,
-    IncomeStatementClassification,
-    TransactionType,
-)
-import secrets
 import hashlib
 from users.models import OneTimePassword
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django.conf import settings
 import logging
-from urllib.parse import urlparse
-from django.utils.http import urlencode
 import secrets
-from datetime import timedelta
-from django.utils import timezone
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.conf import settings
 from django.core.mail import send_mail
-import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 from users.models import Role, RolePermission, Permission, UserRole
+
+
+def custom_parse_date(value: str):
+    if not value:
+        return None
+
+    value = value.strip().replace("“", "").replace("”", "")
+
+    if " " in value:
+        value = value.split()[0]
+
+    formats = ["%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d"]
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError("Invalid date format. Use YYYY-MM-DD, YYYY/MM/DD, or YYYY.MM.DD")
+
+
+def get_gender_salutation(user):
+    """
+    Returns appropriate salutation based on user's gender.
+
+    Args:
+        user: User object with gender field
+
+    Returns:
+        str: Appropriate salutation (Mr., Ms., or empty string)
+    """
+    if not hasattr(user, "gender") or not user.gender:
+        return ""
+
+    gender_salutations = {
+        "male": "Mr.",
+        "female": "Madam",
+        "other": "",  # No salutation for 'other' or when gender is not specified
+    }
+
+    return gender_salutations.get(user.gender.lower(), "")
+
+
+def get_personalized_greeting(user):
+    """
+    Returns a personalized greeting with salutation and name.
+
+    Args:
+        user: User object with gender and fullname fields
+
+    Returns:
+        str: Personalized greeting like "Mr. John Doe" or "Ms. Jane Smith"
+    """
+    salutation = get_gender_salutation(user)
+    fullname = getattr(user, "fullname", "there")
+
+    if salutation:
+        return f"{salutation} {fullname}"
+    return fullname
 
 
 def get_or_create_default_role_with_permissions(institution):
@@ -58,7 +101,13 @@ def get_or_create_default_role_with_permissions(institution):
 
 
 def send_activation_confirmation_email(
-    owner_fullname, owner_email, institution_name, branches, departments, employees
+    owner_fullname,
+    owner_email,
+    institution_name,
+    branches,
+    departments,
+    employees,
+    owner_user=None,
 ):
     """
     Sends an email to the owner confirming the activation of the institution.
@@ -67,14 +116,20 @@ def send_activation_confirmation_email(
     try:
         subject = "Perrac Module Activation Confirmation"
 
+        # Get personalized greeting if user object is available
+        if owner_user:
+            personalized_name = get_personalized_greeting(owner_user)
+        else:
+            personalized_name = owner_fullname
+
         context = {
-            "owner_full_name": owner_fullname,
+            "owner_full_name": personalized_name,
             "owner_email": owner_email,
             "institution_name": institution_name,
             "branches": len(branches),
             "departments": len(departments),
             "employees": len(employees),
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
         }
 
         # Render HTML template
@@ -124,7 +179,7 @@ def create_and_institution_otp(user_id, purpose=None, expiry_minutes=15):
     otp = generate_otp()
     otp_hash = hash_otp(user_id, otp)
 
-    expiry_time = timezone.now() + datetime.timedelta(minutes=expiry_minutes)
+    expiry_time = timezone.now() + timedelta(minutes=expiry_minutes)
 
     if purpose:
         cleanup_existing_otps(user_id, purpose)
@@ -210,27 +265,29 @@ def send_plain_email(receivers, subject, body, fail_silently=False):
 
 
 def send_otp_to_user(user, otp):
-    try:
-        subject = "Verify Your Account"
+    subject = "Verify Your Account"
 
-        context = {"user": user, "otp_code": otp, "year": datetime.datetime.now().year}
+    context = {
+        "user": user,
+        "otp_code": otp,
+        "year": datetime.now().year,
+        "personalized_greeting": get_personalized_greeting(user),
+    }
 
-        # Render HTML template
-        html_message = render_to_string(
-            "users/emails/signup_otp_verification.html", context
-        )
-        plain_message = strip_tags(html_message)
+    # Render HTML template
+    html_message = render_to_string(
+        "users/emails/signup_otp_verification.html", context
+    )
+    plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-        )
-        return True
-    except Exception as e:
-        return False
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+    )
+    return True
 
 
 def build_password_link(request, token: str) -> str:
@@ -258,38 +315,38 @@ def create_and_institution_token(user, purpose="registration", expiry_minutes=15
 
 
 def send_password_link_to_user(user, link):
-    try:
-        subject = "Set Your Password"
-        context = {
-            "link": link,
-            "user": user,
-            "year": datetime.datetime.now().year,
-        }
-        html_message = render_to_string(
-            "institutions/emails/signup_link_email.html", context
-        )
-        plain_message = strip_tags(html_message)
+    subject = "Set Your Password"
+    context = {
+        "link": link,
+        "user": user,
+        "fullname": user.fullname,
+        "year": datetime.now().year,
+        "personalized_greeting": get_personalized_greeting(user),
+    }
+    html_message = render_to_string(
+        "institutions/emails/signup_link_email.html", context
+    )
+    plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-        )
-        return True
-    except Exception as e:
-
-        return False
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+    )
+    return True
+    print("\n\n Password code sent to ", user)
 
 
 def send_password_reset_link_to_user(user, link):
     try:
-        subject = "Set Your Password"
+        subject = "Reset Your Password"
         context = {
             "link": link,
             "user": user,
-            "year": datetime.datetime.now().year,
+            "year": datetime.now().year,
+            "personalized_greeting": get_personalized_greeting(user),
         }
         html_message = render_to_string("forgot-password/password-reset.html", context)
         plain_message = strip_tags(html_message)
@@ -303,7 +360,6 @@ def send_password_reset_link_to_user(user, link):
         )
         return True
     except Exception as e:
-
         return False
 
 

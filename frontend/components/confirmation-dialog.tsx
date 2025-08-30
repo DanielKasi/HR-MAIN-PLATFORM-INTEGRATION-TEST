@@ -17,6 +17,7 @@ interface ConfirmationDialogProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  disabled?: boolean;
   confirmText?: string;
   cancelText?: string;
 }
@@ -27,6 +28,7 @@ export function ConfirmationDialog({
   onConfirm,
   title,
   description,
+  disabled,
   confirmText = "Confirm",
   cancelText = "Cancel",
 }: ConfirmationDialogProps) {
@@ -38,8 +40,8 @@ export function ConfirmationDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>{confirmText}</AlertDialogAction>
+          <AlertDialogCancel disabled={disabled}>{cancelText}</AlertDialogCancel>
+          <AlertDialogAction disabled={disabled} onClick={onConfirm}>{confirmText}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

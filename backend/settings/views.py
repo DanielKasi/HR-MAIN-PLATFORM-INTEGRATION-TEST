@@ -7,7 +7,6 @@ from .serializers import SystemConfigurationSerializer, SystemDaySerializer
 from utilities.pagination import CustomPageNumberPagination
 from slugify import slugify
 
-
 class SystemDayListVIew(APIView):
     @extend_schema(
         description="Retrieve a list of system days.",
@@ -27,7 +26,7 @@ class SystemConfigurationListCreateAPIView(APIView):
         tags=["System Configurations"],
     )
     def get(self, request):
-        queryset = SystemConfiguration.objects.all().order_by("-id")
+        queryset = SystemConfiguration.objects.filter(deleted_at__isnull=True).order_by("-id")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = SystemConfigurationSerializer(paginated_qs, many=True)

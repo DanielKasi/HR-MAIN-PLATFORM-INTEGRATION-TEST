@@ -12,6 +12,7 @@ import { Providers } from "./providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WebSocketProvider } from "@/lib/WebSocketProvider";
 import { cn } from "@/lib/utils";
+import LogoutWarningPopup from "@/components/inactivity/logout-warning-popup";
 
 // const Outfit = Outfit({subsets: ["latin"], weight:['100', '200', '300', '400', '500', '600', '700', '800', '900']});
 const font = Outfit({ subsets: ["latin"] });
@@ -20,7 +21,7 @@ const font = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PERACOSOFT",
   description: "A comprehensive SaaS solution for organisation management",
-  generator: "v0.dev",
+  
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -37,8 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           defaultTheme="light"
         >
           <Providers>
+              <LogoutWarningPopup/>
             <WebSocketProvider>{children}</WebSocketProvider>
-            <Toaster duration={10000} position={"top-right"} />
+            <Toaster duration={1000} position={"top-right"} />
           </Providers>
         </ThemeProvider>
       </body>

@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 class BaseModel(models.Model):
     created_by = models.ForeignKey(
@@ -11,8 +11,6 @@ class BaseModel(models.Model):
         blank=True,
         related_name="%(class)s_created_by",
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         "users.Profile",
         on_delete=models.SET_NULL,
@@ -25,7 +23,7 @@ class BaseModel(models.Model):
         abstract = True
     
 
-class Project(BaseModel, UtilityBaseModel):
+class Project(BaseModel, SoftDeletableTimeStampedModel):
     PROJECT_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("planning", "Planning"),
@@ -75,7 +73,7 @@ class Project(BaseModel, UtilityBaseModel):
         ]
 
 
-class ProjectDocument(BaseModel, UtilityBaseModel):
+class ProjectDocument(BaseModel, SoftDeletableTimeStampedModel):
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -96,7 +94,7 @@ class ProjectDocument(BaseModel, UtilityBaseModel):
         ]
 
 
-class Task(BaseModel, UtilityBaseModel):
+class Task(BaseModel, SoftDeletableTimeStampedModel):
     TASK_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
@@ -164,7 +162,7 @@ class Task(BaseModel, UtilityBaseModel):
         ]
 
 
-class TaskDocument(BaseModel, UtilityBaseModel):
+class TaskDocument(BaseModel, SoftDeletableTimeStampedModel):
     task = models.ForeignKey(
         Task,
         on_delete=models.CASCADE,
@@ -185,7 +183,7 @@ class TaskDocument(BaseModel, UtilityBaseModel):
         ]
 
 
-class TaskTimeSheet(BaseModel, UtilityBaseModel):
+class TaskTimeSheet(BaseModel, SoftDeletableTimeStampedModel):
     task = models.OneToOneField(
         Task,
         on_delete=models.CASCADE,

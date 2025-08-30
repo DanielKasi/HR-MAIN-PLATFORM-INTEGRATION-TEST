@@ -18,6 +18,13 @@ from .views import (
     EmployeeContractListAPIView,
     EmployeeContractApprovalAPIView,
     EmployeeWorkingDaysDetailAPIView,
+    ExportAttendanceExcelView,
+    AttendanceReportGetView,
+    EmployeeShiftDetailView,
+    EmployeeShiftListCreateView,
+    EmployeeSalaryAnalyticsAPI,
+    EmployeeAnalyticsAPI,
+    EmployeeAttendanceAnalyticsAPI
 )
 
 urlpatterns = [
@@ -42,7 +49,7 @@ urlpatterns = [
         "template/", EmployeeTemplateDownloadAPIView.as_view(), name="employee-template"
     ),
     path(
-        "<int:employee_id>/delete/",
+        "<int:institution_id>/<int:employee_id>/delete/",
         EmployeeDeleteAPIView.as_view(),
         name="delete-employee",
     ),
@@ -72,20 +79,24 @@ urlpatterns = [
         name="attendance-detail",
     ),
     path(
-        "employee-types/",
+        "employee-types/<int:institution_id>/",
         EmployeeTypeListCreateAPIView.as_view(),
         name="employee-type-list-create",
     ),
     path(
-        "employee-types/<int:pk>/",
+        "employee-types/detail/<int:pk>/",
         EmployeeTypeDetailAPIView.as_view(),
         name="employee-type-detail",
     ),
     path(
-        "work-types/", WorkTypeListCreateAPIView.as_view(), name="work-type-list-create"
+        "work-types/<int:institution_id>/",
+        WorkTypeListCreateAPIView.as_view(),
+        name="work-type-list-create",
     ),
     path(
-        "work-types/<int:pk>/", WorkTypeDetailAPIView.as_view(), name="work-type-detail"
+        "work-types/detail/<int:pk>/",
+        WorkTypeDetailAPIView.as_view(),
+        name="work-type-detail",
     ),
     path(
         "employee-contracts/<int:pk>/",
@@ -101,5 +112,36 @@ urlpatterns = [
         "contracts/<int:pk>/approve/",
         EmployeeContractApprovalAPIView.as_view(),
         name="employee-contract-approve",
+    ),
+    path(
+        "attendance2excel/",
+        ExportAttendanceExcelView.as_view(),
+        name="export-attendance-2-excel",
+    ),
+    path("attendance-data/", AttendanceReportGetView.as_view(), name="attendance-data"),
+    path(
+        "employee-shifts",
+        EmployeeShiftListCreateView.as_view(),
+        name="employee-shifts-list",
+    ),
+    path(
+        "employee-shifts-detail/<int:pk>/",
+        EmployeeShiftDetailView.as_view(),
+        name="employee-shifts-detail",
+    ),
+    path(
+        'institutions/<int:institution_id>/employee-analytics/',
+        EmployeeAnalyticsAPI.as_view(),
+        name='employee-analytics'
+    ),
+    path(
+        'institutions/<int:institution_id>/attendance-analytics/',
+        EmployeeAttendanceAnalyticsAPI.as_view(),
+        name='attendance-analytics'
+    ),
+    path(
+        'institutions/<int:institution_id>/salary-analytics/',
+        EmployeeSalaryAnalyticsAPI.as_view(),
+        name='salary-analytics'
     ),
 ]

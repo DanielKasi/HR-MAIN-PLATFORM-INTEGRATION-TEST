@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from recruitment.models import (
     JobPosition,
     JobPositionAdvert,
@@ -16,6 +17,9 @@ from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
+from employee.models import Employee, WorkType, EmployeeType
+
+
 
 
 class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
@@ -27,7 +31,7 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     job_position_advert_job_details = serializers.SerializerMethodField()
     positions = serializers.SerializerMethodField()
-    created_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    created_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), required=False)
     reviewed_by = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.all(), required=False, allow_null=True
     )
@@ -118,6 +122,7 @@ class InterviewStageSerializer(serializers.ModelSerializer):
             "interviewers_details",
             "candidates_count",
             "candidates",
+            'feedback_fields',
         ]
 
     def get_candidates(self, obj):
@@ -140,12 +145,64 @@ class InterviewStageSerializer(serializers.ModelSerializer):
         return JobInterview.objects.filter(
             interview_stage=obj, status="scheduled"
         ).count()
+    
+    def validate_feedback_fields(self, value):
+        """
+        Validates the structure of the feedback_fields JSON data.
+        """
+        if not isinstance(value, list):
+            raise ValidationError({"error": "feedback_fields must be a list of objects."})
+
+        # Define valid field types
+        valid_types = ["text", "rating", "checkbox"]
+
+        for field in value:
+            # Check if each item is a dictionary
+            if not isinstance(field, dict):
+                raise ValidationError({"error": "Each feedback field must be an object."})
+
+            # Check for required properties in each field
+            required_props = ["label", "type", "required"]
+            if not all(prop in field for prop in required_props):
+                missing_props = [prop for prop in required_props if prop not in field]
+                raise ValidationError(
+                    {"error": f"Missing required properties in a feedback field: {', '.join(missing_props)}."}
+                )
+
+            # Validate the type of the field
+            if field["type"] not in valid_types:
+                raise ValidationError(
+                    {"error": f"Invalid field type '{field['type']}'. Must be one of: {', '.join(valid_types)}."}
+                )
+
+            # Specific validation for 'rating' type
+            if field["type"] == "rating":
+                if "options" not in field:
+                    raise ValidationError(
+                        {"error": "A 'rating' type field must have an 'options' list."}
+                    )
+                if not isinstance(field["options"], list) or not all(isinstance(i, int) for i in field["options"]):
+                    raise ValidationError(
+                        {"error": "'options' for a 'rating' type must be a list of integers."}
+                    )
+
+            # Ensure 'required' is a boolean
+            if not isinstance(field["required"], bool):
+                raise ValidationError(
+                    {"error": "'required' property must be a boolean."}
+                )
+        
+        return value
+
 
 
 class JobPositionAdvertSerializer(serializers.ModelSerializer):
     applications = serializers.SerializerMethodField(read_only=True)
     job_position_details = serializers.SerializerMethodField()
     interview_stages = serializers.SerializerMethodField(read_only=True)
+    work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all(), required=False)
+    employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all(), required=False)
+    institution = serializers.SerializerMethodField()
 
     class Meta:
         model = JobPositionAdvert
@@ -160,7 +217,40 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
             "extra_information",
             "applications",
             "interview_stages",
+            "work_type",
+            "employee_type",
+            "institution"
         ]
+
+    def get_institution(self, obj):
+        department = getattr(obj.job_position, "department", None)
+        if department and hasattr(department, "institution") and department.institution:
+            institution = department.institution
+            return {
+                "id": institution.id,
+                "name": institution.institution_name
+            }
+        return None    
+
+    def to_representation(self, instance):
+        """Customize output for work_type and employee_type"""
+        representation = super().to_representation(instance)
+
+        # Add work_type details
+        if instance.work_type:
+            representation["work_type"] = {
+                "id": instance.work_type.id,
+                "name": instance.work_type.name 
+            }
+
+        # Add employee_type details
+        if instance.employee_type:
+            representation["employee_type"] = {
+                "id": instance.employee_type.id,
+                "name": instance.employee_type.name  
+            }
+
+        return representation   
 
     def get_applications(self, obj):
         applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
@@ -231,10 +321,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(),
         write_only=True,
         required=False,
-        help_text="List of employee IDs to apply salary change to",
+        help_text="List of employee IDs to apply minimum salary to",
     )
     employees = EmployeeSerializer(many=True, read_only=True)
     required_documents = RequiredDocumentSerializer(many=True, required=False)
+    
+    # Add computed salary fields
+    salary_range_display = serializers.ReadOnlyField()
+    salary_midpoint = serializers.ReadOnlyField()
 
     class Meta:
         model = JobPosition
@@ -247,7 +341,10 @@ class JobPositionSerializer(serializers.ModelSerializer):
             "reports_to",
             "reports_to_details",
             "offer_letter_template",
-            "salary",
+            "salary_min",
+            "salary_max",  # Fixed typo: was "salery_max"
+            "salary_range_display",
+            "salary_midpoint",
             "job_adverts",
             "employees",
             "apply_salary_to_employees",
@@ -278,9 +375,19 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return JobPositionAdvertSerializer(adverts, many=True).data
 
     def validate(self, attrs):
+        # Validate salary range
+        salary_min = attrs.get('salary_min')
+        salary_max = attrs.get('salary_max')
+        
+        if salary_min and salary_max and salary_max < salary_min:
+            raise serializers.ValidationError({
+                'salary_max': 'Maximum salary must be greater than or equal to minimum salary.'
+            })
+
+        # Validate employee IDs
         employee_ids = attrs.get("apply_salary_to_employees", [])
         if employee_ids:
-            from employee.models import Employee
+
 
             invalid_ids = (
                 Employee.objects.exclude(id__in=employee_ids)
@@ -290,13 +397,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
             if invalid_ids:
                 raise serializers.ValidationError(
                     {
-                        "apply_salary_to_employees": f"Some employee IDs are invalid: {list(invalid_ids)}"
+                        "error": f"Some employee IDs are invalid: {list(invalid_ids)}"
                     }
                 )
         return attrs
 
     def create(self, validated_data):
         documents_data = validated_data.pop("required_documents", [])
+        validated_data.pop("apply_salary_to_employees", [])  # Remove this from model creation
 
         job_position = JobPosition.objects.create(**validated_data)
 
@@ -336,15 +444,17 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return job_position
 
     def update(self, instance, validated_data):
-        from employee.models import Employee
 
         employee_ids = validated_data.pop("apply_salary_to_employees", [])
         documents_data = validated_data.pop("required_documents", None)
-        old_salary = instance.salary
-        new_salary = validated_data.get("salary", old_salary)
+        
+        # Get old and new salary_min for comparison
+        old_salary_min = instance.salary_min
+        new_salary_min = validated_data.get("salary_min", old_salary_min)
         
         instance = super().update(instance, validated_data)
 
+        # Update required documents if provided
         if documents_data is not None:
             instance.required_documents.all().delete()
             content_type = ContentType.objects.get_for_model(JobPosition)
@@ -355,10 +465,14 @@ class JobPositionSerializer(serializers.ModelSerializer):
                     **doc
                 )
 
-        if new_salary is not None and old_salary != new_salary and employee_ids:
-            Employee.objects.filter(id__in=employee_ids, position=instance).update(
-                salary=new_salary
-            )
+        # Apply salary_min to selected employees if it changed
+        if (new_salary_min is not None and 
+            old_salary_min != new_salary_min and 
+            employee_ids):
+            Employee.objects.filter(
+                id__in=employee_ids, 
+                position=instance
+            ).update(salary=new_salary_min)
 
         return instance
 
@@ -399,6 +513,6 @@ class JobInterviewSerializer(serializers.ModelSerializer):
 
             if rating is not None and (rating < 1 or rating > 10):
                 raise serializers.ValidationError(
-                    {"rating": "Rating must be between 1 and 10."}
+                    {"error": "Rating must be between 1 and 10."}
                 )
         return attrs

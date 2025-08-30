@@ -1,0 +1,344 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import {
+  getPaginatedEmployeeAllowances,
+  getPaginatedEmployeeAllowancesFromUrl,
+  deleteEmployeeAllowance,
+  getAllowanceTypes,
+  getPaginatedEmployees,
+} from "@/lib/utils";
+import type { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog";
+
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatCurrency } from "@/lib/helpers";
+
+export default function EmployeeAllowancesPage() {
+  const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingAllowance, setEditingAllowance] = useState<IEmployeeAllowance | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all");
+  const [isLoading, setIsLoading] = useState(false);
+  const refreshFunctionRef = useRef<(() => void) | null>(null);
+
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+
+  useEffect(() => {
+    const fetchAllowanceTypes = async () => {
+      if (!selectedInstitution?.id) {
+        return;
+      }
+
+      try {
+        const types = await getAllowanceTypes(selectedInstitution.id);
+        setAllowanceTypes(types);
+      } catch (error) {
+        setAllowanceTypes([]);
+        toast.error("Failed to load allowance types");
+      }
+    };
+
+    fetchAllowanceTypes();
+  }, [selectedInstitution?.id]);
+
+
+
+  const handleFormSuccess = (allowance: any, isEdit: boolean) => {
+    setEditingAllowance(null);
+    if (refreshFunctionRef.current) {
+      refreshFunctionRef.current();
+    }
+    toast.success(isEdit ? "Allowance updated successfully" : "Allowance created successfully")
+    refreshFunctionRef.current?.();
+  }
+
+  const handleAllowanceTypeCreated = (newType: IAllowanceType) => {
+    setAllowanceTypes((prev) => [...prev, newType]);
+  };
+
+  const handleEdit = (allowance: IEmployeeAllowance) => {
+    setEditingAllowance(allowance);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const success = await deleteEmployeeAllowance(id);
+      if (success) {
+        if (refreshFunctionRef.current) {
+          refreshFunctionRef.current();
+        }
+        toast.success("Allowance deleted successfully");
+      } else {
+        toast.error("Failed to delete allowance");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred while deleting the allowance");
+    }
+  };
+
+  const openNewAllowanceDialog = () => {
+    setEditingAllowance(null);
+    setIsDialogOpen(true);
+  };
+
+  if (!selectedInstitution || !selectedInstitution.id) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <span className="ml-2">No institution selected...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header and Filters */}
+      <div className="bg-white rounded-lg border shadow-sm min-h-screen">
+        <div className="p-6 border-gray-200">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-900">Employee Allowances</h1>
+          </div>
+        </div>
+        <div className="p-6 border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex w-full flex-col items-start lg:flex-row lg:items-center gap-4 justify-between">
+              <div className="relative w-full flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search employee allowances..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex lg:flex-1 items-center justify-between">
+
+                <div className="flex items-center gap-4">
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value: string) =>
+                      setStatusFilter(value as "all" | "active" | "inactive")
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={methodFilter}
+                    onValueChange={(value: string) =>
+                      setMethodFilter(value as "all" | "fixed" | "percentage")
+                    }
+                  >
+                    <SelectTrigger className="w-full sm:w-[140px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                      <SelectValue placeholder="All Methods" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Methods</SelectItem>
+                      <SelectItem value="fixed">Fixed Amount</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
+                  <Plus className="md:mr-2 h-4 w-4" />
+                  <span className="">Add Allowance</span>
+                </Button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <PaginatedTableWrapper<IEmployeeAllowance>
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await getPaginatedEmployeeAllowances({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+              });
+            }}
+            fetchFromUrl={getPaginatedEmployeeAllowancesFromUrl}
+            deps={[selectedInstitution?.id, searchTerm]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({ data, loading, refresh }) => {
+
+              useEffect(() => {
+                refreshFunctionRef.current = refresh;
+              }, [refresh]);
+
+              // setRefreshFunction(refresh)
+              if (loading) {
+                return <TableSkeleton rows={10} columns={8} />;
+              }
+
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm
+                      ? "No allowances found matching your search criteria"
+                      : "No employee allowances found"}
+                  </div>
+                );
+              }
+
+              // Apply client-side filters (status and method filters)
+              const filteredResults = data.results.filter((allowance) => {
+                const matchesStatus =
+                  statusFilter === "all" ||
+                  (statusFilter === "active" && allowance.is_active) ||
+                  (statusFilter === "inactive" && !allowance.is_active);
+
+                const matchesMethod =
+                  methodFilter === "all" || allowance.calculation_method === methodFilter;
+
+                return matchesStatus && matchesMethod;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    No allowances found matching the selected filters.
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Desktop Table */}
+                  <div className="block rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Allowance Type</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created Date</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((allowance) => (
+                          <TableRow key={allowance.id}>
+                            <TableCell className="font-medium">
+                              {allowance.employee.user?.fullname || "Unknown Employee"}
+                            </TableCell>
+                            <TableCell>{allowance.allowance_type.name}</TableCell>
+                            <TableCell>
+                              <Badge
+                                className={
+                                  allowance.calculation_method === "percentage"
+                                    ? "bg-blue-100 text-blue-800 border-blue-200"
+                                    : "bg-green-100 text-green-800 border-green-200"
+                                }
+                              >
+                                {allowance.calculation_method === "percentage"
+                                  ? "Percentage"
+                                  : "Fixed Amount"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {`${formatCurrency(allowance.amount)}`}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={
+                                  allowance.is_active
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-gray-100 text-gray-800 border-gray-200"
+                                }
+                              >
+                                {allowance.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(allowance.created_at).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(allowance)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDelete(allowance.id)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+
+                </>
+              );
+            }}
+          </PaginatedTableWrapper>
+        </div>
+      </div>
+
+      {/* Form Dialog */}
+      <EmployeeAllowanceFormDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        editingAllowance={editingAllowance}
+        allowanceTypes={allowanceTypes}
+        institutionId={selectedInstitution.id}
+        onSuccess={handleFormSuccess}
+        onAllowanceTypeCreated={handleAllowanceTypeCreated}
+      />
+    </div>
+  );
+}

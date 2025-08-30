@@ -31,6 +31,7 @@ from .serializers import (
     UserSendForgotPasswordTokenSerializer,
     ResendOTPSerializer,
     ProfileSerializer,
+    LogoutRequestSerializer,
 )
 from .models import (
     CustomUser,
@@ -97,6 +98,7 @@ class UserListAPIView(APIView):
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
+            print(f"otp {otp}")
             send_otp_to_user(user, otp)
 
             cleanup_expired_otps()
@@ -132,6 +134,81 @@ class UserListAPIView(APIView):
 
         serializer = CustomUserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ChangeEmailAndResendOTPAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        request={
+            "type": "object",
+            "properties": {
+                "old_email": {"type": "string", "format": "email"},
+                "new_email": {"type": "string", "format": "email"},
+            },
+            "required": ["old_email", "new_email"],
+        },
+        responses={
+            200: {"message": "string"},
+            400: {"detail": "string"},
+            404: {"detail": "string"},
+        },
+        description="Change user email and resend OTP for registration verification",
+        summary="Change email and resend OTP",
+        tags=["User Management"],
+    )
+    def post(self, request):
+        old_email = request.data.get("old_email")
+        new_email = request.data.get("new_email")
+
+        if not old_email or not new_email:
+            return Response(
+                {"detail": "Both old_email and new_email are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if old_email == new_email:
+            return Response(
+                {"detail": "New email must be different from the old email"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            user = CustomUser.objects.get(email=old_email)
+            if CustomUser.objects.filter(email=new_email).exists():
+                return Response(
+                    {"detail": "New email is already in use"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user.email = new_email
+            user.save()
+
+            otp = create_and_institution_otp(
+                user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
+            )
+            print(f"Resend {otp}")
+            send_otp_to_user(user, otp)
+
+            cleanup_expired_otps()
+
+            logger.info(f"Email changed for user {user.id} from {old_email} to {new_email}, OTP resent")
+            return Response(
+                {"message": f"OTP sent to new email: {new_email}"},
+                status=status.HTTP_200_OK,
+            )
+
+        except CustomUser.DoesNotExist:
+            logger.error(f"User with email {old_email} not found during email change")
+            return Response(
+                {"detail": "User with old email not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            logger.error(f"Error during email change for user with email {old_email}: {str(e)}")
+            return Response(
+                {"detail": "An error occurred during email change"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )        
 
 
 class UserDetailAPIView(APIView):
@@ -225,95 +302,43 @@ class VerifyOTPAPIView(APIView):
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        user_id = serializer.validated_data["user_id"]
+        email = serializer.validated_data["email"]
         otp = serializer.validated_data["otp"]
 
         try:
-            user = CustomUser.objects.get(id=user_id)
+            user = CustomUser.objects.get(email=email)
 
-            success, message = verify_otp(user_id, received_otp=otp)
+            success, message = verify_otp(user.id, received_otp=otp)
 
             if success:
                 user.is_active = True
                 user.is_email_verified = True
                 user.save()
 
-                logger.info(f"User {user_id} verified and activated successfully")
+                logger.info(f"User {user.id} verified and activated successfully")
                 return Response(
                     {"message": "OTP verified successfully. Account activated."},
                     status=status.HTTP_200_OK,
                 )
             else:
-                logger.warning(f"OTP verification failed for user {user_id}: {message}")
+                logger.warning(f"OTP verification failed for user {user.id}: {message}")
                 return Response(
                     {"message": message}, status=status.HTTP_400_BAD_REQUEST
                 )
 
         except CustomUser.DoesNotExist:
-            logger.error(f"User {user_id} not found during OTP verification")
+            logger.error(f"User {user.id} not found during OTP verification")
             return Response(
                 {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error during OTP verification for user {user_id}: {str(e)}")
+            logger.error(f"Error during OTP verification for user {user.id}: {str(e)}")
             return Response(
                 {"detail": "An error occurred during verification"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
-class ResendOTPView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        request=ResendOTPSerializer,
-        responses={200: {"message": "string", "user_id": "integer"}},
-        description="Resend OTP to user",
-        summary="Resend OTP",
-        tags=["User Management"],
-    )
-    def post(self, request):
-        serializer = ResendOTPSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user_id = serializer.validated_data["user_id"]
-
-        # Get the user from the database
-        try:
-            user = CustomUser.objects.get(id=user_id)
-
-            # Don't resend OTP if user is already verified
-            if user.is_email_verified:
-                return Response(
-                    {"message": "User is already verified"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Create and send new OTP
-            otp = create_and_institution_otp(
-                user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
-            )
-            send_otp_to_user(user, otp)
-
-            logger.info(f"OTP resent to user {user_id}")
-            return Response(
-                {"message": "OTP sent successfully", "user_id": user_id},
-                status=status.HTTP_200_OK,
-            )
-        except CustomUser.DoesNotExist:
-            logger.warning(f"User {user_id} not found during OTP resend")
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            logger.error(f"Error resending OTP to user {user_id}: {str(e)}")
-            return Response(
-                {"error": "Failed to resend OTP"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
 
 
 class VerifyPasswordResetAPIView(APIView):
@@ -381,8 +406,8 @@ class ResendOTPAPIView(APIView):
             )
         try:
 
-            user_id = serializer.validated_data["user_id"]
-            user_instance = CustomUser.objects.get(id=user_id)
+            email = serializer.validated_data["email"]
+            user_instance = CustomUser.objects.get(email=email)
             otp = create_and_institution_otp(
                 user_id=user_instance.id, purpose="registration", expiry_minutes=15
             )
@@ -1146,3 +1171,24 @@ class UserDetailsWithInstitutions(APIView):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
+
+class LogoutView(APIView):
+    @extend_schema(
+        request=LogoutRequestSerializer,
+        responses={205: None},
+        description="Invalidate the refresh token to log out the user.",
+        summary="User Logout",
+        tags=["Authentication"],
+    )   
+    def post(self, request):
+        serializer = LogoutRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                refresh_token = serializer.validated_data['refresh']
+                UntypedToken(refresh_token)
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({"detail": "Successfully logged out."}, status=status.HTTP_205_RESET_CONTENT)
+            except (InvalidToken, TokenError) as e:
+                return Response({"detail": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     

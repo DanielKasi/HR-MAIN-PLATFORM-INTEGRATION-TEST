@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
-
+from django.db.models import Q
 from .models import DisciplineType, DisciplinaryAction
 from .serializers import DisciplinaryActionSerializer, DisciplineTypeSerializer
 from utilities.pagination import CustomPageNumberPagination
@@ -21,7 +21,8 @@ class DisciplinaryActionAPIView(APIView):
         summary="List all disciplinary actions",
     )
     def get(self, request):
-
+        search_query = request.query_params.get('search', None)
+        employee_id = request.query_params.get("employee_id")
         user = request.user.profile
 
         if user and user.institution:
@@ -34,8 +35,19 @@ class DisciplinaryActionAPIView(APIView):
                 )
 
         actions = DisciplinaryAction.objects.filter(
-            employee__department__institution=institution
+            employee__department__institution=institution,
+            deleted_at__isnull=True
         )
+
+        if employee_id:
+            actions = actions.filter(employee_id=employee_id)
+
+        if search_query:
+            actions = actions.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(discipline_type__name__icontains=search_query) |
+                Q(incident_date__icontains=search_query)
+            )    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(actions, request)

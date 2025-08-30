@@ -1,4 +1,4 @@
-import { PERMISSION_CODES } from "./types.utils";
+import { PERMISSION_CODES, IInstitutionDocument } from "./types.utils";
 
 export interface IProductCategoryDetail {
   id: number;
@@ -7,11 +7,22 @@ export interface IProductCategoryDetail {
   category_description: string | null;
 }
 
+export type InstitutionApprovalStatus = "pending" | "approved" | "rejected" | "under_review"
+
+export interface IKYCDocument {
+  id: number;
+  institution: number;
+  document_title: string;
+  document_file: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IUserInstitution {
   id: number;
   institution_email: string,
   approval_date?: string | null,
-  approval_status: string,
+  approval_status: InstitutionApprovalStatus,
   approval_status_display: string,
   institution_owner_id: number;
   institution_name: string;
@@ -22,7 +33,28 @@ export interface IUserInstitution {
   second_phone_number: string;
   latitude: number,
   longitude: number,
-  location: string
+  location: string,
+  is_attendance_penalties_enabled: boolean,
+  user_inactivity_time: number   // In minutes ,
+  country_code: string,
+  documents?: IInstitutionDocument[]
+}
+
+export interface IUserInstitutionFormData {
+  institution_email: string,
+  approval_date?: string | null,
+  approval_status: InstitutionApprovalStatus,
+  approval_status_display: string,
+  institution_name: string;
+  theme_color: null | string;
+  first_phone_number: string;
+  second_phone_number: string;
+  latitude: number,
+  longitude: number,
+  location: string,
+  is_attendance_penalties_enabled: boolean,
+  user_inactivity_time: number   // In minutes ,
+  country_code: string
 }
 
 
@@ -388,6 +420,8 @@ export interface ICustomUser {
 }
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+
+
 
 // export interface IEmployee {
 //   id: number;

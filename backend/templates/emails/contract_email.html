@@ -26,11 +26,11 @@
       "
     >
       <div style="text-align: center; padding-bottom: 20px">
-        <h2 style="color: #003087; margin: 0; font-size: 24px">
+        <h2 style="color: #FF3403; margin: 0; font-size: 24px">
           Your Employment Contract
         </h2>
       </div>
-      <p style="font-size: 16px">Dear {{ employees_name }},</p>
+      <p style="font-size: 16px">{{ salutation }},</p>
       <p style="font-size: 16px">
         Congratulations on your new role as
         <strong>{{ position_title }}</strong> at
@@ -43,7 +43,7 @@
         return a copy to
         <a
           href="mailto:{{ hr_email }}"
-          style="color: #003087; text-decoration: none"
+          style="color: #FF3403; text-decoration: none"
           >{{ hr_email }}</a
         >
         by {{ due_date }}.
@@ -53,7 +53,7 @@
         at
         <a
           href="mailto:{{ hr_email }}"
-          style="color: #003087; text-decoration: none"
+          style="color: #FF3403; text-decoration: none"
           >{{ hr_email }}</a
         >.
       </p>
@@ -63,7 +63,7 @@
           style="
             display: inline-block;
             padding: 10px 20px;
-            background-color: #003087;
+            background-color: #FF3403;
             color: #ffffff;
             text-decoration: none;
             border-radius: 4px;

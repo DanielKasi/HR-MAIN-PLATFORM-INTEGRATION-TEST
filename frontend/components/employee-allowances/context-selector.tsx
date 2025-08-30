@@ -5,7 +5,7 @@ import { Users, Building, Briefcase, Loader2 } from 'lucide-react'
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { InfiniteScrollSelect } from "@/components/infinite-scroll-select"
-import { getDepartments, getJobPositions, getAllEmployees } from "@/lib/utils"
+import { getDepartments, getJobPositions, getPaginatedEmployees } from "@/lib/utils"
 import type { IDepartment, IJobPosition, IEmployee } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -61,8 +61,8 @@ export function ContextSelector({
 
       switch (selectedContext) {
         case 'employee':
-          const employees = await getAllEmployees({ institutionId:currentInstitution.id })
-          data = employees.map((emp: IEmployee) => ({
+          const employees = await getPaginatedEmployees({ institutionId: currentInstitution.id })
+          data = employees.results.map((emp: IEmployee) => ({
             id: emp.id,
             name: emp.user?.fullname || emp.email,
             description: `${emp.email} • ${emp.department?.name || 'No Department'}`
@@ -70,7 +70,7 @@ export function ContextSelector({
           break
 
         case 'department':
-          const departments = await getDepartments({ institutionId:currentInstitution.id })
+          const departments = await getDepartments({ institutionId: currentInstitution.id })
           data = departments.map((dept: IDepartment) => ({
             id: dept.id,
             name: dept.name,
@@ -79,7 +79,7 @@ export function ContextSelector({
           break
 
         case 'job_position':
-          const positions = await getJobPositions({ institutionId:currentInstitution.id })
+          const positions = await getJobPositions({ institutionId: currentInstitution.id })
           data = positions.map((pos: IJobPosition) => ({
             id: pos.id,
             name: pos.name,
@@ -93,7 +93,7 @@ export function ContextSelector({
 
       // Filter by search if provided
       if (search) {
-        data = data.filter(item => 
+        data = data.filter(item =>
           item.name.toLowerCase().includes(search.toLowerCase()) ||
           (item.description && item.description.toLowerCase().includes(search.toLowerCase()))
         )
@@ -130,7 +130,7 @@ export function ContextSelector({
 
   const handleItemSelect = (item: ContextItem) => {
     const isSelected = selectedItems.some(selected => selected.id === item.id)
-    
+
     if (isSelected) {
       // Remove item
       onItemsChange(selectedItems.filter(selected => selected.id !== item.id))
@@ -214,7 +214,7 @@ export function ContextSelector({
             {getContextIcon(selectedContext)}
             Select {getContextLabel(selectedContext)} *
           </Label>
-          
+
           {/* Selected Items Display */}
           {selectedItems.length > 0 && (
             <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
@@ -241,7 +241,7 @@ export function ContextSelector({
                     <button
                       type="button"
                       onClick={() => handleItemSelect(item)}
-                      className="text-orange-600 hover:text-orange-800"
+                      className="text-myOrange hover:text-orange-800"
                       disabled={disabled}
                     >
                       ×
@@ -265,10 +265,10 @@ export function ContextSelector({
             getItemDescription={(item) => item.description || ""}
             placeholder={`Search ${getContextLabel(selectedContext).toLowerCase()}...`}
             searchPlaceholder={`Search ${getContextLabel(selectedContext).toLowerCase()}...`}
-            emptyMessage={`No ${selectedItems.length ? "more":""} ${getContextLabel(selectedContext).toLowerCase()} found`}
-            // className="h-48"
+            emptyMessage={`No ${selectedItems.length ? "more" : ""} ${getContextLabel(selectedContext).toLowerCase()} found`}
+          // className="h-48"
           />
-          
+
           <p className="text-xs text-gray-500">
             Click on items to select/deselect them. You can select multiple {getContextLabel(selectedContext).toLowerCase()}.
           </p>

@@ -5,10 +5,10 @@ from decimal import Decimal
 from users.models import CustomUser
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import UtilityBaseModel
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class LeaveType(UtilityBaseModel):
+class LeaveType(SoftDeletableTimeStampedModel):
     """Leave types like Annual, Sick, Maternity, etc."""
 
     LEAVE_CATEGORIES = [
@@ -141,7 +141,7 @@ class LeaveType(UtilityBaseModel):
         return synced_count
 
 
-class LeaveBalance(UtilityBaseModel):
+class LeaveBalance(SoftDeletableTimeStampedModel):
     """Track leave balances for each employee per leave type per year"""
 
     institution = models.ForeignKey(
@@ -168,7 +168,7 @@ class LeaveBalance(UtilityBaseModel):
             UniqueConstraint(
                 fields=["employee", "leave_type", "year"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_leave_type_per_year_per_employee"
+                name="unique_active_leave_type_per_year_per_employee",
             )
         ]
 
@@ -185,7 +185,7 @@ class LeaveBalance(UtilityBaseModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
 
 
-class LeaveApplication(UtilityBaseModel):
+class LeaveApplication(SoftDeletableTimeStampedModel):
     """Leave application requests"""
 
     STATUS_CHOICES = [
@@ -243,13 +243,13 @@ class LeaveApplication(UtilityBaseModel):
         from django.core.exceptions import ValidationError
 
         if self.start_date and self.end_date and self.start_date > self.end_date:
-            raise ValidationError("End date must be after start date")
+            raise ValidationError({"error": "End date must be after start date"})
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
 
-class LeavePolicy(UtilityBaseModel):
+class LeavePolicy(SoftDeletableTimeStampedModel):
     """Company leave policies and rules"""
 
     institution = models.ForeignKey(
@@ -268,6 +268,14 @@ class LeavePolicy(UtilityBaseModel):
 
     class Meta:
         db_table = "leave_policies"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['leave_type', 'institution'],
+                condition=models.Q(is_active=True),
+                name='unique_active_leave_policy_per_type_institution'
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} - {self.leave_type.name}"
+

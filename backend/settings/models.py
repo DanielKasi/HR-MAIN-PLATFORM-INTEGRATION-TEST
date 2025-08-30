@@ -2,10 +2,10 @@ from django.db import models
 from institution.models import Institution
 from slugify import slugify
 from django.utils import timezone
-from utilities.utility_base_model import UtilityBaseModel   
+from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
-class SystemConfiguration(UtilityBaseModel):
+class SystemConfiguration(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
     content = models.JSONField(default=list, null=True, blank=True)

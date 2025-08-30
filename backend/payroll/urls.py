@@ -64,4 +64,23 @@ urlpatterns = [
         EmployeeTaxDetailAPIView.as_view(),
         name="employee-tax-detail",
     ),
+    path(
+        "payroll-periods/<int:pk>/attendance-report/",
+        PayrollPeriodAttendanceReportAPIView.as_view(),
+        name="payroll-period-attendance-report",
+    ),
+    path(
+        "export-passlips-report2excel/",
+        PayrollPeriodPayslipsExcelReportAPIView.as_view(),
+        name="export-passlips-report-2-excel",
+    ),
+    path(
+        "payslips/<int:payslip_id>/download/",
+        DownloadPayslipPDFView.as_view(),
+        name="payslip-pdf-download",
+    ),
+    path("penalties/", EmployeePenaltyListAPIView.as_view(), name="employee-penalty-list"),
+    path("penalties/<int:pk>/", EmployeePenaltyDetailAPIView.as_view(), name="employee-penalty-detail"),
+
+
 ]

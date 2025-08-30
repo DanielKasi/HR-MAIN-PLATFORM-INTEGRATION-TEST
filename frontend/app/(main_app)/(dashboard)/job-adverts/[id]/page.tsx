@@ -1,0 +1,514 @@
+"use client";
+
+import {useState, useEffect} from "react";
+import {useRouter, useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {
+  Megaphone,
+  ArrowLeft,
+  Edit,
+  Calendar,
+  Briefcase,
+  Building2,
+  User,
+  FileText,
+  X,
+} from "lucide-react";
+
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Skeleton} from "@/components/ui/skeleton";
+import {Separator} from "@/components/ui/separator";
+
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert} from "@/lib/utils";
+import type {JobPositionAdvert, IJobPosition, JobAdvertStatus} from "@/types/types.utils";
+import {toast} from "sonner";
+import {formatCurrency} from "@/lib/helpers";
+import RichTextDisplay from "@/components/common/rich-text-display";
+
+const getStatusColor = (status: JobAdvertStatus) => {
+  switch (status) {
+    case "active":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "expired":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "closed":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const isExpired = (expiryDate: string) => {
+  return new Date(expiryDate) < new Date();
+};
+
+export default function JobAdvertDetailsPage() {
+  const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null);
+  const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [applicationsCount, setApplicationsCount] = useState<number>(0);
+  const [interviewStagesCount, setInterviewStagesCount] = useState<number>(0);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const router = useRouter();
+  const params = useParams();
+  const jobAdvertId = Number.parseInt(params.id as string);
+
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const selectedBranch = useSelector(selectSelectedBranch);
+
+  useEffect(() => {
+    if (!selectedInstitution || !selectedBranch) {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (isNaN(jobAdvertId)) {
+      toast.error("Invalid job opening ID");
+      router.push("/job-adverts");
+      return;
+    }
+
+    fetchJobAdvertDetails();
+  }, [selectedInstitution, selectedBranch, jobAdvertId, router]);
+
+  const fetchJobAdvertDetails = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      const fetchedJobAdvert = await getJobPositionAdvertById({advertId: jobAdvertId});
+
+      if (!fetchedJobAdvert) {
+        return null;
+      }
+
+      const fetchedApplications = fetchedJobAdvert.applications;
+
+      setJobAdvert(fetchedJobAdvert);
+
+      // Fetch job position details
+      const fetchedJobPosition = await getJobPosition({
+        jobPositionId: fetchedJobAdvert.job_position,
+      });
+      if (fetchedJobPosition) {
+        setJobPosition(fetchedJobPosition);
+      } else {
+        setError("Job opening not found");
+        toast.error("Job opening not found");
+      }
+
+      if (fetchedApplications) {
+        setApplicationsCount(fetchedApplications.length);
+      }
+
+      const fetchedInterviewStages = fetchedJobAdvert.interview_stages;
+
+      setJobAdvert(fetchedJobAdvert);
+
+      if (fetchedInterviewStages) {
+        setInterviewStagesCount(fetchedInterviewStages.length);
+      }
+    } catch (err) {
+      setError("Failed to fetch job opening details");
+      toast.error("Failed to load job opening details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    router.push("/job-adverts");
+  };
+
+  const handleEdit = () => {
+    router.push(`/job-adverts/${jobAdvertId}/edit`);
+  };
+
+  const handleViewApplications = () => {
+    router.push(`/job-adverts/${jobAdvertId}/applications`);
+  };
+
+  const handleViewInterviewStages = () => {
+    router.push(`/job-adverts/${jobAdvertId}/interview-stages`);
+  };
+
+  const handleViewInterviews = () => {
+    router.push(`/job-adverts/${jobAdvertId}/interviews`);
+  };
+
+  const handleCloseAdvert = async () => {
+    if (!jobAdvert) return;
+
+    try {
+      setIsClosing(true);
+
+      const updatedAdvert = await updateJobPositionAdvert({
+        advertId: jobAdvert.id,
+        advertData: {job_position_advert_status: "closed"},
+      });
+
+      if (updatedAdvert) {
+        setJobAdvert(updatedAdvert);
+        toast.success("Job opening closed successfully!");
+      } else {
+        toast.error("Failed to close job opening");
+      }
+    } catch (error) {
+      toast.error("Failed to close job opening");
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  if (!selectedInstitution || !selectedBranch) {
+    return <div>Loading...</div>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full p-6">
+        <div className="w-full space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+
+          {/* Main Card Skeleton */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-7 w-64" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Skeleton className="h-20 w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !jobAdvert) {
+    return (
+      <div className="w-full h-full p-6">
+        <div className="w-full max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Job Openings
+            </Button>
+          </div>
+          <Card className="p-12 text-center w-full">
+            <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Job Opening Not Found</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={handleBack}>Go Back</Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const expired = isExpired(jobAdvert.expiry_date);
+
+  return (
+    <div className="w-full h-full bg-gray-50 rounded-xl p-6">
+      <div className="w-full space-y-8">
+        {/* Header */}
+        <div className="grid grid-cols-1 md:flex items-center justify-between">
+          <div className="">
+            <div className="grid grid-cols-1 md:flex items-center justify-start gap-2">
+              <div className="flex flex-wrap items-center sm:gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="flex items-center gap-2 rounded-full aspect-square"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+                <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening"}</CardTitle>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewApplications}
+                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
+                  title={`${applicationsCount} Applications`}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{applicationsCount} Applications</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewInterviewStages}
+                  className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
+                  title={`${interviewStagesCount} Interview Stages`}
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{interviewStagesCount} Interview Stages</span>
+                </Button>
+                            <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)} ml-0`}>
+              {jobAdvert.job_position_advert_status.toUpperCase()}
+            </Badge>
+            {expired && <Badge variant="destructive">EXPIRED</Badge>}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {jobAdvert.job_position_advert_status !== "closed" && (
+              <Button
+                variant="outline"
+                onClick={handleCloseAdvert}
+                disabled={isClosing}
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 px-2 py-1 text-sm sm:px-3 sm:py-2"
+              >
+                {isClosing ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="hidden sm:inline">Closing...</span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4" />
+                    <span className="hidden sm:inline">Close Job Opening</span>
+                  </>
+                )}
+              </Button>
+            )}
+            <Button onClick={handleEdit} className="flex items-center gap-2 px-3 py-2 text-sm">
+              <Edit className="h-4 w-4" />
+              Edit Job Opening
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Details Card */}
+        <Card className="bg-transparent shadow-none border-0">
+          <CardHeader className="py-1 my-0">
+            <div className="flex items-start justify-between">
+              {jobPosition && (
+              <>
+                <div className="">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Job Opening Details
+                  </h3>
+                  <div className="bg-muted/50 py-1 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      {jobPosition.salary_max || jobPosition.salary_min ? (
+                        <p className="flex items-center gap-1 text-lg font-bold text-green-600">
+                          {formatCurrency(jobPosition.salary_min || 0)} -{" "}
+                          {formatCurrency(jobPosition.salary_max || 0)}
+                        </p>
+                      ) : (
+                        <> </>
+                      )}
+                    </div>
+                    {jobPosition.description && (
+                      <RichTextDisplay
+                        className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
+                        htmlContent={jobPosition.description}
+                      />
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-lg font-bold">
+                  <Calendar className="h-4 w-4" />
+                  {formatDate(jobAdvert.expiry_date)}
+                </div>
+                <p className="text-sm text-muted-foreground">Expiry Date</p>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Advert Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Advert Information */}
+              <Card className="w-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Megaphone className="h-5 w-5" />
+                    Opening Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium">Status</p>
+                    <Badge
+                      className={`text-xs ${getStatusColor(jobAdvert.job_position_advert_status)}`}
+                    >
+                      {jobAdvert.job_position_advert_status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Published Date</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(jobAdvert.published_date)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Expiry Date</p>
+                    <p
+                      className={`text-sm ${expired ? "text-red-600 font-medium" : "text-muted-foreground"}`}
+                    >
+                      {formatDate(jobAdvert.expiry_date)}
+                      {expired && " (EXPIRED)"}
+                    </p>
+                  </div>
+                  {jobAdvert.number_of_employees_expected && (
+                    <div>
+                      <p className="text-sm font-medium">Expected Employees</p>
+                      <p className="text-sm text-muted-foreground">
+                        {jobAdvert.number_of_employees_expected}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Department & Reporting */}
+              {jobPosition && (
+                <Card className="w-full">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Department & Reporting
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium">Department</p>
+                      <p className="text-sm text-muted-foreground">
+                        {jobPosition.department_details?.name}
+                      </p>
+                    </div>
+                    {jobPosition.reports_to_details ? (
+                      <>
+                        <div>
+                          <p className="text-sm font-medium">Reports To</p>
+                          <p className="text-sm text-muted-foreground">
+                            {jobPosition.reports_to_details.name}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Manager Email</p>
+                          <p className="text-sm text-muted-foreground">
+                            {jobPosition.reports_to_details.email}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-4">
+                        <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">No direct reporting manager</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Extra Information */}
+            {jobAdvert.extra_information && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Additional Information</h3>
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <RichTextDisplay
+                      className="text-sm leading-relaxed whitespace-pre-wrap"
+                      htmlContent={jobAdvert.extra_information || "-"}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Document Templates */}
+            {jobPosition &&
+              (jobPosition.contract_template || jobPosition.offer_letter_template) && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Available Templates</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {jobPosition.contract_template && (
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <div>
+                                <p className="font-medium">Contract Template</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Employment contract template
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {jobPosition.offer_letter_template && (
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <div>
+                                <p className="font-medium">Offer Letter Template</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Job offer letter template
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+            <Separator />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

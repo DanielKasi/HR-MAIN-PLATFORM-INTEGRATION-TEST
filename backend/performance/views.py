@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from .models import PerformancePolicy
 from .serializers import PerformancePolicySerializer
 from utilities.pagination import CustomPageNumberPagination
+from django.db.models import Q
 
 class PerformancePolicyAPIView(APIView):
 
@@ -14,9 +15,16 @@ class PerformancePolicyAPIView(APIView):
         responses=PerformancePolicySerializer(many=True),
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         policies = PerformancePolicy.objects.filter(
-            institution_id=institution_id
+            institution_id=institution_id,
+            deleted_at__isnull=True
         ).order_by("-effective_date")
+
+        if search_query:
+            policies = policies.filter(
+                Q(title__icontains=search_query)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(policies, request)

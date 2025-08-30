@@ -29,6 +29,7 @@ from django.core.files.base import ContentFile
 from weasyprint import HTML
 from employee.models import EmployeeContract, Employee
 import logging
+from django.db.models import Q
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -41,9 +42,18 @@ class DocumentTypeListCreateAPIView(APIView):
         responses={200: DocumentTypeSerializer(many=True)},
     )
     def get(self, request, institution_id):
-        queryset = DocumentType.objects.filter(institution_id=institution_id).order_by(
-            "-created_at"
-        )
+        search_query = request.query_params.get('search', None)
+        queryset = DocumentType.objects.filter(
+            institution_id=institution_id, 
+            deleted_at__isnull=True,
+        ).order_by("-created_at")
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) | Q(code__icontains=search_query) | 
+                Q(description__icontains=search_query)
+            )
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = DocumentTypeSerializer(paginated_qs, many=True)
@@ -164,6 +174,7 @@ class DocumentTemplateListCreateAPIView(APIView):
         tags=["Document Templates"],
     )
     def get(self, request, institution_id):
+        search_query = request.query_params.get('search', None)
         try:
             Institution.objects.get(pk=institution_id)
         except Institution.DoesNotExist:
@@ -172,8 +183,16 @@ class DocumentTemplateListCreateAPIView(APIView):
             )
 
         templates = DocumentTemplate.objects.filter(
-            document_type__institution=institution_id
+            document_type__institution=institution_id,
+            deleted_at__isnull=True
         ).order_by("-created_at")
+
+        if search_query:    
+            templates = templates.filter(
+                Q(document_type__name__icontains=search_query) |
+                Q(name__icontains=search_query) |
+                Q(template_type__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginated_templates = paginator.paginate_queryset(templates, request)
         serializer = DocumentTemplateSerializer(
@@ -344,13 +363,13 @@ class BaseDocumentView(APIView):
 
         # Define placeholder patterns to match all formats
         placeholder_patterns = [
-            r"\{\{[\w\s\'-]+\}\}",         # {{variable_name}} or {{Employee's Name}}
-            r"\{[\w\s\'-]+\}",            # {variable_name} or {Employee's Name}
-            r"\[\[[\w\s\'-]+\]\]",        # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",         # [variable_name] or [Parent]
-            r"<<[\w\s\'-]+>>",            # <<variable_name>> or <<Employee's Name>>
-            r"<[\w\s\'-]+>",              # <variable_name> or <Employee's Name>
-            r"([\w\s\'-]+?)\s*:?\s*_{10,}" # Phrase: __________
+            r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
+            r"\{[\w\s\'-]+\}",  # {variable_name} or {Employee's Name}
+            r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
+            r"\[[\w\s\'-]*\w+\]",  # [variable_name] or [Parent]
+            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
+            r"<[\w\s\'-]+>",  # <variable_name> or <Employee's Name>
+            r"([\w\s\'-]+?)\s*:?\s*_{10,}",  # Phrase: __________
         ]
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, preview, re.IGNORECASE)
@@ -360,7 +379,11 @@ class BaseDocumentView(APIView):
             match = next(m for m in match_tuple if m)
             if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
                 # Handle underscore placeholders (e.g., "Name: ________")
-                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE).group(1).strip()
+                phrase = (
+                    re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE)
+                    .group(1)
+                    .strip()
+                )
                 normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
                 value = normalized_values.get(normalized_key, "__________")
                 replacement = f"{phrase}: {value}"
@@ -389,6 +412,7 @@ class BaseDocumentView(APIView):
                 )
 
         return preview
+
 
 class GenerateDocumentView(BaseDocumentView):
     @extend_schema(
@@ -428,8 +452,12 @@ class GenerateDocumentView(BaseDocumentView):
             ph for ph in required_placeholders if ph in template_placeholders
         ]
 
-        clean_template_placeholders = [p.strip("{}").lower() for p in template_placeholders]
-        all_placeholders = list(set(clean_template_placeholders + required_placeholders))
+        clean_template_placeholders = [
+            p.strip("{}").lower() for p in template_placeholders
+        ]
+        all_placeholders = list(
+            set(clean_template_placeholders + required_placeholders)
+        )
 
         context = request.query_params.get("context")
         context_id = request.query_params.get("context_id")
@@ -449,8 +477,10 @@ class GenerateDocumentView(BaseDocumentView):
                     else ""
                 ),
                 "salary": (
-                    str(onboarding.application.job_position_advert.job_position.salary)
-                    if onboarding.application.job_position_advert.job_position.salary
+                    str(
+                        onboarding.application.job_position_advert.job_position.salary_min
+                    )
+                    if onboarding.application.job_position_advert.job_position.salary_min
                     else ""
                 ),
                 "date": str(datetime.now().date()),
@@ -479,7 +509,9 @@ class GenerateDocumentView(BaseDocumentView):
                 {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        placeholder_data = {ph: {"value": known_values.get(ph, "")} for ph in all_placeholders}
+        placeholder_data = {
+            ph: {"value": known_values.get(ph, "")} for ph in all_placeholders
+        }
         serializer = GenerateDocumentResponseSerializer(
             {"placeholders": placeholder_data, "template_id": template_id}
         )
@@ -533,6 +565,7 @@ class GenerateDocumentView(BaseDocumentView):
             status=status.HTTP_201_CREATED,
         )
 
+
 class DocumentContentPreviewView(BaseDocumentView):
     @extend_schema(
         tags=["Document Generation"],
@@ -552,6 +585,7 @@ class DocumentContentPreviewView(BaseDocumentView):
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class DocumentStatusUpdateView(BaseDocumentView):
     def _generate_pdf(self, content, placeholder_values):
         """Generate a PDF from HTML content using weasyprint, preserving template formatting."""
@@ -565,16 +599,28 @@ class DocumentStatusUpdateView(BaseDocumentView):
             <meta charset="utf-8" />
             <title>Document</title>
             <style>
-            body {{
-                font-family: Arial, sans-serif;
-                font-size: 12pt;
-                margin: 35px;
-            }}
-            h1 {{
-                font-size: 14pt;
-                font-weight: bold;
-                margin: 10px 0;
-            }}
+                @page {{
+                    size: A4 portrait;
+                    margin: 2cm 2.5cm 2cm 2.5cm;  /* Standard document margins */
+                }}
+                body {{
+                    font-family: Arial, sans-serif;
+                    font-size: 12pt;
+                    margin: 35px;
+                    text-align: left;
+                }}
+                p {{
+                    text-align: left;
+                    margin: 0 0 10pt 0;
+                }}
+                h1, h2, h3 {{
+                    font-weight: bold;
+                    margin: 12pt 0 6pt 0;
+                    page-break-after: avoid;
+                }}
+                h1 {{ font-size: 14pt; }}
+                h2 {{ font-size: 12pt; }}
+                /* Preserve inline styles; no overrides for text-align, etc. */
             </style>
         </head>
         <body>
@@ -598,19 +644,43 @@ class DocumentStatusUpdateView(BaseDocumentView):
             "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
         }
 
+        def get_salutation(gender, name=""):
+            """Generate appropriate salutation based on gender."""
+            if not gender:
+                return f"Dear {name}" if name else "Dear Sir/Madam"
+            
+            gender_lower = gender.lower()
+            if gender_lower in ['male', 'm']:
+                return f"Dear Mr. {name}" if name else "Dear Sir"
+            elif gender_lower in ['female', 'f']:
+                return f"Dear Ms. {name}" if name else "Dear Madam"
+            else:
+                # For non-binary, prefer, or other gender identities
+                return f"Dear {name}" if name else "Dear Sir/Madam"
+
         if context == "onboarding":
             job_position = (
                 context_obj.application.job_position_advert.job_position
-                if context_obj.application and context_obj.application.job_position_advert
+                if context_obj.application
+                and context_obj.application.job_position_advert
                 else None
             )
+            
+            # Get gender for salutation
+            gender = None
+            employee_name = ""
+            if context_obj.application:
+                employee_name = context_obj.application.applicant_name or ""
+                # Try to get gender from applicant profile/user
+                if hasattr(context_obj.application, 'applicant') and context_obj.application.applicant:
+                    gender = getattr(context_obj.application.applicant, 'gender', None)
+                elif hasattr(context_obj.application, 'user') and context_obj.application.user:
+                    gender = getattr(context_obj.application.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.application.applicant_name
-                        if context_obj.application
-                        else ""
-                    ),
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
                     "position_title": job_position.name if job_position else "",
                     "institution_name": (
                         context_obj.application.job_position_advert.job_position.department.institution.institution_name
@@ -622,12 +692,18 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
+            
         elif context == "employee":
+            gender = None
+            employee_name = ""
+            if hasattr(context_obj, "user") and context_obj.user:
+                employee_name = context_obj.user.fullname or ""
+                gender = getattr(context_obj.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.user.fullname if hasattr(context_obj, "user") else ""
-                    ),
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
                     "position_title": (
                         context_obj.job_position.name
                         if hasattr(context_obj, "job_position")
@@ -635,22 +711,32 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
+            
         elif context == "leave":
+            gender = None
+            employee_name = ""
+            if hasattr(context_obj, "employee") and hasattr(context_obj.employee, "user"):
+                employee_name = context_obj.employee.user.fullname or ""
+                gender = getattr(context_obj.employee.user, 'gender', None)
+            
             email_values.update(
                 {
-                    "employee_name": (
-                        context_obj.employee.user.fullname
-                        if hasattr(context_obj.employee, "user")
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
+                    "leave_type": (
+                        context_obj.leave_type
+                        if hasattr(context_obj, "leave_type")
                         else ""
                     ),
-                    "leave_type": (
-                        context_obj.leave_type if hasattr(context_obj, "leave_type") else ""
-                    ),
                     "start_date": (
-                        str(context_obj.start_date) if hasattr(context_obj, "start_date") else ""
+                        str(context_obj.start_date)
+                        if hasattr(context_obj, "start_date")
+                        else ""
                     ),
                     "end_date": (
-                        str(context_obj.end_date) if hasattr(context_obj, "end_date") else ""
+                        str(context_obj.end_date)
+                        if hasattr(context_obj, "end_date")
+                        else ""
                     ),
                 }
             )
@@ -658,6 +744,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
         for key in email_values:
             if key in placeholder_values:
                 email_values[key] = placeholder_values[key]
+        
         logger.debug(f"Email values for {context}: {email_values}")
         return email_values
 
@@ -744,13 +831,11 @@ class DocumentStatusUpdateView(BaseDocumentView):
                 if job_position and job_position.contract_template
                 else template.content
             )
-        elif (
-            context == "employee"
-            and hasattr(context_obj, "job_position")
-        ):
+        elif context == "employee" and hasattr(context_obj, "job_position"):
             template_content = (
                 context_obj.job_position.contract_template.content
-                if context_obj.job_position and context_obj.job_position.contract_template
+                if context_obj.job_position
+                and context_obj.job_position.contract_template
                 else template.content
             )
 
@@ -776,7 +861,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
                         employee=context_obj,
                         is_active=False,
                         original_contract=document_file,
-                        
                     )
                     context_obj.status = "issued_contract"
                     context_obj.save()

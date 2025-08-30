@@ -1,0 +1,672 @@
+{
+    "global": {
+        "employee_types": [
+            {
+                "name": "Full-Time",
+                "description": "Full-time employment",
+                "code": "FT"
+            },
+            {
+                "name": "Part-Time",
+                "description": "Part-time employment",
+                "code": "PT"
+            },
+            {
+                "name": "Contractor",
+                "description": "Contract-based employment",
+                "code": "CT"
+            }
+        ],
+        "work_types": [
+            {
+                "name": "Office",
+                "description": "Office-based work",
+                "code": "OF"
+            },
+            {
+                "name": "Remote",
+                "description": "Remote work",
+                "code": "RM"
+            },
+            {
+                "name": "Hybrid",
+                "description": "Hybrid work model",
+                "code": "HY"
+            }
+        ]
+    },
+    "UG": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "Nil rate",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "235000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "10% on excess over 235,000 UGX",
+                        "tax_rule_percentage": "10.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "235000.01",
+                        "salary_to": "335000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "20% on excess over 335,000 UGX + 10,000 UGX",
+                        "tax_rule_percentage": "20.00",
+                        "tax_rule_fixed_amount": "10000.00",
+                        "salary_from": "335000.01",
+                        "salary_to": "410000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "30% on excess over 410,000 UGX + 25,000 UGX",
+                        "tax_rule_percentage": "30.00",
+                        "tax_rule_fixed_amount": "25000.00",
+                        "salary_from": "410000.01",
+                        "salary_to": "10000000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "40% on excess over 10,000,000 UGX + 2,902,000 UGX",
+                        "tax_rule_percentage": "40.00",
+                        "tax_rule_fixed_amount": "2902000.00",
+                        "salary_from": "10000000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "NSSF Employee Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Standard Rate",
+                        "tax_rule_description": "5% of gross monthly salary",
+                        "tax_rule_percentage": "5.00",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Local Service Tax",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Exempt",
+                        "tax_rule_description": "No LST (annual)",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "100000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "5,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "5000.00",
+                        "salary_from": "100000.01",
+                        "salary_to": "200000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "10,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "10000.00",
+                        "salary_from": "200000.01",
+                        "salary_to": "300000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "20,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "20000.00",
+                        "salary_from": "300000.01",
+                        "salary_to": "400000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "30,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "30000.00",
+                        "salary_from": "400000.01",
+                        "salary_to": "500000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "40,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "40000.00",
+                        "salary_from": "500000.01",
+                        "salary_to": "600000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 6",
+                        "tax_rule_description": "60,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "60000.00",
+                        "salary_from": "600000.01",
+                        "salary_to": "700000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 7",
+                        "tax_rule_description": "70,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "70000.00",
+                        "salary_from": "700000.01",
+                        "salary_to": "800000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 8",
+                        "tax_rule_description": "80,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "80000.00",
+                        "salary_from": "800000.01",
+                        "salary_to": "900000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 9",
+                        "tax_rule_description": "90,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "90000.00",
+                        "salary_from": "900000.01",
+                        "salary_to": "1000000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 10",
+                        "tax_rule_description": "100,000 UGX annual",
+                        "tax_rule_percentage": null,
+                        "tax_rule_fixed_amount": "100000.00",
+                        "salary_from": "1000000.01",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "KE": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "10% on first 288,000 KES",
+                        "tax_rule_percentage": "10.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "288000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "25% on next 100,000 KES + 28,800 KES",
+                        "tax_rule_percentage": "25.00",
+                        "tax_rule_fixed_amount": "28800.00",
+                        "salary_from": "288000.01",
+                        "salary_to": "388000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "30% on next 5,612,000 KES + 53,800 KES",
+                        "tax_rule_percentage": "30.00",
+                        "tax_rule_fixed_amount": "53800.00",
+                        "salary_from": "388000.01",
+                        "salary_to": "6000000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "32.5% on next 3,600,000 KES + 1,737,400 KES",
+                        "tax_rule_percentage": "32.50",
+                        "tax_rule_fixed_amount": "1737400.00",
+                        "salary_from": "6000000.01",
+                        "salary_to": "9600000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "35% on excess over 9,600,000 KES + 2,907,400 KES",
+                        "tax_rule_percentage": "35.00",
+                        "tax_rule_fixed_amount": "2907400.00",
+                        "salary_from": "9600000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "NSSF Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Employee Contribution",
+                        "tax_rule_description": "6% of pensionable pay (capped at 18,000 KES per month)",
+                        "tax_rule_percentage": "6.00",
+                        "tax_rule_fixed_amount": "18000.00",
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "SHIF Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Social Health Insurance Fund",
+                        "tax_rule_description": "2.75% of gross salary",
+                        "tax_rule_percentage": "2.75",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Housing Levy",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Affordable Housing Levy",
+                        "tax_rule_description": "1.5% of gross salary",
+                        "tax_rule_percentage": "1.50",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "TZ": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "9% on first 270,000 TZS",
+                        "tax_rule_percentage": "9.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "270000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "20% on next 270,000 TZS + 24,300 TZS",
+                        "tax_rule_percentage": "20.00",
+                        "tax_rule_fixed_amount": "24300.00",
+                        "salary_from": "270000.01",
+                        "salary_to": "540000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "25% on next 540,000 TZS + 78,300 TZS",
+                        "tax_rule_percentage": "25.00",
+                        "tax_rule_fixed_amount": "78300.00",
+                        "salary_from": "540000.01",
+                        "salary_to": "1080000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "30% on excess over 1,080,000 TZS + 213,300 TZS",
+                        "tax_rule_percentage": "30.00",
+                        "tax_rule_fixed_amount": "213300.00",
+                        "salary_from": "1080000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Social Security Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Employee Contribution",
+                        "tax_rule_description": "10% of gross salary",
+                        "tax_rule_percentage": "10.00",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "RW": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "0% on first 30,000 RWF",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "30000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "20% on next 20,000 RWF",
+                        "tax_rule_percentage": "20.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "30000.01",
+                        "salary_to": "50000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "30% on excess over 50,000 RWF + 4,000 RWF",
+                        "tax_rule_percentage": "30.00",
+                        "tax_rule_fixed_amount": "4000.00",
+                        "salary_from": "50000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Social Security Fund",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Employee Contribution",
+                        "tax_rule_description": "3% of gross salary",
+                        "tax_rule_percentage": "3.00",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "NG": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "7% on first 300,000 NGN + relief",
+                        "tax_rule_percentage": "7.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "300000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "11% on next 300,000 NGN + 21,000 NGN",
+                        "tax_rule_percentage": "11.00",
+                        "tax_rule_fixed_amount": "21000.00",
+                        "salary_from": "300000.01",
+                        "salary_to": "600000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "15% on next 500,000 NGN + 54,000 NGN",
+                        "tax_rule_percentage": "15.00",
+                        "tax_rule_fixed_amount": "54000.00",
+                        "salary_from": "600000.01",
+                        "salary_to": "1100000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "19% on next 500,000 NGN + 129,000 NGN",
+                        "tax_rule_percentage": "19.00",
+                        "tax_rule_fixed_amount": "129000.00",
+                        "salary_from": "1100000.01",
+                        "salary_to": "1600000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "21% on next 1,600,000 NGN + 224,000 NGN",
+                        "tax_rule_percentage": "21.00",
+                        "tax_rule_fixed_amount": "224000.00",
+                        "salary_from": "1600000.01",
+                        "salary_to": "3200000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 6",
+                        "tax_rule_description": "24% on excess over 3,200,000 NGN + 560,000 NGN",
+                        "tax_rule_percentage": "24.00",
+                        "tax_rule_fixed_amount": "560000.00",
+                        "salary_from": "3200000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Pension Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Employee Contribution",
+                        "tax_rule_description": "8% of gross salary",
+                        "tax_rule_percentage": "8.00",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "ZA": {
+        "taxes": [
+            {
+                "tax_name": "PAYE",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "18% on first 237,100 ZAR",
+                        "tax_rule_percentage": "18.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "237100.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "26% on next 133,800 ZAR + 42,678 ZAR",
+                        "tax_rule_percentage": "26.00",
+                        "tax_rule_fixed_amount": "42678.00",
+                        "salary_from": "237100.01",
+                        "salary_to": "370900.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "31% on next 424,500 ZAR + 77,466 ZAR",
+                        "tax_rule_percentage": "31.00",
+                        "tax_rule_fixed_amount": "77466.00",
+                        "salary_from": "370900.01",
+                        "salary_to": "512800.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "36% on next 256,200 ZAR + 125,055 ZAR",
+                        "tax_rule_percentage": "36.00",
+                        "tax_rule_fixed_amount": "125055.00",
+                        "salary_from": "512800.01",
+                        "salary_to": "673000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "39% on next 544,400 ZAR + 181,327 ZAR",
+                        "tax_rule_percentage": "39.00",
+                        "tax_rule_fixed_amount": "181327.00",
+                        "salary_from": "673000.01",
+                        "salary_to": "857900.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 6",
+                        "tax_rule_description": "41% on next 359,600 ZAR + 253,643 ZAR",
+                        "tax_rule_percentage": "41.00",
+                        "tax_rule_fixed_amount": "253643.00",
+                        "salary_from": "857900.01",
+                        "sales_to": "1817400.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 7",
+                        "tax_rule_description": "45% on excess over 1,817,400 ZAR + 647,079 ZAR",
+                        "tax_rule_percentage": "45.00",
+                        "tax_rule_fixed_amount": "647079.00",
+                        "salary_from": "1817400.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "UIF Contribution",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Employee Contribution",
+                        "tax_rule_description": "1% of gross salary (max 178.79 ZAR per month)",
+                        "tax_rule_percentage": "1.00",
+                        "tax_rule_fixed_amount": "178.79",
+                        "salary_from": "0.00",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "US": {
+        "taxes": [
+            {
+                "tax_name": "Federal Income Tax",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Bracket 1",
+                        "tax_rule_description": "10% on first 11,000 USD (single)",
+                        "tax_rule_percentage": "10.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "11000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 2",
+                        "tax_rule_description": "12% on next 33,725 USD + 1,100 USD",
+                        "tax_rule_percentage": "12.00",
+                        "tax_rule_fixed_amount": "1100.00",
+                        "salary_from": "11000.01",
+                        "salary_to": "44725.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 3",
+                        "tax_rule_description": "22% on next 40,525 USD + 5,147 USD",
+                        "tax_rule_percentage": "22.00",
+                        "tax_rule_fixed_amount": "5147.00",
+                        "salary_from": "44725.01",
+                        "salary_to": "95375.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 4",
+                        "tax_rule_description": "24% on next 103,350 USD + 16,290 USD",
+                        "tax_rule_percentage": "24.00",
+                        "tax_rule_fixed_amount": "16290.00",
+                        "salary_from": "95375.01",
+                        "salary_to": "198725.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 5",
+                        "tax_rule_description": "32% on next 226,550 USD + 41,094 USD",
+                        "tax_rule_percentage": "32.00",
+                        "tax_rule_fixed_amount": "41094.00",
+                        "salary_from": "198725.01",
+                        "salary_to": "425275.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 6",
+                        "tax_rule_description": "35% on next 174,725 USD + 113,590 USD",
+                        "tax_rule_percentage": "35.00",
+                        "tax_rule_fixed_amount": "113590.00",
+                        "salary_from": "425275.01",
+                        "salary_to": "600000.00"
+                    },
+                    {
+                        "tax_rule_name": "Bracket 7",
+                        "tax_rule_description": "37% on excess over 600,000 USD + 174,844 USD",
+                        "tax_rule_percentage": "37.00",
+                        "tax_rule_fixed_amount": "174844.00",
+                        "salary_from": "600000.01",
+                        "salary_to": null
+                    }
+                ]
+            },
+            {
+                "tax_name": "Social Security Tax",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Social Security",
+                        "tax_rule_description": "6.2% of wages up to 176,100 USD",
+                        "tax_rule_percentage": "6.20",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": "176100.00"
+                    }
+                ]
+            },
+            {
+                "tax_name": "Medicare Tax",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Standard Medicare",
+                        "tax_rule_description": "1.45% of all wages",
+                        "tax_rule_percentage": "1.45",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "0.00",
+                        "salary_to": "200000.00"
+                    },
+                    {
+                        "tax_rule_name": "Additional Medicare",
+                        "tax_rule_description": "2.35% on wages over 200,000 USD (includes 0.9% additional)",
+                        "tax_rule_percentage": "2.35",
+                        "tax_rule_fixed_amount": null,
+                        "salary_from": "200000.01",
+                        "salary_to": null
+                    }
+                ]
+            }
+        ]
+    },
+    "GB": {
+        "taxes": [
+            {
+                "tax_name": "Income Tax",
+                "tax_status": true,
+                "rules": [
+                    {
+                        "tax_rule_name": "Personal Allowance",
+                        "tax_rule_description": "0% on first 12,570 GBP",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "0.00",
+                        "salary_to": "12570.00"
+                    },
+                    {
+                        "tax_rule_name": "Basic Rate",
+                        "tax_rule_description": "20% on next 37,700 GBP",
+                        "tax_rule_percentage": "20.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "salary_from": "12570.01",
+                        "salary_to": "50270.00"
+                    }
+                ]
+            }
+        ]
+    }
+}

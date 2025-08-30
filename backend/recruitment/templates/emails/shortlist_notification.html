@@ -1,100 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Congratulations - You've been shortlisted!</title>
     <style>
-        body {
-            font-family: "Outfit", sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .congratulations {
-            color: #28a745;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .job-title {
-            color: #007bff;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .content {
-            margin-bottom: 20px;
-        }
-        .next-steps {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-radius: 4px;
-            margin: 20px 0;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-            color: #6c757d;
-            font-size: 14px;
-        }
-        .company-signature {
-            margin-top: 20px;
-            font-weight: bold;
-        }
+      body {
+        font-family: "Outfit", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .congratulations {
+        color: #ff3403;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .job-title {
+        color: #007bff;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .content {
+        margin-bottom: 20px;
+      }
+      .next-steps {
+        background-color: #e9ecef;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #dee2e6;
+        color: #6c757d;
+        font-size: 14px;
+      }
+      .company-signature {
+        margin-top: 20px;
+        font-weight: bold;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <div class="congratulations">🎉 Congratulations!</div>
+      <div class="header">
+        <div class="congratulations">🎉 Congratulations!</div>
+      </div>
+
+      <div class="content">
+        <p>Dear <strong>{{salutation}} {{ applicant_name }}</strong>,</p>
+
+        <p>
+          We are delighted to inform you that you have been
+          <strong>shortlisted</strong> for the position of:
+        </p>
+
+        <p class="job-title">{{ job_title }}</p>
+
+        <p>
+          We were impressed with your application and believe you have the
+          qualifications and experience we're looking for.
+        </p>
+
+        <div class="next-steps">
+          <h3>📋 What happens next?</h3>
+          <ul>
+            <li>
+              Our HR team will contact you within the next few business days
+            </li>
+            <li>
+              We'll provide you with details about the next stage of the
+              interview process
+            </li>
+            <li>
+              Please keep an eye on your email and phone for our communication
+            </li>
+          </ul>
         </div>
-        
-        <div class="content">
-            <p>Dear <strong>{{ applicant_name }}</strong>,</p>
-            
-            <p>We are delighted to inform you that you have been <strong>shortlisted</strong> for the position of:</p>
-            
-            <p class="job-title">{{ job_title }}</p>
-            
-            <p>We were impressed with your application and believe you have the qualifications and experience we're looking for.</p>
-            
-            <div class="next-steps">
-                <h3>📋 What happens next?</h3>
-                <ul>
-                    <li>Our HR team will contact you within the next few business days</li>
-                    <li>We'll provide you with details about the next stage of the interview process</li>
-                    <li>Please keep an eye on your email and phone for our communication</li>
-                </ul>
-            </div>
-            
-            <p>In the meantime, if you have any questions or need to update your contact information, please don't hesitate to reach out to us.</p>
-            
-            <p>We look forward to speaking with you soon!</p>
+
+        <p>
+          In the meantime, if you have any questions or need to update your
+          contact information, please don't hesitate to reach out to us.
+        </p>
+
+        <p>We look forward to speaking with you soon!</p>
+      </div>
+
+      <div class="footer">
+        <div class="company-signature">
+          Best regards,<br />
+          HR Team<br />
+          {{ company_name }}
         </div>
-        
-        <div class="footer">
-            <div class="company-signature">
-                Best regards,<br>
-                HR Team<br>
-                {{ company_name }}
-            </div>
-            
-            <p><em>This is an automated message. Please do not reply directly to this email.</em></p>
-        </div>
+
+        <p>
+          <em
+            >This is an automated message. Please do not reply directly to this
+            email.</em
+          >
+        </p>
+      </div>
     </div>
-</body>
+  </body>
 </html>

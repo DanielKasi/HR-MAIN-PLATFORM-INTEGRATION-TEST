@@ -54,7 +54,9 @@ INSTALLED_APPS = [
     'jsignature',
     'ckeditor',
     'ckeditor_uploader',
-
+    'approval',
+    'spotcheck',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -168,12 +170,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 5,
 }
 AUTH_USER_MODEL = "users.CustomUser"
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
@@ -197,18 +198,14 @@ STORAGES = {
     },
 }
 
+# Email configuration for Baifam Group domain
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_HOST_USER = os.environ.get("RESPONSE_EMAIL", None)
+EMAIL_HOST_PASSWORD = os.environ.get("RESPONSE_EMAIL_PASSWORD", None)
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
-
-# Google Auth Settings
-GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_AUTH_REDIRECT_URL = os.getenv("GOOGLE_AUTH_REDIRECT_URL")
+DEFAULT_FROM_EMAIL = os.environ.get("RESPONSE_EMAIL", None)
 
 # Channel layers configuration
 CHANNEL_LAYERS = {
@@ -219,3 +216,16 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# Celery Configuration Options
+CELERY_TIMEZONE = "Africa/Kampala"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
+SPOTCHECK_INTERVAL_MINUTES = int(os.getenv("SPOTCHECK_INTERVAL_MINUTES", 15))
+SPOTCHECK_BATCH_SIZE = int(os.getenv("SPOTCHECK_BATCH_SIZE", 50))
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://peracosoft.com/")

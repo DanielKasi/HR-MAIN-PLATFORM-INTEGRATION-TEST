@@ -29,7 +29,7 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs.get('carry_forward_allowed') and attrs.get('max_carry_forward_days', 0) > attrs.get('max_days_per_year', 0):
             raise serializers.ValidationError(
-                "Max carry forward days cannot exceed max days per year"
+                {"error": "Max carry forward days cannot exceed max days per year"}
             )
         return attrs
 
@@ -57,7 +57,7 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
         
         if total_used > total_available:
             raise serializers.ValidationError(
-                "Used and pending days cannot exceed allocated plus carried forward days"
+                {"error": "Used and pending days cannot exceed allocated plus carried forward days"}
             )
         
         return attrs
@@ -103,37 +103,37 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
         # Validate dates
         if start_date and end_date:
             if start_date > end_date:
-                raise serializers.ValidationError("End date must be after start date")
+                raise serializers.ValidationError({"error": "End date must be after start date"})
             
             # Check if start date is not in the past (for new applications)
             if not self.instance and start_date < timezone.now().date():
-                raise serializers.ValidationError("Start date cannot be in the past")
+                raise serializers.ValidationError({"error": "Start date cannot be in the past"})
         
         # Validate gender-specific leave types
         if employee and leave_type:
             if leave_type.gender_specific != 'all':
                 if hasattr(employee, 'gender') and employee.gender != leave_type.gender_specific:
                     raise serializers.ValidationError(
-                        f"This leave type is only available for {leave_type.gender_specific} employees"
+                        {"error": f"This leave type is only available for {leave_type.gender_specific} employees"}
                     )
         
         # Check if supporting document is required
         if leave_type and leave_type.requires_document:
             if not attrs.get('supporting_document') and not (self.instance and self.instance.supporting_document):
                 raise serializers.ValidationError(
-                    "Supporting document is required for this leave type"
+                    {"error": "Supporting document is required for this leave type"}
                 )
         
         # Validate leave policy constraints
         if employee and leave_type and start_date:
             try:
-                policy = LeavePolicy.objects.get(leave_type=leave_type, is_active=True)
+                policy = LeavePolicy.objects.filter(leave_type=leave_type, is_active=True).first()
                 
                 # Check minimum notice period
                 notice_days = (start_date - timezone.now().date()).days
                 if notice_days < policy.min_notice_days:
                     raise serializers.ValidationError(
-                        f"Minimum {policy.min_notice_days} days notice required"
+                        {"error": f"Minimum {policy.min_notice_days} days notice required"}
                     )
                 
                 # Check maximum consecutive days
@@ -143,7 +143,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
                     )
                     if total_days > policy.max_consecutive_days:
                         raise serializers.ValidationError(
-                            f"Maximum {policy.max_consecutive_days} consecutive days allowed"
+                            {"error": f"Maximum {policy.max_consecutive_days} consecutive days allowed"}
                         )
                 
                 # Check probation period
@@ -152,7 +152,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
                         months_employed = (timezone.now().date() - employee.hire_date).days / 30.44
                         if months_employed < policy.applicable_after_probation_months:
                             raise serializers.ValidationError(
-                                f"Leave available after {policy.applicable_after_probation_months} months of employment"
+                                {"error": f"Leave available after {policy.applicable_after_probation_months} months of employment"}
                             )
             
             except LeavePolicy.DoesNotExist:
@@ -176,7 +176,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
             if current_status in allowed_transitions:
                 if value not in allowed_transitions[current_status] and value != current_status:
                     raise serializers.ValidationError(
-                        f"Cannot change status from {current_status} to {value}"
+                        {"error": f"Cannot change status from {current_status} to {value}"}
                     )
         
         return value
@@ -208,7 +208,7 @@ class LeavePolicySerializer(serializers.ModelSerializer):
             leave_type = attrs.get('leave_type')
             if leave_type and attrs['max_consecutive_days'] > leave_type.max_days_per_year:
                 raise serializers.ValidationError(
-                    "Max consecutive days cannot exceed leave type's max days per year"
+                    {"error": "Max consecutive days cannot exceed leave type's max days per year"}
                 )
         
         return attrs
@@ -239,7 +239,7 @@ class LeaveApplicationApprovalSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs.get('action') == 'reject' and not attrs.get('rejection_reason'):
             raise serializers.ValidationError(
-                "Rejection reason is required when rejecting an application"
+                {"error": "Rejection reason is required when rejecting an application"}
             )
         return attrs
 
@@ -252,7 +252,7 @@ class LeaveBalanceInitializeSerializer(serializers.Serializer):
         current_year = timezone.now().year
         if value < current_year - 1 or value > current_year + 1:
             raise serializers.ValidationError(
-                "Year must be within one year of current year"
+                {"error": "Year must be within one year of current year"}
             )
         return value
 
@@ -268,12 +268,12 @@ class LeaveCarryForwardSerializer(serializers.Serializer):
         
         if from_year >= to_year:
             raise serializers.ValidationError(
-                "From year must be less than to year"
+                {"error": "From year must be less than to year"}
             )
         
         if to_year - from_year != 1:
             raise serializers.ValidationError(
-                "Can only carry forward to the immediate next year"
+                {"error": "Can only carry forward to the immediate next year"}
             )
         
         return attrs

@@ -25,6 +25,19 @@ from .views import (
     InstitutionTaxDetailView,
     InstitutionTaxRuleDetailView,
     InstitutionTaxRuleListAPIView,
+    DashboardView,
+    InstitutionKYCDocumentListCreateView,
+    InstitutionKYCDocumentDetailView,
+    InstitutionPenaltyConfigDetailAPIView,
+    InstitutionPenaltyConfigListAPIView,
+    BranchPenaltyConfigListAPIView,
+    BranchPenaltyConfigDetailAPIView,
+    BranchLocationComparisonConfigListAPIView,
+    BranchLocationComparisonConfigDetailAPIView,
+    BranchWorkingDaysListAPIView,
+    BranchWorkingDaysDetailView,
+    BranchShiftDetailView,
+    BranchShiftListCreateView,
 )
 
 urlpatterns = [
@@ -33,6 +46,16 @@ urlpatterns = [
         "<int:institution_id>/",
         InstitutionDetailAPIView.as_view(),
         name="institution-detail",
+    ),
+    path(
+        "kyc_docs",
+        InstitutionKYCDocumentListCreateView.as_view(),
+        name="kyc-docs",
+    ),
+    path(
+        "kyc_doc/<int:document_id>/",
+        InstitutionKYCDocumentDetailView.as_view(),
+        name="kyc-doc-detail",
     ),
     path("bank-type/", InstitutionBankTypeListAPIView.as_view(), name="bank-type-list"),
     path(
@@ -123,4 +146,59 @@ urlpatterns = [
     ),
     path("api/activate/", SystemActivationView.as_view(), name="system_activation"),
     path("default-data/", DefaultDataAPIView.as_view(), name="default-data"),
+    path(
+        "<int:institution_id>/dashboard-analytics/",
+        DashboardView.as_view(),
+        name="dash-analytics",
+    ),
+    path(
+        "institution-penalties/",
+        InstitutionPenaltyConfigListAPIView.as_view(),
+        name="institution-penalty-config-list",
+    ),
+    path(
+        "institution-penalties/<int:pk>/",
+        InstitutionPenaltyConfigDetailAPIView.as_view(),
+        name="institution-penalty-config-detail",
+    ),
+    path(
+        "branch-penalties/",
+        BranchPenaltyConfigListAPIView.as_view(),
+        name="branch-penalty-config-list",
+    ),
+    path(
+        "branch-penalties/<int:pk>/",
+        BranchPenaltyConfigDetailAPIView.as_view(),
+        name="branch-penalty-config-detail",
+    ),
+    path(
+        "branch-working-days/",
+        BranchWorkingDaysListAPIView.as_view(),
+        name="branch-working-days",
+    ),
+    path(
+        "branch-working-day-detail/<int:id>/",
+        BranchWorkingDaysDetailView.as_view(),
+        name="branch-working-day-detail",
+    ),
+    path(
+        "branch-shifts/",
+        BranchShiftListCreateView.as_view(),
+        name="branch-shift-list-create",
+    ),
+    path(
+        "branch-shifts/<int:pk>/",
+        BranchShiftDetailView.as_view(),
+        name="branch-shift-detail",
+    ),
+    path(
+        "branch-location-comparison/",
+        BranchLocationComparisonConfigListAPIView.as_view(),
+        name="branch-location-comparison-config-list",
+    ),
+    path(
+        "branch-location-comparison/<int:pk>/",
+        BranchLocationComparisonConfigDetailAPIView.as_view(),
+        name="branch-location-comparison-config-detail",
+    ),
 ]

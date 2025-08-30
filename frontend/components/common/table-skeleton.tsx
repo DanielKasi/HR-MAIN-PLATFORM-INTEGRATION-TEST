@@ -5,7 +5,7 @@ interface TableSkeletonProps {
   columns?: number
 }
 
-export function TableSkeleton({ rows = 5, columns = 8 }: TableSkeletonProps) {
+export function TableSkeleton({ rows = 5, columns = 8}: TableSkeletonProps) {
   return (
     <div className="animate-pulse">
       {/* Header skeleton */}
@@ -33,7 +33,6 @@ export function TableSkeleton({ rows = 5, columns = 8 }: TableSkeletonProps) {
           </div>
         </div>
 
-        {/* Table skeleton */}
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
@@ -79,6 +78,7 @@ export function TableSkeleton({ rows = 5, columns = 8 }: TableSkeletonProps) {
             ))}
           </TableBody>
         </Table>
+
 
         {/* Pagination skeleton */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
