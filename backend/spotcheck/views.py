@@ -7,6 +7,8 @@ from spotcheck import serializers as SpotCheckSerializers
 from spotcheck.utilities import send_spotcheck_email
 from utilities.pagination import CustomPageNumberPagination
 from datetime import datetime
+from django.db import transaction
+
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
@@ -17,12 +19,14 @@ class InstitutionSpotCheckSettingCreateView(APIView):
         description="Create a new institution setting.",
         tags=["Institution Setting Management"],
     )
+    @transaction.atomic()
     def post(self, request):
         """Create a institution setting."""
 
         serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -55,6 +59,7 @@ class InstitutionSpotCheckSettingUpdateView(APIView):
         description="Update details of a specific institution setting.",
         tags=["Institution Setting Management"],
     )
+    @transaction.atomic()
     def patch(self, request, institution_id):
         """Update details of a specific institution setting."""
         try:
@@ -64,9 +69,12 @@ class InstitutionSpotCheckSettingUpdateView(APIView):
                 {"detail": "Institution setting not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+        setting.approval_status = 'under_update'    
+
         serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(instance=setting, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            setting.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -81,12 +89,14 @@ class BranchSpotCheckSettingCreateView(APIView):
         description="Create a new branch setting.",
         tags=["Branch Setting Management"],
     )
+    @transaction.atomic()
     def post(self, request):
         """Create a brnach setting."""
 
         serializer = SpotCheckSerializers.BranchSpotCheckSettingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -119,6 +129,7 @@ class BranchSpotCheckSettingUpdateView(APIView):
         description="Update details of a specific branch setting.",
         tags=["Branch Setting Management"],
     )
+    @transaction.atomic()
     def patch(self, request, branch_id):
         """Update details of a specific branch setting."""
         try:
@@ -128,9 +139,12 @@ class BranchSpotCheckSettingUpdateView(APIView):
                 {"detail": "Branch setting not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+        setting.approval_status = 'under_update'    
+
         serializer = SpotCheckSerializers.BranchSpotCheckSettingSerializer(instance=setting, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            setting.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -145,12 +159,15 @@ class EmployeeSpotCheckSettingCreateView(APIView):
         description="Create a new employee setting.",
         tags=["Employee Setting Management"],
     )
+    @transaction.atomic()
     def post(self, request):
         """Create a employee setting."""
 
         serializer = SpotCheckSerializers.EmployeeSpotCheckSettingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -183,6 +200,7 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         description="Update details of a specific employee spot check setting.",
         tags=["Employee spot check Setting Management"],
     )
+    @transaction.atomic()
     def patch(self, request, employee_id):
         """Update details of a specific employee spot check setting."""
         try:
@@ -192,9 +210,12 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
                 {"detail": "Employee spot check setting not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+        setting.approval_status = 'under_update'    
+
         serializer = SpotCheckSerializers.EmployeeSpotCheckSettingSerializer(instance=setting, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            setting.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -232,20 +253,21 @@ class EmployeeSpotCheckCreateView(APIView):
 
     def post(self, request):
         """Create a employee spot checkplease share the sale reports record."""
-        spotcheck_status, _ =SpotCheckModels.SpotCheckStatus.objects.get_or_create(status_name="SENT")
+        spotcheck_status, _ = SpotCheckModels.SpotCheckStatus.objects.get_or_create(status_name="SENT")
         spotcheck_time = datetime.now()
 
 
         request_data = request.data.copy()
-        request_data['status'] = spotcheck_status.id
+        request_data['status'] = spotcheck_status.pk
         request_data['spotcheck_time'] = spotcheck_time
-        request_data['initiated_by'] = 'User'
-
+        request_data['initiated_by'] = 'user'
+        print("Request data:", request_data)
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request_data)
         if serializer.is_valid():
             spotcheck = serializer.save()
             send_spotcheck_email(spotcheck)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     

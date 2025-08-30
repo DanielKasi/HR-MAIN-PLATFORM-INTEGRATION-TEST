@@ -23,4 +23,9 @@ urlpatterns = [
     path('<int:institution_id>/initialize-balances/', views.initialize_yearly_balances, name='initialize-yearly-balances'),
     path('<int:institution_id>/carry-forward-leaves/', views.carry_forward_leaves, name='carry-forward-leaves'),
     path('employee/<int:employee_id>/summary/', views.employee_leave_summary, name='employee-leave-summary'),
+    path(
+        'institutions/<int:institution_id>/leave-analytics/',
+        views.LeaveAnalyticsAPI.as_view(),
+        name='leave-analytics'
+    ),
 ]
