@@ -5,8 +5,6 @@ from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db import transaction
-from datetime import datetime
-from decimal import Decimal
 
 from utilities.pagination import CustomPageNumberPagination
 
@@ -54,7 +52,8 @@ class LeaveTypeListCreateAPIView(APIView):
     def post(self, request, institution_id):
         serializer = LeaveTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -76,16 +75,20 @@ class LeaveTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         leave_type = get_object_or_404(LeaveType, pk=pk)
+        leave_type.approval_status = 'under_update'
         serializer = LeaveTypeSerializer(leave_type, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a leave type", responses={204: None})
     def delete(self, request, pk):
         leave_type = get_object_or_404(LeaveType, pk=pk)
+        leave_type.approval_status = 'under_deletion'
         leave_type.delete()
+        leave_type.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -136,7 +139,8 @@ class LeaveBalanceListCreateAPIView(APIView):
     def post(self, request, institution_id):
         serializer = LeaveBalanceSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -159,18 +163,20 @@ class LeaveBalanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         balance = get_object_or_404(LeaveBalance, pk=pk)
+        balance.approval_status = 'under_update'
         serializer = LeaveBalanceSerializer(balance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            balance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a leave balance", responses={204: None})
     def delete(self, request, pk):
         balance = get_object_or_404(LeaveBalance, pk=pk)
-        print("Deleting balance:", balance)
+        balance.approval_status = 'under_deletion'
         balance.delete()
-        print("Balance deleted")
+        balance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -299,6 +305,7 @@ class LeaveApplicationListCreateAPIView(APIView):
 
             # Save application with calculated days
             application = serializer.save(total_days=total_days)
+            application.confirm_create()
 
             # Update pending balance
             try:
@@ -342,6 +349,7 @@ class LeaveApplicationDetailAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        application.approval_status = 'under_update'
         serializer = LeaveApplicationSerializer(
             application, data=request.data, partial=True
         )
@@ -380,6 +388,7 @@ class LeaveApplicationDetailAPIView(APIView):
                     serializer.validated_data["total_days"] = new_total_days
 
                 serializer.save()
+                application.confirm_update()
                 return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -394,6 +403,7 @@ class LeaveApplicationDetailAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        application.approval_status = 'under_deletion'
         with transaction.atomic():
             # Update balance
             try:
@@ -409,6 +419,7 @@ class LeaveApplicationDetailAPIView(APIView):
 
             application.is_active = False
             application.delete()
+            application.confirm_delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -501,7 +512,8 @@ class LeavePolicyListCreateAPIView(APIView):
     def post(self, request, institution_id):
         serializer = LeavePolicySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -523,16 +535,20 @@ class LeavePolicyDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         policy = get_object_or_404(LeavePolicy, pk=pk)
+        policy.approval_status = 'under_update'
         serializer = LeavePolicySerializer(policy, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            policy.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a leave policy", responses={204: None})
     def delete(self, request, pk):
         policy = get_object_or_404(LeavePolicy, pk=pk)
+        policy.approval_status = 'under_deletion'
         policy.delete()
+        policy.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

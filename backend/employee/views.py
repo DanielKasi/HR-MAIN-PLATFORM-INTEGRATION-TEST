@@ -308,9 +308,6 @@ class EmployeeCreateAPIView(APIView):
         employee.user.is_email_verified = True
         employee.user.save()
 
-
-        employee.approval_status = 'under_creation'
-        employee.save()
         employee.confirm_create()
 
         # Send welcome email asynchronously using Celery
@@ -1835,8 +1832,6 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             serializer = EmployeeAttendanceSerializer(data=data, context=context)
             if serializer.is_valid():
                 attendance = serializer.save()
-                attendance.approval_status = 'under_creation'
-                attendance.save()
                 attendance.confirm_create()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
@@ -1927,8 +1922,6 @@ class EmployeeTypeListCreateAPIView(APIView):
         serializer = EmployeeTypeSerializer(data=request.data)
         if serializer.is_valid():
             record = serializer.save()
-            record.approval_status = 'under_creation'
-            record.save()
             record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -2013,8 +2006,6 @@ class WorkTypeListCreateAPIView(APIView):
         serializer = WorkTypeSerializer(data=request.data)
         if serializer.is_valid():
             record = serializer.save()
-            record.approval_status = 'under_creation'
-            record.save()
             record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -2180,8 +2171,6 @@ class EmployeeContractListAPIView(APIView):
         serializer = EmployeeContractSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
-            instance.approval_status = 'under_creation'
-            instance.save()
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -2481,8 +2470,6 @@ class EmployeeShiftListCreateView(APIView):
         )
         if serializer.is_valid():
             shift = serializer.save()
-            shift.approval_status = 'under_creation'
-            shift.save()
             shift.confirm_create()
             return Response(
                 EmployeeShiftSerializer(shift).data, status=status.HTTP_201_CREATED

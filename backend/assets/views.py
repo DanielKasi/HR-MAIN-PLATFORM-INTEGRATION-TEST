@@ -27,14 +27,7 @@ from institution.models import Institution
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_view
-from users.models import Profile, CustomUser, UserRole
-from django.contrib.contenttypes.models import ContentType
-from workflows.models import (
-    ApprovalTask,
-    InstitutionApprovalStepApprovorRole,
-    InstitutionApprovalStepApprovorUser,
-)
+from users.models import Profile
 from django.db.models import Q
 from employee.models import Employee
 from django.db import transaction
