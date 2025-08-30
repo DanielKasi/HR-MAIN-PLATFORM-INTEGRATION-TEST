@@ -7,9 +7,11 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import BaseApprovableModel
+from approval.models import Approval
 
 
-class AssetCategory(SoftDeletableTimeStampedModel):
+class AssetCategory(BaseApprovableModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -37,6 +39,9 @@ class AssetCategory(SoftDeletableTimeStampedModel):
             self.code = self.generate_unique_code()
         super().save(*args, **kwargs)
 
+    def get_institution(self):
+        return self.institution    
+
     @staticmethod
     def generate_unique_code():
         """Generates a unique 5-character alphanumeric code."""
@@ -108,7 +113,7 @@ class AssetCategory(SoftDeletableTimeStampedModel):
 
 
 
-class Asset(SoftDeletableTimeStampedModel):
+class Asset(BaseApprovableModel):
     ASSET_ALLOCATION_CHOICES = [
         ("available", "Available"),
         ("allocated", "Allocated"),
@@ -178,8 +183,11 @@ class Asset(SoftDeletableTimeStampedModel):
                 notes=f"Asset {self.asset_name} created with batch number {self.batch_number}.",
             )
 
+    def get_institution(self):
+        return self.institution        
 
-class AssetRequest(SoftDeletableTimeStampedModel):
+
+class AssetRequest(BaseApprovableModel):
 
     ASSET_REQUEST_STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -189,7 +197,7 @@ class AssetRequest(SoftDeletableTimeStampedModel):
     ]
 
     asset = models.ForeignKey(
-        Asset,
+        "assets.Asset",  # Adjusted to assumed app_label if needed
         on_delete=models.CASCADE,
         related_name="requests",
     )
@@ -214,9 +222,9 @@ class AssetRequest(SoftDeletableTimeStampedModel):
     
     class Meta:
         constraints = [
-            UniqueConstraint(
+            models.UniqueConstraint(
                 fields=["request_reference_code"],
-                condition=Q(deleted_at__isnull=True),
+                condition=models.Q(deleted_at__isnull=True),
                 name="unique_active_request_reference_code"
             )
         ]
@@ -229,55 +237,42 @@ class AssetRequest(SoftDeletableTimeStampedModel):
             self.request_reference_code = f"ASSET-REQ-{self.pk:05d}-{self.asset.id:05d}-{self.requester.id:05d}"
             super().save(update_fields=["request_reference_code"])
 
-    @transaction.atomic
-    def approve(self):
+    def get_institution(self):
+        return self.asset.institution
 
-        if self.asset_request_status != "pending":
-            raise ValueError("Only pending requests can be approved.")
-
-        self.asset_request_status = "approved"
+    def finish_workflow(self, approval: Approval):
+        if approval.status == 'completed':
+            if approval.action.name == 'create':
+                self.asset_request_status = "approved"
+                allocation = AssetAllocation(
+                    asset=self.asset,
+                    allocated_to=self.requester,
+                    responding_to_request=self,
+                    allocated_by=None,
+                    allocation_status="allocated",
+                    status='active'  # Bypass approval for allocation from approved request
+                )
+                allocation.save()
+                self.status = 'active'
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.delete()  # Soft delete
+                return
+        elif approval.status == 'rejected':
+            if approval.action.name == 'create':
+                self.asset_request_status = "rejected"
+                self.status = 'active'  # Keep record instead of deleting
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.status = 'active'
         self.save()
 
-        AssetAllocation.objects.create(
-            asset=self.asset,
-            allocated_to=self.requester,
-            responding_to_request=self,
-            allocated_by=None,
-        )
-
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
-
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.asset_request_status = "cancelled"
-            self.save()
-            return
-
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-
-        elif not tasks.exists():
-            self.approve()
-
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
 
 
-class AssetAllocation(SoftDeletableTimeStampedModel):
+
+class AssetAllocation(BaseApprovableModel):
 
     ASSET_ALLOCATION_STATUS_CHOICES = [
         ("cancelled", "Cancelled"),
@@ -287,7 +282,7 @@ class AssetAllocation(SoftDeletableTimeStampedModel):
     ]
 
     asset = models.ForeignKey(
-        Asset,
+        "assets.Asset",
         on_delete=models.CASCADE,
         related_name="allocations",
     )
@@ -326,9 +321,9 @@ class AssetAllocation(SoftDeletableTimeStampedModel):
     
     class Meta:
         constraints = [
-            UniqueConstraint(
+            models.UniqueConstraint(
                 fields=["alloc_code"],
-                condition=Q(deleted_at__isnull=True),
+                condition=models.Q(deleted_at__isnull=True),
                 name="unique_active_alloc_code"
             )
         ]
@@ -341,64 +336,43 @@ class AssetAllocation(SoftDeletableTimeStampedModel):
             self.alloc_code = f"ALLOC-{self.pk:05d}-{self.asset.id:05d}-{self.allocated_to.id:05d}"
             super().save(update_fields=["alloc_code"])
 
-        if self.pk and self.allocation_status == "allocated":
-            create_asset_history(
-                asset=self.asset,
-                event_type="allocated",
-                performed_by=self.allocated_by,
-                affected_user=self.allocated_to,
-                notes=f"Asset {self.asset.asset_name} allocated to {self.allocated_to.user.fullname}.",
-            )
+    def get_institution(self):
+        return self.asset.institution
 
-            self.asset.status = "allocated"
-
-            self.asset.current_holder = self.allocated_to
-            self.asset.save(update_fields=["status", "current_holder"])
-
-    @transaction.atomic
-    def approve(self):
-        if self.allocation_status != "pending":
-            raise ValueError("Only pending allocations can be approved.")
-
-        self.allocation_status = "allocated"
+    def finish_workflow(self, approval: Approval):
+        if approval.status == 'completed':
+            if approval.action.name == 'create':
+                self.allocation_status = "allocated"
+                create_asset_history(
+                    asset=self.asset,
+                    event_type="allocated",
+                    performed_by=self.allocated_by,
+                    affected_user=self.allocated_to,
+                    notes=f"Asset {self.asset.asset_name} allocated to {self.allocated_to.user.fullname}.",
+                )
+                self.asset.status = "allocated"
+                self.asset.current_holder = self.allocated_to
+                self.asset.save(update_fields=["status", "current_holder"])
+                self.status = 'active'
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.delete()  # Soft delete
+                return
+        elif approval.status == 'rejected':
+            if approval.action.name == 'create':
+                self.allocation_status = "rejected"
+                self.status = 'active'  # Keep record
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.status = 'active'
         self.save()
 
-        self.asset.status = "allocated"
-        self.asset.current_holder = self.allocated_to
-        self.asset.save(update_fields=["status", "current_holder"])
-
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
-
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.allocation_status = "cancelled"
-            self.save()
-            return
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-            return
-        elif not tasks.exists():
-            self.approve()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
+    
 
 
-class AssetReturn(SoftDeletableTimeStampedModel):
+class AssetReturn(BaseApprovableModel):
     ASSET_CONDITION_CHOICES = [
         ("good", "Good"),
         ("damaged", "Damaged"),
@@ -406,7 +380,7 @@ class AssetReturn(SoftDeletableTimeStampedModel):
     ]
 
     asset = models.ForeignKey(
-        Asset,
+        "assets.Asset",
         on_delete=models.CASCADE,
         related_name="returns",
     )
@@ -423,28 +397,44 @@ class AssetReturn(SoftDeletableTimeStampedModel):
         return f"Return of {self.asset.asset_name} by {self.allocation.allocated_to.user.fullname}"
 
     def save(self, *args, **kwargs):
-        is_new = self._state.adding
         super().save(*args, **kwargs)
 
-        if is_new:
-            create_asset_history(
-                asset=self.asset,
-                event_type="returned",
-                performed_by=self.allocation.allocated_by,
-                affected_user=self.allocation.allocated_to,
-                notes=f"Asset {self.asset.asset_name} returned by {self.allocation.allocated_to.user.fullname} in {self.condition}.",
-            )
+    def get_institution(self):
+        return self.asset.institution
 
-            if self.condition == "good":
-                self.asset.status = "available"
-            elif self.condition == "damaged":
-                self.asset.status = "maintenance"
-            elif self.condition == "lost":
-                self.asset.status = "decommissioned"
-
-            self.asset.current_holder = None
-            self.asset.save(update_fields=["status", "current_holder"])
-
+    def finish_workflow(self, approval: Approval):
+        if approval.status == 'completed':
+            if approval.action.name == 'create':
+                create_asset_history(
+                    asset=self.asset,
+                    event_type="returned",
+                    performed_by=self.allocation.allocated_by,
+                    affected_user=self.allocation.allocated_to,
+                    notes=f"Asset {self.asset.asset_name} returned by {self.allocation.allocated_to.user.fullname} in {self.condition}.",
+                )
+                if self.condition == "good":
+                    self.asset.status = "available"
+                elif self.condition == "damaged":
+                    self.asset.status = "maintenance"
+                elif self.condition == "lost":
+                    self.asset.status = "decommissioned"
+                self.asset.current_holder = None
+                self.asset.save(update_fields=["status", "current_holder"])
+                self.status = 'active'
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.delete()  # Soft delete
+                return
+        elif approval.status == 'rejected':
+            if approval.action.name == 'create':
+                self.delete()  # Soft delete on reject
+                return
+            elif approval.action.name == 'update':
+                self.status = 'active'
+            elif approval.action.name == 'delete':
+                self.status = 'active'
+        self.save()
 
 class AssetHistory(SoftDeletableTimeStampedModel):
     EVENT_TYPE_CHOICES = [
