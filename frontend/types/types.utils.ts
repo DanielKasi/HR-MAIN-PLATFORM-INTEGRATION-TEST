@@ -2316,8 +2316,8 @@ export interface ISpotCheckStatus {
 }
 
 export interface ILocation {
-  lat: number;
-  lon: number
+  latitude: number;
+  longitude: number
 }
 
 export interface IInstitutionPenaltyConfig {
@@ -2362,16 +2362,13 @@ export interface IBranchLocationComparisonConfig {
   id: number;
   branch: number;
   branch_name: string;
-  latitude: number;
-  longitude: number;
-  radius: number;
+
+  radius_in_meters: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface IBranchLocationComparisonConfigFormData {
   branch: number;
-  latitude: number;
-  longitude: number;
-  radius: number;
+  radius_in_meters: number;
 }

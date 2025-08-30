@@ -775,11 +775,19 @@ def generate_attendance_excel(
 
 
 def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
+    # Handle both PayrollPeriod object and ID
+    if isinstance(payroll_period_id, PayrollPeriod):
+        payroll_period = payroll_period_id
+        payroll_period_id = payroll_period.id
+    else:
+        payroll_period = get_object_or_404(PayrollPeriod, id=payroll_period_id)
+    
     payslips = Payslip.objects.filter(
         payroll_period_id=payroll_period_id
     ).prefetch_related(
         Prefetch("items"),
         "employee__user",
+        "employee__penalties",  # Add penalties prefetch
     )
 
     if not payslips.exists():
@@ -787,16 +795,30 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
 
     allowance_names = set()
     deduction_names = set()
+    penalty_names = set()
 
+    # Collect all unique allowance, deduction, and penalty names
     for payslip in payslips:
+        # Get allowances and deductions from payslip items
         for item in payslip.items.all():
             if item.item_type == "allowance":
                 allowance_names.add(item.name)
             elif item.item_type == "deduction":
                 deduction_names.add(item.name)
+        
+        # Get penalties from the EmployeePenalty model for this period
+        employee_penalties = payslip.employee.penalties.filter(
+            date__gte=payroll_period.start_date,
+            date__lte=payroll_period.end_date,
+            status='applied'  # Only include applied penalties
+        )
+        
+        for penalty in employee_penalties:
+            penalty_names.add(penalty.get_penalty_type_display())
 
     allowance_names = sorted(allowance_names)
     deduction_names = sorted(deduction_names)
+    penalty_names = sorted(penalty_names)
 
     base_headers = [
         "Full Name",
@@ -806,7 +828,9 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     ]
     deduction_headers = [f"Deduction - {name}" for name in deduction_names]
     allowance_headers = [f"Allowance - {name}" for name in allowance_names]
-    final_headers = base_headers + deduction_headers + allowance_headers
+    penalty_headers = [f"Penalty - {name}" for name in penalty_names]
+    
+    final_headers = base_headers + deduction_headers + allowance_headers + penalty_headers
 
     wb = Workbook()
     ws = wb.active
@@ -820,6 +844,9 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
     )
     total_fill = PatternFill(
         start_color="E2EFDA", end_color="E2EFDA", fill_type="solid"
+    )
+    penalty_fill = PatternFill(
+        start_color="FFEBEE", end_color="FFEBEE", fill_type="solid"
     )
     thin_border = Border(
         left=Side(style="thin"),
@@ -835,10 +862,17 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
         cell = ws.cell(row=2, column=col_idx, value=header)
         cell.font = bold_font
         cell.alignment = center_align
-        cell.fill = header_fill
+        
+        # Different styling for penalty columns
+        if header.startswith("Penalty"):
+            cell.fill = penalty_fill
+        else:
+            cell.fill = header_fill
+            
         cell.border = thin_border
         ws.column_dimensions[cell.column_letter].width = max(15, len(header) + 2)
 
+    # Process each payslip
     for row_idx, payslip in enumerate(payslips, start=3):
         employee = payslip.employee
         employee_name = employee.user.fullname if employee.user else "N/A"
@@ -850,6 +884,7 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
             float(payslip.net_salary),
         ]
 
+        # Process deductions and allowances from payslip items
         deduction_map = defaultdict(lambda: Decimal("0.00"))
         allowance_map = defaultdict(lambda: Decimal("0.00"))
 
@@ -859,21 +894,48 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
             elif item.item_type == "allowance":
                 allowance_map[item.name] += item.amount
 
+        # Process penalties from EmployeePenalty model
+        penalty_map = defaultdict(lambda: Decimal("0.00"))
+        employee_penalties = employee.penalties.filter(
+            date__gte=payroll_period.start_date,
+            date__lte=payroll_period.end_date,
+            status='applied'
+        )
+        
+        for penalty in employee_penalties:
+            penalty_display_name = penalty.get_penalty_type_display()
+            penalty_map[penalty_display_name] += penalty.amount
+
+        # Build the complete row
         row = base_row
+        
+        # Add deduction columns
         for name in deduction_names:
             row.append(float(deduction_map.get(name, 0.00)))
 
+        # Add allowance columns
         for name in allowance_names:
             row.append(float(allowance_map.get(name, 0.00)))
+            
+        # Add penalty columns
+        for name in penalty_names:
+            row.append(float(penalty_map.get(name, 0.00)))
 
+        # Write row to Excel
         for col_idx, value in enumerate(row, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
             cell.alignment = center_align
             cell.border = thin_border
 
+            # Add light penalty background for penalty columns
+            if col_idx > len(base_headers) + len(deduction_names) + len(allowance_names):
+                if isinstance(value, (int, float)) and value > 0:
+                    cell.fill = penalty_fill
+
             if isinstance(value, (int, float)):
                 totals[col_idx] += Decimal(str(value))
 
+    # Write totals row (row 1)
     for col_idx in range(1, len(final_headers) + 1):
         value = totals.get(col_idx)
         if value is not None:
@@ -885,6 +947,7 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
 
     ws.cell(row=1, column=1, value="TOTALS").font = bold_font
 
+    # Freeze panes at row 3 (after totals and headers)
     ws.freeze_panes = ws["A3"]
 
     output = BytesIO()
@@ -896,9 +959,8 @@ def generate_allpayslips_excel(payroll_period_id: int) -> BytesIO:
 def generate_payslip_pdf(payslip):
     """
     Generates a structured payslip PDF with a detailed breakdown of the employee's
-    specific allowances, deductions, and taxes, only including items applicable to the employee.
+    specific allowances, deductions, penalties, and taxes, only including items applicable to the employee.
     """
-
 
     # Safely get institution and company name
     institution = None
@@ -910,7 +972,7 @@ def generate_payslip_pdf(payslip):
         if hasattr(institution, 'currency') and institution.currency:
             currency = institution.currency
 
-    # Get the employee's specific allowances, deductions, and taxes
+    # Get the employee's specific allowances, deductions, penalties, and taxes
     employee = payslip.employee
 
     # Fetch relevant allowances
@@ -931,10 +993,26 @@ def generate_payslip_pdf(payslip):
         if amount is not None and isinstance(amount, (Decimal, int, float)):
             allowances_data.append({'name': allowance.allowance_type.name, 'amount': Decimal(str(amount))})
 
+    # Fetch penalties within the payroll period with 'applied' status
+    penalties = (
+        employee.penalties.filter(
+            date__gte=payslip.payroll_period.start_date,
+            date__lte=payslip.payroll_period.end_date,
+            status='applied'  # Only include applied penalties
+        )
+    )
+    penalties_data = []
+    for penalty in penalties:
+        if penalty.amount is not None and isinstance(penalty.amount, (Decimal, int, float)) and penalty.amount > 0:
+            penalties_data.append({
+                'name': penalty.get_penalty_type_display(), 
+                'amount': Decimal(str(penalty.amount)),
+                'date': penalty.date
+            })
+
     # Fetch regular deductions (excluding attendance penalties)
     deductions = (
         employee.deductions.filter(is_active=True)
-        # .exclude(deduction_type__attendance_penalty_for__in=["late", "absentism"])
         .filter(
             effective_from__lte=payslip.payroll_period.end_date,
         )
@@ -950,14 +1028,6 @@ def generate_payslip_pdf(payslip):
         if amount is not None and isinstance(amount, (Decimal, int, float)):
             regular_deductions.append({'name': deduction.deduction_type.name, 'amount': Decimal(str(amount))})
 
-    # Fetch attendance deductions
-    # attendance_total, deduction_items = payslip.get_attendance_deductions()
-    # attendance_ded_group = defaultdict(Decimal)
-    # for item in deduction_items:
-    #     if item['amount'] is not None and isinstance(item['amount'], (Decimal, int, float)):
-    #         attendance_ded_group[item['name']] += Decimal(str(item['amount']))
-    # attendance_deductions = [{'name': name, 'amount': amt} for name, amt in attendance_ded_group.items()]
-
     # Fetch relevant taxes
     taxes = employee.taxes.filter(
         effective_from__lte=payslip.payroll_period.end_date,
@@ -971,15 +1041,14 @@ def generate_payslip_pdf(payslip):
         if amount is not None and isinstance(amount, (Decimal, int, float)):
             taxes_data.append({'name': tax.institution_tax.tax_name, 'amount': Decimal(str(amount))})
 
-    # Combine all deductions
-    # deductions_data = regular_deductions + attendance_deductions + taxes_data
-    deductions_data = regular_deductions + taxes_data
-
+    # Combine all deductions (regular deductions + penalties + taxes)
+    deductions_data = regular_deductions + penalties_data + taxes_data
     deductions_data.sort(key=lambda x: x['name'])
 
     # Filter out zero-amount items
     allowances_data = [item for item in allowances_data if item['amount'] > 0]
     deductions_data = [item for item in deductions_data if item['amount'] > 0]
+    penalties_data = [item for item in penalties_data if item['amount'] > 0]
 
     # Get the month and year for the header
     pay_period_month = payslip.payroll_period.start_date.strftime('%B %Y')
@@ -997,7 +1066,7 @@ def generate_payslip_pdf(payslip):
         # Convert to integer to remove decimals and format with commas
         return f"{int(Decimal(str(value))):,}"
 
-    # Generate HTML rows for allowances and deductions
+    # Generate HTML rows for allowances, deductions, and penalties
     allowances_rows = "".join([
         f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
         for item in allowances_data
@@ -1006,6 +1075,31 @@ def generate_payslip_pdf(payslip):
         f'<tr><td>{item["name"]}</td><td>{format_currency(item["amount"])}</td></tr>'
         for item in deductions_data
     ])
+    
+    # Generate penalties section if there are any penalties
+    penalties_section = ""
+    if penalties_data:
+        penalties_rows = "".join([
+            f'<tr><td>{item["name"]} ({item["date"].strftime("%d-%b")})</td><td>{format_currency(item["amount"])}</td></tr>'
+            for item in penalties_data
+        ])
+        penalties_section = f"""
+        <h2>Penalties</h2>
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount ({currency})</th>
+                </tr>
+            </thead>
+            <tbody>
+                {penalties_rows}
+            </tbody>
+        </table>
+        """
+
+    # Calculate total penalties for summary
+    total_penalties = sum(item['amount'] for item in penalties_data)
 
     html_template = f"""
     <!DOCTYPE html>
@@ -1094,6 +1188,9 @@ def generate_payslip_pdf(payslip):
                 font-weight: normal;
                 width: 60%;
             }}
+            .penalties-highlight {{
+                background-color: #ffebee;
+            }}
             .footer {{
                 clear: both;
                 padding-top: 20px;
@@ -1151,6 +1248,7 @@ def generate_payslip_pdf(payslip):
                     <td class="label">Total Deductions:</td>
                     <td>{format_currency(payslip.total_deductions)}</td>
                 </tr>
+                {f'<tr class="penalties-highlight"><td class="label">Total Penalties:</td><td>{format_currency(total_penalties)}</td></tr>' if total_penalties > 0 else ''}
                 <tr>
                     <td class="label">Net Salary:</td>
                     <td>{format_currency(payslip.net_salary)}</td>
@@ -1188,6 +1286,8 @@ def generate_payslip_pdf(payslip):
             </tbody>
         </table>
         
+        {penalties_section}
+        
         <div class="footer">
             This is a computer-generated document and does not require a signature.
         </div>
@@ -1200,4 +1300,4 @@ def generate_payslip_pdf(payslip):
     html_doc.write_pdf(target=pdf_buffer)
     pdf_buffer.seek(0)
     
-    return pdf_buffer  
+    return pdf_buffer

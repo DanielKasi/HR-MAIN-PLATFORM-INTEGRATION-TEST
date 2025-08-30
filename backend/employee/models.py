@@ -417,120 +417,84 @@ class Employee(SoftDeletableTimeStampedModel):
         except AttributeError:
             return False
 
+
     def generate_and_set_password(self):
         """Generate and set a compliant password for the user."""
         from django.contrib.auth.hashers import make_password
         import string
-        import random
+        import secrets
+        import logging
+
+        logger = logging.getLogger(__name__)
 
         def generate_compliant_password(length=12):
+            """Generate a password that meets Django's validation requirements"""
             lowercase = string.ascii_lowercase
             uppercase = string.ascii_uppercase
             digits = string.digits
-            special = string.punctuation
-
-            password = [
-                random.choice(lowercase),
-                random.choice(uppercase),
-                random.choice(digits),
-                random.choice(special),
+            special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+            
+            # Ensure we have at least one character from each required set
+            password_chars = [
+                secrets.choice(lowercase),
+                secrets.choice(uppercase),
+                secrets.choice(digits),
+                secrets.choice(special),
             ]
-
+            
+            # Fill the rest of the password length
             all_characters = lowercase + uppercase + digits + special
             for _ in range(length - 4):
-                password.append(random.choice(all_characters))
+                password_chars.append(secrets.choice(all_characters))
+            
+            # Shuffle to avoid predictable patterns
+            secrets.SystemRandom().shuffle(password_chars)
+            return "".join(password_chars)
 
-            random.shuffle(password)
-            return "".join(password)
-
-        # This was incorrectly indented in your original code
-        random_password = generate_compliant_password()
-        self.user.set_password(random_password)
-        self.user.is_password_verified = False
-        self.user.save()
-        return random_password
-
-    def create_password_token_and_send_link(self, request):
-        """Create token and send password link to user."""
         try:
-            # Add the missing import
-            from users.models import OTPModel  # or whatever your Token model is called
-
-            def create_and_institution_token(user, purpose, expiry_minutes):
-                token = uuid.uuid4().hex
-                # Use OTPModel instead of Token if that's your model name
-                OTPModel.objects.create(
-                    user=user,
-                    value=token,  # Make sure this matches your model field name
-                    purpose=purpose,
-                    expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
-                )
-                return token
-
-            def build_password_link(request, token):
-                try:
-                    return request.build_absolute_uri(
-                        reverse("set_password", kwargs={"token": token})
-                    )
-                except Exception as e:
-                    logger.error(f"Error building password link: {e}")
-                    # Fallback URL construction
-                    base_url = f"{request.scheme}://{request.get_host()}"
-                    return f"{base_url}/set-password/{token}"
-
-            def send_password_link_to_user(user, link):
-                # Add debugging
-                print(f"Attempting to send password link to {user.email}")
-                print(f"Email settings - FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
-
-                try:
-                    result = send_mail(
-                        subject="Set Your Password",
-                        message=f"Please use the following link to set your password: {link}",
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[user.email],
-                        fail_silently=False,
-                    )
-                    print(f"Email send result: {result}")
-                    return result > 0
-                except Exception as email_error:
-                    logger.error(f"Failed to send email: {email_error}")
-                    raise email_error
-
-            # Check if user has email
-            if not self.user or not self.user.email:
-                logger.error("User or user email is missing")
-                return False
-
-            token = create_and_institution_token(
-                user=self.user, purpose="registration", expiry_minutes=15
-            )
-            password_link = build_password_link(request=request, token=token)
-            print(f"Generated password link: {password_link}")
-
-            link_sent = send_password_link_to_user(user=self.user, link=password_link)
-
-            (f"Link sent status: {link_sent}")
-            return link_sent
-
+            # Generate the password
+            random_password = generate_compliant_password()
+            
+            # Set the password using Django's built-in method (this handles hashing)
+            self.user.set_password(random_password)
+            self.user.is_password_verified = False
+            self.user.save()
+            
+            return random_password
+            
         except Exception as e:
-            logger.error(f"Error in create_password_token_and_send_link: {e}")
-            return False
+            logger.error(f"Error generating password for user {self.user.email}: {e}")
+            raise e
 
-    def setup_employee_password(self, request):
-        """
-        Complete password setup process for new employees.
-        """
-        print(
-            f"Setting up password for employee: {self.user.email if self.user else 'No user'}"
+    def send_password_email_async(self, password):
+        """Send password via email using Celery task"""
+        from .tasks import send_employee_password_email
+        
+        if not self.user or not self.user.email:
+            return False
+        
+        # Queue the email task
+        send_employee_password_email.delay(
+            user_id=self.user.id,
+            password=password,
+            employee_name=self.user.fullname,
+            employee_email=self.user.email
         )
+        return True
+
+    def setup_employee_password(self, use_async=True):
+        """Complete password setup process for new employees."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Setting up password for employee: {self.user.email if self.user else 'No user'}")
 
         if not self.should_generate_password():
             logger.warning("Password generation not allowed for this employee")
             return {"success": False, "reason": "Institution owner or invalid data"}
 
         try:
-            # Check if user exists and has email
+            # Validate user and email
             if not self.user:
                 logger.error("No user associated with this employee")
                 return {"success": False, "error": "No user associated with employee"}
@@ -539,20 +503,100 @@ class Employee(SoftDeletableTimeStampedModel):
                 logger.error("User has no email address")
                 return {"success": False, "error": "User has no email address"}
 
-            password = self.generate_and_set_password()
-            print(f"Password generated successfully: {bool(password)}")
+            # Generate password
+            try:
+                password = self.generate_and_set_password()
+                logger.info("Password generated successfully")
+            except Exception as pwd_error:
+                logger.error(f"Failed to generate password: {pwd_error}")
+                return {"success": False, "error": f"Password generation failed: {str(pwd_error)}"}
 
-            link_sent = self.create_password_token_and_send_link(request)
-            print(f"Password link sent: {link_sent}")
+            # Send password email
+            try:
+                if use_async:
+                    email_sent = self.send_password_email_async(password)
+                else:
+                    email_sent = self.send_password_email_sync(password)
+                
+                logger.info(f"Password email queued/sent: {email_sent}")
+            except Exception as email_error:
+                logger.error(f"Failed to send password email: {email_error}")
+                return {
+                    "success": True,  # Password was generated successfully
+                    "password_generated": True,
+                    "email_sent": False,
+                    "email_error": str(email_error)
+                }
 
             return {
                 "success": True,
-                "password_generated": bool(password),
-                "link_sent": link_sent,
+                "password_generated": True,
+                "email_sent": email_sent,
             }
+
         except Exception as e:
             logger.error(f"Error in setup_employee_password: {e}")
             return {"success": False, "error": str(e)}
+
+    def send_password_email_sync(self, password):
+        """Send password email synchronously (fallback)"""
+        from django.core.mail import send_mail
+        from django.conf import settings
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        try:
+            subject = "Your Account Password - Welcome to the Team"
+            
+            # Get user's full name safely
+            user_name = getattr(self.user, 'fullname', None) or \
+                    getattr(self.user, 'full_name', None) or \
+                    f"{getattr(self.user, 'first_name', '')} {getattr(self.user, 'last_name', '')}".strip() or \
+                    self.user.email
+            
+            # Get institution name if available
+            institution_name = "the System"
+            try:
+                if hasattr(self, 'department') and self.department and hasattr(self.department, 'institution'):
+                    institution_name = self.department.institution.name
+            except:
+                pass
+            
+            message = f"""
+    Hello {user_name},
+
+    Welcome to {institution_name}! Your employee account has been created successfully.
+
+    Here are your login credentials:
+    Email: {self.user.email}
+    Password: {password}
+
+    IMPORTANT SECURITY NOTICE:
+    - Please change your password after your first login
+    - Keep your login credentials secure and confidential
+    - Do not share your password with anyone
+
+    You can log in to the system using these credentials. If you have any questions or need assistance, please contact your system administrator.
+
+    Best regards,
+    The {institution_name} Team
+            """
+            
+            result = send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[self.user.email],
+                fail_silently=False,
+            )
+            
+            logger.info(f"Password email sent successfully to {self.user.email}")
+            return result > 0
+            
+        except Exception as email_error:
+            logger.error(f"Failed to send password email to {self.user.email}: {email_error}")
+            return False
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
@@ -579,11 +623,10 @@ class Employee(SoftDeletableTimeStampedModel):
 
     def _is_location_valid(self, latitude, longitude):
         """
-        Check if the given location is within 100 meters of any attached branch.
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
         """
-
-        THRESHOLD_METERS = 500
-
         attached_branches = self.get_all_branches()
         if not attached_branches.exists():
             return False
@@ -591,11 +634,21 @@ class Employee(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            if distance <= THRESHOLD_METERS:
+            
+            if distance <= threshold_meters:
                 return True
+                
         return False
 
 class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
@@ -834,11 +887,10 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
 
     def _is_location_valid(self, latitude, longitude):
         """
-        Check if the given location is within 100 meters of any attached branch.
+        Check if the given location is within the configured radius of any attached branch.
+        Uses the branch-specific radius from BranchLocationComaparisonConfig if available,
+        otherwise falls back to a default of 100 meters.
         """
-
-        THRESHOLD_METERS = 500
-
         attached_branches = self.employee.get_all_branches()
         if not attached_branches.exists():
             return False
@@ -846,11 +898,21 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
+                
+            # Get the branch-specific radius or use default
+            try:
+                threshold_meters = branch.location_comparison_settings.radius_in_meters
+            except AttributeError:
+                # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
+                threshold_meters = 100
+                
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            if distance <= THRESHOLD_METERS:
+            
+            if distance <= threshold_meters:
                 return True
+                
         return False
 
     def save(self, *args, **kwargs):
@@ -977,7 +1039,6 @@ class EmployeeContract(SoftDeletableTimeStampedModel):
 
             original_pages = self.extract_text_from_pdf(original_content)
             if not any(original_pages):
-                print("No text extracted from original_contract, trying OCR")
                 original_pages = self.extract_text_with_ocr(original_content)
             if not any(original_pages):
                 self.status = "NOT_MATCHED_NEEDS_REVIEW"
@@ -1010,7 +1071,6 @@ class EmployeeContract(SoftDeletableTimeStampedModel):
                 zip(original_pages, signed_pages), 1
             ):
                 if orig_text != sign_text:
-                    print(f"Page {page_num} differs")
                     matcher = SequenceMatcher(
                         None, orig_text.split(), sign_text.split()
                     )
