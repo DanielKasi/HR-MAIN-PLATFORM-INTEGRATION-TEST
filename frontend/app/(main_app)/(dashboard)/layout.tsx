@@ -3,15 +3,7 @@
 import type React from "react";
 import {useState, useEffect, useRef} from "react";
 import {useRouter, usePathname, useSearchParams} from "next/navigation";
-import {
-  ChevronDown,
-  ChevronRight,
-  Settings,
-  User,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
+import {ChevronDown, ChevronRight, Settings, User, LogOut, Menu, X} from "lucide-react";
 import Image from "next/image";
 import {useSelector, useDispatch} from "react-redux";
 import {Icon} from "@iconify/react";
@@ -61,8 +53,6 @@ import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
 import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
-
-
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -141,14 +131,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const isSideBarOpen = useSelector(selectSideBarOpened);
   const dispatch = useDispatch();
   const router = useRouter();
-  const appLayoutRef = useRef<HTMLDivElement|null>(null);
-
+  const appLayoutRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleActivity = () => {
       if (currentUser && appLayoutRef.current) {
         dispatch(userActivityDetected());
-        
       }
     };
 
@@ -163,9 +151,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     dispatch(fetchUpToDateInstitution());
   }, [dispatch]);
 
-  useEffect(()=>{
-    setMobileMenuOpen(isSideBarOpen)
-  }, [isSideBarOpen])
+  useEffect(() => {
+    setMobileMenuOpen(isSideBarOpen);
+  }, [isSideBarOpen]);
 
   useEffect(() => {
     if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
@@ -203,8 +191,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   }, []);
 
   useEffect(() => {
-    if(isMobile){
-      onCloseSidebar()
+    if (isMobile) {
+      onCloseSidebar();
     }
   }, [pathname]);
 
@@ -213,7 +201,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       if (mobileMenuOpen && isMobile) {
         const target = event.target as HTMLElement;
         if (!target.closest(".mobile-nav-drawer") && !target.closest(".mobile-menu-button")) {
-          onCloseSidebar()
+          onCloseSidebar();
         }
       }
     };
@@ -235,17 +223,16 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "Recruitment Pipeline", href:"/job-interviews/interview-pipeline"},
-        {title: "Recruitment Survey", href:"#"},
+        {title: "Analytics", href: "/analytics/recruitment"},
+        {title: "Recruitment Pipeline", href: "/job-interviews/interview-pipeline"},
+        {title: "Recruitment Survey", href: "#"},
         {title: "Candidates", href: "/applications"},
         {title: "Interviews", href: "/job-interviews"},
-        {title: "Recruitment", href:"#"},
+        {title: "Recruitment", href: "#"},
         {title: "Open Jobs", href: "/job-adverts"},
-        {title: "Stages", href:"#"},
-        {title: "Skill Zone", href:"#"},
+        {title: "Stages", href: "#"},
+        {title: "Skill Zone", href: "#"},
         {title: "Onboarding", href: "/on-boarding"},
-
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
     },
@@ -254,20 +241,17 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
+        {title: "Analytics", href: "/analytics/employees"},
         {title: "Employee Information", href: "/employees/employee-list"},
-        {title: "Document Requests", href:"#"},
-        {title: "Shift Requests", href:"#"},
+        {title: "Document Requests", href: "#"},
+        {title: "Shift Requests", href: "#"},
         {title: "Employee Types", href: "/employees/employee-types"},
         {title: "Work Types", href: "/employees/work-types"},
-        {title: "Rotating Shift Assign", href:"#"},
-        {title: "Rotating Work Type Assign", href:"#"},
+        {title: "Rotating Shift Assign", href: "#"},
+        {title: "Rotating Work Type Assign", href: "#"},
         {title: "Disciplinary Actions", href: "/employees/discipline"},
-        {title: "Policies", href:"#"},
+        {title: "Policies", href: "#"},
         {title: "Organization Chart", href: "#"},
-
-
-        
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
@@ -276,39 +260,39 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#",
       icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "Biometric Devices", href:"#"},
+        {title: "Analytics", href: "/analytics/attendance"},
+        {title: "Biometric Devices", href: "#"},
         {title: "Attendance", href: "/employees/attendance"},
-        {title: "Attendance Requests", href:"#"},
-        {title: "Hour Account", href:"#"},
-        {title: "Work Records", href:"#"},
-        {title: "Attendance Activities", href:"#"},
-        {title: "Late Come Early Out", href:"#"},
-        {title: "My Attendances", href:"#"},
+        {title: "Attendance Requests", href: "#"},
+        {title: "Hour Account", href: "#"},
+        {title: "Work Records", href: "#"},
+        {title: "Attendance Activities", href: "#"},
+        {title: "Late Come Early Out", href: "#"},
+        {title: "My Attendances", href: "#"},
       ],
     },
-        {
+    {
       title: "Leave",
       href: "#1",
       icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "My Leave Requests", href:"#"},
+        {title: "Analytics", href: "/analytics/leave"},
+        {title: "My Leave Requests", href: "#"},
         {title: "Leave Types", href: "/leave/leave-types"},
-        {title: "Assigned Leave", href:"#"},
-        {title: "Leave Allocation Request", href:"#"},
-        {title: "Compensatory Leave Requests", href:"#"},
+        {title: "Assigned Leave", href: "#"},
+        {title: "Leave Allocation Request", href: "#"},
+        {title: "Compensatory Leave Requests", href: "#"},
         {title: "Leave Policy", href: "/leave/leave-policy"},
         {title: "Leave Balances", href: "/leave/leave-balances"},
         {title: "Leave Application", href: "/leave/leave-application"},
       ],
     },
-        {
+    {
       title: "Payroll",
       href: "#1",
       icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
+        {title: "Analytics", href: "/analytics/payroll"},
         {title: "Contracts", href: "/employees/contracts"},
         {title: "Allowance Types", href: "/payroll/allowance-types"},
         {title: "Deduction Types", href: "/payroll/deduction-types"},
@@ -316,10 +300,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Employee Deductions", href: "/payroll/employee-deductions"},
         {title: "Employee Tax", href: "/payroll/employee-tax"},
         {title: "Payroll Period", href: "/payroll/payroll-period"},
-        {title: "Payslips", href:"#"},
-        {title: "Loan / Advanced Salary", href:"#"},
-        {title: "Encashments & Reimbursements", href:"#"},
-        {title: "Federal Tax", href:"#"},
+        {title: "Payslips", href: "#"},
+        {title: "Loan / Advanced Salary", href: "#"},
+        {title: "Encashments & Reimbursements", href: "#"},
+        {title: "Federal Tax", href: "#"},
       ],
     },
     {
@@ -327,14 +311,14 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "#",
       icon: <Icon icon="hugeicons:chart-histogram" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "Objectives", href:"#"},
-        {title: "360 Feedback", href:"#"},
-        {title: "Meetings", href:"#"},
-        {title: "Key Results", href:"#"},
-        {title: "Employee Bonus Point", href:"#"},
-        {title: "Period", href:"#"},
-        {title: "Question Template", href:"#"},
+        {title: "Analytics", href: "/analytics/performance"},
+        {title: "Objectives", href: "#"},
+        {title: "360 Feedback", href: "#"},
+        {title: "Meetings", href: "#"},
+        {title: "Key Results", href: "#"},
+        {title: "Employee Bonus Point", href: "#"},
+        {title: "Period", href: "#"},
+        {title: "Question Template", href: "#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
@@ -344,9 +328,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       href: "/off-boarding",
       icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "Exit Process", href:"#"},
-        {title: "Resignation Letters", href:"#"},
+        {title: "Analytics", href: "/analytics/offboarding"},
+        {title: "Exit Process", href: "#"},
+        {title: "Resignation Letters", href: "#"},
         {title: "Offboarding Stages", href: "/off-boarding/stages"},
         {title: "Separation Types", href: "/off-boarding/separation-types"},
         {title: "Separation Policy", href: "/off-boarding/separation-policy"},
@@ -355,56 +339,56 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
 
-
-
     {
       title: "Assets",
       href: "#1",
       icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
+        {title: "Analytics", href: "/analytics/assets"},
         {title: "Asset Batches", href: "/assests/asset-categories"},
         {title: "Asset View", href: "/assests/assets"},
         {title: "Asset Requests", href: "/assests/asset-requests"},
         {title: "Asset Allocations", href: "/assests/asset-allocations"},
         {title: "Asset Returns", href: "/assests/asset-returns"},
-        {title: "Asset History", href:"#"},
+        {title: "Asset History", href: "#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
     {
       title: "Help Desk",
       href: "#1",
-      icon: <Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />,
+      icon: (
+        <Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />
+      ),
       submenu: [
-        {title: "FAQs", href:"#"},
-        {title: "Tickets", href:"#"},
+        {title: "FAQs", href: "#"},
+        {title: "Tickets", href: "#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
-        {
+    {
       title: "Project",
       href: "#1",
       icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Analytics", href:"#"},
-        {title: "Projects", href:"#"},
-        {title: "Tasks", href:"#"},
-        {title: "Timesheet", href:"#"},
+        {title: "Analytics", href: "/analytics/project"},
+        {title: "Projects", href: "#"},
+        {title: "Tasks", href: "#"},
+        {title: "Timesheet", href: "#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
-        {
+    {
       title: "Configuration",
       href: "#1",
       icon: <Icon icon="hugeicons:configuration-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
-        {title: "Multiple Approvals", href:"#"},
-        {title: "Mail Templates", href:"#"},
-        {title: "Mail Automation", href:"#"},
+        {title: "Multiple Approvals", href: "#"},
+        {title: "Mail Templates", href: "#"},
+        {title: "Mail Automation", href: "#"},
         {title: "Calendar", href: "/events-holidays"},
-        {title: "Company Leaves", href:"#"},
-        {title: "Restrict Leaves", href:"#"},
+        {title: "Company Leaves", href: "#"},
+        {title: "Restrict Leaves", href: "#"},
       ],
       requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
@@ -493,7 +477,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const onToggle = () => {
     if (isMobile) {
       // setMobileMenuOpen(!mobileMenuOpen);
-      dispatch(!isSideBarOpen ? openSideBar():closeSideBar());
+      dispatch(!isSideBarOpen ? openSideBar() : closeSideBar());
       console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
     } else {
       if (isSideBarOpen) {
@@ -505,13 +489,12 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   };
 
   const onOpenSidebar = () => {
-      dispatch(openSideBar());
+    dispatch(openSideBar());
   };
 
   const onCloseSidebar = () => {
-      dispatch(closeSideBar());
-   }
-
+    dispatch(closeSideBar());
+  };
 
   const markSetupAsComplete = async () => {
     if (!InstitutionId) return;
@@ -529,12 +512,20 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     setExpandedItems((prev) => ({[title]: !prev[title]}));
   };
 
-  const NavItemComponent = ({item, isMobileView=false, index}:{item: NavItem, isMobileView:boolean,index:number}) => {
+  const NavItemComponent = ({
+    item,
+    isMobileView = false,
+    index,
+  }: {
+    item: NavItem;
+    isMobileView: boolean;
+    index: number;
+  }) => {
     const isActive = item.submenu
       ? item.submenu.some((sub) => pathname === sub.href)
       : pathname === item.href;
     const isExpanded = expandedItems[item.title];
-    const hoveredTooltipRef = useRef<HTMLSpanElement|null>(null);
+    const hoveredTooltipRef = useRef<HTMLSpanElement | null>(null);
     const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
     return (
@@ -545,7 +536,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
           }`}
           onMouseEnter={() => {
-            if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true)
+            if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true);
           }}
           onMouseLeave={() => setIsTooltipVisible(false)}
           onClick={() => {
@@ -562,11 +553,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         >
           <div className="flex items-center space-x-2 relative">
             {item.icon}
-            {isSideBarOpen ? (
-              <span>{item.title}</span>
-            ) : (
-              <></>
-            )}
+            {isSideBarOpen ? <span>{item.title}</span> : <></>}
 
             {/* Tooltip shown only on hover when sidebar is closed and not mobile */}
             {/* {!isSideBarOpen && !isMobile && isTooltipVisible && (
@@ -619,71 +606,26 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   };
 
   return (
-
-  <>
-  <RedirectsWatcher/>
-    <div ref={appLayoutRef} className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout">
-      {/* Desktop Sidebar */}
-      {!isMobile && (
-        <div
-          className={`${
-            isSideBarOpen ? "w-64" : "w-20"
-          } bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
-        >
-          <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
-            <div className="flex items-center gap-3">
-              <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
-                {InstitutionLogo ? (
-                  <Image
-                    alt="Institution Logo"
-                    className="object-cover object-center !w-full !h-full"
-                    fill
-                    src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
-                  />
-                ) : (
-                  <Icon icon="hugeicons:building-05" width="24" height="24" />
-                )}
-              </div>
-              {isSideBarOpen && (
-                <span className="font-bold text-[var(--sidebar-foreground)] line-clamp-1">
-                  {InstitutionName}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
-            {filteredNavItems.map((item, index) => (
-              <NavItemComponent key={`${item.title}-${index}`} item={item} isMobileView={false} index={index} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Navigation Drawer */}
-      {isMobile && (
-        <>
-          {/* Overlay */}
-          {mobileMenuOpen && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-              // onClick={onCloseSidebar}
-            />
-          )}
-
-          {/* Drawer */}
+    <>
+      <RedirectsWatcher />
+      <div
+        ref={appLayoutRef}
+        className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout"
+      >
+        {/* Desktop Sidebar */}
+        {!isMobile && (
           <div
-            className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
-              mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`${
+              isSideBarOpen ? "w-64" : "w-20"
+            } bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
           >
-            {/* Drawer Header */}
-            <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center justify-between">
+            <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
               <div className="flex items-center gap-3">
                 <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
                   {InstitutionLogo ? (
                     <Image
                       alt="Institution Logo"
-                      className="object-cover rounded-xl"
+                      className="object-cover object-center !w-full !h-full"
                       fill
                       src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
                     />
@@ -691,165 +633,227 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                     <Icon icon="hugeicons:building-05" width="24" height="24" />
                   )}
                 </div>
-                <span className="font-bold text-gray-900">{InstitutionName}</span>
+                {isSideBarOpen && (
+                  <span className="font-bold text-[var(--sidebar-foreground)] line-clamp-1">
+                    {InstitutionName}
+                  </span>
+                )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggle}
-                className="p-2 hover:bg-gray-100"
-              >
-                <X className="h-5 w-5" />
-              </Button>
             </div>
-
-            {/* Branch Selector */}
-            <div className="p-4 border-b border-gray-100">
-              <InstitutionBranchSelector />
-            </div>
-
-            {/* Navigation Items */}
-            <div className="flex-1 overflow-y-auto p-2 pb-20">
-              {filteredNavItems.map((item, idx) => (
-                <NavItemComponent key={`${item.title}-${idx}`} item={item} isMobileView={true} index={idx} />
+            <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
+              {filteredNavItems.map((item, index) => (
+                <NavItemComponent
+                  key={`${item.title}-${index}`}
+                  item={item}
+                  isMobileView={false}
+                  index={index}
+                />
               ))}
             </div>
           </div>
-        </>
-      )}
+        )}
 
-      {/* Main Content Area */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 ${
-          !isMobile ? (isSideBarOpen ? "ml-64" : "ml-20") : ""
-        } transition-all duration-300`}
-      >
-        {/* Header */}
-        <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
-          <div className="flex items-center gap-2 min-w-0">
-            <button
-              onClick={onToggle}
-              className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${
-                isMobile ? "" : ""
+        {/* Mobile Navigation Drawer */}
+        {isMobile && (
+          <>
+            {/* Overlay */}
+            {mobileMenuOpen && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+                // onClick={onCloseSidebar}
+              />
+            )}
+
+            {/* Drawer */}
+            <div
+              className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
+                mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
-              {isMobile ? (
-                <Menu className="w-4 h-4" />
-              ) : (
-                <Icon
-                  icon={!isSideBarOpen ? "hugeicons:transition-right" : "hugeicons:transition-left"}
-                  className="w-5 h-5"
-                />
-              )}
-            </button>
-            <h1 className="text-xl font-bold truncate">PERACOSOFT</h1>
-          </div>
-
-          <div className="flex-1 flex justify-center min-w-0">
-            {!isMobile && <InstitutionBranchSelector />}
-          </div>
-
-          <div className="flex items-center gap-4 min-w-0">
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
-              <Modules />
-            </ProtectedComponent>
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>
-              <Link
-                href={"/admin"}
-                className="text-gray-900 rounded-full bg-white hover:bg-gray-100 p-3 border-none outline-none relative"
-              >
-                <Icon icon="hugeicons:shield-01" width="24" height="24" />
-              </Link>
-            </ProtectedComponent>
-            <TaskNotification />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-2 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
-                  <div className="!w-9 !h-9 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center relative">
-                    <Image
-                      src={"/images/profile-placeholder.jpg"}
-                      fill
-                      alt={"Profile"}
-                      className="!w-full !h-full object-cover object-center"
-                    />
+              {/* Drawer Header */}
+              <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+                    {InstitutionLogo ? (
+                      <Image
+                        alt="Institution Logo"
+                        className="object-cover rounded-xl"
+                        fill
+                        src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
+                      />
+                    ) : (
+                      <Icon icon="hugeicons:building-05" width="24" height="24" />
+                    )}
                   </div>
-                  {!isMobile && (
-                    <>
-                      <div className="hidden md:block min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {currentUser?.fullname || "User"}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
-                      </div>
-                      <ChevronDown className="h-4 w-4 hidden md:block flex-shrink-0" />
-                    </>
-                  )}
+                  <span className="font-bold text-gray-900">{InstitutionName}</span>
                 </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="rounded-xl p-1 shadow-lg border border-gray-200"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onToggle}
+                  className="p-2 hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Branch Selector */}
+              <div className="p-4 border-b border-gray-100">
+                <InstitutionBranchSelector />
+              </div>
+
+              {/* Navigation Items */}
+              <div className="flex-1 overflow-y-auto p-2 pb-20">
+                {filteredNavItems.map((item, idx) => (
+                  <NavItemComponent
+                    key={`${item.title}-${idx}`}
+                    item={item}
+                    isMobileView={true}
+                    index={idx}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 ${
+            !isMobile ? (isSideBarOpen ? "ml-64" : "ml-20") : ""
+          } transition-all duration-300`}
+        >
+          {/* Header */}
+          <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                onClick={onToggle}
+                className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${
+                  isMobile ? "" : ""
+                }`}
               >
-                <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                {isMounted && canViewSettings && (
+                {isMobile ? (
+                  <Menu className="w-4 h-4" />
+                ) : (
+                  <Icon
+                    icon={
+                      !isSideBarOpen ? "hugeicons:transition-right" : "hugeicons:transition-left"
+                    }
+                    className="w-5 h-5"
+                  />
+                )}
+              </button>
+              <h1 className="text-xl font-bold truncate">PERACOSOFT</h1>
+            </div>
+
+            <div className="flex-1 flex justify-center min-w-0">
+              {!isMobile && <InstitutionBranchSelector />}
+            </div>
+
+            <div className="flex items-center gap-4 min-w-0">
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
+                <Modules />
+              </ProtectedComponent>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>
+                <Link
+                  href={"/admin"}
+                  className="text-gray-900 rounded-full bg-white hover:bg-gray-100 p-3 border-none outline-none relative"
+                >
+                  <Icon icon="hugeicons:shield-01" width="24" height="24" />
+                </Link>
+              </ProtectedComponent>
+              <TaskNotification />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-2 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">
+                    <div className="!w-9 !h-9 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center relative">
+                      <Image
+                        src={"/images/profile-placeholder.jpg"}
+                        fill
+                        alt={"Profile"}
+                        className="!w-full !h-full object-cover object-center"
+                      />
+                    </div>
+                    {!isMobile && (
+                      <>
+                        <div className="hidden md:block min-w-0">
+                          <div className="text-sm font-medium truncate">
+                            {currentUser?.fullname || "User"}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            {userRole || "Staff"}
+                          </div>
+                        </div>
+                        <ChevronDown className="h-4 w-4 hidden md:block flex-shrink-0" />
+                      </>
+                    )}
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="rounded-xl p-1 shadow-lg border border-gray-200"
+                >
+                  <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  {isMounted && canViewSettings && (
+                    <DropdownMenuItem
+                      className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                      onClick={() => router.push("/settings")}
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem
                     className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-                    onClick={() => router.push("/settings")}
+                    onClick={handleLogoutClick}
                   >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator className="my-1" />
-                <DropdownMenuItem
-                  className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
-                  onClick={handleLogoutClick}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="w-full p-2 relative min-w-0">
+            {selectedInstitution ? (
+              <>
+                <div className="overflow-y-auto max-h-[88svh] relative min-w-full">{children}</div>
+              </>
+            ) : (
+              <CreateOrganisationWizard />
+            )}
+            {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
           </div>
         </div>
 
-        {/* Content */}
-        <div className="w-full p-2 relative min-w-0">
-          {selectedInstitution ? (
-            <>
-              <div className="overflow-y-auto max-h-[88svh] relative min-w-full">{children}</div>
-            </>
-          ) : (
-            <CreateOrganisationWizard />
-          )}
-          {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
-        </div>
+        {/* Logout Dialog */}
+        <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Logout</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to log out of your account?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex space-x-2 sm:justify-end">
+              <Button type="button" variant="outline" onClick={handleCancelLogout}>
+                Cancel
+              </Button>
+              <Button type="button" variant="default" onClick={handleLogout}>
+                Logout
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {userIsLoading && <FixedLoader />}
       </div>
-
-      {/* Logout Dialog */}
-      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Logout</DialogTitle>
-            <DialogDescription>Are you sure you want to log out of your account?</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex space-x-2 sm:justify-end">
-            <Button type="button" variant="outline" onClick={handleCancelLogout}>
-              Cancel
-            </Button>
-            <Button type="button" variant="default" onClick={handleLogout}>
-              Logout
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {userIsLoading && <FixedLoader />}
-    </div>
     </>
-
   );
 }
