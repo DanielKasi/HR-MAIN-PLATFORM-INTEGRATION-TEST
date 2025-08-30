@@ -10,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
 import type { IEmployee, ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
 
@@ -149,11 +148,11 @@ export default function SpotchecksTable({searchTerm, refreshTableRef, statusFilt
                         {filteredResults.map((spotcheck) => (
                           <TableRow key={spotcheck.id}>
                             
-                            <TableCell className="font-medium">{formatDate(spotcheck.time)}</TableCell>
+                            <TableCell className="font-medium">{formatDate(spotcheck.spotcheck_time)}</TableCell>
                             <TableCell className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-gray-500" />
                               <span className="text-sm">
-                                {spotcheck.location.latitude.toFixed(4)}, {spotcheck.location.longitude.toFixed(4)}
+                                {spotcheck.latitude.toFixed(4)}, {spotcheck.longitude.toFixed(4)}
                               </span>
                             </TableCell>
                             <TableCell>{formatDuration(spotcheck.duration)}</TableCell>
@@ -181,10 +180,10 @@ export default function SpotchecksTable({searchTerm, refreshTableRef, statusFilt
                             </div>
                             <div className="space-y-1 mb-2">
                               <p className="text-sm text-gray-600">
-                                Time: {formatDate(spotcheck.time)}
+                                Time: {formatDate(spotcheck.spotcheck_time)}
                               </p>
                               <p className="text-sm text-gray-600">
-                                Location: {spotcheck.location.latitude.toFixed(4)}, {spotcheck.location.longitude.toFixed(4)}
+                                Location: {spotcheck.latitude.toFixed(4)}, {spotcheck.longitude.toFixed(4)}
                               </p>
                               <p className="text-sm text-gray-600">
                                 Duration: {formatDuration(spotcheck.duration)}
