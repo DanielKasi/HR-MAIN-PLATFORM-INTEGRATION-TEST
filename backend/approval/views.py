@@ -4,6 +4,8 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.http import Http404
 from django.db.models import Q
+
+from institution.models import Institution
 from .models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
     Approval, ApprovalTask
@@ -13,6 +15,13 @@ from .serializers import (
     ApprovalDocumentLevelSerializer, ApprovalSerializer, ApprovalTaskSerializer
 )
 from utilities.pagination import CustomPageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_view
+from users.models import Role
+from rest_framework import serializers
+
 
 
 class ActionListAPIView(APIView):
@@ -527,3 +536,121 @@ class ApprovalTaskRejectAPIView(APIView):
             return Response({'status': 'rejected'}, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class PendingApprovalTaskdListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=ApprovalTaskSerializer(many=True),
+                description="List of pending approval tasks for the user.",
+            ),
+        },
+        tags=["Approval Workflow"],
+    )
+    def get(self, request):
+        user = request.user
+        profile = user.profile
+
+        # Get roles of the user
+        user_roles = Role.objects.filter(user_roles__user=user)
+
+        # Get groups the user belongs to directly or via roles
+        user_groups = ApproverGroup.objects.filter(
+            Q(users=profile) | Q(roles__in=user_roles)
+        ).distinct()
+
+        # Find levels where these groups are approvers
+        levels = ApprovalDocumentLevel.objects.filter(
+            approvers__in=user_groups
+        ).distinct()
+
+        # Find pending tasks in those levels
+        tasks = ApprovalTask.objects.filter(
+            level__in=levels,
+            status='pending',
+            approval__status='ongoing'
+        ).order_by('updated_at')
+
+        serializer = ApprovalTaskSerializer(tasks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ApprovalTaskActionView(APIView):
+    """
+    Handle approval or rejection of tasks.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=serializers.Serializer,  # Accepts a 'comment' field
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Task processed successfully.",
+            ),
+            400: OpenApiResponse(
+                description="Invalid request or task not pending.",
+            ),
+            403: OpenApiResponse(
+                description="User not authorized to perform this action.",
+            ),
+            404: OpenApiResponse(
+                description="Task not found.",
+            ),
+        },
+        tags=["Approval Workflow"],
+    )
+    def post(self, request, task_id, action):
+        """
+        action: 'approve' or 'reject'
+        """
+        task = get_object_or_404(ApprovalTask, id=task_id)
+        user = request.user
+        profile = user.profile
+        comment = request.data.get("comment", "")
+
+        # Check if user can perform this action
+        if not self.can_act(task, profile):
+            return Response(
+                {"detail": "You are not authorized to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if task.status != "pending":
+            return Response(
+                {"detail": "Only pending tasks can be processed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            if action == "approve":
+                task.mark_completed(user, comment)
+                message = "Task approved successfully."
+            elif action == "reject":
+                task.mark_rejected(user, comment)
+                message = "Task rejected successfully."
+            else:
+                return Response(
+                    {"detail": "Invalid action. Use 'approve' or 'reject'."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response({"message": message}, status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def can_act(self, task, profile):
+        """
+        Checks whether the user can approve or reject this task.
+        """
+        groups = task.level.approvers.all()
+        # Get all roles of the user
+        user_roles = Role.objects.filter(user_roles__user=profile.user)
+
+        for group in groups:
+            if ApproverGroupUser.objects.filter(approver_group=group, user=profile).exists():
+                return True
+            if ApproverGroupRole.objects.filter(approver_group=group, role__in=user_roles).exists():
+                return True
+        return False

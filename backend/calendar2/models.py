@@ -3,9 +3,10 @@ from datetime import timedelta, date
 from dateutil.relativedelta import relativedelta
 from utilities.holiday_manager import HolidayManager
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import BaseApprovableModel
 
 
-class PublicHoliday(SoftDeletableTimeStampedModel):
+class PublicHoliday(BaseApprovableModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -43,9 +44,12 @@ class PublicHoliday(SoftDeletableTimeStampedModel):
 
         calendar.public_holidays.add(self)
 
+    def get_institution(self):
+        return self.institution    
+
 
 # Preferably Zoom
-class OnlineMeeting(SoftDeletableTimeStampedModel):
+class OnlineMeeting(BaseApprovableModel):
     event = models.OneToOneField(
         "Event", on_delete=models.CASCADE, related_name="online_event_details"
     )
@@ -60,8 +64,11 @@ class OnlineMeeting(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Online Meeting for {self.topic} at {self.start_time}"
 
+    def get_institution(self):
+        return self.event.institution    
 
-class Event(SoftDeletableTimeStampedModel):
+
+class Event(BaseApprovableModel):
     TARGET_AUDIENCE_CHOICES = [
         ("all", "All Employees"),
         ("department", "Specific Department"),
@@ -240,6 +247,9 @@ class Event(SoftDeletableTimeStampedModel):
         for calendar in calendars.values():
             calendar.events.add(self)
 
+    def get_institution(self):
+        return self.institution        
+
 
 class EventOccurrence(models.Model):
     event = models.ForeignKey(
@@ -258,7 +268,7 @@ class EventOccurrence(models.Model):
         return f"{self.event.title} on {self.date}"
 
 
-class Calendar(SoftDeletableTimeStampedModel):
+class Calendar(BaseApprovableModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -312,3 +322,6 @@ class Calendar(SoftDeletableTimeStampedModel):
                 calendar.public_holidays.add(public_holiday)
 
         return calendar
+
+    def get_institution(self):
+        return self.institution    

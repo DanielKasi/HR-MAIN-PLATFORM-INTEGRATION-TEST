@@ -2287,15 +2287,30 @@ export interface IKYCDocument {
   created_at: string;
   updated_at: string;
 }
-
+export type ISpotCheckInitiator = "system" | "user";
 
 export interface ISpotCheck {
   id: number;
-  location: ILocation;
-  time: string;
-  spotchecktime: string;
+  employee: IEmployee;
+  created_at: string;
+  updated_at: string;
+  responded_at: string | null;
+  address: string;
+  latitude: number;
+  longitude: number;
+  initiated_by: ISpotCheckInitiator,
+  spotcheck_time: string;
   status: ISpotCheckStatus;
   duration: string;
+  notes:string
+}
+
+export interface ISpotCheckFormData {
+  employee: number;
+  latitude: number;
+  longitude: number;
+  initiated_by: ISpotCheckInitiator,
+  notes:string
 }
 
 export interface ISpotCheckStatus {
