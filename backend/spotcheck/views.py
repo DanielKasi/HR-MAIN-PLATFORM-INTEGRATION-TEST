@@ -8,6 +8,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.parsers import FormParser
 from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
+import spotcheck
+from spotcheck.utilities import send_spotcheck_email
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
@@ -212,8 +214,8 @@ class EmployeeStopCheckListView(APIView):
     def get(self, request):
         """Retrieve details of spot check."""
         try:
-            spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
-            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks)
+            spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
+            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
@@ -228,7 +230,8 @@ class EmployeeSpotCheckCreateView(APIView):
 
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            spotcheck = serializer.save()
+            send_spotcheck_email(spotcheck)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

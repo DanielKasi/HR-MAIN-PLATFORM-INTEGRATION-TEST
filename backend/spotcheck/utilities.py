@@ -4,9 +4,7 @@ from employee.models import Employee
 from .models import EmployeeSpotCheck
 
 
-def send_spotcheck_email(
-    employee: Employee, spotcheck_time, spotcheck: EmployeeSpotCheck
-):
+def send_spotcheck_email(spotcheck: EmployeeSpotCheck):
     try:
         send_mail(
             subject="Spot Check",
