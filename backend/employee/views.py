@@ -225,12 +225,14 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         working_days_instance, _ = EmployeeWorkingDays.objects.get_or_create(
             employee=employee
         )
+        working_days_instance.approval_status = 'under_update'
 
         serializer = EmployeeWorkingDaysSerializer(
             instance=working_days_instance, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            working_days_instance.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -306,6 +308,11 @@ class EmployeeCreateAPIView(APIView):
         employee.user.is_email_verified = True
         employee.user.save()
 
+
+        employee.approval_status = 'under_creation'
+        employee.save()
+        employee.confirm_create()
+
         # Send welcome email asynchronously using Celery
         send_employee_welcome_email.delay_on_commit(
             employee.user.email, employee.user.fullname, random_password
@@ -355,9 +362,6 @@ class EmployeeCreateAPIView(APIView):
                 df = pd.read_csv(file, dtype=dtype_dict)
             else:
                 df = pd.read_excel(file, dtype=dtype_dict)
-
-            print(f"Excel/CSV columns: {df.columns.tolist()}")
-            print(f"Excel/CSV row count: {len(df)}")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -459,7 +463,6 @@ class EmployeeCreateAPIView(APIView):
                 )
 
             # Pre-validate all rows
-            print("Pre-validating all rows")
             errors = []
             for index, row in df.iterrows():
                 row_errors = {}  # Dict of field: {"error": "msg"} per row
@@ -579,7 +582,6 @@ class EmployeeCreateAPIView(APIView):
             # If no validation errors, proceed to creation within a transaction
             with transaction.atomic():
                 # Cache foreign key mappings and create missing instances
-                print("Fetching and creating foreign key mappings")
                 field_mappings = {
                     "department": Department,
                     "work_type": WorkType,
@@ -608,9 +610,6 @@ class EmployeeCreateAPIView(APIView):
 
                             # Fetch existing records
                             existing = model.objects.filter(**filter_kwargs)
-                            print(
-                                f"Found existing {field} values: {[item.name for item in existing]}"
-                            )
 
                             # Create mappings for existing records
                             for item in existing:
@@ -628,7 +627,6 @@ class EmployeeCreateAPIView(APIView):
                             ]
 
                             if missing:
-                                print(f"Creating missing {field}s: {missing}")
                                 created_instances = []
                                 for name in missing:
                                     # Basic creation with minimal required fields
@@ -647,23 +645,14 @@ class EmployeeCreateAPIView(APIView):
                                             name.lower()
                                         ] = instance
                                         created_instances.append(instance)
-                                        print(f"Created {field}: {name}")
                                     except Exception as e:
-                                        print(
-                                            f"Error creating {field} '{name}': {str(e)}"
-                                        )
                                         raise
 
-                                print(
-                                    f"Successfully created {len(created_instances)} {field} instances"
-                                )
 
                 # Handle job positions separately, tied to departments
-                print("Handling job positions")
                 position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
 
                 if "position" in df.columns:
-                    print("Processing job positions with departments")
 
                     # Get unique department-position pairs from the dataframe
                     if "department" in df.columns:
@@ -679,9 +668,6 @@ class EmployeeCreateAPIView(APIView):
                                 ["department", "position"]
                             ].drop_duplicates()
 
-                            print(
-                                f"Found {len(dept_pos_pairs)} unique department-position pairs"
-                            )
 
                             for _, row in dept_pos_pairs.iterrows():
                                 dept_name = (
@@ -694,9 +680,6 @@ class EmployeeCreateAPIView(APIView):
                                 dept_lower = dept_name.lower() if dept_name else None
                                 pos_lower = pos_name.lower()
 
-                                print(
-                                    f"Processing position: '{pos_name}' for department: '{dept_name}'"
-                                )
 
                                 # Get department instance
                                 dept_instance = None
@@ -706,9 +689,6 @@ class EmployeeCreateAPIView(APIView):
                                     dept_instance = instance_mappings["department"][
                                         dept_lower
                                     ]
-                                    print(
-                                        f"Found department instance: {dept_instance.name}"
-                                    )
                                 else:
                                     print(
                                         f"Department '{dept_name}' not found in mappings"
@@ -957,13 +937,10 @@ class EmployeeCreateAPIView(APIView):
                         employee_data_list.append(employee_data)
 
                     if not employee_data_list:
-                        print("No valid rows in batch, skipping creation")
                         continue
 
                     # Bulk create users
-                    print(f"Creating {len(user_objects)} users")
                     created_users = CustomUser.objects.bulk_create(user_objects)
-                    print(f"Created {len(created_users)} users")
 
                     # Bulk create profiles for the new users
                     profile_objects = [
@@ -971,14 +948,12 @@ class EmployeeCreateAPIView(APIView):
                         for user in created_users
                     ]
                     Profile.objects.bulk_create(profile_objects)
-                    print(f"Created {len(profile_objects)} profiles")
 
                     # Bulk create user roles
                     userrole_objects = [
                         UserRole(user=user, role=role) for user in created_users
                     ]
                     UserRole.objects.bulk_create(userrole_objects)
-                    print(f"Created {len(userrole_objects)} user roles")
 
                     # Create Employee instances with actual CustomUser objects
                     employee_objects = []
@@ -1080,8 +1055,6 @@ class EmployeeCreateAPIView(APIView):
         except Exception as e:
             import traceback
 
-            print(f"Error processing file: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
             return Response(
                 {
                     "detail": f"Error processing file: {str(e)}",
@@ -1268,6 +1241,7 @@ class EmployeeUpdateAPIView(APIView):
                 final_data["salary"] = None
 
         # Update employee data
+        employee.approval_status = 'under_update'
         serializer = EmployeeSerializer(employee, data=final_data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -1275,6 +1249,7 @@ class EmployeeUpdateAPIView(APIView):
             )
 
         employee = serializer.save()
+        employee.confirm_update()
 
         # Handle user updates separately
         if user_data and employee.user:
@@ -1329,7 +1304,9 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
+            employee.approval_status = 'under_deletion'
             employee.delete()  # Custom delete method to handle soft delete
+            employee.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response(
@@ -1416,7 +1393,10 @@ class EmployeeBranchManagementAPIView(APIView):
                     )
 
             # Attach branches
+            employee.approval_status = 'under_update'
+            employee.save()
             result = self._attach_branches(employee, processed_branches, request.user)
+            employee.confirm_update()
 
             return Response(
                 {
@@ -1703,8 +1683,10 @@ class EmployeeBranchDetailAPIView(APIView):
                 user_branch.save()
 
                 # Update employee payroll branch
+                employee.approval_status = 'under_update'
                 employee.payroll_branch = branch
-                employee.save(update_fields=["payroll_branch"])
+                employee.save(update_fields=["payroll_branch", "approval_status"])
+                employee.confirm_update()
 
             # Get updated summary
             summary = self._get_branch_summary(employee)
@@ -1841,8 +1823,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             serializer = EmployeeAttendanceSerializer(
                 existing, data=data, partial=True, context=context
             )
+            existing.approval_status = 'under_update'
             if serializer.is_valid():
                 serializer.save()
+                existing.confirm_update()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1850,7 +1834,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             # Pass context to the serializer for creation
             serializer = EmployeeAttendanceSerializer(data=data, context=context)
             if serializer.is_valid():
-                serializer.save()
+                attendance = serializer.save()
+                attendance.approval_status = 'under_creation'
+                attendance.save()
+                attendance.confirm_create()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1879,11 +1866,13 @@ class EmployeeAttendanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         record = self.get_object(pk)
+        record.approval_status = 'under_update'
         serializer = EmployeeAttendanceSerializer(
             record, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            record.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1937,7 +1926,10 @@ class EmployeeTypeListCreateAPIView(APIView):
         data["institution"] = institution_id
         serializer = EmployeeTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            record = serializer.save()
+            record.approval_status = 'under_creation'
+            record.save()
+            record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1963,15 +1955,19 @@ class EmployeeTypeDetailAPIView(APIView):
     def patch(self, request, pk):
         obj = self.get_object(pk)
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
+        obj.approval_status = 'under_update'
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_deletion'
         obj.delete()  # Custom delete method that handles soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2016,7 +2012,10 @@ class WorkTypeListCreateAPIView(APIView):
         data["institution"] = institution_id
         serializer = WorkTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            record = serializer.save()
+            record.approval_status = 'under_creation'
+            record.save()
+            record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2039,16 +2038,20 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_update'
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_deletion'
         obj.delete()  # Custom delete method that handles soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2072,16 +2075,20 @@ class EmployeeTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_update'
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_deletion'
         obj.delete()  # Custom method to handle soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2103,16 +2110,20 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_update'
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = 'under_deletion'
         obj.delete()  # Custom delete method to handle soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2168,7 +2179,10 @@ class EmployeeContractListAPIView(APIView):
     def post(self, request):
         serializer = EmployeeContractSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.approval_status = 'under_creation'
+            instance.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2197,11 +2211,13 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         contract = self.get_object(pk)
+        contract.approval_status = 'under_update'
         serializer = EmployeeContractSerializer(
             contract, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            contract.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2212,7 +2228,9 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
+        contract.approval_status = 'under_deletion'
         contract.delete()  # Custom delete method to handle soft delete
+        contract.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2463,6 +2481,9 @@ class EmployeeShiftListCreateView(APIView):
         )
         if serializer.is_valid():
             shift = serializer.save()
+            shift.approval_status = 'under_creation'
+            shift.save()
+            shift.confirm_create()
             return Response(
                 EmployeeShiftSerializer(shift).data, status=status.HTTP_201_CREATED
             )
@@ -2497,11 +2518,13 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        shift.approval_status = 'under_update'
         serializer = EmployeeShiftSerializer(
             shift, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             shift = serializer.save()
+            shift.confirm_update()
             return Response(EmployeeShiftSerializer(shift).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2517,7 +2540,9 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        shift.approval_status = 'under_deletion'
         shift.delete()
+        shift.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
