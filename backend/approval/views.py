@@ -4,6 +4,8 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.http import Http404
 from django.db.models import Q
+
+from institution.models import Institution
 from .models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
     Approval, ApprovalTask
