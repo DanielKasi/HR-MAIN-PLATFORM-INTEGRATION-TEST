@@ -1,14 +1,9 @@
-from functools import partial
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-from rest_framework.parsers import FormParser
 from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
-import spotcheck
 from spotcheck.utilities import send_spotcheck_email
 from utilities.pagination import CustomPageNumberPagination
 
@@ -226,8 +221,6 @@ class EmployeeStopCheckListView(APIView):
             )
 
 class EmployeeSpotCheckCreateView(APIView):
-    parser_classes = [FormParser]
-
     def post(self, request):
         """Create a employee spot checkplease share the sale reports record."""
 
