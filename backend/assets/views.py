@@ -38,7 +38,6 @@ from workflows.models import (
 from django.db.models import Q
 from employee.models import Employee
 from django.db import transaction
-from django.db import transaction
 
 
 class AssetCategoryListCreateView(APIView):
