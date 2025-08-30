@@ -1196,16 +1196,6 @@ export type LeaveRequestStatus = "pending" | "approved" | "rejected" | "cancelle
 
 export type DurationType = "full_day" | "half_day" | "multiple_days";
 
-export interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  employee_id?: string;
-  user?: {
-    fullname: string;
-    email: string;
-  };
-}
 
 export interface ILeaveRequest {
   id?: number | string;

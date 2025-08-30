@@ -56,8 +56,6 @@ import {
   IPayslipFormData,
   IPayslip,
   IPayslipItem,
-  PaginatedEmployeeResponse,
-  PaginatedIOnboardingResponse,
   ILeaveBalance,
   IPaginatedResponse,
   IContract,
@@ -6177,11 +6175,13 @@ export const showErrorToast = ({error, defaultMessage}: {error: any; defaultMess
 export const spotcheckAPI = {
   getPaginated: async ({
     institutionId,
+    scope,
     page = 1,
     search,
     status,
   }: {
     institutionId: number;
+    scope:{type:"default"}|{type:"employee", employee:IEmployee},
     page?: number;
     search?: string;
     status?: string;
@@ -6195,6 +6195,9 @@ export const spotcheckAPI = {
       }
       if (status && status !== "all") {
         params.append("status", status);
+      }
+      if(scope.type === "employee"){
+        params.append("employee_id", scope.employee.id.toString())
       }
 
       const endpoint = `/spotcheck/?${params.toString()}`;

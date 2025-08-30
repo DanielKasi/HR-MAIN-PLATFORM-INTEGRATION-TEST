@@ -503,7 +503,8 @@ class BranchWorkingDays(models.Model):
         super().save(*args, **kwargs)
 
         if is_new:
-            self._create_branch_days()
+            pass
+            # self._create_branch_days()
 
     def _create_branch_days(self):
         inst_working_days = InstitutionWorkingDays.objects.get(
