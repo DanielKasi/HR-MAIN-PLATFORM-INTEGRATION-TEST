@@ -30,6 +30,7 @@ from weasyprint import HTML
 from employee.models import EmployeeContract, Employee
 import logging
 from django.db.models import Q
+from django.db import transaction
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -64,12 +65,14 @@ class DocumentTypeListCreateAPIView(APIView):
         request=DocumentTypeSerializer,
         responses={201: DocumentTypeSerializer},
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         data = request.data.copy()
         data["institution"] = institution_id
         serializer = DocumentTypeSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -98,8 +101,10 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
         request=DocumentTypeSerializer,
         responses={200: DocumentTypeSerializer, 404: None},
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         document_type = self.get_object(pk)
+        document_type.approval_status = 'under-update'
         if not document_type:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = DocumentTypeSerializer(
@@ -107,17 +112,21 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
         )
         if serializer.is_valid():
             serializer.save()
+            document_type.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         description="Delete a document type", responses={204: None, 404: None}
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         document_type = self.get_object(pk)
         if not document_type:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        document_type.delete()
+        document_type.approval_status = 'under_deletion'
+        document_type.save(update_fields=['approval_status'])
+        document_type.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -130,6 +139,7 @@ class DocumentTemplateListCreateAPIView(APIView):
         description="Create a new document template.",
         tags=["Document Templates"],
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         try:
             institution = Institution.objects.get(pk=institution_id)
@@ -157,6 +167,7 @@ class DocumentTemplateListCreateAPIView(APIView):
         )
         if serializer.is_valid():
             template = serializer.save()
+            template.confirm_create()
             # Create audit log
             AuditLog.objects.create(
                 content_type=ContentType.objects.get_for_model(DocumentTemplate),
@@ -231,8 +242,10 @@ class DocumentTemplateDetailAPIView(APIView):
         description="Update a document template.",
         tags=["Document Templates"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         template = self.get_object(pk)
+        template.approval_status = 'under_update'
         if not template:
             return Response(
                 {"error": "Document template not found"},
@@ -254,6 +267,7 @@ class DocumentTemplateDetailAPIView(APIView):
         )
         if serializer.is_valid():
             updated_template = serializer.save()
+            template.confirm_update()
             # Calculate changes
             changes = {}
             new_data = {
@@ -286,6 +300,7 @@ class DocumentTemplateDetailAPIView(APIView):
         description="Delete a document template.",
         tags=["Document Templates"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         template = self.get_object(pk)
         if not template:
@@ -302,7 +317,9 @@ class DocumentTemplateDetailAPIView(APIView):
             user=request.user if request.user.is_authenticated else None,
             description=f"Deleted DocumentTemplate: {template.name}",
         )
-        template.delete()
+        template.approval_status = 'under_deletion'
+        template.save(update_firlds=['approval_status'])
+        template.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -533,6 +550,7 @@ class GenerateDocumentView(BaseDocumentView):
         },
         description="Creates a new document with provided placeholder values and updates OnBoarding status to contract_review if context is onboarding",
     )
+    @transaction.atomic()
     def post(self, request, template_id):
         template = get_object_or_404(DocumentTemplate, pk=template_id)
         serializer = GenerateDocumentRequestSerializer(data=request.data)
