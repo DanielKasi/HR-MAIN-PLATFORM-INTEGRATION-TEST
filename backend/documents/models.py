@@ -5,9 +5,9 @@ from django_ckeditor_5.fields import CKEditor5Field
 from markdownx.models import MarkdownxField
 from ckeditor_uploader.fields import RichTextUploadingField
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import BaseApprovableModel
 
-
-class DocumentType(SoftDeletableTimeStampedModel):
+class DocumentType(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True, editable=False)
@@ -30,8 +30,11 @@ class DocumentType(SoftDeletableTimeStampedModel):
                 counter += 1
         super().save(*args, **kwargs)
 
+    def get_institution(self):
+        return self.institution     
 
-class DocumentTemplate(SoftDeletableTimeStampedModel):
+
+class DocumentTemplate(BaseApprovableModel):
     document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     template_type = models.CharField(max_length=50, choices=[
@@ -56,8 +59,11 @@ class DocumentTemplate(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.document_type.institution     
 
-class Document(models.Model):
+
+class Document(BaseApprovableModel):
     document_template = models.ForeignKey(DocumentTemplate, on_delete=models.PROTECT)
     placeholder_values = models.JSONField(
         default=dict,
@@ -74,3 +80,6 @@ class Document(models.Model):
 
     def __str__(self):
         return f"Document for {self.document_template.name} - Status: {self.status}"
+
+    def get_institution(self):
+        return self.document_template.document_type.institution      

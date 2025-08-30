@@ -18,7 +18,7 @@ from .models import (
     BranchWorkingDays,
     BranchDay,
     BranchShift,
-    BranchLocationComparisonConfig
+    BranchLocationComparisonConfig,
 )
 import os
 from django.db import transaction
@@ -718,10 +718,17 @@ class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+    branch_name = serializers.CharField(source="branch.branch_name", read_only=True)
+
+    class Meta:
+        model = BranchLocationComparisonConfig
+        fields = "__all__"
+
+
 class BranchShiftSerializer(serializers.ModelSerializer):
-    shift_day = serializers.PrimaryKeyRelatedField(
-        queryset=BranchDay.objects.all()
-    )
+    shift_day = serializers.PrimaryKeyRelatedField(queryset=BranchDay.objects.all())
+
     class Meta:
         model = BranchShift
         fields = "__all__"
@@ -731,13 +738,32 @@ class BranchShiftSerializer(serializers.ModelSerializer):
         ret["shift_day"] = BranchDaySerializer(instance.shift_day).data
         return ret
 
-class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
-    branch_name = serializers.CharField(source='branch.branch_name', read_only=True)
+    def validate(self, attrs):
+        branch = attrs.get("branch") or getattr(self.instance, "branch", None)
+        start_time = attrs.get("start_time") or getattr(
+            self.instance, "start_time", None
+        )
+        end_time = attrs.get("end_time") or getattr(self.instance, "end_time", None)
 
-    class Meta:
-        model = BranchLocationComparisonConfig
-        fields = "__all__"
+        if not (start_time and end_time and branch):
+            return attrs
 
+        if start_time >= end_time:
+            raise serializers.ValidationError(
+                {"end_time": "Shift end time must be after start time."}
+            )
 
+        if start_time < branch.branch_opening_time:
+            raise serializers.ValidationError(
+                {
+                    "start_time": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
+                }
+            )
+        if end_time > branch.branch_closing_time:
+            raise serializers.ValidationError(
+                {
+                    "end_time": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
+                }
+            )
 
-                  
+        return attrs

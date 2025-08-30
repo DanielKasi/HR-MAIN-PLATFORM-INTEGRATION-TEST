@@ -1,10 +1,11 @@
 from django.db import models
-from utilities.utility_base_model import SoftDeletableTimeStampedModel, TimeStampedModel
+from utilities.utility_base_model import TimeStampedModel
 from payroll.models import EmployeePenalty
 from datetime import datetime, timedelta
+from approval.models import BaseApprovableModel
 
 # spotcheck settings
-class InstitutionSpotCheckSetting(SoftDeletableTimeStampedModel):
+class InstitutionSpotCheckSetting(BaseApprovableModel):
     institution = models.OneToOneField(
         "institution.Institution",
         on_delete=models.PROTECT,
@@ -19,7 +20,7 @@ class InstitutionSpotCheckSetting(SoftDeletableTimeStampedModel):
         return f"{self.institution.name} SpotCheck Settings"
 
 
-class BranchSpotCheckSetting(SoftDeletableTimeStampedModel):
+class BranchSpotCheckSetting(BaseApprovableModel):
     branch = models.OneToOneField(
         "institution.Branch",
         on_delete=models.PROTECT,
@@ -34,7 +35,7 @@ class BranchSpotCheckSetting(SoftDeletableTimeStampedModel):
         return f"{self.branch.name} SpotCheck Settings"
     
 
-class EmployeeSpotCheckSetting(SoftDeletableTimeStampedModel):
+class EmployeeSpotCheckSetting(BaseApprovableModel):
     employee = models.OneToOneField(
         "employee.Employee",
         on_delete=models.PROTECT,

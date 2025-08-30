@@ -2,9 +2,9 @@ from django.db import models
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from institution.models import Institution
-from users.models import Role, Profile, CustomUser
 import uuid
+from django.db import transaction
+
 
 class Action(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
@@ -24,38 +24,38 @@ class Action(SoftDeletableTimeStampedModel):
         ordering = ['name']    
 
 class ApproverGroup(SoftDeletableTimeStampedModel):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)   
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)   
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    roles = models.ManyToManyField(Role, through='ApproverGroupRole', blank=True)
-    users = models.ManyToManyField(Profile, through='ApproverGroupUser', blank=True)
+    roles = models.ManyToManyField('users.Role', through='ApproverGroupRole', blank=True)
+    users = models.ManyToManyField('users.Profile', through='ApproverGroupUser', blank=True)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
 
     def __str__(self):
-        return f"{self.name} - {self.institution.name}"
+        return f"{self.name} - {self.institution.institution_name}"
 
     class Meta:
         unique_together = ['institution', 'name']     
 
 class ApproverGroupRole(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    role = models.ForeignKey('users.Role', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return f"{self.approver_group.name} - {self.role.name}"
 
-class ApproverGroupUser(models.Model):
+class ApproverGroupUser(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    user = models.ForeignKey('users.Profile', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return f"{self.approver_group.name} - {self.user.user.fullname}"
 
 class ApprovalDocument(SoftDeletableTimeStampedModel):  
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
@@ -66,7 +66,7 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
 
 class ApprovalDocumentLevel(models.Model):
     level = models.PositiveIntegerField()
-    approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE)
+    approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
     approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')
     overriders = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelOverriders', related_name='overrider_levels')
@@ -74,7 +74,7 @@ class ApprovalDocumentLevel(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Level {self.level_number} - {self.approval_document}"
+        return f"Level {self.level} - {self.approval_document}"
 
     class Meta:
         unique_together = ('approval_document', 'level')
@@ -117,6 +117,7 @@ class Approval(models.Model):
         return f"Approval {self.public_id} - {self.status}"
 
 class ApprovalTask(SoftDeletableTimeStampedModel):
+
     STATUS_CHOICES = [
         ('not_started', 'Not Started'),
         ('pending', 'Pending'),
@@ -129,7 +130,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
     level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     comment = models.TextField(blank=True, null=True)
-    approved_by = models.ForeignKey(CustomUser, null=True, blank=True, on_delete=models.SET_NULL)
+    approved_by = models.ForeignKey('users.CustomUser', null=True, blank=True, on_delete=models.SET_NULL)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -139,10 +140,10 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         unique_together = ('approval', 'level')
         ordering = ['level__level']
 
-    def mark_completed(self, user: CustomUser, comment: str = None):
+    def mark_completed(self, user, comment: str = None):
         with transaction.atomic():
             if self.status != 'pending':
-                raise ValueError("Task must be in pending state to be completed")
+                raise ValidationError({"error": "Task must be in pending state to be completed"})
 
             self.status = 'approved'
             self.approved_by = user
@@ -166,10 +167,10 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
 
             # Notify task completion
 
-    def mark_rejected(self, user: CustomUser, comment: str = None):
+    def mark_rejected(self, user, comment: str = None):
         with transaction.atomic():
             if self.status != 'pending':
-                raise ValueError("Task must be in pending state to be rejected")
+                raise ValidationError({"error": "Task must be in pending state to be rejected"})
 
             self.status = 'rejected'
             self.approved_by = user
@@ -201,63 +202,75 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
         ('active', 'Active')
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='under_creation')
+    approval_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='under_creation')
 
     class Meta:
         abstract = True
 
     def get_institution(self):
-        raise ValueError("Institution not found for this object")
+        raise ValidationError({"error": "Institution not found for this object"})
 
     def _trigger_approval(self, action_name: str):
         action = Action.objects.get(name=action_name)
         content_type = ContentType.objects.get_for_model(self.__class__)
-        institution = self.get_institution()   
+        institution = self.get_institution()
 
         if not institution:
-            raise ValueError("No institution for this object") 
+            raise ValidationError({"error": "No institution for this object"})
+
         document = ApprovalDocument.objects.filter(
             institution=institution,
             content_type=content_type,
             actions=action
         ).first()
+
         if not document:
-            raise ValueError(f"No ApprovalDocument found for {action_name} on {content_type} in institution {institution}")
+            # No approval required: auto-complete the action
+            if action_name == 'create' or action_name == 'update':
+                self.approval_status = 'active'
+            elif action_name == 'delete':
+                self.delete()
+                return  # No need to save after delete
+            self.save()
+            return  # Exit early without creating approval
 
-        approval = Approval.objects.create(
-            status='ongoing',
-            document=document,
-            action=action,
-            content_type=content_type,
-            object_id=self.pk
-        ) 
-
-        levels = document.levels.order_by('level')
-        for i, lvl in enumerate(levels):
-            task_status = 'pending' if i == 0 else 'not_started'
-            ApprovalTask.objects.create(
-                approval=approval,
-                level=lvl,
-                status=task_status
+        # Proceed with approval creation as before
+        with transaction.atomic():
+            approval = Approval.objects.create(
+                status='ongoing',
+                document=document,
+                action=action,
+                content_type=content_type,
+                object_id=self.pk
             )
+
+            levels = document.levels.order_by('level')
+            for i, lvl in enumerate(levels):
+                task_status = 'pending' if i == 0 else 'not_started'
+                ApprovalTask.objects.create(
+                    approval=approval,
+                    level=lvl,
+                    status=task_status
+                )
+    # Notify first task (optional)
         # Notify first task (optional)
         # first_task = approval.tasks.first()
         # notify_task_update(first_task)
         # 
         
     def confirm_create(self):
-        if self.status != 'under_creation':
-            raise ValueError("Object must be under_creation to confirm create")
+        if self.approval_status != 'under_creation':
+            raise ValidationError({"error": "Object must be under_creation to confirm create"})
         self._trigger_approval('create')
 
     def confirm_update(self):
-        if self.status != 'under_update':
-            raise ValueError("Object must be under_update to confirm update")
+        if self.approval_status != 'under_update':
+            raise ValidationError({"error": "Object must be under_update to confirm update"})
         self._trigger_approval('update')
 
     def confirm_delete(self):
-        if self.status != 'under_deletion':
-            raise ValueError("Object must be under_deletion to confirm delete")
+        if self.approval_status != 'under_deletion':
+            raise ValidationError({"error": "Object must be under_deletion to confirm delete"})
         self._trigger_approval('delete')
 
     def finish_workflow(self, approval: Approval):

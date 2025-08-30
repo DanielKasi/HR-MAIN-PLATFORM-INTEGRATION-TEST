@@ -593,6 +593,7 @@ const LeaveTypesPage = () => {
       </div>
 
       {/* Leave Types Table */}
+      
       <div>
         <CardContent className="p-0 -ml-3">
           <PaginatedTableWrapper<ILeaveType>

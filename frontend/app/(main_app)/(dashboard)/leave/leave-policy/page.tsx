@@ -331,6 +331,7 @@ const LeavePolicyComponent = () => {
   }
 
   return (
+    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_POLICIES}> 
     <div className="space-y-6">
       {/* Header and Filters */}
       <div className="bg-white rounded-lg border shadow-sm min-h-screen">
@@ -383,7 +384,7 @@ const LeavePolicyComponent = () => {
             </div>
             <div className="flex items-center gap-2">
 
-              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_POLICIES}>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                   <DialogTrigger asChild>
                     <Button className="flex items-center gap-2">
@@ -898,6 +899,8 @@ const LeavePolicyComponent = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}>
                                   <DropdownMenuItem onClick={() => {
                                     const policyWithLeaveType = {
                                       ...policy,
@@ -919,6 +922,9 @@ const LeavePolicyComponent = () => {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
+                                  </ProtectedComponent>
+
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}>
                                   <DropdownMenuItem
                                     onClick={() => {
                                       const policyWithLeaveType = {
@@ -933,6 +939,7 @@ const LeavePolicyComponent = () => {
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
+                                  </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -958,6 +965,7 @@ const LeavePolicyComponent = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}>
                               <DropdownMenuItem onClick={() => {
                                 const policyWithLeaveType = {
                                   ...policy,
@@ -979,6 +987,9 @@ const LeavePolicyComponent = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
+                              </ProtectedComponent>
+
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}>
                               <DropdownMenuItem
                                 onClick={() => {
                                   const policyWithLeaveType = {
@@ -993,6 +1004,7 @@ const LeavePolicyComponent = () => {
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
+                              </ProtectedComponent>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -1028,6 +1040,7 @@ const LeavePolicyComponent = () => {
         </div>
       </div>
     </div>
+    </ProtectedComponent>
   );
 };
 

@@ -31,7 +31,6 @@ from .models import (
     BranchLocationComparisonConfig,
     BranchWorkingDays,
     BranchShift,
-    
 )
 from users.serializers import ProfileSerializer
 from .serializers import (
@@ -53,7 +52,7 @@ from .serializers import (
     BranchPenaltyConfigSerializer,
     BranchWorkingDaysSerializer,
     BranchShiftSerializer,
-    BranchLocationComparisonConfigSerializer
+    BranchLocationComparisonConfigSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -112,27 +111,47 @@ class DefaultDataAPIView(APIView):
 
 class BranchWorkingDaysListAPIView(APIView):
     @extend_schema(
-        responses={200: BranchWorkingDaysSerializer(many=True)},
+        responses={200: BranchWorkingDaysSerializer},
         description="Retrieve all working days for a branch.",
         summary="Get all working days for a branch",
-        tags=["Working Days Management"],
+        tags=["Branch Working Days Management"],
     )
     def get(self, request):
+        branch_id = request.query_params.get("branch_id")
 
-        branch_id = request.search_param.get("branch_id")
+        if not branch_id:
+            return Response(
+                {"Detail": "Branch ID is Required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        working_days = BranchWorkingDays.objects.get(branch=branch_id)
+        try:
+            branch = Branch.objects.get(id=int(branch_id))
 
-        serializer = BranchWorkingDaysSerializer(working_days, many=True)
+            if branch:
+                working_days = BranchWorkingDays.objects.get(branch=branch)
+                print(working_days)
+                serializer = BranchWorkingDaysSerializer(working_days)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"Detail": "Branch with ID not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        return Response(serializer.data)
+        except BranchWorkingDays.DoesNotExist:
+            return Response(
+                {
+                    "Detail": "Working days for the given branch not found. Try creating them."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     @extend_schema(
         request=BranchWorkingDaysSerializer,
         responses={201: BranchWorkingDaysSerializer},
         description="Create a new working days configuration for a branch.",
         summary="Create working days on a branch level",
-        tags=["Working Days Management"],
+        tags=["Branch Working Days Management"],
     )
     def post(self, request):
         serializer = BranchWorkingDaysSerializer(
@@ -155,7 +174,7 @@ class BranchWorkingDaysDetailView(APIView):
         responses={200: BranchWorkingDaysSerializer},
         description="Update the existing Branch Working Days.",
         summary="Update branch working days",
-        tags=["Working Days Management"],
+        tags=["Branch Working Days Management"],
     )
     def patch(self, request, pk):
         try:
@@ -1931,13 +1950,11 @@ class InstitutionPenaltyConfigListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
-        configs = InstitutionPenaltyConfig.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
 
+        configs = InstitutionPenaltyConfig.objects.filter(
+            institution=institution, deleted_at__isnull=True
         )
-        
+
         if penalty_type:
             configs = configs.filter(penalty_type=penalty_type)
 
@@ -1954,7 +1971,7 @@ class InstitutionPenaltyConfigListAPIView(APIView):
 
     @extend_schema(tags=["Penalty Configurations"])
     def post(self, request):
-        
+
         serializer = InstitutionPenaltyConfigSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -2047,12 +2064,11 @@ class BranchPenaltyConfigListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         configs = BranchPenaltyConfig.objects.filter(
-            branch__institution=institution,
-            deleted_at__isnull=True
+            branch__institution=institution, deleted_at__isnull=True
         )
-        
+
         if branch_id:
             configs = configs.filter(branch__id=branch_id)
 
@@ -2103,11 +2119,12 @@ class BranchPenaltyConfigDetailAPIView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(tags=['Penalty Configurations'])
+    @extend_schema(tags=["Penalty Configurations"])
     def delete(self, request, pk):
         config = self.get_object(pk)
         config.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)    
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class BranchLocationComparisonConfigListAPIView(APIView):
     def get(self, request):
@@ -2119,7 +2136,9 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         except AttributeError:
             return Response({"detail": "User has no institution assigned."}, status=400)
 
-        configs = BranchLocationComparisonConfig.objects.filter(branch__institution=institution, deleted_at__isnull=True)
+        configs = BranchLocationComparisonConfig.objects.filter(
+            branch__institution=institution, deleted_at__isnull=True
+        )
 
         if search_query:
             configs = configs.filter(branch__branch_name__icontains=search_query)
@@ -2130,13 +2149,13 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         print("serialized data", serializer.data)
         return paginator.get_paginated_response(serializer.data)
 
-
     def post(self, request):
         serializer = BranchLocationComparisonConfigSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class BranchLocationComparisonConfigDetailAPIView(APIView):
     def get_object(self, pk):
@@ -2152,7 +2171,9 @@ class BranchLocationComparisonConfigDetailAPIView(APIView):
 
     def patch(self, request, pk):
         config = self.get_object(pk)
-        serializer = BranchLocationComparisonConfigSerializer(config, data=request.data, partial=True)
+        serializer = BranchLocationComparisonConfigSerializer(
+            config, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -2168,13 +2189,8 @@ class BranchShiftListCreateView(APIView):
     @extend_schema(
         tags=["Branch Shifts"], responses={200, BranchShiftSerializer(many=True)}
     )
-    def get(self, request):
-        branch_id = request.query_params.get("branch_id", None)
+    def get(self, request, branch_id):
         search = request.query_params.get("search", None)
-        if not branch_id:
-            return Response(
-                {"detail": "Branch ID is Needed"}, status=status.HTTP_404_NOT_FOUND
-            )
 
         try:
             branch = Branch.objects.get(id=branch_id)
@@ -2200,7 +2216,7 @@ class BranchShiftListCreateView(APIView):
         responses={201, BranchShiftSerializer(many=True)},
         request=BranchShiftSerializer,
     )
-    def post(self, request):
+    def post(self, request, branch_id):
         serializer = BranchShiftSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -2209,15 +2225,15 @@ class BranchShiftListCreateView(APIView):
 
 
 class BranchShiftDetailView(APIView):
-    def get_object(self, pk):
+    def get_object(self, shift_id):
         try:
-            return BranchShift.objects.get(pk=pk)
+            return BranchShift.objects.get(pk=shift_id)
         except BranchShift.DoesNotExist:
             raise Http404
 
     @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
-    def get(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def get(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         serializer = BranchShiftSerializer(branch_shift)
         return Response(serializer.data)
 
@@ -2226,8 +2242,8 @@ class BranchShiftDetailView(APIView):
         responses={200, BranchShiftSerializer},
         request=BranchShiftSerializer,
     )
-    def patch(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def patch(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         serializer = BranchShiftSerializer(
             branch_shift, data=request.data, partial=True
         )
@@ -2237,7 +2253,7 @@ class BranchShiftDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(tags=["Branch Shifts"], responses={204: None})
-    def delete(self, request, pk):
-        branch_shift = self.get_object(pk)
+    def delete(self, request, shift_id):
+        branch_shift = self.get_object(pk=shift_id)
         branch_shift.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

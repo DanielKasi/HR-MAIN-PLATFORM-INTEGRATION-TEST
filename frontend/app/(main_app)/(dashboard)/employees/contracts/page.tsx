@@ -34,7 +34,9 @@ export default function ContractsPage() {
           </div>
         
       </CardHeader>
+  
       <ContractsTable searchTerm={searchTerm} scope={{type:"default"}} />
+      
     </div>
   );
 }
