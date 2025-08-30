@@ -37,6 +37,7 @@ import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import { formatCurrency, getFileUrl } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
+import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -100,56 +101,8 @@ export default function EmployeeProfile() {
     return employee.email?.[0]?.toUpperCase() || "E";
   }, []);
 
-  const formatTime = useCallback((timeString: string) => {
-    if (!timeString) return "N/A";
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }, []);
 
-  const getStatusBadge = useCallback((status: string) => {
-    const statusConfig = {
-      present: {label: "Present", className: "bg-[#e1faec] text-[#3cb371] border-[#3cb371]"},
-      absent: {label: "Absent", className: "bg-[#fcdee2] text-[#e21732] border-[#e21732]"},
-      late: {label: "Late", className: "bg-[#d7effd] text-[#0ca0f5] border-[#0ca0f5]"},
-      leave: {label: "Leave", className: "bg-[#ebd4fa] text-[#9c36db] border-[#9c36db]"},
-    };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || {
-      label: status,
-      className: "bg-[#f0f0f6] text-[#848496] border-[#848496]",
-    };
-
-    return (
-      <Badge variant="outline" className={`${config.className} font-medium px-3 py-1`}>
-        {config.label}
-      </Badge>
-    );
-  }, []);
-
-  // Memoized filtered attendance records
-  const filteredAttendanceRecords = useMemo(() => {
-    return attendanceRecords.filter((record) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        formatDate(record.date)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.status.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === "all" || record.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [attendanceRecords, searchTerm, statusFilter, formatDate]);
-
-  const attendanceSummary = useMemo(() => {
-    return {
-      totalWorkDays: attendanceRecords.length,
-      daysAbsent: attendanceRecords.filter((record) => record.status === "absent").length,
-      lateArrivals: attendanceRecords.filter((record) => record.status === "late").length,
-      leaveBalance: 0,
-    };
-  }, [attendanceRecords]);
 
   const handleTabChange = useCallback(
     (newTab: typeof activeTab) => {
@@ -757,9 +710,7 @@ export default function EmployeeProfile() {
                     />
                   )}
                   {(activeTab === "spotchecks" && employee) &&  (
-                    <SpotchecksTable
-                      scope={{type:"employee", employee}}
-                    />
+                    <EmployeeSpotchecks employee={employee} />
                   )}
 
                   {activeTab === "documents" && (
