@@ -3,7 +3,7 @@ from django.core.validators import MinLengthValidator
 from employee.models import Employee
 from users.models import CustomUser
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
-
+from approval.models import BaseApprovableModel
 
 class DisciplineType(models.Model):
     """Types of disciplinary actions"""
@@ -28,7 +28,7 @@ class DisciplineType(models.Model):
         ordering = ["severity", "name"]
 
 
-class DisciplinaryAction(SoftDeletableTimeStampedModel):
+class DisciplinaryAction(BaseApprovableModel):
     """Main disciplinary action record"""
 
     STATUS_CHOICES = [
@@ -80,6 +80,9 @@ class DisciplinaryAction(SoftDeletableTimeStampedModel):
             else str(self.employee)
         )
         return f"{employee_name} - {self.discipline_type.name} ({self.incident_date})"
+
+    def get_institution(self):
+        return self.employee.department.institution       
 
     class Meta:
         ordering = ["-incident_date", "-created_at"]
