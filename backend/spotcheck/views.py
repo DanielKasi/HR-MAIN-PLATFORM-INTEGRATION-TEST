@@ -1,16 +1,12 @@
-from functools import partial
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
-from rest_framework.parsers import FormParser
 from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
-import spotcheck
 from spotcheck.utilities import send_spotcheck_email
 from utilities.pagination import CustomPageNumberPagination
+from datetime import datetime
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
@@ -226,11 +222,20 @@ class EmployeeStopCheckListView(APIView):
             )
 
 class EmployeeSpotCheckCreateView(APIView):
-    parser_classes = [FormParser]
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
+        responses={201: SpotCheckSerializers.EmployeeSpotCheckSerializer, 400: "Bad Request"},
+        summary="Create Employee Spot check",
+        description="Create a new employee spot check.",
+        tags=["Employee spot check Management"],
+    )
 
     def post(self, request):
         """Create a employee spot checkplease share the sale reports record."""
-
+        spotcheck_status, _ =SpotCheckModels.SpotCheckStatus.objects.get_or_create(status_name="SENT")
+        spotcheck_time = datetime.now()
+        request.data['status'] = spotcheck_status.id
+        request.data['spotcheck_time'] = spotcheck_time
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request.data)
         if serializer.is_valid():
             spotcheck = serializer.save()
