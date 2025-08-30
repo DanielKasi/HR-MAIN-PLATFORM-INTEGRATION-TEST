@@ -56,65 +56,59 @@ axiosJsonInstance.interceptors.response.use(
 
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
 
-      if (typeof window !== "undefined") {
-        store.dispatch(logoutStart());
+
+      originalRequest._retry = true;
+
+      const refreshToken = store.getState().auth.refreshToken;
+
+      if (!refreshToken || originalRequest.url?.endsWith("/user/token/refresh")) {
+        if (typeof window !== "undefined") {
+          store.dispatch(logoutStart());
+        }
+        return Promise.reject(error);
       }
 
-      return Promise.reject(error);
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addSubscriber((token: string) => {
+            if (!originalRequest.headers) {
+              originalRequest.headers = new axios.AxiosHeaders();
+            }
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosJsonInstance(originalRequest));
+          });
+        });
+      }
+      isRefreshing = true;
+      try {
+        const response = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
+          {refresh: refreshToken},
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
 
-      // originalRequest._retry = true;
+        const {access, refresh} = (response.data as LoginResponse).tokens;
 
-      // const refreshToken = store.getState().auth.refreshToken;
+        store.dispatch(setAccessToken(access));
+        store.dispatch(setRefreshToken(refresh));
 
-      // if (!refreshToken || originalRequest.url?.endsWith("/user/token/refresh")) {
-      //   if (typeof window !== "undefined") {
-      //     store.dispatch(logoutStart());
-      //   }
+        axiosJsonInstance.defaults.headers.common["Authorization"] = `Bearer ${access}`;
+        originalRequest.headers["Authorization"] = `Bearer ${access}`;
+        onRefreshed(access);
 
-      //   return Promise.reject(error);
-      // }
+        return axiosJsonInstance(originalRequest);
+      } catch (err) {
+        console.log("\n\nError on request : ", err);
+        store.dispatch(logoutStart());
 
-      // if (isRefreshing) {
-      //   return new Promise((resolve) => {
-      //     addSubscriber((token: string) => {
-      //       if (!originalRequest.headers) {
-      //         originalRequest.headers = new axios.AxiosHeaders();
-      //       }
-      //       originalRequest.headers.Authorization = `Bearer ${token}`;
-      //       resolve(axiosJsonInstance(originalRequest));
-      //     });
-      //   });
-      // }
-      // isRefreshing = true;
-      // try {
-      //   const response = await axios.post(
-      //     `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
-      //     {refresh: refreshToken},
-      //     {
-      //       headers: {
-      //         "Content-Type": "application/json",
-      //       },
-      //     },
-      //   );
-
-      //   const {access, refresh} = (response.data as LoginResponse).tokens;
-
-      //   store.dispatch(setAccessToken(access));
-      //   store.dispatch(setRefreshToken(refresh));
-
-      //   axiosJsonInstance.defaults.headers.common["Authorization"] = `Bearer ${access}`;
-      //   originalRequest.headers["Authorization"] = `Bearer ${access}`;
-      //   onRefreshed(access);
-
-      //   return axiosJsonInstance(originalRequest);
-      // } catch (err) {
-      //   console.log("\n\nError on request : ", err);
-      //   store.dispatch(logoutStart());
-
-      //   return Promise.reject(err);
-      // } finally {
-      //   isRefreshing = false;
-      // }
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     const errorMessage = error.response?.data?.detail || error.response?.data?.error ||  error.response  || "An unknown error occurred, please make sure you are connected to a network";
