@@ -214,8 +214,8 @@ class EmployeeStopCheckListView(APIView):
     def get(self, request):
         """Retrieve details of spot check."""
         try:
-            spotchecks = SpotCheckModels.EmployeeSpotCheck.object.filter(employee__position__department__institution=request.user.profile.institution)
-            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks)
+            spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
+            serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(

@@ -7,7 +7,6 @@ import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import type {IAttendance} from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
@@ -35,8 +34,9 @@ import {toast} from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { formatCurrency } from "@/lib/helpers";
+import { formatCurrency, getFileUrl } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
+import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -46,7 +46,7 @@ export default function EmployeeProfile() {
   const [error, setError] = useState<string | null>(null);
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline" | "leave"
+    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline" | "leave"|"spotchecks"
   >("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
@@ -86,25 +86,7 @@ export default function EmployeeProfile() {
     return statusMap[status] || status;
   }, []);
 
-  const getProfilePictureUrl = useCallback((employee: IEmployee) => {
-    const pictureStr = employee.employee_profile_picture || "";
-    if (!pictureStr) return null;
 
-    if (pictureStr.startsWith("http://") || pictureStr.startsWith("https://")) {
-      return pictureStr;
-    }
-
-    if (pictureStr.startsWith("/")) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      return `${baseUrl}${pictureStr}`;
-    }
-
-    if (pictureStr.includes(".")) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      return `${baseUrl}/media/${pictureStr}`;
-    }
-    return null;
-  }, []);
 
   const getEmployeeInitials = useCallback((employee: IEmployee) => {
     if (employee.user?.fullname) {
@@ -254,7 +236,7 @@ export default function EmployeeProfile() {
   }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
 
   // Tab configuration with lazy loading indicators
-  const tabConfig = useMemo(
+  const tabConfig: Array<{id:typeof activeTab, label:string, hasData:boolean}> = useMemo(
     () => [
       {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
       {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
@@ -262,6 +244,7 @@ export default function EmployeeProfile() {
       {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
        {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
        {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
+       {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
   );
@@ -369,7 +352,7 @@ export default function EmployeeProfile() {
                   <div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
                     <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
                       <AvatarImage
-                        src={getProfilePictureUrl(employee) || "/placeholder.svg"}
+                        src={employee.employee_profile_picture ? getFileUrl(employee.employee_profile_picture): "/placeholder.svg"}
                         alt="Profile picture"
                         className="object-cover"
                       />
@@ -643,107 +626,6 @@ export default function EmployeeProfile() {
                 </CardHeader>
 
                 <CardContent className="p-4 md:p-6">
-                  {/* {activeTab === "attendance" && (
-                    <div className="space-y-6">
-                      <div className="bg-white rounded-lg overflow-hidden ">
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-[#f7f7fb] hover:bg-[#f7f7fb]">
-                                <TableHead className="font-semibold text-gray-800 py-3 md:py-4 px-2 md:px-6 min-w-[100px] text-xs md:text-sm">
-                                  Date
-                                </TableHead>
-                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
-                                  Day
-                                </TableHead>
-                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
-                                  Time In
-                                </TableHead>
-                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[70px] text-xs md:text-sm">
-                                  Time Out
-                                </TableHead>
-                                <TableHead className="font-semibold text-gray-800 px-2 md:px-6 min-w-[80px] text-xs md:text-sm">
-                                  Status
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {loadingAttendance ? (
-                                <TableRow>
-                                  <TableCell colSpan={5} className="text-center py-8">
-                                    <div className="flex items-center justify-center space-x-2">
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da]"></div>
-                                      <span className="text-[#848496] text-xs md:text-sm">
-                                        Loading attendance records...
-                                      </span>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ) : filteredAttendanceRecords.length === 0 ? (
-                                <TableRow>
-                                  <TableCell colSpan={5} className="text-center py-8">
-                                    <div className="text-[#848496] text-xs md:text-sm">
-                                      {searchTerm || statusFilter !== "all"
-                                        ? "No attendance records match your filters"
-                                        : "No attendance records found"}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ) : (
-                                filteredAttendanceRecords.map((record, index) => (
-                                  <TableRow
-                                    key={`${record.date}-${index}`}
-                                    className="hover:bg-[#f7f7fb]/50"
-                                  >
-                                    <TableCell className="font-medium text-gray-800 py-3 md:py-4 px-2 md:px-6 text-xs md:text-sm">
-                                      <div className="min-w-0">
-                                        <div className="md:hidden">
-                                          {new Date(record.date).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                          })}
-                                        </div>
-                                        <div className="hidden md:block">
-                                          {formatDate(record.date)}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
-                                      <div className="md:hidden">
-                                        {new Date(record.date).toLocaleDateString("en-US", {
-                                          weekday: "short",
-                                        })}
-                                      </div>
-                                      <div className="hidden md:block">
-                                        {new Date(record.date).toLocaleDateString("en-US", {
-                                          weekday: "long",
-                                        })}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
-                                      {record.check_in_time
-                                        ? formatTime(record.check_in_time)
-                                        : "-"}
-                                    </TableCell>
-                                    <TableCell className="text-gray-800 px-2 md:px-6 text-xs md:text-sm">
-                                      {record.check_out_time
-                                        ? formatTime(record.check_out_time)
-                                        : "-"}
-                                    </TableCell>
-                                                                        <TableCell className="px-2 md:px-6">
-                                      <div className="flex justify-center md:justify-start">
-                                        {getStatusBadge(record.status)}
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </div>
-                  )} */}
 
                   {activeTab === "attendance" &&
                   <EmployeeAttendance
@@ -872,6 +754,11 @@ export default function EmployeeProfile() {
                       institutionId={selectedInstitution.id}
                       scope={{type:"employee", employeeId:employeeId}}
                       showEmployeeName={false}
+                    />
+                  )}
+                  {(activeTab === "spotchecks" && employee) &&  (
+                    <SpotchecksTable
+                      scope={{type:"employee", employee}}
                     />
                   )}
 
