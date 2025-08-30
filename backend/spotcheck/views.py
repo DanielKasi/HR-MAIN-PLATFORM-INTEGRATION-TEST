@@ -232,7 +232,10 @@ class EmployeeStopCheckListView(APIView):
     def get(self, request):
         """Retrieve details of spot check."""
         try:
+            employee_id = request.query_params.get("employee_id", None)
             spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
+            if employee_id:
+                spotchecks = spotchecks.filter(employee_id=employee.id)
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(spotchecks, request)
             serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(paginated_qs, many=True)

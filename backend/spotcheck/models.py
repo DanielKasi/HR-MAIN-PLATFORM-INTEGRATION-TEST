@@ -19,6 +19,9 @@ class InstitutionSpotCheckSetting(BaseApprovableModel):
     def __str__(self):
         return f"{self.institution.name} SpotCheck Settings"
 
+    def get_institution(self):
+        return self.institution       
+
 
 class BranchSpotCheckSetting(BaseApprovableModel):
     branch = models.OneToOneField(
@@ -33,6 +36,9 @@ class BranchSpotCheckSetting(BaseApprovableModel):
     
     def __str__(self):
         return f"{self.branch.name} SpotCheck Settings"
+
+    def get_institution(self):
+        return self.branch.institution       
     
 
 class EmployeeSpotCheckSetting(BaseApprovableModel):
@@ -48,6 +54,9 @@ class EmployeeSpotCheckSetting(BaseApprovableModel):
     
     def __str__(self):
         return f"{self.employee.user.fullname} SpotCheck Settings"
+
+    def get_institution(self):
+        return self.employee.department.institution       
 
 class SpotCheckStatus(TimeStampedModel):
     status_name = models.CharField(max_length=255)

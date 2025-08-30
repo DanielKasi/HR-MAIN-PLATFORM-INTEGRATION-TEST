@@ -11,7 +11,7 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
-
+from approval.models import BaseApprovableModel
 
 class RequiredDocument(SoftDeletableTimeStampedModel):
     """
@@ -33,7 +33,7 @@ class RequiredDocument(SoftDeletableTimeStampedModel):
         )
 
 
-class JobPosition(SoftDeletableTimeStampedModel):
+class JobPosition(BaseApprovableModel):
     JOB_POSITION_STATUS_CHOICES = [
         ("active", "Active"),
         ("inactive", "Inactive"),
@@ -145,38 +145,13 @@ class JobPosition(SoftDeletableTimeStampedModel):
         self.job_position_status = "active"
         self.save()
 
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
+    def get_institution(self):
+        return self.department.institution       
 
-        content_type = ContentType.objects.get_for_model(self.__class__)
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.job_position_status = "inactive"
-            self.save()
-            return
-
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.activate_job_position()
-            return
-        elif not tasks.exists():
-            self.activate_job_position()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
+    
 
 
-class JobPositionAdvert(SoftDeletableTimeStampedModel):
+class JobPositionAdvert(BaseApprovableModel):
     status_choices = [
         ("pending_approval", "Pending Approval"),
         ("expired", "Expired"),
@@ -248,36 +223,9 @@ class JobPositionAdvert(SoftDeletableTimeStampedModel):
         self.full_clean()  # Validate before saving
         self.save()
 
-    def finish_workflow(self):
-        """Handle workflow completion and status transitions."""
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
+    def get_institution(self):
+        return self.job_position.department.institution       
 
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        with transaction.atomic():  # Ensure atomicity
-            tasks = ApprovalTask.objects.filter(
-                content_type=content_type, object_id=self.pk
-            )
-            if tasks.exists() and tasks.filter(status="rejected").exists():
-                self.job_position_advert_status = "inactive"
-                self.save()
-                return
-            if (
-                tasks.exists()
-                and not tasks.filter(
-                    status__in=["not_started", "pending", "rejected"]
-                ).exists()
-            ):
-                self.approve()
-                return
-            elif not tasks.exists():
-                self.approve()
-                return
-            else:
-                raise Exception(
-                    "Cannot finish workflow: Some tasks are not completed or rejected."
-                )
 
     class Meta:
         constraints = [
@@ -444,7 +392,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
             print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
 
 
-class InterviewStage(models.Model):
+class InterviewStage(BaseApprovableModel):
     job_position_advert = models.ForeignKey(
         JobPositionAdvert, on_delete=models.PROTECT, related_name="interview_stages"
     )
@@ -469,8 +417,11 @@ class InterviewStage(models.Model):
 
         super().save(*args, **kwargs)
 
+    def get_institution(self):
+        return self.job_position_advert.job_position.department.institution
 
-class JobInterview(SoftDeletableTimeStampedModel):
+
+class JobInterview(BaseApprovableModel):
     status_choices = [
         ("scheduled", "Scheduled"),
         ("completed", "Completed"),
@@ -746,3 +697,6 @@ class JobInterview(SoftDeletableTimeStampedModel):
         event.specific_employees.set(Profile.objects.filter(id__in=profile_ids))
 
         event.save()
+
+    def get_institution(self):
+        return self.job_position_application.job_position_advert.job_position.department.institution       
