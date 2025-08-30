@@ -1,72 +1,59 @@
 "use client";
 
-import type {Branch, ITill} from "@/types";
-
 import {useEffect, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
 import {
-  Edit,
-  MapPin,
-  Plus,
-  Search,
-  Trash,
-  Loader2,
   ArrowLeft,
   Clock,
   Phone,
   Mail,
-  Save,
+  MapPin,
+  Loader2,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
   X,
+  Plus,
+  Save,
+  RotateCcw,
 } from "lucide-react";
 import {toast} from "sonner";
-import {useDispatch} from "react-redux";
 
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
 import {Badge} from "@/components/ui/badge";
 import {Separator} from "@/components/ui/separator";
+import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
+
+import {cn, showErrorToast} from "@/lib/utils";
 import apiRequest from "@/lib/apiRequest";
-import ProtectedComponent from "@/components/ProtectedComponent";
-import {LocationAutocomplete} from "@/components/location-autocomplete";
-import {PERMISSION_CODES} from "@/types/types.utils";
-import {fetchUpToDateInstitution} from "@/store/auth/actions";
+import {BranchDetailResponse, IBranchWorkingDays, IBranchDay} from "@/types/types.utils";
 
 export default function BranchDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useDispatch();
   const branchId = params.id as string;
 
-  const [branch, setBranch] = useState<Branch | null>(null);
-  const [tills, setTills] = useState<ITill[]>([]); // Separate state for tills
+  const [branch, setBranch] = useState<BranchDetailResponse | null>(null);
+  const [branchWorkingDays, setBranchWorkingDays] = useState<IBranchWorkingDays | null>(null);
+  // const [selectedDays, setSelectedDays] = useState<SelectedDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditingBranch, setIsEditingBranch] = useState(false);
-  const [editedBranch, setEditedBranch] = useState<Branch | null>(null);
-  const [gettingCurrentLocation, setGettingCurrentLocation] = useState(false);
+  const [isWorkingDaysLoading, setIsWorkingDaysLoading] = useState(false);
+  const [isWorkingDaysOpen, setIsWorkingDaysOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [addingDayId, setAddingDayId] = useState<number | null>(null);
+  const [removingDayId, setRemovingDayId] = useState<number | null>(null);
 
-  // Till management states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isAddTillDialogOpen, setIsAddTillDialogOpen] = useState(false);
-  const [isEditTillDialogOpen, setIsEditTillDialogOpen] = useState(false);
-  const [newTill, setNewTill] = useState<ITill>({
-    name: "",
-    branch: Number.parseInt(branchId),
-    id: 0,
-  });
-  const [editTill, setEditTill] = useState<ITill | null>(null);
-  const [editTillIndex, setEditTillIndex] = useState<number | null>(null);
+  // const defaultDays: IBranchDay[] = [
+  //   {day_id: 0, id:1, day_name: "Monday", day_code: "", day_type: ""},
+  //   {day_id: 0,id:2, day_name: "Tuesday", day_code: "", day_type: ""},
+  //   {day_id: 0, day_name: "Wednesday", day_code: "", day_type: ""},
+  //   {day_id: 0, day_name: "Thursday", day_code: "", day_type: ""},
+  //   {day_id: 0, day_name: "Friday", day_code: "", day_type: ""},
+  //   {day_id: 0, day_name: "Saturday", day_code: "", day_type: ""},
+  //   {day_id: 0, day_name: "Sunday", day_code: "", day_type: ""},
+  // ];
 
   const fetchBranch = async () => {
     setIsLoading(true);
@@ -74,16 +61,6 @@ export default function BranchDetailPage() {
       const response = await apiRequest.get(`institution/branch/${branchId}/`);
       if (response.status === 200) {
         setBranch(response.data);
-        setEditedBranch(response.data);
-        
-        // If the response includes tills, set them, otherwise initialize as empty array
-        if (response.data.tills) {
-          setTills(response.data.tills);
-        } else {
-          setTills([]);
-          // Optionally fetch tills separately if needed
-          fetchTills();
-        }
       } else {
         toast.error("Failed to fetch branch details");
         router.push("/branches");
@@ -96,16 +73,62 @@ export default function BranchDetailPage() {
     }
   };
 
-  const fetchTills = async () => {
+  // Fetch branch working days
+  const fetchBranchWorkingDays = async () => {
+    if (!branchId) return;
+
+    setIsWorkingDaysLoading(true);
     try {
-      const response = await apiRequest.get(`institution/branch/${branchId}/tills/`);
-      if (response.status === 200) {
-        setTills(response.data || []);
+      const response = await apiRequest.get(
+        `institution/branch-working-days/?branch_id=${branchId}`,
+      );
+      setBranchWorkingDays(response.data as IBranchWorkingDays);
+    } catch (error: any) {
+      showErrorToast({error, defaultMessage: "Failed to load working days"});
+    } finally {
+      setIsWorkingDaysLoading(false);
+    }
+  };
+
+  // Handle working days update
+  const handleWorkingDaysUpdate = async (days: IBranchDay[]) => {
+    if (!branchId) {
+      toast.error("No branch ID available");
+      return;
+    }
+
+    if (days.length === 0) {
+      toast.error("Please select at least one working day");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      const formData = {
+        branch: parseInt(branchId),
+        branch_days: days.map((day) => ({day_id: day.id, day_type: day.day_type})),
+      };
+
+      let response;
+      if (branchWorkingDays?.id) {
+        response = await apiRequest.patch(
+          `institution/branch-working-day-detail/${branchWorkingDays.id}/`,
+          formData,
+        );
+      } else {
+        response = await apiRequest.post(`institution/branch-working-days/`, formData);
       }
-    } catch (error) {
-      console.error("Error fetching tills:", error);
-      // Don't show error toast here as this might be expected if no tills exist
-      setTills([]);
+
+      setBranchWorkingDays(response.data as IBranchWorkingDays);
+      setHasChanges(false);
+      toast.success("Branch working days updated successfully");
+    } catch (error: any) {
+      showErrorToast({error, defaultMessage: "Failed to update working days"});
+    } finally {
+      setIsSaving(false);
+      setAddingDayId(null);
+      setRemovingDayId(null);
     }
   };
 
@@ -115,154 +138,72 @@ export default function BranchDetailPage() {
     }
   }, [branchId]);
 
-  const handleSaveBranch = async () => {
-    if (!editedBranch) return;
-
-    try {
-      const response = await apiRequest.patch(`institution/branch/${branchId}/`, editedBranch);
-      if (response.status === 200) {
-        setBranch(editedBranch);
-        setIsEditingBranch(false);
-        toast.success("Branch updated successfully");
-        dispatch(fetchUpToDateInstitution());
-      } else {
-        toast.error("Failed to update branch");
-      }
-    } catch (error) {
-      toast.error("Error updating branch");
+  const handleWorkingDaysToggle = () => {
+    setIsWorkingDaysOpen(!isWorkingDaysOpen);
+    if (!isWorkingDaysOpen && !branchWorkingDays) {
+      fetchBranchWorkingDays();
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditedBranch(branch);
-    setIsEditingBranch(false);
+  // const getDisplayDays = (): IBranchDay[] => {
+  //   const fetchedDays = branchWorkingDays?.branch_days || [];
+  //   return fetchedDays.map((defaultDay) => {
+  //     const fetchedDay = fetchedDays.find(
+  //       (day: IBranchDay) => day.day_name === defaultDay.day_name,
+  //     );
+  //     return fetchedDay || {...defaultDay, id: 0, day_type: ""};
+  //   });
+  // };
+
+  const getDayColor = (dayName: string) => {
+    const colors = {
+      Monday: "bg-blue-100 text-blue-700 border-blue-200",
+      Tuesday: "bg-green-100 text-green-700 border-green-200",
+      Wednesday: "bg-purple-100 text-purple-700 border-purple-200",
+      Thursday: "bg-orange-100 text-orange-700 border-orange-200",
+      Friday: "bg-pink-100 text-pink-700 border-pink-200",
+      Saturday: "bg-indigo-100 text-indigo-700 border-indigo-200",
+      Sunday: "bg-red-100 text-red-700 border-red-200",
+    };
+    return colors[dayName as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.info("Your browser does not support geolocation.");
+  const getDayIcon = (dayName: string) => {
+    const icons = {
+      Monday: "M",
+      Tuesday: "T",
+      Wednesday: "W",
+      Thursday: "T",
+      Friday: "F",
+      Saturday: "S",
+      Sunday: "S",
+    };
+    return icons[dayName as keyof typeof icons] || dayName[0] || "?";
+  };
+
+  // Handle day click (add/remove)
+  const handleDayClick = async (dayId: number, dayType: "PHYSICAL" | "REMOTE" = "PHYSICAL") => {
+    const day = branchWorkingDays?.branch_days.find((d) => d.id === dayId);
+    if (!day || day.id === 0) {
+      toast.error("This day is not available for selection");
       return;
     }
 
-    setGettingCurrentLocation(true);
+    const isSelected = branchWorkingDays?.branch_days.some((d) => d.day_id === dayId);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const {latitude, longitude} = position.coords;
-
-          const response = await fetch(
-            `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=12a8608da7914f4c96cbbc76c7ca954c`,
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to reverse geocode location");
-          }
-
-          const data = await response.json();
-
-          if (data.features && data.features.length > 0) {
-            const address = data.features[0].properties.formatted;
-
-            setEditedBranch((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    branch_location: address,
-                    branch_latitude: latitude.toString(),
-                    branch_longitude: longitude.toString(),
-                  }
-                : null,
-            );
-
-            toast.info("Current location has been set.");
-          } else {
-            toast.error("No address found for your location");
-          }
-        } catch (error) {
-          toast.error("Failed to get your current location");
-        } finally {
-          setGettingCurrentLocation(false);
-        }
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        let errorMessage = "Failed to get your location";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location permission denied. Please enable location services.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out.";
-            break;
-        }
-
-        toast.error("Location error: " + errorMessage);
-        setGettingCurrentLocation(false);
-      },
-      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0},
-    );
-  };
-
-  const handleAddTill = async () => {
+    if (!isSelected) {
+      return;
+    }
+    setRemovingDayId(dayId);
+    const newSelectedDays = branchWorkingDays?.branch_days.filter((d) => d.day_id !== dayId);
     try {
-      const response = await apiRequest.post(`institution/branch/${branchId}/tills/`, newTill);
-      if (response.status === 201) {
-        setIsAddTillDialogOpen(false);
-        setNewTill({name: "", branch: Number.parseInt(branchId), id: 0});
-        toast.success("Till added successfully");
-        fetchTills(); // Refresh tills data
-      } else {
-        toast.error("Failed to add till");
-      }
+      await handleWorkingDaysUpdate(newSelectedDays || []);
     } catch (error) {
-      toast.error("Error adding till");
+      showErrorToast({error, defaultMessage: "Failed to remove day. Please try again."});
+    } finally {
+      setRemovingDayId(null);
     }
   };
-
-  const handleEditTillSave = async () => {
-    if (!editTill || editTillIndex === null) return;
-
-    try {
-      const response = await apiRequest.patch(
-        `institution/branch/${branchId}/till/${editTill.id}/`, // Use till ID instead of index
-        editTill,
-      );
-      if (response.status === 200) {
-        setIsEditTillDialogOpen(false);
-        setEditTill(null);
-        setEditTillIndex(null);
-        toast.success("Till updated successfully");
-        fetchTills(); // Refresh tills data
-      } else {
-        toast.error("Failed to update till");
-      }
-    } catch (error) {
-      toast.error("Error updating till");
-    }
-  };
-
-  const handleDeleteTill = async (tillId: number) => {
-    try {
-      const response = await apiRequest.delete(`institution/branch/${branchId}/till/${tillId}/`);
-      if (response.status === 204) {
-        toast.success("Till deleted successfully");
-        fetchTills(); // Refresh tills data
-      } else {
-        toast.error("Failed to delete till");
-      }
-    } catch (error) {
-      toast.error("Error deleting till");
-    }
-  };
-
-  const filteredTills = tills.filter(
-    (till) => searchQuery === "" || till.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   if (isLoading) {
     return (
@@ -288,9 +229,13 @@ export default function BranchDetailPage() {
     );
   }
 
+  const sortedDays = branchWorkingDays?.branch_days.sort((a, b) => {
+    const order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    return order.indexOf(a.day_name) - order.indexOf(b.day_name);
+  });
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
+    <div className="flex flex-col gap-6 mt-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/branches")}>
@@ -298,377 +243,266 @@ export default function BranchDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{branch.branch_name}</h1>
-            <p className="text-muted-foreground">Branch details and till management</p>
+            <p className="text-muted-foreground">{branch.institution_name} - Branch details</p>
           </div>
         </div>
-        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-          {!isEditingBranch ? (
-            <Button onClick={() => setIsEditingBranch(true)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Branch
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCancelEdit}>
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
-              <Button onClick={handleSaveBranch}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
-            </div>
-          )}
-        </ProtectedComponent>
+        <Button className="variant">Branch Shift</Button>
+        <Badge variant={branch.is_active ? "default" : "secondary"}>
+          {branch.is_active ? "Active" : "Inactive"}
+        </Badge>
       </div>
 
-      {/* Branch Details Card */}
       <Card>
         <CardHeader>
           <CardTitle>Branch Information</CardTitle>
-          <CardDescription>
-            {isEditingBranch ? "Edit branch details below" : "View branch details"}
-          </CardDescription>
+          <CardDescription>View branch details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {isEditingBranch && editedBranch ? (
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="branch_name">Branch Name</Label>
-                  <Input
-                    id="branch_name"
-                    value={editedBranch.branch_name}
-                    onChange={(e) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_name: e.target.value,
-                      })
-                    }
-                  />
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Phone:</span>
+                  <span>{branch.branch_phone_number || "Not provided"}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="branch_phone_number">Phone Number</Label>
-                  <Input
-                    id="branch_phone_number"
-                    value={editedBranch.branch_phone_number || ""}
-                    onChange={(e) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_phone_number: e.target.value,
-                      })
-                    }
-                  />
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Email:</span>
+                  <span>{branch.branch_email || "Not provided"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Operating Hours:</span>
+                  <span>
+                    {branch.branch_opening_time && branch.branch_closing_time
+                      ? `${branch.branch_opening_time} - ${branch.branch_closing_time}`
+                      : "Not specified"}
+                  </span>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="branch_email">Email</Label>
-                <Input
-                  id="branch_email"
-                  type="email"
-                  value={editedBranch.branch_email || ""}
-                  onChange={(e) =>
-                    setEditedBranch({
-                      ...editedBranch,
-                      branch_email: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="branch_opening_time">Opening Time</Label>
-                  <Input
-                    id="branch_opening_time"
-                    type="time"
-                    value={editedBranch.branch_opening_time || ""}
-                    onChange={(e) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_opening_time: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="branch_closing_time">Closing Time</Label>
-                  <Input
-                    id="branch_closing_time"
-                    type="time"
-                    value={editedBranch.branch_closing_time || ""}
-                    onChange={(e) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_closing_time: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="branch_location">Location</Label>
-                <div className="space-y-2">
-                  <LocationAutocomplete
-                    placeholder="Search for a location..."
-                    value={editedBranch.branch_location}
-                    onChange={(location) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_location: location,
-                      })
-                    }
-                    onCoordinatesChange={(lat, lon) =>
-                      setEditedBranch({
-                        ...editedBranch,
-                        branch_latitude: lat,
-                        branch_longitude: lon,
-                      })
-                    }
-                  />
-                  {editedBranch.branch_location && (
-                    <div className="text-sm text-muted-foreground break-words border rounded-md p-2 bg-muted/30">
-                      {editedBranch.branch_location}
-                    </div>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={gettingCurrentLocation}
-                    onClick={getCurrentLocation}
-                  >
-                    {gettingCurrentLocation ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <MapPin className="mr-2 h-4 w-4" />
-                    )}
-                    Get Current Location
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Phone:</span>
-                <span>{branch.branch_phone_number || "Not provided"}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Email:</span>
-                <span>{branch.branch_email || "Not provided"}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Operating Hours:</span>
-                <span>
-                  {branch.branch_opening_time && branch.branch_closing_time
-                    ? `${branch.branch_opening_time} - ${branch.branch_closing_time}`
-                    : "Not specified"}
-                </span>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+              <div className="space-y-3">
                 <div>
-                  <span className="font-medium">Location:</span>
-                  <p className="text-sm text-muted-foreground mt-1">{branch.branch_location}</p>
+                  <span className="font-medium">Institution:</span>
+                  <span className="ml-2">{branch.institution_name}</span>
+                </div>
+                <div>
+                  <span className="font-medium">Paying Bank Account:</span>
+                  <span className="ml-2">{branch.paying_bank_account}</span>
                 </div>
               </div>
             </div>
-          )}
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+              <div>
+                <span className="font-medium">Location:</span>
+                <p className="text-sm text-muted-foreground mt-1">{branch.branch_location}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Coordinates: {branch.branch_latitude}, {branch.branch_longitude}
+                </p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       <Separator />
 
-      {/* Tills Management */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Tills Management</h2>
-            <p className="text-muted-foreground">Manage tills for this branch</p>
-          </div>
-          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-            <Dialog open={isAddTillDialogOpen} onOpenChange={setIsAddTillDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Till
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Till</DialogTitle>
-                  <DialogDescription>Create a new till for this branch.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="till_name">Till Name</Label>
-                    <Input
-                      id="till_name"
-                      value={newTill.name}
-                      onChange={(e) => setNewTill({...newTill, name: e.target.value})}
-                      placeholder="Enter till name"
-                    />
+      <Collapsible open={isWorkingDaysOpen} onOpenChange={handleWorkingDaysToggle}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <CardTitle>Branch Working Days</CardTitle>
+                    <CardDescription>Configure the working days for this branch</CardDescription>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddTillDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddTill}>Add Till</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </ProtectedComponent>
-        </div>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle>Tills</CardTitle>
-                <CardDescription>Manage tills for {branch.branch_name}</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    className="pl-8 w-64"
-                    placeholder="Search tills..."
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                <div className="flex items-center gap-2">
+                  {branchWorkingDays && (
+                    <Badge variant="outline">
+                      {branchWorkingDays.branch_days.length}{" "}
+                      {branchWorkingDays.branch_days.length === 1 ? "day" : "days"}
+                    </Badge>
+                  )}
+                  {isWorkingDaysOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </div>
-                <Badge variant="outline">
-                  {filteredTills.length} {filteredTills.length === 1 ? "till" : "tills"}
-                </Badge>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Till Name</TableHead>
-                    <TableHead>Branch</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTills.length === 0 ? (
-                    <TableRow>
-                      <TableCell className="h-24 text-center" colSpan={3}>
-                        {searchQuery ? (
-                          <div className="flex flex-col items-center justify-center text-muted-foreground">
-                            <Search className="h-8 w-8 mb-2" />
-                            <p>No tills found matching "{searchQuery}"</p>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              {isWorkingDaysLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span className="text-sm text-muted-foreground">Loading working days...</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <div className="p-6 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Branch Working Days Manager
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Click the plus (+) button to add a day, or the cross (×) to remove a day.
+                      Select the day type (Physical/Remote) when adding.
+                    </p>
+                  </div>
+                  <div className="p-6 space-y-6">
+                    {sortedDays?.every((day) => day.id === 0) ? (
+                      <div className="text-center py-8">
+                        <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          No Working Days Set
+                        </h3>
+                        <p className="text-gray-500">
+                          Configure your branch's working days to get started.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                          {sortedDays?.map((day) => {
+                            const isSelected = branchWorkingDays?.branch_days.some(
+                              (d) => d.day_id === day.id,
+                            );
+                            const isSelectable = day.id !== 0;
+                            return (
+                              <div key={day.day_name} className="relative">
+                                <div className="text-center transition-all duration-200 rounded-lg p-2">
+                                  <div
+                                    className={cn(
+                                      "w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-2 border-2 transition-all duration-200 relative",
+                                      isSelected
+                                        ? getDayColor(day.day_name)
+                                        : isSelectable
+                                          ? "bg-gray-100 text-gray-400 border-gray-200 hover:border-green-300 hover:bg-green-50 cursor-pointer"
+                                          : "bg-gray-100 text-gray-400 border-gray-200 opacity-50",
+                                    )}
+                                    onClick={() => {
+                                      if (!isSelected && isSelectable) {
+                                        handleDayClick(day.id);
+                                      }
+                                    }}
+                                  >
+                                    {addingDayId === day.id ? (
+                                      <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                    ) : isSelected ? (
+                                      getDayIcon(day.day_name)
+                                    ) : (
+                                      <Plus
+                                        className={cn(
+                                          "w-6 h-6",
+                                          isSelectable ? "text-green-600" : "text-gray-400",
+                                        )}
+                                      />
+                                    )}
+                                  </div>
+                                  <p
+                                    className={cn(
+                                      "font-medium text-sm mb-1",
+                                      isSelected ? "text-gray-900" : "text-gray-500",
+                                    )}
+                                  >
+                                    {day.day_name}
+                                  </p>
+                                  {isSelected && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {
+                                        branchWorkingDays?.branch_days.find((d) => d.id === day.id)
+                                          ?.day_type
+                                      }
+                                    </Badge>
+                                  )}
+                                  {/* {!isSelected && isSelectable && (
+                                    <Select
+                                      onValueChange={(value) =>
+                                        handleDayClick(day.id, value as "PHYSICAL" | "REMOTE")
+                                      }
+                                      disabled={isSaving || addingDayId === day.id}
+                                    >
+                                      <SelectTrigger className="w-full mt-1 text-xs h-8">
+                                        <SelectValue placeholder="Select type" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="PHYSICAL">Physical</SelectItem>
+                                        <SelectItem value="REMOTE">Remote</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )} */}
+                                </div>
+                                {isSelected && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDayClick(day.id)}
+                                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200 z-10"
+                                    title={`Remove ${day.day_name}`}
+                                    disabled={isSaving || removingDayId === day.id}
+                                  >
+                                    {removingDayId === day.id ? (
+                                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                      <X className="w-4 h-4 text-red-600" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              {/* <span className="text-gray-600">
+                                <strong>{selectedDays.length}</strong> working days selected
+                              </span> */}
+                            </div>
+                            <span className="text-gray-500">
+                              Last updated:{" "}
+                              {branchWorkingDays ? new Date().toLocaleDateString() : "Never"}
+                            </span>
+                          </div>
+                        </div>
+                        {/* {hasChanges && (
+                          <div className="flex items-center gap-3 pt-4 border-t">
                             <Button
-                              className="mt-2"
-                              variant="link"
-                              onClick={() => setSearchQuery("")}
+                              onClick={handleSave}
+                              disabled={isSaving}
+                              className="flex items-center gap-2"
                             >
-                              Clear search
+                              <Save className="h-4 w-4" />
+                              {isSaving ? "Saving..." : "Save Changes"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={handleReset}
+                              disabled={isSaving}
+                              className="flex items-center gap-2"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                              Reset
                             </Button>
                           </div>
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-muted-foreground">
-                            <p>No tills found for this branch</p>
-                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
-                              <Button
-                                className="mt-2"
-                                variant="link"
-                                onClick={() => setIsAddTillDialogOpen(true)}
-                              >
-                                Add your first till
-                              </Button>
-                            </ProtectedComponent>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredTills.map((till, index) => (
-                      <TableRow key={till.id || index} className="group">
-                        <TableCell className="font-medium">Till -- {till.name}</TableCell>
-                        <TableCell>{branch.branch_name}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100">
-                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                              <Button
-                                className="h-8 w-8"
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => {
-                                  setEditTill(till);
-                                  setEditTillIndex(till.id);
-                                  setIsEditTillDialogOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                            </ProtectedComponent>
-                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_BRANCH}>
-                              <Button
-                                className="h-8 w-8 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleDeleteTill(till.id)}
-                              >
-                                <Trash className="h-4 w-4" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
-                            </ProtectedComponent>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
+                        )} */}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
         </Card>
-      </div>
-
-      {/* Edit Till Dialog */}
-      <Dialog open={isEditTillDialogOpen} onOpenChange={setIsEditTillDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Till</DialogTitle>
-            <DialogDescription>Edit till details.</DialogDescription>
-          </DialogHeader>
-          {editTill && (
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit_till_name">Till Name</Label>
-                <Input
-                  id="edit_till_name"
-                  value={editTill.name}
-                  onChange={(e) => setEditTill({...editTill, name: e.target.value})}
-                  placeholder="Enter till name"
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditTillDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditTillSave}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </Collapsible>
     </div>
   );
 }

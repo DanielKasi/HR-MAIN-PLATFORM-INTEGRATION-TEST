@@ -2394,6 +2394,38 @@ export interface IBranchLocationComparisonConfigFormData {
   radius_in_meters: number;
 }
 
+
+export interface BranchDetailResponse {
+  id: number;
+  institution: number;
+  paying_bank_account: number;
+  institution_name: string;
+  branch_name: string;
+  branch_phone_number: string;
+  branch_location: string;
+  branch_latitude: number;
+  branch_longitude: number;
+  branch_email: string;
+  branch_opening_time: string;
+  branch_closing_time: string;
+  is_active: boolean;
+}
+
+export interface IBranchDay {
+  day_id: number;
+  day_code: string;
+  id: number;
+  day_name: string;
+  day_type: string;
+}
+
+export interface IBranchWorkingDays {
+  id: number;
+  branch: number;
+  branch_days: IBranchDay[];
+}
+
+
 export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 
@@ -2470,3 +2502,35 @@ export interface IEmployeePenaltyFormData {
   status?:IEmployeePenaltyStatus;
 }
 
+
+
+
+export interface BranchDetailResponse {
+  id: number;
+  institution: number;
+  paying_bank_account: number;
+  institution_name: string;
+  branch_name: string;
+  branch_phone_number: string;
+  branch_location: string;
+  branch_latitude: number;
+  branch_longitude: number;
+  branch_email: string;
+  branch_opening_time: string;
+  branch_closing_time: string;
+  is_active: boolean;
+}
+
+export interface IBranchDay {
+  day_id: number;
+  day_code: string;
+  id: number;
+  day_name: string;
+  day_type: string;
+}
+
+export interface IBranchWorkingDays {
+  id: number;
+  branch: number;
+  branch_days: IBranchDay[];
+}
