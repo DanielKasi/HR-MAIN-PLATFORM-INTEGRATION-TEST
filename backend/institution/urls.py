@@ -182,12 +182,12 @@ urlpatterns = [
         name="branch-working-day-detail",
     ),
     path(
-        "branch-shifts/",
+        "branch-shifts/<int:branch_id>/",
         BranchShiftListCreateView.as_view(),
         name="branch-shift-list-create",
     ),
     path(
-        "branch-shifts/<int:pk>/",
+        "branch-shifts/detail/<int:shift_id>/",
         BranchShiftDetailView.as_view(),
         name="branch-shift-detail",
     ),

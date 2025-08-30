@@ -60,6 +60,7 @@ import requests
 import secrets
 import urllib.parse
 from institution.utils import generate_compliant_password
+from django.db import transaction
 
 
 logger = logging.getLogger(__name__)
@@ -619,11 +620,13 @@ class RoleListAPIView(APIView):
         summary="Create a new role",
         tags=["User Management"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer: RoleSerializer = RoleSerializer(data=request.data)
 
         if serializer.is_valid():
             role = serializer.save()
+            role.confirm_create()
             return Response(
                 RoleSerializer(role).data,
                 status=status.HTTP_201_CREATED,
@@ -668,11 +671,14 @@ class RoleDetailAPIView(APIView):
         summary="Update a role",
         tags=["User Management"],
     )
+    @transaction.atomic()
     def patch(self, request, role_id):
         role = get_object_or_404(Role, pk=role_id)
+        role.approval_status = 'under_update'
         serializer = RoleSerializer(role, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            role.confirm_update()
             return Response(serializer.data)
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
@@ -685,7 +691,9 @@ class RoleDetailAPIView(APIView):
     )
     def delete(self, request, role_id):
         role = get_object_or_404(Role, pk=role_id)
-        role.delete()
+        role.approval_status = 'under_deletion'
+        role.save(update_fields=['approval_status'])
+        role.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

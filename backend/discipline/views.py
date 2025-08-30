@@ -12,6 +12,8 @@ from .models import DisciplineType, DisciplinaryAction
 from .serializers import DisciplinaryActionSerializer, DisciplineTypeSerializer
 from utilities.pagination import CustomPageNumberPagination
 from institution.models import Institution
+from django.db import transaction
+
 
 
 class DisciplinaryActionAPIView(APIView):
@@ -22,7 +24,10 @@ class DisciplinaryActionAPIView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get('search', None)
-        employee_id = request.query_params.get("employee_id")
+        employee_id = request.query_params.get("employee_id", None)
+        status = request.query_params.get("status", None)
+        severity = request.query_params.get("severity", None)
+
         user = request.user.profile
 
         if user and user.institution:
@@ -42,6 +47,12 @@ class DisciplinaryActionAPIView(APIView):
         if employee_id:
             actions = actions.filter(employee_id=employee_id)
 
+        if status:
+            actions = actions.filter(status=status) 
+
+        if severity:
+            actions = actions.filter(severity=discipline_type.id)    
+
         if search_query:
             actions = actions.filter(
                 Q(employee__user__fullname__icontains=search_query) |
@@ -59,10 +70,12 @@ class DisciplinaryActionAPIView(APIView):
         responses=DisciplinaryActionSerializer,
         summary="Create a new disciplinary action",
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = DisciplinaryActionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -83,20 +96,25 @@ class DisciplinaryActionDetailAPIView(APIView):
         responses=DisciplinaryActionSerializer,
         summary="Update a disciplinary action (partial)",
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         action = get_object_or_404(DisciplinaryAction, pk=pk)
+        action.approval_status = 'under_update'
         serializer = DisciplinaryActionSerializer(
             action, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            action.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a disciplinary action")
     def delete(self, request, pk):
         action = get_object_or_404(DisciplinaryAction, pk=pk)
-        action.delete()
+        action.approval_status = 'under_deletion'
+        action.save(update_fields=['approval_status'])
+        action.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

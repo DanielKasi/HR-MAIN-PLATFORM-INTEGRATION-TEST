@@ -2,10 +2,10 @@ from django.db import models
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from institution.models import Institution
-from users.models import Role, Profile, CustomUser
 import uuid
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
+
 
 
 class Action(SoftDeletableTimeStampedModel):
@@ -26,11 +26,11 @@ class Action(SoftDeletableTimeStampedModel):
         ordering = ['name']    
 
 class ApproverGroup(SoftDeletableTimeStampedModel):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)   
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)   
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    roles = models.ManyToManyField(Role, through='ApproverGroupRole', blank=True)
-    users = models.ManyToManyField(Profile, through='ApproverGroupUser', blank=True)
+    roles = models.ManyToManyField('users.Role', through='ApproverGroupRole', blank=True)
+    users = models.ManyToManyField('users.Profile', through='ApproverGroupUser', blank=True)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
 
@@ -42,7 +42,7 @@ class ApproverGroup(SoftDeletableTimeStampedModel):
 
 class ApproverGroupRole(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    role = models.ForeignKey('users.Role', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
@@ -50,14 +50,14 @@ class ApproverGroupRole(SoftDeletableTimeStampedModel):
 
 class ApproverGroupUser(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    user = models.ForeignKey('users.Profile', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return f"{self.approver_group.name} - {self.user.user.fullname}"
 
 class ApprovalDocument(SoftDeletableTimeStampedModel):  
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
@@ -119,6 +119,7 @@ class Approval(models.Model):
         return f"Approval {self.public_id} - {self.status}"
 
 class ApprovalTask(SoftDeletableTimeStampedModel):
+
     STATUS_CHOICES = [
         ('not_started', 'Not Started'),
         ('pending', 'Pending'),
@@ -131,7 +132,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
     level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     comment = models.TextField(blank=True, null=True)
-    approved_by = models.ForeignKey(CustomUser, null=True, blank=True, on_delete=models.SET_NULL)
+    approved_by = models.ForeignKey('users.CustomUser', null=True, blank=True, on_delete=models.SET_NULL)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -141,7 +142,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         unique_together = ('approval', 'level')
         ordering = ['level__level']
 
-    def mark_completed(self, user: CustomUser, comment: str = None):
+    def mark_completed(self, user, comment: str = None):
         with transaction.atomic():
             if self.status != 'pending':
                 raise ValidationError({"error": "Task must be in pending state to be completed"})
@@ -168,7 +169,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
 
             # Notify task completion
 
-    def mark_rejected(self, user: CustomUser, comment: str = None):
+    def mark_rejected(self, user, comment: str = None):
         with transaction.atomic():
             if self.status != 'pending':
                 raise ValidationError({"error": "Task must be in pending state to be rejected"})

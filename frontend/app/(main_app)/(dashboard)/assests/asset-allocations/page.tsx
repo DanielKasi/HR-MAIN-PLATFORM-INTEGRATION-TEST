@@ -18,6 +18,8 @@ import {
   FileText,
   Users
 } from 'lucide-react';
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,7 @@ import { assetsAPI } from "@/lib/utils";
 import type { IAssetAllocation } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react";
+import ProtectedPage from "@/components/ProtectedPage";
 
 
 
@@ -146,7 +149,7 @@ const AssetAllocationsComponent = () => {
   };
 
   const handleViewAllocationDetails = (allocation: IAssetAllocation) => {
-    router.push(`/assests/asset-allocations/${allocation.id}`);
+    router.push(`/assets/asset-allocations/${allocation.id}`);
   };
 
   const clearFilters = () => {
@@ -195,13 +198,16 @@ const AssetAllocationsComponent = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-primary text-white rounded-[11px]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Allocation
-            </Button>
+             
+              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_ALLOCATE_ASSETS]}>
+                 <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="bg-primary text-white rounded-[11px]"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Allocation
+                </Button>
+              </ProtectedPage>
               
             </div>
             
@@ -304,17 +310,23 @@ const AssetAllocationsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteAllocation(allocation)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                               
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_ALLOCATIONS]}>
+                                    <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                              
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_ALLOCATIONS]}>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDeleteAllocation(allocation)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -370,17 +382,22 @@ const AssetAllocationsComponent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteAllocation(allocation)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_ALLOCATIONS]}>
+                                    <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                              
+                                <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_ALLOCATIONS]}>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteAllocation(allocation)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
