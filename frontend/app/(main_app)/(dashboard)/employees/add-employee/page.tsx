@@ -544,7 +544,7 @@ export default function AddEmployeeForm() {
         break;
 
       case 2: // Work Information
-        const workRequiredFields = ["position", "department", "date_of_joining"];
+        const workRequiredFields = ["position", "department", "date_of_joining", "work_type", "employee_type", "selected_branches", "qualifications", "skills"];
         for (const field of workRequiredFields) {
           const value = formData[field as keyof typeof formData];
           if (!value || value === 0) {
@@ -1458,7 +1458,7 @@ export default function AddEmployeeForm() {
                       type="button"
                       onClick={nextStep}
                       className="bg-orange-600 hover:bg-orange-700 px-6"
-                      disabled={!isCurrentStepValid() || isValidating || !!submitError}
+                      disabled={!isCurrentStepValid() || isValidating }
                     >
                       {isValidating ? (
                         <>
