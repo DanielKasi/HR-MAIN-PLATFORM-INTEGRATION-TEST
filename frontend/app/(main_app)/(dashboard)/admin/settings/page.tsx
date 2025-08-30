@@ -26,6 +26,7 @@ import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {penaltyConfigAPI, branchLocationComparisonConfigAPI} from "@/lib/utils";
 import type {IInstitutionPenaltyConfig, IInstitutionPenaltyConfigFormData, IBranchPenaltyConfig, IBranchPenaltyConfigFormData, IBranchLocationComparisonConfig, IBranchLocationComparisonConfigFormData} from "@/types/types.utils";
+import Link from "next/link";
 
 interface DocumentFile {
   id: string;
@@ -955,7 +956,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Penalty Configurations Table */}
-      <div className="bg-white rounded-lg border">
+      <div className="">
         <PaginatedTableWrapper<IInstitutionPenaltyConfig>
           fetchFirstPage={async () => {
             if (!institution) throw new Error("No institution selected");
@@ -1218,7 +1219,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Branch Penalty Configurations Table */}
-          <div className="bg-white rounded-lg border">
+          <div className="">
             <PaginatedTableWrapper<IBranchPenaltyConfig>
               fetchFirstPage={async () => {
                 if (!selectedBranchId) throw new Error("No branch selected");
@@ -1470,7 +1471,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Location Comparison Configurations Table */}
-          <div className="bg-white rounded-lg border">
+          <div className="">
             <PaginatedTableWrapper<IBranchLocationComparisonConfig>
               fetchFirstPage={async () => {
                 if (!institution) throw new Error("No institution selected");
@@ -1631,9 +1632,9 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="bg-white border-gray-200 px-6 py-4">
         <div className="flex items-center gap-4 ">
-            <div className="border rounded-full p-3">
+            <Link href="/admin" className="border rounded-full p-3">
                 <Icon icon="hugeicons:arrow-left-02" className="w-5 h-5" />
-            </div>
+            </Link>
           
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         </div>
