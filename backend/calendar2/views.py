@@ -17,6 +17,8 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from datetime import datetime
 from django.db.models import Q
+from django.db import transaction
+
 
 
 class PublicHolidayListCreateView(APIView):
@@ -38,12 +40,15 @@ class PublicHolidayListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
+        date = request.query_params.get("date", None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
         public_holidays = PublicHoliday.objects.filter(
             institution=institution, deleted_at__isnull=True
         )
+        if date:
+            public_holidays = public_holidays.filter(date=date)
         if search_query:
             public_holidays = public_holidays.filter(
                 Q(title__icontains=search_query) | Q(date__icontains=search_query)
@@ -69,10 +74,12 @@ class PublicHolidayListCreateView(APIView):
         },
         tags=["Calendar"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = PublicHolidaySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -119,13 +126,16 @@ class PublicHolidayDetailView(APIView):
         },
         tags=["Calendar"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
+        public_holiday.approval_status = 'under_update'
         serializer = PublicHolidaySerializer(
             public_holiday, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            public_holiday.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -142,7 +152,9 @@ class PublicHolidayDetailView(APIView):
     )
     def delete(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
-        public_holiday.delete()
+        public_holiday.approval_status = 'under_deletion'
+        public_holiday.save(update_fields=['approval_status'])
+        public_holiday.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -165,12 +177,20 @@ class EventListCreateView(APIView):
     )
     def get(self, request):
         search_query = request.query_params.get('search', None)
+        date = request.query_params.get('date', None)
+        mode = request.query_params.get('mode', None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
         events = Event.objects.filter(
             institution=institution, deleted_at__isnull=True
         )
+
+        if date:
+            events = events.filter(date=date)
+
+        if mode:
+            events = events.filter(mode=event_mode)
         if search_query:
             events = events.filter(
                 Q(title__icontains=search_query) | Q(description__icontains=search_query) |
@@ -197,11 +217,13 @@ class EventListCreateView(APIView):
         },
         tags=["Calendar"],
     )
+    @transaction.atomic()
     def post(self, request):
 
         serializer = EventSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(created_by=request.user.profile)
+            instance = serializer.save(created_by=request.user.profile)
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -247,11 +269,14 @@ class EventDetailView(APIView):
         },
         tags=["Calendar"],
     )
+    @transaction.atomic()
     def patch(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
+        event.approval_stage = 'under_update'
         serializer = EventSerializer(event, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
+            event.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -266,9 +291,12 @@ class EventDetailView(APIView):
         },
         tags=["Calendar"],
     )
+    @transaction.atomic()
     def delete(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
-        event.delete()
+        event.approval_status = 'under_deletion'
+        event.save(update_fields=['approval_status'])
+        event.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
