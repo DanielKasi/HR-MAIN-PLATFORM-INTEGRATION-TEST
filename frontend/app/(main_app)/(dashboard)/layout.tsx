@@ -60,6 +60,7 @@ import CreateOrganisationWizard from "./create-organisation/page";
 import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
 import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
+import RedirectsWatcher from "@/components/common/redirects-watcher";
 
 
 
@@ -620,6 +621,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   return (
 
   <>
+  <RedirectsWatcher/>
     <div ref={appLayoutRef} className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout">
       {/* Desktop Sidebar */}
       {!isMobile && (

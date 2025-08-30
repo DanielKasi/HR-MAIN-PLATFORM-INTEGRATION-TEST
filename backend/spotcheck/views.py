@@ -8,6 +8,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.parsers import FormParser
 from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
+from utilities.pagination import CustomPageNumberPagination
 
 
 class InstitutionSpotCheckSettingCreateView(APIView):
@@ -230,8 +231,10 @@ class EmployeeSpotCheckListCreateAPIView(APIView):
     def get(self, request):
         """List all employee spot check records for an institution of authenticated user."""
         spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(employee__position__department__institution=request.user.profile.institution)
-        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(spotchecks, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = CustomPageNumberPagination()
+        paginated_spotchecks = paginator.paginate_queryset(spotchecks, request)
+        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(paginated_spotchecks, many=True)
+        return paginator.get_paginated_response(serializer.data)
     
 
 class EmployeeSpotCheckDetailView(APIView):

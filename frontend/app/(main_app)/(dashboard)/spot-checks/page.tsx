@@ -260,7 +260,7 @@ const SpotcheckComponent = () => {
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No spot checks found matching your search criteria" : "No spot checks found"}
+                    {"No spot checks found"}
                   </div>
                 );
               }

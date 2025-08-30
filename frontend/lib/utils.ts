@@ -6175,16 +6175,6 @@ export const showErrorToast = ({error, defaultMessage}: {error: any; defaultMess
 
 // Spotcheck API functions
 export const spotcheckAPI = {
-  getAll: async (): Promise<ISpotCheck[]> => {
-    try {
-      const response = await apiRequest.get("/spotcheck/");
-      return response.data.results || response.data;
-    } catch (error) {
-      console.warn("Error fetching spotchecks:", error);
-      throw error;
-    }
-  },
-
   getPaginated: async ({
     institutionId,
     page = 1,
@@ -6240,40 +6230,39 @@ export const spotcheckAPI = {
     missedThisWeek: number;
     missedToday: number;
   }> => {
-    try {
+    // try {
       const response = await apiRequest.get(`/spotcheck/summary/?institution_id=${institutionId}`);
       return response.data;
-    } catch (error) {
-      console.error("Error fetching spotcheck summary:", error);
-      // Return dummy data for now
-      return {
-        totalSpotChecks: 156,
-        totalMissed: 23,
-        missedThisMonth: 8,
-        missedThisWeek: 3,
-        missedToday: 1,
-      };
-    }
+    // } catch (error) {
+    //   console.error("Error fetching spotcheck summary:", error);
+    //   // Return dummy data for now
+    //   return {
+    //     totalSpotChecks: 156,
+    //     totalMissed: 23,
+    //     missedThisMonth: 8,
+    //     missedThisWeek: 3,
+    //     missedToday: 1,
+    //   };
+    // }
   },
 
   getStatuses: async (): Promise<ISpotCheckStatus[]> => {
-    try {
+    // try {
       const response = await apiRequest.get("/spotcheck/statuses/");
       return response.data.results || response.data;
-    } catch (error) {
-      console.error("Error fetching spotcheck statuses:", error);
-      // Return dummy data for now
-      return [
-        { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-        { id: 2, code: "missed", name: "Missed", description: "Spot check was missed" },
-        { id: 3, code: "pending", name: "Pending", description: "Spot check is pending" },
-        { id: 4, code: "in_progress", name: "In Progress", description: "Spot check is currently in progress" },
-      ];
-    }
+    // } catch (error) {
+    //   // Return dummy data for now
+    //   return [
+    //     { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
+    //     { id: 2, code: "missed", name: "Missed", description: "Spot check was missed" },
+    //     { id: 3, code: "pending", name: "Pending", description: "Spot check is pending" },
+    //     { id: 4, code: "in_progress", name: "In Progress", description: "Spot check is currently in progress" },
+    //   ];
+    // }
   },
 
   checkin: async ({spotCheckId, data}:{spotCheckId:number, data:ILocation}): Promise<ISpotCheck> => {
-      const response = await apiRequest.post(`/spotcheck/${spotCheckId}/checkin/`, data);
+      const response = await apiRequest.patch(`/spotcheck/${spotCheckId}/checkin/`, data);
       return response.data;
   },
 
