@@ -221,9 +221,20 @@ class EmployeeStopCheckListView(APIView):
             )
 
 class EmployeeSpotCheckCreateView(APIView):
+    @extend_schema(
+        request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
+        responses={201: SpotCheckSerializers.EmployeeSpotCheckSerializer, 400: "Bad Request"},
+        summary="Create Employee Spot check",
+        description="Create a new employee spot check.",
+        tags=["Employee spot check Management"],
+    )
+
     def post(self, request):
         """Create a employee spot checkplease share the sale reports record."""
-
+        status  = SpotCheckModels.SpotCheckStatus.objects.get_or_create(code="PENDING", name="PENDING")
+        spotcheck_time = datetime.now()
+        request.data['status'] = status[0].id
+        request.data['spotcheck_time'] = spotcheck_time
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request.data)
         if serializer.is_valid():
             spotcheck = serializer.save()

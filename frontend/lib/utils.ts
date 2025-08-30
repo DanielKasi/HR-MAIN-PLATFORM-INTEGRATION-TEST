@@ -111,6 +111,7 @@ import {
   IBranchLocationComparisonConfig,
   IBranchLocationComparisonConfigFormData,
   ILocation,
+  ISpotCheckFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6250,23 +6251,19 @@ export const spotcheckAPI = {
   },
 
   getStatuses: async (): Promise<ISpotCheckStatus[]> => {
-    // try {
       const response = await apiRequest.get("/spotcheck/statuses/");
       return response.data.results || response.data;
-    // } catch (error) {
-    //   // Return dummy data for now
-    //   return [
-    //     { id: 1, code: "completed", name: "Completed", description: "Spot check completed successfully" },
-    //     { id: 2, code: "missed", name: "Missed", description: "Spot check was missed" },
-    //     { id: 3, code: "pending", name: "Pending", description: "Spot check is pending" },
-    //     { id: 4, code: "in_progress", name: "In Progress", description: "Spot check is currently in progress" },
-    //   ];
-    // }
+
   },
 
   checkin: async ({spotCheckId, data}:{spotCheckId:number, data:ILocation}): Promise<ISpotCheck> => {
       const response = await apiRequest.patch(`/spotcheck/${spotCheckId}/checkin/`, data);
       return response.data;
+  },
+
+  create: async (data: Partial<ISpotCheckFormData> ) => {  
+      const response = await apiRequest.post("/spotcheck/create/", data);
+      return response.data as ISpotCheck;
   },
 
   update: async (id: number, data: any): Promise<ISpotCheck> => {
@@ -6275,13 +6272,8 @@ export const spotcheckAPI = {
   },
 
   delete: async (id: number): Promise<boolean> => {
-    try {
       const response = await apiRequest.delete(`/spotcheck/${id}/`);
       return response.status === 204;
-    } catch (error) {
-      console.error("Error deleting spotcheck:", error);
-      throw error;
-    }
   },
 };
 
