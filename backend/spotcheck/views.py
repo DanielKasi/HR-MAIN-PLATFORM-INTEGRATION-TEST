@@ -224,7 +224,7 @@ class EmployeeStopCheckListView(APIView):
 class EmployeeSpotCheckCreateView(APIView):
     @extend_schema(
         request=SpotCheckSerializers.EmployeeSpotCheckSerializer,
-        responses={201: SpotCheckSerializers.EmployeeSpotCheckCreateSerializer, 400: "Bad Request"},
+        responses={201: SpotCheckSerializers.EmployeeSpotCheckSerializer, 400: "Bad Request"},
         summary="Create Employee Spot check",
         description="Create a new employee spot check.",
         tags=["Employee spot check Management"],
@@ -232,17 +232,18 @@ class EmployeeSpotCheckCreateView(APIView):
 
     def post(self, request):
         """Create a employee spot checkplease share the sale reports record."""
-        serializer = SpotCheckSerializers.EmployeeSpotCheckCreateSerializer(data=request.data)
+        spotcheck_status, _ =SpotCheckModels.SpotCheckStatus.objects.get_or_create(status_name="SENT")
+        spotcheck_time = datetime.now()
+
+
+        request_data = request.data.copy()
+        request_data['status'] = spotcheck_status.id
+        request_data['spotcheck_time'] = spotcheck_time
+        request_data['initiated_by'] = 'User'
+
+        serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request_data)
         if serializer.is_valid():
             spotcheck = serializer.save()
-            spotcheck_status, _ =SpotCheckModels.SpotCheckStatus.objects.get_or_create(status_name="SENT")
-
-            spotcheck.spotcheck_time = datetime.now()
-            spotcheck.status = spotcheck_status
-            spotcheck.initiated_by = "User"
-
-            spotcheck.save()
-
             send_spotcheck_email(spotcheck)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
