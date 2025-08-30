@@ -805,5 +805,5 @@ class EmployeeShiftSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["employee"] = EmployeeSerializer(instance.employee, many=True).data
+        rep["employee"] = EmployeeSerializer(instance.employee).data
         return rep

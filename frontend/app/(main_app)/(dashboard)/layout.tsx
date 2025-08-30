@@ -244,7 +244,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Analytics", href: "/analytics/employees"},
         {title: "Employee Information", href: "/employees/employee-list"},
         {title: "Document Requests", href: "#"},
-        {title: "Shift Requests", href: "/employees/shift-requests"},
+        {title: "Shifts", href: "/employees/shift-requests"},
         {title: "Employee Types", href: "/employees/employee-types"},
         {title: "Work Types", href: "/employees/work-types"},
         {title: "Rotating Shift Assign", href: "#"},

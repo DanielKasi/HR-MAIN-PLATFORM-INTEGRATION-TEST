@@ -2426,34 +2426,38 @@ class AttendanceReportGetView(APIView):
 class EmployeeShiftListCreateView(APIView):
     @extend_schema(
         summary="List all employee shifts or create a new shift",
-        description=(
-            "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
-            "is true, or all shifts for the institution if false. POST creates a shift."
-        ),
         request=EmployeeShiftSerializer,
         responses=EmployeeShiftSerializer,
         tags=["Shifts-Allocations/Requests"],
     )
     def get(self, request):
         user = request.user
+
+        profile = getattr(user, "profile", None)
+
+        if not profile or not profile.institution:
+            return Response({"detail": "No institution linked"}, status=400)
+
+        institution = profile.institution
+
+        query_context = request.query_params.get("context", "all").upper()
+        search = request.query_params.get("search")
         is_employee_specific = (
             request.query_params.get("is_employee_specific", "true").lower() == "true"
         )
 
-        print(is_employee_specific)
+        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
 
-        if is_employee_specific:
-            if hasattr(user, "employee"):
-                shifts = EmployeeShift.objects.filter(employee=user.employee)
-            else:
-                return Response(
-                    {"detail": "Unrecognized Employee"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        else:
-            institution = user.profile.institution
-            shifts = EmployeeShift.objects.filter(
-                shift__branch__institution=institution
+        if query_context in ["ALLOCATION", "REQUEST"]:
+            shifts = shifts.filter(context=query_context)
+
+        if is_employee_specific and hasattr(profile, "employee"):
+            shifts = shifts.filter(employee=profile.employee)
+
+        if search:
+            shifts = shifts.filter(
+                Q(employee__user__fullname__icontains=search)
+                | Q(employee__user__email__icontains=search)
             )
 
         paginator = CustomPageNumberPagination()
