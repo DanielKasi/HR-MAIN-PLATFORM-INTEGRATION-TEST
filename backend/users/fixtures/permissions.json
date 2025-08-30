@@ -170,7 +170,13 @@
       "code": "can_perform_gap_analysis",
       "name": "Can Perform Gap Analysis",
       "description": "Allows performing workforce gap analysis"
+    },
+    {
+      "code": "can_manage_recruitment_pipeline",
+      "name": "Can Manage Recruitment Pipeline",
+      "description": "Allows managing the recruitment pipeline" 
     }
+
   ],
 
   "Performance Management": [
@@ -325,9 +331,24 @@
 
   "Leave Management": [
     {
+      "code": "can_create_leave_applications",
+      "name": "Can Create Leave Applications",
+      "description": "Allows creating new leave applications"
+    },
+    {
       "code": "can_view_leave_applications",
       "name": "Can View Leave Applications",
       "description": "Allows viewing leave applications"
+    },
+    {
+      "code": "can_edit_leave_applications",
+      "name": "Can Edit Leave Applications",
+      "description": "Allows editing leave applications"
+    },
+    {
+      "code": "can_delete_leave_applications",
+      "name": "Can Delete Leave Applications",
+      "description": "Allows deleting leave applications"
     },
     {
       "code": "can_approve_leave_applications",
@@ -345,9 +366,24 @@
       "description": "Allows managing leave types and policies"
     },
     {
+      "code": "can_create_leave_balances",
+      "name": "Can Create Leave Balances",
+      "description": "Allows creating new leave balances for employees"
+    },
+    {
       "code": "can_view_leave_balances",
       "name": "Can View Leave Balances",
       "description": "Allows viewing employee leave balances"
+    },
+    {
+      "code": "can_edit_leave_balances",
+      "name": "Can Edit Leave Balances",
+      "description": "Allows editing employee leave balances"
+    },
+    {
+      "code": "can_delete_leave_balances",
+      "name": "Can Delete Leave Balances",
+      "description": "Allows deleting leave balances"
     },
     {
       "code": "can_adjust_leave_balances",
@@ -363,6 +399,26 @@
       "code": "can_cancel_approved_leave",
       "name": "Can Cancel Approved Leave",
       "description": "Allows canceling previously approved leave"
+    },
+    {
+      "code": "can_create_leave_policies",
+      "name": "Can Create Leave Policies",
+      "description": "Allows creating new leave policies"
+    },
+    {
+      "code": "can_view_leave_policies",
+      "name": "Can View Leave Policies",
+      "description": "Allows viewing leave policy listings and details"
+    },
+    {
+      "code": "can_edit_leave_policies",
+      "name": "Can Edit Leave Policies",
+      "description": "Allows editing existing leave policies"
+    },
+    {
+      "code": "can_delete_leave_policies",
+      "name": "Can Delete Leave Policies",
+      "description": "Allows deleting leave policies"
     }
   ],
 
