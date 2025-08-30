@@ -19,7 +19,6 @@ interface IBranchShift {
 
 interface IBranchWorkingDays {
   id: number;
-  day_id: number;
   day_name: string;
   day_type: "PHYSICAL" | "REMOTE";
 }

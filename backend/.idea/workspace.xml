@@ -6,8 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="920aef5e-5a07-438e-a547-a23c19ae675d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/institution/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/institution/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../frontend/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/next-env.d.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/institution/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/institution/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../frontend/app/(main_app)/(dashboard)/branches/shifts/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../frontend/app/(main_app)/(dashboard)/branches/shifts/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,17 +37,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "samuel/backend",
-    "last_opened_file_path": "/home/samuel-s-baifam-group/Desktop/HR-BAIFAM/backend",
-    "settings.editor.selected.configurable": "terminal"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;samuel/backend&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/samuel-s-baifam-group/Desktop/HR-BAIFAM/backend&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;terminal&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
