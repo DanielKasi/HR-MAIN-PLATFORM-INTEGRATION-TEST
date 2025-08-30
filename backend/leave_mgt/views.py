@@ -22,6 +22,10 @@ from employee.models import Employee
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
+from rest_framework import serializers
+
+from utilities.leave_mgt_analytics import get_leave_trends_analytics
 
 
 @extend_schema(tags=["Leave Types"])
@@ -729,3 +733,37 @@ def institution_leave_summary(request, institution_id):
             {"error": "An unexpected error occurred", "details": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+class LeaveAnalyticsAPI(APIView):
+    """
+    API view for leave management trends.
+    The core logic is now in a separate service file.
+    """
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Leave application trends and efficiency analytics.",
+                response=inline_serializer(
+                    name='LeaveTrendsResponse',
+                    fields={
+                        'total_applications': serializers.IntegerField(help_text="Total number of leave applications."),
+                        'applications_by_month': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Volume of applications over time, grouped by month."),
+                        'applications_by_leave_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Count of applications broken down by leave type."),
+                        'application_status_breakdown': serializers.DictField(help_text="Breakdown of application statuses and rates."),
+                        'average_approval_time_in_days': serializers.FloatField(help_text="Average time taken to approve an application, in days."),
+                    }
+                ),
+            ),
+            404: OpenApiResponse(description="No leave application data found."),
+        },
+        summary="Get Leave Application Analytics",
+        description="Provides insights into leave application trends, efficiency, and outcomes.",
+        tags=["Leave Analytics"],
+    )
+    def get(self, request, institution_id: int):
+        analytics_data = get_leave_trends_analytics(institution_id)
+        if analytics_data is None:
+            return Response({"detail": "No leave application data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(analytics_data, status=status.HTTP_200_OK)
+
