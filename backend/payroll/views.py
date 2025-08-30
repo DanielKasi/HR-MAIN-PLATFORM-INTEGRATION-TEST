@@ -30,6 +30,7 @@ from .serializers import (
     AttendanceReportSerializer,
     PayslipsExcelReportSerializer,
     EmployeePenaltySerializer,
+    
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_excel
@@ -40,7 +41,15 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from institution.models import Institution
 from payroll.utils import generate_payslip_pdf
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Sum, Q, Avg
+
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
+from rest_framework import serializers
+
+from .models import Payslip, PayrollPeriod
+from employee.models import Employee
+
 
 
 
@@ -930,3 +939,112 @@ class EmployeePenaltyDetailAPIView(APIView):
 
         penalty.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PayrollAnalyticsAPI(APIView):
+    """
+    A dedicated API view for overall payroll analytics.
+    """
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='payroll_period_id',
+                type=serializers.UUIDField,  # Use the serializer field as the type
+                # help_text="UUID of the specific payroll period to analyze. If not provided, the latest period will be used.",
+                required=False,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Overall payroll summary for the specified period.",
+                response=inline_serializer(
+                    name='PayrollSummaryResponse',
+                    fields={
+                        'payroll_period': serializers.UUIDField(), # Corrected this line to match the field type
+                        'overall_financials': serializers.DictField(
+                            help_text="Total financial amounts for the period.",
+                            child=serializers.FloatField(),
+                        ),
+                        'cost_breakdown_percentages': serializers.DictField(
+                            help_text="Percentage breakdown of gross salary components.",
+                            child=serializers.FloatField(),
+                        ),
+                        'average_metrics': serializers.DictField(
+                            help_text="Average gross and net salary per employee.",
+                            child=serializers.FloatField(),
+                        ),
+                    }
+                ),
+            ),
+            404: OpenApiResponse(description="Payroll period not found."),
+        },
+        summary="Get Overall Payroll Summary",
+        description=(
+            "Provides a high-level financial overview of the institution's payroll for a specific period. "
+            "Includes total amounts, cost breakdowns, and average salaries."
+        ),
+        tags=["Payroll Analytics"],
+    )
+    def get(self, request, institution_id, payroll_period_id=None):
+        """
+        Calculates and returns key payroll summary metrics for an institution.
+        """
+        try:
+            if payroll_period_id:
+                payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
+            else:
+                # Get the most recent payroll period for the institution
+                payroll_period = PayrollPeriod.objects.filter(
+                    institution_id=institution_id,
+                    is_processed=True
+                ).order_by('-start_date').first()
+                if not payroll_period:
+                    return Response({"detail": "No processed payroll periods found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+        except PayrollPeriod.DoesNotExist:
+            return Response({"detail": "Payroll period not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Filter payslips for the specified payroll period
+        payslips = Payslip.objects.filter(
+            payroll_period=payroll_period,
+            employee__is_active=True,
+            deleted_at__isnull=True
+        )
+
+        if not payslips.exists():
+            return Response({"detail": "No payslips found for this period."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 1. Overall Financials
+        overall_financials = payslips.aggregate(
+            total_gross_salary=Sum('gross_salary', default=0.00),
+            total_net_salary=Sum('net_salary', default=0.00),
+            total_allowances=Sum('total_allowances', default=0.00),
+            total_deductions=Sum('total_deductions', default=0.00),
+            total_penalties=Sum('total_penalties', default=0.00),
+        )
+        
+        total_gross_salary = overall_financials.get('total_gross_salary', 0)
+        
+        # 2. Cost Breakdown Percentages
+        cost_breakdown_percentages = {}
+        if total_gross_salary > 0:
+            cost_breakdown_percentages = {
+                'total_allowances_percent': round((overall_financials['total_allowances'] / total_gross_salary) * 100, 2),
+                'total_deductions_percent': round((overall_financials['total_deductions'] / total_gross_salary) * 100, 2),
+                'total_penalties_percent': round((overall_financials['total_penalties'] / total_gross_salary) * 100, 2),
+                'basic_salary_percent': round((overall_financials['total_gross_salary'] - overall_financials['total_allowances']) / total_gross_salary * 100, 2),
+            }
+
+        # 3. Average Metrics
+        average_metrics = payslips.aggregate(
+            avg_gross_salary=Avg('gross_salary', default=0.00),
+            avg_net_salary=Avg('net_salary', default=0.00),
+        )
+
+        response_data = {
+            "payroll_period": serializers.UUIDField().to_representation(payroll_period.id),
+            "overall_financials": {k: round(v, 2) for k, v in overall_financials.items()},
+            "cost_breakdown_percentages": cost_breakdown_percentages,
+            "average_metrics": {k: round(v, 2) for k, v in average_metrics.items()},
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
