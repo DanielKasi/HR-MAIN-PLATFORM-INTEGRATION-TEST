@@ -17,6 +17,8 @@ import {
   AlertCircle,
   FileText,
 } from "lucide-react";
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Badge} from "@/components/ui/badge";
@@ -45,6 +47,7 @@ import {useRouter} from "next/navigation";
 import {assetsAPI} from "@/lib/utils";
 import type {IAssetRequest} from "@/types/types.utils";
 import {useMobile} from "@/hooks/use-mobile";
+import ProtectedPage from "@/components/ProtectedPage";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -144,7 +147,7 @@ const AssetRequestsComponent = () => {
   };
 
   const handleViewRequestDetails = (request: IAssetRequest) => {
-    router.push(`/assests/asset-requests/${request.id}`);
+    router.push(`/assets/asset-requests/${request.id}`);
   };
 
   const clearFilters = () => {
@@ -166,13 +169,18 @@ const AssetRequestsComponent = () => {
                 Manage and track asset requests from employees
               </p>
             </div>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              className=""
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Request
-            </Button>
+
+            <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_REQUEST_ASSETS]}>
+                <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className=""
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
+              </Button>
+              </ProtectedPage>
+            
+                                                
           </div>
         </div>
 
@@ -308,17 +316,25 @@ const AssetRequestsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditRequest(request)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteRequest(request)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                 
+
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteRequest(request)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                  
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -374,17 +390,23 @@ const AssetRequestsComponent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditRequest(request)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteRequest(request)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteRequest(request)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
