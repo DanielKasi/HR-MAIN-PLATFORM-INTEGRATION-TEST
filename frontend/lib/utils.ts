@@ -116,6 +116,9 @@ import {
   IBranchShiftFormData,
   IEmployeeShift,
   IEmployeeShiftFormData,
+  IEmployeePenalty,
+  IPenaltyType,
+  IEmployeePenaltyFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6569,6 +6572,46 @@ export const shiftsAPI = {
       }
         const response = await apiRequest.get(url);
         return response.data as IPaginatedResponse<IEmployeeShift>
+    },
+  }
+}
+
+
+
+
+export const penaltiesAPI = {
+  EMPLOYEE: {
+    getPaginated: async (args:{search?:string, page?:number, employee_id:number, penalty_type?:IPenaltyType, date_from?:string, date_to?:string})=> {
+      const params = new URLSearchParams();  
+        params.append("is_employee_specific", "true");  
+        if(args.search){
+          params.append("search", args.search);
+          }   
+        params.append("page", args.page?.toString() || "1");
+        const response = await apiRequest.get(`/payroll/penalties/?${params.toString()}`);
+        return response.data as IPaginatedResponse<IEmployeePenalty>
+    } ,
+    getById: async (penaltyId: number) => {
+        const response = await apiRequest.get(`/payroll/penalties/${penaltyId}/`);
+        return response.data as IEmployeePenalty
+    } ,
+    create: async (data: IEmployeePenaltyFormData) => {
+        const response = await apiRequest.post(`/payroll/penalties/`, data);
+        return response.data as IEmployeePenalty
+    },
+    update: async (penaltyId: number, data: Partial<IEmployeePenaltyFormData>) => {
+        const response = await apiRequest.patch(`/payroll/penalties/${penaltyId}/`, data);
+        return response.data as IEmployeePenalty
+    },
+    delete: async (penaltyId: number) => {
+        await apiRequest.delete(`/payroll/penalties/${penaltyId}/`);;
+    }
+},
+
+COMMON: {
+    getPaginatedFromUrl: async ({url}:{url:string})=> {
+        const response = await apiRequest.get(url);
+        return response.data as IPaginatedResponse<IEmployeePenalty>
     },
   }
 }

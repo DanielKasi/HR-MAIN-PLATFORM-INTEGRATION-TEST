@@ -279,6 +279,11 @@ export enum PERMISSION_CODES {
   CAN_EDIT_RETIREMENT_REQUESTS = "can_edit_retirement_requests",
   CAN_DELETE_RETIREMENT_REQUESTS = "can_delete_retirement_requests",
   
+  //penalties management
+  CAN_CREATE_PENALTIES = "can_create_penalties",
+  CAN_VIEW_PENALTIES = "can_view_penalties",
+  CAN_EDIT_PENALTIES = "can_edit_penalties",
+  CAN_DELETE_PENALTIES = "can_delete_penalties",
 }
 
 export type ContextType = "employee" | "department" | "job_position";
@@ -2435,5 +2440,33 @@ export interface IBranchShiftFormData {
 export interface IBranchWorkingDays {
   branch: Branch;
   days: ISystemWorkingDay[];
+}
+
+export type IPenaltyType  = "late_coming" | "early_leaving" | "absent" | "no_response_spotcheck" | "late_spotcheck_response";
+export type IEmployeePenaltyStatus = "waived" | "applied";  
+
+export interface IEmployeePenalty {
+  id: number;
+  employee: IEmployee;
+  attendance?: IAttendance;
+  spot_check?: ISpotCheck | null;
+  date: string;
+  penalty_type: IPenaltyType;
+  amount: string | number;
+  notes: string | null;
+  status: IEmployeePenaltyStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IEmployeePenaltyFormData {
+  employee: number;
+  attendance?: number | null;
+  spot_check?: number | null;
+  date: string;
+  penalty_type: IPenaltyType;
+  amount: string | number;
+  notes?: string | null;
+  status?:IEmployeePenaltyStatus;
 }
 
