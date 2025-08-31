@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render
 
 from institution.serializers import UserBranchSerializer
@@ -36,6 +37,8 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiTypes,
 )
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
