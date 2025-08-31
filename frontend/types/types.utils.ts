@@ -588,11 +588,13 @@ export interface IEmployee {
 }
 
 export interface IPayrollItems {
+  penalties: any;
   allowance: Record<string, IPayslipItem[]>;
   deduction: Record<string, IPayslipItem[]>;
 }
 
 export interface IPayslip {
+  total_penalties: string;
   id: number;
   employee: IEmployee;
   payroll_period: IPayrollPeriod;
@@ -1400,7 +1402,7 @@ export interface IPayslipFormData {
 export interface IPayslipItem {
   id: number;
   payslip: IPayslip;
-  item_type: "allowance" | "deduction" | "overtime";
+  item_type: "allowance" | "deduction" | "overtime" | "penalty";
   name: string;
   amount: string;
   description: string;
