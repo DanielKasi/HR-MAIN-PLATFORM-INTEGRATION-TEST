@@ -16,9 +16,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
 from employee.serializers import EmployeeSerializer
+from approval.serializers import BaseApprovableSerializer
 
 
-class OnBoardingSerializer(serializers.ModelSerializer):
+
+class OnBoardingSerializer(BaseApprovableSerializer):
     application_details = JobAdvertApplicationSerializer(
         source="application", read_only=True
     )
@@ -38,7 +40,7 @@ class OnBoardingSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "updated_at"]
 
 
-class OffboardingStageSerializer(serializers.ModelSerializer):
+class OffboardingStageSerializer(BaseApprovableSerializer):
     class Meta:
         model = OffboardingStage
         fields = [
@@ -79,7 +81,7 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
+class InstitutionEmployeeSeparationTypesSerializer(BaseApprovableSerializer):
     supported_stages = serializers.PrimaryKeyRelatedField(
         many=True,
         required=False,
@@ -135,7 +137,7 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
         return representation
 
 
-class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
+class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
     separation_type = serializers.PrimaryKeyRelatedField(
         queryset=InstitutionEmployeeSeparationTypes.objects.all()
     )
@@ -189,7 +191,7 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
         return representation
 
 
-class ResignationRequestSerializer(serializers.ModelSerializer):
+class ResignationRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = ResignationRequest
         fields = [
@@ -332,7 +334,7 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
         return instance
 
 
-class RetirementRequestSerializer(serializers.ModelSerializer):
+class RetirementRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = RetirementRequest
         fields = [
@@ -460,7 +462,7 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
         return retirement_request
 
 
-class TerminationInitiationSerializer(serializers.ModelSerializer):
+class TerminationInitiationSerializer(BaseApprovableSerializer):
     employee_id = serializers.IntegerField(write_only=True)
 
     separation = serializers.PrimaryKeyRelatedField(read_only=True)

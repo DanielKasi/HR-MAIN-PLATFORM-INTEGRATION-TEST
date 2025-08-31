@@ -1,3 +1,4 @@
+from approval.serializers import BaseApprovableSerializer
 from .models import (
     Employee,
     EmployeeAttendance,
@@ -39,19 +40,19 @@ from recruitment.models import JobPosition
 from datetime import date, timedelta, datetime
 
 
-class EmployeeTypeSerializer(serializers.ModelSerializer):
+class EmployeeTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmployeeType
         fields = "__all__"
 
 
-class WorkTypeSerializer(serializers.ModelSerializer):
+class WorkTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = WorkType
         fields = "__all__"
 
 
-class EmployeeSerializer(serializers.ModelSerializer):
+class EmployeeSerializer(BaseApprovableSerializer):
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
     position_details = serializers.SerializerMethodField()
@@ -254,7 +255,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         return data
 
 
-class EmployeeDaySerializer(serializers.ModelSerializer):
+class EmployeeDaySerializer(BaseApprovableSerializer):
     day = serializers.PrimaryKeyRelatedField(queryset=SystemDay.objects.all())
 
     class Meta:
@@ -267,7 +268,7 @@ class EmployeeDaySerializer(serializers.ModelSerializer):
         return rep
 
 
-class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
+class EmployeeWorkingDaysSerializer(BaseApprovableSerializer):
     days = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(),
         many=True,
@@ -326,7 +327,7 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
         return rep
 
 
-class EmployeeAttendanceSerializer(serializers.ModelSerializer):
+class EmployeeAttendanceSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:
@@ -555,7 +556,7 @@ def validate_pdf(file):
     return file
 
 
-class EmployeeContractSerializer(serializers.ModelSerializer):
+class EmployeeContractSerializer(BaseApprovableSerializer):
 
     applicant = serializers.PrimaryKeyRelatedField(
         queryset=JobAdvertApplication.objects.all(), required=False, allow_null=True
@@ -741,7 +742,7 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
         }
 
 
-class EmployeeShiftSerializer(serializers.ModelSerializer):
+class EmployeeShiftSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:

@@ -14,9 +14,10 @@ from django.contrib.contenttypes.models import ContentType
 from employee.serializers import EmployeeSerializer
 from django.db import transaction
 from users.serializers import ProfileSerializer
+from approval.serializers import BaseApprovableSerializer
 
 
-class AssetCategorySerializer(serializers.ModelSerializer):
+class AssetCategorySerializer(BaseApprovableSerializer):
     total_assets = serializers.IntegerField(read_only=True)
     total_available_assets = serializers.IntegerField(read_only=True)
     total_allocated_assets = serializers.IntegerField(read_only=True)
@@ -68,7 +69,7 @@ class AssetHistorySerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetSerializer(serializers.ModelSerializer):
+class AssetSerializer(BaseApprovableSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
     current_holder = serializers.PrimaryKeyRelatedField(read_only=True)
     
@@ -138,7 +139,7 @@ class AssetSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetRequestSerializer(serializers.ModelSerializer):
+class AssetRequestSerializer(BaseApprovableSerializer):
     asset = AssetSerializer(read_only=True)
     asset_id = serializers.IntegerField(write_only=True, required=True)
 
@@ -236,7 +237,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetAllocationSerializer(serializers.ModelSerializer):
+class AssetAllocationSerializer(BaseApprovableSerializer):
     # asset = serializers.IntegerField(write_only=True, required=True)
     # allocated_to = serializers.IntegerField(write_only=True, required=True)
     # responding_to_request = serializers.IntegerField(write_only=True, required=False, allow_null=True)
@@ -401,7 +402,7 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetReturnSerializer(serializers.ModelSerializer):
+class AssetReturnSerializer(BaseApprovableSerializer):
    
     class Meta:
         model = AssetReturn

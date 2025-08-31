@@ -12,6 +12,8 @@ from .models import (
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from utilities.password_validator import validate_password_strength
+from approval.serializers import BaseApprovableSerializer
+
 
 
 class PermissionCategorySerializer(serializers.ModelSerializer):
@@ -35,7 +37,7 @@ class PermissionSerializer(serializers.ModelSerializer):
         ]
 
 
-class RoleSerializer(serializers.ModelSerializer):
+class RoleSerializer(BaseApprovableSerializer):
     permissions_details = serializers.SerializerMethodField()
     permissions = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Permission.objects.all(), write_only=True, required=False
@@ -236,7 +238,7 @@ class InstitutionUserLoginResponseSerializer(LoginResponseSerializer):
     institution_attached = InstitutionSerializer(many=True)
 
 
-class RolePermissionSerializer(serializers.ModelSerializer):
+class RolePermissionSerializer(BaseApprovableSerializer):
     role = RoleSerializer()
     permission = PermissionSerializer()
 
