@@ -228,6 +228,7 @@ export default function JobAdvertsPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_ADVERTS}>
               <Button
                 onClick={() => router.push("/job-adverts/create")}
                 disabled={!selectedInstitution?.id}
@@ -236,6 +237,7 @@ export default function JobAdvertsPage() {
                 <Plus className="mr-2 h-4 w-4" />
                 Create Job Opening
               </Button>
+              </ProtectedComponent>
             </div>
           </div>
         </div>
@@ -286,6 +288,7 @@ export default function JobAdvertsPage() {
               }
 
               return (
+               
                 <div className="overflow-x-auto">
                   { !loading ?
                   (<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
@@ -408,6 +411,7 @@ export default function JobAdvertsPage() {
                    <TableSkeleton columns={8} rows={5} />
                   }
                 </div>
+                
               );
             }}
           </PaginatedTableWrapper>

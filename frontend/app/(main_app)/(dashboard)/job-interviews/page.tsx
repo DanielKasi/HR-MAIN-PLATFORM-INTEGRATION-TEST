@@ -399,6 +399,7 @@ export default function InterviewsPage() {
               Refresh
             </span>
           </Button>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_RECRUITMENT_PIPELINE}>
           <Button
             variant="outline"
             size="sm"
@@ -408,6 +409,7 @@ export default function InterviewsPage() {
             <Briefcase className="h-4 w-4" />
             <span className="hidden md:inline">Interview Pipeline</span>
           </Button>
+          </ProtectedComponent>
           <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SCHEDULE_INTERVIEWS}>
             <Button
               size="sm"

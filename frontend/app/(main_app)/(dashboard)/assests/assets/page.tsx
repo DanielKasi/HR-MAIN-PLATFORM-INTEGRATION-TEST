@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { 
   MoreVertical, 
   Edit, 
   Trash2, 
-  Search, 
   Eye,
   Package
 } from 'lucide-react';
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +30,11 @@ import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
 import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { useRouter } from "next/navigation";
-import { assetCategoriesAPI, assetsAPI, showErrorToast } from "@/lib/utils";
+import { assetsAPI } from "@/lib/utils";
 import type { IAsset, IAssetCategory } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react"
+import ProtectedPage from "@/components/ProtectedPage";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -116,21 +118,8 @@ const AssetsComponent = () => {
   };
 
   const handleViewAssetDetails = (asset: IAsset) => {
-    router.push(`/assests/assets/${asset.id}`);
+    router.push(`/assets/assets/${asset.id}`);
   };
-
-  const handleFetchAssetCategories = async () => {
-    if (!selectedInstitution) return;
-    try {
-      const categories = await assetCategoriesAPI.getPaginated({
-        institutionId: selectedInstitution.id,
-        page: 1,
-      });
-      setAssetsCategories(categories.results);
-    } catch (error) {
-      showErrorToast({error, defaultMessage:"Failed to load asset categories"});
-    }
-  }
 
 
   return (
@@ -175,10 +164,15 @@ const AssetsComponent = () => {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <CreateAssetDialog
-                onSuccess={handleCreateSuccess}
-                disabled={!selectedInstitution?.id}
-              />
+              <ProtectedPage permissionCode={[
+                      PERMISSION_CODES.CAN_CREATE_ASSETS
+                    ]}><CreateAssetDialog
+                  onSuccess={handleCreateSuccess}
+                  disabled={!selectedInstitution?.id}
+                /></ProtectedPage>
+
+                
+             
             </div>
           </div>
           
@@ -273,17 +267,27 @@ const AssetsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditAsset(asset)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteAsset(asset)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  
+                                  <ProtectedPage permissionCode={[
+                                    PERMISSION_CODES.CAN_EDIT_ASSETS
+                                  ]}><DropdownMenuItem onClick={() => handleEditAsset(asset)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    </ProtectedPage>
+                              
+                              
+                                    <ProtectedPage permissionCode={[
+                                      PERMISSION_CODES.CAN_DELETE_ASSETS
+                                    ]}><DropdownMenuItem 
+                                        onClick={() => handleDeleteAsset(asset)}
+                                        className="text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                      </ProtectedPage>
+                              
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -336,17 +340,26 @@ const AssetsComponent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditAsset(asset)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteAsset(asset)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedPage permissionCode={[
+                                PERMISSION_CODES.CAN_CREATE_ASSETS
+                              ]}><DropdownMenuItem onClick={() => handleEditAsset(asset)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                </ProtectedPage>
+                              
+                              
+                              <ProtectedPage permissionCode={[
+                                PERMISSION_CODES.CAN_CREATE_ASSETS
+                              ]}><DropdownMenuItem 
+                                  onClick={() => handleDeleteAsset(asset)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                                </ProtectedPage>
+                              
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -389,4 +402,3 @@ const AssetsComponent = () => {
 };
 
 export default AssetsComponent;
-

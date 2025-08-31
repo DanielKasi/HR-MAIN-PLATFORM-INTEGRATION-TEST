@@ -13,6 +13,8 @@ from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.db.models import Q
+from django.db import transaction
+
 
 
 class ProjectListCreateView(APIView):
@@ -53,14 +55,15 @@ class ProjectListCreateView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic
     def post(self, request, institution_id):
         institution = get_object_or_404(Institution, id=institution_id)
 
-        print("\n\n\nRequest Data:", request.data, "\n\n")
         serializer = ProjectSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -100,8 +103,10 @@ class ProjectDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, project_id):
         project = Project.objects.filter(id=project_id).first()
+        project.approval_status = 'under_update'
         if not project:
             return Response(
                 {"detail": "Project not found."},
@@ -111,6 +116,7 @@ class ProjectDetailView(APIView):
         serializer = ProjectSerializer(project, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
+            project.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -124,9 +130,12 @@ class ProjectDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic()
     def delete(self, request, project_id):
         project = get_object_or_404(Project, id=project_id)
-        project.delete()
+        project.approval_status = 'under_deletion'
+        project.save(update_fields=['approval_status'])
+        project.confirm_delete()
         return Response(
             {"detail": "Project deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
@@ -177,10 +186,12 @@ class TaskListCreateView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic()
     def post(self, request, project_id):
         serializer = TaskSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(created_by=request.user.profile)
+            instance = serializer.save(created_by=request.user.profile)
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -220,8 +231,10 @@ class TaskDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, task_id):
         task = Task.objects.filter(id=task_id).first()
+        task.approval_status = 'under_update'
         if not task:
             return Response(
                 {"detail": "Task not found."},
@@ -231,6 +244,7 @@ class TaskDetailView(APIView):
         serializer = TaskSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
+            task.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -246,7 +260,9 @@ class TaskDetailView(APIView):
     )
     def delete(self, request, task_id):
         task = get_object_or_404(Task, id=task_id)
-        task.delete()
+        task.approval_status = 'under_deletion'
+        task.save(update_fields=['approval_status'])
+        task.confirm_delete()
         return Response(
             {"detail": "Task deleted successfully."},
             status=status.HTTP_204_NO_CONTENT,
@@ -267,6 +283,7 @@ class TaskTimeSheetView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic()
     def patch(self, request, task_timesheet_id):
         task_timesheet = TaskTimeSheet.objects.filter(id=task_timesheet_id).first()
 
@@ -282,6 +299,10 @@ class TaskTimeSheetView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        task_timesheet.approval_status = 'under_update'
+
+        
+
         serializer = TaskTimeSheetSerializer(
             task_timesheet,
             data=request.data,
@@ -290,5 +311,6 @@ class TaskTimeSheetView(APIView):
         )
         if serializer.is_valid():
             serializer.save(updated_by=request.user)
+            task_timesheet.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

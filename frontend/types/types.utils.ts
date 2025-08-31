@@ -72,6 +72,7 @@ export enum PERMISSION_CODES {
   CAN_CONDUCT_INTERVIEWS = "can_conduct_interviews",
   CAN_MAKE_JOB_OFFERS = "can_make_job_offers",
   CAN_PERFORM_GAP_ANALYSIS = "can_perform_gap_analysis",
+  CAN_MANAGE_RECRUITMENT_PIPELINE = "can_manage_recruitment_pipeline",
 
   // Performance Management
   CAN_VIEW_PERFORMANCE_DATA = "can_view_performance_data",
@@ -92,14 +93,24 @@ export enum PERMISSION_CODES {
   CAN_VIEW_TRAINING_REPORTS = "can_view_training_reports",
 
   // Leave Management
+  CAN_CREATE_LEAVE_APPLICATIONS = "can_create_leave_applications",
   CAN_VIEW_LEAVE_APPLICATIONS = "can_view_leave_applications",
+  CAN_EDIT_LEAVE_APPLICATIONS = "can_edit_leave_applications",
+  CAN_DELETE_LEAVE_APPLICATIONS = "can_delete_leave_applications",
   CAN_APPROVE_LEAVE_APPLICATIONS = "can_approve_leave_applications",
   CAN_REJECT_LEAVE_APPLICATIONS = "can_reject_leave_applications",
   CAN_MANAGE_LEAVE_TYPES = "can_manage_leave_types",
+  CAN_CREATE_LEAVE_BALANCES = "can_create_leave_balances",
   CAN_VIEW_LEAVE_BALANCES = "can_view_leave_balances",
+  CAN_EDIT_LEAVE_BALANCES = "can_edit_leave_balances",
+  CAN_DELETE_LEAVE_BALANCES = "can_delete_leave_balances",
   CAN_ADJUST_LEAVE_BALANCES = "can_adjust_leave_balances",
   CAN_VIEW_LEAVE_REPORTS = "can_view_leave_reports",
   CAN_CANCEL_APPROVED_LEAVE = "can_cancel_approved_leave",
+  CAN_CREATE_LEAVE_POLICIES = "can_create_leave_policies",
+  CAN_VIEW_LEAVE_POLICIES = "can_view_leave_policies",
+  CAN_EDIT_LEAVE_POLICIES = "can_edit_leave_policies",
+  CAN_DELETE_LEAVE_POLICIES = "can_delete_leave_policies",
 
   // Payroll & Compensation
   CAN_VIEW_PAYROLL_DATA = "can_view_payroll_data",
@@ -268,6 +279,11 @@ export enum PERMISSION_CODES {
   CAN_EDIT_RETIREMENT_REQUESTS = "can_edit_retirement_requests",
   CAN_DELETE_RETIREMENT_REQUESTS = "can_delete_retirement_requests",
   
+  //penalties management
+  CAN_CREATE_PENALTIES = "can_create_penalties",
+  CAN_VIEW_PENALTIES = "can_view_penalties",
+  CAN_EDIT_PENALTIES = "can_edit_penalties",
+  CAN_DELETE_PENALTIES = "can_delete_penalties",
 }
 
 export type ContextType = "employee" | "department" | "job_position";
@@ -2424,5 +2440,33 @@ export interface IBranchShiftFormData {
 export interface IBranchWorkingDays {
   branch: Branch;
   days: ISystemWorkingDay[];
+}
+
+export type IPenaltyType  = "late_coming" | "early_leaving" | "absent" | "no_response_spotcheck" | "late_spotcheck_response";
+export type IEmployeePenaltyStatus = "waived" | "applied";  
+
+export interface IEmployeePenalty {
+  id: number;
+  employee: IEmployee;
+  attendance?: IAttendance;
+  spot_check?: ISpotCheck | null;
+  date: string;
+  penalty_type: IPenaltyType;
+  amount: string | number;
+  notes: string | null;
+  status: IEmployeePenaltyStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IEmployeePenaltyFormData {
+  employee: number;
+  attendance?: number | null;
+  spot_check?: number | null;
+  date: string;
+  penalty_type: IPenaltyType;
+  amount: string | number;
+  notes?: string | null;
+  status?:IEmployeePenaltyStatus;
 }
 

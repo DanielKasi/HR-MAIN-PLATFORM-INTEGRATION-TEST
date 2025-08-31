@@ -10,6 +10,8 @@ import {TableSkeleton} from "@/components/common/table-skeleton";
 import {Card, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 const AttendancePage = () => {
   const [loading, setLoading] = useState(true);
@@ -83,6 +85,7 @@ const AttendancePage = () => {
       <div className="w-full">
         <div className="mb-8">
           <div className="flex flex-col w-full">
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
             <div className="flex items-center justify-between w-full gap-8">
               <h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">
                 Employee Attendance
@@ -96,12 +99,15 @@ const AttendancePage = () => {
                 <span className="hidden sm:inline">View Attendance</span>
               </Button>
             </div>
+            </ProtectedComponent>
             <p className="text-muted-foreground">Manage daily attendance for your organization</p>
           </div>
         </div>
-        <EmployeeAttendance
-          scope={{type:"default"}}
-        />
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
+          <EmployeeAttendance
+            scope={{type:"default"}}
+          />
+        </ProtectedComponent>
       </div>
     </div>
   );

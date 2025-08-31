@@ -20,10 +20,11 @@ import { Plus, Search, MoreVertical, Edit, Download, Trash2, FileText, File, Loa
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils"
-import { IDocumentTemplate } from "@/types/types.utils"
+import { IDocumentTemplate, PERMISSION_CODES } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import RichTextDisplay from "@/components/common/rich-text-display"
+import ProtectedComponent from "@/components/ProtectedComponent"
 
 
 
@@ -139,12 +140,14 @@ export default function DocumentTemplatesPage() {
           <h1 className="text-3xl font-bold">Document Templates</h1>
           <p className="text-muted-foreground mt-2">Manage your document templates for generating documents</p>
         </div>
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_DOCUMENT_TEMPLATES}>
         <Link href="/documents/templates/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             Create Template
-          </Button>
-        </Link>
+            </Button>
+          </Link>
+        </ProtectedComponent>
       </div>
 
       <div className="mb-6">
@@ -158,7 +161,7 @@ export default function DocumentTemplatesPage() {
           />
         </div>
       </div>
-
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredTemplates.map((template) => (
           <Card key={template.id} className="hover:shadow-md transition-shadow">
@@ -175,14 +178,19 @@ export default function DocumentTemplatesPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TEMPLATES}>
                     <DropdownMenuItem onClick={() => router.push(`templates/${template.id}/edit`)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
+                    </ProtectedComponent>
+                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}>
                     <DropdownMenuItem onClick={() => handleDownload(template)}>
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </DropdownMenuItem>
+                    </ProtectedComponent>
+                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DOCUMENT_TEMPLATES}>
                     <DropdownMenuItem
                       onClick={() => setDeleteDialog({ open: true, template })}
                       className="text-red-600"
@@ -190,6 +198,7 @@ export default function DocumentTemplatesPage() {
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </DropdownMenuItem>
+                    </ProtectedComponent>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -217,7 +226,7 @@ export default function DocumentTemplatesPage() {
           </Card>
         ))}
       </div>
-
+      </ProtectedComponent>
       {filteredTemplates.length === 0 && !isLoading && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

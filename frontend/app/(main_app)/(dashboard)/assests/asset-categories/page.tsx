@@ -11,6 +11,8 @@ import {
   Eye,
   X
 } from 'lucide-react';
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +35,7 @@ import { useRouter } from "next/navigation";
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
+import ProtectedPage from "@/components/ProtectedPage";
  
 
 const getStatusColor = (status: boolean) => {
@@ -118,7 +121,7 @@ const AssetCategoriesComponent = () => {
 
   const handleViewAssetCategoryDetails = (assetCategory: IAssetCategory) => {
     // Navigate to asset category detail page (if needed)
-    // router.push(`/assests/asset-categories/${assetCategory.id}/detail`);
+    // router.push(`/assets/asset-categories/${assetCategory.id}/detail`);
     toast.info("Asset category detail view not implemented yet");
   };
 
@@ -161,10 +164,13 @@ const AssetCategoriesComponent = () => {
                 </SelectContent>
               </Select>
             <div className="flex items-center gap-2">
-              <CreateAssetCategoryDialog
-                onSuccess={handleCreateSuccess}
-                disabled={!selectedInstitution?.id}
-              />
+              
+              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_CREATE_ASSET_CATEGORIES]}>
+                    <CreateAssetCategoryDialog
+                  onSuccess={handleCreateSuccess}
+                  disabled={!selectedInstitution?.id}
+                />
+                </ProtectedPage>
             </div>
           </div>
         </div>
@@ -260,17 +266,24 @@ const AssetCategoriesComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteAssetCategory(category)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                 
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_CATEGORIES]}>
+                                     <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                 
+                                  <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_CATEGORIES]}>
+                                     <DropdownMenuItem 
+                                      onClick={() => handleDeleteAssetCategory(category)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+                                  
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -310,17 +323,22 @@ const AssetCategoriesComponent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteAssetCategory(category)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_CATEGORIES]}>
+                                    <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ProtectedPage>
+                                 
+                                <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_CATEGORIES]}>
+                                    <DropdownMenuItem 
+                                    onClick={() => handleDeleteAssetCategory(category)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

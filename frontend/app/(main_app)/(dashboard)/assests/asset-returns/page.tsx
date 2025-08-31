@@ -9,16 +9,13 @@ import {
   Search, 
   Plus,
   Eye,
-  Package,
-  User,
-  Clock,
   CheckCircle,
   XCircle,
   AlertCircle,
-  FileText,
-  Users,
-  RotateCcw
+  Users
 } from 'lucide-react';
+import { PERMISSION_CODES } from "@/types/types.utils";
+import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +39,7 @@ import { assetsAPI } from "@/lib/utils";
 import type { IAssetReturn } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { Icon } from "@iconify/react";
+import ProtectedPage from "@/components/ProtectedPage";
 
 
 
@@ -122,7 +120,7 @@ const AssetReturnsComponent = () => {
   };
 
   const handleView = (assetReturn: IAssetReturn) => {
-    router.push(`/assests/asset-returns/${assetReturn.id}`);
+    router.push(`/assets/asset-returns/${assetReturn.id}`);
   };
 
   const handleEditSuccess = () => {
@@ -183,13 +181,19 @@ const AssetReturnsComponent = () => {
                   <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-primary text-white rounded-[11px]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Return Asset
-              </Button>
+          
+              <ProtectedPage permissionCode={[
+                PERMISSION_CODES.CAN_RETURN_ASSETS]}><Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="bg-primary text-white rounded-[11px]"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Return Asset
+                </Button>
+                </ProtectedPage>
+                                            
+                                            
+                                          
             </div>
           </div>
         </div>
@@ -286,17 +290,25 @@ const AssetReturnsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDelete(assetReturn)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <ProtectedPage permissionCode={[
+                                    PERMISSION_CODES.CAN_EDIT_ASSET_RETURNS]}>
+                                      <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    </ProtectedPage>
+
+                                    <ProtectedPage permissionCode={[
+                                    PERMISSION_CODES.CAN_DELETE_ASSET_RETURNS]}>
+                                      <DropdownMenuItem 
+                                      onClick={() => handleDelete(assetReturn)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                    </ProtectedPage>
+                                 
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -349,17 +361,24 @@ const AssetReturnsComponent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDelete(assetReturn)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedPage permissionCode={[
+                                    PERMISSION_CODES.CAN_EDIT_ASSET_RETURNS]}>
+                                      <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    </ProtectedPage>
+
+                                  <ProtectedPage permissionCode={[
+                                  PERMISSION_CODES.CAN_DELETE_ASSET_RETURNS]}>
+                                    <DropdownMenuItem 
+                                    onClick={() => handleDelete(assetReturn)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                  </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
