@@ -12,10 +12,10 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { AttendanceRecordsTable } from "@/components/attendance/attendance-records-table";
 
 interface EmployeeAttendanceProps {
-  searchTerm?:string,
-  scope: {type:"default"} | {type:"employee", employee:IEmployee},
-  attendanceRefreshRef?:RefObject<(()=>void|null)>,
-  showingOnDashboard?:boolean
+  searchTerm?: string,
+  scope: { type: "default" } | { type: "employee", employee: IEmployee },
+  attendanceRefreshRef?: RefObject<(() => void | null)>,
+  showingOnDashboard?: boolean
 }
 
 const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
@@ -32,7 +32,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
     <PaginatedTableWrapper<IEmployee>
       fetchFirstPage={async () => {
         if (!selectedInstitution) throw new Error("No institution selected");
-        return await getPaginatedEmployees({ institutionId: selectedInstitution.id, page: 1, search: searchTerm});
+        return await getPaginatedEmployees({ institutionId: selectedInstitution.id, page: 1, search: searchTerm });
       }}
       fetchFromUrl={getPaginatedEmployeesFromUrl}
       deps={[selectedInstitution?.id, searchTerm]}
@@ -43,13 +43,13 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
         const employees = employeesData?.results || [];
 
         return (
-          <>{ selectedInstitution ?
+          <>{selectedInstitution ?
             (
-              <AttendanceRecordsTable showingOnDashboard={showingOnDashboard} employeesLoading={employeesLoading} institutionId={selectedInstitution.id} searchTerm={searchTerm} 
-              attendanceRefreshRef={attendanceRefreshRef}
-              scope={scope.type === "default" ? {type:"default", employees}: {type:"employee", employee:scope.employee}}
+              <AttendanceRecordsTable showingOnDashboard={showingOnDashboard} employeesLoading={employeesLoading} institutionId={selectedInstitution.id} searchTerm={searchTerm}
+                attendanceRefreshRef={attendanceRefreshRef}
+                scope={scope.type === "default" ? { type: "default", employees, employees_count: employeesData?.count || 0 } : { type: "employee", employee: scope.employee }}
               />
-            ):
+            ) :
             <></>
           }
           </>
