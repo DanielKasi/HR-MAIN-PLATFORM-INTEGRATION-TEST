@@ -5,7 +5,8 @@ from .views import (
     JobAdvertApplicationListAPI, JobAdvertApplicationDetailAPI,
     InterviewStageListAPI, InterviewStageDetailAPI,
     JobInterviewListAPI, JobInterviewDetailAPI, RecruitmentFunnelAnalyticsAPI, 
-    JobAdvertSourcingAnalyticsAPI, InterviewCandidateAnalyticsAPI
+    JobAdvertSourcingAnalyticsAPI, InterviewCandidateAnalyticsAPI,
+    RecruitmentDashboardAPIView
 )
 
 urlpatterns = [
@@ -40,5 +41,6 @@ urlpatterns = [
         InterviewCandidateAnalyticsAPI.as_view(),
         name='interview-analytics'
     ),
+    path('analytics/', RecruitmentDashboardAPIView.as_view(), name='recruitment-analytics')   
 
 ]

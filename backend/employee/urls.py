@@ -24,7 +24,9 @@ from .views import (
     EmployeeShiftListCreateView,
     EmployeeSalaryAnalyticsAPI,
     EmployeeAnalyticsAPI,
-    EmployeeAttendanceAnalyticsAPI
+    EmployeeAttendanceAnalyticsAPI,
+    EmployeeDashboardAPIView,
+    AttendanceDashboardAPIView
 )
 
 urlpatterns = [
@@ -144,4 +146,6 @@ urlpatterns = [
         EmployeeSalaryAnalyticsAPI.as_view(),
         name='salary-analytics'
     ),
+    path('analytics/', EmployeeDashboardAPIView.as_view(), name='employee-analytics'),
+    path('attendance-analytics/', AttendanceDashboardAPIView.as_view(), name='attendance-analytics')
 ]

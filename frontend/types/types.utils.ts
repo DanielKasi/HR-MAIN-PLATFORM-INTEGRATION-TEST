@@ -613,6 +613,128 @@ export interface IPayslip {
   items: IPayrollItems;
 }
 
+export interface IRecruitmentDashboard {
+  total_job_positions: number
+  active_job_positions: number
+  total_adverts: number
+  active_adverts: number
+  total_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  total_interviews: number
+  interviews_by_status: Array<{
+    status: string
+    count: number
+  }>
+  upcoming_interviews: number
+  total_onboardings: number
+  onboardings_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_time_to_hire_days: number
+  applications_sources: Array<{
+    source: string
+    count: number
+  }>
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IEmployeeDashboard {
+  total_employees: number
+  employees_by_gender: Array<{
+    gender: string
+    count: number
+  }>
+  employees_by_employee_type: Array<{
+    employee_type: string
+    count: number
+  }>
+  employees_by_work_type: Array<{
+    work_type: string
+    count: number
+  }>
+  employees_by_department: Array<{
+    department: string
+    count: number
+  }>
+  shift_statuses: Array<{
+    status: string
+    count: number
+  }>
+  average_age: number
+  average_tenure_years: number
+  recent_hires: number
+  employees_by_marital_status: Array<{
+    marital_status: string
+    count: number
+  }>
+}
+
+export interface ILeaveDashboard {
+  total_leave_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  applications_by_leave_type: Array<{
+    leave_type: string
+    count: number
+  }>
+  leave_balances_by_type: Array<{
+    leave_type: string
+    total_allocated_days: number
+    total_used_days: number
+    total_available_days: number
+  }>
+  average_leave_days_taken: number
+  pending_approvals: number
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IAttendanceDashboard {
+  total_attendance_records: number
+  attendance_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_overtime_hours: number
+  average_late_minutes: number
+  average_early_checkout_minutes: number
+  spot_check_response_rate: number
+  spot_checks_by_status: Array<{
+    status: string
+    count: number
+  }>
+  attendance_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IPayrollDashboard {
+  total_payroll_amount: number
+  payroll_by_department: Array<{
+    department: string
+    total_amount: number
+  }>
+  average_salary: number
+  total_penalties: number
+  average_overtime_pay: number
+  payroll_over_time: Array<{
+    month: string
+    total_amount: number
+  }>
+}
+
 export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;
