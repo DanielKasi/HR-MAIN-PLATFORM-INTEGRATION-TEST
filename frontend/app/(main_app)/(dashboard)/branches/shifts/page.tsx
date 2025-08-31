@@ -47,38 +47,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import {Badge} from "@/components/ui/badge";
 import {Edit, MoreVertical, Trash2} from "lucide-react";
-import type {IPaginatedResponse} from "@/types/types.utils";
-
-interface IBranchDay {
-  id: number;
-  day_id: number;
-  day_name: string;
-  day_type: "PHYSICAL" | "REMOTE";
-}
-
-interface IBranchShift {
-  id: number;
-  branch: number;
-  name: string;
-  shift_day: IBranchDay;
-  start_time: string;
-  end_time: string;
-  description: string;
-}
-
-interface IBranchWorkingDays {
-  id: number;
-  branch: number;
-  branch_days: IBranchDay[];
-}
-
-interface IShiftFormData {
-  name: string;
-  shift_day: number;
-  start_time: string;
-  end_time: string;
-  description: string;
-}
+import type {
+  IBranchShift,
+  IBranchWorkingDays,
+  IPaginatedResponse,
+  IShiftFormData,
+} from "@/types/types.utils";
 
 const BranchShiftsPage = () => {
   const selectedBranch = useSelector(selectSelectedBranch);
