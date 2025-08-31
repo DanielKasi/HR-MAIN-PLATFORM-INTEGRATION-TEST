@@ -1,6 +1,5 @@
 # app/tasks.py
 from celery import shared_task
-from django.conf import settings
 from django.utils import timezone
 from employee.models import Employee
 from .models import EmployeeSpotCheck, SpotCheckStatus
@@ -8,18 +7,24 @@ from django.db import IntegrityError
 
 
 @shared_task
-def initiate_next_spotcheck_for_an_employee(employee: Employee):
+def initiate_next_spotcheck_for_an_employee(employee_id):
+
+    print(f"Initiaiting nex spotcheck for employee: {employee_id}")
     from spotcheck.utilities import (
         get_employee_spotchecks_expires_after_minutes,
         send_spotcheck_email,
     )
 
+
+    employee = Employee.objects.get(id=employee_id)
     now = timezone.now()
 
     print(f"initiate_next_spotcheck_for_an_employee hit at {now}")
 
     # Pick the next pending spotcheck for today
     status_pending, _ = SpotCheckStatus.objects.get_or_create(status_name="PENDING")
+
+    # make sure not to send un sent spotchecks of previous days
     spotcheck = (
         EmployeeSpotCheck.objects.filter(
             employee=employee,
@@ -53,8 +58,9 @@ def initiate_next_spotcheck_for_an_employee(employee: Employee):
     )
     employee_spotcheck_expires_after_in_secs = employee_spotcheck_expires_after * 60
 
+    print(f"Spotcheck with id: {spotcheck.id} is to be checked on in {employee_spotcheck_expires_after} minutes")
     check_spotcheck_response.apply_async(
-        args=[spotcheck], countdown=employee_spotcheck_expires_after_in_secs
+        args=[spotcheck.id], countdown=employee_spotcheck_expires_after_in_secs
     )
 
     # Schedule the next spotcheck (if any left in DB)
@@ -69,14 +75,15 @@ def initiate_next_spotcheck_for_an_employee(employee: Employee):
     )
     if next_spotcheck:
         initiate_next_spotcheck_for_an_employee.apply_async(
-            args=[employee], eta=next_spotcheck.spotcheck_time
+            args=[employee.id], eta=next_spotcheck.spotcheck_time
         )
 
     return spotcheck.id
 
 
 @shared_task
-def check_spotcheck_response(spotcheck: EmployeeSpotCheck):
+def check_spotcheck_response(spotcheck_id):
+    spotcheck = EmployeeSpotCheck.objects.get(id=spotcheck_id)
     if not spotcheck.responded_at:
         missed_status, _ = SpotCheckStatus.objects.get_or_create(status_name="MISSED")
         spotcheck.status = missed_status
