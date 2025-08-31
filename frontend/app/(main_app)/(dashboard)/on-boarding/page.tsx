@@ -63,7 +63,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
 import { getOnBoardings, updateOnBoarding } from "@/lib/utils"
-import type { IOnBoarding, IOnBoardingFormData } from "@/types/types.utils"
+import { IOnBoarding, IOnBoardingFormData, PERMISSION_CODES } from "@/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 import { toast } from "sonner"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 
@@ -642,30 +643,33 @@ export default function OnboardPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {commonNextStages.map((stageValue) => {
-                        const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue)
-                        if (!stage) return null
-                        const IconComponent = stage.icon
-                        return (
-                          <DropdownMenuItem key={stageValue} onClick={() => handleBulkUpdate(stageValue)}>
-                            <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
-                            Mark as {stage.label}
-                          </DropdownMenuItem>
-                        )
-                      })}
+                      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}>
+                        {commonNextStages.map((stageValue) => {
+                          const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue)
+                          if (!stage) return null
+                          const IconComponent = stage.icon
+                          return (
+                            <DropdownMenuItem key={stageValue} onClick={() => handleBulkUpdate(stageValue)}>
+                              <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
+                              Mark as {stage.label}
+                            </DropdownMenuItem>
+                          )
+                        })}
+                      </ProtectedComponent>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
 
                 {/* Bulk Delete */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" className="w-full sm:w-auto">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Delete Selected</span>
-                      <span className="sm:hidden">Delete</span>
-                    </Button>
-                  </AlertDialogTrigger>
+                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ONBOARDING_RECORDS}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" className="w-full sm:w-auto">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Delete Selected</span>
+                        <span className="sm:hidden">Delete</span>
+                      </Button>
+                    </AlertDialogTrigger>
                   <AlertDialogContent className="w-[95vw] max-w-md">
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Selected Records</AlertDialogTitle>
@@ -685,6 +689,7 @@ export default function OnboardPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
+                </ProtectedComponent>
               </div>
             </div>
           </CardContent>
@@ -802,8 +807,9 @@ export default function OnboardPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto mt-10">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}>
+            <div className="overflow-x-auto mt-10">
+              <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
               <TableHeader className="bg-gray-50/50">
                 <TableRow>
                   <TableHead className="w-[60px] sm:w-[80px]">
@@ -923,23 +929,25 @@ export default function OnboardPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                {nextStages.map((stageValue) => {
-                                  const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue)
-                                  if (!stage) return null
-                                  const IconComponent = stage.icon
-                                  return (
-                                    <DropdownMenuItem
-                                      key={stageValue}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleUpdateOnboarding(onboarding, stageValue)
-                                      }}
-                                    >
-                                      <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
-                                      Mark as {stage.label}
-                                    </DropdownMenuItem>
-                                  )
-                                })}
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}>
+                                  {nextStages.map((stageValue) => {
+                                    const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue)
+                                    if (!stage) return null
+                                    const IconComponent = stage.icon
+                                    return (
+                                      <DropdownMenuItem
+                                        key={stageValue}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleUpdateOnboarding(onboarding, stageValue)
+                                        }}
+                                      >
+                                        <IconComponent className={`h-4 w-4 mr-2 ${stage.color}`} />
+                                        Mark as {stage.label}
+                                      </DropdownMenuItem>
+                                    )
+                                  })}
+                                </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
@@ -952,35 +960,40 @@ export default function OnboardPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleViewOnboarding(onboarding.id)
-                                }}
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleUpdateOnboarding(onboarding, onboarding.status)
-                                }}
-                              >
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Update Feedback
-                              </DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-destructive"
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ONBOARDING_RECORDS}>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleViewOnboarding(onboarding.id)
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ONBOARDING_RECORDS}>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleUpdateOnboarding(onboarding, onboarding.status)
+                                  }}
+                                >
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Update Feedback
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ONBOARDING_RECORDS}>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-destructive"
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
                                 <AlertDialogContent className="w-[95vw] max-w-md">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -1001,6 +1014,7 @@ export default function OnboardPage() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              </ProtectedComponent>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -1010,7 +1024,8 @@ export default function OnboardPage() {
                 })}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </ProtectedComponent>
         )}
       </div>
 

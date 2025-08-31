@@ -13,7 +13,8 @@ import {
   deleteEmployeeDeduction,
   getDeductionTypes,
 } from "@/lib/utils"
-import { IDeductionType, IEmployeeDeduction } from "@/types/types.utils"
+import { IDeductionType, IEmployeeDeduction, PERMISSION_CODES } from "@/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { EmployeeDeductionFormDialog } from "@/components/employee-deductions/employee-deduction-form-dialog"
@@ -157,10 +158,12 @@ export default function EmployeeDeductionsRefactored() {
 
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Deduction
-              </Button>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_DEDUCTIONS}>
+                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Deduction
+                </Button>
+              </ProtectedComponent>
             </div>
           </div>
 
@@ -217,8 +220,9 @@ export default function EmployeeDeductionsRefactored() {
               }
               return (
                 <>
-                  <div className="hidden sm:block rounded-md">
-                    <Table>
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_DEDUCTIONS}>
+                    <div className="hidden sm:block rounded-md">
+                      <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Employee</TableHead>
@@ -269,14 +273,18 @@ export default function EmployeeDeductionsRefactored() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(deduction)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
+                                    <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
+                                    <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -284,8 +292,10 @@ export default function EmployeeDeductionsRefactored() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-                  <div className="sm:hidden space-y-3">
+                    </div>
+                  </ProtectedComponent>
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_DEDUCTIONS}>
+                    <div className="sm:hidden space-y-3">
                     {filteredResults.map((deduction) => (
                       <div key={deduction.id} className="bg-gray-50 rounded-lg p-4 border">
                         <div className="flex items-start justify-between mb-3">
@@ -313,20 +323,25 @@ export default function EmployeeDeductionsRefactored() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(deduction)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
+                                <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
+                                <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  </ProtectedComponent>
                 </>
               );
             }}

@@ -20,6 +20,8 @@ import {ArrowLeft, Save, Calendar, FileText, Users, AlertTriangle} from "lucide-
 import Link from "next/link";
 import {Badge} from "@/components/ui/badge";
 import {Checkbox} from "@/components/ui/checkbox";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface IProjectTask {
   id: number;
@@ -161,7 +163,8 @@ export default function EditTaskPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-full mx-auto space-y-8">
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_TASKS}>
+        <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center gap-6">
           <Link href={`/projects/project-tasks/${params.id}`}>
@@ -552,7 +555,8 @@ export default function EditTaskPage() {
             </Card>
           </div>
         </div>
-      </div>
+        </div>
+      </ProtectedComponent>
     </div>
   );
 }

@@ -444,9 +444,129 @@
       "description": "Allows managing employee allowances"
     },
     {
+      "code": "can_view_allowance_types",
+      "name": "Can View Allowance Types",
+      "description": "Allows viewing allowance types"
+    },
+    {
+      "code": "can_create_allowance_types",
+      "name": "Can Create Allowance Types",
+      "description": "Allows creating new allowance types"
+    },
+    {
+      "code": "can_edit_allowance_types",
+      "name": "Can Edit Allowance Types",
+      "description": "Allows editing allowance types"
+    },
+    {
+      "code": "can_delete_allowance_types",
+      "name": "Can Delete Allowance Types",
+      "description": "Allows deleting allowance types"
+    },
+    {
       "code": "can_manage_deductions",
       "name": "Can Manage Deductions",
       "description": "Allows managing employee deductions"
+    },
+    {
+      "code": "can_view_deduction_types",
+      "name": "Can View Deduction Types",
+      "description": "Allows viewing deduction types"
+    },
+    {
+      "code": "can_create_deduction_types",
+      "name": "Can Create Deduction Types",
+      "description": "Allows creating new deduction types"
+    },
+    {
+      "code": "can_edit_deduction_types",
+      "name": "Can Edit Deduction Types",
+      "description": "Allows editing deduction types"
+    },
+    {
+      "code": "can_delete_deduction_types",
+      "name": "Can Delete Deduction Types",
+      "description": "Allows deleting deduction types"
+    },
+    {
+      "code": "can_view_employee_deductions",
+      "name": "Can View Employee Deductions",
+      "description": "Allows viewing employee deductions"
+    },
+    {
+      "code": "can_create_employee_deductions",
+      "name": "Can Create Employee Deductions",
+      "description": "Allows creating new employee deductions"
+    },
+    {
+      "code": "can_edit_employee_deductions",
+      "name": "Can Edit Employee Deductions",
+      "description": "Allows editing employee deductions"
+    },
+    {
+      "code": "can_delete_employee_deductions",
+      "name": "Can Delete Employee Deductions",
+      "description": "Allows deleting employee deductions"
+    },
+    {
+      "code": "can_view_employee_tax",
+      "name": "Can View Employee Tax",
+      "description": "Allows viewing employee tax configurations"
+    },
+    {
+      "code": "can_create_employee_tax",
+      "name": "Can Create Employee Tax",
+      "description": "Allows creating new employee tax configurations"
+    },
+    {
+      "code": "can_edit_employee_tax",
+      "name": "Can Edit Employee Tax",
+      "description": "Allows editing employee tax configurations"
+    },
+    {
+      "code": "can_delete_employee_tax",
+      "name": "Can Delete Employee Tax",
+      "description": "Allows deleting employee tax configurations"
+    },
+    {
+      "code": "can_view_employee_allowances",
+      "name": "Can View Employee Allowances",
+      "description": "Allows viewing employee allowances"
+    },
+    {
+      "code": "can_create_employee_allowances",
+      "name": "Can Create Employee Allowances",
+      "description": "Allows creating new employee allowances"
+    },
+    {
+      "code": "can_edit_employee_allowances",
+      "name": "Can Edit Employee Allowances",
+      "description": "Allows editing employee allowances"
+    },
+    {
+      "code": "can_delete_employee_allowances",
+      "name": "Can Delete Employee Allowances",
+      "description": "Allows deleting employee allowances"
+    },
+    {
+      "code": "can_view_payroll_periods",
+      "name": "Can View Payroll Periods",
+      "description": "Allows viewing payroll periods"
+    },
+    {
+      "code": "can_create_payroll_periods",
+      "name": "Can Create Payroll Periods",
+      "description": "Allows creating new payroll periods"
+    },
+    {
+      "code": "can_edit_payroll_periods",
+      "name": "Can Edit Payroll Periods",
+      "description": "Allows editing payroll periods"
+    },
+    {
+      "code": "can_delete_payroll_periods",
+      "name": "Can Delete Payroll Periods",
+      "description": "Allows deleting payroll periods"
     },
     {
       "code": "can_approve_salary_changes",
@@ -1017,6 +1137,11 @@
       "code": "can_edit_onboarding_records",
       "name": "Can Edit Onboarding Records",
       "description": "Allows editing onboarding record details and status"
+    },
+    {
+      "code": "can_delete_onboarding_records",
+      "name": "Can Delete Onboarding Records",
+      "description": "Allows deleting onboarding records"
     },
     
     {

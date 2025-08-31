@@ -47,7 +47,8 @@ import * as z from "zod";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
-import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/types/types.utils";
+import {ISeparationType, IOffboardingStage, SeparationCategory, PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 
@@ -221,13 +222,14 @@ export default function SeparationPolicyTypesPage() {
                   Clear Filters 
                 </Button>
               )}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Policy Type
-                  </Button>
-                </DialogTrigger>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_SEPARATION_TYPES}>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Policy Type
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Add New Policy Type</DialogTitle>
@@ -328,6 +330,7 @@ export default function SeparationPolicyTypesPage() {
                   </Form>
                 </DialogContent>
               </Dialog>
+              </ProtectedComponent>
             </div>
           </div>
         </div>
@@ -463,9 +466,10 @@ export default function SeparationPolicyTypesPage() {
       </Dialog>
 
       {/* Table */}
-      <div>
-        <CardContent className="p-0">
-          <PaginatedTableWrapper<ISeparationType>
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_TYPES}>
+        <div>
+          <CardContent className="p-0">
+            <PaginatedTableWrapper<ISeparationType>
             fetchFirstPage={async () => {
               if (!selectedInstitution) throw new Error("No institution selected")
               return await SeparationPolicyTypesAPI.getPaginated({
@@ -552,17 +556,21 @@ export default function SeparationPolicyTypesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(policyType)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setPolicyTypeToDelete(policyType)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_TYPES}>
+                                  <DropdownMenuItem onClick={() => handleEdit(policyType)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_TYPES}>
+                                  <DropdownMenuItem
+                                    onClick={() => setPolicyTypeToDelete(policyType)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -574,8 +582,9 @@ export default function SeparationPolicyTypesPage() {
               )
             }}
           </PaginatedTableWrapper>
-        </CardContent>
-      </div>
+          </CardContent>
+        </div>
+      </ProtectedComponent>
 
       {/* Delete Confirmation Dialog */}
       <Dialog

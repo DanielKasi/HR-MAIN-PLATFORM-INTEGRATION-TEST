@@ -17,7 +17,8 @@ import {
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {taxAPI, getPaginatedEmployees, showErrorToast} from "@/lib/utils";
-import type {IEmployeeTax, IEmployee, ITax} from "@/types/types.utils";
+import {IEmployeeTax, IEmployee, ITax, PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {EmployeeTaxFormDialog} from "@/components/employee-taxes/employee-tax-form-dialog";
 import {
@@ -205,10 +206,12 @@ export default function EmployeeTaxesPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={openNewTaxDialog} disabled={!selectedInstitution.id}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Tax Configuration
-              </Button>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_TAX}>
+                <Button onClick={openNewTaxDialog} disabled={!selectedInstitution.id}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Tax Configuration
+                </Button>
+              </ProtectedComponent>
             </div>
           </div>
         </div>
@@ -304,8 +307,9 @@ export default function EmployeeTaxesPage() {
               }
 
               return (
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_TAX}>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                     <TableHeader className="bg-gray-50/50">
                       <TableRow>
                         <TableHead>Employee</TableHead>
@@ -364,20 +368,24 @@ export default function EmployeeTaxesPage() {
                                   align="end"
                                   className="z-[100] bg-white shadow-lg shadow-black/10 rounded-md w-[10rem] p-1"
                                 >
-                                  <DropdownMenuItem
-                                    className="flex items-center justify-start gap-4 hover:bg-gray-200 cursor-pointer w-full py-2"
-                                    onClick={() => handleEdit(tax)}
-                                  >
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="flex items-center justify-start gap-4 text-red-600 hover:text-red-700 hover:bg-gray-200 cursor-pointer w-full py-2"
-                                    onClick={() => setDeletingTax(tax)}
-                                  >
-                                    <Trash className="h-4 w-4 mr-1" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_TAX}>
+                                    <DropdownMenuItem
+                                      className="flex items-center justify-start gap-4 hover:bg-gray-200 cursor-pointer w-full py-2"
+                                      onClick={() => handleEdit(tax)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-1" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_TAX}>
+                                    <DropdownMenuItem
+                                      className="flex items-center justify-start gap-4 text-red-600 hover:text-red-700 hover:bg-gray-200 cursor-pointer w-full py-2"
+                                      onClick={() => setDeletingTax(tax)}
+                                    >
+                                      <Trash className="h-4 w-4 mr-1" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -386,7 +394,8 @@ export default function EmployeeTaxesPage() {
                       })}
                     </TableBody>
                   </Table>
-                </div>
+                  </div>
+                </ProtectedComponent>
               );
             }}
           </PaginatedTableWrapper>

@@ -20,11 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import type { IAllowanceType } from "@/types/types.utils";
+import { IAllowanceType, PERMISSION_CODES } from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 import { getPaginatedAllowanceTypes, getPaginatedAllowanceTypesFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-allowance-type-dialog";
 import { EditAllowanceTypeDialog } from "@/components/allowance-types/edit-allowance-type-dialog";
 import { DeleteAllowanceTypeDialog } from "@/components/allowance-types/delete-allowance-type-dialog";
@@ -101,15 +100,18 @@ const AllowanceTypesComponent = () => {
 
           <div className="flex items-center gap-4 justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Allowance Types</h1>
-            <Button
-              onClick={() => setIsCreateDialogOpen(true)}
-              disabled={!selectedInstitution?.id}
-            >
-              <Plus className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">
-                Create Allowance Type
-              </span>
-            </Button>
+            
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_ALLOWANCE_TYPES}>
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                disabled={!selectedInstitution?.id}
+                >
+                <Plus className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">
+                  Create Allowance Type
+                </span>
+              </Button>
+            </ProtectedComponent>
           </div>
 
         </div>
@@ -206,8 +208,9 @@ const AllowanceTypesComponent = () => {
 
               return (
                 <>
-                  <div className="overflow-x-auto">
-                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ALLOWANCE_TYPES}>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                       <TableHeader className="bg-gray-50/50">
                         <TableRow>
                           <TableHead>Name</TableHead>
@@ -264,27 +267,32 @@ const AllowanceTypesComponent = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleEditAllowanceType(allowanceType)}
-                                  >
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteAllowanceType(allowanceType)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ALLOWANCE_TYPES}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditAllowanceType(allowanceType)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ALLOWANCE_TYPES}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteAllowanceType(allowanceType)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
-                      </TableBody>
+                                            </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  </ProtectedComponent>
 
                 </>
               );

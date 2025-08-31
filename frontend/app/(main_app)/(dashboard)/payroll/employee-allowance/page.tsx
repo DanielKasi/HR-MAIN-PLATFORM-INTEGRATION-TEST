@@ -15,7 +15,8 @@ import {
   getAllowanceTypes,
   getPaginatedEmployees,
 } from "@/lib/utils";
-import type { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils";
+import { IEmployeeAllowance, IAllowanceType, IEmployee, PERMISSION_CODES } from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog";
 
@@ -170,10 +171,12 @@ export default function EmployeeAllowancesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
-                  <Plus className="md:mr-2 h-4 w-4" />
-                  <span className="">Add Allowance</span>
-                </Button>
+                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_ALLOWANCES}>
+                  <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
+                    <Plus className="md:mr-2 h-4 w-4" />
+                    <span className="">Add Allowance</span>
+                  </Button>
+                </ProtectedComponent>
               </div>
 
             </div>
@@ -238,9 +241,10 @@ export default function EmployeeAllowancesPage() {
 
               return (
                 <>
-                  {/* Desktop Table */}
-                  <div className="block rounded-md">
-                    <Table>
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_ALLOWANCES}>
+                    {/* Desktop Table */}
+                    <div className="block rounded-md">
+                      <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Employee</TableHead>
@@ -301,17 +305,21 @@ export default function EmployeeAllowancesPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(allowance)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDelete(allowance.id)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_ALLOWANCES}>
+                                    <DropdownMenuItem onClick={() => handleEdit(allowance)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_ALLOWANCES}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDelete(allowance.id)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -319,9 +327,8 @@ export default function EmployeeAllowancesPage() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
-
-
+                    </div>
+                  </ProtectedComponent>
                 </>
               );
             }}
