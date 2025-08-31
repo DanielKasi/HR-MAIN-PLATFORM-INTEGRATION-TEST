@@ -71,7 +71,7 @@ def get_employee_minimum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.lower_threshold
+        return employee.department.institution.institutionspotchecksetting.lower_threshold
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
