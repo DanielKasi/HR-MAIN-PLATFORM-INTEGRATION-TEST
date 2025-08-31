@@ -24,9 +24,10 @@ export default function EmployeePenalties({ employee }: Props) {
     if (!data.penalty_type) { toast.error("Please select a penalty type"); return; }
     setIsSending(true);
     try {
-      const payload: Omit<IEmployeePenaltyFormData, "employee"> & { taget_employees: number[] } = {
+      const payload: Omit<IEmployeePenaltyFormData, ""> & { taget_employees: number[] } = {
         ...data,
         taget_employees: [employee.id],
+        employee: employee.id,
         date: data.date || new Date().toISOString().split('T')[0],
         penalty_type: data.penalty_type || 0,
         amount: data.amount || 0,

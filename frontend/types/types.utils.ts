@@ -2315,7 +2315,7 @@ export interface ISpotCheckFormData {
 export interface ISpotCheckStatus {
   id: number;
   code: string;
-  name: string;
+  status_name: string;
   description: string;
 }
 
@@ -2468,6 +2468,7 @@ export interface IEmployeePenalty {
 }
 
 export interface IEmployeePenaltyFormData {
+  employee: number;
   attendance?: number | null;
   spot_check?: number | null;
   date: string;
