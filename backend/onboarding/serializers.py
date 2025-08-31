@@ -11,14 +11,15 @@ from .models import (
     EmployeeSeparation,
 )
 from django.db import transaction
-from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
 from employee.serializers import EmployeeSerializer
+from approval.serializers import BaseApprovableSerializer
 
 
-class OnBoardingSerializer(serializers.ModelSerializer):
+
+class OnBoardingSerializer(BaseApprovableSerializer):
     application_details = JobAdvertApplicationSerializer(
         source="application", read_only=True
     )
@@ -38,7 +39,7 @@ class OnBoardingSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at", "updated_at"]
 
 
-class OffboardingStageSerializer(serializers.ModelSerializer):
+class OffboardingStageSerializer(BaseApprovableSerializer):
     class Meta:
         model = OffboardingStage
         fields = [
@@ -79,7 +80,7 @@ class OffboardingStageSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
+class InstitutionEmployeeSeparationTypesSerializer(BaseApprovableSerializer):
     supported_stages = serializers.PrimaryKeyRelatedField(
         many=True,
         required=False,
@@ -135,7 +136,7 @@ class InstitutionEmployeeSeparationTypesSerializer(serializers.ModelSerializer):
         return representation
 
 
-class InstitutionSeparationPolicySerializer(serializers.ModelSerializer):
+class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
     separation_type = serializers.PrimaryKeyRelatedField(
         queryset=InstitutionEmployeeSeparationTypes.objects.all()
     )
@@ -189,7 +190,7 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
         return representation
 
 
-class ResignationRequestSerializer(serializers.ModelSerializer):
+class ResignationRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = ResignationRequest
         fields = [
@@ -288,32 +289,6 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
             request_status="submitted",
         )
 
-        institution = employee.institution
-
-        content_type = ContentType.objects.get_for_model(ResignationRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="resignation_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                resignation_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=resignation_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            resignation_request.finish_workflow()
 
         return resignation_request
 
@@ -332,7 +307,7 @@ class ResignationRequestSerializer(serializers.ModelSerializer):
         return instance
 
 
-class RetirementRequestSerializer(serializers.ModelSerializer):
+class RetirementRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = RetirementRequest
         fields = [
@@ -430,37 +405,11 @@ class RetirementRequestSerializer(serializers.ModelSerializer):
             request_status="submitted",
         )
 
-        institution = employee.institution
-
-        content_type = ContentType.objects.get_for_model(RetirementRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="retirement_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                retirement_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=retirement_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            retirement_request.finish_workflow()
 
         return retirement_request
 
 
-class TerminationInitiationSerializer(serializers.ModelSerializer):
+class TerminationInitiationSerializer(BaseApprovableSerializer):
     employee_id = serializers.IntegerField(write_only=True)
 
     separation = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -568,31 +517,6 @@ class TerminationInitiationSerializer(serializers.ModelSerializer):
 
         termination_initiation = TerminationInitiation.objects.create(**validated_data)
 
-        institution = employee.department.institution
-
-        content_type = ContentType.objects.get_for_model(TerminationInitiation)
-        try:
-            action = WorkflowAction.objects.get(code="termination_initiation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                termination_initiation.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=termination_initiation.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            termination_initiation.finish_workflow()
 
         return termination_initiation
 

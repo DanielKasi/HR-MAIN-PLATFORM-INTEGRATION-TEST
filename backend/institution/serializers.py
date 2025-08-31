@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from approval.serializers import BaseApprovableSerializer
 from employee.serializers import EmployeeActivationSerializer, EmployeeSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
@@ -177,7 +178,7 @@ class InstitutionSerializer(serializers.ModelSerializer):
         return BranchSerializer(branches, many=True).data
 
 
-class InstitutionBankTypeSerializer(serializers.ModelSerializer):
+class InstitutionBankTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = InstitutionBankType
 
@@ -224,7 +225,7 @@ class InstitutionBankTypeSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class InstitutionBankAccountSerializer(serializers.ModelSerializer):
+class InstitutionBankAccountSerializer(BaseApprovableSerializer):
     institution_bank = serializers.PrimaryKeyRelatedField(
         queryset=InstitutionBankType.objects.all()
     )
@@ -268,7 +269,7 @@ class InstitutionBankAccountSerializer(serializers.ModelSerializer):
         return rep
 
 
-class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
+class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
     days = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(),
         many=True,
@@ -349,7 +350,7 @@ class InstitutionWorkingDaysSerializer(serializers.ModelSerializer):
         return rep
 
 
-class BranchDaySerializer(serializers.ModelSerializer):
+class BranchDaySerializer(BaseApprovableSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
     day_id = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
@@ -360,7 +361,7 @@ class BranchDaySerializer(serializers.ModelSerializer):
         fields = ["id", "day_id", "day_name", "day_type"]
 
 
-class BranchWorkingDaysSerializer(serializers.ModelSerializer):
+class BranchWorkingDaysSerializer(BaseApprovableSerializer):
     branch_days = BranchDaySerializer(many=True)
 
     class Meta:
@@ -388,7 +389,7 @@ class BranchWorkingDaysSerializer(serializers.ModelSerializer):
         return instance
 
 
-class InstitutionTaxSerializer(serializers.ModelSerializer):
+class InstitutionTaxSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTax
@@ -445,7 +446,7 @@ class InstitutionTaxSerializer(serializers.ModelSerializer):
         return instance
 
 
-class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
+class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTaxRule
@@ -548,7 +549,7 @@ class InstitutionTaxRuleSerializer(serializers.ModelSerializer):
         return instance
 
 
-class BranchSerializer(serializers.ModelSerializer):
+class BranchSerializer(BaseApprovableSerializer):
     institution_name = serializers.SerializerMethodField()
     institution_logo = serializers.ImageField(
         source="Institution.Institution_logo", read_only=True
@@ -642,7 +643,7 @@ class UserBranchSerializer(serializers.ModelSerializer):
         return UserBranch.objects.create(created_by=request.user, **validated_data)
 
 
-class DepartmentSerializer(serializers.ModelSerializer):
+class DepartmentSerializer(BaseApprovableSerializer):
     institution_details = InstitutionSerializer(source="institution", read_only=True)
     # head_of_department_details = EmployeeSerializer(
     #     source="head_of_department", read_only=True
@@ -706,19 +707,19 @@ class SuccessResponseSerializer(serializers.Serializer):
     data = serializers.DictField()
 
 
-class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
+class InstitutionPenaltyConfigSerializer(BaseApprovableSerializer):
     class Meta:
         model = InstitutionPenaltyConfig
         fields = "__all__"
 
 
-class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
+class BranchPenaltyConfigSerializer(BaseApprovableSerializer):
     class Meta:
         model = BranchPenaltyConfig
         fields = "__all__"
 
 
-class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
+class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
     branch_name = serializers.CharField(source="branch.branch_name", read_only=True)
 
     class Meta:
@@ -726,7 +727,7 @@ class BranchLocationComparisonConfigSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class BranchShiftSerializer(serializers.ModelSerializer):
+class BranchShiftSerializer(BaseApprovableSerializer):
     shift_day = serializers.PrimaryKeyRelatedField(queryset=BranchDay.objects.all())
 
     class Meta:
