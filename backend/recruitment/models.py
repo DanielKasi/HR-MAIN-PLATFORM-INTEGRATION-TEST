@@ -11,6 +11,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 from approval.models import Approval, BaseApprovableModel
+from django.db import transaction
+
 
 class RequiredDocument(SoftDeletableTimeStampedModel):
     """

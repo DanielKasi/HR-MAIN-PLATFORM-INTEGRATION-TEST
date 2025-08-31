@@ -613,6 +613,40 @@ export interface IPayslip {
   items: IPayrollItems;
 }
 
+export interface IRecruitmentDashboard {
+  total_job_positions: number
+  active_job_positions: number
+  total_adverts: number
+  active_adverts: number
+  total_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  total_interviews: number
+  interviews_by_status: Array<{
+    status: string
+    count: number
+  }>
+  upcoming_interviews: number
+  total_onboardings: number
+  onboardings_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_time_to_hire_days: number
+  applications_sources: Array<{
+    source: string
+    count: number
+  }>
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+
+
 export interface IInterviewStageFormData {
   job_position_advert: number;
   name: string;

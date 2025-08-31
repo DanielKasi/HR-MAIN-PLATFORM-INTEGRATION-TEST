@@ -119,6 +119,7 @@ import {
   IEmployeePenalty,
   IPenaltyType,
   IEmployeePenaltyFormData,
+  IRecruitmentDashboard,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4043,6 +4044,16 @@ export const getPayslips = async (
     return data.results;
   } catch (error) {
     // console.error("Failed to get payslips:", error);
+    throw error;
+  }
+};
+
+export const getRecruitmentDashboard = async () => {
+  try {
+    const response = await apiRequest.get("recruitment/analytics/");
+    return response.data as IRecruitmentDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
     throw error;
   }
 };
