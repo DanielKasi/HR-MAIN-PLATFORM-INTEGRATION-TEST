@@ -15,7 +15,7 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
-from datetime import datetime
+from django.utils import timezone
 from django.db.models import Q
 from django.db import transaction
 
@@ -190,7 +190,7 @@ class EventListCreateView(APIView):
             events = events.filter(date=date)
 
         if mode:
-            events = events.filter(mode=event_mode)
+            events = events.filter(event_mode=mode)
         if search_query:
             events = events.filter(
                 Q(title__icontains=search_query) | Q(description__icontains=search_query) |
@@ -333,7 +333,7 @@ class InstitutionCalendarView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
-            year = datetime.now().year
+            year = timezone.now().year
 
         calendar = Calendar.objects.filter(
             institution=institution, 

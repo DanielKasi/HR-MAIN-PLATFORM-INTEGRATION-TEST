@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.http import Http404
 from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -59,7 +57,6 @@ from .serializers import (
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
 from utilities.pagination import CustomPageNumberPagination
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Count, Sum, Q, F
 from django.contrib.auth import get_user_model
 import logging
@@ -73,7 +70,7 @@ from decimal import Decimal
 from django.utils import timezone
 from leave_mgt.models import LeaveApplication
 from payroll.models import Payslip
-from django.db.models.functions import ExtractMonth, ExtractYear
+from django.db.models.functions import ExtractMonth
 from django.db.models import Value, IntegerField
 from rest_framework import parsers
 
@@ -1749,7 +1746,7 @@ class SystemActivationView(APIView):
                     payroll_branch=branch,
                     department=department,
                     date_of_joining=employee_data.get(
-                        "date_of_joining", datetime.now().date()
+                        "date_of_joining", timezone.now().date()
                     ),
                 )
                 created_employees.append(employee)

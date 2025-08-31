@@ -37,38 +37,38 @@ def get_employee_spotchecks_expires_after_minutes(employee: Employee) -> int:
     return minutes_from_employee
 
 
-def get_employee_spotchecks_lower_threshold(employee: Employee) -> int:
-    minutes_lower_threshold = None
+def get_employee_minimum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
+    day_min_spotchecks = None
     try:
-        minutes_lower_threshold = employee.employeespotchecksetting.lower_threshold
+        day_min_spotchecks = employee.employeespotchecksetting.lower_threshold
     except EmployeeSpotCheckSetting.DoesNotExist:
         try:
-            minutes_lower_threshold = employee.payroll_branch.branchspotchecksetting.lower_threshold
+            day_min_spotchecks = employee.payroll_branch.branchspotchecksetting.lower_threshold
         except BranchSpotCheckSetting.DoesNotExist:
             try:
-                minutes_lower_threshold = employee.department.institution.lower_threshold
+                day_min_spotchecks = employee.department.institution.lower_threshold
             except InstitutionSpotCheckSetting:
-                minutes_lower_threshold = settings.SPOTCHECK_DEFAULT_LOWER_THRESHOLD
+                day_min_spotchecks = settings.SPOTCHECK_DEFAULT_LOWER_THRESHOLD
 
     
-    return minutes_lower_threshold
+    return day_min_spotchecks
 
 
-def get_employee_spotchecks_upper_threshold(employee: Employee) -> int:
-    minutes_upper_threshold = None
+def get_employee_maximum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
+    day_max_spotchecks = None
     try:
-        minutes_upper_threshold = employee.employeespotchecksetting.upper_threshold
+        day_max_spotchecks = employee.employeespotchecksetting.upper_threshold
     except EmployeeSpotCheckSetting.DoesNotExist:
         try:
-            minutes_upper_threshold = employee.payroll_branch.branchspotchecksetting.upper_threshold
+            day_max_spotchecks = employee.payroll_branch.branchspotchecksetting.upper_threshold
         except BranchSpotCheckSetting.DoesNotExist:
             try:
-                minutes_upper_threshold = employee.department.institution.upper_threshold
+                day_max_spotchecks = employee.department.institution.upper_threshold
             except InstitutionSpotCheckSetting:
-                minutes_upper_threshold = settings.SPOTCHECK_DEFAULT_UPPER_THRESHOLD
+                day_max_spotchecks = settings.SPOTCHECK_DEFAULT_UPPER_THRESHOLD
 
     
-    return minutes_upper_threshold
+    return day_max_spotchecks
 
 
 def get_employee_spotchecks_late_starts_after_minutes(employee: Employee) -> int:
