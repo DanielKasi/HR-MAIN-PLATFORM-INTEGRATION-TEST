@@ -32,7 +32,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
 class ApprovalTaskSerializer(serializers.ModelSerializer):
     level_name = serializers.CharField(source='level.name', read_only=True)
     approval_document_description = serializers.CharField(source='approval.document.description', read_only=True)
-    content_object = serializers.SerializerMethodField()  # To show linked object info
+    content_object = serializers.SerializerMethodField()  
 
     class Meta:
         model = ApprovalTask
@@ -45,7 +45,6 @@ class ApprovalTaskSerializer(serializers.ModelSerializer):
 
     def get_content_object(self, obj):
         if obj.approval.content_object:
-            # Return a dict with basic info; customize as needed
             co = obj.approval.content_object
             return {
                 'model': co.__class__.__name__,
