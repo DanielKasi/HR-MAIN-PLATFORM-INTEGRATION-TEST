@@ -2,86 +2,29 @@
 
 import type * as React from "react";
 
-export const Chart = ({children}: {children: React.ReactNode}) => {
-  return <div className="w-full">{children}</div>;
+// ChartContainer
+interface ChartContainerProps {
+  children: React.ReactNode;
+  className?: string;
+  config?: Record<string, { label: string; color: string }>;
+}
+
+export const ChartContainer = ({ children, className, config }: ChartContainerProps) => {
+  // you can even inject config into CSS variables here if needed
+  return <div className={`relative ${className ?? ""}`}>{children}</div>;
 };
 
-export const ChartContainer = ({children}: {children: React.ReactNode}) => {
-  return <div className="relative">{children}</div>;
+// ChartTooltip
+interface ChartTooltipProps {
+  children?: React.ReactNode;
+  content?: React.ReactNode;
+}
+
+export const ChartTooltip = ({ children, content }: ChartTooltipProps) => {
+  return <>{content ?? children}</>;
 };
 
-export const ChartGrid = (
-  // {x, y}:
-  //  {x?: {show: boolean}; y?: {show: boolean}}
-  ) => {
-  return <></>;
-};
-
-export const ChartLine = (
-//   {
-//   data,
-//   valueKey,
-//   categoryKey,
-//   strokeWidth,
-//   style,
-// }: {
-//   data: any[];
-//   valueKey: string;
-//   categoryKey: string;
-//   strokeWidth?: number;
-//   style?: React.CSSProperties;
-// }
-
-) => {
-  return <></>;
-};
-
-export const ChartBar = (
-//   {
-//   data,
-//   valueKey,
-//   categoryKey,
-//   style,
-// }: {
-//   data: any[];
-//   valueKey: string;
-//   categoryKey: string;
-//   style?: React.CSSProperties;
-// }
-) => {
-  return <></>;
-};
-
-export const ChartPie = (
-//   {
-//   data,
-//   valueKey,
-//   categoryKey,
-// }: {
-//   data: any[];
-//   valueKey: string;
-//   categoryKey: string;
-// }
-) => {
-  return <></>;
-};
-
-export const ChartXAxis = () => {
-  return <></>;
-};
-
-export const ChartYAxis = () => {
-  return <></>;
-};
-
-export const ChartTooltip = ({children}: {children: React.ReactNode}) => {
-  return <>{children}</>;
-};
-
+// ChartTooltipContent
 export const ChartTooltipContent = () => {
-  return <></>;
-};
-
-export const ChartLegend = () => {
-  return <></>;
+  return <div className="p-2 text-sm text-muted-foreground">Tooltip</div>;
 };

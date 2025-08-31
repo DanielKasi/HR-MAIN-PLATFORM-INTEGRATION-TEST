@@ -49,7 +49,7 @@ def get_employee_spotchecks_expires_after_minutes(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.expires_after_minutes
+        return employee.department.institution.institutionspotchecksetting.expires_after_minutes
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -71,7 +71,9 @@ def get_employee_minimum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.institutionspotchecksetting.lower_threshold
+        return (
+            employee.department.institution.institutionspotchecksetting.lower_threshold
+        )
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -93,7 +95,9 @@ def get_employee_maximum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.institutionspotchecksetting.upper_threshold
+        return (
+            employee.department.institution.institutionspotchecksetting.upper_threshold
+        )
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -115,7 +119,7 @@ def get_employee_spotchecks_late_starts_after_minutes(employee: Employee) -> int
         pass
 
     try:
-        return employee.department.institution.late_starts_after_minutes
+        return employee.department.institution.institutionspotchecksetting.late_starts_after_minutes
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -156,7 +160,9 @@ def create_spotchecks_for_today(employee: Employee):
     )
 
     status_pending, _ = SpotCheckStatus.objects.get_or_create(status_name="PENDING")
-    status_missed, _ = SpotCheckStatus.objects.get_or_create(status_name="HAD_NOT_YET_CHECKED_IN")
+    status_missed, _ = SpotCheckStatus.objects.get_or_create(
+        status_name="HAD_NOT_YET_CHECKED_IN"
+    )
 
     future_spotchecks = []
 
@@ -174,7 +180,21 @@ def create_spotchecks_for_today(employee: Employee):
             initiated_by="system",
         )
 
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    print(
+        f"max_spotchecks: {max_spotchecks} | min_spotchecks: {min_spotchecks} | today: {today} | weekday_str: {weekday_str}"
+    )
+
+    print(
+        f"system_day: {system_day} | work_start_time: {work_start_time} | work_end_time: {work_end_time} | work_start: {work_start} | work_end: {work_end}"
+    )
+
+    print(
+        f"now: {now} | num_spotchecks: {num_spotchecks} | delta_seconds: {delta_seconds} | scheduled_times: {scheduled_times} | future_spotchecks: {future_spotchecks}"
+    )
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
     if future_spotchecks:
         initiate_next_spotcheck_for_an_employee.apply_async(
-            args=[employee], eta=future_spotchecks[0]
+            args=[employee.id], eta=future_spotchecks[0]
         )

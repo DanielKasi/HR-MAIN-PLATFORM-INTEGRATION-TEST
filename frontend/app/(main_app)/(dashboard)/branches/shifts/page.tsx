@@ -111,7 +111,7 @@ const BranchShiftsPage = () => {
 
     try {
       setLoading(true);
-      const response = await apiRequest.patch(`/institution/branch-shifts/${editingShift.id}/`, {
+      const response = await apiRequest.patch(`/institution/branch-shifts/detail/${editingShift.id}/`, {
         ...formData,
         branch: selectedBranch?.id,
       });
@@ -134,7 +134,7 @@ const BranchShiftsPage = () => {
 
     try {
       setLoading(true);
-      const response = await apiRequest.delete(`/institution/branch-shifts/${shiftToDelete.id}/`);
+      const response = await apiRequest.delete(`/institution/branch-shifts/detail/${shiftToDelete.id}/`);
 
       if (response.status === 204) {
         tableRefreshRef.current?.();
