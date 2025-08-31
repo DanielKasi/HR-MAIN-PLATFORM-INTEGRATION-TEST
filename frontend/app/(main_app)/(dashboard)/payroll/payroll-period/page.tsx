@@ -398,7 +398,7 @@ export default function PayrollPeriods() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_PAYROLL_PERIODS}>
                 <Button
                   onClick={() => {
                     setIsModalOpen(true);
@@ -497,8 +497,9 @@ export default function PayrollPeriods() {
 
               return (
                 <>
-                  <div className="overflow-x-auto">
-                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_PERIODS}>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                       <TableHeader className="bg-gray-50/50">
                         <TableRow>
                           <TableHead>Period Name</TableHead>
@@ -577,17 +578,19 @@ export default function PayrollPeriods() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Link
-                                      href={`/payroll/payroll-period/${period.id}`}
-                                      className="flex items-center w-full"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </Link>
-                                  </DropdownMenuItem>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_PERIODS}>
+                                    <DropdownMenuItem>
+                                      <Link
+                                        href={`/payroll/payroll-period/${period.id}`}
+                                        className="flex items-center w-full"
+                                      >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        View Details
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
                                   <ProtectedComponent
-                                    permissionCode={PERMISSION_CODES.CAN_MANAGE_PAYROLL_PERIODS}
+                                    permissionCode={PERMISSION_CODES.CAN_EDIT_PAYROLL_PERIODS}
                                   >
                                     <DropdownMenuItem
                                       onClick={() => handleEdit(period)}
@@ -596,6 +599,10 @@ export default function PayrollPeriods() {
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_DELETE_PAYROLL_PERIODS}
+                                  >
                                     <DropdownMenuItem
                                       onClick={() => setPeriodToDelete(period)}
                                       className="flex items-center text-red-600 focus:text-red-700"
@@ -603,6 +610,10 @@ export default function PayrollPeriods() {
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Delete
                                     </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_DOWNLOAD_PAYSLIPS}
+                                  >
                                     <DropdownMenuItem
                                       onClick={() => exportPayslipsReport(period.id)}
                                       className="flex items-center w-full"
@@ -618,7 +629,8 @@ export default function PayrollPeriods() {
                         ))}
                       </TableBody>
                     </Table>
-                  </div>
+                    </div>
+                  </ProtectedComponent>
                 </>
               );
             }}

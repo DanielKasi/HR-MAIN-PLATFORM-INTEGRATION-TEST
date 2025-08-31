@@ -18,6 +18,8 @@ import {ArrowLeft, Save, Calendar, FileText, Users, Target, AlertCircle} from "l
 import Link from "next/link";
 import {Badge} from "@/components/ui/badge";
 import {Checkbox} from "@/components/ui/checkbox";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 export default function AddTaskPage() {
   const router = useRouter();
@@ -105,9 +107,10 @@ export default function AddTaskPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-full mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex items-center gap-6">
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_TASKS}>
+        <div className="max-w-full mx-auto space-y-8">
+          {/* Header */}
+          <div className="flex items-center gap-6">
           <Link href={projectId ? `/projects/${projectId}` : "/projects"}>
             <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -532,7 +535,8 @@ export default function AddTaskPage() {
             </Card>
           </div>
         </div>
-      </div>
+        </div>
+      </ProtectedComponent>
     </div>
   );
 }

@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {Textarea} from "@/components/ui/textarea";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface IProjectTask {
   id: number;
@@ -179,7 +181,8 @@ export default function TaskDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
-      <div className="max-w-full mx-auto space-y-8">
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TASKS}>
+        <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -579,7 +582,8 @@ export default function TaskDetailsPage() {
             </Card>
           </div>
         </div>
-      </div>
+        </div>
+      </ProtectedComponent>
     </div>
   );
 }

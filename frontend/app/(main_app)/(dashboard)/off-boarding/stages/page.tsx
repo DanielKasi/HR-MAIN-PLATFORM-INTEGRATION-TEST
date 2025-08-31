@@ -47,7 +47,8 @@ import * as z from "zod"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { cn, OffboardingStagesAPI } from "@/lib/utils"
-import { IOffboardingStage } from "@/types/types.utils"
+import { IOffboardingStage, PERMISSION_CODES } from "@/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 
@@ -173,13 +174,14 @@ export default function OffboardingStagesPage() {
                 </Button>
               )}
             </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Stage
-                </Button>
-              </DialogTrigger>
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_OFFBOARDING_STAGES}>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Stage
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Stage</DialogTitle>
@@ -222,14 +224,16 @@ export default function OffboardingStagesPage() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </ProtectedComponent>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="-ml-2 mt-4">
-        <CardContent className="p-0">
-          <PaginatedTableWrapper<IOffboardingStage>
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES}>
+        <div className="-ml-2 mt-4">
+          <CardContent className="p-0">
+            <PaginatedTableWrapper<IOffboardingStage>
             fetchFirstPage={async () => {
               if (!selectedInstitution) throw new Error("No institution selected")
               return await OffboardingStagesAPI.getPaginated({
@@ -305,17 +309,21 @@ export default function OffboardingStagesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(stage)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => setStageToDelete(stage)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_OFFBOARDING_STAGES}>
+                                  <DropdownMenuItem onClick={() => handleEdit(stage)}>
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_OFFBOARDING_STAGES}>
+                                  <DropdownMenuItem 
+                                    onClick={() => setStageToDelete(stage)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -327,8 +335,9 @@ export default function OffboardingStagesPage() {
               )
             }}
           </PaginatedTableWrapper>
-        </CardContent>
-      </div>
+          </CardContent>
+        </div>
+      </ProtectedComponent>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
