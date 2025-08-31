@@ -39,6 +39,7 @@ import {useMobile} from "@/hooks/use-mobile";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
+import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -56,7 +57,8 @@ export default function EmployeeProfile() {
     | "discipline"
     | "leave"
     | "spotchecks"
-    | "shifts"
+  | "shifts"
+  | "penalties"
   >("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
@@ -202,6 +204,7 @@ export default function EmployeeProfile() {
       {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
       {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
       {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
+  {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
       {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
@@ -560,7 +563,7 @@ export default function EmployeeProfile() {
               <Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none md:shadow-sm md:border">
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
-                    <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
+                    <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8">
                       {tabConfig.map((tab) => (
                         <button
                           key={tab.id}
@@ -743,6 +746,10 @@ export default function EmployeeProfile() {
 
                   {activeTab === "spotchecks" && employee && (
                     <EmployeeSpotchecks employee={employee} />
+                  )}
+
+                  {activeTab === "penalties" && employee && (
+                    <EmployeePenalties employee={employee} />
                   )}
 
                   {activeTab === "shifts" && employee && <EmployeeShifts employee={employee} />}

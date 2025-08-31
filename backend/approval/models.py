@@ -4,6 +4,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 import uuid
 from django.db import transaction
+from rest_framework.exceptions import ValidationError
+
 
 
 class Action(SoftDeletableTimeStampedModel):

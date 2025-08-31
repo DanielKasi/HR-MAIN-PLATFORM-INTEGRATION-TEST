@@ -27,14 +27,7 @@ from institution.models import Institution
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_view
-from users.models import Profile, CustomUser, UserRole
-from django.contrib.contenttypes.models import ContentType
-from workflows.models import (
-    ApprovalTask,
-    InstitutionApprovalStepApprovorRole,
-    InstitutionApprovalStepApprovorUser,
-)
+from users.models import Profile
 from django.db.models import Q
 from employee.models import Employee
 from django.db import transaction
@@ -902,3 +895,326 @@ class AssetHistoryDetailView(APIView):
         asset_history = get_object_or_404(AssetHistory, pk=pk)
         serializer = AssetHistorySerializer(asset_history)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from django.db.models import Q, Count, Avg, Sum
+from django.shortcuts import get_object_or_404
+from institution.models import Institution
+from utilities.pagination import CustomPageNumberPagination
+
+# Asset Analytics
+class AssetCategoryAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Category Analytics",
+        summary="Get analytics for asset categories",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        filters = Q(deleted_at__isnull=True, institution=institution)
+
+        categories = AssetCategory.objects.filter(filters).prefetch_related('assets')
+
+        result = []
+        for category in categories:
+            assets = category.assets.filter(deleted_at__isnull=True)
+            total = assets.count()
+            available = assets.filter(status='available').count()
+            allocated = assets.filter(status='allocated').count()
+            maintenance = assets.filter(status='maintenance').count()
+            decommissioned = assets.filter(status='decommissioned').count()
+
+            result.append({
+                'category_name': category.category_name,
+                'total_assets': total,
+                'available': available,
+                'allocated': allocated,
+                'maintenance': maintenance,
+                'decommissioned': decommissioned,
+                'status_distribution': {
+                    'available': available,
+                    'allocated': allocated,
+                    'maintenance': maintenance,
+                    'decommissioned': decommissioned,
+                }
+            })
+
+        return Response({'asset_category_analytics': result}, status=status.HTTP_200_OK)
+
+class AssetStatusAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Status Analytics",
+        summary="Get analytics for asset statuses",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        filters = Q(deleted_at__isnull=True, institution=institution)
+
+        assets = Asset.objects.filter(filters)
+
+        status_dist = assets.values('status').annotate(count=Count('id')).order_by('-count')
+        total_assets = assets.count()
+
+        percentage_dist = []
+        for item in status_dist:
+            percentage = (item['count'] / total_assets * 100) if total_assets else 0
+            percentage_dist.append({
+                'status': item['status'],
+                'count': item['count'],
+                'percentage': round(percentage, 2)
+            })
+
+        return Response({
+            'status_distribution': list(status_dist),
+            'percentage_distribution': percentage_dist,
+        }, status=status.HTTP_200_OK)
+
+class AssetAllocationAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Allocation Analytics",
+        summary="Get analytics for asset allocations",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        filters = Q(deleted_at__isnull=True, asset__institution=institution)
+        if start_date and end_date:
+            filters &= Q(created_at__range=[start_date, end_date])
+
+        allocations = AssetAllocation.objects.filter(filters)
+
+        status_dist = allocations.values('allocation_status').annotate(count=Count('id')).order_by('-count')
+
+        total_assets = Asset.objects.filter(institution=institution, deleted_at__isnull=True).count()
+        allocation_rate = (allocations.count() / total_assets * 100) if total_assets else 0
+
+        most_allocated = allocations.values('asset__asset_name').annotate(count=Count('id')).order_by('-count')[:5]
+
+        return Response({
+            'total_allocations': allocations.count(),
+            'allocation_status_distribution': list(status_dist),
+            'allocation_rate': round(allocation_rate, 2),
+            'most_allocated_assets': list(most_allocated),
+        }, status=status.HTTP_200_OK)
+
+class AssetRequestAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Request Analytics",
+        summary="Get analytics for asset requests",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        filters = Q(deleted_at__isnull=True, asset__institution=institution)
+        if start_date and end_date:
+            filters &= Q(created_at__range=[start_date, end_date])
+
+        requests = AssetRequest.objects.filter(filters)
+
+        status_dist = requests.values('asset_request_status').annotate(count=Count('id')).order_by('-count')
+
+        total_requests = requests.count()
+        approved = requests.filter(asset_request_status='approved').count()
+        approval_rate = (approved / total_requests * 100) if total_requests else 0
+
+        most_requested = requests.values('asset__asset_name').annotate(count=Count('id')).order_by('-count')[:5]
+
+        return Response({
+            'total_requests': total_requests,
+            'request_status_distribution': list(status_dist),
+            'approval_rate': round(approval_rate, 2),
+            'most_requested_assets': list(most_requested),
+        }, status=status.HTTP_200_OK)
+
+class AssetReturnAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Return Analytics",
+        summary="Get analytics for asset returns",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        filters = Q(deleted_at__isnull=True, asset__institution=institution)
+        if start_date and end_date:
+            filters &= Q(created_at__range=[start_date, end_date])
+
+        returns = AssetReturn.objects.filter(filters)
+
+        condition_dist = returns.values('condition').annotate(count=Count('id')).order_by('-count')
+
+        total_allocations = AssetAllocation.objects.filter(asset__institution=institution, deleted_at__isnull=True).count()
+        return_rate = (returns.count() / total_allocations * 100) if total_allocations else 0
+
+        return Response({
+            'total_returns': returns.count(),
+            'return_condition_distribution': list(condition_dist),
+            'return_rate': round(return_rate, 2),
+        }, status=status.HTTP_200_OK)
+
+class AssetHistoryAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset History Analytics",
+        summary="Get analytics for asset history",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        filters = Q(deleted_at__isnull=True, asset__institution=institution)
+        if start_date and end_date:
+            filters &= Q(created_at__range=[start_date, end_date])
+
+        history = AssetHistory.objects.filter(filters)
+
+        event_dist = history.values('event_type').annotate(count=Count('id')).order_by('-count')
+
+        most_active = history.values('asset__asset_name').annotate(count=Count('id')).order_by('-count')[:5]
+
+        return Response({
+            'total_history_events': history.count(),
+            'event_type_distribution': list(event_dist),
+            'most_active_assets': list(most_active),
+        }, status=status.HTTP_200_OK)
+
+class AssetUtilizationAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Utilization Analytics",
+        summary="Get analytics for asset utilization",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        filters = Q(deleted_at__isnull=True, institution=institution)
+
+        assets = Asset.objects.filter(filters)
+        allocations = AssetAllocation.objects.filter(asset__institution=institution, deleted_at__isnull=True)
+
+        total_assets = assets.count()
+        allocated_assets = assets.filter(status='allocated').count()
+        utilization_rate = (allocated_assets / total_assets * 100) if total_assets else 0
+
+        most_utilized = allocations.values('asset__asset_name').annotate(
+            count=Count('id')
+        ).order_by('-count')[:5]
+
+        return Response({
+            'utilization_rate': round(utilization_rate, 2),
+            'most_utilized_assets': list(most_utilized),
+        }, status=status.HTTP_200_OK)
+
+class AssetMaintenanceAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Maintenance Analytics",
+        summary="Get analytics for asset maintenance",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        filters = Q(deleted_at__isnull=True, status='maintenance', institution=institution)
+
+        assets = Asset.objects.filter(filters)
+
+        most_maintained = AssetHistory.objects.filter(
+            event_type='maintenance',
+            asset__institution=institution,
+            deleted_at__isnull=True
+        ).values('asset__asset_name').annotate(count=Count('id')).order_by('-count')[:5]
+
+        return Response({
+            'total_assets_under_maintenance': assets.count(),
+            'most_frequently_maintained_assets': list(most_maintained),
+        }, status=status.HTTP_200_OK)
+
+class AssetDecommissionAnalyticsViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="Asset Decommission Analytics",
+        summary="Get analytics for asset decommission",
+        responses={
+            200: OpenApiResponse(description="OK"),
+            401: OpenApiResponse(description="Unauthorized"),
+        },
+        tags=["Asset Analytics"],
+    )
+    def get(self, request, institution_id):
+        institution = get_object_or_404(Institution, id=institution_id)
+        filters = Q(deleted_at__isnull=True, status='decommissioned', institution=institution)
+
+        assets = Asset.objects.filter(filters)
+
+        total_assets = Asset.objects.filter(institution=institution, deleted_at__isnull=True).count()
+        decommission_rate = (assets.count() / total_assets * 100) if total_assets else 0
+
+        return Response({
+            'total_decommissioned_assets': assets.count(),
+            'decommission_rate': round(decommission_rate, 2),
+        }, status=status.HTTP_200_OK)

@@ -18,15 +18,17 @@ import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/sele
 import {getDepartments, getJobPositions, createJobPosition} from "@/lib/utils";
 import {SearchableSelect, SearchableSelectItem} from "@/components/searchable-select";
 
-import type {
-  JobPositionFormData,
-  IDepartment,
-  IJobPosition,
-  CreateJobPositionData,
+import {
+  type JobPositionFormData,
+  type IDepartment,
+  type IJobPosition,
+  type CreateJobPositionData,
+  PERMISSION_CODES,
 } from "@/types/types.utils";
 import {toast} from "sonner";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import {RichEditorField} from "@/components/common/rich-editor";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 function formatWithCommas(value: string) {
   const num = value.replace(/,/g, "");
@@ -258,6 +260,7 @@ export default function CreateJobPositionPage() {
               </div>
             </div>
           </CardHeader>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_POSITIONS}>
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -446,6 +449,7 @@ export default function CreateJobPositionPage() {
               </div>
             </form>
           </CardContent>
+          </ProtectedComponent>
         </Card>
       </div>
     </div>

@@ -9,10 +9,9 @@ from io import BytesIO
 from weasyprint import HTML
 from django.db.models import UniqueConstraint, Q
 from django.core.exceptions import ValidationError
-from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import Approval, BaseApprovableModel
 
-
-class OnBoarding(SoftDeletableTimeStampedModel):
+class OnBoarding(BaseApprovableModel):
     STATUS_CHOICES = [
         ("initial", "Initial"),
         ("training", "Training"),
@@ -48,10 +47,13 @@ class OnBoarding(SoftDeletableTimeStampedModel):
 
         super().save(*args, **kwargs)
 
+    def get_institution(self):
+        return self.application.job_position_advert.job_position.department.institution     
 
 
 
-class OffboardingStage(SoftDeletableTimeStampedModel):
+
+class OffboardingStage(BaseApprovableModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -73,8 +75,11 @@ class OffboardingStage(SoftDeletableTimeStampedModel):
             )
         ]
 
+    def get_institution(self):
+        return self.institution     
 
-class InstitutionEmployeeSeparationTypes(SoftDeletableTimeStampedModel):
+
+class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
 
     SEPARATION_CATEGORY_CHOICES = [
         ("resignation", "Resignation"),
@@ -105,8 +110,11 @@ class InstitutionEmployeeSeparationTypes(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.institution.institution_name} - {self.separation_type}"
 
+    def get_institution(self):
+        return self.institution     
 
-class InstitutionSeparationPolicy(SoftDeletableTimeStampedModel):
+
+class InstitutionSeparationPolicy(BaseApprovableModel):
     separation_type = models.ForeignKey(
         InstitutionEmployeeSeparationTypes,
         on_delete=models.CASCADE,
@@ -132,6 +140,9 @@ class InstitutionSeparationPolicy(SoftDeletableTimeStampedModel):
             f"Separation Policy for {self.separation_type.institution.institution_name} - "
             f"{self.separation_type.separation_type}"
         )
+
+    def get_institution(self):
+        return self.separation_type.institution     
 
     class Meta:
         constraints = [
@@ -199,7 +210,7 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
 
-class ResignationRequest(SoftDeletableTimeStampedModel):
+class ResignationRequest(BaseApprovableModel):
     REQUEST_STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
@@ -239,39 +250,38 @@ class ResignationRequest(SoftDeletableTimeStampedModel):
 
         self.request_status = "approved"
         self.save()
+        
+        
 
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
-
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.request_status = "rejected"
+    def get_institution(self):
+        return self.separation.employee.department.institution 
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return  # Exit after deletion
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return  # Exit after deletion
+                elif approval.action.name == 'update':
+                    self.request_status = 'active'  
+                elif approval.action.name == 'delete':
+                    self.request_status = 'active'  
             self.save()
-            return
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-            return
-        elif not tasks.exists():
-            self.approve()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
+            # Optionally update the associated EmployeeSeparation status
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save()
 
 
-class TerminationInitiation(SoftDeletableTimeStampedModel):
+class TerminationInitiation(BaseApprovableModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -316,41 +326,36 @@ class TerminationInitiation(SoftDeletableTimeStampedModel):
 
         self.save()
 
-        self.separation.separation_status = "completed"
-        self.separation.save()
 
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
-
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.initiation_status = "rejected"
+    def get_institution(self):
+        return self.separation.employee.department.institution 
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.initiation_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.initiation_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.initiation_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.initiation_status = 'active'
             self.save()
-            return
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-            return
-        elif not tasks.exists():
-            self.approve()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
+            # Update EmployeeSeparation status if approved
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save()
 
 
-class RetirementRequest(models.Model):
+class RetirementRequest(BaseApprovableModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -392,36 +397,35 @@ class RetirementRequest(models.Model):
 
         self.request_status = "approved"
         self.save()
-
-    def finish_workflow(self):
-        from workflows.models import ApprovalTask
-        from django.contrib.contenttypes.models import ContentType
-
-        content_type = ContentType.objects.get_for_model(self.__class__)
-
-        tasks = ApprovalTask.objects.filter(
-            content_type=content_type, object_id=self.pk
-        )
-
-        if tasks.exists() and tasks.filter(status="rejected").exists():
-            self.request_status = "rejected"
+        
+    def get_institution(self):
+        return self.separation.employee.department.institution    
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.request_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.request_status = 'active'
             self.save()
-            return
-        if (
-            tasks.exists()
-            and not tasks.filter(
-                status__in=["not_started", "pending", "rejected"]
-            ).exists()
-        ):
-            self.approve()
-            return
-        elif not tasks.exists():
-            self.approve()
-            return
-        else:
-            raise Exception(
-                "Cannot finish workflow: Some tasks are not completed or rejected."
-            )
+            # Update EmployeeSeparation status if approved
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save() 
+
+    
 
 
 class SeparationStageProgress(models.Model):

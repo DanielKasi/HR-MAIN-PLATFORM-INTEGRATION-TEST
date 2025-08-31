@@ -11,6 +11,8 @@ import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { PERMISSION_CODES } from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 
 export default function EmployeesPage() {
@@ -36,6 +38,7 @@ export default function EmployeesPage() {
       <CardHeader className="space-y-4">
         <CardTitle className="flex flex-row items-center justify-between gap-4">
           <h1 className="text-xl md:text-2xl font-bold">Employees</h1>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="">
@@ -56,6 +59,7 @@ export default function EmployeesPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </ProtectedComponent>
         </CardTitle>
 
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-12">
@@ -99,10 +103,13 @@ export default function EmployeesPage() {
 
           </div>
         </div>
+        
       </CardHeader>
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEES}>
         <EmployeesTable
         refreshFunctionRef={refreshFunctionRef}
         />
+      </ProtectedComponent>
 
           <BulkUploadEmployeesDialog
         isOpen={isBulkUploadDialogOpen}

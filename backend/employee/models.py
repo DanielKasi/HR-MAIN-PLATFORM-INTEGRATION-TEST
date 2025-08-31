@@ -1,25 +1,15 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
-from institution.utils import generate_compliant_password
-from utilities.helpers import (
-    build_password_link,
-    create_and_institution_otp,
-    send_password_link_to_user,
-    create_and_institution_token,
-)
 
 from django.db import models
 from datetime import datetime
-from institution.models import Branch, UserBranch, BranchWorkingDays
+from institution.models import Branch, UserBranch
 from datetime import date, datetime
-from django.template.loader import render_to_string
-from django.conf import settings
 from django.core.exceptions import ValidationError
 import PyPDF2
 from pdf2image import convert_from_bytes
 import pytesseract
-import io
 from io import BytesIO
 from difflib import SequenceMatcher
 import re
@@ -27,9 +17,10 @@ from django.db.models import UniqueConstraint, Q
 import math
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
+from approval.models import BaseApprovableModel
 
 
-class EmployeeType(SoftDeletableTimeStampedModel):
+class EmployeeType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -40,8 +31,11 @@ class EmployeeType(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.institution
 
-class WorkType(SoftDeletableTimeStampedModel):
+
+class WorkType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -52,8 +46,11 @@ class WorkType(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.institution
 
-class Employee(SoftDeletableTimeStampedModel):
+
+class Employee(BaseApprovableModel):
     """
     Employee model to store employee details in the system.
     """
@@ -155,6 +152,9 @@ class Employee(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
+
+    def get_institution(self):
+        return self.department.institution
 
     class Meta:
         constraints = [
@@ -458,7 +458,7 @@ class Employee(SoftDeletableTimeStampedModel):
         return False
 
 
-class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
+class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
         Employee, on_delete=models.CASCADE, related_name="custom_working_days"
     )
@@ -473,8 +473,11 @@ class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
+    def get_institution(self):
+        return self.employee.get_institution()
 
-class EmployeeDay(models.Model):
+
+class EmployeeDay(BaseApprovableModel):
     employee_working_days = models.ForeignKey(
         "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
     )
@@ -490,8 +493,11 @@ class EmployeeDay(models.Model):
     class Meta:
         unique_together = ("employee_working_days", "day")
 
+    def get_institution(self):
+        return self.employee_working_days.get_institution()
 
-class EmployeeShift(models.Model):
+
+class EmployeeShift(BaseApprovableModel):
     CONTEXT_TYPES = [
         ("REQUEST", "Request"),
         ("ALLOCATION", "Allocation"),
@@ -526,8 +532,11 @@ class EmployeeShift(models.Model):
     def __str__(self):
         return f"{self.employee.user.fullname} - shift {self.context.upper()}"
 
+    def get_institution(self):
+        return self.employee.get_institution()
 
-class EmployeeAttendance(SoftDeletableTimeStampedModel):
+
+class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
@@ -574,6 +583,9 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         if user and hasattr(user, "fname") and hasattr(user, "lname"):
             return f"{user.fname} {user.lname} - {self.date} - {self.status}"
         return f"{self.employee} - {self.date} - {self.status}"
+
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def calculate_overtime_hours(self):
 
@@ -743,7 +755,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(SoftDeletableTimeStampedModel):
+class EmployeeContract(BaseApprovableModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -782,6 +794,9 @@ class EmployeeContract(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
+
+    def get_institution(self):
+        return self.employee.get_institution() if self.employee else None
 
     class Meta:
         constraints = [

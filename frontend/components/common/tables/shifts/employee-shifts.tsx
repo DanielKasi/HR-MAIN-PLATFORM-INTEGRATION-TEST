@@ -41,7 +41,7 @@ export default function EmployeeShifts({ employee }: Props) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Shifts</h3>
         <div className="flex items-center gap-2">
-          <Button className="rounded-full" onClick={handleCreate}>Assign Shift</Button>
+          <Button size={"sm"} className="rounded-full" onClick={handleCreate}>Assign Shift</Button>
         </div>
       </div>
 

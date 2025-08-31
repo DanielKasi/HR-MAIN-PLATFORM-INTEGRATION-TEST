@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 
@@ -179,7 +178,8 @@ class EmployeeAllowanceAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -202,18 +202,22 @@ class EmployeeAllowanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeAllowanceSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee allowance")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -247,7 +251,8 @@ class PayrollPeriodAPIView(APIView):
     def post(self, request, institution_id):
         serializer = PayrollPeriodSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -269,16 +274,20 @@ class PayrollPeriodDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = PayrollPeriodSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a payroll period")
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_update()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -324,7 +333,8 @@ class EmployeeDeductionAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -347,18 +357,22 @@ class EmployeeDeductionDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeDeductionSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee deduction")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -393,7 +407,8 @@ class AllowanceTypeAPIView(APIView):
     def post(self, request, institution_id):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(institution_id=institution_id)
+            instance = serializer.save(institution_id=institution_id)
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -415,9 +430,11 @@ class AllowanceTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = AllowanceTypeSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -435,7 +452,8 @@ class AllowanceTypeDetailAPIView(APIView):
     def post(self, request):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -470,7 +488,8 @@ class DeductionTypeAPIView(APIView):
     def post(self, request, institution_id):
         serializer = DeductionTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -492,16 +511,20 @@ class DeductionTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = DeductionTypeSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a deduction type")
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -559,7 +582,8 @@ class EmployeeTaxListAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -584,11 +608,13 @@ class EmployeeTaxDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeTaxSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -651,9 +677,6 @@ class PayslipAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        print("\n\n\n")
-        print(f"Employees found: {employees}")
-
         employee_ids = list(employees.values_list("id", flat=True))
 
         created_payslips = PayrollProcessor.generate_payslips_for_period(
@@ -679,9 +702,11 @@ class PayslipDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(Payslip, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = PayslipSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -901,7 +926,8 @@ class EmployeePenaltyListAPIView(APIView):
     def post(self, request):
         serializer = EmployeePenaltySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -924,9 +950,11 @@ class EmployeePenaltyDetailAPIView(APIView):
         except EmployeePenalty.DoesNotExist:
             return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        penalty.approval_status = 'under_update'
         serializer = EmployeePenaltySerializer(penalty, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            penalty.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -937,7 +965,9 @@ class EmployeePenaltyDetailAPIView(APIView):
         except EmployeePenalty.DoesNotExist:
             return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        penalty.approval_status = 'under_deletion'
         penalty.delete()
+        penalty.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

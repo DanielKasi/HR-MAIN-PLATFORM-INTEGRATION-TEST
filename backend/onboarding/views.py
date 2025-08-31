@@ -33,6 +33,8 @@ from .serializers import (
 )
 from institution.models import Institution
 from django.db.models import Q
+from django.db import transaction
+
 
 
 class OnBoardingListAPI(APIView):
@@ -44,10 +46,12 @@ class OnBoardingListAPI(APIView):
         summary="Create Onboarding Record",
         tags=["Onboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = OnBoardingSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -58,6 +62,7 @@ class OnBoardingListAPI(APIView):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
+        status = request.query_params.get('status', None)
         onboardings = OnBoarding.objects.filter(
             application__job_position_advert__job_position__department__institution_id=institution_id,
             deleted_at__isnull=True
@@ -69,6 +74,9 @@ class OnBoardingListAPI(APIView):
                 Q(application__applicant_email__icontains=search_query) |
                 Q(application__job_position_advert__job_position__name__icontains=search_query)
             )
+            
+        if status:
+            onboardings = onboardings.filter(status=status)    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(onboardings, request)
@@ -98,14 +106,17 @@ class OnBoardingDetailAPI(APIView):
         summary="Update Onboarding Record",
         tags=["Onboarding"],
     )
+    @transaction.atomic()
     def patch(self, request, onboarding_id):
         try:
             onboarding = OnBoarding.objects.get(id=onboarding_id)
+            onboarding.approval_status = 'under_update'
             serializer = OnBoardingSerializer(
                 onboarding, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                onboarding.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except OnBoarding.DoesNotExist:
@@ -146,6 +157,7 @@ class BulkOnBoardingCreateAPI(APIView):
         description="Create onboarding records for multiple applications with initial status",
         tags=["Onboarding"],
     )
+    
     def post(self, request):
         application_ids = request.data.get("application_ids", [])
 
@@ -209,6 +221,7 @@ class BulkOnBoardingCreateAPI(APIView):
 
         # Serialize created onboarding records
         serializer = OnBoardingSerializer(created_onboardings, many=True)
+        serializer.confirm_create()
 
         response_data = {
             "created": serializer.data,
@@ -231,12 +244,14 @@ class OffboardingStageListCreateView(APIView):
         summary="Create Offboarding Stage",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = OffboardingStageSerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -292,14 +307,17 @@ class OffboardingStageDetailView(APIView):
         summary="Update Offboarding Stage",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def patch(self, request, stage_id):
         try:
             stage = OffboardingStage.objects.get(id=stage_id)
+            stage.approval_status = 'under_update'
             serializer = OffboardingStageSerializer(
                 stage, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                stage.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except OffboardingStage.DoesNotExist:
@@ -313,7 +331,9 @@ class OffboardingStageDetailView(APIView):
     def delete(self, request, stage_id):
         try:
             stage = OffboardingStage.objects.get(id=stage_id)
-            stage.delete()
+            stage.approval_status = 'under_deletion'
+            stage.save(update_fields=['approval_status'])
+            stage.confirm_delete()
             return Response(status=204)
         except OffboardingStage.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -327,12 +347,14 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         summary="Create Institution Employee Separation Type",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = InstitutionEmployeeSeparationTypesSerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confiem_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -390,16 +412,19 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
         summary="Update Institution Employee Separation Type",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def patch(self, request, separation_type_id):
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
                 id=separation_type_id
             )
+            separation_type.approval_status = 'under_update'
             serializer = InstitutionEmployeeSeparationTypesSerializer(
                 separation_type, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                separation_type.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
@@ -410,12 +435,15 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
         summary="Delete Institution Employee Separation Type",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def delete(self, request, separation_type_id):
         try:
             separation_type = InstitutionEmployeeSeparationTypes.objects.get(
                 id=separation_type_id
             )
-            separation_type.delete()
+            separation_type.approval_status = 'under_deletion'
+            separation_type.save(update_fields=['approval_status'])
+            separation_type.confirm_delete()
             return Response(status=204)
         except InstitutionEmployeeSeparationTypes.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -429,12 +457,14 @@ class InstitutionSeparationPolicyListCreateView(APIView):
         summary="Create Institution Separation Policy",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
         serializer = InstitutionSeparationPolicySerializer(
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -491,14 +521,17 @@ class InstitutionSeparationPolicyDetailView(APIView):
         summary="Update Institution Separation Policy",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def patch(self, request, policy_id):
         try:
             policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
+            policy.approval_status = 'under_update'
             serializer = InstitutionSeparationPolicySerializer(
                 policy, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                policy.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except InstitutionSeparationPolicy.DoesNotExist:
@@ -509,10 +542,13 @@ class InstitutionSeparationPolicyDetailView(APIView):
         summary="Delete Institution Separation Policy",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def delete(self, request, policy_id):
         try:
             policy = InstitutionSeparationPolicy.objects.get(id=policy_id)
-            policy.delete()
+            policy.approval_status = 'under_deletion'
+            policy.save(update_fields=['approval_status'])
+            policy.confirm_delete()
             return Response(status=204)
         except InstitutionSeparationPolicy.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -525,6 +561,7 @@ class ResignationRequestListCreateView(APIView):
         summary="Create Resignation Request",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
         employee = getattr(request.user, "employee", None)
         if not employee:
@@ -539,6 +576,7 @@ class ResignationRequestListCreateView(APIView):
 
         if serializer.is_valid():
             instance = serializer.save()
+            instance.confirm_create()
             return Response(
                 ResignationRequestSerializer(instance).data,
                 status=status.HTTP_201_CREATED,
@@ -597,16 +635,19 @@ class ResignationRequestDetailView(APIView):
         summary="Update Resignation Request",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def patch(self, request, resignation_request_id):
         try:
             resignation_request = ResignationRequest.objects.get(
                 id=resignation_request_id
             )
+            resignation_request.approval_status = 'under_update'
             serializer = ResignationRequestSerializer(
                 resignation_request, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                resignation_request.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except ResignationRequest.DoesNotExist:
@@ -622,7 +663,9 @@ class ResignationRequestDetailView(APIView):
             resignation_request = ResignationRequest.objects.get(
                 id=resignation_request_id
             )
-            resignation_request.delete()
+            resignation_request.approval_status = 'under_deletion'
+            resignation_request.save(update_fields=['approbal_status'])
+            resignation_request.confirm_delete()
             return Response(status=204)
         except ResignationRequest.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
@@ -659,6 +702,7 @@ class TerminationInitiationListCreateView(APIView):
         summary="Initiate Employee Termination",
         tags=["Offboarding"],
     )
+    @transaction.atomic()
     def post(self, request):
 
         serializer = TerminationInitiationSerializer(
@@ -667,6 +711,7 @@ class TerminationInitiationListCreateView(APIView):
 
         if serializer.is_valid():
             instance = serializer.save()
+            instance.confirm_create()
             return Response(
                 TerminationInitiationSerializer(instance).data,
                 status=status.HTTP_201_CREATED,
@@ -729,11 +774,13 @@ class TerminationInitiationDetailView(APIView):
             termination_initiation = TerminationInitiation.objects.get(
                 id=termination_initiation_id
             )
+            termination_initiation.approval_status = 'under_update'
             serializer = TerminationInitiationSerializer(
                 termination_initiation, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                termination_initiation.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except TerminationInitiation.DoesNotExist:
@@ -749,7 +796,9 @@ class TerminationInitiationDetailView(APIView):
             termination_initiation = TerminationInitiation.objects.get(
                 id=termination_initiation_id
             )
-            termination_initiation.delete()
+            termination_initiation.approval_status = 'under_deletion'
+            termination_initiation.save(update_fields=['approval_status'])
+            termination_initiation.confirm_delete()
             return Response(status=204)
         except TerminationInitiation.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)

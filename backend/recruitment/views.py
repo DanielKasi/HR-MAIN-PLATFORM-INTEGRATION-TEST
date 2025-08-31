@@ -37,6 +37,8 @@ from .models import JobInterview, JobAdvertApplication
 from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from datetime import timedelta
+from django.db import transaction
+
 
 
 
@@ -50,10 +52,12 @@ class JobPositionListAPI(APIView):
         summary="Create Job Position",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.comfirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -106,14 +110,17 @@ class JobPositionDetailAPI(APIView):
         summary="Update Job Position",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def patch(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
+            job_position.approval_status = 'under_update'
             serializer = JobPositionSerializer(
                 job_position, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                job_position.confirm_update()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except JobPosition.DoesNotExist:
@@ -127,10 +134,13 @@ class JobPositionDetailAPI(APIView):
         summary="Delete Job Position",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def delete(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
-            job_position.delete()
+            job_position.approval_status = 'under_deletion'
+            job_position.save(update_fields=['approval_status'])
+            job_position.comfirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobPosition.DoesNotExist:
             return Response(
@@ -149,10 +159,12 @@ class JobPositionAdvertListAPI(APIView):
         summary="Create Job Position Advert",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         serializer = JobPositionAdvertSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -164,6 +176,7 @@ class JobPositionAdvertListAPI(APIView):
     )
     def get(self, request, institution_id=None):
         search_query = request.query_params.get('search', None)
+        status = request.query_params.get('status', None)
         adverts = JobPositionAdvert.objects.filter(
             deleted_at__isnull=True
         ).order_by("-published_date")
@@ -182,6 +195,9 @@ class JobPositionAdvertListAPI(APIView):
             adverts = adverts.filter(
                 Q(job_position__name__icontains=search_query)
             )
+
+        if status:
+            adverts = adverts.filter(status=status)    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
@@ -214,14 +230,17 @@ class JobPositionAdvertDetailAPI(APIView):
         summary="Update Job Position Advert",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def patch(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
+            advert.approval_status = 'under_update'
             serializer = JobPositionAdvertSerializer(
                 advert, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                advert.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except JobPositionAdvert.DoesNotExist:
@@ -233,10 +252,13 @@ class JobPositionAdvertDetailAPI(APIView):
         summary="Delete Job Position Advert",
         tags=["Recruitment"],
     )   
+    @transaction.atomic()
     def delete(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
-            advert.delete()
+            advert.approval_status = 'under_deletion'
+            advert.save(update_fields=['approval_status'])
+            advert.confirm_delete()
             return Response({"detail": "Job advert deleted successfully."}, status=200)
         except JobPositionAdvert.DoesNotExist:
             return Response({"detail": "Job advert not found."}, status=404)
@@ -332,10 +354,12 @@ class InterviewStageListAPI(APIView):
         summary="Create Interview Stage",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         serializer = InterviewStageSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -379,14 +403,17 @@ class InterviewStageDetailAPI(APIView):
         summary="Update Interview Stage",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def patch(self, request, stage_id):
         try:
             stage = InterviewStage.objects.get(id=stage_id)
+            stage.approval_stage = 'under_update'
             serializer = InterviewStageSerializer(
                 stage, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                stage.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except InterviewStage.DoesNotExist:
@@ -402,10 +429,12 @@ class JobInterviewListAPI(APIView):
         summary="Schedule Job Interview",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def post(self, request, institution_id):
         serializer = JobInterviewSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -416,6 +445,8 @@ class JobInterviewListAPI(APIView):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
+        status = request.query_params.get('status', None)
+        date = request.query_params.get('date', None)
         interviews = (
             JobInterview.objects.filter(
                 job_position_application__job_position_advert__job_position__department__institution_id=institution_id,
@@ -442,6 +473,12 @@ class JobInterviewListAPI(APIView):
                 Q(job_position_application__job_position_advert__job_position__name__icontains=search_query)
 
             )
+
+        if status:
+            interviews = interviews.filter(status=status)  
+
+        if date:
+            interviews = interviews.filter(date=interview_date)      
 
         # Serialize interviews and add cumulative rating to response
         interview_data = []
@@ -478,14 +515,17 @@ class JobInterviewDetailAPI(APIView):
         summary="Update Job Interview",
         tags=["Recruitment"],
     )
+    @transaction.atomic()
     def patch(self, request, interview_id):
         try:
             interview = JobInterview.objects.get(id=interview_id)
+            interview.approval_status = 'under_update'
             serializer = JobInterviewSerializer(
                 interview, data=request.data, partial=True
             )
             if serializer.is_valid():
                 serializer.save()
+                interview.confirm_update()
                 return Response(serializer.data)
             return Response(serializer.errors, status=400)
         except JobInterview.DoesNotExist:
