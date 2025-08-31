@@ -1,5 +1,5 @@
-import {ReactNode} from "react";
-import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
+import { ReactNode } from "react";
+import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -340,7 +340,7 @@ export interface IDepartment {
   description?: string | null;
   institution: number;
   institution_details?: IUserInstitution | null;
-  job_positions?: {id: number; name: string; description: string; department_id: number}[];
+  job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
 
 export interface PaginatedEmployeeResponse {
@@ -1498,9 +1498,9 @@ export interface IGeneratedDocumentTemplate {
 }
 
 export interface ICountry {
-  name: {common: string};
+  name: { common: string };
   cca2: string;
-  idd?: {root?: string; suffixes?: string[]};
+  idd?: { root?: string; suffixes?: string[] };
 }
 
 export type ApprovalStepApprover = {
@@ -1828,8 +1828,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax {}
-export interface ItaxRules extends ITaxRule {}
+export interface Itax extends ITax { }
+export interface ItaxRules extends ITaxRule { }
 
 export interface IAssetCategory {
   id: number;
@@ -1876,12 +1876,12 @@ export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
   event_type:
-    | "allocated"
-    | "returned"
-    | "maintenance"
-    | "decommissioned"
-    | "created"
-    | "reassigned";
+  | "allocated"
+  | "returned"
+  | "maintenance"
+  | "decommissioned"
+  | "created"
+  | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;
@@ -2377,6 +2377,10 @@ export interface IBranchLocationComparisonConfigFormData {
   radius_in_meters: number;
 }
 
+
+export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
+export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
+
 export interface IBranchDay {
   id: number;
   day_id: number;
@@ -2384,19 +2388,10 @@ export interface IBranchDay {
   day_type: "PHYSICAL" | "REMOTE";
 }
 
-export interface IBranchShift {
-  id: number;
-  branch: number;
-  name: string;
-  shift_day: IBranchDay;
-  start_time: string;
-  end_time: string;
-  description: string;
-}
 
 export interface IBranchWorkingDays {
   id: number;
-  branch: number;
+  branch: Branch;
   branch_days: IBranchDay[];
 }
 
@@ -2412,12 +2407,43 @@ export interface IEmployeeShift {
   id: string;
   employee: IEmployee;
   shift: IBranchShift;
-  context: "REQUEST" | "ALLOCATION";
-  shift_status: "PENDING" | "APPROVED" | "REJECTED";
+  context: IEmployeeShiftContext;
+  shift_status: IEmployeeShiftStatus;
   date: string;
   created_at: string;
   created_by: IUser;
 }
+
+export interface IEmployeeShiftFormData {
+  employee: number;
+  shift: number;
+  context: IEmployeeShiftContext;
+  shift_status: IEmployeeShiftStatus;
+  date: string;
+}
+
+export interface IBranchShift {
+  id: number;
+  branch: Branch;
+  name: string;
+  shift_day: IBranchWorkingDays | null;
+  start_time: string;
+  end_time: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IBranchShiftFormData {
+  branch: number;
+  name: string;
+  shift_day?: number | null;
+  start_time: string;
+  end_time: string;
+  description?: string | null;
+}
+
+
 
 export type IPenaltyType =
   | "late_coming"
@@ -2442,7 +2468,6 @@ export interface IEmployeePenalty {
 }
 
 export interface IEmployeePenaltyFormData {
-  employee: number;
   attendance?: number | null;
   spot_check?: number | null;
   date: string;
