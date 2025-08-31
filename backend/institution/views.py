@@ -1,4 +1,6 @@
 from datetime import datetime
+
+from django.http import Http404
 from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView

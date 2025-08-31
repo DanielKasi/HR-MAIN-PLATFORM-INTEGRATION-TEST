@@ -75,9 +75,7 @@ const BranchShiftsPage = () => {
   const fetchPaginatedShifts = async (): Promise<IPaginatedResponse<IBranchShift>> => {
     if (!selectedBranch?.id) throw new Error("No branch selected");
 
-    const response = await apiRequest.get(
-      `/institution/branch-shifts/?branch_id=${selectedBranch.id}`,
-    );
+    const response = await apiRequest.get(`/institution/branch-shifts/${selectedBranch.id}`);
     return response.data;
   };
 
@@ -111,7 +109,7 @@ const BranchShiftsPage = () => {
     console.log("Adding shift with data:", {...formData, branch: selectedBranch?.id});
     try {
       setLoading(true);
-      const response = await apiRequest.post("/institution/branch-shifts/", {
+      const response = await apiRequest.post(`/institution/branch-shifts/${selectedBranch?.id}/`, {
         ...formData,
         branch: selectedBranch?.id,
       });

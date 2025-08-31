@@ -34,9 +34,10 @@ from django.core.validators import FileExtensionValidator
 from settings.serializers import SystemDaySerializer
 from settings.models import SystemDay
 from .models import EmployeeWorkingDays
-from institution.models import Department
+from institution.models import Department, BranchShift
 from recruitment.models import JobPosition
 from datetime import date, timedelta, datetime
+from users.models import CustomUser
 
 
 class EmployeeTypeSerializer(serializers.ModelSerializer):
@@ -327,6 +328,7 @@ class EmployeeWorkingDaysSerializer(serializers.ModelSerializer):
 
 
 class EmployeeAttendanceSerializer(serializers.ModelSerializer):
+
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:
@@ -339,6 +341,7 @@ class EmployeeAttendanceSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
 
     def to_representation(self, instance):
+
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
         return rep
@@ -743,6 +746,7 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
 
 class EmployeeShiftSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    shift = serializers.PrimaryKeyRelatedField(queryset=BranchShift.objects.all())
 
     class Meta:
         model = EmployeeShift
@@ -804,6 +808,10 @@ class EmployeeShiftSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def to_representation(self, instance):
+        from institution.serializers import BranchShiftSerializer
+
         rep = super().to_representation(instance)
         rep["employee"] = EmployeeSerializer(instance.employee).data
+        rep["shift"] = BranchShiftSerializer(instance.shift).data
+        rep["created_by"] = CustomUserSerializer(instance.created_by).data
         return rep
