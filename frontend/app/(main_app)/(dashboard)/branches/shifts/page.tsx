@@ -1,14 +1,14 @@
 "use client";
 
-import {useEffect} from "react";
+import { useEffect } from "react";
 
 import apiRequest from "@/lib/apiRequest";
-import {selectSelectedBranch} from "@/store/auth/selectors";
-import {Icon} from "@iconify/react";
-import {useRef, useState} from "react";
-import {useSelector} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
+import { selectSelectedBranch } from "@/store/auth/selectors";
+import { Icon } from "@iconify/react";
+import { useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -25,10 +25,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,8 +45,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {Badge} from "@/components/ui/badge";
-import {Edit, MoreVertical, Trash2} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, MoreVertical, Trash2 } from "lucide-react";
 import type {
   IBranchShift,
   IBranchWorkingDays,
@@ -106,7 +106,7 @@ const BranchShiftsPage = () => {
   };
 
   const handleAddShift = async () => {
-    console.log("Adding shift with data:", {...formData, branch: selectedBranch?.id});
+    console.log("Adding shift with data:", { ...formData, branch: selectedBranch?.id });
     try {
       setLoading(true);
       const response = await apiRequest.post(`/institution/branch-shifts/${selectedBranch?.id}/`, {
@@ -171,10 +171,10 @@ const BranchShiftsPage = () => {
     setEditingShift(shift);
     setFormData({
       name: shift.name,
-      shift_day: shift.shift_day.id,
+      shift_day: shift.shift_day?.id,
       start_time: shift.start_time,
       end_time: shift.end_time,
-      description: shift.description,
+      description: shift.description || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -234,7 +234,7 @@ const BranchShiftsPage = () => {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter shift name"
                 />
               </div>
@@ -244,7 +244,7 @@ const BranchShiftsPage = () => {
                 <Select
                   value={formData.shift_day.toString()}
                   onValueChange={(value) =>
-                    setFormData({...formData, shift_day: Number.parseInt(value)})
+                    setFormData({ ...formData, shift_day: Number.parseInt(value) })
                   }
                 >
                   <SelectTrigger>
@@ -267,7 +267,7 @@ const BranchShiftsPage = () => {
                     id="start_time"
                     type="time"
                     value={formData.start_time}
-                    onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                   />
                 </div>
                 <div>
@@ -276,7 +276,7 @@ const BranchShiftsPage = () => {
                     id="end_time"
                     type="time"
                     value={formData.end_time}
-                    onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
                   />
                 </div>
               </div>
@@ -286,7 +286,7 @@ const BranchShiftsPage = () => {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter shift description"
                   rows={3}
                 />
@@ -317,7 +317,7 @@ const BranchShiftsPage = () => {
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               tableRefreshRef.current = refresh;
 
               if (loading) {
@@ -408,7 +408,7 @@ const BranchShiftsPage = () => {
               <Input
                 id="edit_name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter shift name"
               />
             </div>
@@ -418,7 +418,7 @@ const BranchShiftsPage = () => {
               <Select
                 value={formData.shift_day.toString()}
                 onValueChange={(value) =>
-                  setFormData({...formData, shift_day: Number.parseInt(value)})
+                  setFormData({ ...formData, shift_day: Number.parseInt(value) })
                 }
               >
                 <SelectTrigger>
@@ -441,7 +441,7 @@ const BranchShiftsPage = () => {
                   id="edit_start_time"
                   type="time"
                   value={formData.start_time}
-                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                 />
               </div>
               <div>
@@ -450,7 +450,7 @@ const BranchShiftsPage = () => {
                   id="edit_end_time"
                   type="time"
                   value={formData.end_time}
-                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
                 />
               </div>
             </div>
@@ -460,7 +460,7 @@ const BranchShiftsPage = () => {
               <Textarea
                 id="edit_description"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter shift description"
                 rows={3}
               />

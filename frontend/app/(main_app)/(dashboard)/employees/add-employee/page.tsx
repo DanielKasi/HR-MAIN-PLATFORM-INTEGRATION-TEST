@@ -1,11 +1,11 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect, useMemo} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { useState, useEffect, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import PhoneNumberInput from "@/components/phone-number-input";
 import CountrySelect from "@/components/common/country-select";
 import {
@@ -15,9 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Separator} from "@/components/ui/separator";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Textarea} from "@/components/ui/textarea";
-import {Upload, User, X, Loader2, Plus} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Upload, User, X, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
   createEmployee,
   getDepartments,
@@ -40,10 +40,9 @@ import {
   createEmployeeType,
   getWorkTypes,
   getEmployeeTypes,
-  getJobPositions,
 } from "@/lib/utils";
-import {useBranches} from "@/hooks/use-branches";
-import {MultiSelectBranches} from "@/components/multi-select-branches";
+import { useBranches } from "@/hooks/use-branches";
+import { MultiSelectBranches } from "@/components/multi-select-branches";
 import {
   type IEmployeeFormData,
   type ICreateEmployeeForm,
@@ -56,26 +55,26 @@ import {
   type ICountry,
   PERMISSION_CODES,
 } from "@/types/types.utils";
-import {toast} from "sonner";
-import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
-import {useDispatch} from "react-redux";
-import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
+import { toast } from "sonner";
+import { selectEmployeeCreationForm } from "@/store/miscellaneous/selectors";
+import { useDispatch } from "react-redux";
+import { clearEmployeeForm, saveEmployeeForm } from "@/store/miscellaneous/actions";
 import { set } from "date-fns";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 
 const maritalStatusOptions = [
-  {value: "single", label: "Single"},
-  {value: "married", label: "Married"},
-  {value: "divorced", label: "Divorced"},
-  {value: "widowed", label: "Widowed"},
+  { value: "single", label: "Single" },
+  { value: "married", label: "Married" },
+  { value: "divorced", label: "Divorced" },
+  { value: "widowed", label: "Widowed" },
 ];
 
 const steps = [
-  {id: 1, title: "Personal Information"},
-  {id: 2, title: "Work Information"},
-  {id: 3, title: "Financial Information"},
+  { id: 1, title: "Personal Information" },
+  { id: 2, title: "Work Information" },
+  { id: 3, title: "Financial Information" },
 ];
 
 export default function AddEmployeeForm() {
@@ -89,7 +88,7 @@ export default function AddEmployeeForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
+  const { branches, loading: branchesLoading, error: branchesError } = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -97,7 +96,7 @@ export default function AddEmployeeForm() {
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [employeeProfilePicture, setEmployeeProfilePicture] = useState<File | null>(null);
-  const [phoneError, setPhoneError] = useState<string|null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
   const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
@@ -118,7 +117,7 @@ export default function AddEmployeeForm() {
     institution: selectedInstitution ? selectedInstitution.id : 0,
   });
 
-  useEffect(()=>{
+  useEffect(() => {
     setWorkTypeFormData((prev) => ({
       ...prev,
       institution: selectedInstitution ? selectedInstitution.id : 0,
@@ -130,7 +129,7 @@ export default function AddEmployeeForm() {
 
   }, [selectedInstitution]);
 
-  const [formData, setFormData] = useState<Omit<ICreateEmployeeForm, "phone_number_country_code"|"emergency_contact_phone_country_code">>({
+  const [formData, setFormData] = useState<Omit<ICreateEmployeeForm, "phone_number_country_code" | "emergency_contact_phone_country_code">>({
     fullname: "",
     email: "",
     phone_number: "",
@@ -177,7 +176,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
   // Add state for emergency contact phone input
   const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
@@ -185,7 +184,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
 
   const dispatch = useDispatch();
 
@@ -210,12 +209,12 @@ export default function AddEmployeeForm() {
         setPhoneInput((prev) => ({
           ...prev,
           phoneNumber: currentEmployeeCreationForm.phone_number,
-          countryCode: currentEmployeeCreationForm.phone_number_country_code || "" ,
+          countryCode: currentEmployeeCreationForm.phone_number_country_code || "",
         }));
       }
 
       if (currentEmployeeCreationForm.country) {
-        setSelectedCountry({name: {common: currentEmployeeCreationForm.country}} as ICountry);
+        setSelectedCountry({ name: { common: currentEmployeeCreationForm.country } } as ICountry);
       }
 
       if (currentEmployeeCreationForm.emergency_contact_phone) {
@@ -229,7 +228,7 @@ export default function AddEmployeeForm() {
   }, [currentEmployeeCreationForm, formData.fullname]);
 
   useEffect(() => {
-    setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
+    setFormData((prev) => ({ ...prev, selected_branches: branches.map((br) => br.id) }));
   }, [branches]);
 
   const loadDropdownData = async () => {
@@ -239,9 +238,9 @@ export default function AddEmployeeForm() {
     try {
       const [departmentsData, workTypesData, employeeTypesData] = await Promise.all([
         // getJobPositions({institutionId: selectedInstitution.id}),
-        getDepartments({institutionId: selectedInstitution.id}),
-        getWorkTypes({institutionId: selectedInstitution.id}),
-        getEmployeeTypes({institutionId: selectedInstitution.id}),
+        getDepartments({ institutionId: selectedInstitution.id }),
+        getWorkTypes({ institutionId: selectedInstitution.id }),
+        getEmployeeTypes({ institutionId: selectedInstitution.id }),
       ]);
 
       // setPositions(Array.isArray(positionsData) ? positionsData : []);
@@ -328,7 +327,7 @@ export default function AddEmployeeForm() {
         handleSaveLocalEmployeeCreateForm(updatedFormData);
       }
     } else if (field === "department") {
-              console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n")
+      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n")
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -353,8 +352,8 @@ export default function AddEmployeeForm() {
     setEmployeeProfilePicture(value);
 
     // Also save the updated form data to Redux (without the profile picture)
-    const updatedFormData = {...formData};
-   setFormData(updatedFormData);
+    const updatedFormData = { ...formData };
+    setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
 
@@ -415,7 +414,7 @@ export default function AddEmployeeForm() {
     }
 
     // Save the updated form data to Redux after removing image
-    const updatedFormData = {...formData};
+    const updatedFormData = { ...formData };
     setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
@@ -447,8 +446,8 @@ export default function AddEmployeeForm() {
 
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({...prev, work_type: newWorkType.id}));
-        setWorkTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
+        setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
+        setWorkTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -484,8 +483,8 @@ export default function AddEmployeeForm() {
 
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
-                setEmployeeTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
+        setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
+        setEmployeeTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -507,8 +506,8 @@ export default function AddEmployeeForm() {
 
     for (const field of requiredFields) {
       if (
-        !formData[field as keyof typeof  formData] ||
-        formData[field as keyof typeof  formData] === 0
+        !formData[field as keyof typeof formData] ||
+        formData[field as keyof typeof formData] === 0
       ) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
@@ -571,7 +570,7 @@ export default function AddEmployeeForm() {
       case 1: // Personal Information
         const personalRequiredFields = ["fullname", "email"];
         for (const field of personalRequiredFields) {
-          if (!formData[field as keyof typeof  formData]) {
+          if (!formData[field as keyof typeof formData]) {
             return false;
           }
         }
@@ -585,7 +584,7 @@ export default function AddEmployeeForm() {
       case 2: // Work Information
         const workRequiredFields = ["position", "department", "date_of_joining"];
         for (const field of workRequiredFields) {
-          const value = formData[field as keyof typeof  formData];
+          const value = formData[field as keyof typeof formData];
           if (!value || value === 0) {
             return false;
           }
@@ -720,7 +719,7 @@ export default function AddEmployeeForm() {
         emergency_contact_phone: newEmergencyPhone,
       };
       setFormData(updatedFormData);
-    handleSaveLocalEmployeeCreateForm({...updatedFormData, phone_number_country_code:phoneInput.countryCode, emergency_contact_phone_country_code:emergencyPhoneInput.countryCode});
+      handleSaveLocalEmployeeCreateForm({ ...updatedFormData, phone_number_country_code: phoneInput.countryCode, emergency_contact_phone_country_code: emergencyPhoneInput.countryCode });
     }
   }, [phoneInput, selectedCountry?.name?.common, emergencyPhoneInput]);
 
@@ -925,42 +924,16 @@ export default function AddEmployeeForm() {
                 <Label htmlFor="position">Position *</Label>
 
                 <JobPositionSearchableSelect
-                setPositions={(positions: IJobPosition[]) => setPositions(prev => ([...prev.filter(prevPos => !positions.some(pos => pos.id === prevPos.id)), ...positions]))}
-                
-                value={[formData.position.toString() || ""]}
-                  onValueChange={(values) =>{
-                    if(values.length > 0){
-                      handleInputChange("position", Number(values[0]))}
+                  setPositions={(positions: IJobPosition[]) => setPositions(prev => ([...prev.filter(prevPos => !positions.some(pos => pos.id === prevPos.id)), ...positions]))}
+
+                  value={[formData.position.toString() || ""]}
+                  onValueChange={(values) => {
+                    if (values.length > 0) {
+                      handleInputChange("position", Number(values[0]))
                     }
                   }
-                />
-
-                {/* <Select
-                  value={formData.position > 0 ? formData.position.toString() : ""}
-                  onValueChange={(value: string) =>
-                    handleInputChange("position", Number.parseInt(value))
                   }
-                  disabled={formData.department === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredPositions.length > 0 ? (
-                      filteredPositions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        {formData.department > 0
-                          ? "No positions available for this department"
-                          : "Please select a department first"}
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select> */}
+                />
               </div>
 
               <div className="space-y-2">
@@ -1015,7 +988,7 @@ export default function AddEmployeeForm() {
                             id="workTypeName"
                             value={workTypeFormData.name}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, name: e.target.value}))
+                              setWorkTypeFormData((prev) => ({ ...prev, name: e.target.value }))
                             }
                             placeholder="Enter work type name"
                           />
@@ -1026,7 +999,7 @@ export default function AddEmployeeForm() {
                             id="workTypeCode"
                             value={workTypeFormData.code}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, code: e.target.value}))
+                              setWorkTypeFormData((prev) => ({ ...prev, code: e.target.value }))
                             }
                             placeholder="Enter work type code (optional)"
                             maxLength={10}
@@ -1054,7 +1027,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                                    setWorkTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
+                            setWorkTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -1131,7 +1104,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeName"
                             value={employeeTypeFormData.name}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
+                              setEmployeeTypeFormData((prev) => ({ ...prev, name: e.target.value }))
                             }
                             placeholder="Enter employee type name"
                           />
@@ -1142,7 +1115,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeCode"
                             value={employeeTypeFormData.code}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
+                              setEmployeeTypeFormData((prev) => ({ ...prev, code: e.target.value }))
                             }
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
@@ -1170,7 +1143,7 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                                    setEmployeeTypeFormData(prev => ({...prev, name: "", description: "", code: ""}));
+                            setEmployeeTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
                           }}
                           disabled={isAddingEmployeeType}
                         >
@@ -1312,189 +1285,187 @@ export default function AddEmployeeForm() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-full">
-      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}> 
-        <Card className="!p-0 md:!p-0">
-          <CardHeader>
-            <CardTitle className="text-xl md:text-2xl">Add New Employee</CardTitle>
-            <CardDescription>
-              Fill in the employee details to add them to the system
-            </CardDescription>
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
+          <Card className="!p-0 md:!p-0">
+            <CardHeader>
+              <CardTitle className="text-xl md:text-2xl">Add New Employee</CardTitle>
+              <CardDescription>
+                Fill in the employee details to add them to the system
+              </CardDescription>
 
-            {/* Progress indicator */}
-            <div className="flex items-center justify-between mt-5">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      currentStep >= step.id
-                        ? "bg-orange-600 text-white"
-                        : "bg-gray-200 text-gray-600"
-                    }`}
-                  >
-                    {step.id}
-                  </div>
-                  <span
-                    className={`ml-2 text-sm ${
-                      currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
-                    }`}
-                  >
-                    {step.title}
-                  </span>
-                  {index < steps.length - 1 && (
+              {/* Progress indicator */}
+              <div className="flex items-center justify-between mt-5">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="flex items-center">
                     <div
-                      className={`w-12 h-0.5 mx-4 ${currentStep > step.id ? "bg-orange-600" : "bg-gray-200"}`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
+                          ? "bg-orange-600 text-white"
+                          : "bg-gray-200 text-gray-600"
+                        }`}
+                    >
+                      {step.id}
+                    </div>
+                    <span
+                      className={`ml-2 text-sm ${currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
+                        }`}
+                    >
+                      {step.title}
+                    </span>
+                    {index < steps.length - 1 && (
+                      <div
+                        className={`w-12 h-0.5 mx-4 ${currentStep > step.id ? "bg-orange-600" : "bg-gray-200"}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6">
+              {submitError ? (
+                <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                  {submitError}
+                </div>
+              ) : (
+                <></>
+              )}
+              {phoneError ? (
+                <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                  {phoneError}
+                </div>
+              ) : (
+                <></>
+              )}
+
+
+              <form onSubmit={handleSubmit} className="space-y-8 w-full">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
+                      <AvatarFallback>
+                        <User className="w-12 h-12" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {previewUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <Input
+                      id="profilePicture"
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleFileChange}
+                      className="hidden"
                     />
+                    <Label htmlFor="profilePicture" className="cursor-pointer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex items-center space-x-2 bg-transparent"
+                        asChild
+                      >
+                        <span>
+                          <Upload className="w-4 h-4" />
+                          <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
+                        </span>
+                      </Button>
+                    </Label>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Max size: 5MB. Formats: JPEG, PNG, GIF, WebP
+                    </p>
+                  </div>
+                  {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
+                  {uploadSuccess && (
+                    <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>
                   )}
                 </div>
-              ))}
-            </div>
-          </CardHeader>
 
-          <CardContent className="p-6">
-            {submitError ? (
-              <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-                {submitError}
-              </div>
-            ) : (
-              <></>
-            )}
-            {phoneError ? (
-              <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-                {phoneError}
-              </div>
-            ) : (
-              <></>
-            )}
+                <Separator />
 
+                {/* Form Steps */}
+                {renderStep()}
 
-            <form onSubmit={handleSubmit} className="space-y-8 w-full">
-              {/* Profile Picture Upload */}
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative">
-                  <Avatar className="w-24 h-24">
-                    <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
-                    <AvatarFallback>
-                      <User className="w-12 h-12" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {previewUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
-                      title="Remove image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="text-center">
-                  <Input
-                    id="profilePicture"
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <Label htmlFor="profilePicture" className="cursor-pointer">
+                <Separator />
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between">
+                  <div className="flex gap-2">
+                    <Link href="/employees/employee-list">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full sm:w-auto bg-transparent"
+                        disabled={isSubmitting}
+                      >
+                        Cancel
+                      </Button>
+                    </Link>
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex items-center space-x-2 bg-transparent"
-                      asChild
-                    >
-                      <span>
-                        <Upload className="w-4 h-4" />
-                        <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
-                      </span>
-                    </Button>
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Max size: 5MB. Formats: JPEG, PNG, GIF, WebP
-                  </p>
-                </div>
-                {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-                {uploadSuccess && (
-                  <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Form Steps */}
-              {renderStep()}
-
-              <Separator />
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between">
-                <div className="flex gap-2">
-                  <Link href="/employees/employee-list">
-                    <Button
-                      type="button"
-                      variant="outline"
+                      onClick={handleClearLocalEmployeeCreateForm}
                       className="w-full sm:w-auto bg-transparent"
                       disabled={isSubmitting}
                     >
-                      Cancel
+                      Clear Form
                     </Button>
-                  </Link>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleClearLocalEmployeeCreateForm}
-                    className="w-full sm:w-auto bg-transparent"
-                    disabled={isSubmitting}
-                  >
-                    Clear Form
-                  </Button>
-                </div>
+                  </div>
 
-                <div className="flex gap-2">
-                  {currentStep > 1 && (
-                    <Button type="button" onClick={prevStep} variant="outline">
-                      Previous
-                    </Button>
-                  )}
-                  {currentStep < steps.length ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      className="bg-orange-600 hover:bg-orange-700 px-6"
-                      disabled={!isCurrentStepValid() || isValidating }
-                    >
-                      {isValidating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Validating...
-                        </>
-                      ) : (
-                        "Next"
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="bg-orange-600 hover:bg-orange-700"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating Employee...
-                        </>
-                      ) : (
-                        "Submit"
-                      )}
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {currentStep > 1 && (
+                      <Button type="button" onClick={prevStep} variant="outline">
+                        Previous
+                      </Button>
+                    )}
+                    {currentStep < steps.length ? (
+                      <Button
+                        type="button"
+                        onClick={nextStep}
+                        className="bg-orange-600 hover:bg-orange-700 px-6"
+                        disabled={!isCurrentStepValid() || isValidating}
+                      >
+                        {isValidating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Validating...
+                          </>
+                        ) : (
+                          "Next"
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Employee...
+                          </>
+                        ) : (
+                          "Submit"
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </ProtectedComponent>
+              </form>
+            </CardContent>
+          </Card>
+        </ProtectedComponent>
       </div>
     </div>
   );

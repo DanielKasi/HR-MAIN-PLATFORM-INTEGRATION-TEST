@@ -303,7 +303,7 @@ class EmployeeStopCheckListView(APIView):
                 employee__position__department__institution=request.user.profile.institution
             )
             if employee_id:
-                spotchecks = spotchecks.filter(employee_id=employee.id)
+                spotchecks = spotchecks.filter(employee_id=employee_id)
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(spotchecks, request)
             serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(

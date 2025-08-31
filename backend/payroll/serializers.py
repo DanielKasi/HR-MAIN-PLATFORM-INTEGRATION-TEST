@@ -187,7 +187,7 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
             "This method should be implemented in the child serializer."
         )
 
-class EmployeePenaltySerializer(EmployeeRelatedSerializer, BaseApprovableSerializer):
+class EmployeePenaltySerializer(BaseApprovableSerializer):
 
     class Meta:
         model = EmployeePenalty
