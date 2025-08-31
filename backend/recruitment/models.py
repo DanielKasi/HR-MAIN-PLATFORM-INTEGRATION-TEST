@@ -11,7 +11,7 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
 
 class RequiredDocument(SoftDeletableTimeStampedModel):
     """
@@ -148,7 +148,29 @@ class JobPosition(BaseApprovableModel):
     def get_institution(self):
         return self.department.institution       
 
-    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+            self.save()
 
 
 class JobPositionAdvert(BaseApprovableModel):
@@ -235,6 +257,30 @@ class JobPositionAdvert(BaseApprovableModel):
                 name="unique_active_advert_per_job_position",
             )
         ]
+        
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'active'
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'pending_approval'
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'pending_approval'
+            self.save()    
 
 
 class JobAdvertApplication(SoftDeletableTimeStampedModel):
