@@ -11,7 +11,6 @@ from .models import (
     EmployeeSeparation,
 )
 from django.db import transaction
-from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
@@ -290,32 +289,6 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
             request_status="submitted",
         )
 
-        institution = employee.institution
-
-        content_type = ContentType.objects.get_for_model(ResignationRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="resignation_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                resignation_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=resignation_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            resignation_request.finish_workflow()
 
         return resignation_request
 
@@ -432,32 +405,6 @@ class RetirementRequestSerializer(BaseApprovableSerializer):
             request_status="submitted",
         )
 
-        institution = employee.institution
-
-        content_type = ContentType.objects.get_for_model(RetirementRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="retirement_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                retirement_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=retirement_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            retirement_request.finish_workflow()
 
         return retirement_request
 
@@ -570,31 +517,6 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
 
         termination_initiation = TerminationInitiation.objects.create(**validated_data)
 
-        institution = employee.department.institution
-
-        content_type = ContentType.objects.get_for_model(TerminationInitiation)
-        try:
-            action = WorkflowAction.objects.get(code="termination_initiation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                termination_initiation.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=termination_initiation.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            termination_initiation.finish_workflow()
 
         return termination_initiation
 
