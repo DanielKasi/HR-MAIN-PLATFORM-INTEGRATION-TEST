@@ -120,6 +120,10 @@ import {
   IPenaltyType,
   IEmployeePenaltyFormData,
   IRecruitmentDashboard,
+  IEmployeeDashboard,
+  ILeaveDashboard,
+  IAttendanceDashboard,
+  IPayrollDashboard,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4057,6 +4061,46 @@ export const getRecruitmentDashboard = async () => {
     throw error;
   }
 };
+
+export const getAttendanceDashboard = async () => {
+  try {
+    const response = await apiRequest.get("employee/attendance-analytics/");
+    return response.data as IAttendanceDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getPayrollDashboard = async () => {
+  try {
+    const response = await apiRequest.get("payroll/analytics/");
+    return response.data as IPayrollDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getLeaveDashboard = async () => {
+  try {
+    const response = await apiRequest.get("leave-mgt/analytics/");
+    return response.data as ILeaveDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getEmployeeDashboard = async (): Promise<IEmployeeDashboard> => {
+  try {
+    const response = await apiRequest.get("employee/analytics/");
+    return response.data as IEmployeeDashboard;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 export const getPayslip = async (id: number) => {
   try {

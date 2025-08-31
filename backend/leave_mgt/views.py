@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
+from django.db.models import Count, Avg, Sum, F, ExpressionWrapper, FloatField
 from django.utils import timezone
+from datetime import timedelta
 from django.db import transaction
-
+from django.db.models.functions import TruncMonth
 from utilities.pagination import CustomPageNumberPagination
-
+from rest_framework.permissions import IsAuthenticated
 from .models import LeaveApplication, LeaveBalance, LeavePolicy, LeaveType
 from .serializers import (
     LeaveApplicationSerializer,
@@ -19,7 +21,6 @@ from .utils import LeaveCalculator, LeaveBalanceManager
 from employee.models import Employee
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
-from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
 
@@ -783,3 +784,188 @@ class LeaveAnalyticsAPI(APIView):
             return Response({"detail": "No leave application data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
         return Response(analytics_data, status=status.HTTP_200_OK)
 
+
+class LeaveDashboardAPIView(APIView):
+    """
+    API endpoint for leave management dashboard analytics.
+    Provides aggregated metrics on leave applications, balances, and statuses,
+    filtered by the authenticated user's institution.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['Leave Dashboard'],
+        description=(
+            'Retrieves key analytics for the leave management module dashboard, filtered by the authenticated user\'s institution. '
+            'Metrics include total leave applications, applications by status, leave balances by type, '
+            'average leave days taken, and applications over time (last 6 months).'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_leave_applications': {'type': 'integer', 'description': 'Total leave applications'},
+                    'applications_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Leave applications by status'
+                    },
+                    'applications_by_leave_type': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'leave_type': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Leave applications by leave type'
+                    },
+                    'leave_balances_by_type': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'leave_type': {'type': 'string'},
+                                'total_allocated_days': {'type': 'number'},
+                                'total_used_days': {'type': 'number'},
+                                'total_available_days': {'type': 'number'}
+                            }
+                        },
+                        'description': 'Leave balances aggregated by leave type'
+                    },
+                    'average_leave_days_taken': {'type': 'number', 'description': 'Average leave days taken per employee'},
+                    'pending_approvals': {'type': 'integer', 'description': 'Total pending leave applications'},
+                    'applications_over_time': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'date': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Leave applications over time (last 6 months)'
+                    },
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        if not institution:
+            return Response(
+                {"error": "User is not associated with any institution"},
+                status=400
+            )
+
+        # Filter by institution
+        leave_applications = LeaveApplication.objects.filter(
+            institution=institution,
+            deleted_at__isnull=True
+        )
+        leave_balances = LeaveBalance.objects.filter(
+            institution=institution,
+            deleted_at__isnull=True,
+            year=timezone.now().year
+        )
+
+        # Total leave applications
+        total_leave_applications = leave_applications.count()
+
+        # Applications by status
+        applications_by_status = list(
+            leave_applications.values('status')
+            .annotate(count=Count('id'))
+            .order_by('status')
+        )
+
+        # Applications by leave type
+        applications_by_leave_type = list(
+            leave_applications.values('leave_type__name')
+            .annotate(count=Count('id'))
+            .order_by('leave_type__name')
+        )
+
+        # Leave balances by type
+        leave_balances_by_type = list(
+            leave_balances.values('leave_type__name')
+            .annotate(
+                total_allocated_days=Sum('allocated_days'),
+                total_used_days=Sum('used_days'),
+                total_available_days=Sum(
+                    ExpressionWrapper(
+                        F('allocated_days') - F('used_days'),
+                        output_field=FloatField()
+                    )
+                )
+            )
+            .order_by('leave_type__name')
+        )
+
+        # Average leave days taken per employee
+        avg_leave_days = leave_applications.filter(status='approved').aggregate(
+            avg_days=Avg('total_days')
+        )['avg_days'] or 0
+        average_leave_days_taken = round(avg_leave_days, 2) if avg_leave_days else 0
+
+        # Pending approvals
+        pending_approvals = leave_applications.filter(status='pending').count()
+
+        # Applications over time (last 6 months)
+        six_months_ago = timezone.now() - timedelta(days=180)
+        applications_over_time = list(
+            leave_applications.filter(start_date__gte=six_months_ago)
+            .annotate(date=TruncMonth('start_date'))
+            .values('date')
+            .annotate(count=Count('id'))
+            .order_by('date')
+            .values('date', 'count')
+        )
+        applications_over_time = [
+            {
+                'date': item['date'].strftime('%b %Y'),
+                'count': item['count']
+            }
+            for item in applications_over_time
+        ]
+
+        data = {
+            'total_leave_applications': total_leave_applications,
+            'applications_by_status': [
+                {'status': item['status'], 'count': item['count']}
+                for item in applications_by_status
+            ],
+            'applications_by_leave_type': [
+                {'leave_type': item['leave_type__name'], 'count': item['count']}
+                for item in applications_by_leave_type if item['leave_type__name']
+            ],
+            'leave_balances_by_type': [
+                {
+                    'leave_type': item['leave_type__name'],
+                    'total_allocated_days': float(item['total_allocated_days'] or 0),
+                    'total_used_days': float(item['total_used_days'] or 0),
+                    'total_available_days': float(item['total_available_days'] or 0)
+                }
+                for item in leave_balances_by_type if item['leave_type__name']
+            ],
+            'average_leave_days_taken': average_leave_days_taken,
+            'pending_approvals': pending_approvals,
+            'applications_over_time': applications_over_time,
+        }
+
+        return Response(data)
