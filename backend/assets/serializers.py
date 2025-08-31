@@ -7,7 +7,6 @@ from .models import (
     AssetReturn,
     AssetHistory,
 )
-from workflows.models import ApprovalTask, InstitutionApprovalStep, WorkflowAction
 from django.db import transaction
 from employee.models import Employee
 from django.contrib.contenttypes.models import ContentType
@@ -197,33 +196,6 @@ class AssetRequestSerializer(BaseApprovableSerializer):
 
         asset_request = AssetRequest.objects.create(**validated_data)
 
-        institution = asset_request.asset.institution
-
-        content_type = ContentType.objects.get_for_model(AssetRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="asset_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                asset_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=asset_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            asset_request.finish_workflow()
-
         return asset_request
 
     
@@ -347,33 +319,6 @@ class AssetAllocationSerializer(BaseApprovableSerializer):
             validated_data["responding_to_request"] = responding_to_request
 
         asset_allocation = AssetAllocation.objects.create(**validated_data)
-
-        institution = asset_allocation.asset.institution
-
-        content_type = ContentType.objects.get_for_model(AssetAllocation)
-
-        try:
-            action = WorkflowAction.objects.get(code="asset_allocation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                asset_allocation.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=asset_allocation.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            asset_allocation.finish_workflow()
 
         return asset_allocation
 

@@ -57,7 +57,7 @@ class JobPositionListAPI(APIView):
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
-            instance.comfirm_create()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -140,7 +140,7 @@ class JobPositionDetailAPI(APIView):
             job_position = JobPosition.objects.get(id=job_position_id)
             job_position.approval_status = 'under_deletion'
             job_position.save(update_fields=['approval_status'])
-            job_position.comfirm_delete()
+            job_position.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobPosition.DoesNotExist:
             return Response(
