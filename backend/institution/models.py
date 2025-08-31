@@ -754,23 +754,44 @@ class InstitutionPenaltyConfig(BaseApprovableModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["institution", "penalty_type"],
+                name="unique_institution_penalty_type"
+            )
+        ]
 
     def __str__(self):
         return f"Penalty Config for {self.institution.institution_name} - {self.get_penalty_type_display()}"
 
     def clean(self):
-        from django.core.exceptions import ValidationError
+        super().clean()
+
+        # prevent duplicates at validation level
+        if InstitutionPenaltyConfig.objects.exclude(pk=self.pk).filter(
+            institution=self.institution,
+            penalty_type=self.penalty_type
+        ).exists():
+            raise ValidationError(
+                {"error": "This penalty type already exists for this institution."}
+            )
 
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    "Penalty value must be greater than 0 when penalty type is fixed"
+                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
                 )
+                
+    def save(self, *args, **kwargs):
+        self.full_clean()  # ✅ ensures clean() is run
+        return super().save(*args, **kwargs)            
 
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""
@@ -810,23 +831,44 @@ class BranchPenaltyConfig(BaseApprovableModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch", "penalty_type"],
+                name="unique_branch_penalty_type"
+            )
+        ]
 
     def __str__(self):
         return f"{self.get_penalty_type_display()} - {self.branch.branch_name}"
-
+    
     def clean(self):
-        from django.core.exceptions import ValidationError
+        super().clean()
+
+        # prevent duplicates at validation level
+        if BranchPenaltyConfig.objects.exclude(pk=self.pk).filter(
+            branch=self.branch,
+            penalty_type=self.penalty_type
+        ).exists():
+            raise ValidationError(
+                {"error": "This penalty type already exists for this branch."}
+            )
 
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    "Penalty value must be greater than 0 when penalty type is fixed"
+                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
                 )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # ✅ ensures clean() is run
+        return super().save(*args, **kwargs)
 
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""

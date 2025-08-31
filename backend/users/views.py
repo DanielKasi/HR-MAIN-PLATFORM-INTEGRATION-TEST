@@ -48,7 +48,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from .serializers import CustomUserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from utilities.pagination import CustomPageNumberPagination
 import logging
