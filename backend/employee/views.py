@@ -2457,7 +2457,7 @@ class EmployeeShiftListCreateView(APIView):
             request.query_params.get("is_employee_specific", "true").lower() == "true"
         )
 
-        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
+        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution, is_active=True)
 
         if query_context in ["ALLOCATION", "REQUEST"]:
             shifts = shifts.filter(context=query_context)

@@ -2300,7 +2300,7 @@ class BranchShiftListCreateView(APIView):
                 {"detail": "Branch not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        branch_shifts = BranchShift.objects.filter(branch=branch)
+        branch_shifts = BranchShift.objects.filter(branch=branch, is_active=True)
 
         if search:
             branch_shifts = branch_shifts.filter(Q(name__icontains=search))
@@ -2330,13 +2330,13 @@ class BranchShiftListCreateView(APIView):
 class BranchShiftDetailView(APIView):
     def get_object(self, shift_id):
         try:
-            return BranchShift.objects.get(pk=shift_id)
+            return BranchShift.objects.get(id=shift_id)
         except BranchShift.DoesNotExist:
             raise Http404
 
     @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
     def get(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
+        branch_shift = self.get_object(shift_id)
         serializer = BranchShiftSerializer(branch_shift)
         return Response(serializer.data)
 
@@ -2347,7 +2347,7 @@ class BranchShiftDetailView(APIView):
     )
     @transaction.atomic()
     def patch(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
+        branch_shift = self.get_object(shift_id)
         branch_shift.approval_status = "under_update"
         serializer = BranchShiftSerializer(
             branch_shift, data=request.data, partial=True
@@ -2360,7 +2360,7 @@ class BranchShiftDetailView(APIView):
 
     @extend_schema(tags=["Branch Shifts"], responses={204: None})
     def delete(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
+        branch_shift = self.get_object(shift_id)
         branch_shift.approval_status = "under_deletion"
         branch_shift.save(update_fields=["approval_status"])
         branch_shift.confirm_delete()
