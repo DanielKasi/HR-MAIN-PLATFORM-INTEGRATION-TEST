@@ -336,10 +336,10 @@ class EmployeeSpotCheckCreateView(APIView):
         spotcheck_time = datetime.now()
 
         request_data = request.data.copy()
-        request_data['status'] = spotcheck_status.id
-        request_data['spotcheck_time'] = spotcheck_time
-        request_data['initiated_by'] = 'User'
-
+        request_data["status"] = spotcheck_status.pk
+        request_data["spotcheck_time"] = spotcheck_time
+        request_data["initiated_by"] = "user"
+        print("Request data:", request_data)
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request_data)
         if serializer.is_valid():
             spotcheck = serializer.save()
@@ -353,7 +353,7 @@ class EmployeeSpotCheckCreateView(APIView):
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
-        print(serializer.errors)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
