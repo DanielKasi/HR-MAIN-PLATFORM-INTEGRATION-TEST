@@ -6,9 +6,10 @@ from users.models import CustomUser
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import BaseApprovableModel
 
 
-class LeaveType(SoftDeletableTimeStampedModel):
+class LeaveType(BaseApprovableModel):
     """Leave types like Annual, Sick, Maternity, etc."""
 
     LEAVE_CATEGORIES = [
@@ -45,6 +46,9 @@ class LeaveType(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    def get_institution(self):
+        return self.institution
 
     def save(self, *args, **kwargs):
         is_new_leave_type = self.pk is None
@@ -141,7 +145,7 @@ class LeaveType(SoftDeletableTimeStampedModel):
         return synced_count
 
 
-class LeaveBalance(SoftDeletableTimeStampedModel):
+class LeaveBalance(BaseApprovableModel):
     """Track leave balances for each employee per leave type per year"""
 
     institution = models.ForeignKey(
@@ -184,8 +188,11 @@ class LeaveBalance(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.year})"
 
+    def get_institution(self):
+        return self.institution
 
-class LeaveApplication(SoftDeletableTimeStampedModel):
+
+class LeaveApplication(BaseApprovableModel):
     """Leave application requests"""
 
     STATUS_CHOICES = [
@@ -239,6 +246,9 @@ class LeaveApplication(SoftDeletableTimeStampedModel):
         db_table = "leave_applications"
         ordering = ["-created_at"]
 
+    def get_institution(self):
+        return self.institution
+
     def clean(self):
         from django.core.exceptions import ValidationError
 
@@ -249,7 +259,7 @@ class LeaveApplication(SoftDeletableTimeStampedModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
 
-class LeavePolicy(SoftDeletableTimeStampedModel):
+class LeavePolicy(BaseApprovableModel):
     """Company leave policies and rules"""
 
     institution = models.ForeignKey(
@@ -278,4 +288,7 @@ class LeavePolicy(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.name} - {self.leave_type.name}"
+    
+    def get_institution(self):
+        return self.institution
 
