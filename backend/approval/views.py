@@ -584,7 +584,7 @@ class ApprovalTaskActionView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=serializers.Serializer,  # Accepts a 'comment' field
+        request=serializers.Serializer,  
         responses={
             200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,

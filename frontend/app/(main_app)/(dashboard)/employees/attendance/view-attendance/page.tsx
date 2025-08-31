@@ -16,11 +16,12 @@ import {Badge} from "@/components/ui/badge";
 import {Users, Building, Info, FileSpreadsheet, UserCheck} from "lucide-react";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {fetchAttendanceData} from "@/lib/utils";
-import type {AttendanceResponse, IDepartment, IEmployee, IJobPosition} from "@/types/types.utils";
+import {PERMISSION_CODES, type AttendanceResponse, type IDepartment, type IEmployee, type IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
 import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
 import {toast} from "sonner";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 const attendanceCodes = {
   "P-onT": {label: "Present on Time", color: "bg-green-100 text-green-800"},
@@ -473,6 +474,7 @@ export default function AttendanceTable() {
         </div>
       </div>
 
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
       <div className="bg-white rounded-lg shadow-md border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
           <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
@@ -584,6 +586,7 @@ export default function AttendanceTable() {
           </div>
         </div>
       </div>
+      </ProtectedComponent>
     </div>
   );
 }

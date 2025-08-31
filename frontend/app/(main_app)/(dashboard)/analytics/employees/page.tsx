@@ -21,6 +21,15 @@ import {selectSelectedInstitution, selectUser} from "@/store/auth/selectors";
 import {IInstitutionAnalytics} from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import {USER_GENDER} from "@/types";
+import AttendanceChart from "./employee-attendance-chart";
+import PieChart from "./employee-piechart";
+import BarChart from "./employee-bar-chart";
+import SalaryCharts from "./salary-charts";
+import apiRequest from "@/lib/apiRequest";
+import {toast} from "sonner";
+import {select} from "redux-saga/effects";
+
+// Employee
 
 export default function Dashboard() {
   const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -31,6 +40,112 @@ export default function Dashboard() {
   const [pastYearTotal, setPastYearTotal] = useState(0);
   const [growthPercentage, setGrowthPercentage] = useState(0);
   const currentUser = useSelector(selectUser);
+  const [salaryData, setSalaryData] = useState<SalaryData>({
+    average_salary_by_department: [],
+    average_salary_by_position: [],
+    salary_distribution: [],
+    gender_pay_gap: {Male: 0, Female: 0, Other: 0},
+  });
+
+  const selectedInstitutionId = currentInstitution?.id;
+
+  // Employee
+  const mockData = {
+    total_hours_worked: 67,
+    total_late_minutes: 20,
+    total_overtime_hours: 10,
+    attendance_metrics: {
+      additionalProp1: "string",
+      additionalProp2: "string",
+      additionalProp3: "string",
+    },
+  };
+
+  const employeeCountAnalytics = {
+    headcount: 0,
+    headcount_by_department: [
+      {label: "HR", value: 10},
+      {label: "Engineering", value: 25},
+      {label: "Sales", value: 15},
+    ],
+    headcount_by_position: [
+      {label: "Manager", value: 5},
+      {label: "Developer", value: 20},
+      {label: "Intern", value: 10},
+    ],
+    headcount_by_gender: [
+      {label: "Male", value: 30},
+      {label: "Female", value: 15},
+    ],
+    headcount_by_employee_type: [
+      {label: "Full-time", value: 35},
+      {label: "Part-time", value: 10},
+    ],
+    headcount_by_work_type: [
+      {label: "On-site", value: 25},
+      {label: "Remote", value: 20},
+    ],
+    age_distribution: [
+      {label: "20-29", value: 10},
+      {label: "30-39", value: 20},
+      {label: "40-49", value: 10},
+      {label: "50+", value: 5},
+    ],
+  };
+
+  const salaryAnalytics = {
+    average_salary_by_department: [
+      {label: "HR", value: 50000},
+      {label: "Engineering", value: 80000},
+      {label: "Sales", value: 60000},
+    ],
+    average_salary_by_position: [
+      {label: "Manager", value: 90000},
+      {label: "Developer", value: 75000},
+      {label: "Intern", value: 30000},
+    ],
+    salary_distribution: [
+      {label: "0-50k", value: 10},
+      {label: "50k-100k", value: 20},
+      {label: "100k+", value: 5},
+    ],
+    gender_pay_gap: {
+      Male: 75000,
+      Female: 65000,
+      Other: 70000,
+    },
+  };
+  interface SalaryData {
+    average_salary_by_department: {label: string; value: number}[];
+    average_salary_by_position: {label: string; value: number}[];
+    salary_distribution: {label: string; value: number}[];
+    gender_pay_gap: {
+      Male: number;
+      Female: number;
+      Other: number;
+    };
+  }
+
+  useEffect(() => {
+    const fetchSalaryData = async () => {
+      try {
+        setLoading(true);
+        const response = await apiRequest.get(
+          `/employee/institutions/${selectedInstitutionId}/salary-analytics/`,
+        );
+
+        setSalaryData(response);
+      } catch (err: any) {
+        toast(err.message || "Failed to fetch salary data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSalaryData();
+  }, []);
+
+  console.log("Salary Data....", salaryData);
 
   useEffect(() => {
     const percentage =
@@ -92,43 +207,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          {/* <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">
-            {greeting},{" "}
-            {currentUser?.gender === USER_GENDER.MALE
-              ? "Mr"
-              : currentUser?.gender === USER_GENDER.FEMALE
-                ? "Ms"
-                : ""}
-            . {capitalizeFirstLetter(currentUser?.fullname || "")}
-          </h1> */}
-          {/* <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link
-                href={"/employees/employee-list"}
-                className="flex items-center justify-start gap-3"
-              >
-                <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Add Employee</span>
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link href={"/job-adverts/create"} className="flex items-center justify-start gap-3">
-                <Icon icon="hugeicons:advertisiment" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Post Job Opening</span>
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link
-                href={"/events-holidays/events/add"}
-                className="flex items-center justify-start gap-3"
-              >
-                <Icon icon="hugeicons:calendar-add-01" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Add event</span>
-              </Link>
-            </Button>
-          </div> */}
-        </div>
+        <div className="flex items-center justify-between"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
@@ -139,9 +218,8 @@ export default function Dashboard() {
                 <MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-primary/10 shadow-sm border-none">
+              {/* <Card className="bg-primary/10 shadow-sm border-none">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-8 h-8 text-primary/80 rounded-lg flex items-center justify-center">
@@ -153,44 +231,41 @@ export default function Dashboard() {
                     {currentPayroll.toLocaleString()}
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              <Card className="md:col-span-2 shadow-sm border-none bg-white">
+              {/* <Card className="md:col-span-2 shadow-sm border-none bg-white">
                 <CardHeader className="flex flex-row items-center justify-between py-2">
                   <CardTitle className="text-lg md:text-xl font-medium">Announcements</CardTitle>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </CardHeader>
-              </Card>
+              </Card> */}
             </div>
-
             {/* Payroll Chart */}
-            <PayrollChart
+            {/* <PayrollChart
               data={data?.payroll_summary}
               totalCurrentYear={totalCurrentYear}
               growthPercentage={growthPercentage}
               onRefresh={refreshData}
               loading={loading}
-            />
-
+            /> */}
+            {/* Salary charts */}
+            <SalaryCharts data={salaryData} />;{/* Attendance Chart */}
+            <div className="p-6">
+              <h1 className="text-2xl font-bold mb-4">Attendance Dashboard</h1>
+              <AttendanceChart data={mockData} />
+            </div>
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <DepartmentTreemap
-                data={data?.employees_per_department}
-                onRefresh={refreshData}
-                loading={loading}
+              <PieChart
+                title="Headcount by Work Type"
+                data={employeeCountAnalytics.headcount_by_work_type}
               />
-              <PayrollByDepartment
-                data={data?.payroll_by_department}
-                onRefresh={refreshData}
-                loading={loading}
-              />
+              <PieChart title="Age Distribution" data={employeeCountAnalytics.age_distribution} />
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <EmployeeCountChart
-                data={data?.employees_per_department}
-                onRefresh={refreshData}
-                loading={loading}
+              <BarChart
+                title="Headcount by Position"
+                data={employeeCountAnalytics.headcount_by_position}
               />
               <GenderDistribution
                 data={data?.gender_distribution}
@@ -198,10 +273,9 @@ export default function Dashboard() {
                 loading={loading}
               />
             </div>
-
             {/* Projects */}
             {/* <ProjectCards /> */}
-            <EmployeeAttendance showingOnDashboard={true} scope={{type: "default"}} />
+            {/* <EmployeeAttendance showingOnDashboard={true} scope={{type: "default"}} /> */}
           </div>
 
           {/* Sidebar */}

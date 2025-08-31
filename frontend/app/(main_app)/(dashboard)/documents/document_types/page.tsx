@@ -200,6 +200,7 @@ export default function DocumentTypesPage() {
     }
 
     return (
+        
         <div className="w-full py-8 ">
             <div className="flex items-center justify-between">
                 <div>

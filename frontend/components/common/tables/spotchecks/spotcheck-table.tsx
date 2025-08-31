@@ -148,14 +148,14 @@ export default function SpotchecksTable({searchTerm, refreshTableRef, statusFilt
                         {filteredResults.map((spotcheck) => (
                           <TableRow key={spotcheck.id}>
                             
-                            <TableCell className="font-medium">{formatDate(spotcheck.spotcheck_time)}</TableCell>
+                            <TableCell className="font-medium">{spotcheck?.spotcheck_time  ? formatDate(spotcheck?.spotcheck_time): "N/A"}</TableCell>
                             <TableCell className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-gray-500" />
                               <span className="text-sm">
-                                {spotcheck.latitude.toFixed(4)}, {spotcheck.longitude.toFixed(4)}
+                                {spotcheck?.latitude?.toFixed(4) || "N/A"}, {spotcheck?.longitude?.toFixed(4) || "N/A"}
                               </span>
                             </TableCell>
-                            <TableCell>{formatDuration(spotcheck.duration)}</TableCell>
+                            <TableCell>{spotcheck?.duration ?formatDuration(spotcheck?.duration): "N/A"}</TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(spotcheck.status.code)}>
                                 {getStatusDisplay(spotcheck.status.code)}
@@ -180,13 +180,13 @@ export default function SpotchecksTable({searchTerm, refreshTableRef, statusFilt
                             </div>
                             <div className="space-y-1 mb-2">
                               <p className="text-sm text-gray-600">
-                                Time: {formatDate(spotcheck.spotcheck_time)}
+                                Time: { spotcheck?.spotcheck_time ? formatDate(spotcheck.spotcheck_time): "N/A"}
                               </p>
                               <p className="text-sm text-gray-600">
-                                Location: {spotcheck.latitude.toFixed(4)}, {spotcheck.longitude.toFixed(4)}
+                                Location: {spotcheck.latitude?.toFixed(4) || "N/A"}, {spotcheck.longitude?.toFixed(4) || "N/A"}
                               </p>
                               <p className="text-sm text-gray-600">
-                                Duration: {formatDuration(spotcheck.duration)}
+                                Duration: {spotcheck.duration ? formatDuration(spotcheck.duration): "N/A"}
                               </p>
                               <div className="flex items-center gap-2">
                                 <Badge className={getStatusColor(spotcheck.status.code)}>

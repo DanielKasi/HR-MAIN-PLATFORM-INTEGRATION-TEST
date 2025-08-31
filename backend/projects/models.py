@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from utilities.utility_base_model import SoftDeletableTimeStampedModel
+from approval.models import BaseApprovableModel
 
 class BaseModel(models.Model):
     created_by = models.ForeignKey(
@@ -23,7 +23,7 @@ class BaseModel(models.Model):
         abstract = True
     
 
-class Project(BaseModel, SoftDeletableTimeStampedModel):
+class Project(BaseModel, BaseApprovableModel):
     PROJECT_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("planning", "Planning"),
@@ -60,6 +60,9 @@ class Project(BaseModel, SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Project: {self.project_name} under ({self.institution})"
 
+    def get_institution(self):
+        return self.institution      
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Projects"
@@ -73,7 +76,7 @@ class Project(BaseModel, SoftDeletableTimeStampedModel):
         ]
 
 
-class ProjectDocument(BaseModel, SoftDeletableTimeStampedModel):
+class ProjectDocument(BaseModel, BaseApprovableModel):
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -85,6 +88,9 @@ class ProjectDocument(BaseModel, SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Document for Project: {self.project.project_name} ({self.project.institution})"
 
+    def get_institution(self):
+        return self.project.institution      
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Project Documents"
@@ -94,7 +100,7 @@ class ProjectDocument(BaseModel, SoftDeletableTimeStampedModel):
         ]
 
 
-class Task(BaseModel, SoftDeletableTimeStampedModel):
+class Task(BaseModel, BaseApprovableModel):
     TASK_STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("in_progress", "In Progress"),
@@ -149,6 +155,9 @@ class Task(BaseModel, SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Task: {self.task_name} in Project: {self.project.project_name} ({self.project.institution})"
 
+    def get_institution(self):
+        return self.project.institution      
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Project Tasks"
@@ -162,7 +171,7 @@ class Task(BaseModel, SoftDeletableTimeStampedModel):
         ]
 
 
-class TaskDocument(BaseModel, SoftDeletableTimeStampedModel):
+class TaskDocument(BaseModel, BaseApprovableModel):
     task = models.ForeignKey(
         Task,
         on_delete=models.CASCADE,
@@ -174,6 +183,9 @@ class TaskDocument(BaseModel, SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Document for Task: {self.task.task_name} in Project: {self.task.project.project_name} ({self.task.project.institution})"
 
+    def get_institution(self):
+        return self.task.project.institution      
+
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Task Documents"
@@ -183,7 +195,7 @@ class TaskDocument(BaseModel, SoftDeletableTimeStampedModel):
         ]
 
 
-class TaskTimeSheet(BaseModel, SoftDeletableTimeStampedModel):
+class TaskTimeSheet(BaseModel, BaseApprovableModel):
     task = models.OneToOneField(
         Task,
         on_delete=models.CASCADE,
@@ -210,3 +222,6 @@ class TaskTimeSheet(BaseModel, SoftDeletableTimeStampedModel):
             if self.end_time and self.start_time
             else None
         )
+
+    def get_institution(self):
+        return self.task.project.institution      

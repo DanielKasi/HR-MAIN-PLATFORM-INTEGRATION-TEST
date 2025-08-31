@@ -44,16 +44,17 @@ import {
 } from "@/lib/utils";
 import {useBranches} from "@/hooks/use-branches";
 import {MultiSelectBranches} from "@/components/multi-select-branches";
-import type {
-  IEmployeeFormData,
-  ICreateEmployeeForm,
-  IDepartment,
-  IJobPosition,
-  IWorkType,
-  IEmployeeType,
-  IWorkTypeFormData,
-  IEmployeeTypeFormData,
-  ICountry,
+import {
+  type IEmployeeFormData,
+  type ICreateEmployeeForm,
+  type IDepartment,
+  type IJobPosition,
+  type IWorkType,
+  type IEmployeeType,
+  type IWorkTypeFormData,
+  type IEmployeeTypeFormData,
+  type ICountry,
+  PERMISSION_CODES,
 } from "@/types/types.utils";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
@@ -61,6 +62,7 @@ import {useDispatch} from "react-redux";
 import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
 import { set } from "date-fns";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 
 const maritalStatusOptions = [
@@ -1310,6 +1312,7 @@ export default function AddEmployeeForm() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-full">
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}> 
         <Card className="!p-0 md:!p-0">
           <CardHeader>
             <CardTitle className="text-xl md:text-2xl">Add New Employee</CardTitle>
@@ -1491,6 +1494,7 @@ export default function AddEmployeeForm() {
             </form>
           </CardContent>
         </Card>
+      </ProtectedComponent>
       </div>
     </div>
   );

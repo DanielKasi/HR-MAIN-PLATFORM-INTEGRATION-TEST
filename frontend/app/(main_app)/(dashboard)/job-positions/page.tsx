@@ -22,10 +22,11 @@ import {
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 
-import type {IJobPosition} from "@/types/types.utils";
+import {PERMISSION_CODES, type IJobPosition} from "@/types/types.utils";
 import {formatCurrency} from "@/lib/helpers";
 import {useDocumentTitle} from "@/hooks/use-document-title";
 import {JobPositionsTable} from "@/components/common/tables/job-positions/job-positions-table";
+import ProtectedComponent from "@/components/ProtectedComponent";
 
 export default function JobPositionsPage() {
   const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
@@ -167,6 +168,8 @@ export default function JobPositionsPage() {
           </Select>
         </div>
 
+
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_POSITIONS}> 
         <Button
           onClick={() => {
             router.push("/job-positions/create");
@@ -176,6 +179,7 @@ export default function JobPositionsPage() {
           <Plus className="h-4 w-4" />
           Create Job Position / Title
         </Button>
+        </ProtectedComponent>
       </div>
 
       <JobPositionsTable setJobPositionsCount={setJobPositionsCount}  searchTerm={searchTerm} setCurrentJobPostions={setJobPositions} />

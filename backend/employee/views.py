@@ -2445,7 +2445,7 @@ class EmployeeShiftListCreateView(APIView):
                 return Response({"detail": "Unrecognized Employee"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             institution = user.profile.institution
-            shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
+            shifts = EmployeeShift.objects.filter(shift__branch__institution__id=institution_id)
 
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)

@@ -53,7 +53,7 @@ class SpotCheckStatusSerializer(serializers.ModelSerializer):
 
 class EmployeeSpotCheckSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
-    status = serializers.PrimaryKeyRelatedField(queryset=SpotCheckModels.EmployeeSpotCheck.objects.all())
+    status = serializers.PrimaryKeyRelatedField(queryset=SpotCheckModels.SpotCheckStatus.objects.all())
 
     class Meta:
         model = SpotCheckModels.EmployeeSpotCheck

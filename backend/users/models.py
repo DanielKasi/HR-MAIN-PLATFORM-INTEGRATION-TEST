@@ -16,6 +16,7 @@ from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from datetime import timedelta
 from django.conf import settings
+from approval.models import BaseApprovableModel
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -200,7 +201,7 @@ class Permission(SoftDeletableTimeStampedModel):
             )
         ]
 
-class Role(SoftDeletableTimeStampedModel):
+class Role(BaseApprovableModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -227,8 +228,11 @@ class Role(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.institution    
 
-class RolePermission(models.Model):
+
+class RolePermission(BaseApprovableModel):
     role = models.ForeignKey(Role, related_name="permissions", on_delete=models.CASCADE)
     permission = models.ForeignKey(
         Permission, related_name="roles", on_delete=models.CASCADE
@@ -239,8 +243,11 @@ class RolePermission(models.Model):
     def __str__(self):
         return f"{self.role} - {self.permission}"
 
+    def get_institution(self):
+        return self.role.institution    
 
-class UserRole(models.Model):
+
+class UserRole(BaseApprovableModel):
     user = models.ForeignKey(
         CustomUser, related_name="user_roles", on_delete=models.CASCADE
     )
@@ -250,6 +257,9 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.role.name}"
+
+    def get_institution(self):
+        return self.role.institution    
 
 
 class OTPModel(models.Model):

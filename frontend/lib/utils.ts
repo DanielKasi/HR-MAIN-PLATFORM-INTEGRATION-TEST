@@ -112,6 +112,13 @@ import {
   IBranchLocationComparisonConfigFormData,
   ILocation,
   ISpotCheckFormData,
+  IBranchShift,
+  IBranchShiftFormData,
+  IEmployeeShift,
+  IEmployeeShiftFormData,
+  IEmployeePenalty,
+  IPenaltyType,
+  IEmployeePenaltyFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -6493,3 +6500,118 @@ export const branchLocationComparisonConfigAPI = {
     }
   },
 };
+
+
+
+export const shiftsAPI = {
+  BRANCH: {
+    getAll: async (branchId: number)=> {
+        const response = await apiRequest.get(`/institution/branch-shifts/${branchId}/`);
+        return response.data as IPaginatedResponse<IBranchShift>
+    },
+    getById: async (shiftId: number) => {
+        const response = await apiRequest.get(`/institution/branch-shifts/detail/${shiftId}/`);
+        return response.data as IBranchShift
+    } ,
+    create: async (data: IBranchShiftFormData) => {
+        const response = await apiRequest.post(`/institution/branch-shifts/`, data);
+        return response.data as IBranchShift
+    },
+    update: async (shiftId: number, data: Partial<IBranchShiftFormData>) => {
+        const response = await apiRequest.patch(`/institution/branch-shifts/${shiftId}/`, data);
+        return response.data as IBranchShift
+    },
+    delete: async (shiftId: number) => {
+        const response = await apiRequest.delete(`/institution/branch-shifts/${shiftId}/`);
+        return response.status === 204;
+    }
+  },
+  EMPLOYEE: {
+    getPaginatedForEmployee: async ({search, page=1}:{search?:string, page?:number})=> {
+      const params = new URLSearchParams();
+        params.append("is_employee_specific", "true");
+        if(search){
+          params.append("search", search);
+        }
+        params.append("page", page.toString());
+        const response = await apiRequest.get(`/employee/employee-shifts/?${params.toString()}`);
+        return response.data as IPaginatedResponse<IEmployeeShift>
+    },
+    getPaginatedForInstitution: async ({search, page=1}:{search?:string, page?:number})=> {
+      const params = new URLSearchParams();
+        params.append("is_employee_specific", "false");
+        params.append("page", page.toString());
+        if(search){
+          params.append("search", search);
+        }
+        const response = await apiRequest.get(`/employee/employee-shifts/?${params.toString()}`);
+        return response.data as IPaginatedResponse<IEmployeeShift>
+    },
+    getById: async (shiftId: number) => {
+        const response = await apiRequest.get(`/employee/employee-shifts/detail/${shiftId}/`);
+        return response.data as IEmployeeShift
+    } ,
+    create: async (data: IEmployeeShiftFormData) => {
+        const response = await apiRequest.post(`/employee/employee-shifts/`, data);
+        return response.data as IEmployeeShift
+    },
+    update: async (shiftId: number, data: Partial<IEmployeeShiftFormData>) => {
+        const response = await apiRequest.patch(`/employee/employee-shifts/${shiftId}/`, data);
+        return response.data as IEmployeeShift
+    },
+    delete: async (shiftId: number) => {
+        const response = await apiRequest.delete(`/employee/employee-shifts/${shiftId}/`);
+        return response.status === 204;
+    } 
+  },
+  COMMON: {
+      getPaginatedFromUrl: async ({url, is_employee_specific}:{url:string, is_employee_specific:boolean})=> {
+      if(!url.includes("is_employee_specific")){
+        const separator = url.includes("?") ? "&" : "?";
+        url = `${url}${separator}is_employee_specific=${is_employee_specific}`;
+      }
+        const response = await apiRequest.get(url);
+        return response.data as IPaginatedResponse<IEmployeeShift>
+    },
+  }
+}
+
+
+
+
+export const penaltiesAPI = {
+  EMPLOYEE: {
+    getPaginated: async (args:{search?:string, page?:number, employee_id:number, penalty_type?:IPenaltyType, date_from?:string, date_to?:string})=> {
+      const params = new URLSearchParams();  
+        params.append("is_employee_specific", "true");  
+        if(args.search){
+          params.append("search", args.search);
+          }   
+        params.append("page", args.page?.toString() || "1");
+        const response = await apiRequest.get(`/payroll/penalties/?${params.toString()}`);
+        return response.data as IPaginatedResponse<IEmployeePenalty>
+    } ,
+    getById: async (penaltyId: number) => {
+        const response = await apiRequest.get(`/payroll/penalties/${penaltyId}/`);
+        return response.data as IEmployeePenalty
+    } ,
+    create: async (data: IEmployeePenaltyFormData) => {
+        const response = await apiRequest.post(`/payroll/penalties/`, data);
+        return response.data as IEmployeePenalty
+    },
+    update: async (penaltyId: number, data: Partial<IEmployeePenaltyFormData>) => {
+        const response = await apiRequest.patch(`/payroll/penalties/${penaltyId}/`, data);
+        return response.data as IEmployeePenalty
+    },
+    delete: async (penaltyId: number) => {
+        await apiRequest.delete(`/payroll/penalties/${penaltyId}/`);;
+    }
+},
+
+COMMON: {
+    getPaginatedFromUrl: async ({url}:{url:string})=> {
+        const response = await apiRequest.get(url);
+        return response.data as IPaginatedResponse<IEmployeePenalty>
+    },
+  }
+}

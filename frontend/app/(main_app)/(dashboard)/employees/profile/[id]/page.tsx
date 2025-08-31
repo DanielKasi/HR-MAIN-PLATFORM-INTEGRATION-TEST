@@ -31,13 +31,15 @@ import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import type {IEmployee} from "@/types/types.utils";
 import {toast} from "sonner";
-import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
+import {EmployeePayrollTable} from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { formatCurrency, getFileUrl } from "@/lib/helpers";
-import { useMobile } from "@/hooks/use-mobile";
+import {formatCurrency, getFileUrl} from "@/lib/helpers";
+import {useMobile} from "@/hooks/use-mobile";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
+import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
+import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -47,7 +49,16 @@ export default function EmployeeProfile() {
   const [error, setError] = useState<string | null>(null);
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "attendance" | "payroll" | "assets" | "projects" | "documents" | "discipline" | "leave"|"spotchecks"
+    | "attendance"
+    | "payroll"
+    | "assets"
+    | "projects"
+    | "documents"
+    | "discipline"
+    | "leave"
+    | "spotchecks"
+  | "shifts"
+  | "penalties"
   >("attendance");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
@@ -87,8 +98,6 @@ export default function EmployeeProfile() {
     return statusMap[status] || status;
   }, []);
 
-
-
   const getEmployeeInitials = useCallback((employee: IEmployee) => {
     if (employee.user?.fullname) {
       const names = employee.user.fullname.split(" ").filter((name) => name.length > 0);
@@ -100,9 +109,6 @@ export default function EmployeeProfile() {
     }
     return employee.email?.[0]?.toUpperCase() || "E";
   }, []);
-
-
-
 
   const handleTabChange = useCallback(
     (newTab: typeof activeTab) => {
@@ -189,15 +195,17 @@ export default function EmployeeProfile() {
   }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
 
   // Tab configuration with lazy loading indicators
-  const tabConfig: Array<{id:typeof activeTab, label:string, hasData:boolean}> = useMemo(
+  const tabConfig: Array<{id: typeof activeTab; label: string; hasData: boolean}> = useMemo(
     () => [
       {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
       {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
       {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
       {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
-       {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
-       {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
-       {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
+      {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
+      {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
+      {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
+  {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
+      {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
   );
@@ -220,9 +228,7 @@ export default function EmployeeProfile() {
           <p className="text-[#e21732] mb-4">{error || "Employee not found"}</p>
           <div className="space-y-2">
             <Link href="/employees/employee-list">
-              <Button className="text-white w-full md:w-auto">
-                Back to Employees
-              </Button>
+              <Button className="text-white w-full md:w-auto">Back to Employees</Button>
             </Link>
             <Button
               variant="outline"
@@ -268,7 +274,7 @@ export default function EmployeeProfile() {
               <Link href={`/employees/update-employee/${employee.id}`}>
                 <Button
                   variant="outline"
-                  size={isMobile ? "sm":"default"}
+                  size={isMobile ? "sm" : "default"}
                   className="text-gray-500 hover:text-gray-600 flex items-center gap-2"
                 >
                   <Edit className="w-4 h-4" />
@@ -277,7 +283,7 @@ export default function EmployeeProfile() {
               </Link>
               <Button
                 variant="outline"
-                size={isMobile ? "sm":"default"}
+                size={isMobile ? "sm" : "default"}
                 className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2"
               >
                 <Trash2 className="w-4 h-4" />
@@ -286,7 +292,7 @@ export default function EmployeeProfile() {
 
               <Button
                 variant="outline"
-                size={isMobile ? "sm":"default"}
+                size={isMobile ? "sm" : "default"}
                 onClick={() => setShowDocumentDialog(true)}
                 className="flex items-center gap-2 shadow-sm"
               >
@@ -305,7 +311,11 @@ export default function EmployeeProfile() {
                   <div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
                     <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
                       <AvatarImage
-                        src={employee.employee_profile_picture ? getFileUrl(employee.employee_profile_picture): "/placeholder.svg"}
+                        src={
+                          employee.employee_profile_picture
+                            ? getFileUrl(employee.employee_profile_picture)
+                            : "/placeholder.svg"
+                        }
                         alt="Profile picture"
                         className="object-cover"
                       />
@@ -379,7 +389,7 @@ export default function EmployeeProfile() {
                       <div className="text-center lg:text-left">
                         <div className="text-xs text-[#848496] mb-1">Monthly Salary</div>
                         <div className="font-bold text-lg text-gray-800">
-                           {formatCurrency(employee.salary)}
+                          {formatCurrency(employee.salary)}
                         </div>
                       </div>
                     )}
@@ -412,9 +422,7 @@ export default function EmployeeProfile() {
                     <div className="space-y-4">
                       {employee.salary && (
                         <div>
-                          <label className="text-sm font-medium text-[#848496]">
-                            Salary
-                          </label>
+                          <label className="text-sm font-medium text-[#848496]">Salary</label>
                           <p className="text-gray-800 font-medium">
                             {formatCurrency(employee.salary)}
                           </p>
@@ -432,7 +440,9 @@ export default function EmployeeProfile() {
                       )}
                       {employee.date_of_birth && (
                         <div>
-                          <label className="text-sm font-medium text-[#848496]">Date of Birth</label>
+                          <label className="text-sm font-medium text-[#848496]">
+                            Date of Birth
+                          </label>
                           <p className="text-gray-800 font-medium">
                             {formatDate(employee.date_of_birth)}
                           </p>
@@ -495,9 +505,7 @@ export default function EmployeeProfile() {
                         <div>
                           <label className="text-sm font-medium text-[#848496]">Bank Details</label>
                           {employee.bank && (
-                            <p className="text-gray-800 font-medium break-words">
-                              {employee.bank}
-                            </p>
+                            <p className="text-gray-800 font-medium break-words">{employee.bank}</p>
                           )}
                           {employee.bank_account_number && (
                             <p className="text-[#848496] text-sm break-all">
@@ -531,9 +539,7 @@ export default function EmployeeProfile() {
                         {employee.experience > 0 && (
                           <div>
                             <label className="text-xs text-[#848496]">Years of Experience</label>
-                            <p className="text-gray-800 font-medium">
-                              {employee.experience} years
-                            </p>
+                            <p className="text-gray-800 font-medium">{employee.experience} years</p>
                           </div>
                         )}
                         {employee.skills && (
@@ -557,7 +563,7 @@ export default function EmployeeProfile() {
               <Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none md:shadow-sm md:border">
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
-                    <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max">
+                    <div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8">
                       {tabConfig.map((tab) => (
                         <button
                           key={tab.id}
@@ -579,12 +585,9 @@ export default function EmployeeProfile() {
                 </CardHeader>
 
                 <CardContent className="p-4 md:p-6">
-
-                  {activeTab === "attendance" &&
-                  <EmployeeAttendance
-                    scope={{type:"employee", employee}}
-                  />
-                  }
+                  {activeTab === "attendance" && (
+                    <EmployeeAttendance scope={{type: "employee", employee}} />
+                  )}
 
                   {activeTab === "discipline" && (
                     <EmployeeDiscipline
@@ -702,15 +705,12 @@ export default function EmployeeProfile() {
                     </div>
                   )}
 
-                  {(activeTab === "payroll" && selectedInstitution) &&  (
+                  {activeTab === "payroll" && selectedInstitution && (
                     <EmployeePayrollTable
                       institutionId={selectedInstitution.id}
-                      scope={{type:"employee", employeeId:employeeId}}
+                      scope={{type: "employee", employeeId: employeeId}}
                       showEmployeeName={false}
                     />
-                  )}
-                  {(activeTab === "spotchecks" && employee) &&  (
-                    <EmployeeSpotchecks employee={employee} />
                   )}
 
                   {activeTab === "documents" && (
@@ -738,12 +738,21 @@ export default function EmployeeProfile() {
                       {documentsSubTab === "contracts" && (
                         <ContractsTable
                           searchTerm={searchTerm}
-                          scope={{type:"employee", employeeId}}
+                          scope={{type: "employee", employeeId}}
                         />
                       )}
-
                     </div>
                   )}
+
+                  {activeTab === "spotchecks" && employee && (
+                    <EmployeeSpotchecks employee={employee} />
+                  )}
+
+                  {activeTab === "penalties" && employee && (
+                    <EmployeePenalties employee={employee} />
+                  )}
+
+                  {activeTab === "shifts" && employee && <EmployeeShifts employee={employee} />}
                 </CardContent>
               </Card>
             </div>
