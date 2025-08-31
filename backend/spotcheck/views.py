@@ -6,7 +6,7 @@ from spotcheck import models as SpotCheckModels
 from spotcheck import serializers as SpotCheckSerializers
 from spotcheck.utilities import send_spotcheck_email
 from utilities.pagination import CustomPageNumberPagination
-from datetime import datetime
+from django.utils import timezone
 from django.db import transaction
 
 
@@ -333,7 +333,7 @@ class EmployeeSpotCheckCreateView(APIView):
         spotcheck_status, _ = SpotCheckModels.SpotCheckStatus.objects.get_or_create(
             status_name="SENT"
         )
-        spotcheck_time = datetime.now()
+        spotcheck_time = timezone.now()
 
         request_data = request.data.copy()
         request_data["status"] = spotcheck_status.pk

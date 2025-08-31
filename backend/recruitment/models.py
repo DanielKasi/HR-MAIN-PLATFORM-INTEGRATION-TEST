@@ -1,17 +1,16 @@
 from django.db import models
-from datetime import datetime, timezone
+from datetime import datetime
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 import os
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
-from django.db import transaction
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
 
 class RequiredDocument(SoftDeletableTimeStampedModel):
     """
@@ -148,7 +147,29 @@ class JobPosition(BaseApprovableModel):
     def get_institution(self):
         return self.department.institution       
 
-    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'active'
+                    self.job_position_status = 'active'
+            self.save()
 
 
 class JobPositionAdvert(BaseApprovableModel):
@@ -235,6 +256,30 @@ class JobPositionAdvert(BaseApprovableModel):
                 name="unique_active_advert_per_job_position",
             )
         ]
+        
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'active'
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'pending_approval'
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'active'
+                    self.job_position_advert_status = 'pending_approval'
+            self.save()    
 
 
 class JobAdvertApplication(SoftDeletableTimeStampedModel):
@@ -267,7 +312,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
     cover_letter = models.FileField(
         upload_to="applications/cover_letters/", blank=True, null=True
     )
-    application_date = models.DateTimeField(default=datetime.now)
+    application_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=status_choices, default="new")
     gender = models.CharField(max_length=10, choices=gender_choices)
     state = models.CharField(max_length=100, blank=True, null=True)
@@ -444,7 +489,7 @@ class JobInterview(BaseApprovableModel):
         related_name="interviews",
     )
     interview_type = models.CharField(max_length=20, choices=interview_type_choices)
-    interview_date = models.DateTimeField(default=datetime.now)
+    interview_date = models.DateTimeField(default=timezone.now)
     interview_time = models.TimeField()
     location = models.CharField(max_length=255)
     feedback = models.TextField(blank=True, null=True)

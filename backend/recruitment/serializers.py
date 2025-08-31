@@ -11,13 +11,14 @@ from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
 import PyPDF2
 from docx import Document
-from workflows.models import WorkflowAction, InstitutionApprovalStep, ApprovalTask
+
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
 from employee.models import Employee, WorkType, EmployeeType
+from approval.serializers import BaseApprovableSerializer
 
 
 
@@ -104,7 +105,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         return representation
 
 
-class InterviewStageSerializer(serializers.ModelSerializer):
+class InterviewStageSerializer(BaseApprovableSerializer):
     interviewers_details = EmployeeSerializer(
         source="interviewers", many=True, read_only=True
     )
@@ -196,7 +197,7 @@ class InterviewStageSerializer(serializers.ModelSerializer):
 
 
 
-class JobPositionAdvertSerializer(serializers.ModelSerializer):
+class JobPositionAdvertSerializer(BaseApprovableSerializer):
     applications = serializers.SerializerMethodField(read_only=True)
     job_position_details = serializers.SerializerMethodField()
     interview_stages = serializers.SerializerMethodField(read_only=True)
@@ -281,29 +282,6 @@ class JobPositionAdvertSerializer(serializers.ModelSerializer):
         )
         content_type = ContentType.objects.get_for_model(JobPositionAdvert)
 
-        try:
-            action = WorkflowAction.objects.get(code="job_position_advertisement")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                advert.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=advert.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            advert.finish_workflow()
-
         return advert
 
 
@@ -313,7 +291,7 @@ class RequiredDocumentSerializer(serializers.ModelSerializer):
         fields = ["id", "document_name", "description", "is_optional"]
 
 
-class JobPositionSerializer(serializers.ModelSerializer):
+class JobPositionSerializer(BaseApprovableSerializer):
     department_details = serializers.SerializerMethodField(read_only=True)
     reports_to_details = serializers.SerializerMethodField()
     job_adverts = serializers.SerializerMethodField(read_only=True)
@@ -418,29 +396,6 @@ class JobPositionSerializer(serializers.ModelSerializer):
                 **doc_data
             )
 
-        try:
-            action = WorkflowAction.objects.get(code="job_position_creation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                job_position.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=job_position.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            job_position.finish_workflow()
-
         return job_position
 
     def update(self, instance, validated_data):
@@ -477,7 +432,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return instance
 
 
-class JobInterviewSerializer(serializers.ModelSerializer):
+class JobInterviewSerializer(BaseApprovableSerializer):
     job_position_application_details = JobAdvertApplicationSerializer(
         source="job_position_application", read_only=True
     )

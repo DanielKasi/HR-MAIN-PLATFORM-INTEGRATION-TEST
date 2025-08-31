@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from approval.serializers import BaseApprovableSerializer
 from .models import DocumentType, DocumentTemplate
 from institution.models import Institution
 from institution.serializers import InstitutionSerializer
@@ -11,7 +12,7 @@ import PyPDF2
 from bs4 import BeautifulSoup
 
 
-class DocumentTypeSerializer(serializers.ModelSerializer):
+class DocumentTypeSerializer(BaseApprovableSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
@@ -26,7 +27,7 @@ class DocumentTypeSerializer(serializers.ModelSerializer):
         return data
 
 
-class DocumentTemplateSerializer(serializers.ModelSerializer):
+class DocumentTemplateSerializer(BaseApprovableSerializer):
     document_type = serializers.PrimaryKeyRelatedField(
         queryset=DocumentType.objects.all()
     )

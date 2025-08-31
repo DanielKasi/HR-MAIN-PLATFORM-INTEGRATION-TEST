@@ -1,8 +1,9 @@
 from django.db import models
 from utilities.utility_base_model import TimeStampedModel
 from payroll.models import EmployeePenalty
-from datetime import datetime, timedelta
+from datetime import timedelta
 from approval.models import BaseApprovableModel
+from django.utils import timezone
 
 # spotcheck settings
 class InstitutionSpotCheckSetting(BaseApprovableModel):
@@ -108,7 +109,7 @@ class EmployeeSpotCheck(TimeStampedModel):
         expiry_time = self.spotcheck_time + timedelta(minutes=setting.expires_after_minutes)
         late_time = self.spotcheck_time + timedelta(minutes=setting.late_starts_after_minutes)
 
-        now = datetime.now()  
+        now = timezone.now()  
 
         if self.responded_at:
             if self.responded_at <= expiry_time:

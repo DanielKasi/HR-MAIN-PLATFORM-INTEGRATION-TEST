@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render
 
 from institution.serializers import UserBranchSerializer
@@ -7,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
+
+from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
     Employee,
     EmployeeAttendance,
@@ -36,6 +39,8 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiTypes,
 )
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
@@ -66,7 +71,10 @@ from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
-from utilities.helpers import get_or_create_default_role_with_permissions, custom_parse_date
+from utilities.helpers import (
+    get_or_create_default_role_with_permissions,
+    custom_parse_date,
+)
 from django.db.models import Q
 from datetime import datetime, date
 from institution.models import Institution
@@ -82,6 +90,7 @@ from .tasks import send_employee_welcome_email
 import string
 import secrets
 
+
 def generate_compliant_password(length=12):
     """Generate a password that meets Django's validation requirements"""
     # Define character sets (excluding problematic special characters)
@@ -90,7 +99,7 @@ def generate_compliant_password(length=12):
     digits = string.digits
     # Use a safer subset of special characters to avoid validation issues
     special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    
+
     # Ensure we have at least one character from each required set
     password_chars = [
         secrets.choice(lowercase),
@@ -98,15 +107,16 @@ def generate_compliant_password(length=12):
         secrets.choice(digits),
         secrets.choice(special),
     ]
-    
+
     # Fill the rest of the password length
     all_characters = lowercase + uppercase + digits + special
     for _ in range(length - 4):
         password_chars.append(secrets.choice(all_characters))
-    
+
     # Shuffle to avoid predictable patterns
     secrets.SystemRandom().shuffle(password_chars)
     return "".join(password_chars)
+
 
 class EmployeeListAPIView(APIView):
 
@@ -205,7 +215,6 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 
         return Response(EmployeeWorkingDaysSerializer(working_days).data)
 
-
     @extend_schema(
         request=EmployeeWorkingDaysSerializer,
         responses={200: EmployeeWorkingDaysSerializer, 404: "Employee not found"},
@@ -225,7 +234,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         working_days_instance, _ = EmployeeWorkingDays.objects.get_or_create(
             employee=employee
         )
-        working_days_instance.approval_status = 'under_update'
+        working_days_instance.approval_status = "under_update"
 
         serializer = EmployeeWorkingDaysSerializer(
             instance=working_days_instance, data=request.data, partial=True
@@ -321,7 +330,7 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
-        start_time = datetime.now()
+        start_time = timezone.now()
         print(f"Starting bulk upload at {start_time}")
 
         # Fetch institution and default role once (mirroring single creation)
@@ -645,7 +654,6 @@ class EmployeeCreateAPIView(APIView):
                                     except Exception as e:
                                         raise
 
-
                 # Handle job positions separately, tied to departments
                 position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
 
@@ -665,7 +673,6 @@ class EmployeeCreateAPIView(APIView):
                                 ["department", "position"]
                             ].drop_duplicates()
 
-
                             for _, row in dept_pos_pairs.iterrows():
                                 dept_name = (
                                     str(row["department"]).strip()
@@ -676,7 +683,6 @@ class EmployeeCreateAPIView(APIView):
 
                                 dept_lower = dept_name.lower() if dept_name else None
                                 pos_lower = pos_name.lower()
-
 
                                 # Get department instance
                                 dept_instance = None
@@ -770,7 +776,7 @@ class EmployeeCreateAPIView(APIView):
                 print(f"Starting batch processing with batch size {batch_size}")
                 for start_idx in range(0, len(df), batch_size):
                     batch = df[start_idx : start_idx + batch_size]
-                    batch_start_time = datetime.now()
+                    batch_start_time = timezone.now()
                     print(
                         f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
                     )
@@ -811,8 +817,8 @@ class EmployeeCreateAPIView(APIView):
                             "is_email_verified": True,
                             "is_password_verified": True,
                             "user_type": "staff",
-                            "created_at": datetime.now(),
-                            "updated_at": datetime.now(),
+                            "created_at": timezone.now(),
+                            "updated_at": timezone.now(),
                         }
 
                         # Process employee data
@@ -925,8 +931,8 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data[field] = 0
 
                         # Add timestamps
-                        employee_data["created_at"] = datetime.now()
-                        employee_data["updated_at"] = datetime.now()
+                        employee_data["created_at"] = timezone.now()
+                        employee_data["updated_at"] = timezone.now()
 
                         # Add to creation lists
                         user_objects.append(CustomUser(**user_data))
@@ -1015,7 +1021,7 @@ class EmployeeCreateAPIView(APIView):
                             send_employee_welcome_email.delay_on_commit(
                                 employee.user.email,
                                 employee.user.fullname,
-                                plain_passwords[idx]
+                                plain_passwords[idx],
                             )
                         except Exception as e:
                             print(
@@ -1026,7 +1032,7 @@ class EmployeeCreateAPIView(APIView):
                     created_count += len(created_employees)
 
                     print(
-                        f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
+                        f"Batch {start_idx//batch_size + 1} completed in {(timezone.now() - batch_start_time).total_seconds()} seconds"
                     )
 
             # Set default employee role if not already set (once after all batches)
@@ -1035,7 +1041,7 @@ class EmployeeCreateAPIView(APIView):
                 institution.save()
 
             print(
-                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+                f"Total upload time: {(timezone.now() - start_time).total_seconds()} seconds"
             )
 
             return Response(
@@ -1238,7 +1244,7 @@ class EmployeeUpdateAPIView(APIView):
                 final_data["salary"] = None
 
         # Update employee data
-        employee.approval_status = 'under_update'
+        employee.approval_status = "under_update"
         serializer = EmployeeSerializer(employee, data=final_data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -1301,7 +1307,7 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
-            employee.approval_status = 'under_deletion'
+            employee.approval_status = "under_deletion"
             employee.delete()  # Custom delete method to handle soft delete
             employee.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -1390,7 +1396,7 @@ class EmployeeBranchManagementAPIView(APIView):
                     )
 
             # Attach branches
-            employee.approval_status = 'under_update'
+            employee.approval_status = "under_update"
             employee.save()
             result = self._attach_branches(employee, processed_branches, request.user)
             employee.confirm_update()
@@ -1680,7 +1686,7 @@ class EmployeeBranchDetailAPIView(APIView):
                 user_branch.save()
 
                 # Update employee payroll branch
-                employee.approval_status = 'under_update'
+                employee.approval_status = "under_update"
                 employee.payroll_branch = branch
                 employee.save(update_fields=["payroll_branch", "approval_status"])
                 employee.confirm_update()
@@ -1820,7 +1826,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             serializer = EmployeeAttendanceSerializer(
                 existing, data=data, partial=True, context=context
             )
-            existing.approval_status = 'under_update'
+            existing.approval_status = "under_update"
             if serializer.is_valid():
                 serializer.save()
                 existing.confirm_update()
@@ -1833,6 +1839,8 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             if serializer.is_valid():
                 attendance = serializer.save()
                 attendance.confirm_create()
+                employee_instance = Employee.objects.get(id=employee)
+                create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1861,7 +1869,7 @@ class EmployeeAttendanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         record = self.get_object(pk)
-        record.approval_status = 'under_update'
+        record.approval_status = "under_update"
         serializer = EmployeeAttendanceSerializer(
             record, data=request.data, partial=True
         )
@@ -1948,7 +1956,7 @@ class EmployeeTypeDetailAPIView(APIView):
     def patch(self, request, pk):
         obj = self.get_object(pk)
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
-        obj.approval_status = 'under_update'
+        obj.approval_status = "under_update"
         if serializer.is_valid():
             serializer.save()
             obj.confirm_update()
@@ -1958,7 +1966,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_deletion'
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method that handles soft delete
         obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -2029,7 +2037,7 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_update'
+        obj.approval_status = "under_update"
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -2040,7 +2048,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_deletion'
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method that handles soft delete
         obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -2066,7 +2074,7 @@ class EmployeeTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_update'
+        obj.approval_status = "under_update"
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -2077,7 +2085,7 @@ class EmployeeTypeDetailAPIView(APIView):
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_deletion'
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom method to handle soft delete
         obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -2101,7 +2109,7 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_update'
+        obj.approval_status = "under_update"
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -2112,7 +2120,7 @@ class WorkTypeDetailAPIView(APIView):
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
-        obj.approval_status = 'under_deletion'
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method to handle soft delete
         obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -2200,7 +2208,7 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         contract = self.get_object(pk)
-        contract.approval_status = 'under_update'
+        contract.approval_status = "under_update"
         serializer = EmployeeContractSerializer(
             contract, data=request.data, partial=True
         )
@@ -2217,7 +2225,7 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
-        contract.approval_status = 'under_deletion'
+        contract.approval_status = "under_deletion"
         contract.delete()  # Custom delete method to handle soft delete
         contract.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -2356,7 +2364,7 @@ class ExportAttendanceExcelView(APIView):
         try:
             excel_file = generate_attendance_excel(start_date, end_date, context)
 
-            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2429,28 +2437,39 @@ class AttendanceReportGetView(APIView):
 class EmployeeShiftListCreateView(APIView):
     @extend_schema(
         summary="List all employee shifts or create a new shift",
-        description=(
-                "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
-                "is true, or all shifts for the institution if false. POST creates a shift."
-        ),
         request=EmployeeShiftSerializer,
         responses=EmployeeShiftSerializer,
         tags=["Shifts-Allocations/Requests"],
     )
     def get(self, request):
         user = request.user
-        is_employee_specific = request.query_params.get("is_employee_specific", "true").lower() == "true"
 
-        print(is_employee_specific)
+        profile = getattr(user, "profile", None)
 
-        if is_employee_specific:
-            if hasattr(user, "employee"):
-                shifts = EmployeeShift.objects.filter(employee=user.employee)
-            else:
-                return Response({"detail": "Unrecognized Employee"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            institution = user.profile.institution
-            shifts = EmployeeShift.objects.filter(shift__branch__institution__id=institution_id)
+        if not profile or not profile.institution:
+            return Response({"detail": "No institution linked"}, status=400)
+
+        institution = profile.institution
+
+        query_context = request.query_params.get("context", "all").upper()
+        search = request.query_params.get("search")
+        is_employee_specific = (
+            request.query_params.get("is_employee_specific", "true").lower() == "true"
+        )
+
+        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
+
+        if query_context in ["ALLOCATION", "REQUEST"]:
+            shifts = shifts.filter(context=query_context)
+
+        if is_employee_specific and hasattr(profile, "employee"):
+            shifts = shifts.filter(employee=profile.employee)
+
+        if search:
+            shifts = shifts.filter(
+                Q(employee__user__fullname__icontains=search)
+                | Q(employee__user__email__icontains=search)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)
@@ -2505,7 +2524,7 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        shift.approval_status = 'under_update'
+        shift.approval_status = "under_update"
         serializer = EmployeeShiftSerializer(
             shift, data=request.data, partial=True, context={"request": request}
         )
@@ -2527,11 +2546,10 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        shift.approval_status = 'under_deletion'
+        shift.approval_status = "under_deletion"
         shift.delete()
         shift.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 
 class EmployeeAnalyticsAPI(APIView):
@@ -2539,24 +2557,47 @@ class EmployeeAnalyticsAPI(APIView):
     API view for employee analytics and workforce composition.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee demographics and workforce composition analytics",
                 response=inline_serializer(
-                    name='EmployeeAnalyticsResponse',
+                    name="EmployeeAnalyticsResponse",
                     fields={
-                        'headcount': serializers.IntegerField(help_text="Total number of active employees."),
-                        'headcount_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by department."),
-                        'headcount_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by job position."),
-                        'headcount_by_gender': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by gender."),
-                        'headcount_by_employee_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by employee type."),
-                        'headcount_by_work_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by work type."),
-                        'age_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by age bracket."),
-                    }
+                        "headcount": serializers.IntegerField(
+                            help_text="Total number of active employees."
+                        ),
+                        "headcount_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by department.",
+                        ),
+                        "headcount_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by job position.",
+                        ),
+                        "headcount_by_gender": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by gender.",
+                        ),
+                        "headcount_by_employee_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by employee type.",
+                        ),
+                        "headcount_by_work_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by work type.",
+                        ),
+                        "age_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by age bracket.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No employee data found for this institution."),
+            404: OpenApiResponse(
+                description="No employee data found for this institution."
+            ),
         },
         summary="Get Employee Analytics",
         description="Provides key analytics on the workforce composition and demographics.",
@@ -2565,7 +2606,10 @@ class EmployeeAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_demographics_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No employee data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No employee data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2574,21 +2618,32 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     API view for employee attendance and productivity analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee attendance and productivity analytics",
                 response=inline_serializer(
-                    name='AttendanceAnalyticsResponse',
+                    name="AttendanceAnalyticsResponse",
                     fields={
-                        'total_hours_worked': serializers.FloatField(help_text="Total hours worked."),
-                        'total_late_minutes': serializers.IntegerField(help_text="Total minutes late."),
-                        'total_overtime_hours': serializers.FloatField(help_text="Total overtime hours."),
-                        'attendance_metrics': serializers.DictField(help_text="Counts and rates for attendance statuses."),
-                    }
+                        "total_hours_worked": serializers.FloatField(
+                            help_text="Total hours worked."
+                        ),
+                        "total_late_minutes": serializers.IntegerField(
+                            help_text="Total minutes late."
+                        ),
+                        "total_overtime_hours": serializers.FloatField(
+                            help_text="Total overtime hours."
+                        ),
+                        "attendance_metrics": serializers.DictField(
+                            help_text="Counts and rates for attendance statuses."
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No attendance data found for this institution."),
+            404: OpenApiResponse(
+                description="No attendance data found for this institution."
+            ),
         },
         summary="Get Employee Attendance Analytics",
         description="Provides key analytics on employee attendance.",
@@ -2597,7 +2652,10 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_attendance_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No attendance data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No attendance data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2606,21 +2664,36 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     API view for employee salary and compensation analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee salary and compensation analytics",
                 response=inline_serializer(
-                    name='SalaryAnalyticsResponse',
+                    name="SalaryAnalyticsResponse",
                     fields={
-                        'average_salary_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by department."),
-                        'average_salary_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by position."),
-                        'salary_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by salary bracket."),
-                        'gender_pay_gap': serializers.DictField(child=serializers.FloatField(), help_text="Average salary breakdown by gender."),
-                    }
+                        "average_salary_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by department.",
+                        ),
+                        "average_salary_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by position.",
+                        ),
+                        "salary_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by salary bracket.",
+                        ),
+                        "gender_pay_gap": serializers.DictField(
+                            child=serializers.FloatField(),
+                            help_text="Average salary breakdown by gender.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No salary data found for this institution."),
+            404: OpenApiResponse(
+                description="No salary data found for this institution."
+            ),
         },
         summary="Get Employee Salary Analytics",
         description="Provides key analytics on employee salaries and a gender pay gap analysis.",
@@ -2629,5 +2702,8 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_salary_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No salary data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No salary data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)

@@ -6,8 +6,10 @@ from institution.serializers import InstitutionSerializer, BranchSerializer
 from institution.models import Institution, Branch
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
+from approval.serializers import BaseApprovableSerializer
 
-class InstitutionSpotCheckSettingSerializer(serializers.ModelSerializer):
+
+class InstitutionSpotCheckSettingSerializer(BaseApprovableSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
@@ -20,7 +22,7 @@ class InstitutionSpotCheckSettingSerializer(serializers.ModelSerializer):
         data["institution"] = InstitutionSerializer(instance.institution).data
         return data
 
-class BranchSpotCheckSettingSerializer(serializers.ModelSerializer):
+class BranchSpotCheckSettingSerializer(BaseApprovableSerializer):
     branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
 
     class Meta:
@@ -33,7 +35,7 @@ class BranchSpotCheckSettingSerializer(serializers.ModelSerializer):
         data["branch"] = BranchSerializer(instance.branch).data
         return data
 
-class EmployeeSpotCheckSettingSerializer(serializers.ModelSerializer):
+class EmployeeSpotCheckSettingSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:
