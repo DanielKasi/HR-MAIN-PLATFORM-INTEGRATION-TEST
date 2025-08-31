@@ -1,15 +1,16 @@
+from approval.serializers import BaseApprovableSerializer
 from .models import PublicHoliday, Event, Calendar, EventOccurrence
 from rest_framework import serializers
 
 
-class PublicHolidaySerializer(serializers.ModelSerializer):
+class PublicHolidaySerializer(BaseApprovableSerializer):
     class Meta:
         model = PublicHoliday
         fields = ["id", "institution", "title", "date", "created_at", "updated_at"]
         read_only_fields = ["id"]
 
 
-class EventSerializer(serializers.ModelSerializer):
+class EventSerializer(BaseApprovableSerializer):
     class Meta:
         model = Event
         fields = [
@@ -40,7 +41,7 @@ class EventOccurrenceSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-class CalendarSerializer(serializers.ModelSerializer):
+class CalendarSerializer(BaseApprovableSerializer):
 
     public_holidays = PublicHolidaySerializer(many=True, read_only=True)
     event_occurrences = EventOccurrenceSerializer(many=True, read_only=True)

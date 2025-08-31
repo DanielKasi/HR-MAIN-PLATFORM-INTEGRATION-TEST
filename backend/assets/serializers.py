@@ -7,16 +7,16 @@ from .models import (
     AssetReturn,
     AssetHistory,
 )
-from workflows.models import ApprovalTask, InstitutionApprovalStep, WorkflowAction
 from django.db import transaction
 from employee.models import Employee
 from django.contrib.contenttypes.models import ContentType
 from employee.serializers import EmployeeSerializer
 from django.db import transaction
 from users.serializers import ProfileSerializer
+from approval.serializers import BaseApprovableSerializer
 
 
-class AssetCategorySerializer(serializers.ModelSerializer):
+class AssetCategorySerializer(BaseApprovableSerializer):
     total_assets = serializers.IntegerField(read_only=True)
     total_available_assets = serializers.IntegerField(read_only=True)
     total_allocated_assets = serializers.IntegerField(read_only=True)
@@ -68,7 +68,7 @@ class AssetHistorySerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetSerializer(serializers.ModelSerializer):
+class AssetSerializer(BaseApprovableSerializer):
     asset_histories = AssetHistorySerializer(many=True, read_only=True)
     current_holder = serializers.PrimaryKeyRelatedField(read_only=True)
     
@@ -138,7 +138,7 @@ class AssetSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetRequestSerializer(serializers.ModelSerializer):
+class AssetRequestSerializer(BaseApprovableSerializer):
     asset = AssetSerializer(read_only=True)
     asset_id = serializers.IntegerField(write_only=True, required=True)
 
@@ -196,33 +196,6 @@ class AssetRequestSerializer(serializers.ModelSerializer):
 
         asset_request = AssetRequest.objects.create(**validated_data)
 
-        institution = asset_request.asset.institution
-
-        content_type = ContentType.objects.get_for_model(AssetRequest)
-
-        try:
-            action = WorkflowAction.objects.get(code="asset_request")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                asset_request.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=asset_request.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            asset_request.finish_workflow()
-
         return asset_request
 
     
@@ -236,7 +209,7 @@ class AssetRequestSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetAllocationSerializer(serializers.ModelSerializer):
+class AssetAllocationSerializer(BaseApprovableSerializer):
     # asset = serializers.IntegerField(write_only=True, required=True)
     # allocated_to = serializers.IntegerField(write_only=True, required=True)
     # responding_to_request = serializers.IntegerField(write_only=True, required=False, allow_null=True)
@@ -347,33 +320,6 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
 
         asset_allocation = AssetAllocation.objects.create(**validated_data)
 
-        institution = asset_allocation.asset.institution
-
-        content_type = ContentType.objects.get_for_model(AssetAllocation)
-
-        try:
-            action = WorkflowAction.objects.get(code="asset_allocation")
-        except WorkflowAction.DoesNotExist:
-            action = None
-
-        if action:
-            steps = InstitutionApprovalStep.objects.filter(
-                institution=institution, action=action
-            ).order_by("level")
-
-            if not steps.exists():
-                asset_allocation.finish_workflow()
-            else:
-                for i, step in enumerate(steps):
-                    ApprovalTask.objects.create(
-                        step=step,
-                        content_type=content_type,
-                        object_id=asset_allocation.id,
-                        status="pending" if i == 0 else "not_started",
-                    )
-        else:
-            asset_allocation.finish_workflow()
-
         return asset_allocation
 
     def to_representation(self, instance):
@@ -401,7 +347,7 @@ class AssetAllocationSerializer(serializers.ModelSerializer):
         return rep
 
 
-class AssetReturnSerializer(serializers.ModelSerializer):
+class AssetReturnSerializer(BaseApprovableSerializer):
    
     class Meta:
         model = AssetReturn

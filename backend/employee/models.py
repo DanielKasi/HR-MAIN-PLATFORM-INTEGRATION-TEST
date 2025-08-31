@@ -460,7 +460,7 @@ class Employee(BaseApprovableModel):
 
 class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
-        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
+        Employee, on_delete=models.PROTECT, related_name="custom_working_days"
     )
 
     days = models.ManyToManyField(
@@ -479,11 +479,11 @@ class EmployeeWorkingDays(BaseApprovableModel):
 
 class EmployeeDay(BaseApprovableModel):
     employee_working_days = models.ForeignKey(
-        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+        "EmployeeWorkingDays", on_delete=models.PROTECT, related_name="employee_days"
     )
-    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
-    start_time = models.TimeField(blank=True, null=True)
-    end_time = models.TimeField(blank=True, null=True)
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.PROTECT)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
     def __str__(self):
         return (
@@ -510,11 +510,11 @@ class EmployeeShift(BaseApprovableModel):
     ]
 
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="employee_shift"
+        Employee, on_delete=models.PROTECT, related_name="employee_shift"
     )
     shift = models.ForeignKey(
         "institution.BranchShift",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="employee_shift",
     )
     context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
@@ -526,7 +526,7 @@ class EmployeeShift(BaseApprovableModel):
 
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
-        "users.CustomUser", on_delete=models.CASCADE, related_name="employee_shift"
+        "users.CustomUser", on_delete=models.PROTECT, related_name="employee_shift"
     )
 
     def __str__(self):
@@ -538,7 +538,7 @@ class EmployeeShift(BaseApprovableModel):
 
 class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="attendance_records"
+        Employee, on_delete=models.PROTECT, related_name="attendance_records"
     )
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)

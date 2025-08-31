@@ -57,7 +57,7 @@ class JobPositionListAPI(APIView):
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
-            instance.comfirm_create()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -140,7 +140,7 @@ class JobPositionDetailAPI(APIView):
             job_position = JobPosition.objects.get(id=job_position_id)
             job_position.approval_status = 'under_deletion'
             job_position.save(update_fields=['approval_status'])
-            job_position.comfirm_delete()
+            job_position.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobPosition.DoesNotExist:
             return Response(
@@ -445,42 +445,38 @@ class JobInterviewListAPI(APIView):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
-        status = request.query_params.get('status', None)
+        status_filter = request.query_params.get('status', None)  # <-- renamed
         date = request.query_params.get('date', None)
+
         interviews = (
             JobInterview.objects.filter(
                 job_position_application__job_position_advert__job_position__department__institution_id=institution_id,
                 deleted_at__isnull=True
             )
             .annotate(
-                # Calculate cumulative rating for each application across all their interviews
                 cumulative_rating=Coalesce(
                     Sum(
                         "job_position_application__interviews__rating",
-                        filter=Q(
-                            job_position_application__interviews__rating__isnull=False
-                        ),
+                        filter=Q(job_position_application__interviews__rating__isnull=False),
                     ),
                     0,
                 )
             )
             .order_by("-cumulative_rating", "-created_at")
-        )  # Default order by cumulative rating desc
+        )
 
         if search_query:
             interviews = interviews.filter(
                 Q(job_position_application__applicant_name__icontains=search_query) |
                 Q(job_position_application__job_position_advert__job_position__name__icontains=search_query)
-
             )
 
-        if status:
-            interviews = interviews.filter(status=status)  
+        if status_filter:
+            interviews = interviews.filter(status=status_filter)
 
         if date:
-            interviews = interviews.filter(date=interview_date)      
+            interviews = interviews.filter(interview_date=date)
 
-        # Serialize interviews and add cumulative rating to response
         interview_data = []
         for interview in interviews:
             serializer = JobInterviewSerializer(interview)
