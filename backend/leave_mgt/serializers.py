@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
-
+from approval.serializers import BaseApprovableSerializer
 from employee.models import Employee
 from .models import LeaveType, LeaveBalance, LeaveApplication, LeavePolicy
 from .utils import LeaveCalculator
@@ -13,7 +13,7 @@ from employee.serializers import EmployeeSerializer
 from users.models import CustomUser
 
 
-class LeaveTypeSerializer(serializers.ModelSerializer):
+class LeaveTypeSerializer(BaseApprovableSerializer):
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 
     class Meta:
@@ -34,7 +34,7 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class LeaveBalanceSerializer(serializers.ModelSerializer):
+class LeaveBalanceSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())  
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
     available_days = serializers.ReadOnlyField()
@@ -70,7 +70,7 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
         return rep
 
 
-class LeaveApplicationSerializer(serializers.ModelSerializer):
+class LeaveApplicationSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
     approved_by = serializers.PrimaryKeyRelatedField(
@@ -193,7 +193,7 @@ class LeaveApplicationSerializer(serializers.ModelSerializer):
         return rep
 
 
-class LeavePolicySerializer(serializers.ModelSerializer):
+class LeavePolicySerializer(BaseApprovableSerializer):
     leave_type = serializers.PrimaryKeyRelatedField(queryset=LeaveType.objects.all())
     institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
 

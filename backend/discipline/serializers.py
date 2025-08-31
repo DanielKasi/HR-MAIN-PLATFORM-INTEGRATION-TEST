@@ -1,4 +1,5 @@
 
+from approval.serializers import BaseApprovableSerializer
 from employee.serializers import EmployeeSerializer
 # from users.serializers import CustomUserSerializer
 from rest_framework import serializers
@@ -11,7 +12,7 @@ class DisciplineTypeSerializer(serializers.ModelSerializer):
         model = DisciplineType
         fields = '__all__'
 
-class DisciplinaryActionSerializer(serializers.ModelSerializer):
+class DisciplinaryActionSerializer(BaseApprovableSerializer):
     discipline_type = serializers.PrimaryKeyRelatedField(
         queryset=DisciplineType.objects.all(),
     )

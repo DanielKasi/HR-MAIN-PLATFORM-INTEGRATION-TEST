@@ -18,6 +18,7 @@ from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
 from employee.models import Employee, WorkType, EmployeeType
+from approval.serializers import BaseApprovableSerializer
 
 
 
@@ -104,7 +105,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         return representation
 
 
-class InterviewStageSerializer(serializers.ModelSerializer):
+class InterviewStageSerializer(BaseApprovableSerializer):
     interviewers_details = EmployeeSerializer(
         source="interviewers", many=True, read_only=True
     )
@@ -196,7 +197,7 @@ class InterviewStageSerializer(serializers.ModelSerializer):
 
 
 
-class JobPositionAdvertSerializer(serializers.ModelSerializer):
+class JobPositionAdvertSerializer(BaseApprovableSerializer):
     applications = serializers.SerializerMethodField(read_only=True)
     job_position_details = serializers.SerializerMethodField()
     interview_stages = serializers.SerializerMethodField(read_only=True)
@@ -313,7 +314,7 @@ class RequiredDocumentSerializer(serializers.ModelSerializer):
         fields = ["id", "document_name", "description", "is_optional"]
 
 
-class JobPositionSerializer(serializers.ModelSerializer):
+class JobPositionSerializer(BaseApprovableSerializer):
     department_details = serializers.SerializerMethodField(read_only=True)
     reports_to_details = serializers.SerializerMethodField()
     job_adverts = serializers.SerializerMethodField(read_only=True)
@@ -477,7 +478,7 @@ class JobPositionSerializer(serializers.ModelSerializer):
         return instance
 
 
-class JobInterviewSerializer(serializers.ModelSerializer):
+class JobInterviewSerializer(BaseApprovableSerializer):
     job_position_application_details = JobAdvertApplicationSerializer(
         source="job_position_application", read_only=True
     )
