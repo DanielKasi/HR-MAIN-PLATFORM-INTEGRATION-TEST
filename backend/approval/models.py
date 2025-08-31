@@ -5,6 +5,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 import uuid
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
+from django.utils import timezone
 
 
 
@@ -119,13 +120,12 @@ class Approval(models.Model):
         return f"Approval {self.public_id} - {self.status}"
 
 class ApprovalTask(SoftDeletableTimeStampedModel):
-
     STATUS_CHOICES = [
         ('not_started', 'Not Started'),
         ('pending', 'Pending'),
         ('rejected', 'Rejected'),
         ('approved', 'Approved'),
-        ('terminated', 'Terminated'),  # A
+        ('terminated', 'Terminated'),
     ]
 
     approval = models.ForeignKey(Approval, on_delete=models.CASCADE, related_name='tasks')
@@ -159,15 +159,13 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if next_task:
                 next_task.status = 'pending'
                 next_task.save(update_fields=["status", "updated_at"])
-
                 # Notify next approvers 
             else:
                 self.approval.status = 'completed'
                 self.approval.save()
                 if self.approval.content_object:
                     self.approval.content_object.finish_workflow(self.approval)
-
-            # Notify task completion
+                # Notify approval completion
 
     def mark_rejected(self, user, comment: str = None):
         with transaction.atomic():
@@ -183,18 +181,12 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             self.approval.status = 'rejected'
             self.approval.save()
 
-            # Terminate other tasks
             terminated_tasks = self.approval.tasks.exclude(id=self.id).filter(status__in=['not_started', 'pending'])
             terminated_tasks.update(status='terminated')
 
-            # Notify task rejection
-
-            # Notify terminated tasks
-
-
             if self.approval.content_object:
                 self.approval.content_object.finish_workflow(self.approval)
-
+            # Notify task rejection and terminated tasks
 
 class BaseApprovableModel(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
@@ -228,16 +220,20 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
 
         if not document:
             # No approval required: auto-complete the action
-            if action_name == 'create' or action_name == 'update':
+            if action_name in ['create', 'update']:
                 self.approval_status = 'active'
+                self.is_active = True  
+                self.deleted_at = None  
             elif action_name == 'delete':
-                self.delete()
-                return  # No need to save after delete
-            self.save()
-            return  # Exit early without creating approval
+                self.is_active = False  
+                self.deleted_at = timezone.now()
+            self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
+            return  
 
-        # Proceed with approval creation as before
+        # Proceed with approval creation
         with transaction.atomic():
+            self.is_active = False  # Set is_active=False until approved
+            self.save(update_fields=['is_active'])
             approval = Approval.objects.create(
                 status='ongoing',
                 document=document,
@@ -254,12 +250,8 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                     level=lvl,
                     status=task_status
                 )
-    # Notify first task (optional)
-        # Notify first task (optional)
-        # first_task = approval.tasks.first()
-        # notify_task_update(first_task)
-        # 
-        
+            # Notify first task (optional)
+
     def confirm_create(self):
         if self.approval_status != 'under_creation':
             raise ValidationError({"error": "Object must be under_creation to confirm create"})
@@ -276,24 +268,24 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
         self._trigger_approval('delete')
 
     def finish_workflow(self, approval: Approval):
-        if approval.status == 'completed':
-            if approval.action.name == 'create':
-                self.status = 'active'
-            elif approval.action.name == 'update':
-                self.status = 'active'
-            elif approval.action.name == 'delete':
-                self.delete()
-                return   
-
-        elif approval.status == 'rejected':
-            if approval.action.name == 'create':
-                self.delete()
-                return         
-
-            elif approval.action.name == 'update':
-                self.status = 'active'  
-            elif approval.action.name == 'delete':
-                self.status = 'active'  
-        self.save()
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name in ['create', 'update']:
+                    self.approval_status = 'active'
+                    self.is_active = True  # Set is_active=True for approved create/update
+                    self.deleted_at = None
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'under_deletion'
+                    self.is_active = False  # Soft delete
+                    self.deleted_at = timezone.now()
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.is_active = False
+                    self.deleted_at = timezone.now()  # Soft delete on rejected create
+                elif approval.action.name in ['update', 'delete']:
+                    self.approval_status = 'active'
+                    self.is_active = True  # Revert to active
+                    self.deleted_at = None
+            self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
 
     
