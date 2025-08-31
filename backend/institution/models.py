@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
+from approval.models import BaseApprovableModel
 
 
 logger = logging.getLogger(__name__)
@@ -267,7 +268,7 @@ class InstitutionKYCDocument(models.Model):
         verbose_name_plural = "Institution KYC Documents"
 
 
-class InstitutionBankType(SoftDeletableTimeStampedModel):
+class InstitutionBankType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
@@ -291,9 +292,12 @@ class InstitutionBankType(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution
 
 
-class InstitutionBankAccount(SoftDeletableTimeStampedModel):
+class InstitutionBankAccount(BaseApprovableModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
@@ -327,9 +331,12 @@ class InstitutionBankAccount(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution_bank.institution
 
 
-class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
+class InstitutionWorkingDays(BaseApprovableModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
@@ -357,9 +364,12 @@ class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Working Days for {self.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution
 
 
-class InstitutionTax(SoftDeletableTimeStampedModel):
+class InstitutionTax(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
@@ -383,13 +393,16 @@ class InstitutionTax(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.tax_name
+    
+    def get_institution(self):
+        return self.institution
 
     class Meta:
         verbose_name_plural = "Institution Taxes"
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(SoftDeletableTimeStampedModel):
+class InstitutionTaxRule(BaseApprovableModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -425,9 +438,12 @@ class InstitutionTaxRule(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.tax_rule_name
+    
+    def get_institution(self):
+        return self.institution_tax.institution
 
 
-class Branch(SoftDeletableTimeStampedModel):
+class Branch(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -482,9 +498,12 @@ class Branch(SoftDeletableTimeStampedModel):
             + " - "
             + self.branch_name
         )
+        
+    def get_institution(self):
+        return self.institution    
 
 
-class BranchWorkingDays(models.Model):
+class BranchWorkingDays(BaseApprovableModel):
     branch = models.OneToOneField(
         "Branch", on_delete=models.CASCADE, related_name="working_days"
     )
@@ -533,6 +552,9 @@ class BranchWorkingDays(models.Model):
             )
 
         self.days.set(inst_working_days.days.all())
+        
+    def get_institution(self):
+        return self.branch.institution    
 
 
 class BranchDay(models.Model):
@@ -558,7 +580,7 @@ class BranchDay(models.Model):
         ordering = ("day__level",)
 
 
-class BranchShift(models.Model):
+class BranchShift(BaseApprovableModel):
     branch = models.ForeignKey(
         "Branch", on_delete=models.CASCADE, related_name="shifts"
     )
@@ -606,6 +628,9 @@ class BranchShift(models.Model):
             "shift_day__day__level",
             "name",
         )
+        
+    def get_institution(self):
+        return self.branch.institution    
 
 
 class UserBranch(models.Model):
@@ -666,7 +691,7 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(SoftDeletableTimeStampedModel):
+class Department(BaseApprovableModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -689,6 +714,9 @@ class Department(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.name
+    
+    def get_institution(self):
+        return self.institution
 
 
 PENALTY_TYPES = [
@@ -705,7 +733,7 @@ PENALTY_VALUE_TYPES = [
 ]
 
 
-class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
+class InstitutionPenaltyConfig(BaseApprovableModel):
     """Default penalty configuration at institution level"""
 
     institution = models.ForeignKey(
@@ -758,9 +786,12 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
             return calculated
 
         return self.penalty_value
+    
+    def get_institution(self):
+        return self.institution
 
 
-class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
+class BranchPenaltyConfig(BaseApprovableModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
 
     branch = models.ForeignKey(
@@ -811,9 +842,12 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
             return calculated
 
         return self.penalty_value
+    
+    def get_institution(self):
+        return self.branch.institution
 
 
-class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
+class BranchLocationComparisonConfig(BaseApprovableModel):
     radius_in_meters = models.IntegerField(default=100)
     branch = models.OneToOneField(
         Branch, on_delete=models.CASCADE, related_name="location_comparison_settings"
@@ -821,3 +855,6 @@ class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Location Comparison Settings for {self.branch.branch_name}"
+    
+    def get_institution(self):
+        return self.branch.institution
