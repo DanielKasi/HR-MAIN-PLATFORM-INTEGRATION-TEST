@@ -33,7 +33,6 @@ from .serializers import (
 )
 from employee.models import Employee
 from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_excel
-from datetime import datetime
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -114,7 +113,7 @@ class ExportEFTExcelView(APIView):
             payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
 
             # Generate a dynamic filename
-            filename = f"BULK_EFT_UPLOAD_TEMPLATE_{payroll_period.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"BULK_EFT_UPLOAD_TEMPLATE_{payroll_period.name.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
 
             response = HttpResponse(
                 excel_file.getvalue(),
@@ -794,7 +793,7 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
         try:
             excel_file = generate_allpayslips_excel(payroll_period_id)
 
-            filename = f"PAYROLL-PERIOD-PASSLIPS_REPORT_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"PAYROLL-PERIOD-PASSLIPS_REPORT_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

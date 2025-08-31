@@ -1,16 +1,13 @@
 from django.db import models
-from datetime import time, datetime
+from datetime import time
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from django.core.exceptions import ValidationError
 import logging
 from utilities.default_document_types import DEFAULT_DOCUMENT_TYPES
-from utilities.default_data import default_data
 from django.db import transaction
 from django.utils import timezone
-from recruitment.models import JobPosition
 import json
-from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -215,7 +212,7 @@ class Institution(SoftDeletableTimeStampedModel):
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
 
-        current_year = datetime.now().year
+        current_year = timezone.now().year
         Calendar.create_with_holidays(institution=self, year=current_year)
 
     def get_zoom_access_token(self):

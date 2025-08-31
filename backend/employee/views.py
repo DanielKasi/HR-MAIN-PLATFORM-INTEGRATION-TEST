@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
+
+from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
     Employee,
     EmployeeAttendance,
@@ -328,7 +330,7 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
-        start_time = datetime.now()
+        start_time = timezone.now()
         print(f"Starting bulk upload at {start_time}")
 
         # Fetch institution and default role once (mirroring single creation)
@@ -774,7 +776,7 @@ class EmployeeCreateAPIView(APIView):
                 print(f"Starting batch processing with batch size {batch_size}")
                 for start_idx in range(0, len(df), batch_size):
                     batch = df[start_idx : start_idx + batch_size]
-                    batch_start_time = datetime.now()
+                    batch_start_time = timezone.now()
                     print(
                         f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
                     )
@@ -815,8 +817,8 @@ class EmployeeCreateAPIView(APIView):
                             "is_email_verified": True,
                             "is_password_verified": True,
                             "user_type": "staff",
-                            "created_at": datetime.now(),
-                            "updated_at": datetime.now(),
+                            "created_at": timezone.now(),
+                            "updated_at": timezone.now(),
                         }
 
                         # Process employee data
@@ -929,8 +931,8 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data[field] = 0
 
                         # Add timestamps
-                        employee_data["created_at"] = datetime.now()
-                        employee_data["updated_at"] = datetime.now()
+                        employee_data["created_at"] = timezone.now()
+                        employee_data["updated_at"] = timezone.now()
 
                         # Add to creation lists
                         user_objects.append(CustomUser(**user_data))
@@ -1030,7 +1032,7 @@ class EmployeeCreateAPIView(APIView):
                     created_count += len(created_employees)
 
                     print(
-                        f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
+                        f"Batch {start_idx//batch_size + 1} completed in {(timezone.now() - batch_start_time).total_seconds()} seconds"
                     )
 
             # Set default employee role if not already set (once after all batches)
@@ -1039,7 +1041,7 @@ class EmployeeCreateAPIView(APIView):
                 institution.save()
 
             print(
-                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+                f"Total upload time: {(timezone.now() - start_time).total_seconds()} seconds"
             )
 
             return Response(
@@ -1837,6 +1839,8 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             if serializer.is_valid():
                 attendance = serializer.save()
                 attendance.confirm_create()
+                employee_instance = Employee.objects.get(id=employee)
+                create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -2360,7 +2364,7 @@ class ExportAttendanceExcelView(APIView):
         try:
             excel_file = generate_attendance_excel(start_date, end_date, context)
 
-            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

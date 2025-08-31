@@ -31,6 +31,7 @@ from employee.models import EmployeeContract, Employee
 import logging
 from django.db.models import Q
 from django.db import transaction
+from django.utils import timezone
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -500,7 +501,7 @@ class GenerateDocumentView(BaseDocumentView):
                     if onboarding.application.job_position_advert.job_position.salary_min
                     else ""
                 ),
-                "date": str(datetime.now().date()),
+                "date": str(timezone.now().date()),
             }
         elif context == "employee":
             employee = get_object_or_404(Employee, pk=context_id)
@@ -509,18 +510,18 @@ class GenerateDocumentView(BaseDocumentView):
                     employee.user.fullname if hasattr(employee.user, "fullname") else ""
                 ),
                 "salary": str(employee.salary) if hasattr(employee, "salary") else "",
-                "date": str(datetime.now().date()),
+                "date": str(timezone.now().date()),
             }
-        elif context == "leave":
-            leave = get_object_or_404(Leave, pk=context_id)
-            known_values = {
-                "fullname": (
-                    leave.employee.fullname
-                    if hasattr(leave.employee, "fullname")
-                    else ""
-                ),
-                "date": str(datetime.now().date()),
-            }
+        # elif context == "leave":
+        #     leave = get_object_or_404(Leave, pk=context_id)
+        #     known_values = {
+        #         "fullname": (
+        #             leave.employee.fullname
+        #             if hasattr(leave.employee, "fullname")
+        #             else ""
+        #         ),
+        #         "date": str(timezone.now().date()),
+        #     }
         else:
             return Response(
                 {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
@@ -658,7 +659,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
     def _get_email_values(self, placeholder_values, context, context_obj):
         """Derive email values based on context and context object."""
         email_values = {
-            "due_date": str(datetime.now().date() + timedelta(days=7)),
+            "due_date": str(timezone.now().date() + timedelta(days=7)),
             "hr_email": getattr(settings, "HR_EMAIL", settings.DEFAULT_FROM_EMAIL),
         }
 
@@ -772,8 +773,8 @@ class DocumentStatusUpdateView(BaseDocumentView):
             return get_object_or_404(OnBoarding, pk=context_id)
         elif context == "employee":
             return get_object_or_404(Employee, pk=context_id)
-        elif context == "leave":
-            return get_object_or_404(Leave, pk=context_id)
+        # elif context == "leave":
+        #     return get_object_or_404(Leave, pk=context_id)
         raise ValueError("Invalid context")
 
     @extend_schema(

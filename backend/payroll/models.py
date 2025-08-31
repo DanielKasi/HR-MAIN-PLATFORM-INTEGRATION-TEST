@@ -296,6 +296,7 @@ class EmployeeDeduction(BaseApprovableModel):
         ]
 
     def get_recurrence_count(self, payroll_period):
+        from employee.utilities import get_employee_working_days
         """
         Calculate the number of times this item (allowance or deduction) will recur
         in the given payroll period.
@@ -307,12 +308,8 @@ class EmployeeDeduction(BaseApprovableModel):
         start_date = payroll_period.start_date
         end_date = payroll_period.end_date
 
-        if hasattr(self.employee, "custom_working_days"):
-            working_days = self.employee.custom_working_days.days.all()
-        else:
-            institution = self.employee.department.institution
-            working_days = institution.working_days.days.all()
-
+        working_days = get_employee_working_days(self.employee)
+        
         # Daily recurrence
         if self.deduction_type.frequency == "DAILY":
             current_date = start_date
