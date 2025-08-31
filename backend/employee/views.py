@@ -1840,7 +1840,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 attendance = serializer.save()
                 attendance.confirm_create()
                 employee_instance = Employee.objects.get(id=employee)
-                # create_spotchecks_for_today(employee_instance)
+                create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
