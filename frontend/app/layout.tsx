@@ -21,7 +21,7 @@ const font = Outfit({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PERACOSOFT",
   description: "A comprehensive SaaS solution for organisation management",
-  
+
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,9 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           defaultTheme="light"
         >
           <Providers>
-              <LogoutWarningPopup/>
+            <LogoutWarningPopup />
             <WebSocketProvider>{children}</WebSocketProvider>
-            <Toaster duration={1000} position={"top-right"} />
+            <Toaster duration={10000} position={"top-right"} />
           </Providers>
         </ThemeProvider>
       </body>
