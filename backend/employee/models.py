@@ -482,8 +482,8 @@ class EmployeeDay(BaseApprovableModel):
         "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
     )
     day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
     def __str__(self):
         return (
