@@ -22,7 +22,7 @@ interface AttendanceRecordsTableProps {
   selectedDate?: string;
   setSelectedDate?: (date: string) => void;
   searchTerm?: string,
-  scope: { type: "default", employees: IEmployee[] } | { type: "employee", employee: IEmployee },
+  scope: { type: "default", employees: IEmployee[], employees_count: number } | { type: "employee", employee: IEmployee },
   attendanceRefreshRef?: RefObject<(() => void | null)>;
   employeesLoading: boolean,
   showingOnDashboard?: boolean
@@ -147,7 +147,7 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
       const stats =
         scope.type === "default" ?
           [
-            { label: "Total Employees", value: employees.length || 0, icon: null },
+            { label: "Total Employees", value: scope.employees_count || 0, icon: null },
             { label: "Checked In", value: attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
             { label: "Checked Out", value: attendanceRecords.filter((a) => a.check_out_time).length, icon: null },
             { label: "Absent", value: employees.length - attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
@@ -161,7 +161,7 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
               {scope.type === "default" ?
                 <>
                   <CardTitle className="flex items-center justify-between">
-                    <span className="mb-2">Attendance ({attendanceData?.count || 0})</span>
+                    <span className="mb-2">Attendance</span>
                   </CardTitle>
                   {
                     !showingOnDashboard && (
