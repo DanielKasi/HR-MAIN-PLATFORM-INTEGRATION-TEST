@@ -2500,7 +2500,7 @@ export interface IBranchLocationComparisonConfigFormData {
 }
 
 
-export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
+export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 
 export interface IBranchDay {

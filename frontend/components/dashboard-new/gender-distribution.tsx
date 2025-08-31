@@ -1,10 +1,10 @@
 "use client";
 
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {PieChart, Pie, Cell, ResponsiveContainer} from "recharts";
-import {Button} from "@/components/ui/button";
-import {RefreshCw} from "lucide-react";
-import {useMobile} from "@/hooks/use-mobile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { useMobile } from "@/hooks/use-mobile";
 
 interface GenderDistributionProps {
   data?: {
@@ -17,16 +17,17 @@ interface GenderDistributionProps {
   loading: boolean;
 }
 
-export function GenderDistribution({data, onRefresh, loading}: GenderDistributionProps) {
+export function GenderDistribution({ data, onRefresh, loading }: GenderDistributionProps) {
   const isMobile = useMobile();
   const chartData = [
-    {name: "Female", value: data?.female || 0, color: "#1E40AF"},
-    {name: "Male", value: data?.male || 0, color: "#EF4444"},
+    { name: "Female", value: data?.female || 0, color: "#1E40AF" },
+    { name: "Male", value: data?.male || 0, color: "#EF4444" },
+    { name: "Other", value: data?.other || 0, color: "#ABABAB" },
   ];
 
   const femalePercentage = data ? Math.round((data.female / data.employees_count) * 100) : 0;
   const malePercentage = data ? Math.round((data.male / data.employees_count) * 100) : 0;
-
+  const otherPercentage = data ? Math.round((data.other / data.employees_count) * 100) : 0;
   return (
     <Card className="shadow-sm border-none rounded-3xl">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -70,10 +71,19 @@ export function GenderDistribution({data, onRefresh, loading}: GenderDistributio
               <div className="flex items-center gap-1 md:gap-3">
                 <div className="w-2 md:w-3 md:h-3 !aspect-square !inline-block bg-blue-600 rounded-full"></div>
                 <p className="text-xs md:text-sm text-gray-600 inline-block">
-                 <span>Female</span>  <span className="text-xs">({data?.female || 0})</span> 
+                  <span>Female</span>  <span className="text-xs">({data?.female || 0})</span>
                 </p>
               </div>
               <p className="text-base font-semibold">{femalePercentage || 0}%</p>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 md:gap-3">
+                <div className="w-2 md:w-3 md:h-3 !aspect-square !inline-block bg-gray-500 rounded-full"></div>
+                <p className="text-xs md:text-sm text-gray-600 inline-block">
+                  <span>Other</span>  <span className="text-xs">({data?.other || 0})</span>
+                </p>
+              </div>
+              <p className="text-base font-semibold">{otherPercentage || 0}%</p>
             </div>
           </div>
         </div>
