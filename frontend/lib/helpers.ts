@@ -22,33 +22,33 @@ export function capitalizeEachWord(str: string) {
 }
 
 export const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
 
 export const formatNumberByMagnitude = (value: number) => {
-    if (value >= 1000000000) {
-      return `${(value / 1000000000).toFixed(1)}B`;
-    }
-    else if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
-    }
-    else if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}K`;
-    }
-    return `${value}`;
-  };
+  if (value >= 1000000000) {
+    return `${(value / 1000000000).toFixed(1)}B`;
+  }
+  else if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+  else if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}K`;
+  }
+  return `${value}`;
+};
 
-export  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
+export const getInitials = (name: string) => {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+};
 
 export function getDefaultInstitutionId() {
   if (typeof window !== "undefined") {
@@ -86,7 +86,7 @@ export const fetchAndSetData = async <T>(
 
     setFn(data);
   } catch (error) {
-    showErrorToast({error, defaultMessage:errorMsg})
+    showErrorToast({ error, defaultMessage: errorMsg })
     if (setErrorFn) {
       setErrorFn(errorMsg);
     }
@@ -250,43 +250,43 @@ export const downloadFile = (filePath: string, fileName: string) => {
 }
 
 
-  export const getFileUrl = (filePath: string) => {
-    if (filePath.startsWith("http")) {
-      return filePath;
-    }
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    return `${baseUrl}${filePath}`;
+export const getFileUrl = (filePath: string) => {
+  if (filePath.startsWith("http")) {
+    return filePath;
   }
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  return `${baseUrl}${filePath}`;
+}
 
-  export const getFileName = (filePath: string) => {
-    return filePath.split("/").pop() || "document.pdf";
+export const getFileName = (filePath: string) => {
+  return filePath.split("/").pop() || "document.pdf";
+}
+
+export const handleDownload = async (fileUrl: string, fileName: string) => {
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+
+    toast.success("Download started", {
+      description: `${fileName} is being downloaded.`,
+    })
+  } catch (error) {
+    toast.error("Download failed", {
+      description: "Failed to download the file. Please try again.",
+    })
   }
-
-    export const handleDownload = async (fileUrl: string, fileName: string) => {
-      try {
-        const response = await fetch(fileUrl);
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(link);
-  
-        toast.success("Download started", {
-          description: `${fileName} is being downloaded.`,
-        })
-      } catch (error) {
-        toast.error("Download failed", {
-          description: "Failed to download the file. Please try again.",
-        })
-      }
-    }
+}
 
 
 export const countryAPI = {
@@ -298,8 +298,8 @@ export const countryAPI = {
 };
 
 
-export const getCurrentUserLocation = async (callback: (position:GeolocationPosition) =>void) => {
-  if(!navigator.geolocation){
+export const getCurrentUserLocation = async (callback: (position: GeolocationPosition) => void) => {
+  if (!navigator.geolocation) {
     toast.warning("Your browser doesn't support geolocation")
   };
   navigator.geolocation.getCurrentPosition(callback);
@@ -321,9 +321,9 @@ export function maskEmail(email: string): string {
   return `${visible}${hidden}@${domain}`;
 }
 
-export function forceUrlToHttps(url:string) {
-  const  FORCE_HTTPS = process.env.NEXT_PUBLIC_FORCE_HTTPS ? process.env.NEXT_PUBLIC_FORCE_HTTPS === "true" : true;
-  if(!FORCE_HTTPS){ return url}
+export function forceUrlToHttps(url: string) {
+  const FORCE_HTTPS = process.env.NEXT_PUBLIC_FORCE_HTTPS ? process.env.NEXT_PUBLIC_FORCE_HTTPS === "true" : true;
+  if (!FORCE_HTTPS) { return url }
   return url.replace(/^http:\/\//i, "https://");
 }
 

@@ -1,6 +1,6 @@
-import {Input} from "@/components/ui/input";
-import {formatCurrency} from "@/lib/helpers";
-import {InputHTMLAttributes} from "react";
+import { Input } from "@/components/ui/input";
+import { formatCurrency } from "@/lib/helpers";
+import { InputHTMLAttributes } from "react";
 
 interface FormattedNumberInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
@@ -30,7 +30,6 @@ export function FormattedNumberInput({
         if (!isNaN(parsed)) {
           onValuChange(parsed);
         }
-        console.log("\n\n Passing parsed value as : ", parsed)
       }}
     />
   );

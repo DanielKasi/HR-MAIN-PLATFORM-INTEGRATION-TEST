@@ -2359,9 +2359,9 @@ export default function JobSpecificInterviewPipeline() {
                                 </TableHeader>
 
                                 <TableBody>
-                                  {filteredCandidates.map((candidate) => (
+                                  {filteredCandidates.map((candidate, idx) => (
                                     <TableRow
-                                      key={candidate.id}
+                                      key={idx}
                                       className={
                                         candidate.status === 'rejected' || candidate.status === 'cancelled'
                                           ? 'opacity-60 bg-red-50'

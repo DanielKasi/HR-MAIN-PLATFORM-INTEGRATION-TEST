@@ -354,7 +354,7 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
         )
         if serializer.is_valid():
             instance = serializer.save()
-            instance.confiem_create()
+            instance.confirm_create()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
