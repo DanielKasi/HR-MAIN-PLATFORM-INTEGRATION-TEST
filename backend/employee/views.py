@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
+
+from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
     Employee,
     EmployeeAttendance,
@@ -1837,6 +1839,8 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             if serializer.is_valid():
                 attendance = serializer.save()
                 attendance.confirm_create()
+                employee_instance = Employee.objects.get(id=employee)
+                create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
