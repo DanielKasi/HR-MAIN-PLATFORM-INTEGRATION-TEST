@@ -240,6 +240,10 @@ export function EmployeePayrollTable({
                     <TableHead className="font-semibold text-gray-700 min-w-[8rem]">
                       Deductions
                     </TableHead>
+                    <TableHead className="font-semibold text-gray-700 min-w-[8rem]">
+                      Penalties
+                    </TableHead>
+
 
                     <TableHead className="font-semibold text-gray-700 min-w-[80px]">Days</TableHead>
                     <TableHead className="font-semibold text-gray-700 min-w-[100px]">
@@ -311,6 +315,11 @@ export function EmployeePayrollTable({
                           {formatCurrency(payslip.total_deductions)}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-red-600">
+                          {formatCurrency(payslip.total_penalties)}
+                        </div>
+                      </TableCell>
 
                       <TableCell>
                         <div className="text-center font-medium text-gray-700">
@@ -345,6 +354,7 @@ export function EmployeePayrollTable({
                       {extractItems(displayedPayslips).map((itemName, index) => {
                         const allowanceItem = payslip.items?.allowance?.[itemName];
                         const deductionItem = payslip.items?.deduction?.[itemName];
+                        const penaltyItem = payslip.items?.penalties?.[itemName];
 
                         let totalAmount = 0;
                         let count = 0;
@@ -362,6 +372,13 @@ export function EmployeePayrollTable({
                             0,
                           );
                           count = deductionItem.length;
+                          isDeduction = true;
+                        } else if (penaltyItem) {
+                          totalAmount = penaltyItem.reduce(
+                            (sum: number, item: { amount: string; }) => sum + Number.parseFloat(item.amount),
+                          0
+                          );
+                          count = penaltyItem.length;
                           isDeduction = true;
                         }
 
