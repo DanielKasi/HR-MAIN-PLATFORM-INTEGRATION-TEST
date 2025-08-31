@@ -177,7 +177,7 @@ urlpatterns = [
         name="branch-working-days",
     ),
     path(
-        "branch-working-day-detail/<int:id>/",
+        "branch-working-day-detail/<int:pk>/",
         BranchWorkingDaysDetailView.as_view(),
         name="branch-working-day-detail",
     ),
