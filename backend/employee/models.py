@@ -30,7 +30,7 @@ class EmployeeType(BaseApprovableModel):
 
     def __str__(self):
         return self.name
-    
+
     def get_institution(self):
         return self.institution
 
@@ -440,22 +440,23 @@ class Employee(BaseApprovableModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
-                
+
             # Get the branch-specific radius or use default
             try:
                 threshold_meters = branch.location_comparison_settings.radius_in_meters
             except AttributeError:
                 # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
                 threshold_meters = 100
-                
+
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            
+
             if distance <= threshold_meters:
                 return True
-                
+
         return False
+
 
 class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
@@ -495,6 +496,7 @@ class EmployeeDay(BaseApprovableModel):
     def get_institution(self):
         return self.employee_working_days.get_institution()
 
+
 class EmployeeShift(BaseApprovableModel):
     CONTEXT_TYPES = [
         ("REQUEST", "Request"),
@@ -507,10 +509,18 @@ class EmployeeShift(BaseApprovableModel):
         ("PENDING", "Pending"),
     ]
 
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="employee_shift")
-    shift = models.ForeignKey("institution.BranchShift", on_delete=models.CASCADE, related_name="employee_shift")
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="employee_shift"
+    )
+    shift = models.ForeignKey(
+        "institution.BranchShift",
+        on_delete=models.CASCADE,
+        related_name="employee_shift",
+    )
     context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
-    shift_status = models.CharField(choices=STATUS_CHOICES, max_length=200, default="PENDING")
+    shift_status = models.CharField(
+        choices=STATUS_CHOICES, max_length=200, default="PENDING"
+    )
 
     date = models.DateField()
 
@@ -524,6 +534,7 @@ class EmployeeShift(BaseApprovableModel):
 
     def get_institution(self):
         return self.employee.get_institution()
+
 
 class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
@@ -557,7 +568,7 @@ class EmployeeAttendance(BaseApprovableModel):
             ("absent", "Absent"),
             ("pending", "Pending"),
         ],
-        default="pending"  # Added default value
+        default="pending",  # Added default value
     )
 
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -643,7 +654,6 @@ class EmployeeAttendance(BaseApprovableModel):
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
 
-
         # Check for absence first
         if not self.check_in_time and not self.check_out_time:
             print("    Absent (no check-in or check-out)")
@@ -668,17 +678,18 @@ class EmployeeAttendance(BaseApprovableModel):
         else:
             self.attendance_status = "on_time"
 
-        print(f"    Final Status = {self.attendance_status}, "
-              f"Overtime = {self.overtime_hours}, "
-              f"Late = {self.late_minutes}, "
-              f"Early checkout = {self.early_checkout_minutes}")
+        print(
+            f"    Final Status = {self.attendance_status}, "
+            f"Overtime = {self.overtime_hours}, "
+            f"Late = {self.late_minutes}, "
+            f"Early checkout = {self.early_checkout_minutes}"
+        )
 
     def save(self, *args, **kwargs):
         """
         Simplified save method - status calculation is now handled by serializer.
         """
         super().save(*args, **kwargs)
-
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
@@ -716,21 +727,21 @@ class EmployeeAttendance(BaseApprovableModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
-                
+
             # Get the branch-specific radius or use default
             try:
                 threshold_meters = branch.location_comparison_settings.radius_in_meters
             except AttributeError:
                 # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
                 threshold_meters = 100
-                
+
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            
+
             if distance <= threshold_meters:
                 return True
-                
+
         return False
 
     def save(self, *args, **kwargs):
