@@ -707,16 +707,47 @@ class SuccessResponseSerializer(serializers.Serializer):
     data = serializers.DictField()
 
 
-class InstitutionPenaltyConfigSerializer(BaseApprovableSerializer):
+class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstitutionPenaltyConfig
         fields = "__all__"
+        extra_kwargs = {
+            "penalty_type": {"error_messages": {"unique": "This penalty type already exists for this institution."}}
+        }
+        validators = []  # ✅ disable DRF's auto UniqueTogetherValidator
+
+    def validate(self, attrs):
+        institution = attrs.get("institution") or self.instance.institution
+        penalty_type = attrs.get("penalty_type") or self.instance.penalty_type
+
+        if InstitutionPenaltyConfig.objects.exclude(pk=getattr(self.instance, "pk", None)).filter(
+            institution=institution,
+            penalty_type=penalty_type
+        ).exists():
+            raise serializers.ValidationError(
+                {"error": "This penalty type already exists for this institution."}
+            )
+        return attrs
 
 
-class BranchPenaltyConfigSerializer(BaseApprovableSerializer):
+class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = BranchPenaltyConfig
         fields = "__all__"
+        validators = []  # ✅ disable DRF's auto UniqueTogetherValidator
+
+    def validate(self, attrs):
+        branch = attrs.get("branch") or self.instance.branch
+        penalty_type = attrs.get("penalty_type") or self.instance.penalty_type
+
+        if BranchPenaltyConfig.objects.exclude(pk=getattr(self.instance, "pk", None)).filter(
+            branch=branch,
+            penalty_type=penalty_type
+        ).exists():
+            raise serializers.ValidationError(
+                {"error": "This penalty type already exists for this branch."}
+            )
+        return attrs
 
 
 class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
