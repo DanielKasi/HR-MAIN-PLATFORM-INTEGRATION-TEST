@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from .models import Employee, EmployeeDay
 from settings.models import SystemDay
 
@@ -19,19 +19,19 @@ def get_employee_working_days(employee: Employee):
     return get_employee_working_days_obj(employee).days.all()
 
 
-def get_employee_day(employee: Employee, day: SystemDay) -> EmployeeDay:
+def get_employee_day(employee: Employee, day: SystemDay):
     working_days = get_employee_working_days_obj(employee)
     try:
-        return working_days.employee_days.get(day=day)
+        return working_days.days.get(day=day)
     except EmployeeDay.DoesNotExist:
         raise LookupError(
             f"No working schedule found for employee {employee.id} on {day}"
         )
 
 
-def get_employee_day_working_start_time(employee: Employee, day: SystemDay) -> datetime:
+def get_employee_day_working_start_time(employee: Employee, day: SystemDay) -> time:
     return get_employee_day(employee, day).start_time
 
 
-def get_employee_day_working_end_time(employee: Employee, day: SystemDay) -> datetime:
+def get_employee_day_working_end_time(employee: Employee, day: SystemDay) -> time:
     return get_employee_day(employee, day).end_time

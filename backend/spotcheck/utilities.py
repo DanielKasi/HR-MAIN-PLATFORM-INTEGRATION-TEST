@@ -1,10 +1,13 @@
 import random
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from employee.utilities import get_employee_day_working_end_time, get_employee_day_working_start_time
+from employee.utilities import (
+    get_employee_day_working_end_time,
+    get_employee_day_working_start_time,
+)
 
 from employee.models import Employee
 from settings.models import SystemDay
@@ -16,6 +19,7 @@ from .models import (
     InstitutionSpotCheckSetting,
     SpotCheckStatus,
 )
+
 
 def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
     try:
@@ -89,7 +93,7 @@ def get_employee_maximum_spotchecks_to_send_in_a_day(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.upper_threshold
+        return employee.department.institution.institutionspotchecksetting.upper_threshold
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -121,7 +125,6 @@ def get_employee_spotchecks_late_starts_after_minutes(employee: Employee) -> int
     raise ValueError("No late start threshold found for employee")
 
 
-
 def create_spotchecks_for_today(employee: Employee):
     max_spotchecks = get_employee_maximum_spotchecks_to_send_in_a_day(employee)
     min_spotchecks = get_employee_minimum_spotchecks_to_send_in_a_day(employee)
@@ -130,21 +133,20 @@ def create_spotchecks_for_today(employee: Employee):
     weekday_str = today.strftime("%a").upper()
     system_day = SystemDay.objects.get(day_code=weekday_str)
 
-    work_start = get_employee_day_working_start_time(employee, system_day)
-    work_end = get_employee_day_working_end_time(employee, system_day)
+    work_start_time: time = get_employee_day_working_start_time(employee, system_day)
+    work_end_time: time = get_employee_day_working_end_time(employee, system_day)
 
-    # Ensure timezone-aware datetimes
+    work_start = datetime.combine(today, work_start_time)
+    work_end = datetime.combine(today, work_end_time)
+
+    if timezone.is_naive(work_start):
+        work_start = timezone.make_aware(work_start)
+    if timezone.is_naive(work_end):
+        work_end = timezone.make_aware(work_end)
+
     now = timezone.now()
-    work_start = (
-        timezone.make_aware(work_start) if timezone.is_naive(work_start) else work_start
-    )
-    work_end = (
-        timezone.make_aware(work_end) if timezone.is_naive(work_end) else work_end
-    )
-
     num_spotchecks = random.randint(min_spotchecks, max_spotchecks)
 
-    # Generate random times within work window
     delta_seconds = int((work_end - work_start).total_seconds())
     scheduled_times = sorted(
         [
@@ -154,13 +156,12 @@ def create_spotchecks_for_today(employee: Employee):
     )
 
     status_pending, _ = SpotCheckStatus.objects.get_or_create(status_name="PENDING")
-    status_missed, _ = SpotCheckStatus.objects.get_or_create(status_name="NOT_YET_IN")
+    status_missed, _ = SpotCheckStatus.objects.get_or_create(status_name="HAD_NOT_YET_CHECKED_IN")
 
     future_spotchecks = []
 
     for scheduled_time in scheduled_times:
         if scheduled_time <= now:
-            # Missed (already past when created)
             status = status_missed
         else:
             status = status_pending
@@ -173,7 +174,6 @@ def create_spotchecks_for_today(employee: Employee):
             initiated_by="system",
         )
 
-    # Schedule the first future spotcheck (if any exist)
     if future_spotchecks:
         initiate_next_spotcheck_for_an_employee.apply_async(
             args=[employee], eta=future_spotchecks[0]
