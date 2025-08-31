@@ -244,8 +244,15 @@ class EmployeeSpotCheckCreateView(APIView):
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(data=request_data)
         if serializer.is_valid():
             spotcheck = serializer.save()
-            send_spotcheck_email(spotcheck)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            if send_spotcheck_email(spotcheck):
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                spotcheck.delete()
+                return Response(
+                    {"detail": "Spotcheck creation failed because email could not be sent."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+   
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     
