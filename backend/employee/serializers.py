@@ -745,7 +745,7 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
 
 
 class EmployeeShiftSerializer(BaseApprovableSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), required=False)
     shift = serializers.PrimaryKeyRelatedField(queryset=BranchShift.objects.all())
 
     class Meta:
@@ -770,9 +770,9 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         employee = data.get("employee")
 
         if context == "REQUEST":
-            if not hasattr(request_user, "employee"):
+            if not hasattr(request_user, "employees"):
                 raise serializers.ValidationError("Logged-in user is not an employee.")
-            data["employee"] = request_user.employee
+            data["employee"] = request_user.employees
             employee = data["employee"]
         elif context == "ALLOCATION":
             if employee is None:
@@ -801,6 +801,7 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
                 f"({branch_open} - {branch_close})."
             )
 
+        print("data", data)
         return data
 
     def create(self, validated_data):
