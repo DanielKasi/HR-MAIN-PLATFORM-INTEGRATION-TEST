@@ -741,7 +741,7 @@ class Payslip(BaseApprovableModel):
         self.basic_salary = self.basic_salary or self.employee.salary or 0
 
         gross = self.basic_salary + taxable_allowances
-        net = gross - tax_total + non_taxable_allowances - deductions - - total_penalties
+        net = gross - tax_total + non_taxable_allowances - deductions -  total_penalties
 
         self.gross_salary = gross
         self.net_salary = net

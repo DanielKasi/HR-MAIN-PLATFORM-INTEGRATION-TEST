@@ -117,7 +117,7 @@ const EmployeeShiftsPage = () => {
 
     setIsSubmitting(true);
     try {
-      await apiRequest.patch(`employee/employee-shifts/${selectedShift.id}/`, {
+      await apiRequest.patch(`employee/employee-shifts/detail/${selectedShift.id}/`, {
         employee: formData.employee_id,
         shift: formData.shift_id,
         context: "ALLOCATION",
@@ -139,7 +139,7 @@ const EmployeeShiftsPage = () => {
 
     setIsSubmitting(true);
     try {
-      await apiRequest.delete(`employee/employee-shifts/${selectedShift.id}/`);
+      await apiRequest.delete(`employee/employee-shifts/detail/${selectedShift.id}/`);
       console.log("Allocation deleted successfully");
       setIsDeleteDialogOpen(false);
       setSelectedShift(null);

@@ -1840,7 +1840,7 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 attendance = serializer.save()
                 attendance.confirm_create()
                 employee_instance = Employee.objects.get(id=employee)
-                create_spotchecks_for_today(employee_instance)
+                # create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -2457,7 +2457,7 @@ class EmployeeShiftListCreateView(APIView):
             request.query_params.get("is_employee_specific", "true").lower() == "true"
         )
 
-        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution)
+        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution, is_active=True)
 
         if query_context in ["ALLOCATION", "REQUEST"]:
             shifts = shifts.filter(context=query_context)

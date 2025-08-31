@@ -75,7 +75,6 @@ from django.db.models import Value, IntegerField
 from rest_framework import parsers
 
 
-
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -186,8 +185,8 @@ class BranchWorkingDaysDetailView(APIView):
             return Response(
                 {"detail": "Working days configuration not found."}, status=404
             )
-            
-        branch_working_days.approval_status = 'under_update'    
+
+        branch_working_days.approval_status = "under_update"
 
         serializer = BranchWorkingDaysSerializer(
             branch_working_days, data=request.data, partial=True
@@ -654,8 +653,8 @@ class InstitutionBankTypeDetailView(APIView):
         except InstitutionBankType.DoesNotExist:
             return Response({"detail": "Bank type not found."}, status=404)
 
-        bank_type.approval_status = 'under_updatw'
-        
+        bank_type.approval_status = "under_updatw"
+
         serializer = InstitutionBankTypeSerializer(
             bank_type, data=request.data, partial=True
         )
@@ -677,8 +676,8 @@ class InstitutionBankTypeDetailView(APIView):
     def delete(self, request, bank_type_id):
         try:
             bank_type = InstitutionBankType.objects.get(id=bank_type_id)
-            bank_type.approval_status = 'under_deletion'
-            bank_type.save(update_fields=['approval_status'])
+            bank_type.approval_status = "under_deletion"
+            bank_type.save(update_fields=["approval_status"])
             bank_type.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionBankType.DoesNotExist:
@@ -771,7 +770,7 @@ class InstitutionBankAccountDetailView(APIView):
         except InstitutionBankAccount.DoesNotExist:
             return Response({"detail": "Bank account not found."}, status=404)
 
-        bank_account.approval_status = 'under_update'
+        bank_account.approval_status = "under_update"
 
         serializer = InstitutionBankAccountSerializer(
             bank_account, data=request.data, partial=True
@@ -793,8 +792,8 @@ class InstitutionBankAccountDetailView(APIView):
     def delete(self, request, bank_account_id):
         try:
             bank_account = InstitutionBankAccount.objects.get(id=bank_account_id)
-            bank_account.approval_status = 'under_deletion'
-            bank_account.save(update_fields=['approval_status'])
+            bank_account.approval_status = "under_deletion"
+            bank_account.save(update_fields=["approval_status"])
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionBankAccount.DoesNotExist:
             return Response({"detail": "Bank account not found."}, status=404)
@@ -863,8 +862,8 @@ class InstitutionWorkingDaysDetailView(APIView):
             return Response(
                 {"detail": "Working days configuration not found."}, status=404
             )
-            
-        working_days.approval_status = 'under_update'    
+
+        working_days.approval_status = "under_update"
 
         serializer = InstitutionWorkingDaysSerializer(
             working_days, data=request.data, partial=True, context={"request": request}
@@ -896,8 +895,7 @@ class InstitutionTaxListAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
         taxes = InstitutionTax.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
+            institution=institution, deleted_at__isnull=True
         )
 
         if search_query:
@@ -911,8 +909,7 @@ class InstitutionTaxListAPIView(APIView):
             elif status == "inactive":
                 taxes = taxes.filter(is_active=False)
             elif status == "all":
-                pass  
-
+                pass
 
         serializer = InstitutionTaxSerializer(taxes, many=True)
         return Response(serializer.data)
@@ -970,7 +967,7 @@ class InstitutionTaxDetailView(APIView):
         except InstitutionTax.DoesNotExist:
             return Response({"detail": "Tax configuration not found."}, status=404)
 
-        tax.approval_status = 'under_update'
+        tax.approval_status = "under_update"
 
         serializer = InstitutionTaxSerializer(
             tax, data=request.data, partial=True, context={"request": request}
@@ -993,8 +990,8 @@ class InstitutionTaxDetailView(APIView):
     def delete(self, request, tax_id):
         try:
             tax = InstitutionTax.objects.get(id=tax_id)
-            tax.approval_status = 'under_deletion'
-            tax.save(update_fields=['approval_status'])
+            tax.approval_status = "under_deletion"
+            tax.save(update_fields=["approval_status"])
             tax.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except InstitutionTax.DoesNotExist:
@@ -1011,7 +1008,7 @@ class InstitutionTaxRuleListAPIView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile if request.user.is_authenticated else None
-        status = request.query_params.get("status", None) 
+        status = request.query_params.get("status", None)
 
         try:
             institution = Institution.objects.get(id=user.institution_id)
@@ -1028,7 +1025,7 @@ class InstitutionTaxRuleListAPIView(APIView):
                 | Q(institution_tax__name__icontains=search_query)
                 | Q(institution_tax__tax_name__icontains=search_query)
             )
-            
+
         if status:
             status = status.lower()
             if status == "active":
@@ -1036,7 +1033,7 @@ class InstitutionTaxRuleListAPIView(APIView):
             elif status == "inactive":
                 tax_rules = tax_rules.filter(is_active=False)
             elif status == "all":
-                pass      
+                pass
 
         serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
 
@@ -1094,7 +1091,7 @@ class InstitutionTaxRuleDetailView(APIView):
             tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
         except InstitutionTaxRule.DoesNotExist:
             return Response({"detail": "Tax rule not found."}, status=404)
-        tax_rule.approval_status = 'under_update'
+        tax_rule.approval_status = "under_update"
 
         serializer = InstitutionTaxRuleSerializer(
             tax_rule, data=request.data, partial=True, context={"request": request}
@@ -1117,8 +1114,8 @@ class InstitutionTaxRuleDetailView(APIView):
     def delete(self, request, tax_rule_id):
         try:
             tax_rule = InstitutionTaxRule.objects.get(id=tax_rule_id)
-            tax_rule.approval_status = 'under_deletion'
-            tax_rule.save(update_fields=['approval_status'])
+            tax_rule.approval_status = "under_deletion"
+            tax_rule.save(update_fields=["approval_status"])
             tax_rule.confirm_delete()
             return Response(status=204)
         except InstitutionTaxRule.DoesNotExist:
@@ -1215,8 +1212,8 @@ class BranchDetailAPIView(APIView):
                 return Response({"detail": "Access denied."}, status=403)
         except Branch.DoesNotExist:
             return Response({"detail": "Branch not found."}, status=404)
-        
-        branch.approval_status = 'under_update'
+
+        branch.approval_status = "under_update"
 
         serializer = BranchSerializer(branch, data=request.data, partial=True)
         if serializer.is_valid():
@@ -1243,8 +1240,8 @@ class BranchDetailAPIView(APIView):
                 and branch.institution.institution_owner != request.user
             ):
                 return Response({"detail": "Access denied."}, status=403)
-            branch.approval_status = 'under_deletion'
-            branch.save(update_fields=['approval_status'])
+            branch.approval_status = "under_deletion"
+            branch.save(update_fields=["approval_status"])
             branch.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Branch.DoesNotExist:
@@ -1535,7 +1532,7 @@ class DepartmentDetailAPIView(APIView):
     def patch(self, request, department_id):
         try:
             department = Department.objects.get(id=department_id)
-            department.approval_status = 'under_update'
+            department.approval_status = "under_update"
             serializer = DepartmentSerializer(
                 department, data=request.data, partial=True
             )
@@ -1558,8 +1555,8 @@ class DepartmentDetailAPIView(APIView):
     def delete(self, request, department_id):
         try:
             department = Department.objects.get(id=department_id)
-            department.approval_status = 'under_deletion'
-            department.save(update_fields=['approval_status'])
+            department.approval_status = "under_deletion"
+            department.save(update_fields=["approval_status"])
             department.confirm_delete()
             return Response(status=204)
         except Department.DoesNotExist:
@@ -2081,7 +2078,7 @@ class InstitutionPenaltyConfigDetailAPIView(APIView):
     @transaction.atomic()
     def patch(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status = 'under_update'
+        config.approval_status = "under_update"
         serializer = InstitutionPenaltyConfigSerializer(
             config, data=request.data, partial=True
         )
@@ -2094,8 +2091,8 @@ class InstitutionPenaltyConfigDetailAPIView(APIView):
     @extend_schema(tags=["Penalty Configurations"])
     def delete(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status = 'under_deletion'
-        config.save(update_fields=['approval_status'])
+        config.approval_status = "under_deletion"
+        config.save(update_fields=["approval_status"])
         config.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -2204,7 +2201,7 @@ class BranchPenaltyConfigDetailAPIView(APIView):
     @transaction.atomic()
     def patch(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status = 'under_update'
+        config.approval_status = "under_update"
         serializer = BranchPenaltyConfigSerializer(
             config, data=request.data, partial=True
         )
@@ -2217,8 +2214,8 @@ class BranchPenaltyConfigDetailAPIView(APIView):
     @extend_schema(tags=["Penalty Configurations"])
     def delete(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status ='under_deletion'
-        config.save(update_fields=['approval_status'])
+        config.approval_status = "under_deletion"
+        config.save(update_fields=["approval_status"])
         config.confirm_dlete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -2271,7 +2268,7 @@ class BranchLocationComparisonConfigDetailAPIView(APIView):
     @transaction.atomic()
     def patch(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status = 'under_update'
+        config.approval_status = "under_update"
         serializer = BranchLocationComparisonConfigSerializer(
             config, data=request.data, partial=True
         )
@@ -2283,8 +2280,8 @@ class BranchLocationComparisonConfigDetailAPIView(APIView):
 
     def delete(self, request, pk):
         config = self.get_object(pk)
-        config.approval_status = 'under_deletion'
-        config.save(update_fields=['approval_status'])
+        config.approval_status = "under_deletion"
+        config.save(update_fields=["approval_status"])
         config.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -2303,7 +2300,7 @@ class BranchShiftListCreateView(APIView):
                 {"detail": "Branch not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
-        branch_shifts = BranchShift.objects.filter(branch=branch)
+        branch_shifts = BranchShift.objects.filter(branch=branch, is_active=True)
 
         if search:
             branch_shifts = branch_shifts.filter(Q(name__icontains=search))
@@ -2333,13 +2330,13 @@ class BranchShiftListCreateView(APIView):
 class BranchShiftDetailView(APIView):
     def get_object(self, shift_id):
         try:
-            return BranchShift.objects.get(pk=shift_id)
+            return BranchShift.objects.get(id=shift_id)
         except BranchShift.DoesNotExist:
             raise Http404
 
     @extend_schema(tags=["Branch Shifts"], responses={200, BranchShiftSerializer})
     def get(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
+        branch_shift = self.get_object(shift_id)
         serializer = BranchShiftSerializer(branch_shift)
         return Response(serializer.data)
 
@@ -2350,8 +2347,8 @@ class BranchShiftDetailView(APIView):
     )
     @transaction.atomic()
     def patch(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
-        branch_shift.approval_status = 'under_update'
+        branch_shift = self.get_object(shift_id)
+        branch_shift.approval_status = "under_update"
         serializer = BranchShiftSerializer(
             branch_shift, data=request.data, partial=True
         )
@@ -2363,8 +2360,8 @@ class BranchShiftDetailView(APIView):
 
     @extend_schema(tags=["Branch Shifts"], responses={204: None})
     def delete(self, request, shift_id):
-        branch_shift = self.get_object(pk=shift_id)
-        branch_shift.approval_status = 'under_deletion'
-        branch_shift.save(update_fields=['approval_status'])
+        branch_shift = self.get_object(shift_id)
+        branch_shift.approval_status = "under_deletion"
+        branch_shift.save(update_fields=["approval_status"])
         branch_shift.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
