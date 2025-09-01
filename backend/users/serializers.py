@@ -13,7 +13,8 @@ from .models import (
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from utilities.password_validator import validate_password_strength
 from approval.serializers import BaseApprovableSerializer
-
+from django.contrib.auth.password_validation import validate_password
+from django.core import exceptions
 
 
 class PermissionCategorySerializer(serializers.ModelSerializer):
@@ -162,6 +163,36 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 )
 
         return instance
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+    new_password_confirm = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['new_password_confirm']:
+            raise serializers.ValidationError({"new_password_confirm": "New passwords do not match."})
+        
+        user = self.context['request'].user
+        
+        # Check old password
+        if not user.check_password(data['old_password']):
+            raise serializers.ValidationError({"old_password": "Old password is incorrect."})
+        
+        # Validate new password strength
+        try:
+            validate_password(data['new_password'], user)
+        except exceptions.ValidationError as e:
+            errors = dict(e.error_list)
+            raise serializers.ValidationError({"new_password": errors})
+        
+        return data
+
+    def save(self):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user    
 
 
 class ProfileRequestSerializer(serializers.Serializer):

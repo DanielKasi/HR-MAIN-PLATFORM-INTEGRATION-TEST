@@ -2079,6 +2079,11 @@ export interface IAsset {
   asset_histories?: IAssetHistory[];
 }
 
+export interface ChangePasswordData {
+  old_password: string;
+  new_password: string;
+  new_password_confirm: string;
+}
 export interface IAssetFormData {
   asset_name: string;
   serial_number: string;
