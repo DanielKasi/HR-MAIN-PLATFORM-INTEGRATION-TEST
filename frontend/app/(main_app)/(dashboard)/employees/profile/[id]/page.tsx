@@ -461,6 +461,21 @@ export default function EmployeeProfile() {
                                 </p>
                               </div>
                             )}
+                            {employee.payroll_branch && (
+                              <p className="text-[#848496] text-sm break-all">
+                                {employee.payroll_branch.branch_name}
+                              </p>
+                            )}
+
+                            {employee.user?.branches && (
+                              <div className="px-2 py-4">
+                                {employee.user.branches.map((branch, idx) => (
+                                  <p key={idx} className="text-[#848496] text-sm break-all">
+                                    {branch.branch_name}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
                             {employee.date_of_joining && (
                               <div>
                                 <label className="text-sm font-medium text-[#848496]">

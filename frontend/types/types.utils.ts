@@ -961,7 +961,7 @@ export interface ICreateEmployeeForm {
   experience: number;
   qualifications: string;
   skills: string;
-  selected_branches: number[]; // Added for multi-branch selection
+  selected_branches: number[]; 
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_phone_country_code?: string;

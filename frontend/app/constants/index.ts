@@ -19,7 +19,7 @@ export const GENDER_CHOICES = [
 
 export const PENALTY_TYPES: { value: IPenaltyType; label: string }[] = [
   { value: "late_coming", label: "Late Coming" },
-  { value: "early_leaving", label: "Early Leaving" },
+  { value: "early_leaving", label: "Early Checkout" },
   { value: "absent", label: "Absent" },
   { value: "no_response_spotcheck", label: "Not responding to a spotcheck" },
   { value: "late_spotcheck_response", label: "Late spotcheck response" },
