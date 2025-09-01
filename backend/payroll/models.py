@@ -593,7 +593,7 @@ class EmployeePenalty(BaseApprovableModel):
 
         if not config:
             # Fall back to institution config
-            institution = branch.institution if branch else employee.institution
+            institution = branch.institution if branch else employee.department.institution
             if institution:
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
