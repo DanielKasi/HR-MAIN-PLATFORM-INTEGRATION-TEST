@@ -42,7 +42,6 @@ export default function ShiftsTable({searchTerm, refreshTableRef, scope}: Shifts
         if (scope.type === "branch") {
           return await shiftsAPI.BRANCH.getAll(scope.branch.id);
         }
-        // default: return empty
         return {results: [], count: 0} as any;
       }}
       onError={(error) => showErrorToast({error, defaultMessage: "Failed to fetch shifts"})}
