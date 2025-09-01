@@ -2454,17 +2454,20 @@ class EmployeeShiftListCreateView(APIView):
 
         query_context = request.query_params.get("context", "all").upper()
         search = request.query_params.get("search")
-        is_employee_specific = (
-            request.query_params.get("is_employee_specific", "true").lower() == "true"
-        )
+        is_employee_specific = request.query_params.get("is_employee_specific")
 
-        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution, is_active=True)
+        shifts = EmployeeShift.objects.filter(
+            shift__branch__institution=institution, is_active=True
+        )
 
         if query_context in ["ALLOCATION", "REQUEST"]:
             shifts = shifts.filter(context=query_context)
 
-        if is_employee_specific and hasattr(profile, "employee"):
-            shifts = shifts.filter(employee=profile.employee)
+        if is_employee_specific == "true":
+
+            employee_id = request.query_params.get("employee_id")
+
+            shifts = shifts.filter(employee=int(employee_id))
 
         if search:
             shifts = shifts.filter(

@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { showErrorToast, shiftsAPI } from "@/lib/utils";
-import type { IEmployee, IBranchShift, IEmployeeShift } from "@/types/types.utils";
+import React, {useEffect, useRef} from "react";
+import {useSelector} from "react-redux";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {showErrorToast, shiftsAPI} from "@/lib/utils";
+import type {IEmployee, IBranchShift, IEmployeeShift} from "@/types/types.utils";
 
 interface ShiftsTableProps {
   searchTerm?: string;
   className?: string;
   footerClassName?: string;
   refreshTableRef?: React.RefObject<() => void>;
-  scope: { type: "default" } | { type: "employee"; employee: IEmployee } | { type: "branch"; branch: { id: number; name?: string } };
+  scope:
+    | {type: "default"}
+    | {type: "employee"; employee: IEmployee}
+    | {type: "branch"; branch: {id: number; name?: string}};
 }
 
-export default function ShiftsTable({ searchTerm, refreshTableRef, scope }: ShiftsTableProps) {
+export default function ShiftsTable({searchTerm, refreshTableRef, scope}: ShiftsTableProps) {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const localRefreshRef = refreshTableRef || useRef<(() => void) | null>(null);
 
@@ -26,24 +29,35 @@ export default function ShiftsTable({ searchTerm, refreshTableRef, scope }: Shif
       fetchFirstPage={async () => {
         if (!selectedInstitution) throw new Error("No institution selected");
         if (scope.type === "employee") {
-          return await shiftsAPI.EMPLOYEE.getPaginatedForEmployee({search: searchTerm, page:1});
+          console.log("Fetching employee shifts for employee_id:", scope.employee.id);
+          return await shiftsAPI.EMPLOYEE.getPaginatedForEmployee({
+            search: searchTerm,
+            page: 1,
+            employee_id: scope.employee.id,
+          });
         }
         if (scope.type === "default") {
-          return await shiftsAPI.EMPLOYEE.getPaginatedForInstitution({search: searchTerm, page:1});
+          return await shiftsAPI.EMPLOYEE.getPaginatedForInstitution({search: searchTerm, page: 1});
         }
         if (scope.type === "branch") {
           return await shiftsAPI.BRANCH.getAll(scope.branch.id);
         }
         // default: return empty
-        return { results: [], count: 0 } as any;
+        return {results: [], count: 0} as any;
       }}
-      onError={(error) => showErrorToast({ error, defaultMessage: "Failed to fetch shifts" })}
-      fetchFromUrl={async (args: {url:string}) => shiftsAPI.COMMON.getPaginatedFromUrl({url: args.url, is_employee_specific: scope.type === "employee"})} // url is ignored
+      onError={(error) => showErrorToast({error, defaultMessage: "Failed to fetch shifts"})}
+      fetchFromUrl={async (args: {url: string}) =>
+        shiftsAPI.COMMON.getPaginatedFromUrl({
+          url: args.url,
+          is_employee_specific: scope.type === "employee",
+          employee_id: scope.type === "employee" ? scope.employee.id : undefined,
+        })
+      }
       deps={[selectedInstitution?.id, searchTerm]}
       className="space-y-4"
       footerClassName="pt-4"
     >
-      {({ data, loading, refresh }) => {
+      {({data, loading, refresh}) => {
         useEffect(() => {
           // store refresh
           if (localRefreshRef && typeof localRefreshRef !== "function") {
@@ -90,8 +104,12 @@ export default function ShiftsTable({ searchTerm, refreshTableRef, scope }: Shif
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{s.shift.name}</h3>
-                      <p className="text-sm text-gray-600">Day: {(s.shift.shift_day as any)?.day_name || "-"}</p>
-                      <p className="text-sm text-gray-600">{s.shift.start_time} - {s.shift.end_time}</p>
+                      <p className="text-sm text-gray-600">
+                        Day: {(s.shift.shift_day as any)?.day_name || "-"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {s.shift.start_time} - {s.shift.end_time}
+                      </p>
                     </div>
                     <div className="text-sm text-gray-600">{s.shift_status}</div>
                   </div>
