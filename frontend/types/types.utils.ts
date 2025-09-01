@@ -794,38 +794,60 @@ export interface ILeaveDashboard {
 }
 
 export interface IAttendanceDashboard {
-  total_attendance_records: number;
+  total_attendance_records: number
   attendance_by_status: Array<{
-    status: string;
-    count: number;
-  }>;
-  average_overtime_hours: number;
-  average_late_minutes: number;
-  average_early_checkout_minutes: number;
-  spot_check_response_rate: number;
+    status: string
+    count: number
+  }>
+  average_overtime_hours: number
+  average_late_minutes: number
+  average_early_checkout_minutes: number
+  spot_check_response_rate: number
   spot_checks_by_status: Array<{
-    status: string;
-    count: number;
-  }>;
+    status: string
+    count: number
+  }>
   attendance_over_time: Array<{
-    date: string;
-    count: number;
-  }>;
+    date: string
+    count: number
+  }>
 }
 
 export interface IPayrollDashboard {
-  total_payroll_amount: number;
+  total_payroll_amount: number
+  total_gross_payroll: number
   payroll_by_department: Array<{
-    department: string;
-    total_amount: number;
-  }>;
-  average_salary: number;
-  total_penalties: number;
-  average_overtime_pay: number;
+    department: string
+    total_net: number
+    total_gross: number
+    employee_count: number
+  }>
   payroll_over_time: Array<{
-    month: string;
-    total_amount: number;
-  }>;
+    month: string
+    total_net: number
+    total_gross: number
+    payslips_count: number
+  }>
+  allowances_vs_deductions: {
+    total_allowances: number
+    total_deductions: number
+    net_difference: number
+  }
+  average_gross_salary: number
+  average_net_salary: number
+  payroll_periods_summary: {
+    total_periods: number
+    processed_periods: number
+    pending_periods: number
+    latest_period: string
+  }
+  penalty_breakdown: Array<{
+    penalty_type: string
+    count: number
+    total_amount: number
+  }>
+  total_penalties_amount: number
+  total_penalties_count: number
 }
 
 export interface IInterviewStageFormData {
