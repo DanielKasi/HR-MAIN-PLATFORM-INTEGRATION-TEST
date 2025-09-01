@@ -30,11 +30,14 @@ import {
   createInterviewStage,
   fetchEmployees,
   getInterviews,
+  getPaginatedJobAdverts,
+  getPaginatedJobAdvertsFromUrl,
 } from "@/lib/utils"
 import type { JobApplication, IInterviewStage, IInterview, IInterviewFormData, IEmployee } from "@/types/types.utils"
 import { toast } from "sonner"
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
+import PaginatedSearchableSelect from "@/components/generic/paginated-searchable-select"
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, 'job_position_application'> {
   userData: any
@@ -247,12 +250,14 @@ export default function CreateInterviewPage() {
       ...prev,
       selected_applications: [],
       interview_stage: 0,
+      job_position: Number(jobPositionId)
     }))
     setSelectedStage(null)
     setErrors((prev: any) => ({
       ...prev,
       job_position: undefined,
       interview_stage: undefined,
+      selected_applications: undefined
     }))
   }
 
@@ -303,6 +308,7 @@ export default function CreateInterviewPage() {
     if (formData.selected_applications.length === 0) {
       newErrors.selected_applications = "Please select at least one applicant"
     }
+    
     if (!formData.interview_stage || formData.interview_stage === 0) {
       newErrors.interview_stage = "Please select an interview stage"
     }
@@ -335,6 +341,15 @@ export default function CreateInterviewPage() {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+
+  const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
+    if (!selectedInstitution) { throw new Error("No intitution found !") }
+    return await getPaginatedJobAdverts({ institutionId: selectedInstitution.id, ...query });
+  };
+
+  const fetchFromUrl = async ({ url }: { url: string }) => {
+    return await getPaginatedJobAdvertsFromUrl({ url });
+  };
 
   const handleCreateStage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -544,16 +559,19 @@ export default function CreateInterviewPage() {
                 <Label htmlFor="job_position" className="text-sm font-medium">
                   Job Position/ Title  *
                 </Label>
-                <SearchableSelect
-                  items={jobPositionItems}
+                <PaginatedSearchableSelect<any, { search?: string; page?: number }>
+                  paginated
+                  fetchFirstPage={fetchFirstPage}
+                  fetchFromUrl={fetchFromUrl}
+                  getItemId={(position) => position.id}
+                  getItemLabel={(position) => position.job_position_details?.name || `Position ${position.id}`}
+                  getItemValue={(position) => position.id.toString()}
+                  searchPlaceholder="Search job positions by name..."
+                  triggerClassName="w-full justify-between focus:ring-primary"
+                  popoverClassName="w-full"
+                  onSelect={(positionId) => handleJobPositionSelect(positionId.toString())}
+                  onRemove={(positionId) => handleJobPositionSelect("")}
                   selectedItems={selectedJobPosition ? [selectedJobPosition] : []}
-                  placeholder="Select a job position"
-                  searchPlaceholder="Search job positions..."
-                  emptyMessage="No job positions with available applicants found."
-                  onSelect={(itemId) => handleJobPositionSelect(itemId.toString())}
-                  multiple={false}
-                  triggerClassName={errors.job_position ? "border-destructive" : ""}
-                  popoverClassName="w-[400px]"
                 />
                 {errors.job_position && (
                   <p className="text-sm text-destructive">{errors.job_position}</p>
@@ -563,20 +581,17 @@ export default function CreateInterviewPage() {
                   {Object.keys(filteredGroupedApplications).length}
                 </div>
               </div>
-
-              {/* Applicant Selection */}
-              {selectedJobPosition && filteredGroupedApplications[Number(selectedJobPosition)] && (
+              
+              {/* Applicant Selection - Show after job position is selected */}
+              {selectedJobPosition && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Select Applicants * (
-                      {filteredGroupedApplications[Number(selectedJobPosition)]?.applications
-                        .length || 0}{" "}
-                      available)
+                      Select Applicants for this Position *
                     </Label>
                     <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
                       <div className="space-y-3">
-                        {filteredGroupedApplications[Number(selectedJobPosition)]?.applications.map(
+                        {filteredGroupedApplications[Number(selectedJobPosition)]?.applications?.map(
                           (application) => (
                             <div
                               key={application.id}
@@ -604,17 +619,14 @@ export default function CreateInterviewPage() {
                               </div>
                             </div>
                           )
+                        ) || (
+                          <div className="text-center py-4 text-muted-foreground">
+                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">
+                              No applicants found for this position or all applicants have already been scheduled
+                            </p>
+                          </div>
                         )}
-                        {filteredGroupedApplications[Number(selectedJobPosition)]
-                          ?.applications.length === 0 && (
-                            <div className="text-center py-4 text-muted-foreground">
-                              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">
-                                All applicants for this position have already been scheduled for
-                                interviews
-                              </p>
-                            </div>
-                          )}
                       </div>
                     </div>
                     {errors.selected_applications && (
@@ -624,81 +636,138 @@ export default function CreateInterviewPage() {
                 </div>
               )}
 
-              {/* Form Fields - Responsive Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Interview Stage */}
-                {/* Interview Stage */}
-                <div className="space-y-2">
-                  <Label htmlFor="interview_stage" className="text-sm font-normal">
-                    Interview Stage *
-                  </Label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <SearchableSelect
-                        items={interviewStageItems}
-                        selectedItems={formData.interview_stage ? [formData.interview_stage] : []}
-                        placeholder={
+                {/* Form Fields - Responsive Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Interview Stage */}
+                  <div className="space-y-2">
+                    <Label htmlFor="interview_stage" className="text-sm font-normal">
+                      Interview Stage *
+                    </Label>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <SearchableSelect
+                          items={interviewStageItems}
+                          selectedItems={formData.interview_stage ? [formData.interview_stage] : []}
+                          placeholder={
+                            !selectedJobPosition
+                              ? "Select a job position/title first"
+                              : filteredInterviewStages.length === 0
+                                ? "No stages available for this position"
+                                : "Select interview stage"
+                          }
+                          searchPlaceholder="Search interview stages..."
+                          emptyMessage={
+                            !selectedJobPosition
+                              ? "Select a job position first"
+                              : "No interview stages found for this position"
+                          }
+                          onSelect={(itemId) => updateFormData("interview_stage", Number(itemId))}
+                          multiple={false}
+                          disabled={!selectedJobPosition}
+                          triggerClassName={errors.interview_stage ? "border-destructive" : ""}
+                          popoverClassName="w-[500px]"
+                        />
+                      </div>
+
+                      {/* Fixed Dialog Trigger Button */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={!selectedJobPosition}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (selectedJobPosition) {
+                            setIsCreateStageDialogOpen(true);
+                          }
+                        }}
+                        title={
                           !selectedJobPosition
                             ? "Select a job position/title first"
-                            : filteredInterviewStages.length === 0
-                              ? "No stages available for this position"
-                              : "Select interview stage"
+                            : "Create new interview stage"
                         }
-                        searchPlaceholder="Search interview stages..."
-                        emptyMessage={
-                          !selectedJobPosition
-                            ? "Select a job position first"
-                            : "No interview stages found for this position"
-                        }
-                        onSelect={(itemId) => updateFormData("interview_stage", Number(itemId))}
-                        multiple={false}
-                        disabled={!selectedJobPosition}
-                        triggerClassName={errors.interview_stage ? "border-destructive" : ""}
-                        popoverClassName="w-[500px]"
-                      />
+                        className="flex-shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
 
-                    {/* Fixed Dialog Trigger Button */}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      disabled={!selectedJobPosition}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (selectedJobPosition) {
-                          setIsCreateStageDialogOpen(true);
-                        }
-                      }}
-                      title={
-                        !selectedJobPosition
-                          ? "Select a job position/title first"
-                          : "Create new interview stage"
-                      }
-                      className="flex-shrink-0"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    {errors.interview_stage && (
+                      <p className="text-sm text-destructive">{errors.interview_stage}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {!selectedJobPosition
+                        ? "Select a job position/title to see available interview stages"
+                        : !hasStagesForPosition
+                          ? "No stages found for this position. Click + to create one."
+                          : "Can't find the right stage? Click the + button to create a new one."}
+                    </p>
                   </div>
 
-                  {errors.interview_stage && (
-                    <p className="text-sm text-destructive">{errors.interview_stage}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    {!selectedJobPosition
-                      ? "Select a job position/title to see available interview stages"
-                      : !hasStagesForPosition
-                        ? "No stages found for this position. Click + to create one."
-                        : "Can't find the right stage? Click the + button to create a new one."}
-                  </p>
+                  {/* Interview Date */}
+                  <div className="space-y-2">
+                    <Label htmlFor="interview_date" className="text-sm font-medium">
+                      Interview Date & Time *
+                    </Label>
+                    <Input
+                      id="interview_date"
+                      type="datetime-local"
+                      value={formData.interview_date}
+                      onChange={(e) => updateFormData("interview_date", e.target.value)}
+                      className={errors.interview_date ? "border-destructive" : ""}
+                      min={new Date().toISOString().slice(0, 16)}
+                    />
+                    {errors.interview_date && (
+                      <p className="text-sm text-destructive">{errors.interview_date}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">Must be a future date and time</p>
+                  </div>
+
+                  {/* Interview Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="interview_type" className="text-sm font-medium">
+                      Interview Type
+                    </Label>
+                    <Select
+                      value={formData.interview_type}
+                      onValueChange={(value) => updateFormData("interview_type", value)}
+                    >
+                      <SelectTrigger className={errors.interview_type ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Select interview type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="online">Online</SelectItem>
+                        <SelectItem value="in_person">In Person</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Interview Location */}
+                  <div className="space-y-2">
+                    <Label htmlFor="location" className="text-sm font-medium">
+                      Interview Location *
+                    </Label>
+                    <LocationAutocomplete
+                      value={formData.location}
+                      onChange={(value) => updateFormData("location", value)}
+                      onCoordinatesChange={(lat, lon) => {
+                      }}
+                      placeholder="Search for interview location..."
+                      showCurrentLocationButton={true}
+                    />
+                    {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
+                    <p className="text-xs text-muted-foreground">
+                      Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
+                    </p>
+                  </div>
                 </div>
 
-                {/* Move Dialog outside the form field to prevent nesting issues */}
+                {/* Create Interview Stage Dialog */}
                 <Dialog
                   open={isCreateStageDialogOpen}
                   onOpenChange={(open) => {
-                    console.log('Dialog state changing to:', open); // Debug log
+                    console.log('Dialog state changing to:', open);
                     setIsCreateStageDialogOpen(open);
                   }}
                 >
@@ -803,66 +872,7 @@ export default function CreateInterviewPage() {
                   </DialogContent>
                 </Dialog>
 
-                {/* Interview Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="interview_date" className="text-sm font-medium">
-                    Interview Date & Time *
-                  </Label>
-                  <Input
-                    id="interview_date"
-                    type="datetime-local"
-                    value={formData.interview_date}
-                    onChange={(e) => updateFormData("interview_date", e.target.value)}
-                    className={errors.interview_date ? "border-destructive" : ""}
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                  {errors.interview_date && (
-                    <p className="text-sm text-destructive">{errors.interview_date}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Must be a future date and time</p>
-                </div>
-
-                {/* Interview Type */}
-                <div className="space-y-2">
-                  <Label htmlFor="interview_type" className="text-sm font-medium">
-                    Interview Type
-                  </Label>
-                  <Select
-                    value={formData.interview_type}
-                    onValueChange={(value) => updateFormData("interview_type", value)}
-                  >
-                    <SelectTrigger className={errors.interview_type ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select interview type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="in_person">In Person</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Interview Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium">
-                    Interview Location *
-                  </Label>
-                  <LocationAutocomplete
-                    value={formData.location}
-                    onChange={(value) => updateFormData("location", value)}
-                    onCoordinatesChange={(lat, lon) => {
-                    }}
-                    placeholder="Search for interview location..."
-                    showCurrentLocationButton={true}
-                  />
-                  {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
-                  <p className="text-xs text-muted-foreground">
-                    Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
-                  </p>
-                </div>
-
-              </div>
-
-              {/* Selected Applications Summary */}
+                {/* Selected Applications Summary */}
               {selectedApplications.length > 0 && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
@@ -900,6 +910,12 @@ export default function CreateInterviewPage() {
 
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
+                {/* Debug Info */}
+                <div className="w-full text-xs text-muted-foreground mb-2">
+                  Debug: selectedJobPosition: {selectedJobPosition}, selectedApplications: {selectedApplications.length}, 
+                  jobApplications: {jobApplications.length}
+                </div>
+                
                 <Button
                   type="button"
                   variant="outline"
@@ -911,7 +927,7 @@ export default function CreateInterviewPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || selectedApplications.length === 0}
+                  disabled={isSubmitting || (selectedApplications.length === 0 && !selectedJobPosition)}
                   className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   {isSubmitting ? (
@@ -923,8 +939,10 @@ export default function CreateInterviewPage() {
                   ) : (
                     <>
                       <Check className="h-4 w-4" />
-                      Schedule {selectedApplications.length} Interview
-                      {selectedApplications.length !== 1 ? "s" : ""}
+                      {selectedApplications.length > 0 
+                        ? `Schedule ${selectedApplications.length} Interview${selectedApplications.length !== 1 ? "s" : ""}`
+                        : "Select Applicants to Continue"
+                      }
                     </>
                   )}
                 </Button>
