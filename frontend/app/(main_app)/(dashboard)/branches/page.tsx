@@ -1,5 +1,5 @@
 // Update newBranch institution when selectedInstitution changes
- "use client";
+"use client";
 
 import type {Branch} from "@/types";
 
@@ -46,7 +46,7 @@ export default function BranchesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [gettingCurrentLocation, setGettingCurrentLocation] = useState(false);
-  
+
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const router = useRouter();
   const dispatch = useDispatch();
@@ -75,8 +75,8 @@ export default function BranchesPage() {
 
     setIsLoading(true);
     try {
-      const response = await apiRequest.get(`institution/${selectedInstitution.id}/branch`); 
-      if (response.data && typeof response.data === 'object') {
+      const response = await apiRequest.get(`institution/${selectedInstitution.id}/branch`);
+      if (response.data && typeof response.data === "object") {
         if (Array.isArray(response.data)) {
           setBranches(response.data);
         } else if (Array.isArray(response.data.results)) {
@@ -87,10 +87,10 @@ export default function BranchesPage() {
       } else {
         setBranches([]);
       }
-      
-      setErrorMessage(""); 
+
+      setErrorMessage("");
     } catch (error) {
-      setBranches([]); 
+      setBranches([]);
       setErrorMessage("Failed to fetch branches");
     } finally {
       setIsLoading(false);
@@ -176,7 +176,7 @@ export default function BranchesPage() {
       const response = await apiRequest.delete(`institution/branch/${id}/`);
 
       if (response.status === 204) {
-        setBranches((prev) => Array.isArray(prev) ? prev.filter((b) => b.id !== id) : []);
+        setBranches((prev) => (Array.isArray(prev) ? prev.filter((b) => b.id !== id) : []));
         toast.success("The branch has been successfully deleted.");
       } else {
         toast.info("Failed to delete Branch");
@@ -296,7 +296,7 @@ export default function BranchesPage() {
                 {filteredBranches.length} {filteredBranches.length === 1 ? "branch" : "branches"}
               </Badge>
             </div>
-            
+
             <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_ADD_BRANCH}>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
@@ -312,11 +312,7 @@ export default function BranchesPage() {
                   </DialogHeader>
                   <ScrollArea className="flex-1 pr-4">
                     <div className="grid gap-4 py-4">
-                      {[
-                        "branch_name",
-                        "branch_phone_number",
-                        "branch_email",
-                      ].map((field) => (
+                      {["branch_name", "branch_phone_number", "branch_email"].map((field) => (
                         <div key={field} className="grid grid-cols-4 items-center gap-4">
                           <Label className="text-right" htmlFor={field}>
                             {field
@@ -337,7 +333,7 @@ export default function BranchesPage() {
                           />
                         </div>
                       ))}
-                      
+
                       {/* Opening Time */}
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right" htmlFor="branch_opening_time">
@@ -356,7 +352,7 @@ export default function BranchesPage() {
                           }
                         />
                       </div>
-                      
+
                       {/* Closing Time */}
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right" htmlFor="branch_closing_time">
@@ -375,7 +371,7 @@ export default function BranchesPage() {
                           }
                         />
                       </div>
-                      
+
                       <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
                         <Label className="text-right pt-2" htmlFor="branch_location">
                           Location
@@ -551,6 +547,12 @@ export default function BranchesPage() {
               </TableBody>
             </Table>
           </div>
+
+          <div className="flex justify-end">
+            <Button onClick={() => router.push("/branches/shifts")} variant="ghost">
+              Branch Shifts
+            </Button>
+          </div>
         </CardContent>
       </div>
 
@@ -564,11 +566,7 @@ export default function BranchesPage() {
           {editBranch && (
             <ScrollArea className="flex-1 pr-4">
               <div className="grid gap-4 py-4">
-                {[
-                  "branch_name",
-                  "branch_phone_number",
-                  "branch_email",
-                ].map((field) => (
+                {["branch_name", "branch_phone_number", "branch_email"].map((field) => (
                   <div key={field} className="grid grid-cols-4 items-center gap-4">
                     <Label className="text-right" htmlFor={`edit-${field}`}>
                       {field
@@ -589,7 +587,7 @@ export default function BranchesPage() {
                     />
                   </div>
                 ))}
-                
+
                 {/* Opening Time */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right" htmlFor="edit-branch_opening_time">
@@ -608,7 +606,7 @@ export default function BranchesPage() {
                     }
                   />
                 </div>
-                
+
                 {/* Closing Time */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right" htmlFor="edit-branch_closing_time">
@@ -627,7 +625,7 @@ export default function BranchesPage() {
                     }
                   />
                 </div>
-                
+
                 <div key="branch_location" className="grid grid-cols-4 items-start gap-4">
                   <Label className="text-right pt-2" htmlFor="edit-branch_location">
                     Location

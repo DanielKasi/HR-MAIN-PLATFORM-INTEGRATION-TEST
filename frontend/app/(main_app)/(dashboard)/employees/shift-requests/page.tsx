@@ -386,7 +386,9 @@ const EmployeeShiftsPage = () => {
                 <SelectContent>
                   {shifts.map((shift) => (
                     <SelectItem key={shift.id} value={shift.id.toString()}>
-                      {shift.name} ({shift.start_time} - {shift.end_time})
+                      {shift.name} (
+                      {shift.shift_day?.branch_days?.map((d) => d.day_name).join(", ")} BTN{" "}
+                      {shift.start_time} - {shift.end_time})
                     </SelectItem>
                   ))}
                 </SelectContent>
