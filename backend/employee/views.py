@@ -2855,6 +2855,11 @@ class EmployeeDashboardAPIView(APIView):
         },
     )
     def get(self, request):
+        from datetime import date
+        from django.db.models import Avg, Count, F, ExpressionWrapper, IntegerField, FloatField, Case, When
+        from django.utils import timezone
+        from datetime import timedelta
+        
         user = request.user
         institution = getattr(user.profile, "institution", None)
 
@@ -2910,31 +2915,99 @@ class EmployeeDashboardAPIView(APIView):
             .order_by("shift_status")
         )
 
-        # Average age (calculated using date_of_birth)
-        current_date = date.today()
-        avg_age = employees.filter(date_of_birth__isnull=False).aggregate(
+        # Method 1: Calculate average age using database aggregation (More efficient for large datasets)
+        current_date = timezone.now().date()
+        
+        # Calculate age in days then convert to years
+        avg_age_result = employees.filter(date_of_birth__isnull=False).aggregate(
             avg_age=Avg(
                 ExpressionWrapper(
-                    (current_date - F("date_of_birth")) / 365.25,
+                    F("date_of_birth__year") * -1 + current_date.year +
+                    Case(
+                        When(
+                            date_of_birth__month__gt=current_date.month,
+                            then=-1
+                        ),
+                        When(
+                            date_of_birth__month=current_date.month,
+                            date_of_birth__day__gt=current_date.day,
+                            then=-1
+                        ),
+                        default=0,
+                        output_field=IntegerField()
+                    ),
                     output_field=FloatField(),
                 )
             )
-        )["avg_age"]
-        average_age = round(avg_age) if avg_age else 0
+        )
+        average_age = round(avg_age_result["avg_age"]) if avg_age_result["avg_age"] else 0
 
-        # Average tenure (in years)
-        avg_tenure = employees.filter(date_of_joining__isnull=False).aggregate(
+        # Method 2: Alternative calculation using Python (More accurate but less efficient for large datasets)
+        # employees_with_birth_date = employees.filter(date_of_birth__isnull=False)
+        # if employees_with_birth_date.exists():
+        #     ages = []
+        #     for emp in employees_with_birth_date:
+        #         age = current_date.year - emp.date_of_birth.year
+        #         if (current_date.month, current_date.day) < (emp.date_of_birth.month, emp.date_of_birth.day):
+        #             age -= 1
+        #         ages.append(age)
+        #     average_age = round(sum(ages) / len(ages))
+        # else:
+        #     average_age = 0
+
+        # Calculate average tenure (in years) - Fixed calculation
+        avg_tenure_result = employees.filter(date_of_joining__isnull=False).aggregate(
             avg_tenure=Avg(
                 ExpressionWrapper(
-                    (current_date - F("date_of_joining")) / 365.25,
+                    current_date.year - F("date_of_joining__year") +
+                    Case(
+                        When(
+                            date_of_joining__month__gt=current_date.month,
+                            then=-1
+                        ),
+                        When(
+                            date_of_joining__month=current_date.month,
+                            date_of_joining__day__gt=current_date.day,
+                            then=-1
+                        ),
+                        default=0,
+                        output_field=IntegerField()
+                    ),
                     output_field=FloatField(),
                 )
             )
-        )["avg_tenure"]
-        average_tenure_years = round(avg_tenure, 1) if avg_tenure else 0
+        )
+        average_tenure_years = round(avg_tenure_result["avg_tenure"], 1) if avg_tenure_result["avg_tenure"] else 0
+
+        # Alternative Python-based tenure calculation (more precise)
+        # employees_with_join_date = employees.filter(date_of_joining__isnull=False)
+        # if employees_with_join_date.exists():
+        #     tenures = []
+        #     for emp in employees_with_join_date:
+        #         tenure_years = current_date.year - emp.date_of_joining.year
+        #         if (current_date.month, current_date.day) < (emp.date_of_joining.month, emp.date_of_joining.day):
+        #             tenure_years -= 1
+        #         # Add fractional part for more precision
+        #         if emp.date_of_joining.month <= current_date.month:
+        #             months_diff = current_date.month - emp.date_of_joining.month
+        #             if emp.date_of_joining.day <= current_date.day:
+        #                 days_diff = current_date.day - emp.date_of_joining.day
+        #             else:
+        #                 months_diff -= 1
+        #                 days_diff = (current_date.replace(day=1) - timedelta(days=1)).day - emp.date_of_joining.day + current_date.day
+        #         else:
+        #             months_diff = 12 - emp.date_of_joining.month + current_date.month
+        #             tenure_years -= 1
+        #             days_diff = current_date.day - emp.date_of_joining.day if emp.date_of_joining.day <= current_date.day else 0
+        #         
+        #         tenure_precise = tenure_years + (months_diff + days_diff/30.44) / 12  # 30.44 is average days per month
+        #         tenures.append(tenure_precise)
+        #     average_tenure_years = round(sum(tenures) / len(tenures), 1)
+        # else:
+        #     average_tenure_years = 0
 
         # Recent hires (last 30 days)
-        recent_hires = employees.filter(date_of_joining__gte=thirty_days_ago).count()
+        recent_hires = employees.filter(date_of_joining__gte=thirty_days_ago.date()).count()
 
         # Employees by marital status
         employees_by_marital_status = list(

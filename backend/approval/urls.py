@@ -6,7 +6,8 @@ from .views import (
     ApprovalDocumentLevelListAPIView, ApprovalDocumentLevelDetailAPIView,
     ApprovalListAPIView, ApprovalDetailAPIView,
     ApprovalTaskListAPIView, ApprovalTaskDetailAPIView,
-    ApprovalTaskApproveAPIView, ApprovalTaskRejectAPIView
+    ApprovalTaskApproveAPIView, ApprovalTaskRejectAPIView,
+    ApprovalTasksDashboardAPIView
 )
 
 app_name = 'approvals'
@@ -37,4 +38,6 @@ urlpatterns = [
     path('approval-tasks/<int:pk>/', ApprovalTaskDetailAPIView.as_view(), name='approval-task-detail'),
     path('approval-tasks/<int:pk>/approve/', ApprovalTaskApproveAPIView.as_view(), name='approval-task-approve'),
     path('approval-tasks/<int:pk>/reject/', ApprovalTaskRejectAPIView.as_view(), name='approval-task-reject'),
+
+    path('tasks-analytics/', ApprovalTasksDashboardAPIView.as_view(), name='tasks-analytics')
 ]

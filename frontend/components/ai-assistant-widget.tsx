@@ -431,8 +431,8 @@ export default function AIAssistantWidget() {
                               What Can I Help You With?
                             </h4>
                             <p className="text-xs sm:text-sm text-gray-600 text-center mb-4 sm:mb-6 max-w-xs leading-relaxed px-2">
-                              Ask me anything about your supermarket system from stock levels and
-                              sales reports to orders, staff performance, and branch statistics.
+                              Ask me anything about your hr system from employee, attendance and
+                              payroll reports to orders, business assets, and analytics.
                             </p>
 
                             {/* Suggested Questions */}
