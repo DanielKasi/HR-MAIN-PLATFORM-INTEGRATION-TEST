@@ -253,7 +253,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Policies", href: "#"},
         {title: "Organization Chart", href: "#"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+      // requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
       title: "Attendance",

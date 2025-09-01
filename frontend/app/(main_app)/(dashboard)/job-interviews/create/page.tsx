@@ -129,6 +129,7 @@ export default function CreateInterviewPage() {
     {} as Record<number, { jobName: string; applications: JobApplication[] }>
   )
 
+
   const filteredGroupedApplications = Object.entries(groupedApplications).reduce(
     (acc, [jobId, { jobName, applications }]) => {
       const availableApplications = getAvailableApplications(applications)
@@ -491,6 +492,8 @@ export default function CreateInterviewPage() {
       value: `${jobName}`.toLowerCase(),
     })
   );
+
+  console.log("\n\n Filtered positions from applications : ", jobPositionItems)
 
   const interviewStageItems: SearchableSelectItem[] = filteredInterviewStages.map((stage) => ({
     id: stage.id,

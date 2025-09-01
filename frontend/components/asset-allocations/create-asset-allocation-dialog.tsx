@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Package, User, FileText, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import {useState, useEffect} from "react";
+import {X, Package, User, FileText, Search} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Label} from "@/components/ui/label";
+import {Input} from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -12,11 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { assetsAPI, getPaginatedEmployees } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IAsset, IAssetRequest, IAssetAllocationFormData } from "@/types/types.utils";
+import {toast} from "sonner";
+import {assetsAPI, getPaginatedEmployees} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import type {IAsset, IAssetRequest, IAssetAllocationFormData} from "@/types/types.utils";
+import EmployeeSearchableSelect from "../selects/employee-searchable-select";
 
 interface CreateAssetAllocationDialogProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export const CreateAssetAllocationDialog = ({
   const [assetRequests, setAssetRequests] = useState<IAssetRequest[]>([]);
   const [formData, setFormData] = useState<IAssetAllocationFormData>({
     asset: 0,
-    allocated_to: 0
+    allocated_to: 0,
   });
 
   // Search states
@@ -53,23 +54,28 @@ export const CreateAssetAllocationDialog = ({
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
   // Filtered assets and employees based on search
-  const filteredAssets = assets.filter((asset) =>
-    asset.asset_name.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
-    asset.serial_number.toLowerCase().includes(assetSearchTerm.toLowerCase())
+  const filteredAssets = assets.filter(
+    (asset) =>
+      asset.asset_name.toLowerCase().includes(assetSearchTerm.toLowerCase()) ||
+      asset.serial_number.toLowerCase().includes(assetSearchTerm.toLowerCase()),
   );
 
   const filteredEmployees = employees.filter((employee) => {
-    const fullName = employee.user?.fullname || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown';
-    const employeeId = employee.employee_id || '';
+    const fullName =
+      employee.user?.fullname ||
+      `${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
+      "Unknown";
+    const employeeId = employee.employee_id || "";
     return (
       fullName.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
       employeeId.toLowerCase().includes(employeeSearchTerm.toLowerCase())
     );
   });
 
-  const filteredAssetRequests = assetRequests.filter((request) =>
-    request.request_reference_code.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
-    request.asset.asset_name.toLowerCase().includes(requestSearchTerm.toLowerCase())
+  const filteredAssetRequests = assetRequests.filter(
+    (request) =>
+      request.request_reference_code.toLowerCase().includes(requestSearchTerm.toLowerCase()) ||
+      request.asset.asset_name.toLowerCase().includes(requestSearchTerm.toLowerCase()),
   );
 
   // Fetch available assets, employees, and asset requests
@@ -77,13 +83,15 @@ export const CreateAssetAllocationDialog = ({
     try {
       const response = await assetsAPI.getAll();
       // Filter for available assets (not currently allocated)
-      let availableAssets = response.filter((asset: IAsset) =>
-        asset.status === "available" && asset.is_active
+      let availableAssets = response.filter(
+        (asset: IAsset) => asset.status === "available" && asset.is_active,
       );
 
       // If we have a pre-selected asset, include it even if not available
       if (preSelectedAsset) {
-        const preSelectedAssetExists = availableAssets.find(asset => asset.id === preSelectedAsset.id);
+        const preSelectedAssetExists = availableAssets.find(
+          (asset) => asset.id === preSelectedAsset.id,
+        );
         if (!preSelectedAssetExists) {
           availableAssets = [preSelectedAsset, ...availableAssets];
         }
@@ -103,7 +111,7 @@ export const CreateAssetAllocationDialog = ({
     }
 
     try {
-      const data = await getPaginatedEmployees({ institutionId: selectedInstitution.id });
+      const data = await getPaginatedEmployees({institutionId: selectedInstitution.id});
       setEmployees(data.results || []);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -115,8 +123,8 @@ export const CreateAssetAllocationDialog = ({
     try {
       const response = await assetsAPI.getAssetRequests();
       // Filter for approved requests
-      const approvedRequests = response.filter((request: IAssetRequest) =>
-        request.asset_request_status === "approved"
+      const approvedRequests = response.filter(
+        (request: IAssetRequest) => request.asset_request_status === "approved",
       );
       setAssetRequests(approvedRequests);
     } catch (error) {
@@ -135,14 +143,14 @@ export const CreateAssetAllocationDialog = ({
       if (preSelectedAsset) {
         setFormData({
           asset: preSelectedAsset.id,
-          allocated_to: 0
+          allocated_to: 0,
         });
         // Also set the asset search term to show the asset
         setAssetSearchTerm(preSelectedAsset.asset_name);
       } else {
         setFormData({
           asset: 0,
-          allocated_to: 0
+          allocated_to: 0,
         });
         // Reset search terms when opening
         setAssetSearchTerm("");
@@ -182,14 +190,9 @@ export const CreateAssetAllocationDialog = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-gray-200">
           <div className="flex items-center space-x-3">
-            
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Create Asset Allocation
-              </h2>
-              <p className="text-sm text-gray-600">
-                Allocate an asset to an employee
-              </p>
+              <h2 className="text-xl font-semibold text-gray-900">Create Asset Allocation</h2>
+              <p className="text-sm text-gray-600">Allocate an asset to an employee</p>
             </div>
           </div>
           <Button
@@ -211,7 +214,7 @@ export const CreateAssetAllocationDialog = ({
             <Select
               value={formData.asset.toString()}
               onValueChange={(value: string) => {
-                setFormData({ ...formData, asset: parseInt(value) });
+                setFormData({...formData, asset: parseInt(value)});
                 setIsAssetDropdownOpen(false);
               }}
               open={isAssetDropdownOpen}
@@ -242,9 +245,7 @@ export const CreateAssetAllocationDialog = ({
                       <div className="flex items-center space-x-2">
                         <Package className="h-4 w-4" />
                         <span>{asset.asset_name}</span>
-                        <span className="text-gray-500 text-xs">
-                          ({asset.serial_number})
-                        </span>
+                        <span className="text-gray-500 text-xs">({asset.serial_number})</span>
                       </div>
                     </SelectItem>
                   ))
@@ -267,64 +268,30 @@ export const CreateAssetAllocationDialog = ({
                 Please select an institution to load employees
               </div>
             ) : (
-              <Select
-                value={formData.allocated_to.toString()}
-                onValueChange={(value: string) => {
-                  setFormData({ ...formData, allocated_to: parseInt(value) });
-                  setIsEmployeeDropdownOpen(false);
-                }}
-                open={isEmployeeDropdownOpen}
-                onOpenChange={setIsEmployeeDropdownOpen}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* Employee Search Input */}
-                  <div className="p-2 border-gray-200">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search employees..."
-                        value={employeeSearchTerm}
-                        onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-                        className="pl-8 h-8 text-sm border-0 focus:ring-0 focus:border-0"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Employee Options */}
-                  {filteredEmployees.length > 0 ? (
-                    filteredEmployees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
-                        <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4" />
-                          <span>{employee.user?.fullname || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown'}</span>
-                          <span className="text-gray-500 text-xs">
-                            ({employee.employee_id})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-2 text-sm text-gray-500 text-center">
-                      {employeeSearchTerm ? "No employees found" : "No employees available"}
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
+              <EmployeeSearchableSelect
+                value={formData.allocated_to ? [formData.allocated_to] : []}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    allocated_to: value[0] ? Number(value[0]) : 0,
+                  })
+                }
+                disabled={isSubmitting}
+                placeholder="Search and select employee"
+                showEmployeeId={false}
+                showDepartment={false}
+                multiple={false}
+              />
             )}
           </div>
-
-
         </div>
 
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
-  
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.asset || !formData.allocated_to || !selectedInstitution}
+            disabled={
+              isSubmitting || !formData.asset || !formData.allocated_to || !selectedInstitution
+            }
             className="bg-primary hover:bg-primary text-white  w-full rounded-full"
           >
             {isSubmitting ? "Creating..." : "Create Allocation"}

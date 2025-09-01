@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
+import React, {useState} from "react";
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -71,9 +71,9 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
       FRI: "bg-pink-100 text-pink-700 border-pink-200",
       SAT: "bg-indigo-100 text-indigo-700 border-indigo-200",
       SUN: "bg-red-100 text-red-700 border-red-200",
-    }
-    return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200"
-  }
+    };
+    return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
+  };
 
   const getDayIcon = (dayCode: string) => {
     const icons = {
@@ -169,20 +169,20 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
 
   const handleSave = async () => {
     try {
-      await onUpdate(selectedDays)
-      setHasChanges(false)
-      toast.success("Working days updated successfully")
+      await onUpdate(selectedDays);
+      setHasChanges(false);
+      toast.success("Working days updated successfully");
     } catch (error) {
-      toast.error("Failed to update working days")
+      toast.error("Failed to update working days");
     }
-  }
+  };
 
   const handleReset = () => {
     if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
       const dayIds = scope.institutionWorkingDays.days.map(day => day.id)
       setSelectedDays(dayIds)
     }
-  }
+  };
 
   if (scope.type === "institution" && (!scope.institutionWorkingDays || scope.institutionWorkingDays.days.length === 0)) {
     // For institution, show empty state if no days set
@@ -197,7 +197,9 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
           <div className="text-center py-8">
             <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Working Days Set</h3>
-            <p className="text-gray-500">Configure your institution's working days to get started.</p>
+            <p className="text-gray-500">
+              Configure your institution's working days to get started.
+            </p>
           </div>
         </div>
       </div>

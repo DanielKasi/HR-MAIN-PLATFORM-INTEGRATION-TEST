@@ -514,7 +514,7 @@ class EmployeeShift(BaseApprovableModel):
     )
     shift = models.ForeignKey(
         "institution.BranchShift",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="employee_shift",
     )
     context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")

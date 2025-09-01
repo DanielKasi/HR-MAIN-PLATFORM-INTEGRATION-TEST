@@ -529,7 +529,7 @@ export default function SettingsPage() {
     if (config.penalty_value_type === "percentage") {
       return `${config.percentage}%`;
     }
-    return `$${Number(config.penalty_value).toFixed(2)}`;
+    return `${formatCurrency(config.penalty_value)}`;
   };
 
   // Location Comparison Config helper functions

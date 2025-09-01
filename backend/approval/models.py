@@ -223,7 +223,8 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
             if action_name in ['create', 'update']:
                 self.approval_status = 'active'
                 self.is_active = True  
-                self.deleted_at = None  
+                self.deleted_at = None
+                # self.finish_workflow()
             elif action_name == 'delete':
                 self.is_active = False  
                 self.deleted_at = timezone.now()

@@ -44,13 +44,13 @@ class BaseModelSerializer(serializers.ModelSerializer):
 class AllowanceTypeSerializer(BaseModelSerializer, BaseApprovableSerializer):
     class Meta:
         model = AllowanceType
-        fields = BaseModelSerializer.Meta.fields
+        fields = '__all__'
 
 
 class DeductionTypeSerializer(BaseModelSerializer, BaseApprovableSerializer):
     class Meta:
         model = DeductionType
-        fields = BaseModelSerializer.Meta.fields
+        fields = '__all__'
 
 
 class EmployeeRelatedSerializer(serializers.ModelSerializer):
@@ -198,7 +198,7 @@ class EmployeeAllowanceSerializer(EmployeeRelatedSerializer, BaseApprovableSeria
         queryset=AllowanceType.objects.all()
     )
 
-    class Meta:
+    class Meta(EmployeeRelatedSerializer.Meta):
         model = EmployeeAllowance
         fields = "__all__"
 
@@ -252,7 +252,7 @@ class EmployeeDeductionSerializer(EmployeeRelatedSerializer, BaseApprovableSeria
         queryset=DeductionType.objects.all()
     )
 
-    class Meta:
+    class Meta(EmployeeRelatedSerializer.Meta):
         model = EmployeeDeduction
         fields = "__all__"
 
