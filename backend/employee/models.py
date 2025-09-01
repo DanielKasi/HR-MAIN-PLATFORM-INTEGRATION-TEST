@@ -156,24 +156,24 @@ class Employee(BaseApprovableModel):
     def get_institution(self):
         return self.department.institution
 
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["department", "user"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_user_per_department_institution",
-            ),
-            UniqueConstraint(
-                fields=["department", "email"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_email_per_department_institution",
-            ),
-            UniqueConstraint(
-                fields=["department", "nin"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_nin_per_department_institution",
-            ),
-        ]
+    # class Meta:
+    #     constraints = [
+    #         UniqueConstraint(
+    #             fields=["department", "user"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_user_per_department_institution",
+    #         ),
+    #         UniqueConstraint(
+    #             fields=["department", "email"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_email_per_department_institution",
+    #         ),
+    #         UniqueConstraint(
+    #             fields=["department", "nin"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_nin_per_department_institution",
+    #         ),
+    #     ]
 
     def clean(self):
         """Custom validation for the Employee model"""
