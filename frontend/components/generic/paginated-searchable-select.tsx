@@ -128,7 +128,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                 setFetchingMore(true);
                 fetchFromUrl({ url: data.next! })
                     .then((res) => {
-                        if (res) {
+                        if (res && (!data.next || data.next !== res.next)) {
                             setData((prev) =>
                                 prev
                                     ? {

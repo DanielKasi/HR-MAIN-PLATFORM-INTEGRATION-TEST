@@ -26,14 +26,15 @@ export default function RedirectsWatcher() {
   const [hasRedirected, setHasRedirected] = React.useState(false);
 
   useEffect(() => {
-    console.log("RedirectsWatcher: pending", pending);
-    console.log("RedirectsWatcher: user", user);
+    // console.log("RedirectsWatcher: pending", pending);
+    // console.log("RedirectsWatcher: user", user);
     if (hasRedirected) return;
     if (!pending) return;
     if (!user) return;
       const path = buildPathFromRedirect(pending);
       console.log("\n\n Redirecting to", path);
-      window.location.href = path;
+      router.push(path)
+      // window.location.replace(path);
       // router.replace(path);
       // router.push(path);
       setHasRedirected(true);
