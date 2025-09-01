@@ -92,6 +92,7 @@ import string
 import secrets
 from django.db.models import Count, F, ExpressionWrapper, FloatField, Avg
 
+
 def generate_compliant_password(length=12):
     """Generate a password that meets Django's validation requirements"""
     # Define character sets (excluding problematic special characters)
@@ -2454,17 +2455,19 @@ class EmployeeShiftListCreateView(APIView):
 
         query_context = request.query_params.get("context", "all").upper()
         search = request.query_params.get("search")
-        is_employee_specific = (
-            request.query_params.get("is_employee_specific", "true").lower() == "true"
-        )
+        is_employee_specific = request.query_params.get("is_employee_specific")
+        employee_id = request.query_params.get("employee_id")
 
-        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution, is_active=True)
+        shifts = EmployeeShift.objects.filter(
+            shift__branch__institution=institution, is_active=True
+        )
 
         if query_context in ["ALLOCATION", "REQUEST"]:
             shifts = shifts.filter(context=query_context)
 
-        if is_employee_specific and hasattr(profile, "employee"):
-            shifts = shifts.filter(employee=profile.employee)
+        if is_employee_specific == "true" and employee_id:
+            print("employee_id found:", employee_id)
+            shifts = shifts.filter(employee=int(employee_id))
 
         if search:
             shifts = shifts.filter(
@@ -2708,106 +2711,114 @@ class EmployeeSalaryAnalyticsAPI(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(analytics_data, status=status.HTTP_200_OK)
-    
-    
+
+
 class EmployeeDashboardAPIView(APIView):
     """
     API endpoint for employee dashboard analytics.
     Provides aggregated metrics on employees, employee types, work types, shifts, and demographics,
     filtered by the authenticated user's institution.
     """
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        tags=['Employee Dashboard'],
+        tags=["Employee Dashboard"],
         description=(
-            'Retrieves key analytics for the employee module dashboard, filtered by the authenticated user\'s institution. '
-            'Metrics include employee counts, demographics, employee types, work types, shift statuses, '
-            'average age, average tenure, and recent hires.'
+            "Retrieves key analytics for the employee module dashboard, filtered by the authenticated user's institution. "
+            "Metrics include employee counts, demographics, employee types, work types, shift statuses, "
+            "average age, average tenure, and recent hires."
         ),
         responses={
             200: {
-                'type': 'object',
-                'properties': {
-                    'total_employees': {'type': 'integer', 'description': 'Total active employees'},
-                    'employees_by_gender': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'gender': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
-                        },
-                        'description': 'Employee count by gender'
+                "type": "object",
+                "properties": {
+                    "total_employees": {
+                        "type": "integer",
+                        "description": "Total active employees",
                     },
-                    'employees_by_employee_type': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'employee_type': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "employees_by_gender": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "gender": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Employee count by employee type'
+                        "description": "Employee count by gender",
                     },
-                    'employees_by_work_type': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'work_type': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "employees_by_employee_type": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "employee_type": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Employee count by work type'
+                        "description": "Employee count by employee type",
                     },
-                    'employees_by_department': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'department': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "employees_by_work_type": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "work_type": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Employee count by department'
+                        "description": "Employee count by work type",
                     },
-                    'shift_statuses': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "employees_by_department": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "department": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Shift counts by status (last 30 days)'
+                        "description": "Employee count by department",
                     },
-                    'average_age': {'type': 'integer', 'description': 'Average employee age'},
-                    'average_tenure_years': {'type': 'number', 'description': 'Average years of tenure'},
-                    'recent_hires': {'type': 'integer', 'description': 'Employees hired in last 30 days'},
-                    'employees_by_marital_status': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'marital_status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "shift_statuses": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "status": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Employee count by marital status'
-                    }
-                }
+                        "description": "Shift counts by status (last 30 days)",
+                    },
+                    "average_age": {
+                        "type": "integer",
+                        "description": "Average employee age",
+                    },
+                    "average_tenure_years": {
+                        "type": "number",
+                        "description": "Average years of tenure",
+                    },
+                    "recent_hires": {
+                        "type": "integer",
+                        "description": "Employees hired in last 30 days",
+                    },
+                    "employees_by_marital_status": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "marital_status": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
+                        },
+                        "description": "Employee count by marital status",
+                    },
+                },
             },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'}
-                }
-            }
-        }
+            400: {"type": "object", "properties": {"error": {"type": "string"}}},
+        },
     )
     def get(self, request):
         user = request.user
@@ -2815,40 +2826,41 @@ class EmployeeDashboardAPIView(APIView):
 
         if not institution:
             return Response(
-                {"error": "User is not associated with any institution"},
-                status=400
+                {"error": "User is not associated with any institution"}, status=400
             )
 
         # Filter employees by institution
-        employees = Employee.objects.filter(department__institution=institution, deleted_at__isnull=True)
+        employees = Employee.objects.filter(
+            department__institution=institution, deleted_at__isnull=True
+        )
 
         # Total employees
         total_employees = employees.count()
 
         # Employees by gender
         employees_by_gender = list(
-            employees.values('gender').annotate(count=Count('id')).order_by('gender')
+            employees.values("gender").annotate(count=Count("id")).order_by("gender")
         )
 
         # Employees by employee type
         employees_by_employee_type = list(
-            employees.values('employee_type__name')
-            .annotate(count=Count('id'))
-            .order_by('employee_type__name')
+            employees.values("employee_type__name")
+            .annotate(count=Count("id"))
+            .order_by("employee_type__name")
         )
 
         # Employees by work type
         employees_by_work_type = list(
-            employees.values('work_type__name')
-            .annotate(count=Count('id'))
-            .order_by('work_type__name')
+            employees.values("work_type__name")
+            .annotate(count=Count("id"))
+            .order_by("work_type__name")
         )
 
         # Employees by department
         employees_by_department = list(
-            employees.values('department__name')
-            .annotate(count=Count('id'))
-            .order_by('department__name')
+            employees.values("department__name")
+            .annotate(count=Count("id"))
+            .order_by("department__name")
         )
 
         # Shift statuses (last 30 days)
@@ -2857,11 +2869,11 @@ class EmployeeDashboardAPIView(APIView):
             EmployeeShift.objects.filter(
                 employee__department__institution=institution,
                 date__gte=thirty_days_ago,
-                employee__deleted_at__isnull=True
+                employee__deleted_at__isnull=True,
             )
-            .values('shift_status')
-            .annotate(count=Count('id'))
-            .order_by('shift_status')
+            .values("shift_status")
+            .annotate(count=Count("id"))
+            .order_by("shift_status")
         )
 
         # Average age (calculated using date_of_birth)
@@ -2869,130 +2881,142 @@ class EmployeeDashboardAPIView(APIView):
         avg_age = employees.filter(date_of_birth__isnull=False).aggregate(
             avg_age=Avg(
                 ExpressionWrapper(
-                    (current_date - F('date_of_birth')) / 365.25,
-                    output_field=FloatField()
+                    (current_date - F("date_of_birth")) / 365.25,
+                    output_field=FloatField(),
                 )
             )
-        )['avg_age']
+        )["avg_age"]
         average_age = round(avg_age) if avg_age else 0
 
         # Average tenure (in years)
         avg_tenure = employees.filter(date_of_joining__isnull=False).aggregate(
             avg_tenure=Avg(
                 ExpressionWrapper(
-                    (current_date - F('date_of_joining')) / 365.25,
-                    output_field=FloatField()
+                    (current_date - F("date_of_joining")) / 365.25,
+                    output_field=FloatField(),
                 )
             )
-        )['avg_tenure']
+        )["avg_tenure"]
         average_tenure_years = round(avg_tenure, 1) if avg_tenure else 0
 
         # Recent hires (last 30 days)
-        recent_hires = employees.filter(
-            date_of_joining__gte=thirty_days_ago
-        ).count()
+        recent_hires = employees.filter(date_of_joining__gte=thirty_days_ago).count()
 
         # Employees by marital status
         employees_by_marital_status = list(
-            employees.values('marital_status')
-            .annotate(count=Count('id'))
-            .order_by('marital_status')
+            employees.values("marital_status")
+            .annotate(count=Count("id"))
+            .order_by("marital_status")
         )
 
         data = {
-            'total_employees': total_employees,
-            'employees_by_gender': [
-                {'gender': item['gender'] or 'Unknown', 'count': item['count']}
+            "total_employees": total_employees,
+            "employees_by_gender": [
+                {"gender": item["gender"] or "Unknown", "count": item["count"]}
                 for item in employees_by_gender
             ],
-            'employees_by_employee_type': [
-                {'employee_type': item['employee_type__name'], 'count': item['count']}
-                for item in employees_by_employee_type if item['employee_type__name']
+            "employees_by_employee_type": [
+                {"employee_type": item["employee_type__name"], "count": item["count"]}
+                for item in employees_by_employee_type
+                if item["employee_type__name"]
             ],
-            'employees_by_work_type': [
-                {'work_type': item['work_type__name'], 'count': item['count']}
-                for item in employees_by_work_type if item['work_type__name']
+            "employees_by_work_type": [
+                {"work_type": item["work_type__name"], "count": item["count"]}
+                for item in employees_by_work_type
+                if item["work_type__name"]
             ],
-            'employees_by_department': [
-                {'department': item['department__name'], 'count': item['count']}
-                for item in employees_by_department if item['department__name']
+            "employees_by_department": [
+                {"department": item["department__name"], "count": item["count"]}
+                for item in employees_by_department
+                if item["department__name"]
             ],
-            'shift_statuses': shift_statuses,
-            'average_age': average_age,
-            'average_tenure_years': average_tenure_years,
-            'recent_hires': recent_hires,
-            'employees_by_marital_status': employees_by_marital_status,
+            "shift_statuses": shift_statuses,
+            "average_age": average_age,
+            "average_tenure_years": average_tenure_years,
+            "recent_hires": recent_hires,
+            "employees_by_marital_status": employees_by_marital_status,
         }
 
         return Response(data)
-    
-    
+
+
 class AttendanceDashboardAPIView(APIView):
     """
     API endpoint for attendance dashboard analytics.
     Provides aggregated metrics on employee attendance and spot checks,
     filtered by the authenticated user's institution.
     """
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        tags=['Attendance Dashboard'],
+        tags=["Attendance Dashboard"],
         description=(
-            'Retrieves key analytics for the attendance module dashboard, filtered by the authenticated user\'s institution. '
-            'Metrics include attendance status distribution, average overtime hours, average late minutes, '
-            'spot check response rates, and attendance trends over the last 30 days.'
+            "Retrieves key analytics for the attendance module dashboard, filtered by the authenticated user's institution. "
+            "Metrics include attendance status distribution, average overtime hours, average late minutes, "
+            "spot check response rates, and attendance trends over the last 30 days."
         ),
         responses={
             200: {
-                'type': 'object',
-                'properties': {
-                    'total_attendance_records': {'type': 'integer', 'description': 'Total attendance records (last 30 days)'},
-                    'attendance_by_status': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
-                        },
-                        'description': 'Attendance records by status (last 30 days)'
+                "type": "object",
+                "properties": {
+                    "total_attendance_records": {
+                        "type": "integer",
+                        "description": "Total attendance records (last 30 days)",
                     },
-                    'average_overtime_hours': {'type': 'number', 'description': 'Average overtime hours per record'},
-                    'average_late_minutes': {'type': 'integer', 'description': 'Average late minutes per record'},
-                    'average_early_checkout_minutes': {'type': 'integer', 'description': 'Average early checkout minutes per record'},
-                    'spot_check_response_rate': {'type': 'number', 'description': 'Percentage of spot checks responded to'},
-                    'spot_checks_by_status': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "attendance_by_status": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "status": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Spot check counts by status (last 30 days)'
+                        "description": "Attendance records by status (last 30 days)",
                     },
-                    'attendance_over_time': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'date': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
+                    "average_overtime_hours": {
+                        "type": "number",
+                        "description": "Average overtime hours per record",
+                    },
+                    "average_late_minutes": {
+                        "type": "integer",
+                        "description": "Average late minutes per record",
+                    },
+                    "average_early_checkout_minutes": {
+                        "type": "integer",
+                        "description": "Average early checkout minutes per record",
+                    },
+                    "spot_check_response_rate": {
+                        "type": "number",
+                        "description": "Percentage of spot checks responded to",
+                    },
+                    "spot_checks_by_status": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "status": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
                         },
-                        'description': 'Daily attendance records over the last 30 days'
-                    }
-                }
+                        "description": "Spot check counts by status (last 30 days)",
+                    },
+                    "attendance_over_time": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "date": {"type": "string"},
+                                "count": {"type": "integer"},
+                            },
+                        },
+                        "description": "Daily attendance records over the last 30 days",
+                    },
+                },
             },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'}
-                }
-            }
-        }
+            400: {"type": "object", "properties": {"error": {"type": "string"}}},
+        },
     )
     def get(self, request):
         user = request.user
@@ -3000,8 +3024,7 @@ class AttendanceDashboardAPIView(APIView):
 
         if not institution:
             return Response(
-                {"error": "User is not associated with any institution"},
-                status=400
+                {"error": "User is not associated with any institution"}, status=400
             )
 
         # Filter by institution and last 30 days
@@ -3009,7 +3032,7 @@ class AttendanceDashboardAPIView(APIView):
         attendance_records = EmployeeAttendance.objects.filter(
             employee__department__institution=institution,
             date__gte=thirty_days_ago,
-            employee__deleted_at__isnull=True
+            employee__deleted_at__isnull=True,
         )
 
         # Total attendance records
@@ -3017,79 +3040,79 @@ class AttendanceDashboardAPIView(APIView):
 
         # Attendance by status
         attendance_by_status = list(
-            attendance_records.values('attendance_status')
-            .annotate(count=Count('id'))
-            .order_by('attendance_status')
+            attendance_records.values("attendance_status")
+            .annotate(count=Count("id"))
+            .order_by("attendance_status")
         )
 
         # Average overtime hours
-        avg_overtime = attendance_records.aggregate(
-            avg_overtime=Avg('overtime_hours')
-        )['avg_overtime']
+        avg_overtime = attendance_records.aggregate(avg_overtime=Avg("overtime_hours"))[
+            "avg_overtime"
+        ]
         average_overtime_hours = round(float(avg_overtime), 2) if avg_overtime else 0.0
 
         # Average late minutes
-        avg_late = attendance_records.aggregate(
-            avg_late=Avg('late_minutes')
-        )['avg_late']
+        avg_late = attendance_records.aggregate(avg_late=Avg("late_minutes"))[
+            "avg_late"
+        ]
         average_late_minutes = round(avg_late) if avg_late else 0
 
         # Average early checkout minutes
         avg_early_checkout = attendance_records.aggregate(
-            avg_early_checkout=Avg('early_checkout_minutes')
-        )['avg_early_checkout']
-        average_early_checkout_minutes = round(avg_early_checkout) if avg_early_checkout else 0
+            avg_early_checkout=Avg("early_checkout_minutes")
+        )["avg_early_checkout"]
+        average_early_checkout_minutes = (
+            round(avg_early_checkout) if avg_early_checkout else 0
+        )
 
         # Spot checks (last 30 days)
         spot_checks = EmployeeSpotCheck.objects.filter(
             employee__department__institution=institution,
             spotcheck_time__gte=thirty_days_ago,
-            employee__deleted_at__isnull=True
+            employee__deleted_at__isnull=True,
         )
         total_spot_checks = spot_checks.count()
         responded_spot_checks = spot_checks.filter(responded_at__isnull=False).count()
         spot_check_response_rate = (
             round((responded_spot_checks / total_spot_checks * 100), 1)
-            if total_spot_checks > 0 else 0.0
+            if total_spot_checks > 0
+            else 0.0
         )
 
         # Spot checks by status
         spot_checks_by_status = list(
-            spot_checks.values('status__status_name')
-            .annotate(count=Count('id'))
-            .order_by('status__status_name')
+            spot_checks.values("status__status_name")
+            .annotate(count=Count("id"))
+            .order_by("status__status_name")
         )
 
         # Attendance over time (daily counts)
         attendance_over_time = list(
-            attendance_records.values('date')
-            .annotate(count=Count('id'))
-            .order_by('date')
-            .values('date', 'count')
+            attendance_records.values("date")
+            .annotate(count=Count("id"))
+            .order_by("date")
+            .values("date", "count")
         )
         attendance_over_time = [
-            {
-                'date': item['date'].strftime('%Y-%m-%d'),
-                'count': item['count']
-            }
+            {"date": item["date"].strftime("%Y-%m-%d"), "count": item["count"]}
             for item in attendance_over_time
         ]
 
         data = {
-            'total_attendance_records': total_attendance_records,
-            'attendance_by_status': [
-                {'status': item['attendance_status'], 'count': item['count']}
+            "total_attendance_records": total_attendance_records,
+            "attendance_by_status": [
+                {"status": item["attendance_status"], "count": item["count"]}
                 for item in attendance_by_status
             ],
-            'average_overtime_hours': average_overtime_hours,
-            'average_late_minutes': average_late_minutes,
-            'average_early_checkout_minutes': average_early_checkout_minutes,
-            'spot_check_response_rate': spot_check_response_rate,
-            'spot_checks_by_status': [
-                {'status': item['status__status_name'], 'count': item['count']}
+            "average_overtime_hours": average_overtime_hours,
+            "average_late_minutes": average_late_minutes,
+            "average_early_checkout_minutes": average_early_checkout_minutes,
+            "spot_check_response_rate": spot_check_response_rate,
+            "spot_checks_by_status": [
+                {"status": item["status__status_name"], "count": item["count"]}
                 for item in spot_checks_by_status
             ],
-            'attendance_over_time': attendance_over_time,
+            "attendance_over_time": attendance_over_time,
         }
 
-        return Response(data)    
+        return Response(data)

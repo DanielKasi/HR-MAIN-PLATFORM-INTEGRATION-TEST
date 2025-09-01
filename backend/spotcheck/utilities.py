@@ -25,7 +25,7 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
     try:
         send_mail(
             subject="Spot Check",
-            message=f"Please confirm your spotcheck by clicking the link: {settings.FRONTEND_URL}spotcheck/?intent=spotcheck&id={spotcheck.id}",
+            message=f"Please confirm your spotcheck by clicking the link: {settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[spotcheck.employee.user.email],
             fail_silently=False,

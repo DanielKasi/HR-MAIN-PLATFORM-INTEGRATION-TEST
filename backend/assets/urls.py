@@ -12,7 +12,7 @@ from .views import (
     AssetDetailView,
     AssetHistoryListView,
     AssetHistoryDetailView,
-
+    AssetsDashboardView,
 
     # Asset Analytics
     AssetCategoryAnalyticsViewSet,
@@ -93,5 +93,6 @@ urlpatterns = [
     path('assets/<int:institution_id>/utilization/', AssetUtilizationAnalyticsViewSet.as_view(), name='asset-utilization-analytics'),
     path('assets/<int:institution_id>/maintenance/', AssetMaintenanceAnalyticsViewSet.as_view(), name='asset-maintenance-analytics'),
     path('assets/<int:institution_id>/decommission/', AssetDecommissionAnalyticsViewSet.as_view(), name='asset-decommission-analytics'),
+    path('analytics/', AssetsDashboardView.as_view(), name='assets-dashboard-analytics'),
 
 ]

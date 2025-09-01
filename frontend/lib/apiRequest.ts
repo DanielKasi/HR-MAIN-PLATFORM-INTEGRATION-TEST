@@ -4,9 +4,10 @@ import { CustomApiRequestError } from "@/types/types.utils";
 import { store } from "@/store";
 import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
 import { LoginResponse } from "@/utils/authUtils";
+import { MAIN_DOMAIN_URL } from "@/app/constants";
 
 const axiosJsonInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,
   headers: {},
   timeout: 30000,
   validateStatus: (status) => status !== 401 && status !== 403
@@ -82,7 +83,7 @@ axiosJsonInstance.interceptors.response.use(
       isRefreshing = true;
       try {
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/"}/user/token/refresh/`,
+          `${process.env.NEXT_PUBLIC_API_URL || MAIN_DOMAIN_URL}/user/token/refresh/`,
           {refresh: refreshToken},
           {
             headers: {
@@ -102,7 +103,6 @@ axiosJsonInstance.interceptors.response.use(
 
         return axiosJsonInstance(originalRequest);
       } catch (err) {
-        console.log("\n\nError on request : ", err);
         store.dispatch(logoutStart());
 
         return Promise.reject(err);

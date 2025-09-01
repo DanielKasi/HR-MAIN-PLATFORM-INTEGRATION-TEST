@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { ArrowLeft, FileText } from "lucide-react"
 import { TerminationInitiationsAPI } from "@/lib/utils"
 import { ITermination } from "@/types/types.utils"
+import { MAIN_DOMAIN_URL } from "@/app/constants"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -95,7 +96,7 @@ export default function TerminationInitiationDetailsPage() {
         {termination.termination_letter && (
           <Button
             variant="outline"
-            onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000' +termination.termination_letter!, "_blank")}
+            onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || `${MAIN_DOMAIN_URL}` +termination.termination_letter!, "_blank")}
           >
             <FileText className="h-4 w-4 mr-2" />
             View Termination Letter

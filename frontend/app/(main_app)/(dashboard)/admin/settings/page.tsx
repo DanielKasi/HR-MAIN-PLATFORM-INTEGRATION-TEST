@@ -1141,7 +1141,7 @@ export default function SettingsPage() {
 
               {penaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
-                  <Label htmlFor="penalty_value">Penalty Amount ($)</Label>
+                  <Label htmlFor="penalty_value">Penalty Amount</Label>
                   <Input
                     id="penalty_value"
                     type="number"
@@ -1424,7 +1424,7 @@ export default function SettingsPage() {
 
               {branchPenaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
-                  <Label htmlFor="branch_penalty_value">Penalty Amount ($)</Label>
+                  <Label htmlFor="branch_penalty_value">Penalty Amount</Label>
                   <Input
                     id="branch_penalty_value"
                     type="number"
