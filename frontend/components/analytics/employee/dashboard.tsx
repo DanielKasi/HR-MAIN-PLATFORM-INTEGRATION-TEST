@@ -75,7 +75,7 @@ export default function EmployeeDashboard() {
               <Users className="h-4 w-4 text-chart-1" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-chart-1">{data.total_employees}</div>
+              <div className="text-2xl font-bold text-chart-1">{data?.total_employees}</div>
               <p className="text-xs text-muted-foreground">Active workforce</p>
             </CardContent>
           </Card>
@@ -86,7 +86,7 @@ export default function EmployeeDashboard() {
               <Clock className="h-4 w-4 text-chart-2" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-chart-2">{data.average_age}</div>
+              <div className="text-2xl font-bold text-chart-2">{data?.average_age}</div>
               <p className="text-xs text-muted-foreground">Years old</p>
             </CardContent>
           </Card>
@@ -97,7 +97,7 @@ export default function EmployeeDashboard() {
               <TrendingUp className="h-4 w-4 text-chart-3" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-chart-3">{data.average_tenure_years}</div>
+              <div className="text-2xl font-bold text-chart-3">{data?.average_tenure_years}</div>
               <p className="text-xs text-muted-foreground">Years of service</p>
             </CardContent>
           </Card>
@@ -108,7 +108,7 @@ export default function EmployeeDashboard() {
               <UserCheck className="h-4 w-4 text-chart-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-chart-4">{data.recent_hires}</div>
+              <div className="text-2xl font-bold text-chart-4">{data?.recent_hires}</div>
               <p className="text-xs text-muted-foreground">New employees</p>
             </CardContent>
           </Card>
@@ -126,7 +126,7 @@ export default function EmployeeDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={data.employees_by_gender}
+                      data={data?.employees_by_gender}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -136,7 +136,7 @@ export default function EmployeeDashboard() {
                       dataKey="count"
                       nameKey="gender"
                     >
-                      {data.employees_by_gender.map((entry, index) => (
+                      {data?.employees_by_gender.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={Object.values(chartConfig.gender)[index]?.color || "hsl(var(--chart-1))"}
@@ -159,7 +159,7 @@ export default function EmployeeDashboard() {
             <CardContent>
               <ChartContainer config={chartConfig.department} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.employees_by_department} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={data?.employees_by_department} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="department" angle={-45} textAnchor="end" height={80} fontSize={12} />
                     <YAxis />
@@ -182,7 +182,7 @@ export default function EmployeeDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={data.employees_by_marital_status}
+                      data={data?.employees_by_marital_status}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -194,7 +194,7 @@ export default function EmployeeDashboard() {
                       dataKey="count"
                       nameKey="marital_status"
                     >
-                      {data.employees_by_marital_status.map((entry, index) => (
+                      {data?.employees_by_marital_status.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={Object.values(chartConfig.maritalStatus)[index]?.color || "hsl(var(--chart-1))"}
@@ -217,7 +217,7 @@ export default function EmployeeDashboard() {
             <CardContent>
               <ChartContainer config={{}} className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.employees_by_work_type} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <BarChart data={data?.employees_by_work_type} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="work_type" />
                     <YAxis />
@@ -239,7 +239,7 @@ export default function EmployeeDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {data.employees_by_employee_type.map((item, index) => (
+                {data?.employees_by_employee_type.map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="font-medium capitalize">{item.employee_type}</span>
                     <Badge variant="secondary" className="bg-chart-4 text-white">
@@ -262,7 +262,7 @@ export default function EmployeeDashboard() {
                 <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
                   <span className="font-medium">Workforce Size</span>
                   <Badge variant="outline" className="text-lg font-bold">
-                    {data.total_employees} employees
+                    {data?.total_employees} employees
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
