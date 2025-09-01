@@ -1,60 +1,83 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Clock, User } from "lucide-react"
-import { useSelector } from "react-redux"
-import { selectSelectedBranch } from "@/store/auth/selectors"
-import apiRequest from "@/lib/apiRequest"
-import { toast } from "sonner"
-import type { IEmployee, IEmployeeShiftFormData, IEmployeeShift, IBranchShift } from "@/types/types.utils"
+import {useEffect, useState} from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Clock, User} from "lucide-react";
+import {useSelector} from "react-redux";
+import {selectSelectedBranch} from "@/store/auth/selectors";
+import apiRequest from "@/lib/apiRequest";
+import {toast} from "sonner";
+import type {
+  IEmployee,
+  IEmployeeShiftFormData,
+  IEmployeeShift,
+  IBranchShift,
+} from "@/types/types.utils";
 
 interface Props {
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
-  employee: IEmployee
-  shiftId?: number
-  onSaved?: () => void
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  employee: IEmployee;
+  shiftId?: number;
+  onSaved?: () => void;
 }
 
-export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, shiftId, onSaved }: Props) {
-  const [loading, setLoading] = useState(false)
-  const [branchShifts, setBranchShifts] = useState<IBranchShift[]>([])
-  const [loadingShifts, setLoadingShifts] = useState(false)
+export default function EmployeeShiftDialog({
+  isOpen,
+  onOpenChange,
+  employee,
+  shiftId,
+  onSaved,
+}: Props) {
+  const [loading, setLoading] = useState(false);
+  const [branchShifts, setBranchShifts] = useState<IBranchShift[]>([]);
+  const [loadingShifts, setLoadingShifts] = useState(false);
   const [form, setForm] = useState<IEmployeeShiftFormData>({
     shift: 0,
     context: "ALLOCATION",
     employee: employee?.id || 0,
     shift_status: "PENDING",
     date: new Date().toISOString().split("T")[0],
-  })
+  });
 
-  const selectedBranch = useSelector(selectSelectedBranch)
+  const selectedBranch = useSelector(selectSelectedBranch);
 
   const fetchBranchShifts = async () => {
-    if (!selectedBranch?.id) return
+    if (!selectedBranch?.id) return;
 
-    setLoadingShifts(true)
+    setLoadingShifts(true);
     try {
-      const response = await apiRequest.get(`institution/branch-shifts/${selectedBranch.id}/`)
-      setBranchShifts(response.data.results || [])
+      const response = await apiRequest.get(`institution/branch-shifts/${selectedBranch.id}/`);
+      setBranchShifts(response.data.results || []);
     } catch (error) {
-      console.error("Failed to fetch branch shifts:", error)
-      setBranchShifts([])
+      console.error("Failed to fetch branch shifts:", error);
+      setBranchShifts([]);
     } finally {
-      setLoadingShifts(false)
+      setLoadingShifts(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (isOpen && selectedBranch?.id) {
-      fetchBranchShifts()
+      fetchBranchShifts();
     }
-  }, [isOpen, selectedBranch?.id])
+  }, [isOpen, selectedBranch?.id]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -64,63 +87,63 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
         shift_status: "PENDING",
         employee: employee.id,
         date: new Date().toISOString().split("T")[0],
-      })
+      });
     }
-  }, [isOpen, employee?.id])
+  }, [isOpen, employee?.id]);
 
   useEffect(() => {
     if (shiftId) {
-      ; (async () => {
+      (async () => {
         try {
-          const response = await apiRequest.get(`employee/employee-shifts/${shiftId}/`)
-          const data: IEmployeeShift = response.data
+          const response = await apiRequest.get(`employee/employee-shifts/${shiftId}/`);
+          const data: IEmployeeShift = response.data;
           setForm({
             shift: data.shift.id,
             context: data.context,
             employee: data.employee,
             date: data.date,
-          } as any)
+          } as any);
         } catch (error) {
-          console.error("Failed to load shift:", error)
-          toast.error("Failed to load shift")
+          console.error("Failed to load shift:", error);
+          toast.error("Failed to load shift");
         }
-      })()
+      })();
     }
-  }, [shiftId])
+  }, [shiftId]);
 
   const handleSubmit = async () => {
     if (!form.shift || !form.date) {
-      toast.error("Please fill in all required fields")
-      return
+      toast.error("Please fill in all required fields");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       const payload = {
         shift: form.shift,
         context: "ALLOCATION",
         employee: employee.id,
         date: form.date,
-      }
+      };
 
       if (shiftId) {
-        await apiRequest.put(`employee/employee-shifts/${shiftId}/`, payload)
-        toast.success("Shift updated successfully")
+        await apiRequest.put(`employee/employee-shifts/${shiftId}/`, payload);
+        toast.success("Shift updated successfully");
       } else {
-        await apiRequest.post("employee/employee-shifts/", payload)
-        toast.success("Shift assigned successfully")
+        await apiRequest.post("employee/employee-shifts/", payload);
+        toast.success("Shift assigned successfully");
       }
-      onOpenChange(false)
-      onSaved?.()
+      onOpenChange(false);
+      onSaved?.();
     } catch (error) {
-      console.error("Failed to save shift:", error)
-      toast.error("Failed to save shift")
+      console.error("Failed to save shift:", error);
+      toast.error("Failed to save shift");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const selectedShift = branchShifts.find((shift) => shift.id === form.shift)
+  const selectedShift = branchShifts.find((shift) => shift.id === form.shift);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -142,7 +165,7 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
             <Label htmlFor="shift">Available Shifts</Label>
             <Select
               value={form.shift ? String(form.shift) : ""}
-              onValueChange={(value) => setForm((p) => ({ ...p, shift: Number(value) }))}
+              onValueChange={(value) => setForm((p) => ({...p, shift: Number(value)}))}
               disabled={loadingShifts}
             >
               <SelectTrigger>
@@ -175,7 +198,7 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
               id="date"
               type="date"
               value={form.date}
-              onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+              onChange={(e) => setForm((p) => ({...p, date: e.target.value}))}
               min={new Date().toISOString().split("T")[0]}
             />
             {/* {selectedShift && form.date && (
@@ -190,11 +213,14 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || loadingShifts || !form.shift || !form.date}>
+          <Button
+            onClick={handleSubmit}
+            disabled={loading || loadingShifts || !form.shift || !form.date}
+          >
             {loading ? "Saving..." : shiftId ? "Update Assignment" : "Assign Shift"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

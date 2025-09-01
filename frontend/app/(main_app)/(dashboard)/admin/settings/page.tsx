@@ -19,13 +19,26 @@ import {setAttachedInstitutions, setSelectedInstitution} from "@/store/auth/acti
 import {Upload, FileText, X, Check, Plus, Edit, Trash2} from "lucide-react";
 import {DocumentsList} from "@/components/documents-list";
 import Image from "next/image";
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {Badge} from "@/components/ui/badge";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {penaltyConfigAPI, branchLocationComparisonConfigAPI} from "@/lib/utils";
-import type {IInstitutionPenaltyConfig, IInstitutionPenaltyConfigFormData, IBranchPenaltyConfig, IBranchPenaltyConfigFormData, IBranchLocationComparisonConfig, IBranchLocationComparisonConfigFormData} from "@/types/types.utils";
+import type {
+  IInstitutionPenaltyConfig,
+  IInstitutionPenaltyConfigFormData,
+  IBranchPenaltyConfig,
+  IBranchPenaltyConfigFormData,
+  IBranchLocationComparisonConfig,
+  IBranchLocationComparisonConfigFormData,
+} from "@/types/types.utils";
 import Link from "next/link";
 import {formatCurrency} from "@/lib/helpers";
 
@@ -39,7 +52,9 @@ interface DocumentFile {
 export default function SettingsPage() {
   const institution = useSelector(selectSelectedInstitution);
   const attachedInstitutions = useSelector(selectAttachedInstitutions);
-  const [activeTab, setActiveTab] = useState<'institution' | 'kyc' | 'penalties' | 'branch_penalties' | 'location_comparison'>('institution');
+  const [activeTab, setActiveTab] = useState<
+    "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison"
+  >("institution");
   const [formData, setFormData] = useState({
     institution_name: "",
     institution_email: "",
@@ -70,7 +85,7 @@ export default function SettingsPage() {
     onConfirm: () => {},
   });
   const [documentsRefreshTrigger, setDocumentsRefreshTrigger] = useState(0);
-  
+
   // Penalty Configuration state
   const [penaltyConfigs, setPenaltyConfigs] = useState<IInstitutionPenaltyConfig[]>([]);
   const [penaltyFormData, setPenaltyFormData] = useState<IInstitutionPenaltyConfigFormData>({
@@ -81,7 +96,8 @@ export default function SettingsPage() {
     institution: institution?.id || 0,
   });
   const [isPenaltyFormOpen, setIsPenaltyFormOpen] = useState(false);
-  const [editingPenaltyConfig, setEditingPenaltyConfig] = useState<IInstitutionPenaltyConfig | null>(null);
+  const [editingPenaltyConfig, setEditingPenaltyConfig] =
+    useState<IInstitutionPenaltyConfig | null>(null);
   const [penaltySearchTerm, setPenaltySearchTerm] = useState("");
   const [penaltyTypeFilter, setPenaltyTypeFilter] = useState<string>("all");
 
@@ -95,22 +111,29 @@ export default function SettingsPage() {
     percentage: undefined,
   });
   const [isBranchPenaltyFormOpen, setIsBranchPenaltyFormOpen] = useState(false);
-  const [editingBranchPenaltyConfig, setEditingBranchPenaltyConfig] = useState<IBranchPenaltyConfig | null>(null);
+  const [editingBranchPenaltyConfig, setEditingBranchPenaltyConfig] =
+    useState<IBranchPenaltyConfig | null>(null);
   const [branchPenaltySearchTerm, setBranchPenaltySearchTerm] = useState("");
   const [branchPenaltyTypeFilter, setBranchPenaltyTypeFilter] = useState<string>("all");
-    const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
-  
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+
   // Location Comparison Config state
-  const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<IBranchLocationComparisonConfig[]>([]);
-  const [locationComparisonFormData, setLocationComparisonFormData] = useState<IBranchLocationComparisonConfigFormData>({
-    branch: 0,
-    radius_in_meters: 100,
-  });
+  const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<
+    IBranchLocationComparisonConfig[]
+  >([]);
+  const [locationComparisonFormData, setLocationComparisonFormData] =
+    useState<IBranchLocationComparisonConfigFormData>({
+      branch: 0,
+      radius_in_meters: 100,
+    });
   const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false);
-  const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] = useState<IBranchLocationComparisonConfig | null>(null);
+  const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] =
+    useState<IBranchLocationComparisonConfig | null>(null);
   const [locationComparisonSearchTerm, setLocationComparisonSearchTerm] = useState("");
-  const [selectedLocationComparisonBranchId, setSelectedLocationComparisonBranchId] = useState<number | null>(null);
-  
+  const [selectedLocationComparisonBranchId, setSelectedLocationComparisonBranchId] = useState<
+    number | null
+  >(null);
+
   // Refs for table refresh functions
   const institutionPenaltyRefreshRef = useRef<(() => void) | null>(null);
   const branchPenaltyRefreshRef = useRef<(() => void) | null>(null);
@@ -315,7 +338,10 @@ export default function SettingsPage() {
   };
 
   // Penalty Configuration helper functions
-  const handlePenaltyInputChange = (field: keyof IInstitutionPenaltyConfigFormData, value: string | number) => {
+  const handlePenaltyInputChange = (
+    field: keyof IInstitutionPenaltyConfigFormData,
+    value: string | number,
+  ) => {
     setPenaltyFormData((prev) => ({...prev, [field]: value}));
   };
 
@@ -354,7 +380,10 @@ export default function SettingsPage() {
     setIsLoading(true);
     try {
       if (editingPenaltyConfig) {
-        await penaltyConfigAPI.updateInstitutionPenaltyConfig(editingPenaltyConfig.id, penaltyFormData);
+        await penaltyConfigAPI.updateInstitutionPenaltyConfig(
+          editingPenaltyConfig.id,
+          penaltyFormData,
+        );
         toast.success("Penalty configuration updated successfully");
       } else {
         await penaltyConfigAPI.createInstitutionPenaltyConfig(penaltyFormData);
@@ -412,7 +441,10 @@ export default function SettingsPage() {
   };
 
   // Branch Penalty Configuration helper functions
-  const handleBranchPenaltyInputChange = (field: keyof IBranchPenaltyConfigFormData, value: string | number) => {
+  const handleBranchPenaltyInputChange = (
+    field: keyof IBranchPenaltyConfigFormData,
+    value: string | number,
+  ) => {
     setBranchPenaltyFormData((prev) => ({...prev, [field]: value}));
   };
 
@@ -455,7 +487,10 @@ export default function SettingsPage() {
     setIsLoading(true);
     try {
       if (editingBranchPenaltyConfig) {
-        await penaltyConfigAPI.updateBranchPenaltyConfig(editingBranchPenaltyConfig.id, branchPenaltyFormData);
+        await penaltyConfigAPI.updateBranchPenaltyConfig(
+          editingBranchPenaltyConfig.id,
+          branchPenaltyFormData,
+        );
         toast.success("Branch penalty configuration updated successfully");
       } else {
         await penaltyConfigAPI.createBranchPenaltyConfig(branchPenaltyFormData);
@@ -498,7 +533,10 @@ export default function SettingsPage() {
   };
 
   // Location Comparison Config helper functions
-  const handleLocationComparisonInputChange = (field: keyof IBranchLocationComparisonConfigFormData, value: string | number) => {
+  const handleLocationComparisonInputChange = (
+    field: keyof IBranchLocationComparisonConfigFormData,
+    value: string | number,
+  ) => {
     setLocationComparisonFormData((prev) => ({...prev, [field]: value}));
   };
 
@@ -535,10 +573,15 @@ export default function SettingsPage() {
     setIsLoading(true);
     try {
       if (editingLocationComparisonConfig) {
-        await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(editingLocationComparisonConfig.id, locationComparisonFormData);
+        await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(
+          editingLocationComparisonConfig.id,
+          locationComparisonFormData,
+        );
         toast.success("Location comparison configuration updated successfully");
       } else {
-        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(locationComparisonFormData);
+        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(
+          locationComparisonFormData,
+        );
         toast.success("Location comparison configuration created successfully");
       }
       resetLocationComparisonForm();
@@ -563,7 +606,10 @@ export default function SettingsPage() {
           // Trigger table refresh
           locationComparisonRefreshRef.current?.();
         } catch (error) {
-          showErrorToast({error, defaultMessage: "Failed to delete location comparison configuration"});
+          showErrorToast({
+            error,
+            defaultMessage: "Failed to delete location comparison configuration",
+          });
         }
         setConfirmationDialog((prev) => ({...prev, isOpen: false}));
       },
@@ -578,192 +624,192 @@ export default function SettingsPage() {
 
       {/* Institution Logo */}
       <div className="flex flex-col  items-center justify-center">
-                <div className="relative">
-                  {institution?.institution_logo || logoFile ? (
+        <div className="relative">
+          {institution?.institution_logo || logoFile ? (
             <div className="w-24 h-24 rounded-lg overflow-hidden relative">
-                      <Image
-                        fill
-                        src={
-                          logoFile
-                            ? URL.createObjectURL(logoFile)
-                            : process.env.NEXT_PUBLIC_BASE_URL + institution?.institution_logo!
-                        }
-                        alt="Institution Logo"
+              <Image
+                fill
+                src={
+                  logoFile
+                    ? URL.createObjectURL(logoFile)
+                    : process.env.NEXT_PUBLIC_BASE_URL + institution?.institution_logo!
+                }
+                alt="Institution Logo"
                 className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                  ) : (
+              />
+            </div>
+          ) : (
             <div className="w-24 h-24 bg-gradient-to-br from-primary/30 to-primary/50 rounded-lg flex items-center justify-center">
               <Icon icon="hugeicons:building-04" className="w-12 h-12 text-white" />
-                    </div>
-                  )}
-                  {isEditing.logo && (
+            </div>
+          )}
+          {isEditing.logo && (
             <div className="absolute -bottom-1 -right-1">
-                      <label htmlFor="logo-upload" className="cursor-pointer">
+              <label htmlFor="logo-upload" className="cursor-pointer">
                 <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                   <Icon icon="hugeicons:edit-01" className="w-3 h-3 text-white" />
-                        </div>
-                      </label>
-                      <input
-                        id="logo-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleEdit("logo")}
+              </label>
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
+            </div>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleEdit("logo")}
           className="rounded-lg border-gray-200 hover:bg-gray-50 mt-2"
-                >
-                  {isEditing.logo ? "Cancel" : "Change Logo"}
-                </Button>
-              </div>
+        >
+          {isEditing.logo ? "Cancel" : "Change Logo"}
+        </Button>
+      </div>
 
       {/* Form Fields */}
       <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="institution_name" className="text-sm font-medium text-gray-700">
-                    Institution Name
-                  </Label>
-                  <div className="flex items-center space-x-3">
-                    {isEditing.institution_name ? (
-                      <Input
-                        id="institution_name"
-                        value={formData.institution_name}
-                        onChange={(e) => handleInputChange("institution_name", e.target.value)}
+        <div className="space-y-2">
+          <Label htmlFor="institution_name" className="text-sm font-medium text-gray-700">
+            Institution Name
+          </Label>
+          <div className="flex items-center space-x-3">
+            {isEditing.institution_name ? (
+              <Input
+                id="institution_name"
+                value={formData.institution_name}
+                onChange={(e) => handleInputChange("institution_name", e.target.value)}
                 className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                      />
-                    ) : (
+              />
+            ) : (
               <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                        {formData.institution_name}
-                      </div>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleEdit("institution_name")}
+                {formData.institution_name}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleEdit("institution_name")}
               className="rounded-lg border-gray-200 hover:bg-gray-50"
-                    >
-                      {isEditing.institution_name ? "Cancel" : "Change"}
-                    </Button>
-                  </div>
-                </div>
+            >
+              {isEditing.institution_name ? "Cancel" : "Change"}
+            </Button>
+          </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="institution_email" className="text-sm font-medium text-gray-700">
-                    Email Address
-                  </Label>
-                  <div className="flex items-center space-x-3">
-                    {isEditing.institution_email ? (
-                      <Input
-                        id="institution_email"
-                        type="email"
-                        disabled
-                        value={formData.institution_email}
-                        onChange={(e) => handleInputChange("institution_email", e.target.value)}
+        <div className="space-y-2">
+          <Label htmlFor="institution_email" className="text-sm font-medium text-gray-700">
+            Email Address
+          </Label>
+          <div className="flex items-center space-x-3">
+            {isEditing.institution_email ? (
+              <Input
+                id="institution_email"
+                type="email"
+                disabled
+                value={formData.institution_email}
+                onChange={(e) => handleInputChange("institution_email", e.target.value)}
                 className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                      />
-                    ) : (
+              />
+            ) : (
               <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                        {formData.institution_email}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {formData.institution_email}
+              </div>
+            )}
+          </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="first_phone_number" className="text-sm font-medium text-gray-700">
-                    Phone Number
-                  </Label>
-                  <div className="flex items-center space-x-3">
-                    {isEditing.first_phone_number ? (
-                      <Input
-                        id="first_phone_number"
-                        value={formData.first_phone_number}
-                        onChange={(e) => handleInputChange("first_phone_number", e.target.value)}
+        <div className="space-y-2">
+          <Label htmlFor="first_phone_number" className="text-sm font-medium text-gray-700">
+            Phone Number
+          </Label>
+          <div className="flex items-center space-x-3">
+            {isEditing.first_phone_number ? (
+              <Input
+                id="first_phone_number"
+                value={formData.first_phone_number}
+                onChange={(e) => handleInputChange("first_phone_number", e.target.value)}
                 className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                      />
-                    ) : (
+              />
+            ) : (
               <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                        {formData.first_phone_number || "Not set"}
-                      </div>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleEdit("first_phone_number")}
+                {formData.first_phone_number || "Not set"}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleEdit("first_phone_number")}
               className="rounded-lg border-gray-200 hover:bg-gray-50"
-                    >
-                      {isEditing.first_phone_number ? "Cancel" : "Change"}
-                    </Button>
-                  </div>
-                </div>
+            >
+              {isEditing.first_phone_number ? "Cancel" : "Change"}
+            </Button>
+          </div>
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium text-gray-700">
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-sm font-medium text-gray-700">
             Location
-                  </Label>
-                  <div className="flex items-center space-x-3">
-                    {isEditing.location ? (
-                      <div className="flex-1 space-y-2">
+          </Label>
+          <div className="flex items-center space-x-3">
+            {isEditing.location ? (
+              <div className="flex-1 space-y-2">
                 <div className="flex items-center space-x-2">
                   <Icon icon="hugeicons:location-01" className="w-4 h-4 text-gray-500" />
-                        <Input
-                          id="location"
-                          value={formData.location}
-                          onChange={(e) => handleInputChange("location", e.target.value)}
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange("location", e.target.value)}
                     className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                          placeholder="Enter institution address"
-                        />
+                    placeholder="Enter institution address"
+                  />
                 </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleUseCurrentLocation}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUseCurrentLocation}
                   className="rounded-lg border-gray-200 hover:bg-gray-50 flex items-center space-x-2 bg-transparent"
-                        >
-                          <Icon icon="hugeicons:location-01" className="w-4 h-4" />
-                          <span>Use Current Location</span>
-                        </Button>
-                      </div>
-                    ) : (
+                >
+                  <Icon icon="hugeicons:location-01" className="w-4 h-4" />
+                  <span>Use Current Location</span>
+                </Button>
+              </div>
+            ) : (
               <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
                 <Icon icon="hugeicons:location-01" className="w-4 h-4 text-gray-500" />
                 <span>{formData.location || "Not set"}</span>
-                      </div>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleEdit("location")}
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleEdit("location")}
               className="rounded-lg border-gray-200 hover:bg-gray-50"
-                    >
-                      {isEditing.location ? "Cancel" : "Change"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">Attendance Penalties</Label>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <span className="text-gray-900">
-                      {formData.is_attendance_penalties_enabled ? "Enabled" : "Disabled"}
-                    </span>
-                    <Switch
-                      checked={formData.is_attendance_penalties_enabled}
-                      onCheckedChange={(checked) =>
-                        handleInputChange("is_attendance_penalties_enabled", checked)
-                      }
-                    />
+            >
+              {isEditing.location ? "Cancel" : "Change"}
+            </Button>
           </div>
-                  </div>
-                </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Attendance Penalties</Label>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <span className="text-gray-900">
+              {formData.is_attendance_penalties_enabled ? "Enabled" : "Disabled"}
+            </span>
+            <Switch
+              checked={formData.is_attendance_penalties_enabled}
+              onCheckedChange={(checked) =>
+                handleInputChange("is_attendance_penalties_enabled", checked)
+              }
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="pt-6">
         <Button
@@ -775,7 +821,7 @@ export default function SettingsPage() {
             <div className="flex items-center space-x-2">
               <Icon icon="hugeicons:loading-03" className="w-4 h-4 animate-spin" />
               <span>Updating Changes...</span>
-                      </div>
+            </div>
           ) : (
             "Save Changes"
           )}
@@ -788,140 +834,133 @@ export default function SettingsPage() {
     <div className="space-y-6 ">
       <div className="flex items-center justify-between border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-900">KYC Documents</h2>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleEdit("documents")}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toggleEdit("documents")}
           className="rounded-lg border-gray-200 hover:bg-gray-50"
-                      >
-                        {isEditing.documents ? "Cancel" : "Manage Documents"}
-                      </Button>
-                    </div>
+        >
+          {isEditing.documents ? "Cancel" : "Manage Documents"}
+        </Button>
+      </div>
 
       <div>
-        <p className="text-sm text-gray-600 mb-4">
-          Submit and review your KYC files
-        </p>
-                    <DocumentsList
-                      refreshTrigger={documentsRefreshTrigger}
-                      onDocumentChange={() => setDocumentsRefreshTrigger((prev) => prev + 1)}
-                    />
-                  </div>
+        <p className="text-sm text-gray-600 mb-4">Submit and review your KYC files</p>
+        <DocumentsList
+          refreshTrigger={documentsRefreshTrigger}
+          onDocumentChange={() => setDocumentsRefreshTrigger((prev) => prev + 1)}
+        />
+      </div>
 
-                  {isEditing.documents && (
+      {isEditing.documents && (
         <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium text-gray-700">Upload Documents</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addDocument}
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700">Upload Documents</h4>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addDocument}
               className="rounded-lg border-gray-200 hover:bg-gray-50 flex items-center space-x-2"
-                        >
-                          <Upload className="w-4 h-4" />
-                          <span>Add Document</span>
-                        </Button>
-                      </div>
+            >
+              <Upload className="w-4 h-4" />
+              <span>Add Document</span>
+            </Button>
+          </div>
 
-                      {documents.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                          <p className="text-sm">No documents added yet</p>
-                          <p className="text-xs">Click "Add Document" to upload KYC documents</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {documents.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200"
-                            >
-                              <div className="flex-1 space-y-2">
-                                <Input
-                                  placeholder="Document title (e.g., Business License, Tax Certificate)"
-                                  value={doc.title}
-                                  onChange={(e) => updateDocument(doc.id, "title", e.target.value)}
+          {documents.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">No documents added yet</p>
+              <p className="text-xs">Click "Add Document" to upload KYC documents</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200"
+                >
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="Document title (e.g., Business License, Tax Certificate)"
+                      value={doc.title}
+                      onChange={(e) => updateDocument(doc.id, "title", e.target.value)}
                       className="rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
-                                />
-                                <div className="flex items-center space-x-2">
-                                  <label htmlFor={`file-${doc.id}`} className="cursor-pointer">
+                    />
+                    <div className="flex items-center space-x-2">
+                      <label htmlFor={`file-${doc.id}`} className="cursor-pointer">
                         <div className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
-                                      <Upload className="w-4 h-4 text-gray-500" />
-                                      <span className="text-sm text-gray-600">
-                                        {doc.fileName || "Choose file"}
-                                      </span>
-                                    </div>
-                                  </label>
-                                  <input
-                                    id={`file-${doc.id}`}
-                                    type="file"
-                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                    onChange={(e) =>
-                                      handleFileChange(doc.id, e.target.files?.[0] || null)
-                                    }
-                                    className="hidden"
-                                  />
-                                  {doc.file && (
-                                    <div className="flex items-center space-x-1 text-green-600">
-                                      <Check className="w-4 h-4" />
-                                      <span className="text-xs">Selected</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => removeDocument(doc.id)}
-                    className="rounded-lg border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
+                          <Upload className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            {doc.fileName || "Choose file"}
+                          </span>
                         </div>
-                      )}
-
-                      {documents.length > 0 && (
-                        <div className="pt-4 border-t border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs text-gray-500">
-                              <p>• Supported formats: PDF, DOC, DOCX, JPG, PNG</p>
-                              <p>• Maximum file size: 10MB per document</p>
-                            </div>
-                            <Button
-                              type="button"
-                              onClick={handleSave}
-                              disabled={isLoading}
-                  className="bg-primary hover:bg-primary text-white rounded-lg px-6"
-                            >
-                              {isLoading ? (
-                                <div className="flex items-center space-x-2">
-                                  <Icon
-                                    icon="hugeicons:loading-03"
-                                    className="w-4 h-4 animate-spin"
-                                  />
-                                  <span>Uploading...</span>
-                                </div>
-                              ) : (
-                                "Upload Documents"
-                              )}
-                            </Button>
-                          </div>
+                      </label>
+                      <input
+                        id={`file-${doc.id}`}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(doc.id, e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      {doc.file && (
+                        <div className="flex items-center space-x-1 text-green-600">
+                          <Check className="w-4 h-4" />
+                          <span className="text-xs">Selected</span>
                         </div>
                       )}
                     </div>
-                  )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeDocument(doc.id)}
+                    className="rounded-lg border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {documents.length > 0 && (
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-gray-500">
+                  <p>• Supported formats: PDF, DOC, DOCX, JPG, PNG</p>
+                  <p>• Maximum file size: 10MB per document</p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isLoading}
+                  className="bg-primary hover:bg-primary text-white rounded-lg px-6"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <Icon icon="hugeicons:loading-03" className="w-4 h-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </div>
+                  ) : (
+                    "Upload Documents"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 
   const renderPenaltyConfigurations = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-900">Penalty Configurations</h2>
-                  <Button
+        <Button
           onClick={handleCreatePenaltyConfig}
           className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
         >
@@ -933,7 +972,10 @@ export default function SettingsPage() {
       {/* Search and Filter */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
-          <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5" />
+          <Icon
+            icon="hugeicons:search-01"
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5"
+          />
           <Input
             placeholder="Search penalty types"
             value={penaltySearchTerm}
@@ -986,7 +1028,9 @@ export default function SettingsPage() {
             if (!data || data.results.length === 0) {
               return (
                 <div className="text-center py-8 text-gray-500">
-                  {penaltySearchTerm ? "No penalty configurations found matching your search criteria" : "No penalty configurations found"}
+                  {penaltySearchTerm
+                    ? "No penalty configurations found matching your search criteria"
+                    : "No penalty configurations found"}
                 </div>
               );
             }
@@ -1012,11 +1056,9 @@ export default function SettingsPage() {
                           {getPenaltyValueTypeDisplay(config.penalty_value_type)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono">
-                        {formatPenaltyValue(config)}
-                      </TableCell>
+                      <TableCell className="font-mono">{formatPenaltyValue(config)}</TableCell>
                       <TableCell>
-                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1060,7 +1102,7 @@ export default function SettingsPage() {
                 <Icon icon="hugeicons:close-01" className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="penalty_type">Penalty Type</Label>
@@ -1099,18 +1141,20 @@ export default function SettingsPage() {
 
               {penaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
-                  <Label htmlFor="penalty_value">Penalty Amount ($)</Label>
+                  <Label htmlFor="penalty_value">Penalty Amount</Label>
                   <Input
                     id="penalty_value"
                     type="number"
                     step="0.01"
                     min="0"
                     value={penaltyFormData.penalty_value}
-                    onChange={(e) => handlePenaltyInputChange("penalty_value", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handlePenaltyInputChange("penalty_value", parseFloat(e.target.value) || 0)
+                    }
                     placeholder="Enter penalty amount"
                   />
-                      </div>
-                    ) : (
+                </div>
+              ) : (
                 <div>
                   <Label htmlFor="percentage">Percentage (%)</Label>
                   <Input
@@ -1120,7 +1164,9 @@ export default function SettingsPage() {
                     min="0"
                     max="100"
                     value={penaltyFormData.percentage || ""}
-                    onChange={(e) => handlePenaltyInputChange("percentage", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handlePenaltyInputChange("percentage", parseFloat(e.target.value) || 0)
+                    }
                     placeholder="Enter percentage"
                   />
                 </div>
@@ -1131,7 +1177,7 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={resetPenaltyForm}
-                    disabled={isLoading}
+                disabled={isLoading}
                 className="flex-1 rounded-full"
               >
                 Cancel
@@ -1144,10 +1190,10 @@ export default function SettingsPage() {
                 {isLoading ? "Saving..." : editingPenaltyConfig ? "Update" : "Create"}
               </Button>
             </div>
-              </div>
+          </div>
         </div>
       )}
-      </div>
+    </div>
   );
 
   const renderBranchPenaltyConfigurations = () => (
@@ -1171,12 +1217,16 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium text-blue-900">Select Branch</h3>
             <p className="text-sm text-blue-700">
-              Choose a branch to manage its penalty configurations. Each branch can have different penalty settings.
+              Choose a branch to manage its penalty configurations. Each branch can have different
+              penalty settings.
             </p>
           </div>
         </div>
         <div className="mt-3">
-          <Select value={selectedBranchId?.toString() || ""} onValueChange={(value) => setSelectedBranchId(parseInt(value))}>
+          <Select
+            value={selectedBranchId?.toString() || ""}
+            onValueChange={(value) => setSelectedBranchId(parseInt(value))}
+          >
             <SelectTrigger className="w-[300px]">
               <SelectValue placeholder="Select a branch" />
             </SelectTrigger>
@@ -1196,7 +1246,10 @@ export default function SettingsPage() {
           {/* Search and Filter */}
           <div className="flex items-center space-x-4">
             <div className="relative flex-1 max-w-sm">
-              <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5" />
+              <Icon
+                icon="hugeicons:search-01"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5"
+              />
               <Input
                 placeholder="Search penalty types"
                 value={branchPenaltySearchTerm}
@@ -1228,7 +1281,8 @@ export default function SettingsPage() {
                   branchId: selectedBranchId,
                   page: 1,
                   search: branchPenaltySearchTerm || undefined,
-                  penalty_type: branchPenaltyTypeFilter !== "all" ? branchPenaltyTypeFilter : undefined,
+                  penalty_type:
+                    branchPenaltyTypeFilter !== "all" ? branchPenaltyTypeFilter : undefined,
                 });
               }}
               fetchFromUrl={penaltyConfigAPI.getBranchPenaltyConfigsFromUrl}
@@ -1249,7 +1303,9 @@ export default function SettingsPage() {
                 if (!data || data.results.length === 0) {
                   return (
                     <div className="text-center py-8 text-gray-500">
-                      {branchPenaltySearchTerm ? "No branch penalty configurations found matching your search criteria" : "No branch penalty configurations found"}
+                      {branchPenaltySearchTerm
+                        ? "No branch penalty configurations found matching your search criteria"
+                        : "No branch penalty configurations found"}
                     </div>
                   );
                 }
@@ -1279,7 +1335,7 @@ export default function SettingsPage() {
                             {formatBranchPenaltyValue(config)}
                           </TableCell>
                           <TableCell>
-                      <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1314,7 +1370,9 @@ export default function SettingsPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingBranchPenaltyConfig ? "Edit Branch Penalty Configuration" : "Add Branch Penalty Configuration"}
+                {editingBranchPenaltyConfig
+                  ? "Edit Branch Penalty Configuration"
+                  : "Add Branch Penalty Configuration"}
               </h3>
               <Button
                 variant="ghost"
@@ -1325,7 +1383,7 @@ export default function SettingsPage() {
                 <Icon icon="hugeicons:close-01" className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="branch_penalty_type">Penalty Type</Label>
@@ -1350,7 +1408,9 @@ export default function SettingsPage() {
                 <Label htmlFor="branch_penalty_value_type">Value Type</Label>
                 <Select
                   value={branchPenaltyFormData.penalty_value_type}
-                  onValueChange={(value) => handleBranchPenaltyInputChange("penalty_value_type", value)}
+                  onValueChange={(value) =>
+                    handleBranchPenaltyInputChange("penalty_value_type", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select value type" />
@@ -1364,18 +1424,23 @@ export default function SettingsPage() {
 
               {branchPenaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
-                  <Label htmlFor="branch_penalty_value">Penalty Amount ($)</Label>
+                  <Label htmlFor="branch_penalty_value">Penalty Amount</Label>
                   <Input
                     id="branch_penalty_value"
                     type="number"
                     step="0.01"
                     min="0"
                     value={branchPenaltyFormData.penalty_value}
-                    onChange={(e) => handleBranchPenaltyInputChange("penalty_value", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleBranchPenaltyInputChange(
+                        "penalty_value",
+                        parseFloat(e.target.value) || 0,
+                      )
+                    }
                     placeholder="Enter penalty amount"
                   />
-                      </div>
-                    ) : (
+                </div>
+              ) : (
                 <div>
                   <Label htmlFor="branch_percentage">Percentage (%)</Label>
                   <Input
@@ -1385,7 +1450,9 @@ export default function SettingsPage() {
                     min="0"
                     max="100"
                     value={branchPenaltyFormData.percentage || ""}
-                    onChange={(e) => handleBranchPenaltyInputChange("percentage", parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleBranchPenaltyInputChange("percentage", parseFloat(e.target.value) || 0)
+                    }
                     placeholder="Enter percentage"
                   />
                 </div>
@@ -1407,18 +1474,20 @@ export default function SettingsPage() {
                 className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
               >
                 {isLoading ? "Saving..." : editingBranchPenaltyConfig ? "Update" : "Create"}
-                  </Button>
-                </div>
-              </div>
+              </Button>
+            </div>
+          </div>
         </div>
       )}
-      </div>
+    </div>
   );
 
   const renderLocationComparisonConfigurations = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Branch Location Comparison Configurations</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Branch Location Comparison Configurations
+        </h2>
         <Button
           onClick={handleCreateLocationComparisonConfig}
           className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
@@ -1436,12 +1505,16 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium text-green-900">Select Branch</h3>
             <p className="text-sm text-green-700">
-              Choose a branch to manage its location comparison settings. Each branch can have different location parameters.
+              Choose a branch to manage its location comparison settings. Each branch can have
+              different location parameters.
             </p>
           </div>
         </div>
         <div className="mt-3">
-          <Select value={selectedLocationComparisonBranchId?.toString() || ""} onValueChange={(value) => setSelectedLocationComparisonBranchId(parseInt(value))}>
+          <Select
+            value={selectedLocationComparisonBranchId?.toString() || ""}
+            onValueChange={(value) => setSelectedLocationComparisonBranchId(parseInt(value))}
+          >
             <SelectTrigger className="w-[300px]">
               <SelectValue placeholder="Select a branch" />
             </SelectTrigger>
@@ -1461,7 +1534,10 @@ export default function SettingsPage() {
           {/* Search */}
           <div className="flex items-center space-x-4">
             <div className="relative flex-1 max-w-sm">
-              <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Icon
+                icon="hugeicons:search-01"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"
+              />
               <Input
                 placeholder="Search by branch name..."
                 value={locationComparisonSearchTerm}
@@ -1482,7 +1558,9 @@ export default function SettingsPage() {
                   search: locationComparisonSearchTerm || undefined,
                 });
               }}
-              fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
+              fetchFromUrl={
+                branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl
+              }
               deps={[institution?.id, locationComparisonSearchTerm]}
               className="space-y-4"
               footerClassName="pt-4"
@@ -1500,7 +1578,9 @@ export default function SettingsPage() {
                 if (!data || data.results.length === 0) {
                   return (
                     <div className="text-center py-8 text-gray-500">
-                      {locationComparisonSearchTerm ? "No location comparison configurations found matching your search criteria" : "No location comparison configurations found"}
+                      {locationComparisonSearchTerm
+                        ? "No location comparison configurations found matching your search criteria"
+                        : "No location comparison configurations found"}
                     </div>
                   );
                 }
@@ -1555,7 +1635,9 @@ export default function SettingsPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingLocationComparisonConfig ? "Edit Location Comparison Configuration" : "Add Location Comparison Configuration"}
+                {editingLocationComparisonConfig
+                  ? "Edit Location Comparison Configuration"
+                  : "Add Location Comparison Configuration"}
               </h3>
               <Button
                 variant="ghost"
@@ -1566,7 +1648,7 @@ export default function SettingsPage() {
                 <Icon icon="hugeicons:close-01" className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               {/* <div>
                 <Label htmlFor="latitude">Latitude</Label>
@@ -1599,7 +1681,12 @@ export default function SettingsPage() {
                   type="number"
                   min="1"
                   value={locationComparisonFormData.radius_in_meters}
-                  onChange={(e) => handleLocationComparisonInputChange("radius_in_meters", parseInt(e.target.value) || 100)}
+                  onChange={(e) =>
+                    handleLocationComparisonInputChange(
+                      "radius_in_meters",
+                      parseInt(e.target.value) || 100,
+                    )
+                  }
                   placeholder="Enter radius in meters"
                 />
               </div>
@@ -1633,10 +1720,10 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="bg-white border-gray-200 px-6 py-4">
         <div className="flex items-center gap-4 ">
-            <Link href="/admin" className="border rounded-full p-3">
-                <Icon icon="hugeicons:arrow-left-02" className="w-5 h-5" />
-            </Link>
-          
+          <Link href="/admin" className="border rounded-full p-3">
+            <Icon icon="hugeicons:arrow-left-02" className="w-5 h-5" />
+          </Link>
+
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
         </div>
       </div>
@@ -1647,140 +1734,154 @@ export default function SettingsPage() {
           <div className="p-6">
             <div className="space-y-2">
               <button
-                onClick={() => setActiveTab('institution')}
+                onClick={() => setActiveTab("institution")}
                 className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
-                  activeTab === 'institution'
-                    ? 'bg-red-50 border border-red-200'
-                    : 'hover:bg-gray-50'
+                  activeTab === "institution"
+                    ? "bg-red-50 border border-red-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
-                <Icon 
-                  icon="hugeicons:building-06" 
+                <Icon
+                  icon="hugeicons:building-06"
                   className={`w-5 h-5 ${
-                    activeTab === 'institution' ? 'text-primary' : 'text-gray-900'
-                  }`} 
+                    activeTab === "institution" ? "text-primary" : "text-gray-900"
+                  }`}
                 />
                 <div>
-                  <div className={`font-medium ${
-                    activeTab === 'institution' ? 'text-primary' : 'text-gray-900'
-                  }`}>
+                  <div
+                    className={`font-medium ${
+                      activeTab === "institution" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
                     Institution Settings
                   </div>
-                  <div className={`text-sm ${
-                    activeTab === 'institution' ? 'text-[#6B7280]' : 'text-[#6B7280]'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      activeTab === "institution" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
                     Manage details of your institution.
                   </div>
                 </div>
               </button>
 
               <button
-                onClick={() => setActiveTab('kyc')}
+                onClick={() => setActiveTab("kyc")}
                 className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
-                  activeTab === 'kyc'
-                    ? 'bg-red-50 border border-red-200'
-                    : 'hover:bg-gray-50'
+                  activeTab === "kyc" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
                 }`}
               >
-                <Icon 
-                  icon="hugeicons:document-attachment" 
-                  className={`w-5 h-5 ${
-                    activeTab === 'kyc' ? 'text-primary' : 'text-gray-500'
-                  }`} 
+                <Icon
+                  icon="hugeicons:document-attachment"
+                  className={`w-5 h-5 ${activeTab === "kyc" ? "text-primary" : "text-gray-500"}`}
                 />
                 <div>
-                  <div className={`font-medium ${
-                    activeTab === 'kyc' ? 'text-primary' : 'text-gray-900'
-                  }`}>
+                  <div
+                    className={`font-medium ${
+                      activeTab === "kyc" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
                     KYC Documents
                   </div>
-                  <div className={`text-sm ${
-                    activeTab === 'kyc' ? 'text-[#6B7280]' : 'text-[#6B7280]'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      activeTab === "kyc" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
                     Submit and review your KYC files
                   </div>
                 </div>
               </button>
 
               <button
-                onClick={() => setActiveTab('penalties')}
+                onClick={() => setActiveTab("penalties")}
                 className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
-                  activeTab === 'penalties'
-                    ? 'bg-red-50 border border-red-200'
-                    : 'hover:bg-gray-50'
+                  activeTab === "penalties" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
                 }`}
               >
-                <Icon 
-                  icon="hugeicons:settings-02" 
+                <Icon
+                  icon="hugeicons:settings-02"
                   className={`w-5 h-5 ${
-                    activeTab === 'penalties' ? 'text-primary' : 'text-gray-500'
-                  }`} 
+                    activeTab === "penalties" ? "text-primary" : "text-gray-500"
+                  }`}
                 />
                 <div>
-                  <div className={`font-medium ${
-                    activeTab === 'penalties' ? 'text-primary' : 'text-gray-900'
-                  }`}>
+                  <div
+                    className={`font-medium ${
+                      activeTab === "penalties" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
                     Institution Penalties
                   </div>
-                  <div className={`text-sm ${
-                    activeTab === 'penalties' ? 'text-[#6B7280]' : 'text-[#6B7280]'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      activeTab === "penalties" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
                     Manage institution-level penalty settings
                   </div>
                 </div>
               </button>
 
               <button
-                onClick={() => setActiveTab('branch_penalties')}
+                onClick={() => setActiveTab("branch_penalties")}
                 className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
-                  activeTab === 'branch_penalties'
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50'
+                  activeTab === "branch_penalties"
+                    ? "bg-blue-50 border border-blue-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
-                <Icon 
-                  icon="hugeicons:building-04" 
+                <Icon
+                  icon="hugeicons:building-04"
                   className={`w-5 h-5 ${
-                    activeTab === 'branch_penalties' ? 'text-primary' : 'text-gray-500'
-                  }`} 
+                    activeTab === "branch_penalties" ? "text-primary" : "text-gray-500"
+                  }`}
                 />
                 <div>
-                  <div className={`font-medium ${
-                    activeTab === 'branch_penalties' ? 'text-primary' : 'text-gray-900'
-                  }`}>
+                  <div
+                    className={`font-medium ${
+                      activeTab === "branch_penalties" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
                     Branch Penalties
                   </div>
-                  <div className={`text-sm ${
-                    activeTab === 'branch_penalties' ? 'text-[#6B7280]' : 'text-[#6B7280]'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      activeTab === "branch_penalties" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
                     Manage branch-specific penalty settings
                   </div>
                 </div>
               </button>
 
               <button
-                onClick={() => setActiveTab('location_comparison')}
+                onClick={() => setActiveTab("location_comparison")}
                 className={`w-full flex items-center space-x-3 p-4 rounded-lg text-left transition-colors ${
-                  activeTab === 'location_comparison'
-                    ? 'bg-green-50 border border-green-200'
-                    : 'hover:bg-gray-50'
+                  activeTab === "location_comparison"
+                    ? "bg-green-50 border border-green-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
-                <Icon 
-                  icon="hugeicons:location-01" 
+                <Icon
+                  icon="hugeicons:location-01"
                   className={`w-5 h-5 ${
-                    activeTab === 'location_comparison' ? 'text-primary' : 'text-gray-500'
-                  }`} 
+                    activeTab === "location_comparison" ? "text-primary" : "text-gray-500"
+                  }`}
                 />
                 <div>
-                  <div className={`font-medium ${
-                    activeTab === 'location_comparison' ? 'text-primary' : 'text-gray-900'
-                  }`}>
+                  <div
+                    className={`font-medium ${
+                      activeTab === "location_comparison" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
                     Location Comparison
                   </div>
-                  <div className={`text-sm ${
-                    activeTab === 'location_comparison' ? 'text-[#6B7280]' : 'text-[#6B7280]'
-                  }`}>
+                  <div
+                    className={`text-sm ${
+                      activeTab === "location_comparison" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
                     Manage branch location comparison settings
                   </div>
                 </div>
@@ -1791,11 +1892,15 @@ export default function SettingsPage() {
 
         {/* Right Content Panel */}
         <div className="flex-[7.0] p-6 bg-white">
-          {activeTab === 'institution' ? renderInstitutionSettings() : 
-           activeTab === 'kyc' ? renderKYCDocuments() : 
-           activeTab === 'penalties' ? renderPenaltyConfigurations() :
-           activeTab === 'branch_penalties' ? renderBranchPenaltyConfigurations() :
-           renderLocationComparisonConfigurations()}
+          {activeTab === "institution"
+            ? renderInstitutionSettings()
+            : activeTab === "kyc"
+              ? renderKYCDocuments()
+              : activeTab === "penalties"
+                ? renderPenaltyConfigurations()
+                : activeTab === "branch_penalties"
+                  ? renderBranchPenaltyConfigurations()
+                  : renderLocationComparisonConfigurations()}
         </div>
       </div>
 
