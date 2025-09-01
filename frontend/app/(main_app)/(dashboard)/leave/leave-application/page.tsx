@@ -834,7 +834,7 @@ const LeaveApplicationComponent = () => {
                     </DialogTitle>
                     <DialogDescription>Submit a new leave application request.</DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 items-end">
                     <div className="space-y-2">
                       <Label htmlFor="employee" className="text-sm font-medium">
                         Employee *
