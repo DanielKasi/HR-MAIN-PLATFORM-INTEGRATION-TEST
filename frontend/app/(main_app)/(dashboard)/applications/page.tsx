@@ -109,6 +109,7 @@ import type {
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { getFileUrl } from "@/lib/helpers";
 
 
 const statusColors = {
@@ -2047,7 +2048,7 @@ export default function ApplicationsPage() {
                               <div className="py-1 flex flex-col gap-2 items-start">
                                 <Button variant="link" size="sm" className="h-auto p-0" asChild>
                                   <a
-                                    href={process.env.NEXT_PUBLIC_BASE_URL + application.resume}
+                                    href={getFileUrl(application.resume)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
@@ -2060,7 +2061,7 @@ export default function ApplicationsPage() {
                                   <Button variant="link" size="sm" className="h-auto p-0" asChild>
                                     <a
                                       href={
-                                        process.env.NEXT_PUBLIC_BASE_URL + application.cover_letter
+                                        getFileUrl(application.cover_letter)
                                       }
                                       target="_blank"
                                       rel="noopener noreferrer"

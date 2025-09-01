@@ -12,7 +12,10 @@ from .models import (
     InstitutionKYCDocument,
     InstitutionPenaltyConfig,
     BranchPenaltyConfig,
-BranchDay, BranchWorkingDays,BranchShift,
+    BranchDay, 
+    BranchWorkingDays,
+    BranchShift,
+    BranchLocationComparisonConfig
 )
 
 
@@ -45,3 +48,4 @@ admin.site.register(BranchPenaltyConfig)
 admin.site.register(BranchDay)
 admin.site.register(BranchWorkingDays)
 admin.site.register(BranchShift)
+admin.site.register(BranchLocationComparisonConfig)
