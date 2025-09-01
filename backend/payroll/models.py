@@ -656,6 +656,7 @@ class Payslip(BaseApprovableModel):
         max_digits=10, decimal_places=2, default=0.00
     )
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    taxable_gross_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     days_worked = models.PositiveIntegerField(default=30)  # or working days in period
     # overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -740,11 +741,14 @@ class Payslip(BaseApprovableModel):
         self.total_penalties = total_penalties
         self.basic_salary = self.basic_salary or self.employee.salary or 0
 
-        gross = self.basic_salary + taxable_allowances
-        net = gross - tax_total + non_taxable_allowances - deductions -  total_penalties
+        gross = self.basic_salary + taxable_allowances + non_taxable_allowances
+        taxable_gross = self.basic_salary + taxable_allowances
+        net = taxable_gross - tax_total + non_taxable_allowances - deductions - total_penalties
+        
 
         self.gross_salary = gross
         self.net_salary = net
+        self.taxable_gross = taxable_gross
 
         self.save()
 
