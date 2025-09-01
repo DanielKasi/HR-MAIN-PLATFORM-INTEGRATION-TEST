@@ -53,6 +53,7 @@ from .serializers import (
     BranchWorkingDaysSerializer,
     BranchShiftSerializer,
     BranchLocationComparisonConfigSerializer,
+    AIQuerySerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import generate_compliant_password
@@ -74,9 +75,137 @@ from django.db.models.functions import ExtractMonth
 from django.db.models import Value, IntegerField
 from rest_framework import parsers
 
+from ai_assistant.schema_export import get_database_schema_for_ai
+from ai_assistant.query_runner import run_sql_with_retry
+from ai_assistant.query_generator import generate_sql_from_question
+from ai_assistant.result_interpreter import interpret_sql_results_with_groq
+from ai_assistant.utils import classify_intent_groq
+
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+class AIAssistantView(APIView):
+    """
+    AI Assistant for natural language HR queries.
+    Accepts a question from an authenticated user,
+    generates SQL, executes it, and returns a human-readable interpretation.
+    """
+
+    @extend_schema(
+        request=AIQuerySerializer,
+        responses={
+            200: AIQuerySerializer,
+            400: {"description": "Bad Request"},
+            403: {"description": "Forbidden"},
+            404: {"description": "Not Found"},
+            500: {"description": "Internal Server Error"},
+        },
+        description="Ask a HR question and get an AI-generated answer.",
+        summary="AI HR Query Assistant",
+        tags=["AI Assistant"],
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = AIQuerySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        question = serializer.validated_data["question"]
+
+        try:
+            intent = classify_intent_groq(question)
+        except Exception as e:
+            return Response(
+                {
+                    "detail": "Intent classification failed.",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        if intent == "GREETING":
+            greeting_response = (
+                "Hello! 👋 I'm here to help with HR questions. "
+                "You can ask me things like:\n"
+                "- What were the total employee headcount last month?\n"
+                "- Which departments are low on staff?\n"
+                "- Show top-performing employees this quarter.\n"
+                "- How many leave applications did we get last week?\n"
+                "- What’s the salary distribution by department?"
+            )
+            return Response({"answer": greeting_response}, status=status.HTTP_200_OK)
+
+        elif intent == "HR_QUERY":
+            user = request.user
+
+            try:
+                profile = Profile.objects.select_related("institution").get(user=user)
+                institution = profile.institution
+            except Profile.DoesNotExist:
+                return Response(
+                    {"detail": "User profile not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if not institution:
+                return Response(
+                    {"detail": "You are not assigned to any institution."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            institution_id = institution.id
+
+            try:
+                # Step 1: Get DB schema for AI
+                schema = get_database_schema_for_ai()
+
+                # Step 2: Generate initial SQL
+                initial_sql = generate_sql_from_question(
+                    schema, question, institution_id
+                )
+
+                # Step 3: Run SQL (with retry/fallback)
+                sql_result = run_sql_with_retry(
+                    schema=schema,
+                    question=question,
+                    institution_id=institution_id,
+                    initial_sql=initial_sql,
+                )
+
+                # Step 4: Interpret result using AI
+                interpretation = interpret_sql_results_with_groq(
+                    question=question,
+                    columns=sql_result["columns"],
+                    rows=sql_result["results"],
+                    sql=sql_result["sql"],
+                )
+
+                return Response(
+                    {
+                        "answer": interpretation,
+                        "sql": sql_result["sql"],
+                        "columns": sql_result["columns"],
+                        "results": sql_result["results"],
+                        "row_count": sql_result["row_count"],
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            except Exception as e:
+                return Response(
+                    {
+                        "detail": "Something went wrong.",
+                        "error": str(e),
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+        else:
+            fallback_msg = (
+                "Sorry, I can only help with Human Resource based questions. "
+                "Please ask about employee management, attendance, payroll, or benefits."
+            )
+            return Response({"answer": fallback_msg}, status=status.HTTP_200_OK)
 
 
 class DefaultDataAPIView(APIView):

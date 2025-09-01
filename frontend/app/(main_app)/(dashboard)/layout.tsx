@@ -53,6 +53,7 @@ import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
 import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
+import AIAssistantWidget from "@/components/ai-assistant-widget";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -829,6 +830,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
               <CreateOrganisationWizard />
             )}
             {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
+          </div>
+
+          <div className="mb-4 sm:mb-0">
+            <AIAssistantWidget />
           </div>
         </div>
 
