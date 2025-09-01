@@ -94,10 +94,10 @@ export default function OffboardingDashboard() {
             <h1 className="text-3xl font-bold text-foreground text-balance">HR Offboarding Dashboard</h1>
             <p className="text-muted-foreground mt-1">Track employee separations and manage offboarding processes</p>
           </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+          {/* <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Users className="w-4 h-4 mr-2" />
             New Separation
-          </Button>
+          </Button> */}
         </div>
 
         {/* Key Metrics Cards */}
