@@ -389,6 +389,60 @@ export interface PaginatedEmployeeResponse {
   results: IEmployee[];
 }
 
+export type OffboardingData = {
+  separation_counts: {
+    planned: number
+    completed: number
+    cancelled: number
+    total: number
+  }
+  category_counts: {
+    resignation: number
+    termination: number
+    retirement: number
+    layoff: number
+    other: number
+  }
+  pending_requests: {
+    resignation: number
+    termination: number
+    retirement: number
+    layoff: number
+    other: number
+    total: number
+  }
+  recent_separations: {
+    id: number
+    employee_name: string
+    separation_type: string
+    effective_date: string
+    separation_status: string
+    additional_notes: string
+  }[]
+}
+
+export interface AssetsData {
+  asset_counts: {
+    available: number
+    allocated: number
+    maintenance: number
+    decommissioned: number
+    total: number
+  }
+  category_counts: {
+    [key: string]: number
+  }
+  pending_counts: {
+    requests: number
+    allocations: number
+    returns: number
+    total: number
+  }
+  recent_assets: IAsset[]
+}
+
+
+
 export interface IReportsToDetails {
   id: number;
   name: string;
