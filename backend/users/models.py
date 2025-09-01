@@ -18,6 +18,7 @@ from datetime import timedelta
 from django.conf import settings
 from approval.models import BaseApprovableModel
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if email:
@@ -67,19 +68,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
     def get_token(self):
         """Generate a custom JWT token with additional user details."""
         institution = None
-        if hasattr(self, 'profile') and self.profile:
+        if hasattr(self, "profile") and self.profile:
             institution = self.profile.institution
 
         if institution and institution.user_inactivity_time:
             lifetime = timedelta(minutes=institution.user_inactivity_time)
         else:
-            lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME', timedelta(hours=1))
+            lifetime = settings.SIMPLE_JWT.get(
+                "ACCESS_TOKEN_LIFETIME", timedelta(hours=1)
+            )
 
-  
-        
         one_day = timedelta(days=1)
-
-
 
         refresh = RefreshToken.for_user(self)
         refresh.access_token.lifetime = lifetime
@@ -87,11 +86,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
         refresh["fullname"] = self.fullname
         refresh["lifetime"] = int(one_day.total_seconds()) / 60
 
-
-        return {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token)
-        }
+        return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
     def get_all_permissions(self, obj=None):
         """Get all permissions for this user."""
@@ -164,16 +159,15 @@ class PermissionCategory(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.permission_category_name
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["permission_category_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_permission_category_name"
+                name="unique_active_permission_category_name",
             )
         ]
-        
 
 
 # many to many relationship between roles and permissions
@@ -188,20 +182,21 @@ class Permission(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.permission_name} ({self.category})"
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["permission_code"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_permission_code"
+                name="unique_active_permission_code",
             ),
             UniqueConstraint(
                 fields=["permission_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_permission_name"
-            )
+                name="unique_active_permission_name",
+            ),
         ]
+
 
 class Role(BaseApprovableModel):
     name = models.CharField(max_length=255)
@@ -219,7 +214,7 @@ class Role(BaseApprovableModel):
             UniqueConstraint(
                 fields=["name", "institution"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_name_per_institution"
+                name="unique_active_name_per_institution",
             )
         ]
 
@@ -231,7 +226,7 @@ class Role(BaseApprovableModel):
         return self.name
 
     def get_institution(self):
-        return self.institution    
+        return self.institution
 
 
 class RolePermission(BaseApprovableModel):
@@ -246,7 +241,7 @@ class RolePermission(BaseApprovableModel):
         return f"{self.role} - {self.permission}"
 
     def get_institution(self):
-        return self.role.institution    
+        return self.role.institution
 
 
 class UserRole(BaseApprovableModel):
@@ -261,7 +256,7 @@ class UserRole(BaseApprovableModel):
         return f"{self.user.email} - {self.role.name}"
 
     def get_institution(self):
-        return self.role.institution    
+        return self.role.institution
 
 
 class OTPModel(models.Model):

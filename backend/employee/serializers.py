@@ -745,7 +745,9 @@ class AttendanceQueryParamsSerializer(serializers.Serializer):
 
 
 class EmployeeShiftSerializer(BaseApprovableSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), required=False)
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), required=False
+    )
     shift = serializers.PrimaryKeyRelatedField(queryset=BranchShift.objects.all())
 
     class Meta:
@@ -771,34 +773,42 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
 
         if context == "REQUEST":
             if not hasattr(request_user, "employees"):
-                raise serializers.ValidationError("Logged-in user is not an employee.")
+                raise serializers.ValidationError(
+                    {"detail": "Logged-in user is not an employee."}
+                )
             data["employee"] = request_user.employees
             employee = data["employee"]
         elif context == "ALLOCATION":
             if employee is None:
                 raise serializers.ValidationError(
-                    "Employee must be provided for ALLOCATION context."
+                    {"detail": "Employee must be provided for ALLOCATION context."}
                 )
 
         if shift.branch != employee.payroll_branch:
             raise serializers.ValidationError(
-                f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
+                {
+                    "detail": f"Shift '{shift.name}' does not belong to employee's branch '{employee.payroll_branch.branch_name}'."
+                }
             )
 
         python_weekday = date_selected.weekday()
         level = python_weekday + 1
         if shift.shift_day.day.level != level:
             raise serializers.ValidationError(
-                f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
-                f"but the selected date is '{date_selected.strftime('%A')}'."
+                {
+                    "detail": f"Shift '{shift.name}' occurs on '{shift.shift_day.day.day_name}' "
+                    f"but the selected date is '{date_selected.strftime('%A')}'."
+                }
             )
 
         branch_open = employee.payroll_branch.branch_opening_time
         branch_close = employee.payroll_branch.branch_closing_time
         if shift.start_time < branch_open or shift.end_time > branch_close:
             raise serializers.ValidationError(
-                f"Shift '{shift.name}' must be within branch working hours "
-                f"({branch_open} - {branch_close})."
+                {
+                    "detail": f"Shift '{shift.name}' must be within branch working hours "
+                    f"({branch_open} - {branch_close})."
+                }
             )
 
         print("data", data)

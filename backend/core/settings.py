@@ -51,12 +51,12 @@ INSTALLED_APPS = [
     "audit",
     "settings",
     "markdownx",
-    'jsignature',
-    'ckeditor',
-    'ckeditor_uploader',
-    'approval',
-    'spotcheck',
-    'django_celery_beat',
+    "jsignature",
+    "ckeditor",
+    "ckeditor_uploader",
+    "approval",
+    "spotcheck",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -76,16 +76,18 @@ ROOT_URLCONF = "core.urls"
 CKEDITOR_UPLOAD_PATH = "uploads/"  # Path for file uploads
 CKEDITOR_IMAGE_BACKEND = "pillow"  # Required for image uploads
 CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'full',
-        'height': 400,
-        'width': '100%',
-        'extraPlugins': ','.join([
-            'uploadimage',  # Enable image uploads
-            'codesnippet',  # Optional: for code snippets
-        ]),
-        'filebrowserUploadUrl': '/ckeditor/upload/',
-        'filebrowserBrowseUrl': '/ckeditor/browse/',
+    "default": {
+        "toolbar": "full",
+        "height": 400,
+        "width": "100%",
+        "extraPlugins": ",".join(
+            [
+                "uploadimage",  # Enable image uploads
+                "codesnippet",  # Optional: for code snippets
+            ]
+        ),
+        "filebrowserUploadUrl": "/ckeditor/upload/",
+        "filebrowserBrowseUrl": "/ckeditor/browse/",
     },
 }
 DJANGO_CKEDITOR_5_CONFIGS = {
@@ -222,12 +224,22 @@ CELERY_TIMEZONE = "Africa/Kampala"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # spotcheck settings
-SPOTCHECK_DEFAULT_MINUTES_TO_EXPIRE = int(os.getenv("SPOTCHECK_DEFAULT_MINUTES_TO_EXPIRE", 1))
-SPOTCHECK_DEFAULT_LOWER_THRESHOLD = int(os.getenv("SPOTCHECK_DEFAULT_LOWER_THRESHOLD", 2))
-SPOTCHECK_DEFAULT_UPPER_THRESHOLD = int(os.getenv("SPOTCHECK_DEFAULT_UPPER_THRESHOLD", 10))
-SPOTCHECK_DEFAULT_LATE_STARTS_AFTER_MINUTES = int(os.getenv("SPOTCHECK_DEFAULT_UPPER_THRESHOLD", 1))
+SPOTCHECK_DEFAULT_MINUTES_TO_EXPIRE = int(
+    os.getenv("SPOTCHECK_DEFAULT_MINUTES_TO_EXPIRE", 1)
+)
+SPOTCHECK_DEFAULT_LOWER_THRESHOLD = int(
+    os.getenv("SPOTCHECK_DEFAULT_LOWER_THRESHOLD", 2)
+)
+SPOTCHECK_DEFAULT_UPPER_THRESHOLD = int(
+    os.getenv("SPOTCHECK_DEFAULT_UPPER_THRESHOLD", 10)
+)
+SPOTCHECK_DEFAULT_LATE_STARTS_AFTER_MINUTES = int(
+    os.getenv("SPOTCHECK_DEFAULT_UPPER_THRESHOLD", 1)
+)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://peracosoft.com/")
+
+GROK_API_KEY = os.getenv("GROK_API_KEY")

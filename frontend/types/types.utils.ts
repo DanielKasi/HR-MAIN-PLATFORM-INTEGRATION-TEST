@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile } from ".";
+import {ReactNode} from "react";
+import {Branch, ICustomerProfile, IUser, IUserInstitution, Permission, Role, UserProfile} from ".";
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -379,7 +379,7 @@ export interface IDepartment {
   description?: string | null;
   institution: number;
   institution_details?: IUserInstitution | null;
-  job_positions?: { id: number; name: string; description: string; department_id: number }[];
+  job_positions?: {id: number; name: string; description: string; department_id: number}[];
 }
 
 export interface PaginatedEmployeeResponse {
@@ -707,125 +707,125 @@ export interface IPayslip {
 }
 
 export interface IRecruitmentDashboard {
-  total_job_positions: number
-  active_job_positions: number
-  total_adverts: number
-  active_adverts: number
-  total_applications: number
+  total_job_positions: number;
+  active_job_positions: number;
+  total_adverts: number;
+  active_adverts: number;
+  total_applications: number;
   applications_by_status: Array<{
-    status: string
-    count: number
-  }>
-  total_interviews: number
+    status: string;
+    count: number;
+  }>;
+  total_interviews: number;
   interviews_by_status: Array<{
-    status: string
-    count: number
-  }>
-  upcoming_interviews: number
-  total_onboardings: number
+    status: string;
+    count: number;
+  }>;
+  upcoming_interviews: number;
+  total_onboardings: number;
   onboardings_by_status: Array<{
-    status: string
-    count: number
-  }>
-  average_time_to_hire_days: number
+    status: string;
+    count: number;
+  }>;
+  average_time_to_hire_days: number;
   applications_sources: Array<{
-    source: string
-    count: number
-  }>
+    source: string;
+    count: number;
+  }>;
   applications_over_time: Array<{
-    date: string
-    count: number
-  }>
+    date: string;
+    count: number;
+  }>;
 }
 
 export interface IEmployeeDashboard {
-  total_employees: number
+  total_employees: number;
   employees_by_gender: Array<{
-    gender: string
-    count: number
-  }>
+    gender: string;
+    count: number;
+  }>;
   employees_by_employee_type: Array<{
-    employee_type: string
-    count: number
-  }>
+    employee_type: string;
+    count: number;
+  }>;
   employees_by_work_type: Array<{
-    work_type: string
-    count: number
-  }>
+    work_type: string;
+    count: number;
+  }>;
   employees_by_department: Array<{
-    department: string
-    count: number
-  }>
+    department: string;
+    count: number;
+  }>;
   shift_statuses: Array<{
-    status: string
-    count: number
-  }>
-  average_age: number
-  average_tenure_years: number
-  recent_hires: number
+    status: string;
+    count: number;
+  }>;
+  average_age: number;
+  average_tenure_years: number;
+  recent_hires: number;
   employees_by_marital_status: Array<{
-    marital_status: string
-    count: number
-  }>
+    marital_status: string;
+    count: number;
+  }>;
 }
 
 export interface ILeaveDashboard {
-  total_leave_applications: number
+  total_leave_applications: number;
   applications_by_status: Array<{
-    status: string
-    count: number
-  }>
+    status: string;
+    count: number;
+  }>;
   applications_by_leave_type: Array<{
-    leave_type: string
-    count: number
-  }>
+    leave_type: string;
+    count: number;
+  }>;
   leave_balances_by_type: Array<{
-    leave_type: string
-    total_allocated_days: number
-    total_used_days: number
-    total_available_days: number
-  }>
-  average_leave_days_taken: number
-  pending_approvals: number
+    leave_type: string;
+    total_allocated_days: number;
+    total_used_days: number;
+    total_available_days: number;
+  }>;
+  average_leave_days_taken: number;
+  pending_approvals: number;
   applications_over_time: Array<{
-    date: string
-    count: number
-  }>
+    date: string;
+    count: number;
+  }>;
 }
 
 export interface IAttendanceDashboard {
-  total_attendance_records: number
+  total_attendance_records: number;
   attendance_by_status: Array<{
-    status: string
-    count: number
-  }>
-  average_overtime_hours: number
-  average_late_minutes: number
-  average_early_checkout_minutes: number
-  spot_check_response_rate: number
+    status: string;
+    count: number;
+  }>;
+  average_overtime_hours: number;
+  average_late_minutes: number;
+  average_early_checkout_minutes: number;
+  spot_check_response_rate: number;
   spot_checks_by_status: Array<{
-    status: string
-    count: number
-  }>
+    status: string;
+    count: number;
+  }>;
   attendance_over_time: Array<{
-    date: string
-    count: number
-  }>
+    date: string;
+    count: number;
+  }>;
 }
 
 export interface IPayrollDashboard {
-  total_payroll_amount: number
+  total_payroll_amount: number;
   payroll_by_department: Array<{
-    department: string
-    total_amount: number
-  }>
-  average_salary: number
-  total_penalties: number
-  average_overtime_pay: number
+    department: string;
+    total_amount: number;
+  }>;
+  average_salary: number;
+  total_penalties: number;
+  average_overtime_pay: number;
   payroll_over_time: Array<{
-    month: string
-    total_amount: number
-  }>
+    month: string;
+    total_amount: number;
+  }>;
 }
 
 export interface IInterviewStageFormData {
@@ -1713,9 +1713,9 @@ export interface IGeneratedDocumentTemplate {
 }
 
 export interface ICountry {
-  name: { common: string };
+  name: {common: string};
   cca2: string;
-  idd?: { root?: string; suffixes?: string[] };
+  idd?: {root?: string; suffixes?: string[]};
 }
 
 export type ApprovalStepApprover = {
@@ -2043,8 +2043,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax { }
-export interface ItaxRules extends ITaxRule { }
+export interface Itax extends ITax {}
+export interface ItaxRules extends ITaxRule {}
 
 export interface IAssetCategory {
   id: number;
@@ -2096,12 +2096,12 @@ export interface IAssetHistory {
   id: number;
   asset: number | IAsset;
   event_type:
-  | "allocated"
-  | "returned"
-  | "maintenance"
-  | "decommissioned"
-  | "created"
-  | "reassigned";
+    | "allocated"
+    | "returned"
+    | "maintenance"
+    | "decommissioned"
+    | "created"
+    | "reassigned";
   performed_by: number | UserProfile;
   affected_user: number | UserProfile;
   notes: string | null;
@@ -2597,7 +2597,6 @@ export interface IBranchLocationComparisonConfigFormData {
   radius_in_meters: number;
 }
 
-
 export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 
@@ -2607,7 +2606,6 @@ export interface IBranchDay {
   day_name: string;
   day_type: "PHYSICAL" | "REMOTE";
 }
-
 
 export interface IBranchWorkingDays {
   id: number;
@@ -2646,7 +2644,7 @@ export interface IBranchShift {
   id: number;
   branch: Branch;
   name: string;
-  shift_day: IBranchWorkingDays | null;
+  shift_day: IBranchDay | null;
   start_time: string;
   end_time: string;
   description: string | null;
@@ -2662,8 +2660,6 @@ export interface IBranchShiftFormData {
   end_time: string;
   description?: string | null;
 }
-
-
 
 export type IPenaltyType =
   | "late_coming"

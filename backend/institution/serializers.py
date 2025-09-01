@@ -32,6 +32,9 @@ from settings.models import SystemDay
 
 logger = logging.getLogger(__name__)
 
+class AIQuerySerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=1000, required=True)
+
 
 class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -313,7 +316,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
                 institution=institution
             )
             raise serializers.ValidationError(
-                {"error": "Working days already exist for this institution."}
+                {"detail": "Working days already exist for this institution."}
             )
         except InstitutionWorkingDays.DoesNotExist:
             pass
@@ -350,7 +353,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         return rep
 
 
-class BranchDaySerializer(BaseApprovableSerializer):
+class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
     day_id = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
@@ -372,20 +375,24 @@ class BranchWorkingDaysSerializer(BaseApprovableSerializer):
     def update(self, instance, validated_data):
         branch_days_data = validated_data.pop("branch_days", [])
 
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        instance.branch_days.all().delete()
+
         for bd_data in branch_days_data:
             day = bd_data.get("day")
-            day_type = bd_data.get("day_type")
+            day_type = bd_data.get("day_type", "PHYSICAL")
 
             if not day:
                 continue
 
-            branch_day, created = BranchDay.objects.get_or_create(
-                branch_working_days=instance, day=day
+            BranchDay.objects.create(
+                branch_working_days=instance, day=day, day_type=day_type
             )
-            if day_type:
-                branch_day.day_type = day_type
-                branch_day.save()
 
+        instance.refresh_from_db()
         return instance
 
 
@@ -712,7 +719,11 @@ class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
         model = InstitutionPenaltyConfig
         fields = "__all__"
         extra_kwargs = {
-            "penalty_type": {"error_messages": {"unique": "This penalty type already exists for this institution."}}
+            "penalty_type": {
+                "error_messages": {
+                    "unique": "This penalty type already exists for this institution."
+                }
+            }
         }
         validators = []  # ✅ disable DRF's auto UniqueTogetherValidator
 
@@ -720,10 +731,13 @@ class InstitutionPenaltyConfigSerializer(serializers.ModelSerializer):
         institution = attrs.get("institution") or self.instance.institution
         penalty_type = attrs.get("penalty_type") or self.instance.penalty_type
 
-        if InstitutionPenaltyConfig.objects.exclude(pk=getattr(self.instance, "pk", None)).filter(
-            institution=institution,
-            penalty_type=penalty_type
-        ).exists():
+        if (
+            InstitutionPenaltyConfig.objects.exclude(
+                pk=getattr(self.instance, "pk", None)
+            )
+            .filter(institution=institution, penalty_type=penalty_type)
+            .exists()
+        ):
             raise serializers.ValidationError(
                 {"error": "This penalty type already exists for this institution."}
             )
@@ -740,10 +754,11 @@ class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
         branch = attrs.get("branch") or self.instance.branch
         penalty_type = attrs.get("penalty_type") or self.instance.penalty_type
 
-        if BranchPenaltyConfig.objects.exclude(pk=getattr(self.instance, "pk", None)).filter(
-            branch=branch,
-            penalty_type=penalty_type
-        ).exists():
+        if (
+            BranchPenaltyConfig.objects.exclude(pk=getattr(self.instance, "pk", None))
+            .filter(branch=branch, penalty_type=penalty_type)
+            .exists()
+        ):
             raise serializers.ValidationError(
                 {"error": "This penalty type already exists for this branch."}
             )
@@ -782,19 +797,19 @@ class BranchShiftSerializer(BaseApprovableSerializer):
 
         if start_time >= end_time:
             raise serializers.ValidationError(
-                {"end_time": "Shift end time must be after start time."}
+                {"detail": "Shift end time must be after start time."}
             )
 
         if start_time < branch.branch_opening_time:
             raise serializers.ValidationError(
                 {
-                    "start_time": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
+                    "detail": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
                 }
             )
         if end_time > branch.branch_closing_time:
             raise serializers.ValidationError(
                 {
-                    "end_time": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
+                    "detail": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
                 }
             )
 

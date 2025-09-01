@@ -1241,6 +1241,10 @@ def generate_payslip_pdf(payslip):
                     <td>{format_currency(payslip.gross_salary)}</td>
                 </tr>
                 <tr>
+                    <td class="label">Taxable Gross Salary:</td>
+                    <td>{format_currency(payslip.taxable_gross_salary)}</td>
+                </tr>
+                <tr>
                     <td class="label">Total Allowances:</td>
                     <td>{format_currency(payslip.total_allowances)}</td>
                 </tr>
