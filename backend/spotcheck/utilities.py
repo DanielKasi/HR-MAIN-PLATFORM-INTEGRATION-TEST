@@ -25,14 +25,14 @@ from django.template.loader import render_to_string
 def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
 
     try:
-
+        intent_url = f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intent_id={spotcheck.id}"
         subject = "Spot Check"
-        plain_message = f"Please confirm your spotcheck by clicking the link: {settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}"
+        plain_message = f"Please confirm your spotcheck by clicking the link: {intent_url}"
         html_message = render_to_string(
             "emails/spotcheck_email.html",
             context={
                 "employee_name": spotcheck.employee.user.fullname,
-                "spotcheck_link": f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}",
+                "spotcheck_link": f"{intent_url}",
             },
         )
         send_mail(
