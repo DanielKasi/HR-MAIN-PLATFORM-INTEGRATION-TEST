@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useRef, useState} from "react";
 import {Plus} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
@@ -68,6 +68,8 @@ const EmployeeShiftsPage = () => {
     date: "",
   });
 
+  const refreshRef = useRef<(() => void) | null>(null);
+
   const selectedBranch = useSelector(selectSelectedBranch);
   const currentInstitutionId = useSelector(selectSelectedInstitution)?.id;
 
@@ -102,6 +104,9 @@ const EmployeeShiftsPage = () => {
       console.log("Allocation created successfully");
       setIsAddDialogOpen(false);
       setFormData({employee_id: "", shift_id: "", date: ""});
+      if (refreshRef.current) {
+        refreshRef.current();
+      }
     } catch (error) {
       console.error("Failed to create allocation:", error);
     } finally {
@@ -239,112 +244,120 @@ const EmployeeShiftsPage = () => {
             key={`${contextFilter}-${searchTerm}`}
           >
             {({data, loading, goNext, goPrev, refresh}) => (
-              <>
-                {loading ? (
-                  <TableSkeleton />
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Shift</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created By</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(data as IPaginatedResponse<IEmployeeShift>)?.results?.map(
-                        (shift: IEmployeeShift) => {
-                          console.log("Shift data:", shift);
-
-                          return (
-                            <TableRow key={shift.id}>
-                              <TableCell className="font-medium">
-                                {shift.employee?.user?.fullname || "N/A"}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">
-                                    {typeof shift.shift === "object"
-                                      ? shift.shift?.name
-                                      : `Shift ID: ${shift.shift}`}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {typeof shift.shift === "object"
-                                      ? shift.shift?.shift_day?.day_name
-                                      : ""}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{shift.date}</TableCell>
-                              <TableCell>
-                                {typeof shift.shift === "object" &&
-                                shift.shift?.start_time &&
-                                shift.shift?.end_time
-                                  ? `${shift.shift.start_time} - ${shift.shift.end_time}`
-                                  : "Time details not loaded"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={shift.context === "ALLOCATION" ? "default" : "secondary"}
-                                >
-                                  {shift.context === "ALLOCATION" ? "Allocation" : "Request"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={getStatusBadgeVariant(shift.shift_status)}>
-                                  {shift.shift_status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {typeof shift.created_by === "object"
-                                  ? shift.created_by?.fullname
-                                  : `User ID: ${shift.created_by}`}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openEditDialog(shift)}>
-                                      <Edit className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => {
-                                        setSelectedShift(shift);
-                                        setIsDeleteDialogOpen(true);
-                                      }}
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        },
-                      )}
-                      {(data as IPaginatedResponse<IEmployeeShift>)?.results?.length === 0 && (
+              (refreshRef.current = refresh),
+              (
+                <>
+                  {loading ? (
+                    <TableSkeleton />
+                  ) : (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                            No shifts found. Try adjusting your search or filter criteria.
-                          </TableCell>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Shift</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created By</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </>
+                      </TableHeader>
+                      <TableBody>
+                        {(data as IPaginatedResponse<IEmployeeShift>)?.results?.map(
+                          (shift: IEmployeeShift) => {
+                            console.log("Shift data:", shift);
+
+                            return (
+                              <TableRow key={shift.id}>
+                                <TableCell className="font-medium">
+                                  {shift.employee?.user?.fullname || "N/A"}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">
+                                      {typeof shift.shift === "object"
+                                        ? shift.shift?.name
+                                        : `Shift ID: ${shift.shift}`}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {typeof shift.shift === "object"
+                                        ? shift.shift?.shift_day?.day_name
+                                        : ""}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{shift.date}</TableCell>
+                                <TableCell>
+                                  {typeof shift.shift === "object" &&
+                                  shift.shift?.start_time &&
+                                  shift.shift?.end_time
+                                    ? `${shift.shift.start_time} - ${shift.shift.end_time}`
+                                    : "Time details not loaded"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      shift.context === "ALLOCATION" ? "default" : "secondary"
+                                    }
+                                  >
+                                    {shift.context === "ALLOCATION" ? "Allocation" : "Request"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={getStatusBadgeVariant(shift.shift_status)}>
+                                    {shift.shift_status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {typeof shift.created_by === "object"
+                                    ? shift.created_by?.fullname
+                                    : `User ID: ${shift.created_by}`}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => openEditDialog(shift)}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          setSelectedShift(shift);
+                                          setIsDeleteDialogOpen(true);
+                                        }}
+                                        className="text-destructive"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          },
+                        )}
+                        {(data as IPaginatedResponse<IEmployeeShift>)?.results?.length === 0 && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={8}
+                              className="text-center py-8 text-muted-foreground"
+                            >
+                              No shifts found. Try adjusting your search or filter criteria.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </>
+              )
             )}
           </PaginatedTableWrapper>
         </CardContent>
@@ -386,9 +399,8 @@ const EmployeeShiftsPage = () => {
                 <SelectContent>
                   {shifts.map((shift) => (
                     <SelectItem key={shift.id} value={shift.id.toString()}>
-                      {shift.name} (
-                      {shift.shift_day?.branch_days?.map((d) => d.day_name).join(", ")} BTN{" "}
-                      {shift.start_time} - {shift.end_time})
+                      {shift.name} ({shift.shift_day?.day_name} BTN {shift.start_time} -{" "}
+                      {shift.end_time})
                     </SelectItem>
                   ))}
                 </SelectContent>
