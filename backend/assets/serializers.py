@@ -11,7 +11,6 @@ from django.db import transaction
 from employee.models import Employee
 from django.contrib.contenttypes.models import ContentType
 from employee.serializers import EmployeeSerializer
-from django.db import transaction
 from users.serializers import ProfileSerializer
 from approval.serializers import BaseApprovableSerializer
 
