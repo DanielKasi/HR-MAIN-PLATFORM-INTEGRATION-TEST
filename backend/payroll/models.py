@@ -476,12 +476,16 @@ class EmployeePenalty(BaseApprovableModel):
         return self.employee.get_institution()
 
     def save(self, *args, **kwargs):
+        print(f"[SAVE] Saving penalty for {self.employee} | penalty_type={self.penalty_type} | date={self.date}")
         if not self.date:
             if self.attendance:
                 self.date = self.attendance.date
+                print(f"[SAVE] Date set from attendance: {self.date}")
             elif self.spot_check:
                 self.date = self.spot_check.spotcheck_time.date()
+                print(f"[SAVE] Date set from spot_check: {self.date}")
         super().save(*args, **kwargs)
+        print(f"[SAVE] Penalty saved with ID {self.id}")
 
     @classmethod
     def create_from_attendance(cls, attendance):  
@@ -496,10 +500,12 @@ class EmployeePenalty(BaseApprovableModel):
         elif attendance.attendance_status == 'absent':
             penalty_type = 'absent'   
 
+        print(f"[CREATE_ATTENDANCE] Attendance={attendance.id}, status={attendance.attendance_status}, penalty_type={penalty_type}")
+
         if not penalty_type:
+            print("[CREATE_ATTENDANCE] No penalty type applicable.")
             return None
 
-        # Check if penalty already exists
         existing = cls.objects.filter(
             employee=employee,
             attendance=attendance,
@@ -507,14 +513,17 @@ class EmployeePenalty(BaseApprovableModel):
         ).first()
         
         if existing:
+            print(f"[CREATE_ATTENDANCE] Existing penalty found (ID={existing.id}) → Skipping creation.")
             return existing
 
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
+            print(f"[CREATE_ATTENDANCE] No config found for penalty_type={penalty_type}")
             return None 
 
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)  
+        print(f"[CREATE_ATTENDANCE] Calculated penalty amount={amount} for employee={employee}")
 
         penalty = cls.objects.create(
             employee=employee,
@@ -525,19 +534,15 @@ class EmployeePenalty(BaseApprovableModel):
             notes=f"Penalty for {penalty_type} on {attendance.date}"
         )
         
-
+        print(f"[CREATE_ATTENDANCE] New penalty created with ID={penalty.id}")
         return penalty
 
     @classmethod
     def update_or_remove_penalty_for_attendance(cls, attendance):
-        """
-        Update or remove existing penalty when attendance status changes
-        """
-        
-        # Get all existing penalties for this attendance
+        print(f"[UPDATE_OR_REMOVE] Updating penalties for attendance={attendance.id}, status={attendance.attendance_status}")
         existing_penalties = cls.objects.filter(attendance=attendance)
-        
-        # Determine what penalty should exist based on current status
+        print(f"[UPDATE_OR_REMOVE] Found {existing_penalties.count()} existing penalties")
+
         required_penalty_type = None
         if attendance.attendance_status == 'late':
             required_penalty_type = 'late_coming'
@@ -547,59 +552,64 @@ class EmployeePenalty(BaseApprovableModel):
             required_penalty_type = 'absent'
         
         if required_penalty_type:
-            # Should have a penalty - create or update
             penalty = cls.create_from_attendance(attendance)
-            
-            # Remove any other penalty types for this attendance
+            print(f"[UPDATE_OR_REMOVE] Required penalty type={required_penalty_type}. Keeping ID={penalty.id if penalty else None}")
             existing_penalties.exclude(penalty_type=required_penalty_type).delete()
-            
         else:
+            print("[UPDATE_OR_REMOVE] No penalty required → Deleting all existing penalties.")
             existing_penalties.delete()
 
     @classmethod
     def create_from_spotcheck(cls, spotcheck, penalty_type):    
+        print(f"[CREATE_SPOTCHECK] spotcheck={spotcheck.id}, penalty_type={penalty_type}")
         if penalty_type not in ['no_response_spotcheck', 'late_spotcheck_response']:
+            print("[CREATE_SPOTCHECK] Invalid penalty_type. Skipping.")
             return None
 
         employee = spotcheck.employee
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
+            print(f"[CREATE_SPOTCHECK] No config found for penalty_type={penalty_type}")
             return None
 
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)
+        print(f"[CREATE_SPOTCHECK] Calculated amount={amount} for employee={employee}")
 
-        return cls.objects.create(
+        penalty = cls.objects.create(
             employee=employee,
             spot_check=spotcheck,
             penalty_type=penalty_type,
             amount=amount,
             notes=f"Penalty for spotcheck: {penalty_type}"
         )
+        print(f"[CREATE_SPOTCHECK] Penalty created with ID={penalty.id}")
+        return penalty
 
     @classmethod
     def _get_penalty_config(cls, employee, penalty_type):
-        """Get penalty config: branch > institution"""
-        
+        print(f"[GET_CONFIG] Fetching penalty config for employee={employee}, penalty_type={penalty_type}")
         branch = employee.payroll_branch
         config = None
         
         if branch:
-
             config = BranchPenaltyConfig.objects.filter(
                 branch=branch, penalty_type=penalty_type
             ).first()
-
+            print(f"[GET_CONFIG] Branch config found: {config}")
 
         if not config:
-            # Fall back to institution config
             institution = branch.institution if branch else employee.department.institution
             if institution:
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
                 ).first()
+                print(f"[GET_CONFIG] Institution config found: {config}")
         
-        return config      
+        if not config:
+            print("[GET_CONFIG] No config found")
+        return config
+  
 
 
 class PayrollPeriod(BaseApprovableModel):
