@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, MoreHorizontal, Trash } from "lucide-react";
 import { PENALTY_TYPES } from "@/app/constants";
+import { formatCurrency } from "@/lib/helpers";
 
 interface PenaltiesTableProps {
   searchTerm?: string;
@@ -71,7 +72,7 @@ export default function PenaltiesTable({ searchTerm, refreshTableRef, scope, onE
                   {data.results.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>{PENALTY_TYPES.find(p => p.value === r.penalty_type)?.label || "-"}</TableCell>
-                      <TableCell>{r.amount}</TableCell>
+                      <TableCell>{formatCurrency(r.amount)}</TableCell>
                       <TableCell>{r.date}</TableCell>
                       <TableCell>
                         <DropdownMenu>

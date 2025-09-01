@@ -103,7 +103,7 @@ export default function CreateOrganisationWizard() {
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const userData = useSelector(selectUser);
+  const currentUser = useSelector(selectUser);
   const refreshToken = useSelector(selectRefreshToken);
   const dispatch = useDispatch();
 
@@ -133,9 +133,9 @@ export default function CreateOrganisationWizard() {
   }>({ country: null, countryCode: "", phoneNumber: "", isValid: true });
 
   useEffect(() => {
-    if (userData) {
+    if (currentUser) {
       try {
-        const user = userData;
+        const user = currentUser;
         setUserId(user.id);
         if (user.email) {
           setOrganizationFormData((prev) => ({ ...prev, institutionEmail: user.email }));
@@ -146,7 +146,7 @@ export default function CreateOrganisationWizard() {
     } else {
       router.push("/login");
     }
-  }, [userData, router]);
+  }, [currentUser, router]);
 
   useEffect(() => {
     // If a selected institution exists, redirect to dashboard — this wizard is only for users without an institution.
@@ -154,13 +154,12 @@ export default function CreateOrganisationWizard() {
       router.push("/dashboard");
       return;
     }
+    fetchDefaultDepartments();
   }, [router, selectedInstitution]);
 
-  useEffect(() => {
-    fetchDefaultDepartments();
-  }, []);
 
   const fetchDefaultDepartments = async () => {
+    if(selectedInstitution || !currentUser){return};
     try {
       const departments = await getDefaultData();
       if (departments && organizationFormData.departments.length === 0) {

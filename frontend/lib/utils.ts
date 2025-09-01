@@ -135,6 +135,7 @@ import { toast } from "sonner";
 import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 import { create } from "domain";
+import { MAIN_DOMAIN_URL } from "@/app/constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -1076,7 +1077,7 @@ export const downloadPayrollPasslipsReport = async ({
   };
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/export-passlips-report2excel/`,
+    `${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/payroll/export-passlips-report2excel/`,
     {
       method: "POST",
       headers: {
@@ -1111,7 +1112,7 @@ export const downloadSinglePayslip = async ({
   accessToken: string;
   payslipId: string | number;
 }): Promise<void> => {
-  const url = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/payroll/payslips/${payslipId}/download/`;
+  const url = `${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/payroll/payslips/${payslipId}/download/`;
 
   const response = await fetch(url, {
     method: "GET",

@@ -38,6 +38,7 @@ import { PaginatedTableWrapper } from "@/components/common/tables/paginated-tabl
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { PERMISSION_CODES } from "@/types/types.utils"
+import { MAIN_DOMAIN_URL } from "@/app/constants"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -230,7 +231,7 @@ export default function TerminationInitiationsPage() {
                           {termination.termination_letter && (
                             <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TERMINATION_INITIATIONS}>
                               <DropdownMenuItem 
-                                onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000' +termination.termination_letter!, "_blank")}
+                                onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || MAIN_DOMAIN_URL +termination.termination_letter!, "_blank")}
                               >
                                 <FileText className="h-4 w-4 mr-2" />
                                 View Letter
