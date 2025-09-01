@@ -46,6 +46,7 @@ import type {
 import {useSelector} from "react-redux";
 import {selectSelectedBranch, selectSelectedInstitution} from "@/store/auth/selectors";
 import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
+import {showErrorToast} from "@/lib/utils";
 
 interface IAllocationFormData {
   employee_id: string;
@@ -110,6 +111,7 @@ const EmployeeShiftsPage = () => {
       }
     } catch (error) {
       console.error("Failed to create allocation:", error);
+      showErrorToast({error: error, defaultMessage: "Failed to create allocation."});
     } finally {
       setIsSubmitting(false);
     }

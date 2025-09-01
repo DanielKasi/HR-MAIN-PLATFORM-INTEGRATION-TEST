@@ -19,13 +19,26 @@ from .models import (
     InstitutionSpotCheckSetting,
     SpotCheckStatus,
 )
+from django.template.loader import render_to_string
 
 
 def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
+
     try:
+
+        subject = "Spot Check"
+        plain_message = f"Please confirm your spotcheck by clicking the link: {settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}"
+        html_message = render_to_string(
+            "emails/spotcheck_email.html",
+            context={
+                "employee_name": spotcheck.employee.user.fullname,
+                "spotcheck_link": f"{settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}",
+            },
+        )
         send_mail(
-            subject="Spot Check",
-            message=f"Please confirm your spotcheck by clicking the link: {settings.FRONTEND_URL}spot-checks/?intent=spot_check&intend_id={spotcheck.id}",
+            subject=subject,
+            message=plain_message,
+            html_message=html_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[spotcheck.employee.user.email],
             fail_silently=False,
@@ -49,7 +62,9 @@ def get_employee_spotchecks_expires_after_minutes(employee: Employee) -> int:
         pass
 
     try:
-        return employee.department.institution.institutionspotchecksetting.expires_after_minutes
+        return (
+            employee.department.institution.institutionspotchecksetting.expires_after_minutes
+        )
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -119,7 +134,9 @@ def get_employee_spotchecks_late_starts_after_minutes(employee: Employee) -> int
         pass
 
     try:
-        return employee.department.institution.institutionspotchecksetting.late_starts_after_minutes
+        return (
+            employee.department.institution.institutionspotchecksetting.late_starts_after_minutes
+        )
     except InstitutionSpotCheckSetting.DoesNotExist:
         pass
 
@@ -180,7 +197,9 @@ def create_spotchecks_for_today(employee: Employee):
             initiated_by="system",
         )
 
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    print(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    )
     print(
         f"max_spotchecks: {max_spotchecks} | min_spotchecks: {min_spotchecks} | today: {today} | weekday_str: {weekday_str}"
     )
@@ -192,7 +211,9 @@ def create_spotchecks_for_today(employee: Employee):
     print(
         f"now: {now} | num_spotchecks: {num_spotchecks} | delta_seconds: {delta_seconds} | scheduled_times: {scheduled_times} | future_spotchecks: {future_spotchecks}"
     )
-    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    print(
+        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    )
 
     if future_spotchecks:
         initiate_next_spotcheck_for_an_employee.apply_async(

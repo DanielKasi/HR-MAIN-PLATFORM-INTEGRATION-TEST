@@ -434,9 +434,7 @@ class EmployeeSpotCheckInView(APIView):
     def patch(self, request, spotcheck_id):
         """Record Spot check record when an employee responds to a spot check prompt."""
         try:
-            setting = SpotCheckModels.EmployeeSpotCheck.objects.get(
-                id=spotcheck_id, deleted_at=None
-            )
+            setting = SpotCheckModels.EmployeeSpotCheck.objects.get(id=spotcheck_id)
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
                 {"detail": "Employee spot check not found."},
@@ -450,10 +448,11 @@ class EmployeeSpotCheckInView(APIView):
             spotcheck = serializer.save()
 
             valid_status, _ = SpotCheckModels.SpotCheckStatus.objects.get_or_create(
-                "VALID", "VALID"
+                status_name="CHECKED_IN"
             )
+
             invalid_status, _ = SpotCheckModels.SpotCheckStatus.objects.get_or_create(
-                "INVALID", "INVALID"
+                status_name="NOT_CHECKED_AT_PREMISES"
             )
 
             # confirm that employee is within allowed range
