@@ -117,10 +117,35 @@ export enum PERMISSION_CODES {
   CAN_PROCESS_PAYROLL = "can_process_payroll",
   CAN_GENERATE_PAYSLIPS = "can_generate_payslips",
   CAN_MANAGE_ALLOWANCES = "can_manage_allowances",
+  CAN_VIEW_ALLOWANCE_TYPES = "can_view_allowance_types",
+  CAN_CREATE_ALLOWANCE_TYPES = "can_create_allowance_types",
+  CAN_EDIT_ALLOWANCE_TYPES = "can_edit_allowance_types",
+  CAN_DELETE_ALLOWANCE_TYPES = "can_delete_allowance_types",
+  CAN_VIEW_DEDUCTION_TYPES = "can_view_deduction_types",
+  CAN_CREATE_DEDUCTION_TYPES = "can_create_deduction_types",
+  CAN_EDIT_DEDUCTION_TYPES = "can_edit_deduction_types",
+  CAN_DELETE_DEDUCTION_TYPES = "can_delete_deduction_types",
+  CAN_VIEW_EMPLOYEE_DEDUCTIONS = "can_view_employee_deductions",
+  CAN_CREATE_EMPLOYEE_DEDUCTIONS = "can_create_employee_deductions",
+  CAN_EDIT_EMPLOYEE_DEDUCTIONS = "can_edit_employee_deductions",
+  CAN_DELETE_EMPLOYEE_DEDUCTIONS = "can_delete_employee_deductions",
+  CAN_VIEW_EMPLOYEE_TAX = "can_view_employee_tax",
+  CAN_CREATE_EMPLOYEE_TAX = "can_create_employee_tax",
+  CAN_EDIT_EMPLOYEE_TAX = "can_edit_employee_tax",
+  CAN_DELETE_EMPLOYEE_TAX = "can_delete_employee_tax",
+  CAN_VIEW_EMPLOYEE_ALLOWANCES = "can_view_employee_allowances",
+  CAN_CREATE_EMPLOYEE_ALLOWANCES = "can_create_employee_allowances",
+  CAN_EDIT_EMPLOYEE_ALLOWANCES = "can_edit_employee_allowances",
+  CAN_DELETE_EMPLOYEE_ALLOWANCES = "can_delete_employee_allowances",
+  CAN_VIEW_PAYROLL_PERIODS = "can_view_payroll_periods",
+  CAN_CREATE_PAYROLL_PERIODS = "can_create_payroll_periods",
+  CAN_EDIT_PAYROLL_PERIODS = "can_edit_payroll_periods",
+  CAN_DELETE_PAYROLL_PERIODS = "can_delete_payroll_periods",
   CAN_MANAGE_DEDUCTIONS = "can_manage_deductions",
   CAN_APPROVE_SALARY_CHANGES = "can_approve_salary_changes",
   CAN_VIEW_PAYROLL_REPORTS = "can_view_payroll_reports",
   CAN_MANAGE_COMPENSATION_POLICIES = "can_manage_compensation_policies",
+  CAN_DOWNLOAD_PAYSLIPS = "can_download_payslips",
 
   // Discipline Management
   CAN_VIEW_DISCIPLINE_CASES = "can_view_discipline_cases",
@@ -218,6 +243,19 @@ export enum PERMISSION_CODES {
   CAN_DELETE_DOCUMENTS = "can_delete_documents",
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
   CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
+
+  // Project Management
+  CAN_CREATE_PROJECTS = "can_create_projects",
+  CAN_VIEW_PROJECTS = "can_view_projects",
+  CAN_EDIT_PROJECTS = "can_edit_projects",
+  CAN_DELETE_PROJECTS = "can_delete_projects",
+  CAN_CREATE_TASKS = "can_create_tasks",
+  CAN_VIEW_TASKS = "can_view_tasks",
+  CAN_EDIT_TASKS = "can_edit_tasks",
+  CAN_DELETE_TASKS = "can_delete_tasks",
+  CAN_START_TASKS = "can_start_tasks",
+  CAN_COMPLETE_TASKS = "can_complete_tasks",
+  CAN_ASSIGN_TASKS = "can_assign_tasks",
   CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
 
   //assets management
@@ -253,6 +291,7 @@ export enum PERMISSION_CODES {
   CAN_CREATE_ONBOARDING_RECORDS = "can_create_onboarding_records",
   CAN_VIEW_ONBOARDING_RECORDS = "can_view_onboarding_records",
   CAN_EDIT_ONBOARDING_RECORDS = "can_edit_onboarding_records",
+  CAN_DELETE_ONBOARDING_RECORDS = "can_delete_onboarding_records",
   CAN_CREATE_OFFBOARDING_STAGES = "can_create_offboarding_stages",
   CAN_VIEW_OFFBOARDING_STAGES = "can_view_offboarding_stages",
   CAN_EDIT_OFFBOARDING_STAGES = "can_edit_offboarding_stages",
@@ -611,6 +650,128 @@ export interface IPayslip {
   created_at: string;
   updated_at: string;
   items: IPayrollItems;
+}
+
+export interface IRecruitmentDashboard {
+  total_job_positions: number
+  active_job_positions: number
+  total_adverts: number
+  active_adverts: number
+  total_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  total_interviews: number
+  interviews_by_status: Array<{
+    status: string
+    count: number
+  }>
+  upcoming_interviews: number
+  total_onboardings: number
+  onboardings_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_time_to_hire_days: number
+  applications_sources: Array<{
+    source: string
+    count: number
+  }>
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IEmployeeDashboard {
+  total_employees: number
+  employees_by_gender: Array<{
+    gender: string
+    count: number
+  }>
+  employees_by_employee_type: Array<{
+    employee_type: string
+    count: number
+  }>
+  employees_by_work_type: Array<{
+    work_type: string
+    count: number
+  }>
+  employees_by_department: Array<{
+    department: string
+    count: number
+  }>
+  shift_statuses: Array<{
+    status: string
+    count: number
+  }>
+  average_age: number
+  average_tenure_years: number
+  recent_hires: number
+  employees_by_marital_status: Array<{
+    marital_status: string
+    count: number
+  }>
+}
+
+export interface ILeaveDashboard {
+  total_leave_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  applications_by_leave_type: Array<{
+    leave_type: string
+    count: number
+  }>
+  leave_balances_by_type: Array<{
+    leave_type: string
+    total_allocated_days: number
+    total_used_days: number
+    total_available_days: number
+  }>
+  average_leave_days_taken: number
+  pending_approvals: number
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IAttendanceDashboard {
+  total_attendance_records: number
+  attendance_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_overtime_hours: number
+  average_late_minutes: number
+  average_early_checkout_minutes: number
+  spot_check_response_rate: number
+  spot_checks_by_status: Array<{
+    status: string
+    count: number
+  }>
+  attendance_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IPayrollDashboard {
+  total_payroll_amount: number
+  payroll_by_department: Array<{
+    department: string
+    total_amount: number
+  }>
+  average_salary: number
+  total_penalties: number
+  average_overtime_pay: number
+  payroll_over_time: Array<{
+    month: string
+    total_amount: number
+  }>
 }
 
 export interface IInterviewStageFormData {
@@ -2315,7 +2476,7 @@ export interface ISpotCheckFormData {
 export interface ISpotCheckStatus {
   id: number;
   code: string;
-  name: string;
+  status_name: string;
   description: string;
 }
 
@@ -2378,7 +2539,7 @@ export interface IBranchLocationComparisonConfigFormData {
 }
 
 
-export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
+export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
 export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 
 export interface IBranchDay {
@@ -2468,6 +2629,7 @@ export interface IEmployeePenalty {
 }
 
 export interface IEmployeePenaltyFormData {
+  employee: number;
   attendance?: number | null;
   spot_check?: number | null;
   date: string;

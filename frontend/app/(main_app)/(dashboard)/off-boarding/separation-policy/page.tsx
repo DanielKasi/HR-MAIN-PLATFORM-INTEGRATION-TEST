@@ -30,6 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/types/types.utils";
 
 export default function SeparationPoliciesPage() {
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -97,23 +99,26 @@ export default function SeparationPoliciesPage() {
                 </Button>
               )}
             </div>
-            <Link href="/off-boarding/separation-policy/add">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Policy
-              </Button>
-            </Link>
+            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_SEPARATION_POLICIES}>
+              <Link href="/off-boarding/separation-policy/add">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Policy
+                </Button>
+              </Link>
+            </ProtectedComponent>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="-ml-4">
-        <CardHeader>
-          
-        </CardHeader>
-        <CardContent>
-          <PaginatedTableWrapper<ISeparationPolicy>
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}>
+        <div className="-ml-4">
+          <CardHeader>
+            
+          </CardHeader>
+          <CardContent>
+            <PaginatedTableWrapper<ISeparationPolicy>
             fetchFirstPage={async () => {
               if (!selectedInstitution) throw new Error("No institution selected")
               return await SeparationPoliciesAPI.getPaginated({
@@ -191,16 +196,21 @@ export default function SeparationPoliciesPage() {
                                 align="end"
                                 className="w-48 bg-white border border-gray-200 shadow-lg"
                               >
-                                <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/${policy.id}`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                      <Eye className="h-4 w-4" /> View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/edit/${policy.id}/`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
-                                      <Edit className="h-4 w-4" /> Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setDeleteDialog({open: true, policy})} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
-
-                                    <Trash2 className="h-4 w-4" /> Delete
-                                </DropdownMenuItem>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}>
+                                  <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/${policy.id}`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                        <Eye className="h-4 w-4" /> View Details
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_POLICIES}>
+                                  <DropdownMenuItem onClick={()=>{router.push(`/off-boarding/separation-policy/edit/${policy.id}/`)}} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                        <Edit className="h-4 w-4" /> Edit
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_POLICIES}>
+                                  <DropdownMenuItem onClick={() => setDeleteDialog({open: true, policy})} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
+                                      <Trash2 className="h-4 w-4" /> Delete
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>
 
@@ -213,8 +223,9 @@ export default function SeparationPoliciesPage() {
               )
             }}
           </PaginatedTableWrapper>
-        </CardContent>
-      </div>
+          </CardContent>
+        </div>
+      </ProtectedComponent>
 
       <Dialog
         open={deleteDialog.open}

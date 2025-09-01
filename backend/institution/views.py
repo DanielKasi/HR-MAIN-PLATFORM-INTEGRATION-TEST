@@ -2328,9 +2328,9 @@ class BranchShiftListCreateView(APIView):
 
 
 class BranchShiftDetailView(APIView):
-    def get_object(self, shift_id):
+    def get_object(self, pk):
         try:
-            return BranchShift.objects.get(id=shift_id)
+            return BranchShift.objects.get(pk=pk)
         except BranchShift.DoesNotExist:
             raise Http404
 

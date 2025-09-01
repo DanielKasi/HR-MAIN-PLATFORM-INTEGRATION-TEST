@@ -91,5 +91,6 @@ urlpatterns = [
         PayrollAnalyticsAPI.as_view(),
         name='payroll-analytics-period'
     ),
+    path('analytics/', PayrollDashboardAPIView.as_view(), name='payroll-analytics')
 
 ]

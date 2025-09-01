@@ -119,6 +119,12 @@ import {
   IEmployeePenalty,
   IPenaltyType,
   IEmployeePenaltyFormData,
+  IRecruitmentDashboard,
+  IEmployeeDashboard,
+  ILeaveDashboard,
+  IAttendanceDashboard,
+  IPayrollDashboard,
+  IBranchWorkingDays,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -126,6 +132,7 @@ import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
 import { forceUrlToHttps } from "./helpers";
+import { create } from "domain";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -4047,6 +4054,56 @@ export const getPayslips = async (
   }
 };
 
+export const getRecruitmentDashboard = async () => {
+  try {
+    const response = await apiRequest.get("recruitment/analytics/");
+    return response.data as IRecruitmentDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getAttendanceDashboard = async () => {
+  try {
+    const response = await apiRequest.get("employee/attendance-analytics/");
+    return response.data as IAttendanceDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getPayrollDashboard = async () => {
+  try {
+    const response = await apiRequest.get("payroll/analytics/");
+    return response.data as IPayrollDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getLeaveDashboard = async () => {
+  try {
+    const response = await apiRequest.get("leave-mgt/analytics/");
+    return response.data as ILeaveDashboard;
+  } catch (error) {
+    // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getEmployeeDashboard = async (): Promise<IEmployeeDashboard> => {
+  try {
+    const response = await apiRequest.get("employee/analytics/");
+    return response.data as IEmployeeDashboard;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 export const getPayslip = async (id: number) => {
   try {
     const response = await apiRequest.get(`payroll/payslips/${id}/`);
@@ -6505,8 +6562,15 @@ export const branchLocationComparisonConfigAPI = {
 
 export const shiftsAPI = {
   BRANCH: {
-    getAll: async (branchId: number) => {
-      const response = await apiRequest.get(`/institution/branch-shifts/${branchId}/`);
+    getAll: async (args: { branch_id: number, search?: string, page?: number }) => {
+      const params = new URLSearchParams();
+      Object.entries(args).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+
+      const response = await apiRequest.get(`/institution/branch-shifts/${args.branch_id}/?${params.toString()}`);
       return response.data as IPaginatedResponse<IBranchShift>
     },
     getById: async (shiftId: number) => {
@@ -6524,6 +6588,10 @@ export const shiftsAPI = {
     delete: async (shiftId: number) => {
       const response = await apiRequest.delete(`/institution/branch-shifts/${shiftId}/`);
       return response.status === 204;
+    },
+    getPaginatedFromUrl: async ({ url }: { url: string }) => {
+      const response = await apiRequest.get(url);
+      return response.data as IPaginatedResponse<IBranchShift>
     }
   },
   EMPLOYEE: {
@@ -6562,17 +6630,15 @@ export const shiftsAPI = {
     delete: async (shiftId: number) => {
       const response = await apiRequest.delete(`/employee/employee-shifts/${shiftId}/`);
       return response.status === 204;
-    }
-  },
-  COMMON: {
+    },
     getPaginatedFromUrl: async ({ url, is_employee_specific }: { url: string, is_employee_specific: boolean }) => {
-      if (!url.includes("is_employee_specific")) {
-        const separator = url.includes("?") ? "&" : "?";
-        url = `${url}${separator}is_employee_specific=${is_employee_specific}`;
-      }
+      const separator = url.includes("?") ? "&" : "?";
+      url = `${url}${separator}is_employee_specific=${is_employee_specific}`;
       const response = await apiRequest.get(url);
       return response.data as IPaginatedResponse<IEmployeeShift>
     },
+  },
+  COMMON: {
   }
 }
 
@@ -6616,3 +6682,22 @@ export const penaltiesAPI = {
     },
   }
 }
+
+
+export const branchesAPI = {
+  WORKING_DAYS: {
+    getAll: async ({ branchId }: { branchId: number }): Promise<IBranchWorkingDays | null> => {
+      const response = await apiRequest.get(`/institution/branch-working-days/?branch_id=${branchId}`);
+      return response.data as IBranchWorkingDays;
+    },
+    create: async (data: { branch_days: Array<{ day_id: number, day_type: "REMOTE" | "PHYSICAL" }> }): Promise<IBranchWorkingDays | null> => {
+      const response = await apiRequest.post(`/institution/branch-working-days/`, data);
+      return response.data as IBranchWorkingDays;
+    },
+
+    update: async (branchDaysId: number, data: { branch_days: Array<{ day_id: number, day_type: "REMOTE" | "PHYSICAL" }> }): Promise<IBranchWorkingDays | null> => {
+      const response = await apiRequest.patch(`/institution/branch-working-day-detail/${branchDaysId}/`, data);
+      return response.data as IBranchWorkingDays;
+    },
+  }
+} 

@@ -1086,6 +1086,7 @@ const LeaveApplicationComponent = () => {
                               <DropdownMenuContent align="end">
                                 {application.status === "pending" && (
                                   <>
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_APPROVE_LEAVE_APPLICATIONS}>
                                     <DropdownMenuItem
                                       onClick={() =>
                                         openConfirmDialog(
@@ -1099,6 +1100,9 @@ const LeaveApplicationComponent = () => {
                                       <Check className="h-4 w-4 mr-2" />
                                       Approve
                                     </DropdownMenuItem>
+                                    </ProtectedComponent>
+
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_REJECT_LEAVE_APPLICATIONS}>
                                     <DropdownMenuItem
                                       onClick={() =>
                                         openConfirmDialog(
@@ -1112,12 +1116,18 @@ const LeaveApplicationComponent = () => {
                                       <X className="h-4 w-4 mr-2" />
                                       Reject
                                     </DropdownMenuItem>
+                                    </ProtectedComponent>
+
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_APPLICATIONS}>
                                     <DropdownMenuItem
                                       onClick={() => handleEditApplication(application)}
                                     >
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
+                                    </ProtectedComponent>
+
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_APPLICATIONS}>
                                     <DropdownMenuItem
                                       onClick={() =>
                                         openConfirmDialog(
@@ -1131,14 +1141,17 @@ const LeaveApplicationComponent = () => {
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Delete
                                     </DropdownMenuItem>
+                                    </ProtectedComponent>
                                   </>
                                 )}
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_APPLICATIONS}>
                                 <DropdownMenuItem
                                   onClick={() => handleViewApplication(application)}
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
+                                </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

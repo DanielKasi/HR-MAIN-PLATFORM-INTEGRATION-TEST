@@ -29,6 +29,7 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
     shift: 0,
     context: "ALLOCATION",
     employee: employee?.id || 0,
+    shift_status: "PENDING",
     date: new Date().toISOString().split("T")[0],
   })
 
@@ -60,6 +61,7 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
       setForm({
         shift: 0,
         context: "ALLOCATION",
+        shift_status: "PENDING",
         employee: employee.id,
         date: new Date().toISOString().split("T")[0],
       })
@@ -68,7 +70,7 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
 
   useEffect(() => {
     if (shiftId) {
-      ;(async () => {
+      ; (async () => {
         try {
           const response = await apiRequest.get(`employee/employee-shifts/${shiftId}/`)
           const data: IEmployeeShift = response.data
@@ -160,11 +162,11 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
                 ))}
               </SelectContent>
             </Select>
-            {selectedShift && (
+            {/* {selectedShift && (
               <div className="text-sm text-muted-foreground mt-1">
                 <span className="font-medium">Day:</span> {selectedShift.shift_day?.day_name}
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="grid gap-2">
@@ -176,11 +178,11 @@ export default function EmployeeShiftDialog({ isOpen, onOpenChange, employee, sh
               onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
               min={new Date().toISOString().split("T")[0]}
             />
-            {selectedShift && form.date && (
+            {/* {selectedShift && form.date && (
               <div className="text-sm text-muted-foreground mt-1">
-                Make sure the selected date falls on a {selectedShift.shift_day?.day_name}
+                Make sure the selected date falls on a {selectedShift.shift_day?.}
               </div>
-            )}
+            )} */}
           </div>
         </div>
 

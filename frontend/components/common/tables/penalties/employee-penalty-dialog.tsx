@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
-import {showErrorToast} from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { showErrorToast } from "@/lib/utils";
 import {
   PERMISSION_CODES,
   type IEmployee,
@@ -18,10 +18,11 @@ import {
   type IEmployeePenaltyFormData,
   type IPenaltyType,
 } from "@/types/types.utils";
-import {Label} from "@/components/ui/label";
-import {Select, SelectContent, SelectItem, SelectTrigger} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import FormattedNumberInput from "../../inputs/formatted-number-input";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import { PENALTY_TYPES } from "@/app/constants";
 
 interface Props {
   isOpen: boolean;
@@ -32,13 +33,7 @@ interface Props {
   isSaving?: boolean;
 }
 
-const penaltyTypes: {value: IPenaltyType; label: string}[] = [
-  {value: "late_coming", label: "Late Coming"},
-  {value: "early_leaving", label: "Early Leaving"},
-  {value: "absent", label: "Absent"},
-  {value: "no_response_spotcheck", label: "Not responding to a spotcheck"},
-  {value: "late_spotcheck_response", label: "Late spotcheck response"},
-];
+
 
 export default function EmployeePenaltyDialog({
   isOpen,
@@ -76,7 +71,6 @@ export default function EmployeePenaltyDialog({
     onSave({
       amount: amount,
       penalty_type: penaltyType,
-      employee: employee.id,
       date: date,
     });
   };
@@ -97,10 +91,10 @@ export default function EmployeePenaltyDialog({
                 onValueChange={(value) => setPenaltyType(value as IPenaltyType)}
               >
                 <SelectTrigger className="rounded-xl">
-                  {penaltyType ? penaltyTypes.find((p) => p.value === penaltyType)?.label : ""}
+                  {penaltyType ? PENALTY_TYPES.find((p) => p.value === penaltyType)?.label : ""}
                 </SelectTrigger>
                 <SelectContent>
-                  {penaltyTypes.map((type) => (
+                  {PENALTY_TYPES.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>

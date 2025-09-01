@@ -50,9 +50,9 @@ import { Edit, MoreVertical, Trash2 } from "lucide-react";
 import type {
   IBranchShift,
   IBranchWorkingDays,
-  IPaginatedResponse,
   IShiftFormData,
 } from "@/types/types.utils";
+import { shiftsAPI } from "@/lib/utils";
 
 const BranchShiftsPage = () => {
   const selectedBranch = useSelector(selectSelectedBranch);
@@ -72,26 +72,6 @@ const BranchShiftsPage = () => {
     description: "",
   });
 
-  const fetchPaginatedShifts = async (): Promise<IPaginatedResponse<IBranchShift>> => {
-    if (!selectedBranch?.id) throw new Error("No branch selected");
-
-    const response = await apiRequest.get(`/institution/branch-shifts/${selectedBranch.id}`);
-    return response.data;
-  };
-
-  const fetchShiftsFromUrl = async ({
-    url,
-  }: {
-    url: string;
-  }): Promise<IPaginatedResponse<IBranchShift> | undefined> => {
-    try {
-      const response = await apiRequest.get(url);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching shifts from URL:", error);
-      return undefined;
-    }
-  };
 
   const fetchBranchWorkingDays = async () => {
     try {
@@ -171,7 +151,7 @@ const BranchShiftsPage = () => {
     setEditingShift(shift);
     setFormData({
       name: shift.name,
-      shift_day: shift.shift_day?.id,
+      shift_day: shift.shift_day?.id || 0,
       start_time: shift.start_time,
       end_time: shift.end_time,
       description: shift.description || "",
@@ -311,8 +291,11 @@ const BranchShiftsPage = () => {
         </CardHeader>
         <CardContent>
           <PaginatedTableWrapper<IBranchShift>
-            fetchFirstPage={fetchPaginatedShifts}
-            fetchFromUrl={fetchShiftsFromUrl}
+            fetchFirstPage={async () => {
+              if (!selectedBranch) { throw new Error("No branch selected") };
+              return await shiftsAPI.BRANCH.getAll({ branch_id: selectedBranch.id });
+            }}
+            fetchFromUrl={async (args: { url: string }) => shiftsAPI.BRANCH.getPaginatedFromUrl({ url: args.url })}
             deps={[selectedBranch?.id]}
             className="space-y-4"
             footerClassName="pt-4"
@@ -330,8 +313,8 @@ const BranchShiftsPage = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Shift Name</TableHead>
-                        <TableHead>Day</TableHead>
-                        <TableHead>Type</TableHead>
+                        {/* <TableHead>Day</TableHead>
+                        <TableHead>Type</TableHead> */}
                         <TableHead>Start Time</TableHead>
                         <TableHead>End Time</TableHead>
                         <TableHead>Description</TableHead>
@@ -358,8 +341,8 @@ const BranchShiftsPage = () => {
                         data?.results.map((shift) => (
                           <TableRow key={shift.id}>
                             <TableCell className="font-medium">{shift.name}</TableCell>
-                            <TableCell>{shift.shift_day.day_name}</TableCell>
-                            <TableCell>{getDayTypeBadge(shift.shift_day.day_type)}</TableCell>
+                            {/* <TableCell>{shift.shift_day}</TableCell> */}
+                            {/* <TableCell>{getDayTypeBadge(shift.shift_day.)}</TableCell> */}
                             <TableCell>{shift.start_time}</TableCell>
                             <TableCell>{shift.end_time}</TableCell>
                             <TableCell className="max-w-xs truncate">{shift.description}</TableCell>

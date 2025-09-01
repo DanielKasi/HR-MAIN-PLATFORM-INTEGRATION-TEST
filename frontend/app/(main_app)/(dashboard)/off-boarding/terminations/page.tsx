@@ -36,6 +36,8 @@ import { TerminationInitiationsAPI } from "@/lib/utils"
 import { ITermination } from "@/types/types.utils"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"
+import ProtectedComponent from "@/components/ProtectedComponent"
+import { PERMISSION_CODES } from "@/types/types.utils"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -122,20 +124,22 @@ export default function TerminationInitiationsPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              
-              <Button onClick={() => router.push("/off-boarding/terminations/create")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Initiate Termination
-              </Button>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_TERMINATION_INITIATIONS}>
+                <Button onClick={() => router.push("/off-boarding/terminations/create")}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Initiate Termination
+                </Button>
+              </ProtectedComponent>
             </div>
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div>
-        <CardContent className="p-0 -ml-3">
-          <PaginatedTableWrapper<ITermination>
+      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TERMINATION_INITIATIONS}>
+        <div>
+          <CardContent className="p-0 -ml-3">
+            <PaginatedTableWrapper<ITermination>
             fetchFirstPage={async () => {
               if (!selectedInstitution) throw new Error("No institution selected")
               return await TerminationInitiationsAPI.getPaginated({
@@ -211,29 +215,37 @@ export default function TerminationInitiationsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleView(termination.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(termination.id)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          {termination.termination_letter && (
-                            <DropdownMenuItem 
-                              onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000' +termination.termination_letter!, "_blank")}
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              View Letter
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TERMINATION_INITIATIONS}>
+                            <DropdownMenuItem onClick={() => handleView(termination.id)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
                             </DropdownMenuItem>
+                          </ProtectedComponent>
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_TERMINATION_INITIATIONS}>
+                            <DropdownMenuItem onClick={() => handleEdit(termination.id)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          </ProtectedComponent>
+                          {termination.termination_letter && (
+                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TERMINATION_INITIATIONS}>
+                              <DropdownMenuItem 
+                                onClick={() => window.open(process.env.NEXT_PUBLIC_BASE_URL || 'http://127.0.0.1:8000' +termination.termination_letter!, "_blank")}
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Letter
+                              </DropdownMenuItem>
+                            </ProtectedComponent>
                           )}
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(termination)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
+                          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_TERMINATION_INITIATIONS}>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(termination)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </ProtectedComponent>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -245,8 +257,9 @@ export default function TerminationInitiationsPage() {
               )
             }}
           </PaginatedTableWrapper>
-        </CardContent>
-      </div>
+          </CardContent>
+        </div>
+      </ProtectedComponent>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
