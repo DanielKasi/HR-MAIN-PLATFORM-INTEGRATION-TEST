@@ -12,8 +12,9 @@ from workflows.serializers import (
     TerminationInitiationWorkflowSerializer,
     RetirementRequestWorkflowSerializer,
 )
-
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .models import (
+    EmployeeSeparation,
     OnBoarding,
     OffboardingStage,
     InstitutionEmployeeSeparationTypes,
@@ -23,6 +24,7 @@ from .models import (
     RetirementRequest,
 )
 from .serializers import (
+    EmployeeSeparationSerializer,
     OnBoardingSerializer,
     OffboardingStageSerializer,
     InstitutionEmployeeSeparationTypesSerializer,
@@ -32,7 +34,7 @@ from .serializers import (
     RetirementRequestSerializer,
 )
 from institution.models import Institution
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import transaction
 
 
@@ -802,3 +804,137 @@ class TerminationInitiationDetailView(APIView):
             return Response(status=204)
         except TerminationInitiation.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
+
+
+@extend_schema(
+    tags=['Offboarding'],
+    summary='Retrieve offboarding dashboard data',
+    description=(
+        'This endpoint provides aggregated data for the offboarding dashboard, including: '
+        '- Separation counts by status (planned, completed, cancelled, total). '
+        '- Category counts (resignation, termination, retirement, etc.). '
+        '- Pending requests counts for resignations, terminations, and retirements. '
+        '- List of recent separations (last 10, with details). '
+        'Data is filtered by the institution associated with the authenticated user.'
+    ),
+    responses={
+        200: OpenApiResponse(
+            description='Successful response with dashboard data',
+            response={
+                'type': 'object',
+                'properties': {
+                    'separation_counts': {
+                        'type': 'object',
+                        'properties': {
+                            'planned': {'type': 'integer'},
+                            'completed': {'type': 'integer'},
+                            'cancelled': {'type': 'integer'},
+                            'total': {'type': 'integer'},
+                        }
+                    },
+                    'category_counts': {
+                        'type': 'object',
+                        'additionalProperties': {'type': 'integer'},
+                        'description': 'Counts by separation category (e.g., "resignation": 5)'
+                    },
+                    'pending_requests': {
+                        'type': 'object',
+                        'properties': {
+                            'resignations': {'type': 'integer'},
+                            'terminations': {'type': 'integer'},
+                            'retirements': {'type': 'integer'},
+                            'total': {'type': 'integer'},
+                        }
+                    },
+                    'recent_separations': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'employee_name': {'type': 'string'},
+                                'separation_type': {'type': 'string'},
+                                'category': {'type': 'string'},
+                                'effective_date': {'type': 'string', 'format': 'date'},
+                                'separation_status': {'type': 'string'},
+                                'additional_notes': {'type': 'string', 'nullable': True},
+                            }
+                        }
+                    }
+                }
+            }
+        ),
+        400: OpenApiResponse(description='Bad request (e.g., user institution not found)')
+    }
+)
+class OffboardingDashboardView(APIView):
+    """
+    Endpoint to retrieve data for the offboarding dashboard.
+    Assumes the request.user has a profile with an associated institution.
+    If not, adjust the institution retrieval logic as needed (e.g., via query params).
+    GET /api/offboarding/dashboard/
+    """
+
+    def get(self, request):
+        # Retrieve the institution from the authenticated user (adjust if needed)
+        try:
+            institution = request.user.profile.institution  # Assuming Profile has institution field
+        except AttributeError:
+            return Response({"error": "User institution not found."}, status=400)
+
+        # Filter separations for the institution
+        separations = EmployeeSeparation.objects.filter(
+            employee__department__institution=institution  # Assuming Employee has department with institution
+        )
+
+        # Separation counts by status
+        separation_counts = separations.aggregate(
+            planned=Count('id', filter=Q(separation_status='planned')),
+            completed=Count('id', filter=Q(separation_status='completed')),
+            cancelled=Count('id', filter=Q(separation_status='cancelled')),
+            total=Count('id')
+        )
+
+        # Category counts
+        category_counts = dict(
+            separations.values('employee_separation_type__category')
+            .annotate(count=Count('id'))
+            .values_list('employee_separation_type__category', 'count')
+        )
+
+        # Pending requests counts
+        pending_resignations = ResignationRequest.objects.filter(
+            separation__employee__department__institution=institution,
+            request_status='submitted'
+        ).count()
+
+        pending_terminations = TerminationInitiation.objects.filter(
+            separation__employee__department__institution=institution,
+            initiation_status='submitted'
+        ).count()
+
+        pending_retirements = RetirementRequest.objects.filter(
+            separation__employee__department__institution=institution,
+            request_status='submitted'
+        ).count()
+
+        pending_requests = {
+            'resignations': pending_resignations,
+            'terminations': pending_terminations,
+            'retirements': pending_retirements,
+            'total': pending_resignations + pending_terminations + pending_retirements
+        }
+
+        # Recent separations (last 10, ordered by effective_date descending)
+        recent_separations = separations.order_by('-effective_date')[:10]
+        recent_separations_data = EmployeeSeparationSerializer(recent_separations, many=True).data
+
+        # Compile dashboard data
+        dashboard_data = {
+            'separation_counts': separation_counts,
+            'category_counts': category_counts,
+            'pending_requests': pending_requests,
+            'recent_separations': recent_separations_data
+        }
+
+        return Response(dashboard_data)

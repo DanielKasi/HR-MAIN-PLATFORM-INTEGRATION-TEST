@@ -125,6 +125,8 @@ import {
   IAttendanceDashboard,
   IPayrollDashboard,
   IBranchWorkingDays,
+  OffboardingData,
+  AssetsData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4098,6 +4100,23 @@ export const getEmployeeDashboard = async (): Promise<IEmployeeDashboard> => {
   try {
     const response = await apiRequest.get("employee/analytics/");
     return response.data as IEmployeeDashboard;
+  } catch (error) {
+    throw error;
+  }
+};
+export const getOffboardingDashboard = async (): Promise<OffboardingData> => {
+  try {
+    const response = await apiRequest.get("on-boarding/analytics/");
+    return response.data as OffboardingData;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getAssetDashboard = async (): Promise<AssetsData> => {
+  try {
+    const response = await apiRequest.get("assets/analytics/");
+    return response.data as AssetsData;
   } catch (error) {
     throw error;
   }

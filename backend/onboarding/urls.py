@@ -14,6 +14,7 @@ from .views import (
     ResignationRequestByLoggedInUser,
     TerminationInitiationListCreateView,
     TerminationInitiationDetailView,
+    OffboardingDashboardView
 )
 
 urlpatterns = [
@@ -85,4 +86,5 @@ urlpatterns = [
         TerminationInitiationDetailView.as_view(),
         name="termination-initiations-detail",
     ),
+    path("analytics/", OffboardingDashboardView.as_view(), name="offboarding-analytics")
 ]

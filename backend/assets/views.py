@@ -848,6 +848,7 @@ class AssetHistoryListView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         status = request.query_params.get("status", None)
+        user = request.user
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -860,7 +861,7 @@ class AssetHistoryListView(APIView):
         )
 
         if status:
-            asset_histories = AssetHistory.filter(status=event_type)
+            asset_histories = AssetHistory.filter(event_type=status)
 
         if search_query:
             asset_histories = asset_histories.filter(
@@ -1218,3 +1219,140 @@ class AssetDecommissionAnalyticsViewSet(APIView):
             'total_decommissioned_assets': assets.count(),
             'decommission_rate': round(decommission_rate, 2),
         }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=['Assets'],
+    summary='Retrieve assets dashboard data',
+    description=(
+        'This endpoint provides aggregated data for the assets dashboard, including: '
+        '- Asset counts by status (available, allocated, maintenance, decommissioned, total). '
+        '- Category counts (number of assets per category). '
+        '- Pending requests and allocations counts. '
+        '- List of recent assets (last 10, ordered by creation date descending). '
+        'Data is filtered by the institution associated with the authenticated user.'
+    ),
+    responses={
+        200: OpenApiResponse(
+            description='Successful response with dashboard data',
+            response={
+                'type': 'object',
+                'properties': {
+                    'asset_counts': {
+                        'type': 'object',
+                        'properties': {
+                            'available': {'type': 'integer'},
+                            'allocated': {'type': 'integer'},
+                            'maintenance': {'type': 'integer'},
+                            'decommissioned': {'type': 'integer'},
+                            'total': {'type': 'integer'},
+                        }
+                    },
+                    'category_counts': {
+                        'type': 'object',
+                        'additionalProperties': {'type': 'integer'},
+                        'description': 'Counts by asset category (e.g., "Laptops": 5)'
+                    },
+                    'pending_counts': {
+                        'type': 'object',
+                        'properties': {
+                            'requests': {'type': 'integer'},
+                            'allocations': {'type': 'integer'},
+                            'returns': {'type': 'integer'},
+                            'total': {'type': 'integer'},
+                        }
+                    },
+                    'recent_assets': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'asset_name': {'type': 'string'},
+                                'batch_number': {'type': 'string'},
+                                'serial_number': {'type': 'string'},
+                                'category_name': {'type': 'string'},
+                                'status': {'type': 'string'},
+                                'description': {'type': 'string', 'nullable': True},
+                                'current_holder_name': {'type': 'string', 'nullable': True},
+                            }
+                        }
+                    }
+                }
+            }
+        ),
+        400: OpenApiResponse(description='Bad request (e.g., user institution not found)')
+    }
+)
+class AssetsDashboardView(APIView):
+    """
+    Endpoint to retrieve data for the assets dashboard.
+    Assumes the request.user has a profile with an associated institution.
+    If not, adjust the institution retrieval logic as needed (e.g., via query params).
+    GET /api/assets/dashboard/
+    """
+
+    def get(self, request):
+        # Retrieve the institution from the authenticated user (adjust if needed)
+        try:
+            institution = request.user.profile.institution  # Assuming Profile has institution field
+        except AttributeError:
+            return Response({"error": "User institution not found."}, status=400)
+
+        # Filter assets for the institution
+        assets = Asset.objects.filter(institution=institution)
+
+        # Asset counts by status
+        asset_counts = assets.aggregate(
+            available=Count('id', filter=Q(status='available')),
+            allocated=Count('id', filter=Q(status='allocated')),
+            maintenance=Count('id', filter=Q(status='maintenance')),
+            decommissioned=Count('id', filter=Q(status='decommissioned')),
+            total=Count('id')
+        )
+
+        # Category counts
+        category_counts = dict(
+            assets.values('category__category_name')
+            .annotate(count=Count('id'))
+            .values_list('category__category_name', 'count')
+        )
+
+        # Pending counts
+        pending_requests = AssetRequest.objects.filter(
+            asset__institution=institution,
+            asset_request_status='pending'
+        ).count()
+
+        pending_allocations = AssetAllocation.objects.filter(
+            asset__institution=institution,
+            allocation_status='pending'
+        ).count()
+
+        # Assuming AssetReturn uses approval workflow and 'pending' can be inferred (e.g., if not yet approved/rejected)
+        # For simplicity, count all new returns; adjust if BaseApprovableModel has a status field
+        pending_returns = AssetReturn.objects.filter(
+            asset__institution=institution,
+            # If no explicit status, perhaps filter by recent or approval_pending; here assuming all for example
+        ).count()  # Adjust query as per actual model logic
+
+        pending_counts = {
+            'requests': pending_requests,
+            'allocations': pending_allocations,
+            'returns': pending_returns,
+            'total': pending_requests + pending_allocations + pending_returns
+        }
+
+        # Recent assets (last 10, ordered by -id assuming no created_at; adjust if timestamps available)
+        recent_assets = assets.order_by('-id')[:10]  # Use '-created_at' if available
+        recent_assets_data = AssetSerializer(recent_assets, many=True).data
+
+        # Compile dashboard data
+        dashboard_data = {
+            'asset_counts': asset_counts,
+            'category_counts': category_counts,
+            'pending_counts': pending_counts,
+            'recent_assets': recent_assets_data
+        }
+
+        return Response(dashboard_data)
