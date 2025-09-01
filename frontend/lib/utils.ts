@@ -128,6 +128,7 @@ import {
   OffboardingData,
   AssetsData,
   ChangePasswordData,
+  ApprovalTasksDashboardResponse,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4072,6 +4073,15 @@ export const getPayslips = async (
     return data.results;
   } catch (error) {
     // console.error("Failed to get payslips:", error);
+    throw error;
+  }
+};
+
+export const getTasksDashboard = async () => {
+  try {
+    const response = await apiRequest.get("approval/tasks-analytics/");
+    return response.data as ApprovalTasksDashboardResponse;
+  } catch (error) {
     throw error;
   }
 };

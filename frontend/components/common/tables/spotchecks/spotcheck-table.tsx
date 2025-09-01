@@ -125,9 +125,9 @@ export default function SpotchecksTable({ searchTerm, refreshTableRef, statusFil
                   <TableRow>
 
                     <TableHead>Time</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Status</TableHead>
+                    {/* <TableHead>Location</TableHead>
+                    <TableHead>Duration</TableHead> */}
+                    <TableHead className="text-right">Status</TableHead>
 
                   </TableRow>
                 </TableHeader>
@@ -136,7 +136,7 @@ export default function SpotchecksTable({ searchTerm, refreshTableRef, statusFil
                     <TableRow key={spotcheck.id}>
 
                       <TableCell className="font-medium">{spotcheck?.spotcheck_time ? formatDate(spotcheck?.spotcheck_time) : "Not available"}</TableCell>
-                      <TableCell className="flex items-center gap-2">
+                      {/* <TableCell className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-gray-500" />
                         {
                           spotcheck?.latitude ? (
@@ -147,8 +147,8 @@ export default function SpotchecksTable({ searchTerm, refreshTableRef, statusFil
                             <>{"Not available"}</>
                         }
                       </TableCell>
-                      <TableCell>{spotcheck?.duration ? formatDuration(spotcheck?.duration) : "Not available"}</TableCell>
-                      <TableCell>
+                      <TableCell>{spotcheck?.duration ? formatDuration(spotcheck?.duration) : "Not available"}</TableCell> */}
+                      <TableCell className="text-right">
                         <Badge className={getStatusColor(spotcheck.status.code)}>
                           {spotcheck.status.status_name || "Unknown"}
                         </Badge>

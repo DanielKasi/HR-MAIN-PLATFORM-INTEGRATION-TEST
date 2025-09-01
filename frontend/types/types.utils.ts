@@ -2079,6 +2079,33 @@ export interface IAsset {
   asset_histories?: IAssetHistory[];
 }
 
+export interface ApprovalTask {
+  id: number;
+  approval: number;  // Foreign key to Approval ID
+  level: number;     // Foreign key to ApprovalDocumentLevel ID
+  status: 'not_started' | 'pending' | 'rejected' | 'approved' | 'terminated';
+  comment: string | null;
+  approved_by: number | null;  // Foreign key to User ID
+  created_at: string;          // ISO datetime string
+  updated_at: string;          // ISO datetime string
+  deleted_at: string | null;   // ISO datetime string or null
+}
+
+export interface DashboardCategory {
+  count: number;
+  tasks: ApprovalTask[];
+}
+
+export interface ApprovalTasksDashboardResponse {
+  incoming: DashboardCategory;
+  open: DashboardCategory;
+  critical: DashboardCategory;
+  expired: DashboardCategory;
+  outgoing: DashboardCategory;
+}
+
+export type TaskType = "incoming" | "open" | "critical" | "expired" | "outgoing"
+
 export interface ChangePasswordData {
   old_password: string;
   new_password: string;

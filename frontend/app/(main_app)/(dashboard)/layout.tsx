@@ -752,9 +752,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             </div>
 
             <div className="flex items-center gap-4 min-w-0">
-              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
+              {/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
                 <Modules />
-              </ProtectedComponent>
+              </ProtectedComponent> */}
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>
                 <Link
                   href={"/admin"}
