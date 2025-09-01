@@ -22,6 +22,7 @@ import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selecto
 import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import { MAIN_DOMAIN_URL } from "@/app/constants";
 
 const attendanceCodes = {
   "P-onT": {label: "Present on Time", color: "bg-green-100 text-green-800"},
@@ -275,7 +276,7 @@ export default function AttendanceTable() {
         payload.target_employees = employeeIds;
       }
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/employee/attendance2excel/`,
+        `${process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`}/employee/attendance2excel/`,
         {
           method: "POST",
           headers: {

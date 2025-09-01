@@ -24,3 +24,5 @@ export const PENALTY_TYPES: { value: IPenaltyType; label: string }[] = [
   { value: "no_response_spotcheck", label: "Not responding to a spotcheck" },
   { value: "late_spotcheck_response", label: "Late spotcheck response" },
 ];
+
+export const MAIN_DOMAIN_URL="https://peracosoft.com"

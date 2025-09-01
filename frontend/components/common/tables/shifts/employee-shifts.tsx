@@ -49,15 +49,15 @@ export default function EmployeeShifts({employee}: Props) {
     console.log("Shift request submitted successfully!");
   };
 
-  console.log("loggedInUser", loggedInUser)
-  console.log("employee", employee)
+  console.log("loggedInUser", loggedInUser);
+  console.log("employee", employee);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Shifts</h3>
         <div className="flex items-center gap-2">
-          {loggedInUser?.id === employee.user.id ? (
+          {loggedInUser?.id === employee.user?.id ? (
             <Button
               size={"sm"}
               className="rounded-full"
