@@ -2,6 +2,7 @@
 from celery import shared_task
 from django.utils import timezone
 from employee.models import Employee
+from payroll.models import EmployeePenalty
 from .models import EmployeeSpotCheck, SpotCheckStatus
 from django.db import IntegrityError
 
@@ -18,10 +19,6 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
 
     employee = Employee.objects.get(id=employee_id)
     now = timezone.now()
-
-    print(f"initiate_next_spotcheck_for_an_employee hit at {now}")
-
-    # Pick the next pending spotcheck for today
     status_pending, _ = SpotCheckStatus.objects.get_or_create(status_name="PENDING")
 
     # make sure not to send un sent spotchecks of previous days
@@ -37,7 +34,7 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
     )
 
     if not spotcheck:
-        return "no pending spotchecks"
+        return f"no pending spotchecks for employee: {employee_id}"
 
     sent_status, _ = SpotCheckStatus.objects.get_or_create(status_name="SENT")
     spotcheck.status = sent_status
@@ -88,5 +85,6 @@ def check_spotcheck_response(spotcheck_id):
         missed_status, _ = SpotCheckStatus.objects.get_or_create(status_name="MISSED")
         spotcheck.status = missed_status
         spotcheck.save()
+        EmployeePenalty.create_from_spotcheck(spotcheck, 'no_response_spotcheck')
         return "missed"
     return "responded"
