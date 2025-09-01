@@ -30,6 +30,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
 
 interface EmployeesTableProps {
   refreshFunctionRef?:RefObject<(()=>void)|null>,
@@ -43,6 +44,8 @@ export function EmployeesTable({
   const currentInstitution = useSelector(selectSelectedInstitution)
     const tableRefreshRef = refreshFunctionRef || useRef<(() => void) | null>(null);
     const [employeeToDelete, setEmployeeToDelete] = useState<IEmployee | null>(null);
+
+    const router = useRouter();
 
 
     const handleDelete = async () => {
@@ -132,20 +135,20 @@ export function EmployeesTable({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="start">
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem  className="p-0">
                                     <Link
-                                      className="text-xs flex items-center justify-start"
+                                      className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
                                       href={`/employees/profile/${employee.id}`}
                                     >
                                       <Eye className="h-4 w-4 mr-2" /> View Details
                                     </Link>
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem className="p-0">
                                     <ProtectedComponent
                                       permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}
                                     >
                                       <Link
-                                        className="text-xs flex items-center justify-start"
+                                        className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
                                         href={`/employees/update-employee/${employee.id}`}
                                       >
                                         <Edit className="h-4 w-4 mr-2" /> Edit
@@ -155,9 +158,9 @@ export function EmployeesTable({
 
                                   <DropdownMenuItem
                                     onClick={() => setEmployeeToDelete(employee)}
-                                    className="text-red-600"
+                                    className="text-red-600 p-0"
                                   >
-                                    <span className="text-red-600 hover:text-red-700 text-xs w-full flex items-center">
+                                    <span className="text-red-600 hover:text-red-700 text-xs w-full h-full px-2 py-1.5 flex items-center">
                                       <Trash2 className="h-4 w-4 mr-2" /> Delete
                                     </span>
                                   </DropdownMenuItem>

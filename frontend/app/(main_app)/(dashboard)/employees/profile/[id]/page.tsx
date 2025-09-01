@@ -57,9 +57,10 @@ export default function EmployeeProfile() {
     | "discipline"
     | "leave"
     | "spotchecks"
-  | "shifts"
-  | "penalties"
-  >("attendance");
+    | "shifts"
+    | "penalties"
+    | "bio_data"
+  >("bio_data");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
   const [totalAttendanceRecords, setTotalAttendanceRecords] = useState(0);
@@ -197,6 +198,7 @@ export default function EmployeeProfile() {
   // Tab configuration with lazy loading indicators
   const tabConfig: Array<{id: typeof activeTab; label: string; hasData: boolean}> = useMemo(
     () => [
+      {id: "bio_data", label: "Bio Data", hasData: true}, // Component handles own loading
       {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
       {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
       {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
@@ -204,7 +206,7 @@ export default function EmployeeProfile() {
       {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
       {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
       {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
-  {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
+      {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
       {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
@@ -412,154 +414,8 @@ export default function EmployeeProfile() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            {/* Sidebar - stack on mobile, sidebar on desktop */}
-            <div className="xl:col-span-2 order-2 xl:order-1">
-              <Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
-                <CardContent className="p-4 md:p-6 space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Additional Info</h3>
-                    <div className="space-y-4">
-                      {employee.salary && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">Salary</label>
-                          <p className="text-gray-800 font-medium">
-                            {formatCurrency(employee.salary)}
-                          </p>
-                        </div>
-                      )}
-                      {employee.date_of_joining && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">
-                            Date of Joining
-                          </label>
-                          <p className="text-gray-800 font-medium">
-                            {formatDate(employee.date_of_joining)}
-                          </p>
-                        </div>
-                      )}
-                      {employee.date_of_birth && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">
-                            Date of Birth
-                          </label>
-                          <p className="text-gray-800 font-medium">
-                            {formatDate(employee.date_of_birth)}
-                          </p>
-                        </div>
-                      )}
-                      {employee.nin && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">NIN</label>
-                          <p className="text-gray-800 font-medium break-all">{employee.nin}</p>
-                        </div>
-                      )}
-                      {employee.tin && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">TIN</label>
-                          <p className="text-gray-800 font-medium break-all">{employee.tin}</p>
-                        </div>
-                      )}
-                      {employee.nssf_no && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">NSSF No.</label>
-                          <p className="text-gray-800 font-medium break-all">{employee.nssf_no}</p>
-                        </div>
-                      )}
-                      {(employee.marital_status || employee.children_count > 0) && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">
-                            Marital Status
-                          </label>
-                          <p className="text-gray-800 font-medium">
-                            {getMaritalStatusLabel(employee.marital_status)}
-                            {employee.children_count &&
-                              employee.children_count > 0 &&
-                              ` (${employee.children_count} ${employee.children_count === 1 ? "Child" : "Children"})`}
-                          </p>
-                        </div>
-                      )}
-                      {(employee.emergency_contact_name || employee.emergency_contact_phone) && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">
-                            Emergency Contact
-                          </label>
-                          {employee.emergency_contact_name && (
-                            <p className="text-gray-800 font-medium break-words">
-                              {employee.emergency_contact_name}{" "}
-                              {employee.emergency_contact_relationship && (
-                                <span className="text-[#848496]">
-                                  ({employee.emergency_contact_relationship})
-                                </span>
-                              )}
-                            </p>
-                          )}
-                          {employee.emergency_contact_phone && (
-                            <p className="text-[#848496] text-sm break-all">
-                              {employee.emergency_contact_phone}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {(employee.bank || employee.bank_account_number) && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">Bank Details</label>
-                          {employee.bank && (
-                            <p className="text-gray-800 font-medium break-words">{employee.bank}</p>
-                          )}
-                          {employee.bank_account_number && (
-                            <p className="text-[#848496] text-sm break-all">
-                              A/C: {employee.bank_account_number}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {employee.country && (
-                        <div>
-                          <label className="text-sm font-medium text-[#848496]">Country</label>
-                          <p className="text-gray-800 font-medium">{employee.country}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {(employee.qualifications || employee.experience > 0 || employee.skills) && (
-                    <div className="border-t border-[#e8e8f2] pt-6">
-                      <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                        <GraduationCap className="w-5 h-5" />
-                        Qualifications & Experience
-                      </h3>
-                      <div className="space-y-3">
-                        {employee.qualifications && (
-                          <div>
-                            <label className="text-xs text-[#848496]">Education</label>
-                            <p className="text-gray-800 font-medium">{employee.qualifications}</p>
-                          </div>
-                        )}
-                        {employee.experience > 0 && (
-                          <div>
-                            <label className="text-xs text-[#848496]">Years of Experience</label>
-                            <p className="text-gray-800 font-medium">{employee.experience} years</p>
-                          </div>
-                        )}
-                        {employee.skills && (
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
-                              <Award className="w-5 h-5" />
-                              Skills
-                            </h4>
-                            <p className="text-gray-800">{employee.skills}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Main content area */}
-            <div className="xl:col-span-2 order-1 xl:order-2">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="">
               <Card className="bg-white border-[#e8e8f2] border-none p-0 shadow-none md:shadow-sm md:border">
                 <CardHeader className="border-b border-[#e8e8f2] pb-0">
                   <div className="flex gap-2 md:gap-4 lg:gap-8 relative overflow-x-auto scrollbar-hide">
@@ -587,6 +443,175 @@ export default function EmployeeProfile() {
                 <CardContent className="p-4 md:p-6">
                   {activeTab === "attendance" && (
                     <EmployeeAttendance scope={{type: "employee", employee}} />
+                  )}
+
+                  {activeTab === "bio_data" && (
+                    <Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
+                      <CardContent className="p-4 md:p-6 space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                            Additional Info
+                          </h3>
+                          <div className="space-y-4">
+                            {employee.salary && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">Salary</label>
+                                <p className="text-gray-800 font-medium">
+                                  {formatCurrency(employee.salary)}
+                                </p>
+                              </div>
+                            )}
+                            {employee.date_of_joining && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Date of Joining
+                                </label>
+                                <p className="text-gray-800 font-medium">
+                                  {formatDate(employee.date_of_joining)}
+                                </p>
+                              </div>
+                            )}
+                            {employee.date_of_birth && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Date of Birth
+                                </label>
+                                <p className="text-gray-800 font-medium">
+                                  {formatDate(employee.date_of_birth)}
+                                </p>
+                              </div>
+                            )}
+                            {employee.nin && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">NIN</label>
+                                <p className="text-gray-800 font-medium break-all">
+                                  {employee.nin}
+                                </p>
+                              </div>
+                            )}
+                            {employee.tin && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">TIN</label>
+                                <p className="text-gray-800 font-medium break-all">
+                                  {employee.tin}
+                                </p>
+                              </div>
+                            )}
+                            {employee.nssf_no && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  NSSF No.
+                                </label>
+                                <p className="text-gray-800 font-medium break-all">
+                                  {employee.nssf_no}
+                                </p>
+                              </div>
+                            )}
+                            {(employee.marital_status || employee.children_count > 0) && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Marital Status
+                                </label>
+                                <p className="text-gray-800 font-medium">
+                                  {getMaritalStatusLabel(employee.marital_status)}
+                                  {employee.children_count &&
+                                    employee.children_count > 0 &&
+                                    ` (${employee.children_count} ${employee.children_count === 1 ? "Child" : "Children"})`}
+                                </p>
+                              </div>
+                            )}
+                            {(employee.emergency_contact_name ||
+                              employee.emergency_contact_phone) && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Emergency Contact
+                                </label>
+                                {employee.emergency_contact_name && (
+                                  <p className="text-gray-800 font-medium break-words">
+                                    {employee.emergency_contact_name}{" "}
+                                    {employee.emergency_contact_relationship && (
+                                      <span className="text-[#848496]">
+                                        ({employee.emergency_contact_relationship})
+                                      </span>
+                                    )}
+                                  </p>
+                                )}
+                                {employee.emergency_contact_phone && (
+                                  <p className="text-[#848496] text-sm break-all">
+                                    {employee.emergency_contact_phone}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {(employee.bank || employee.bank_account_number) && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Bank Details
+                                </label>
+                                {employee.bank && (
+                                  <p className="text-gray-800 font-medium break-words">
+                                    {employee.bank}
+                                  </p>
+                                )}
+                                {employee.bank_account_number && (
+                                  <p className="text-[#848496] text-sm break-all">
+                                    A/C: {employee.bank_account_number}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {employee.country && (
+                              <div>
+                                <label className="text-sm font-medium text-[#848496]">
+                                  Country
+                                </label>
+                                <p className="text-gray-800 font-medium">{employee.country}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {(employee.qualifications ||
+                          employee.experience > 0 ||
+                          employee.skills) && (
+                          <div className="border-t border-[#e8e8f2] pt-6">
+                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                              <GraduationCap className="w-5 h-5" />
+                              Qualifications & Experience
+                            </h3>
+                            <div className="space-y-3">
+                              {employee.qualifications && (
+                                <div>
+                                  <label className="text-xs text-[#848496]">Education</label>
+                                  <p className="text-gray-800 font-medium">
+                                    {employee.qualifications}
+                                  </p>
+                                </div>
+                              )}
+                              {employee.experience > 0 && (
+                                <div>
+                                  <label className="text-xs text-[#848496]">
+                                    Years of Experience
+                                  </label>
+                                  <p className="text-gray-800 font-medium">
+                                    {employee.experience} years
+                                  </p>
+                                </div>
+                              )}
+                              {employee.skills && (
+                                <div>
+                                  <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                                    <Award className="w-5 h-5" />
+                                    Skills
+                                  </h4>
+                                  <p className="text-gray-800">{employee.skills}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   )}
 
                   {activeTab === "discipline" && (

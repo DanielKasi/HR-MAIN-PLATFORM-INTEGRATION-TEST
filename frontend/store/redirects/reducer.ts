@@ -16,7 +16,6 @@ export const redirectsReducer = (
     case REDIRECTS_ACTION_TYPES.SET_REDIRECT:
       return { ...state, pending: action.payload as RedirectPayload };
     case REDIRECTS_ACTION_TYPES.CLEAR_REDIRECT:
-        console.log("\n\n Clearing redirect in reducer with action ", action);
       return { ...state, pending: null };
     default:
       return state;
