@@ -7,7 +7,7 @@ def run_sql_with_retry(
     question: str,
     institution_id: int,
     initial_sql: str,
-    max_retries: int = 2,
+    max_retries: int = 9,
 ) -> dict:
     """
     Executes SQL with retry if initial SQL fails.
