@@ -422,8 +422,8 @@ export default function AIAssistantWidget() {
                         {/* Welcome Section - Scrollable */}
                         <div className="flex-1 overflow-y-auto">
                           <div className="flex flex-col items-center justify-center p-4 sm:p-6 min-h-full">
-                            <div className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-purple-200">
-                              <div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+                            <div className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-red-200">
+                              <div className="w-8 sm:w-10 h-8 sm:h-10 bg-gradient-to-br from-red-500 to-orange-600 rounded-full flex items-center justify-center">
                                 <Sparkles className="h-4 sm:h-5 w-4 sm:w-5 text-white animate-pulse" />
                               </div>
                             </div>
