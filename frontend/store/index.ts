@@ -90,7 +90,7 @@ export const configureAppStore = () => {
 
   // store.subscribe(()=>{
   //   const state = store.getState();
-  //   console.log("\n\n Current User : ", state.auth.user, '\n And current institution : ', state.auth.selectedInstitution)
+  //   console.log("\n\n Current auth : ", state.auth)
   // })
 
   return store;

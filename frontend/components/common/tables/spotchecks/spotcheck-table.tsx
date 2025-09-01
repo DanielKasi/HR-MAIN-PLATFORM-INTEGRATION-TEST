@@ -2,9 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import {
-  MapPin,
-} from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -150,7 +147,7 @@ export default function SpotchecksTable({ searchTerm, refreshTableRef, statusFil
                       <TableCell>{spotcheck?.duration ? formatDuration(spotcheck?.duration) : "Not available"}</TableCell> */}
                       <TableCell className="text-right">
                         <Badge className={getStatusColor(spotcheck.status.code)}>
-                          {spotcheck.status.status_name || "Unknown"}
+                          {spotcheck.status.status_name.replace("_", " ") || "Unknown"}
                         </Badge>
                       </TableCell>
 
