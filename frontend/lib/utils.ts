@@ -6014,6 +6014,10 @@ export const employeeAPI = {
       throw error;
     }
   },
+  getByUserId: async ({user_id}:{user_id:number}) => {
+    const response = await apiRequest.get(`/employee/${user_id}/?by_user=true`);
+      return response.data as IEmployee;
+  }
 };
 
 // Calendar API functions

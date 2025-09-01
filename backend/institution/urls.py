@@ -38,6 +38,7 @@ from .views import (
     BranchWorkingDaysDetailView,
     BranchShiftDetailView,
     BranchShiftListCreateView,
+    AIAssistantView,
 )
 
 urlpatterns = [
@@ -200,5 +201,10 @@ urlpatterns = [
         "branch-location-comparison/<int:pk>/",
         BranchLocationComparisonConfigDetailAPIView.as_view(),
         name="branch-location-comparison-config-detail",
+    ),
+    path(
+        "ai-assistant/",
+        AIAssistantView.as_view(),
+        name="ai-assistant",
     ),
 ]

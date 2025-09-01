@@ -32,6 +32,9 @@ from settings.models import SystemDay
 
 logger = logging.getLogger(__name__)
 
+class AIQuerySerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=1000, required=True)
+
 
 class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):
     class Meta:

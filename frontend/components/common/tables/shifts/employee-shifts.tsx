@@ -49,8 +49,8 @@ export default function EmployeeShifts({employee}: Props) {
     console.log("Shift request submitted successfully!");
   };
 
-  console.log("loggedInUser", loggedInUser);
-  console.log("employee", employee);
+  // console.log("loggedInUser", loggedInUser);
+  // console.log("employee", employee);
 
   return (
     <div className="space-y-4">
