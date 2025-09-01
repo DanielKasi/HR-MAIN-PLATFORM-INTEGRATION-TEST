@@ -160,10 +160,14 @@ class AIAssistantView(APIView):
                 # Step 1: Get DB schema for AI
                 schema = get_database_schema_for_ai()
 
+                # print(schema)
+
                 # Step 2: Generate initial SQL
                 initial_sql = generate_sql_from_question(
                     schema, question, institution_id
                 )
+
+                # print(initial_sql)
 
                 # Step 3: Run SQL (with retry/fallback)
                 sql_result = run_sql_with_retry(
@@ -173,6 +177,8 @@ class AIAssistantView(APIView):
                     initial_sql=initial_sql,
                 )
 
+                # print(sql_result)
+
                 # Step 4: Interpret result using AI
                 interpretation = interpret_sql_results_with_groq(
                     question=question,
@@ -180,6 +186,8 @@ class AIAssistantView(APIView):
                     rows=sql_result["results"],
                     sql=sql_result["sql"],
                 )
+
+                # print(interpretation)
 
                 return Response(
                     {
