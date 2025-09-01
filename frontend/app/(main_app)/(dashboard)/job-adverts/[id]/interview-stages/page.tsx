@@ -2286,8 +2286,8 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {filteredCandidates.map((candidate) => (
-                                <TableRow key={candidate.id}>
+                              {filteredCandidates.map((candidate, idx) => (
+                                <TableRow key={idx}>
                                   <TableCell>
                                     <Checkbox
                                       checked={selectedCandidates.includes(candidate.id)}

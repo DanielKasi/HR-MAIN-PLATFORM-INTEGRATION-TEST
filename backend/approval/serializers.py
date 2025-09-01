@@ -1,55 +1,104 @@
 from rest_framework import serializers
-from .models import (
+from django.contrib.contenttypes.models import ContentType
+from approval.models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
-    Approval, ApprovalTask
+    Approval, ApprovalTask, ApproverGroupUser, ApproverGroupRole,
+    ApprovalDocumentLevelApprovers, ApprovalDocumentLevelOverriders
 )
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Action
-        fields = '__all__'
+        fields = ['id', 'name', 'code', 'description', 'public_uuid']
+
+class ApproverGroupUserSerializer(serializers.ModelSerializer):
+    user_fullname = serializers.CharField(source='user.user.fullname', read_only=True)
+
+    class Meta:
+        model = ApproverGroupUser
+        fields = ['id', 'user', 'user_fullname', 'public_uuid']
+
+class ApproverGroupRoleSerializer(serializers.ModelSerializer):
+    role_name = serializers.CharField(source='role.name', read_only=True)
+
+    class Meta:
+        model = ApproverGroupRole
+        fields = ['id', 'role', 'role_name', 'public_uuid']
 
 class ApproverGroupSerializer(serializers.ModelSerializer):
+    institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
+    users = ApproverGroupUserSerializer(source='approvergroupuser_set', many=True, read_only=True)
+    roles = ApproverGroupRoleSerializer(source='approvergrouprole_set', many=True, read_only=True)
+
     class Meta:
         model = ApproverGroup
-        fields = '__all__'
+        fields = ['id', 'institution', 'institution_name', 'name', 'description', 'public_uuid', 'users', 'roles']
 
-class ApprovalDocumentSerializer(serializers.ModelSerializer):
+class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
+    approver_group = ApproverGroupSerializer(read_only=True)
+
     class Meta:
-        model = ApprovalDocument
-        fields = '__all__'
+        model = ApprovalDocumentLevelApprovers
+        fields = ['id', 'approver_group']
+
+class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
+    approver_group = ApproverGroupSerializer(read_only=True)
+
+    class Meta:
+        model = ApprovalDocumentLevelOverriders
+        fields = ['id', 'approver_group']
 
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
+    approvers = ApprovalDocumentLevelApproverSerializer(source='approvaldocumentlevelapprovers_set', many=True, read_only=True)
+    overriders = ApprovalDocumentLevelOverriderSerializer(source='approvaldocumentleveloverriders_set', many=True, read_only=True)
+
     class Meta:
         model = ApprovalDocumentLevel
-        fields = '__all__'
+        fields = ['id', 'level', 'name', 'description', 'public_uuid', 'approvers', 'overriders']
 
-class ApprovalSerializer(serializers.ModelSerializer):
+class ApprovalDocumentSerializer(serializers.ModelSerializer):
+    actions = ActionSerializer(many=True, read_only=True)
+    levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
+    institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
+
     class Meta:
-        model = Approval
-        fields = '__all__'
+        model = ApprovalDocument
+        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'actions', 'levels']
 
 class ApprovalTaskSerializer(serializers.ModelSerializer):
     level_name = serializers.CharField(source='level.name', read_only=True)
     approval_document_description = serializers.CharField(source='approval.document.description', read_only=True)
-    content_object = serializers.SerializerMethodField()  # To show linked object info
+    approved_by_fullname = serializers.CharField(source='approved_by.fullname', read_only=True, allow_null=True)
+    level = ApprovalDocumentLevelSerializer(read_only=True)
 
     class Meta:
         model = ApprovalTask
         fields = [
-            'id', 'status', 'comment', 'approved_by', 'updated_at',
-            'level', 'level_name', 'approval_document_description',
-            'content_object'
+            'id', 'status', 'comment', 'approved_by', 'approved_by_fullname',
+            'updated_at', 'level', 'level_name', 'approval_document_description'
         ]
         read_only_fields = ['approved_by', 'updated_at']
 
-    def get_content_object(self, obj):
-        if obj.approval.content_object:
-            # Return a dict with basic info; customize as needed
-            co = obj.approval.content_object
-            return {
-                'model': co.__class__.__name__,
-                'id': co.pk,
-                'str': str(co)
-            }
-        return None
+class ApprovalSerializer(serializers.ModelSerializer):
+    tasks = ApprovalTaskSerializer(many=True, read_only=True)
+    document = ApprovalDocumentSerializer(read_only=True)
+    action = ActionSerializer(read_only=True)
+
+    class Meta:
+        model = Approval
+        fields = ['id', 'public_id', 'status', 'document', 'action', 'content_type', 'object_id', 'tasks']
+
+class BaseApprovableSerializer(serializers.ModelSerializer):
+    approvals = serializers.SerializerMethodField()
+
+    def get_approvals(self, obj):
+        content_type = ContentType.objects.get_for_model(obj.__class__)
+        approvals = Approval.objects.filter(
+            content_type=content_type,
+            object_id=obj.pk
+        ).select_related('document', 'action', 'content_type').prefetch_related('tasks__level', 'document__levels')
+        return ApprovalSerializer(approvals, many=True).data
+
+    class Meta:
+        abstract = True
+        fields = ['id', 'approval_status', 'approvals']

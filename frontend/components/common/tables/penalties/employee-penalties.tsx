@@ -1,12 +1,12 @@
 "use client";
 
-import React, {useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
+import React, { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import PenaltiesTable from "@/components/common/tables/penalties/penalties-table";
-import {showErrorToast, penaltiesAPI} from "@/lib/utils";
-import {toast} from "sonner";
-import {PERMISSION_CODES, type IEmployee, type IEmployeePenaltyFormData} from "@/types/types.utils";
-import {ConfirmationDialog} from "@/components/confirmation-dialog";
+import { showErrorToast, penaltiesAPI } from "@/lib/utils";
+import { toast } from "sonner";
+import { PERMISSION_CODES, type IEmployee, type IEmployeePenaltyFormData } from "@/types/types.utils";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import EmployeePenaltyDialog from "@/components/common/tables/penalties/employee-penalty-dialog";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
@@ -14,25 +14,31 @@ interface Props {
   employee: IEmployee;
 }
 
-export default function EmployeePenalties({employee}: Props) {
-  const refreshRef = useRef<() => void>(() => {});
+export default function EmployeePenalties({ employee }: Props) {
+  const refreshRef = useRef<() => void>(() => { });
   const [openSend, setOpenSend] = useState(false);
   const [editingPenalty, setEditingPenalty] = useState<any | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   const handleCreate = async (data: Partial<IEmployeePenaltyFormData>) => {
+    if (!data.penalty_type) { toast.error("Please select a penalty type"); return; }
     setIsSending(true);
     try {
-      const payload: Partial<IEmployeePenaltyFormData> = {
+      const payload: Omit<IEmployeePenaltyFormData, ""> & { taget_employees: number[] } = {
         ...data,
+        taget_employees: [employee.id],
         employee: employee.id,
-      } as Partial<IEmployeePenaltyFormData>;
+        date: data.date || new Date().toISOString().split('T')[0],
+        penalty_type: data.penalty_type || 0,
+        amount: data.amount || 0,
+      };
+
 
       if (editingPenalty && editingPenalty.id) {
         await penaltiesAPI.EMPLOYEE.update(editingPenalty.id, payload as any);
         toast.success("Penalty updated");
       } else {
-        await penaltiesAPI.EMPLOYEE.create(payload as any);
+        await penaltiesAPI.EMPLOYEE.create(payload);
         toast.success("Penalty created");
       }
 
@@ -40,7 +46,7 @@ export default function EmployeePenalties({employee}: Props) {
       setEditingPenalty(null);
       if (refreshRef.current) refreshRef.current();
     } catch (err: any) {
-      showErrorToast({error: err, defaultMessage: "Failed to save penalty"});
+      showErrorToast({ error: err, defaultMessage: "Failed to save penalty" });
     } finally {
       setIsSending(false);
     }
@@ -53,7 +59,7 @@ export default function EmployeePenalties({employee}: Props) {
       toast.success("Penalty deleted");
       if (refreshRef.current) refreshRef.current();
     } catch (err: any) {
-      showErrorToast({error: err, defaultMessage: "Failed to delete penalty"});
+      showErrorToast({ error: err, defaultMessage: "Failed to delete penalty" });
     } finally {
       setIsSending(false);
     }
@@ -64,13 +70,13 @@ export default function EmployeePenalties({employee}: Props) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Penalties</h3>
         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_PENALTIES} >
-        <div className="flex gap-2">
-          <Button size={"sm"} onClick={() => { setEditingPenalty(null); setOpenSend(true); }} className="rounded-full">Create Penalty</Button>
-        </div>
+          <div className="flex gap-2">
+            <Button size={"sm"} onClick={() => { setEditingPenalty(null); setOpenSend(true); }} className="rounded-full">Create Penalty</Button>
+          </div>
         </ProtectedComponent>
       </div>
 
-      <PenaltiesTable scope={{type: "employee", employee}} refreshTableRef={refreshRef} onEdit={(p)=>{ setEditingPenalty(p); setOpenSend(true); }} onDelete={handleDelete} />
+      <PenaltiesTable scope={{ type: "employee", employee }} refreshTableRef={refreshRef} onEdit={(p) => { setEditingPenalty(p); setOpenSend(true); }} onDelete={handleDelete} />
 
 
       <EmployeePenaltyDialog
@@ -84,8 +90,8 @@ export default function EmployeePenalties({employee}: Props) {
 
       <ConfirmationDialog
         isOpen={false}
-        onClose={()=>{}}
-        onConfirm={()=>{}}
+        onClose={() => { }}
+        onConfirm={() => { }}
         title=""
         description=""
       />

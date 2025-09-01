@@ -9,7 +9,7 @@ from io import BytesIO
 from weasyprint import HTML
 from django.db.models import UniqueConstraint, Q
 from django.core.exceptions import ValidationError
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
 
 class OnBoarding(BaseApprovableModel):
     STATUS_CHOICES = [
@@ -250,9 +250,35 @@ class ResignationRequest(BaseApprovableModel):
 
         self.request_status = "approved"
         self.save()
+        
+        
 
     def get_institution(self):
         return self.separation.employee.department.institution 
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return  # Exit after deletion
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return  # Exit after deletion
+                elif approval.action.name == 'update':
+                    self.request_status = 'active'  
+                elif approval.action.name == 'delete':
+                    self.request_status = 'active'  
+            self.save()
+            # Optionally update the associated EmployeeSeparation status
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save()
 
 
 class TerminationInitiation(BaseApprovableModel):
@@ -300,14 +326,36 @@ class TerminationInitiation(BaseApprovableModel):
 
         self.save()
 
-        self.separation.separation_status = "completed"
-        self.separation.save()
 
     def get_institution(self):
         return self.separation.employee.department.institution 
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.initiation_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.initiation_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.initiation_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.initiation_status = 'active'
+            self.save()
+            # Update EmployeeSeparation status if approved
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save()
 
 
-class RetirementRequest(models.Model):
+class RetirementRequest(BaseApprovableModel):
     separation = models.OneToOneField(
         EmployeeSeparation,
         on_delete=models.CASCADE,
@@ -349,6 +397,33 @@ class RetirementRequest(models.Model):
 
         self.request_status = "approved"
         self.save()
+        
+    def get_institution(self):
+        return self.separation.employee.department.institution    
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'update':
+                    self.request_status = 'approved'
+                elif approval.action.name == 'delete':
+                    self.delete()
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.delete()
+                    return
+                elif approval.action.name == 'update':
+                    self.request_status = 'active'
+                elif approval.action.name == 'delete':
+                    self.request_status = 'active'
+            self.save()
+            # Update EmployeeSeparation status if approved
+            if approval.status == 'completed' and approval.action.name in ['create', 'update']:
+                self.separation.separation_status = 'completed'
+                self.separation.save() 
 
     
 

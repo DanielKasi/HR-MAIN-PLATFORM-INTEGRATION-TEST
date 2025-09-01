@@ -1,5 +1,7 @@
+from django.conf import settings
 from django.shortcuts import render
 
+from spotcheck.models import EmployeeSpotCheck
 from institution.serializers import UserBranchSerializer
 from institution.models import Branch, UserBranch, Department
 from rest_framework.views import APIView
@@ -7,6 +9,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
+from datetime import timedelta
+from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
     Employee,
     EmployeeAttendance,
@@ -36,6 +40,8 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     OpenApiTypes,
 )
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import logging
 from django.db import transaction
@@ -66,7 +72,10 @@ from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
-from utilities.helpers import get_or_create_default_role_with_permissions, custom_parse_date
+from utilities.helpers import (
+    get_or_create_default_role_with_permissions,
+    custom_parse_date,
+)
 from django.db.models import Q
 from datetime import datetime, date
 from institution.models import Institution
@@ -77,10 +86,11 @@ from utilities.employee_analytics import (
     get_employee_attendance_analytics,
     get_employee_salary_analytics,
 )
-
+from django.db.models import F, ExpressionWrapper, DurationField
 from .tasks import send_employee_welcome_email
 import string
 import secrets
+from django.db.models import Count, F, ExpressionWrapper, FloatField, Avg
 
 def generate_compliant_password(length=12):
     """Generate a password that meets Django's validation requirements"""
@@ -90,7 +100,7 @@ def generate_compliant_password(length=12):
     digits = string.digits
     # Use a safer subset of special characters to avoid validation issues
     special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    
+
     # Ensure we have at least one character from each required set
     password_chars = [
         secrets.choice(lowercase),
@@ -98,15 +108,16 @@ def generate_compliant_password(length=12):
         secrets.choice(digits),
         secrets.choice(special),
     ]
-    
+
     # Fill the rest of the password length
     all_characters = lowercase + uppercase + digits + special
     for _ in range(length - 4):
         password_chars.append(secrets.choice(all_characters))
-    
+
     # Shuffle to avoid predictable patterns
     secrets.SystemRandom().shuffle(password_chars)
     return "".join(password_chars)
+
 
 class EmployeeListAPIView(APIView):
 
@@ -205,7 +216,6 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
 
         return Response(EmployeeWorkingDaysSerializer(working_days).data)
 
-
     @extend_schema(
         request=EmployeeWorkingDaysSerializer,
         responses={200: EmployeeWorkingDaysSerializer, 404: "Employee not found"},
@@ -225,12 +235,14 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         working_days_instance, _ = EmployeeWorkingDays.objects.get_or_create(
             employee=employee
         )
+        working_days_instance.approval_status = "under_update"
 
         serializer = EmployeeWorkingDaysSerializer(
             instance=working_days_instance, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            working_days_instance.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -306,6 +318,8 @@ class EmployeeCreateAPIView(APIView):
         employee.user.is_email_verified = True
         employee.user.save()
 
+        employee.confirm_create()
+
         # Send welcome email asynchronously using Celery
         send_employee_welcome_email.delay_on_commit(
             employee.user.email, employee.user.fullname, random_password
@@ -317,7 +331,7 @@ class EmployeeCreateAPIView(APIView):
 
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
-        start_time = datetime.now()
+        start_time = timezone.now()
         print(f"Starting bulk upload at {start_time}")
 
         # Fetch institution and default role once (mirroring single creation)
@@ -355,9 +369,6 @@ class EmployeeCreateAPIView(APIView):
                 df = pd.read_csv(file, dtype=dtype_dict)
             else:
                 df = pd.read_excel(file, dtype=dtype_dict)
-
-            print(f"Excel/CSV columns: {df.columns.tolist()}")
-            print(f"Excel/CSV row count: {len(df)}")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
@@ -459,7 +470,6 @@ class EmployeeCreateAPIView(APIView):
                 )
 
             # Pre-validate all rows
-            print("Pre-validating all rows")
             errors = []
             for index, row in df.iterrows():
                 row_errors = {}  # Dict of field: {"error": "msg"} per row
@@ -579,7 +589,6 @@ class EmployeeCreateAPIView(APIView):
             # If no validation errors, proceed to creation within a transaction
             with transaction.atomic():
                 # Cache foreign key mappings and create missing instances
-                print("Fetching and creating foreign key mappings")
                 field_mappings = {
                     "department": Department,
                     "work_type": WorkType,
@@ -608,9 +617,6 @@ class EmployeeCreateAPIView(APIView):
 
                             # Fetch existing records
                             existing = model.objects.filter(**filter_kwargs)
-                            print(
-                                f"Found existing {field} values: {[item.name for item in existing]}"
-                            )
 
                             # Create mappings for existing records
                             for item in existing:
@@ -628,7 +634,6 @@ class EmployeeCreateAPIView(APIView):
                             ]
 
                             if missing:
-                                print(f"Creating missing {field}s: {missing}")
                                 created_instances = []
                                 for name in missing:
                                     # Basic creation with minimal required fields
@@ -647,23 +652,13 @@ class EmployeeCreateAPIView(APIView):
                                             name.lower()
                                         ] = instance
                                         created_instances.append(instance)
-                                        print(f"Created {field}: {name}")
                                     except Exception as e:
-                                        print(
-                                            f"Error creating {field} '{name}': {str(e)}"
-                                        )
                                         raise
 
-                                print(
-                                    f"Successfully created {len(created_instances)} {field} instances"
-                                )
-
                 # Handle job positions separately, tied to departments
-                print("Handling job positions")
                 position_mappings = {}  # Key: (dep_lower or None, pos_lower): instance
 
                 if "position" in df.columns:
-                    print("Processing job positions with departments")
 
                     # Get unique department-position pairs from the dataframe
                     if "department" in df.columns:
@@ -679,10 +674,6 @@ class EmployeeCreateAPIView(APIView):
                                 ["department", "position"]
                             ].drop_duplicates()
 
-                            print(
-                                f"Found {len(dept_pos_pairs)} unique department-position pairs"
-                            )
-
                             for _, row in dept_pos_pairs.iterrows():
                                 dept_name = (
                                     str(row["department"]).strip()
@@ -694,10 +685,6 @@ class EmployeeCreateAPIView(APIView):
                                 dept_lower = dept_name.lower() if dept_name else None
                                 pos_lower = pos_name.lower()
 
-                                print(
-                                    f"Processing position: '{pos_name}' for department: '{dept_name}'"
-                                )
-
                                 # Get department instance
                                 dept_instance = None
                                 if dept_lower and dept_lower in instance_mappings.get(
@@ -706,9 +693,6 @@ class EmployeeCreateAPIView(APIView):
                                     dept_instance = instance_mappings["department"][
                                         dept_lower
                                     ]
-                                    print(
-                                        f"Found department instance: {dept_instance.name}"
-                                    )
                                 else:
                                     print(
                                         f"Department '{dept_name}' not found in mappings"
@@ -793,7 +777,7 @@ class EmployeeCreateAPIView(APIView):
                 print(f"Starting batch processing with batch size {batch_size}")
                 for start_idx in range(0, len(df), batch_size):
                     batch = df[start_idx : start_idx + batch_size]
-                    batch_start_time = datetime.now()
+                    batch_start_time = timezone.now()
                     print(
                         f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
                     )
@@ -834,8 +818,8 @@ class EmployeeCreateAPIView(APIView):
                             "is_email_verified": True,
                             "is_password_verified": True,
                             "user_type": "staff",
-                            "created_at": datetime.now(),
-                            "updated_at": datetime.now(),
+                            "created_at": timezone.now(),
+                            "updated_at": timezone.now(),
                         }
 
                         # Process employee data
@@ -948,8 +932,8 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data[field] = 0
 
                         # Add timestamps
-                        employee_data["created_at"] = datetime.now()
-                        employee_data["updated_at"] = datetime.now()
+                        employee_data["created_at"] = timezone.now()
+                        employee_data["updated_at"] = timezone.now()
 
                         # Add to creation lists
                         user_objects.append(CustomUser(**user_data))
@@ -957,13 +941,10 @@ class EmployeeCreateAPIView(APIView):
                         employee_data_list.append(employee_data)
 
                     if not employee_data_list:
-                        print("No valid rows in batch, skipping creation")
                         continue
 
                     # Bulk create users
-                    print(f"Creating {len(user_objects)} users")
                     created_users = CustomUser.objects.bulk_create(user_objects)
-                    print(f"Created {len(created_users)} users")
 
                     # Bulk create profiles for the new users
                     profile_objects = [
@@ -971,14 +952,12 @@ class EmployeeCreateAPIView(APIView):
                         for user in created_users
                     ]
                     Profile.objects.bulk_create(profile_objects)
-                    print(f"Created {len(profile_objects)} profiles")
 
                     # Bulk create user roles
                     userrole_objects = [
                         UserRole(user=user, role=role) for user in created_users
                     ]
                     UserRole.objects.bulk_create(userrole_objects)
-                    print(f"Created {len(userrole_objects)} user roles")
 
                     # Create Employee instances with actual CustomUser objects
                     employee_objects = []
@@ -1043,7 +1022,7 @@ class EmployeeCreateAPIView(APIView):
                             send_employee_welcome_email.delay_on_commit(
                                 employee.user.email,
                                 employee.user.fullname,
-                                plain_passwords[idx]
+                                plain_passwords[idx],
                             )
                         except Exception as e:
                             print(
@@ -1054,7 +1033,7 @@ class EmployeeCreateAPIView(APIView):
                     created_count += len(created_employees)
 
                     print(
-                        f"Batch {start_idx//batch_size + 1} completed in {(datetime.now() - batch_start_time).total_seconds()} seconds"
+                        f"Batch {start_idx//batch_size + 1} completed in {(timezone.now() - batch_start_time).total_seconds()} seconds"
                     )
 
             # Set default employee role if not already set (once after all batches)
@@ -1063,7 +1042,7 @@ class EmployeeCreateAPIView(APIView):
                 institution.save()
 
             print(
-                f"Total upload time: {(datetime.now() - start_time).total_seconds()} seconds"
+                f"Total upload time: {(timezone.now() - start_time).total_seconds()} seconds"
             )
 
             return Response(
@@ -1080,8 +1059,6 @@ class EmployeeCreateAPIView(APIView):
         except Exception as e:
             import traceback
 
-            print(f"Error processing file: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
             return Response(
                 {
                     "detail": f"Error processing file: {str(e)}",
@@ -1268,6 +1245,7 @@ class EmployeeUpdateAPIView(APIView):
                 final_data["salary"] = None
 
         # Update employee data
+        employee.approval_status = "under_update"
         serializer = EmployeeSerializer(employee, data=final_data, partial=True)
         if not serializer.is_valid():
             return Response(
@@ -1275,6 +1253,7 @@ class EmployeeUpdateAPIView(APIView):
             )
 
         employee = serializer.save()
+        employee.confirm_update()
 
         # Handle user updates separately
         if user_data and employee.user:
@@ -1329,7 +1308,9 @@ class EmployeeDeleteAPIView(APIView):
             employee = Employee.objects.get(
                 id=employee_id, department__institution_id=institution_id
             )
+            employee.approval_status = "under_deletion"
             employee.delete()  # Custom delete method to handle soft delete
+            employee.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Employee.DoesNotExist:
             return Response(
@@ -1416,7 +1397,10 @@ class EmployeeBranchManagementAPIView(APIView):
                     )
 
             # Attach branches
+            employee.approval_status = "under_update"
+            employee.save()
             result = self._attach_branches(employee, processed_branches, request.user)
+            employee.confirm_update()
 
             return Response(
                 {
@@ -1703,8 +1687,10 @@ class EmployeeBranchDetailAPIView(APIView):
                 user_branch.save()
 
                 # Update employee payroll branch
+                employee.approval_status = "under_update"
                 employee.payroll_branch = branch
-                employee.save(update_fields=["payroll_branch"])
+                employee.save(update_fields=["payroll_branch", "approval_status"])
+                employee.confirm_update()
 
             # Get updated summary
             summary = self._get_branch_summary(employee)
@@ -1841,8 +1827,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             serializer = EmployeeAttendanceSerializer(
                 existing, data=data, partial=True, context=context
             )
+            existing.approval_status = "under_update"
             if serializer.is_valid():
                 serializer.save()
+                existing.confirm_update()
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1850,7 +1838,10 @@ class EmployeeAttendanceListCreateAPIView(APIView):
             # Pass context to the serializer for creation
             serializer = EmployeeAttendanceSerializer(data=data, context=context)
             if serializer.is_valid():
-                serializer.save()
+                attendance = serializer.save()
+                attendance.confirm_create()
+                employee_instance = Employee.objects.get(id=employee)
+                create_spotchecks_for_today(employee_instance)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -1879,11 +1870,13 @@ class EmployeeAttendanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         record = self.get_object(pk)
+        record.approval_status = "under_update"
         serializer = EmployeeAttendanceSerializer(
             record, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            record.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1937,7 +1930,8 @@ class EmployeeTypeListCreateAPIView(APIView):
         data["institution"] = institution_id
         serializer = EmployeeTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            record = serializer.save()
+            record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1963,15 +1957,19 @@ class EmployeeTypeDetailAPIView(APIView):
     def patch(self, request, pk):
         obj = self.get_object(pk)
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
+        obj.approval_status = "under_update"
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method that handles soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2016,7 +2014,8 @@ class WorkTypeListCreateAPIView(APIView):
         data["institution"] = institution_id
         serializer = WorkTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            record = serializer.save()
+            record.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2039,16 +2038,20 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_update"
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method that handles soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2072,16 +2075,20 @@ class EmployeeTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_update"
         serializer = EmployeeTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete an employee type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom method to handle soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2103,16 +2110,20 @@ class WorkTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_update"
         serializer = WorkTypeSerializer(obj, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            obj.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(description="Delete a work type", responses={204: None})
     def delete(self, request, pk):
         obj = self.get_object(pk)
+        obj.approval_status = "under_deletion"
         obj.delete()  # Custom delete method to handle soft delete
+        obj.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2168,7 +2179,8 @@ class EmployeeContractListAPIView(APIView):
     def post(self, request):
         serializer = EmployeeContractSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2197,11 +2209,13 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         contract = self.get_object(pk)
+        contract.approval_status = "under_update"
         serializer = EmployeeContractSerializer(
             contract, data=request.data, partial=True
         )
         if serializer.is_valid():
             serializer.save()
+            contract.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2212,7 +2226,9 @@ class EmployeeContractDetailAPIView(APIView):
     )
     def delete(self, request, pk):
         contract = self.get_object(pk)
+        contract.approval_status = "under_deletion"
         contract.delete()  # Custom delete method to handle soft delete
+        contract.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -2349,7 +2365,7 @@ class ExportAttendanceExcelView(APIView):
         try:
             excel_file = generate_attendance_excel(start_date, end_date, context)
 
-            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -2422,28 +2438,39 @@ class AttendanceReportGetView(APIView):
 class EmployeeShiftListCreateView(APIView):
     @extend_schema(
         summary="List all employee shifts or create a new shift",
-        description=(
-                "GET returns all shifts of the logged-in employee if 'is_employee_specific' "
-                "is true, or all shifts for the institution if false. POST creates a shift."
-        ),
         request=EmployeeShiftSerializer,
         responses=EmployeeShiftSerializer,
         tags=["Shifts-Allocations/Requests"],
     )
     def get(self, request):
         user = request.user
-        is_employee_specific = request.query_params.get("is_employee_specific", "true").lower() == "true"
 
-        print(is_employee_specific)
+        profile = getattr(user, "profile", None)
 
-        if is_employee_specific:
-            if hasattr(user, "employee"):
-                shifts = EmployeeShift.objects.filter(employee=user.employee)
-            else:
-                return Response({"detail": "Unrecognized Employee"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            institution = user.profile.institution
-            shifts = EmployeeShift.objects.filter(shift__branch__institution__id=institution_id)
+        if not profile or not profile.institution:
+            return Response({"detail": "No institution linked"}, status=400)
+
+        institution = profile.institution
+
+        query_context = request.query_params.get("context", "all").upper()
+        search = request.query_params.get("search")
+        is_employee_specific = (
+            request.query_params.get("is_employee_specific", "true").lower() == "true"
+        )
+
+        shifts = EmployeeShift.objects.filter(shift__branch__institution=institution, is_active=True)
+
+        if query_context in ["ALLOCATION", "REQUEST"]:
+            shifts = shifts.filter(context=query_context)
+
+        if is_employee_specific and hasattr(profile, "employee"):
+            shifts = shifts.filter(employee=profile.employee)
+
+        if search:
+            shifts = shifts.filter(
+                Q(employee__user__fullname__icontains=search)
+                | Q(employee__user__email__icontains=search)
+            )
 
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)
@@ -2463,6 +2490,7 @@ class EmployeeShiftListCreateView(APIView):
         )
         if serializer.is_valid():
             shift = serializer.save()
+            shift.confirm_create()
             return Response(
                 EmployeeShiftSerializer(shift).data, status=status.HTTP_201_CREATED
             )
@@ -2497,11 +2525,13 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        shift.approval_status = "under_update"
         serializer = EmployeeShiftSerializer(
             shift, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             shift = serializer.save()
+            shift.confirm_update()
             return Response(EmployeeShiftSerializer(shift).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -2517,9 +2547,10 @@ class EmployeeShiftDetailView(APIView):
         except EmployeeShift.DoesNotExist:
             return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        shift.approval_status = "under_deletion"
         shift.delete()
+        shift.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 
 class EmployeeAnalyticsAPI(APIView):
@@ -2527,24 +2558,47 @@ class EmployeeAnalyticsAPI(APIView):
     API view for employee analytics and workforce composition.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee demographics and workforce composition analytics",
                 response=inline_serializer(
-                    name='EmployeeAnalyticsResponse',
+                    name="EmployeeAnalyticsResponse",
                     fields={
-                        'headcount': serializers.IntegerField(help_text="Total number of active employees."),
-                        'headcount_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by department."),
-                        'headcount_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by job position."),
-                        'headcount_by_gender': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by gender."),
-                        'headcount_by_employee_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by employee type."),
-                        'headcount_by_work_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Employee count by work type."),
-                        'age_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by age bracket."),
-                    }
+                        "headcount": serializers.IntegerField(
+                            help_text="Total number of active employees."
+                        ),
+                        "headcount_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by department.",
+                        ),
+                        "headcount_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by job position.",
+                        ),
+                        "headcount_by_gender": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by gender.",
+                        ),
+                        "headcount_by_employee_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by employee type.",
+                        ),
+                        "headcount_by_work_type": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Employee count by work type.",
+                        ),
+                        "age_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by age bracket.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No employee data found for this institution."),
+            404: OpenApiResponse(
+                description="No employee data found for this institution."
+            ),
         },
         summary="Get Employee Analytics",
         description="Provides key analytics on the workforce composition and demographics.",
@@ -2553,7 +2607,10 @@ class EmployeeAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_demographics_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No employee data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No employee data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2562,21 +2619,32 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     API view for employee attendance and productivity analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee attendance and productivity analytics",
                 response=inline_serializer(
-                    name='AttendanceAnalyticsResponse',
+                    name="AttendanceAnalyticsResponse",
                     fields={
-                        'total_hours_worked': serializers.FloatField(help_text="Total hours worked."),
-                        'total_late_minutes': serializers.IntegerField(help_text="Total minutes late."),
-                        'total_overtime_hours': serializers.FloatField(help_text="Total overtime hours."),
-                        'attendance_metrics': serializers.DictField(help_text="Counts and rates for attendance statuses."),
-                    }
+                        "total_hours_worked": serializers.FloatField(
+                            help_text="Total hours worked."
+                        ),
+                        "total_late_minutes": serializers.IntegerField(
+                            help_text="Total minutes late."
+                        ),
+                        "total_overtime_hours": serializers.FloatField(
+                            help_text="Total overtime hours."
+                        ),
+                        "attendance_metrics": serializers.DictField(
+                            help_text="Counts and rates for attendance statuses."
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No attendance data found for this institution."),
+            404: OpenApiResponse(
+                description="No attendance data found for this institution."
+            ),
         },
         summary="Get Employee Attendance Analytics",
         description="Provides key analytics on employee attendance.",
@@ -2585,7 +2653,10 @@ class EmployeeAttendanceAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_attendance_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No attendance data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No attendance data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
 
 
@@ -2594,21 +2665,36 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     API view for employee salary and compensation analytics.
     The core logic is now in a separate service file.
     """
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
                 description="Employee salary and compensation analytics",
                 response=inline_serializer(
-                    name='SalaryAnalyticsResponse',
+                    name="SalaryAnalyticsResponse",
                     fields={
-                        'average_salary_by_department': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by department."),
-                        'average_salary_by_position': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Average salary by position."),
-                        'salary_distribution': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Distribution of employees by salary bracket."),
-                        'gender_pay_gap': serializers.DictField(child=serializers.FloatField(), help_text="Average salary breakdown by gender."),
-                    }
+                        "average_salary_by_department": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by department.",
+                        ),
+                        "average_salary_by_position": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Average salary by position.",
+                        ),
+                        "salary_distribution": serializers.ListField(
+                            child=serializers.DictField(child=serializers.CharField()),
+                            help_text="Distribution of employees by salary bracket.",
+                        ),
+                        "gender_pay_gap": serializers.DictField(
+                            child=serializers.FloatField(),
+                            help_text="Average salary breakdown by gender.",
+                        ),
+                    },
                 ),
             ),
-            404: OpenApiResponse(description="No salary data found for this institution."),
+            404: OpenApiResponse(
+                description="No salary data found for this institution."
+            ),
         },
         summary="Get Employee Salary Analytics",
         description="Provides key analytics on employee salaries and a gender pay gap analysis.",
@@ -2617,5 +2703,393 @@ class EmployeeSalaryAnalyticsAPI(APIView):
     def get(self, request, institution_id):
         analytics_data = get_employee_salary_analytics(institution_id)
         if analytics_data is None:
-            return Response({"detail": "No salary data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No salary data found for this institution."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         return Response(analytics_data, status=status.HTTP_200_OK)
+    
+    
+class EmployeeDashboardAPIView(APIView):
+    """
+    API endpoint for employee dashboard analytics.
+    Provides aggregated metrics on employees, employee types, work types, shifts, and demographics,
+    filtered by the authenticated user's institution.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['Employee Dashboard'],
+        description=(
+            'Retrieves key analytics for the employee module dashboard, filtered by the authenticated user\'s institution. '
+            'Metrics include employee counts, demographics, employee types, work types, shift statuses, '
+            'average age, average tenure, and recent hires.'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_employees': {'type': 'integer', 'description': 'Total active employees'},
+                    'employees_by_gender': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'gender': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Employee count by gender'
+                    },
+                    'employees_by_employee_type': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'employee_type': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Employee count by employee type'
+                    },
+                    'employees_by_work_type': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'work_type': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Employee count by work type'
+                    },
+                    'employees_by_department': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'department': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Employee count by department'
+                    },
+                    'shift_statuses': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Shift counts by status (last 30 days)'
+                    },
+                    'average_age': {'type': 'integer', 'description': 'Average employee age'},
+                    'average_tenure_years': {'type': 'number', 'description': 'Average years of tenure'},
+                    'recent_hires': {'type': 'integer', 'description': 'Employees hired in last 30 days'},
+                    'employees_by_marital_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'marital_status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Employee count by marital status'
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        if not institution:
+            return Response(
+                {"error": "User is not associated with any institution"},
+                status=400
+            )
+
+        # Filter employees by institution
+        employees = Employee.objects.filter(department__institution=institution, deleted_at__isnull=True)
+
+        # Total employees
+        total_employees = employees.count()
+
+        # Employees by gender
+        employees_by_gender = list(
+            employees.values('gender').annotate(count=Count('id')).order_by('gender')
+        )
+
+        # Employees by employee type
+        employees_by_employee_type = list(
+            employees.values('employee_type__name')
+            .annotate(count=Count('id'))
+            .order_by('employee_type__name')
+        )
+
+        # Employees by work type
+        employees_by_work_type = list(
+            employees.values('work_type__name')
+            .annotate(count=Count('id'))
+            .order_by('work_type__name')
+        )
+
+        # Employees by department
+        employees_by_department = list(
+            employees.values('department__name')
+            .annotate(count=Count('id'))
+            .order_by('department__name')
+        )
+
+        # Shift statuses (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        shift_statuses = list(
+            EmployeeShift.objects.filter(
+                employee__department__institution=institution,
+                date__gte=thirty_days_ago,
+                employee__deleted_at__isnull=True
+            )
+            .values('shift_status')
+            .annotate(count=Count('id'))
+            .order_by('shift_status')
+        )
+
+        # Average age (calculated using date_of_birth)
+        current_date = date.today()
+        avg_age = employees.filter(date_of_birth__isnull=False).aggregate(
+            avg_age=Avg(
+                ExpressionWrapper(
+                    (current_date - F('date_of_birth')) / 365.25,
+                    output_field=FloatField()
+                )
+            )
+        )['avg_age']
+        average_age = round(avg_age) if avg_age else 0
+
+        # Average tenure (in years)
+        avg_tenure = employees.filter(date_of_joining__isnull=False).aggregate(
+            avg_tenure=Avg(
+                ExpressionWrapper(
+                    (current_date - F('date_of_joining')) / 365.25,
+                    output_field=FloatField()
+                )
+            )
+        )['avg_tenure']
+        average_tenure_years = round(avg_tenure, 1) if avg_tenure else 0
+
+        # Recent hires (last 30 days)
+        recent_hires = employees.filter(
+            date_of_joining__gte=thirty_days_ago
+        ).count()
+
+        # Employees by marital status
+        employees_by_marital_status = list(
+            employees.values('marital_status')
+            .annotate(count=Count('id'))
+            .order_by('marital_status')
+        )
+
+        data = {
+            'total_employees': total_employees,
+            'employees_by_gender': [
+                {'gender': item['gender'] or 'Unknown', 'count': item['count']}
+                for item in employees_by_gender
+            ],
+            'employees_by_employee_type': [
+                {'employee_type': item['employee_type__name'], 'count': item['count']}
+                for item in employees_by_employee_type if item['employee_type__name']
+            ],
+            'employees_by_work_type': [
+                {'work_type': item['work_type__name'], 'count': item['count']}
+                for item in employees_by_work_type if item['work_type__name']
+            ],
+            'employees_by_department': [
+                {'department': item['department__name'], 'count': item['count']}
+                for item in employees_by_department if item['department__name']
+            ],
+            'shift_statuses': shift_statuses,
+            'average_age': average_age,
+            'average_tenure_years': average_tenure_years,
+            'recent_hires': recent_hires,
+            'employees_by_marital_status': employees_by_marital_status,
+        }
+
+        return Response(data)
+    
+    
+class AttendanceDashboardAPIView(APIView):
+    """
+    API endpoint for attendance dashboard analytics.
+    Provides aggregated metrics on employee attendance and spot checks,
+    filtered by the authenticated user's institution.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['Attendance Dashboard'],
+        description=(
+            'Retrieves key analytics for the attendance module dashboard, filtered by the authenticated user\'s institution. '
+            'Metrics include attendance status distribution, average overtime hours, average late minutes, '
+            'spot check response rates, and attendance trends over the last 30 days.'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_attendance_records': {'type': 'integer', 'description': 'Total attendance records (last 30 days)'},
+                    'attendance_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Attendance records by status (last 30 days)'
+                    },
+                    'average_overtime_hours': {'type': 'number', 'description': 'Average overtime hours per record'},
+                    'average_late_minutes': {'type': 'integer', 'description': 'Average late minutes per record'},
+                    'average_early_checkout_minutes': {'type': 'integer', 'description': 'Average early checkout minutes per record'},
+                    'spot_check_response_rate': {'type': 'number', 'description': 'Percentage of spot checks responded to'},
+                    'spot_checks_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Spot check counts by status (last 30 days)'
+                    },
+                    'attendance_over_time': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'date': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        },
+                        'description': 'Daily attendance records over the last 30 days'
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        if not institution:
+            return Response(
+                {"error": "User is not associated with any institution"},
+                status=400
+            )
+
+        # Filter by institution and last 30 days
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        attendance_records = EmployeeAttendance.objects.filter(
+            employee__department__institution=institution,
+            date__gte=thirty_days_ago,
+            employee__deleted_at__isnull=True
+        )
+
+        # Total attendance records
+        total_attendance_records = attendance_records.count()
+
+        # Attendance by status
+        attendance_by_status = list(
+            attendance_records.values('attendance_status')
+            .annotate(count=Count('id'))
+            .order_by('attendance_status')
+        )
+
+        # Average overtime hours
+        avg_overtime = attendance_records.aggregate(
+            avg_overtime=Avg('overtime_hours')
+        )['avg_overtime']
+        average_overtime_hours = round(float(avg_overtime), 2) if avg_overtime else 0.0
+
+        # Average late minutes
+        avg_late = attendance_records.aggregate(
+            avg_late=Avg('late_minutes')
+        )['avg_late']
+        average_late_minutes = round(avg_late) if avg_late else 0
+
+        # Average early checkout minutes
+        avg_early_checkout = attendance_records.aggregate(
+            avg_early_checkout=Avg('early_checkout_minutes')
+        )['avg_early_checkout']
+        average_early_checkout_minutes = round(avg_early_checkout) if avg_early_checkout else 0
+
+        # Spot checks (last 30 days)
+        spot_checks = EmployeeSpotCheck.objects.filter(
+            employee__department__institution=institution,
+            spotcheck_time__gte=thirty_days_ago,
+            employee__deleted_at__isnull=True
+        )
+        total_spot_checks = spot_checks.count()
+        responded_spot_checks = spot_checks.filter(responded_at__isnull=False).count()
+        spot_check_response_rate = (
+            round((responded_spot_checks / total_spot_checks * 100), 1)
+            if total_spot_checks > 0 else 0.0
+        )
+
+        # Spot checks by status
+        spot_checks_by_status = list(
+            spot_checks.values('status__status_name')
+            .annotate(count=Count('id'))
+            .order_by('status__status_name')
+        )
+
+        # Attendance over time (daily counts)
+        attendance_over_time = list(
+            attendance_records.values('date')
+            .annotate(count=Count('id'))
+            .order_by('date')
+            .values('date', 'count')
+        )
+        attendance_over_time = [
+            {
+                'date': item['date'].strftime('%Y-%m-%d'),
+                'count': item['count']
+            }
+            for item in attendance_over_time
+        ]
+
+        data = {
+            'total_attendance_records': total_attendance_records,
+            'attendance_by_status': [
+                {'status': item['attendance_status'], 'count': item['count']}
+                for item in attendance_by_status
+            ],
+            'average_overtime_hours': average_overtime_hours,
+            'average_late_minutes': average_late_minutes,
+            'average_early_checkout_minutes': average_early_checkout_minutes,
+            'spot_check_response_rate': spot_check_response_rate,
+            'spot_checks_by_status': [
+                {'status': item['status__status_name'], 'count': item['count']}
+                for item in spot_checks_by_status
+            ],
+            'attendance_over_time': attendance_over_time,
+        }
+
+        return Response(data)    

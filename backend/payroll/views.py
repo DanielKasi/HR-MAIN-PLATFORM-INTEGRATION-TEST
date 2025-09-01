@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 
@@ -32,9 +31,8 @@ from .serializers import (
     EmployeePenaltySerializer,
     
 )
-from employee.models import Employee
+from employee.models import Employee, EmployeeAttendance
 from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_excel
-from datetime import datetime
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -42,11 +40,11 @@ from institution.models import Institution
 from payroll.utils import generate_payslip_pdf
 from django.utils import timezone
 from django.db.models import Q, Sum, Q, Avg
-
-
+from django.db.models.functions import TruncMonth
+from django.db.models import Count, Sum, Avg, F, ExpressionWrapper, FloatField
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
-
+from datetime import timedelta
 from .models import Payslip, PayrollPeriod
 from employee.models import Employee
 
@@ -115,7 +113,7 @@ class ExportEFTExcelView(APIView):
             payroll_period = PayrollPeriod.objects.get(id=payroll_period_id)
 
             # Generate a dynamic filename
-            filename = f"BULK_EFT_UPLOAD_TEMPLATE_{payroll_period.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"BULK_EFT_UPLOAD_TEMPLATE_{payroll_period.name.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
 
             response = HttpResponse(
                 excel_file.getvalue(),
@@ -179,7 +177,8 @@ class EmployeeAllowanceAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -202,18 +201,22 @@ class EmployeeAllowanceDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeAllowanceSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee allowance")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeAllowance, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -247,7 +250,8 @@ class PayrollPeriodAPIView(APIView):
     def post(self, request, institution_id):
         serializer = PayrollPeriodSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -269,16 +273,20 @@ class PayrollPeriodDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = PayrollPeriodSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a payroll period")
     def delete(self, request, pk):
         instance = get_object_or_404(PayrollPeriod, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_update()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -324,7 +332,8 @@ class EmployeeDeductionAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -347,18 +356,22 @@ class EmployeeDeductionDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeDeductionSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete an employee deduction")
     def delete(self, request, pk):
         instance = get_object_or_404(EmployeeDeduction, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -393,7 +406,8 @@ class AllowanceTypeAPIView(APIView):
     def post(self, request, institution_id):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(institution_id=institution_id)
+            instance = serializer.save(institution_id=institution_id)
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -415,9 +429,11 @@ class AllowanceTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(AllowanceType, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = AllowanceTypeSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -435,7 +451,8 @@ class AllowanceTypeDetailAPIView(APIView):
     def post(self, request):
         serializer = AllowanceTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -470,7 +487,8 @@ class DeductionTypeAPIView(APIView):
     def post(self, request, institution_id):
         serializer = DeductionTypeSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -492,16 +510,20 @@ class DeductionTypeDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = DeductionTypeSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(summary="Delete a deduction type")
     def delete(self, request, pk):
         instance = get_object_or_404(DeductionType, pk=pk)
+        instance.approval_status = 'under_deletion'
         instance.delete()
+        instance.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -559,7 +581,8 @@ class EmployeeTaxListAPIView(APIView):
             data=request.data, context={"request": request}
         )
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -584,11 +607,13 @@ class EmployeeTaxDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(EmployeeTax, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = EmployeeTaxSerializer(
             instance, data=request.data, partial=True, context={"request": request}
         )
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -651,9 +676,6 @@ class PayslipAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        print("\n\n\n")
-        print(f"Employees found: {employees}")
-
         employee_ids = list(employees.values_list("id", flat=True))
 
         created_payslips = PayrollProcessor.generate_payslips_for_period(
@@ -679,9 +701,11 @@ class PayslipDetailAPIView(APIView):
     )
     def patch(self, request, pk):
         instance = get_object_or_404(Payslip, pk=pk)
+        instance.approval_status = 'under_update'
         serializer = PayslipSerializer(instance, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            instance.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -769,7 +793,7 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
         try:
             excel_file = generate_allpayslips_excel(payroll_period_id)
 
-            filename = f"PAYROLL-PERIOD-PASSLIPS_REPORT_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            filename = f"PAYROLL-PERIOD-PASSLIPS_REPORT_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -901,7 +925,8 @@ class EmployeePenaltyListAPIView(APIView):
     def post(self, request):
         serializer = EmployeePenaltySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            instance = serializer.save()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -924,9 +949,11 @@ class EmployeePenaltyDetailAPIView(APIView):
         except EmployeePenalty.DoesNotExist:
             return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        penalty.approval_status = 'under_update'
         serializer = EmployeePenaltySerializer(penalty, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            penalty.confirm_update()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -937,7 +964,9 @@ class EmployeePenaltyDetailAPIView(APIView):
         except EmployeePenalty.DoesNotExist:
             return Response({"detail": "Penalty not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        penalty.approval_status = 'under_deletion'
         penalty.delete()
+        penalty.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -1048,3 +1077,163 @@ class PayrollAnalyticsAPI(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    
+class PayrollDashboardAPIView(APIView):
+    """
+    API endpoint for payroll dashboard analytics.
+    Provides aggregated metrics on payroll (derived from employee salaries), penalties, and overtime,
+    filtered by the authenticated user's institution.
+    """
+
+    @extend_schema(
+        tags=['Payroll Dashboard'],
+        description=(
+            'Retrieves key analytics for the payroll module dashboard, filtered by the authenticated user\'s institution. '
+            'Metrics include total payroll amount (based on employee salaries), payroll by department, '
+            'average salary per employee, total penalties, average overtime pay, and payroll trends over the last 6 months.'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_payroll_amount': {'type': 'number', 'description': 'Total payroll amount for the current year'},
+                    'payroll_by_department': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'department': {'type': 'string'},
+                                'total_amount': {'type': 'number'}
+                            }
+                        },
+                        'description': 'Payroll amounts by department (current year)'
+                    },
+                    'average_salary': {'type': 'number', 'description': 'Average salary per employee (current year)'},
+                    'total_penalties': {'type': 'integer', 'description': 'Total penalty instances (current year)'},
+                    'average_overtime_pay': {'type': 'number', 'description': 'Average overtime pay per employee (current year)'},
+                    'payroll_over_time': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'month': {'type': 'string'},
+                                'total_amount': {'type': 'number'}
+                            }
+                        },
+                        'description': 'Payroll amounts by month (last 6 months)'
+                    },
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        if not institution:
+            return Response(
+                {"error": "User is not associated with any institution"},
+                status=400
+            )
+
+        # Filter employees by institution and current year
+        current_year = timezone.now().year
+        employees = Employee.objects.filter(
+            department__institution=institution,
+            deleted_at__isnull=True
+        )
+
+        # Total payroll amount (sum of salaries for all employees, assuming monthly salary)
+        total_payroll_amount = employees.aggregate(total=Sum('salary'))['total'] or 0.0
+        total_payroll_amount = float(total_payroll_amount) * 12
+
+        # Payroll by department
+        payroll_by_department = list(
+            employees.values('department__name')
+            .annotate(total_amount=Sum('salary'))
+            .order_by('department__name')
+        )
+        payroll_by_department = [
+            {
+                'department': item['department__name'],
+                'total_amount': float((item['total_amount'] or 0) * 12)  # Annualize safely
+            }
+            for item in payroll_by_department if item['department__name']
+        ]
+
+        # Average salary per employee
+        avg_salary = employees.aggregate(
+            avg_salary=Avg('salary')
+        )['avg_salary'] or 0
+        average_salary = round(float(avg_salary), 2) if avg_salary else 0.0
+
+        # Total penalties
+        total_penalties = EmployeePenalty.objects.filter(
+            employee__department__institution=institution,
+            employee__deleted_at__isnull=True,
+            created_at__year=current_year
+        ).count()
+
+        # Average overtime pay (using overtime_hours from EmployeeAttendance)
+        overtime_records = EmployeeAttendance.objects.filter(
+            employee__department__institution=institution,
+            employee__deleted_at__isnull=True,
+            date__year=current_year,
+            overtime_hours__gt=0
+        )
+        avg_overtime_pay = overtime_records.aggregate(
+            avg_overtime=Avg(
+                ExpressionWrapper(
+                    F('overtime_hours') * 50.0,  # Assume $50/hour rate; adjust as needed
+                    output_field=FloatField()
+                )
+            )
+        )['avg_overtime'] or 0
+        average_overtime_pay = round(float(avg_overtime_pay), 2) if avg_overtime_pay else 0.0
+
+        # Payroll over time (last 6 months, based on salary and overtime)
+        six_months_ago = timezone.now() - timedelta(days=180)
+        monthly_salaries = employees.values('department__name').annotate(
+            monthly_salary=Sum('salary')
+        )
+        payroll_over_time = []
+        for i in range(5, -1, -1):  # Last 6 months, including current
+            month_date = (timezone.now() - timedelta(days=30 * i)).replace(day=1)
+            month_salary = sum(item['monthly_salary'] or 0 for item in monthly_salaries)
+            # Add overtime pay for the month
+            overtime_for_month = EmployeeAttendance.objects.filter(
+                employee__department__institution=institution,
+                employee__deleted_at__isnull=True,
+                date__year=month_date.year,
+                date__month=month_date.month,
+                overtime_hours__gt=0
+            ).aggregate(
+                total_overtime=Sum(
+                    ExpressionWrapper(
+                        F('overtime_hours') * 50.0,
+                        output_field=FloatField()
+                    )
+                )
+            )['total_overtime'] or 0
+            payroll_over_time.append({
+                'month': month_date.strftime('%b %Y'),
+                'total_amount': float(month_salary + overtime_for_month)
+            })
+
+        data = {
+            'total_payroll_amount': total_payroll_amount,
+            'payroll_by_department': payroll_by_department,
+            'average_salary': average_salary,
+            'total_penalties': total_penalties,
+            'average_overtime_pay': average_overtime_pay,
+            'payroll_over_time': payroll_over_time,
+        }
+
+        return Response(data)

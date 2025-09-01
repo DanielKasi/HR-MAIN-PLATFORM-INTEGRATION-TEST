@@ -2,21 +2,22 @@ from rest_framework import serializers
 from .models import Project, Task, TaskDocument, TaskTimeSheet, ProjectDocument
 from django.db import transaction
 from users.models import Profile
+from approval.serializers import BaseApprovableSerializer
 
 
-class ProjectDocumentSerializer(serializers.ModelSerializer):
+class ProjectDocumentSerializer(BaseApprovableSerializer):
     class Meta:
         model = ProjectDocument
         fields = "__all__"
 
 
-class TaskDocumentSerializer(serializers.ModelSerializer):
+class TaskDocumentSerializer(BaseApprovableSerializer):
     class Meta:
         model = TaskDocument
         fields = "__all__"
 
 
-class TaskTimeSheetSerializer(serializers.ModelSerializer):
+class TaskTimeSheetSerializer(BaseApprovableSerializer):
     time_spent = serializers.SerializerMethodField()
 
     class Meta:
@@ -135,7 +136,7 @@ class TaskTimeSheetSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializer(BaseApprovableSerializer):
     project_tasks = serializers.SerializerMethodField()
     leaders = serializers.PrimaryKeyRelatedField(
         queryset=Profile.objects.all(), many=True
@@ -252,7 +253,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         return rep
 
 
-class TaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(BaseApprovableSerializer):
     task_time_sheet = serializers.SerializerMethodField()
     leaders = serializers.PrimaryKeyRelatedField(
         queryset=Profile.objects.all(), many=True, required=False

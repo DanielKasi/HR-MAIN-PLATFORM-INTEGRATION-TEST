@@ -1,19 +1,17 @@
 from django.db import models
-from datetime import time, datetime
+from datetime import time
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from django.core.exceptions import ValidationError
 import logging
 from utilities.default_document_types import DEFAULT_DOCUMENT_TYPES
-from utilities.default_data import default_data
 from django.db import transaction
 from django.utils import timezone
-from recruitment.models import JobPosition
 import json
-from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.core.validators import MinValueValidator, MaxValueValidator
+from approval.models import BaseApprovableModel
 
 
 logger = logging.getLogger(__name__)
@@ -214,7 +212,7 @@ class Institution(SoftDeletableTimeStampedModel):
     def _create_calendar_for_institution(self):
         from calendar2.models import Calendar
 
-        current_year = datetime.now().year
+        current_year = timezone.now().year
         Calendar.create_with_holidays(institution=self, year=current_year)
 
     def get_zoom_access_token(self):
@@ -267,7 +265,7 @@ class InstitutionKYCDocument(models.Model):
         verbose_name_plural = "Institution KYC Documents"
 
 
-class InstitutionBankType(SoftDeletableTimeStampedModel):
+class InstitutionBankType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, related_name="banks", on_delete=models.CASCADE
     )
@@ -291,9 +289,12 @@ class InstitutionBankType(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution
 
 
-class InstitutionBankAccount(SoftDeletableTimeStampedModel):
+class InstitutionBankAccount(BaseApprovableModel):
     institution_bank = models.ForeignKey(
         InstitutionBankType, related_name="accounts", on_delete=models.CASCADE
     )
@@ -327,9 +328,12 @@ class InstitutionBankAccount(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution_bank.institution
 
 
-class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
+class InstitutionWorkingDays(BaseApprovableModel):
     institution = models.OneToOneField(
         Institution, related_name="working_days", on_delete=models.CASCADE
     )
@@ -357,9 +361,12 @@ class InstitutionWorkingDays(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Working Days for {self.institution.institution_name}"
+    
+    def get_institution(self):
+        return self.institution
 
 
-class InstitutionTax(SoftDeletableTimeStampedModel):
+class InstitutionTax(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, related_name="taxes"
     )
@@ -383,13 +390,16 @@ class InstitutionTax(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.tax_name
+    
+    def get_institution(self):
+        return self.institution
 
     class Meta:
         verbose_name_plural = "Institution Taxes"
         verbose_name = "Institution Tax"
 
 
-class InstitutionTaxRule(SoftDeletableTimeStampedModel):
+class InstitutionTaxRule(BaseApprovableModel):
     institution_tax = models.ForeignKey(
         InstitutionTax, related_name="rules", on_delete=models.CASCADE
     )
@@ -425,9 +435,12 @@ class InstitutionTaxRule(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.tax_rule_name
+    
+    def get_institution(self):
+        return self.institution_tax.institution
 
 
-class Branch(SoftDeletableTimeStampedModel):
+class Branch(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, related_name="branches", on_delete=models.CASCADE
     )
@@ -482,9 +495,12 @@ class Branch(SoftDeletableTimeStampedModel):
             + " - "
             + self.branch_name
         )
+        
+    def get_institution(self):
+        return self.institution    
 
 
-class BranchWorkingDays(models.Model):
+class BranchWorkingDays(BaseApprovableModel):
     branch = models.OneToOneField(
         "Branch", on_delete=models.CASCADE, related_name="working_days"
     )
@@ -533,6 +549,9 @@ class BranchWorkingDays(models.Model):
             )
 
         self.days.set(inst_working_days.days.all())
+        
+    def get_institution(self):
+        return self.branch.institution    
 
 
 class BranchDay(models.Model):
@@ -558,7 +577,7 @@ class BranchDay(models.Model):
         ordering = ("day__level",)
 
 
-class BranchShift(models.Model):
+class BranchShift(BaseApprovableModel):
     branch = models.ForeignKey(
         "Branch", on_delete=models.CASCADE, related_name="shifts"
     )
@@ -606,6 +625,9 @@ class BranchShift(models.Model):
             "shift_day__day__level",
             "name",
         )
+        
+    def get_institution(self):
+        return self.branch.institution    
 
 
 class UserBranch(models.Model):
@@ -666,7 +688,7 @@ class UserBranch(models.Model):
         return self.user.email + " - " + self.branch.branch_location
 
 
-class Department(SoftDeletableTimeStampedModel):
+class Department(BaseApprovableModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
@@ -689,6 +711,9 @@ class Department(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return self.name
+    
+    def get_institution(self):
+        return self.institution
 
 
 PENALTY_TYPES = [
@@ -705,7 +730,7 @@ PENALTY_VALUE_TYPES = [
 ]
 
 
-class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
+class InstitutionPenaltyConfig(BaseApprovableModel):
     """Default penalty configuration at institution level"""
 
     institution = models.ForeignKey(
@@ -729,23 +754,44 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["institution", "penalty_type"],
+                name="unique_institution_penalty_type"
+            )
+        ]
 
     def __str__(self):
         return f"Penalty Config for {self.institution.institution_name} - {self.get_penalty_type_display()}"
 
     def clean(self):
-        from django.core.exceptions import ValidationError
+        super().clean()
+
+        # prevent duplicates at validation level
+        if InstitutionPenaltyConfig.objects.exclude(pk=self.pk).filter(
+            institution=self.institution,
+            penalty_type=self.penalty_type
+        ).exists():
+            raise ValidationError(
+                {"error": "This penalty type already exists for this institution."}
+            )
 
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    "Penalty value must be greater than 0 when penalty type is fixed"
+                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
                 )
+                
+    def save(self, *args, **kwargs):
+        self.full_clean()  # ✅ ensures clean() is run
+        return super().save(*args, **kwargs)            
 
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""
@@ -758,9 +804,12 @@ class InstitutionPenaltyConfig(SoftDeletableTimeStampedModel):
             return calculated
 
         return self.penalty_value
+    
+    def get_institution(self):
+        return self.institution
 
 
-class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
+class BranchPenaltyConfig(BaseApprovableModel):
     """Branch-level penalty configuration (overrides institution defaults)"""
 
     branch = models.ForeignKey(
@@ -782,23 +831,44 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["branch", "penalty_type"],
+                name="unique_branch_penalty_type"
+            )
+        ]
 
     def __str__(self):
         return f"{self.get_penalty_type_display()} - {self.branch.branch_name}"
-
+    
     def clean(self):
-        from django.core.exceptions import ValidationError
+        super().clean()
+
+        # prevent duplicates at validation level
+        if BranchPenaltyConfig.objects.exclude(pk=self.pk).filter(
+            branch=self.branch,
+            penalty_type=self.penalty_type
+        ).exists():
+            raise ValidationError(
+                {"error": "This penalty type already exists for this branch."}
+            )
 
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    "Penalty value must be greater than 0 when penalty type is fixed"
+                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
                 )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # ✅ ensures clean() is run
+        return super().save(*args, **kwargs)
 
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""
@@ -811,9 +881,12 @@ class BranchPenaltyConfig(SoftDeletableTimeStampedModel):
             return calculated
 
         return self.penalty_value
+    
+    def get_institution(self):
+        return self.branch.institution
 
 
-class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
+class BranchLocationComparisonConfig(BaseApprovableModel):
     radius_in_meters = models.IntegerField(default=100)
     branch = models.OneToOneField(
         Branch, on_delete=models.CASCADE, related_name="location_comparison_settings"
@@ -821,3 +894,6 @@ class BranchLocationComparisonConfig(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Location Comparison Settings for {self.branch.branch_name}"
+    
+    def get_institution(self):
+        return self.branch.institution

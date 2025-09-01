@@ -77,13 +77,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
 
   
         
+        one_day = timedelta(days=1)
+
 
 
         refresh = RefreshToken.for_user(self)
         refresh.access_token.lifetime = lifetime
         refresh["email"] = self.email
         refresh["fullname"] = self.fullname
-        refresh["lifetime"] = int(lifetime.total_seconds()) / 60
+        refresh["lifetime"] = int(one_day.total_seconds()) / 60
 
 
         return {

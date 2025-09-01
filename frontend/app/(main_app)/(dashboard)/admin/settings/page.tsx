@@ -40,6 +40,7 @@ import type {
   IBranchLocationComparisonConfigFormData,
 } from "@/types/types.utils";
 import Link from "next/link";
+import {formatCurrency} from "@/lib/helpers";
 
 interface DocumentFile {
   id: string;
@@ -436,7 +437,7 @@ export default function SettingsPage() {
     if (config.penalty_value_type === "percentage") {
       return `${config.percentage}%`;
     }
-    return `$${Number(config.penalty_value).toFixed(2)}`;
+    return `${formatCurrency(config.penalty_value)}`;
   };
 
   // Branch Penalty Configuration helper functions

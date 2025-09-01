@@ -5,12 +5,13 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
+from onboarding.models import OnBoarding
 from workflows.serializers import (
     JobPositionWorkflowSerializer,
     JobPositionAdvertWorkflowSerializer,
 )
 from utilities.pagination import CustomPageNumberPagination
-
+from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     InterviewStageSerializer,
     JobAdvertApplicationSerializer,
@@ -31,6 +32,7 @@ from .models import (
 from django.db.models import Count, Avg, F
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
+from django.db.models.functions import TruncMonth
 
 from .models import JobInterview, JobAdvertApplication
 
@@ -57,7 +59,7 @@ class JobPositionListAPI(APIView):
         serializer = JobPositionSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
-            instance.comfirm_create()
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -140,7 +142,7 @@ class JobPositionDetailAPI(APIView):
             job_position = JobPosition.objects.get(id=job_position_id)
             job_position.approval_status = 'under_deletion'
             job_position.save(update_fields=['approval_status'])
-            job_position.comfirm_delete()
+            job_position.confirm_delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except JobPosition.DoesNotExist:
             return Response(
@@ -445,42 +447,38 @@ class JobInterviewListAPI(APIView):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
-        status = request.query_params.get('status', None)
+        status_filter = request.query_params.get('status', None)  # <-- renamed
         date = request.query_params.get('date', None)
+
         interviews = (
             JobInterview.objects.filter(
                 job_position_application__job_position_advert__job_position__department__institution_id=institution_id,
                 deleted_at__isnull=True
             )
             .annotate(
-                # Calculate cumulative rating for each application across all their interviews
                 cumulative_rating=Coalesce(
                     Sum(
                         "job_position_application__interviews__rating",
-                        filter=Q(
-                            job_position_application__interviews__rating__isnull=False
-                        ),
+                        filter=Q(job_position_application__interviews__rating__isnull=False),
                     ),
                     0,
                 )
             )
             .order_by("-cumulative_rating", "-created_at")
-        )  # Default order by cumulative rating desc
+        )
 
         if search_query:
             interviews = interviews.filter(
                 Q(job_position_application__applicant_name__icontains=search_query) |
                 Q(job_position_application__job_position_advert__job_position__name__icontains=search_query)
-
             )
 
-        if status:
-            interviews = interviews.filter(status=status)  
+        if status_filter:
+            interviews = interviews.filter(status=status_filter)
 
         if date:
-            interviews = interviews.filter(date=interview_date)      
+            interviews = interviews.filter(interview_date=date)
 
-        # Serialize interviews and add cumulative rating to response
         interview_data = []
         for interview in interviews:
             serializer = JobInterviewSerializer(interview)
@@ -823,3 +821,194 @@ class InterviewCandidateAnalyticsAPI(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+class RecruitmentDashboardAPIView(APIView):
+    """
+    API endpoint for recruitment dashboard analytics.
+    Provides aggregated metrics on job positions, adverts, applications, interviews, and onboarding
+    filtered by the authenticated user's institution.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['Recruitment Dashboard'],
+        description=(
+            'Retrieves key analytics for the recruitment module dashboard, filtered by the authenticated user\'s institution. '
+            'Metrics include counts of job positions, adverts, applications by status, '
+            'interviews, upcoming interviews, onboarding statuses, average time to hire, application sources, '
+            'and applications over time (last 6 months).'
+        ),
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'total_job_positions': {'type': 'integer'},
+                    'active_job_positions': {'type': 'integer'},
+                    'total_adverts': {'type': 'integer'},
+                    'active_adverts': {'type': 'integer'},
+                    'total_applications': {'type': 'integer'},
+                    'applications_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        }
+                    },
+                    'total_interviews': {'type': 'integer'},
+                    'interviews_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        }
+                    },
+                    'upcoming_interviews': {'type': 'integer'},
+                    'total_onboardings': {'type': 'integer'},
+                    'onboardings_by_status': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'status': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        }
+                    },
+                    'average_time_to_hire_days': {'type': 'integer'},
+                    'applications_sources': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'source': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        }
+                    },
+                    'applications_over_time': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'date': {'type': 'string'},
+                                'count': {'type': 'integer'}
+                            }
+                        }
+                    },
+                }
+            }
+        }
+    )
+    def get(self, request):
+        user = request.user
+        institution = getattr(user.profile, "institution", None)
+
+        if not institution:
+            return Response(
+                {"error": "User is not associated with any institution"},
+                status=400
+            )
+
+        # Filter querysets by institution
+        job_positions = JobPosition.objects.filter(department__institution=institution)
+        adverts = JobPositionAdvert.objects.filter(job_position__department__institution=institution)
+        applications = JobAdvertApplication.objects.filter(
+            job_position_advert__job_position__department__institution=institution
+        )
+        interviews = JobInterview.objects.filter(
+            job_position_application__job_position_advert__job_position__department__institution=institution
+        )
+        onboardings = OnBoarding.objects.filter(
+            application__job_position_advert__job_position__department__institution=institution
+        )
+
+        # Job Positions
+        total_job_positions = job_positions.count()
+        active_job_positions = job_positions.filter(job_position_status='active').count()
+
+        # Adverts
+        total_adverts = adverts.count()
+        active_adverts = adverts.filter(job_position_advert_status='active').count()
+
+        # Applications
+        total_applications = applications.count()
+        applications_by_status = list(
+            applications.values('status').annotate(count=Count('id')).order_by('status')
+        )
+
+        # Interviews
+        total_interviews = interviews.count()
+        interviews_by_status = list(
+            interviews.values('status').annotate(count=Count('id')).order_by('status')
+        )
+        upcoming_interviews = interviews.filter(
+            interview_date__gte=timezone.now(),
+            interview_date__lte=timezone.now() + timedelta(days=7),
+            status='scheduled'
+        ).count()
+
+        # Onboarding
+        total_onboardings = onboardings.count()
+        onboardings_by_status = list(
+            onboardings.values('status').annotate(count=Count('id')).order_by('status')
+        )
+
+        # Average time to hire (for accepted offers)
+        accepted_onboardings = onboardings.filter(status='accepted_offer').select_related('application')
+        if accepted_onboardings.exists():
+            time_diffs = [
+                (timezone.now() - ob.application.application_date).days
+                for ob in accepted_onboardings if ob.application
+            ]
+            average_time_to_hire = sum(time_diffs) // len(time_diffs) if time_diffs else 0
+        else:
+            average_time_to_hire = 0
+
+        # Application sources
+        applications_sources = list(
+            applications.values('source').annotate(count=Count('id')).order_by('source')
+        )
+
+        # Applications over time (last 6 months)
+        six_months_ago = timezone.now() - timedelta(days=180)
+        applications_over_time = list(
+            applications.filter(application_date__gte=six_months_ago)
+            .annotate(date=TruncMonth('application_date'))
+            .values('date')
+            .annotate(count=Count('id'))
+            .order_by('date')
+            .values('date', 'count')
+        )
+        # Format dates as strings (e.g., "Jan 2025")
+        applications_over_time = [
+            {
+                'date': item['date'].strftime('%b %Y'),
+                'count': item['count']
+            }
+            for item in applications_over_time
+        ]
+
+        data = {
+            'total_job_positions': total_job_positions,
+            'active_job_positions': active_job_positions,
+            'total_adverts': total_adverts,
+            'active_adverts': active_adverts,
+            'total_applications': total_applications,
+            'applications_by_status': applications_by_status,
+            'total_interviews': total_interviews,
+            'interviews_by_status': interviews_by_status,
+            'upcoming_interviews': upcoming_interviews,
+            'total_onboardings': total_onboardings,
+            'onboardings_by_status': onboardings_by_status,
+            'average_time_to_hire_days': average_time_to_hire,
+            'applications_sources': applications_sources,
+            'applications_over_time': applications_over_time,
+        }
+
+        return Response(data)    

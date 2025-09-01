@@ -2,6 +2,8 @@
 
 import {useEffect, useState} from "react";
 import type {UserProfile} from "@/types";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import ProtectedComponent from "@/components/ProtectedComponent";
 import {apiGet} from "@/lib/apiRequest";
 import {Button} from "@/components/ui/button";
 import {Badge} from "@/components/ui/badge";
@@ -179,12 +181,14 @@ export default function ProjectsPage() {
               Manage and track all your projects in one place
             </p>
           </div>
-          <Link href="/projects/add">
-            <Button size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Create Project
-            </Button>
-          </Link>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_PROJECTS}>
+            <Link href="/projects/add">
+              <Button size="lg">
+                <Plus className="mr-2 h-5 w-5" />
+                Create Project
+              </Button>
+            </Link>
+          </ProtectedComponent>
         </div>
 
         {/* Stats Cards */}
@@ -279,8 +283,9 @@ export default function ProjectsPage() {
         </Card>
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => {
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PROJECTS}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => {
             const progress = calculateProgress(project.project_tasks);
             const daysRemaining = getDaysRemaining(project.end_date);
             const isOverdue = daysRemaining < 0 && project.project_status !== "completed";
@@ -314,22 +319,28 @@ export default function ProjectsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/projects/${project.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/projects/edit/${project.id}`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Project
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PROJECTS}>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/projects/${project.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_PROJECTS}>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/projects/edit/${project.id}`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Project
+                            </Link>
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
+                        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_PROJECTS}>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </ProtectedComponent>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -378,24 +389,29 @@ export default function ProjectsPage() {
 
                   {/* Action Buttons */}
                   <div className="flex gap-2 pt-2">
-                    <Link href={`/projects/${project.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        <Eye className="mr-2 h-4 w-4" />
-                        View
-                      </Button>
-                    </Link>
-                    <Link href={`/projects/edit/${project.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="w-full">
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
-                    </Link>
+                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PROJECTS}>
+                      <Link href={`/projects/${project.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </Button>
+                      </Link>
+                    </ProtectedComponent>
+                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_PROJECTS}>
+                      <Link href={`/projects/edit/${project.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      </Link>
+                    </ProtectedComponent>
                   </div>
                 </CardContent>
               </Card>
             );
           })}
-        </div>
+          </div>
+        </ProtectedComponent>
 
         {filteredProjects.length === 0 && (
           <Card className="border-0 shadow-lg">

@@ -1,0 +1,19 @@
+
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('institution', '0038_merge_20250829_2027'),
+    ]
+
+    operations = [
+        migrations.AlterField(
+            model_name='department',
+            name='institution',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='departments', to='institution.institution'),
+        ),
+    ]

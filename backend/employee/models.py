@@ -1,25 +1,15 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
-from institution.utils import generate_compliant_password
-from utilities.helpers import (
-    build_password_link,
-    create_and_institution_otp,
-    send_password_link_to_user,
-    create_and_institution_token,
-)
 
 from django.db import models
 from datetime import datetime
-from institution.models import Branch, UserBranch, BranchWorkingDays
+from institution.models import Branch, UserBranch
 from datetime import date, datetime
-from django.template.loader import render_to_string
-from django.conf import settings
 from django.core.exceptions import ValidationError
 import PyPDF2
 from pdf2image import convert_from_bytes
 import pytesseract
-import io
 from io import BytesIO
 from difflib import SequenceMatcher
 import re
@@ -27,9 +17,10 @@ from django.db.models import UniqueConstraint, Q
 import math
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
+from approval.models import BaseApprovableModel
 
 
-class EmployeeType(SoftDeletableTimeStampedModel):
+class EmployeeType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -40,8 +31,11 @@ class EmployeeType(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.institution
 
-class WorkType(SoftDeletableTimeStampedModel):
+
+class WorkType(BaseApprovableModel):
     institution = models.ForeignKey(
         Institution, on_delete=models.CASCADE, null=True, blank=True
     )
@@ -52,8 +46,11 @@ class WorkType(SoftDeletableTimeStampedModel):
     def __str__(self):
         return self.name
 
+    def get_institution(self):
+        return self.institution
 
-class Employee(SoftDeletableTimeStampedModel):
+
+class Employee(BaseApprovableModel):
     """
     Employee model to store employee details in the system.
     """
@@ -155,6 +152,9 @@ class Employee(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.user.fullname}  - {self.position}"
+
+    def get_institution(self):
+        return self.department.institution
 
     class Meta:
         constraints = [
@@ -440,26 +440,27 @@ class Employee(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
-                
+
             # Get the branch-specific radius or use default
             try:
                 threshold_meters = branch.location_comparison_settings.radius_in_meters
             except AttributeError:
                 # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
                 threshold_meters = 100
-                
+
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            
+
             if distance <= threshold_meters:
                 return True
-                
+
         return False
 
-class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
+
+class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
-        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
+        Employee, on_delete=models.PROTECT, related_name="custom_working_days"
     )
 
     days = models.ManyToManyField(
@@ -472,14 +473,17 @@ class EmployeeWorkingDays(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.employee.user.fullname} - Custom Working Days"
 
+    def get_institution(self):
+        return self.employee.get_institution()
 
-class EmployeeDay(models.Model):
+
+class EmployeeDay(BaseApprovableModel):
     employee_working_days = models.ForeignKey(
-        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
+        "EmployeeWorkingDays", on_delete=models.PROTECT, related_name="employee_days"
     )
-    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.PROTECT)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
     def __str__(self):
         return (
@@ -489,7 +493,11 @@ class EmployeeDay(models.Model):
     class Meta:
         unique_together = ("employee_working_days", "day")
 
-class EmployeeShift(models.Model):
+    def get_institution(self):
+        return self.employee_working_days.get_institution()
+
+
+class EmployeeShift(BaseApprovableModel):
     CONTEXT_TYPES = [
         ("REQUEST", "Request"),
         ("ALLOCATION", "Allocation"),
@@ -501,24 +509,36 @@ class EmployeeShift(models.Model):
         ("PENDING", "Pending"),
     ]
 
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="employee_shift")
-    shift = models.ForeignKey("institution.BranchShift", on_delete=models.CASCADE, related_name="employee_shift")
+    employee = models.ForeignKey(
+        Employee, on_delete=models.PROTECT, related_name="employee_shift"
+    )
+    shift = models.ForeignKey(
+        "institution.BranchShift",
+        on_delete=models.PROTECT,
+        related_name="employee_shift",
+    )
     context = models.CharField(choices=CONTEXT_TYPES, max_length=200, default="REQUEST")
-    shift_status = models.CharField(choices=STATUS_CHOICES, max_length=200, default="PENDING")
+    shift_status = models.CharField(
+        choices=STATUS_CHOICES, max_length=200, default="PENDING"
+    )
 
     date = models.DateField()
 
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
-        "users.CustomUser", on_delete=models.CASCADE, related_name="employee_shift"
+        "users.CustomUser", on_delete=models.PROTECT, related_name="employee_shift"
     )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - shift {self.context.upper()}"
 
-class EmployeeAttendance(SoftDeletableTimeStampedModel):
+    def get_institution(self):
+        return self.employee.get_institution()
+
+
+class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
-        Employee, on_delete=models.CASCADE, related_name="attendance_records"
+        Employee, on_delete=models.PROTECT, related_name="attendance_records"
     )
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)
@@ -548,7 +568,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
             ("absent", "Absent"),
             ("pending", "Pending"),
         ],
-        default="pending"  # Added default value
+        default="pending",  # Added default value
     )
 
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -563,6 +583,9 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         if user and hasattr(user, "fname") and hasattr(user, "lname"):
             return f"{user.fname} {user.lname} - {self.date} - {self.status}"
         return f"{self.employee} - {self.date} - {self.status}"
+
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def calculate_overtime_hours(self):
 
@@ -631,7 +654,6 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
 
-
         # Check for absence first
         if not self.check_in_time and not self.check_out_time:
             print("    Absent (no check-in or check-out)")
@@ -656,17 +678,18 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         else:
             self.attendance_status = "on_time"
 
-        print(f"    Final Status = {self.attendance_status}, "
-              f"Overtime = {self.overtime_hours}, "
-              f"Late = {self.late_minutes}, "
-              f"Early checkout = {self.early_checkout_minutes}")
+        print(
+            f"    Final Status = {self.attendance_status}, "
+            f"Overtime = {self.overtime_hours}, "
+            f"Late = {self.late_minutes}, "
+            f"Early checkout = {self.early_checkout_minutes}"
+        )
 
     def save(self, *args, **kwargs):
         """
         Simplified save method - status calculation is now handled by serializer.
         """
         super().save(*args, **kwargs)
-
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
@@ -704,21 +727,21 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         for branch in attached_branches:
             if branch.branch_latitude is None or branch.branch_longitude is None:
                 continue
-                
+
             # Get the branch-specific radius or use default
             try:
                 threshold_meters = branch.location_comparison_settings.radius_in_meters
             except AttributeError:
                 # If BranchLocationComaparisonConfig doesn't exist for this branch, use default
                 threshold_meters = 100
-                
+
             distance = self._haversine_distance(
                 latitude, longitude, branch.branch_latitude, branch.branch_longitude
             )
-            
+
             if distance <= threshold_meters:
                 return True
-                
+
         return False
 
     def save(self, *args, **kwargs):
@@ -732,7 +755,7 @@ class EmployeeAttendance(SoftDeletableTimeStampedModel):
         super().save(*args, **kwargs)
 
 
-class EmployeeContract(SoftDeletableTimeStampedModel):
+class EmployeeContract(BaseApprovableModel):
     STATUS_CHOICES = (
         ("MATCHED_NEEDS_REVIEW", "Matched, Needs Review"),
         ("NOT_MATCHED_NEEDS_REVIEW", "Not Matched, Needs Review"),
@@ -771,6 +794,9 @@ class EmployeeContract(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"Contract {self.contract_reference} "
+
+    def get_institution(self):
+        return self.employee.get_institution() if self.employee else None
 
     class Meta:
         constraints = [

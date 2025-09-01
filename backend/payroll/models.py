@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
-from datetime import datetime
 from employee.models import Employee, EmployeeAttendance
 from django.utils import timezone
 from datetime import timedelta
@@ -10,7 +9,7 @@ from django.utils import timezone
 from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
-from django.core.exceptions import ValidationError
+from approval.models import BaseApprovableModel
 
 
 class BaseModel(models.Model):
@@ -57,7 +56,7 @@ class BaseModel(models.Model):
         super().clean()
 
 
-class AllowanceType(BaseModel, SoftDeletableTimeStampedModel):
+class AllowanceType(BaseModel, BaseApprovableModel):
     """
     Define types of allowances (Housing, Transport, Medical, etc.)
 
@@ -76,14 +75,14 @@ class AllowanceType(BaseModel, SoftDeletableTimeStampedModel):
     class Meta:
         ordering = ["name"]
 
+    def get_institution(self):
+        return self.institution
 
-class DeductionType(BaseModel, SoftDeletableTimeStampedModel):
+
+class DeductionType(BaseModel, BaseApprovableModel):
     """
     Define types of deductions (Tax, NSSF, Health Insurance, etc.)
     """
-
-
-
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -91,6 +90,8 @@ class DeductionType(BaseModel, SoftDeletableTimeStampedModel):
     )
     is_mandatory = models.BooleanField(default=False)
 
+    def get_institution(self):
+        return self.institution
 
     def __str__(self):
         return self.name
@@ -99,7 +100,7 @@ class DeductionType(BaseModel, SoftDeletableTimeStampedModel):
         ordering = ["name"]
 
 
-class EmployeeAllowance(SoftDeletableTimeStampedModel):
+class EmployeeAllowance(BaseApprovableModel):
     """
     Employee-specific allowances (can vary by employee)
     """
@@ -126,6 +127,9 @@ class EmployeeAllowance(SoftDeletableTimeStampedModel):
     )
     effective_from = models.DateField(default=timezone.now)
     effective_to = models.DateField(blank=True, null=True)
+
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def __str__(self):
         return f"{self.employee} - {self.allowance_type.name}"
@@ -230,7 +234,7 @@ class EmployeeAllowance(SoftDeletableTimeStampedModel):
         return recurrence_count
 
 
-class EmployeeDeduction(SoftDeletableTimeStampedModel):
+class EmployeeDeduction(BaseApprovableModel):
     """
     Employee-specific deductions
     """
@@ -272,6 +276,9 @@ class EmployeeDeduction(SoftDeletableTimeStampedModel):
             return calculated
         return self.amount
 
+    def get_institution(self):
+        return self.employee.get_institution()
+
     def save(self, *args, **kwargs):
         """Override save to set amount for percentage-based deductions"""
         if self.calculation_method == "percentage":
@@ -289,6 +296,7 @@ class EmployeeDeduction(SoftDeletableTimeStampedModel):
         ]
 
     def get_recurrence_count(self, payroll_period):
+        from employee.utilities import get_employee_working_days
         """
         Calculate the number of times this item (allowance or deduction) will recur
         in the given payroll period.
@@ -300,12 +308,8 @@ class EmployeeDeduction(SoftDeletableTimeStampedModel):
         start_date = payroll_period.start_date
         end_date = payroll_period.end_date
 
-        if hasattr(self.employee, "custom_working_days"):
-            working_days = self.employee.custom_working_days.days.all()
-        else:
-            institution = self.employee.department.institution
-            working_days = institution.working_days.days.all()
-
+        working_days = get_employee_working_days(self.employee)
+        
         # Daily recurrence
         if self.deduction_type.frequency == "DAILY":
             current_date = start_date
@@ -359,7 +363,7 @@ class EmployeeDeduction(SoftDeletableTimeStampedModel):
         return recurrence_count
 
 
-class EmployeeTax(SoftDeletableTimeStampedModel):
+class EmployeeTax(BaseApprovableModel):
     """
     Employee-specific tax details
     """
@@ -385,6 +389,9 @@ class EmployeeTax(SoftDeletableTimeStampedModel):
                 name="unique_active_institution_tax_per_employee",
             )
         ]
+
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def rule_fit_employee_salary(self):
 
@@ -432,7 +439,7 @@ class EmployeeTax(SoftDeletableTimeStampedModel):
 
         return Decimal(0.00)
 
-class EmployeePenalty(SoftDeletableTimeStampedModel):
+class EmployeePenalty(BaseApprovableModel):
     PENALTY_STATUS_CHOICES = [
         ("waived", "Waived"),
         ("applied", "Applied"),
@@ -464,6 +471,9 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.get_penalty_type_display()} on {self.date}"
+
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def save(self, *args, **kwargs):
         if not self.date:
@@ -592,7 +602,7 @@ class EmployeePenalty(SoftDeletableTimeStampedModel):
         return config      
 
 
-class PayrollPeriod(SoftDeletableTimeStampedModel):
+class PayrollPeriod(BaseApprovableModel):
     """
     Define payroll periods (Monthly, Bi-weekly, etc.)
     """
@@ -608,6 +618,9 @@ class PayrollPeriod(SoftDeletableTimeStampedModel):
     pay_date = models.DateField()
     is_processed = models.BooleanField(default=False)
 
+    def get_institution(self):
+        return self.institution
+
     def __str__(self):
         return self.name
 
@@ -615,7 +628,7 @@ class PayrollPeriod(SoftDeletableTimeStampedModel):
         ordering = ["-start_date"]
 
 
-class Payslip(SoftDeletableTimeStampedModel):
+class Payslip(BaseApprovableModel):
     """
     Individual employee payslip for a specific period
     """
@@ -651,6 +664,8 @@ class Payslip(SoftDeletableTimeStampedModel):
     is_paid = models.BooleanField(default=False)
     paid_date = models.DateField(blank=True, null=True)
 
+    def get_institution(self):
+        return self.employee.get_institution()
 
     def __str__(self):
         return f"{self.employee} - {self.payroll_period.name}"
@@ -726,7 +741,7 @@ class Payslip(SoftDeletableTimeStampedModel):
         self.basic_salary = self.basic_salary or self.employee.salary or 0
 
         gross = self.basic_salary + taxable_allowances
-        net = gross - tax_total + non_taxable_allowances - deductions - - total_penalties
+        net = gross - tax_total + non_taxable_allowances - deductions -  total_penalties
 
         self.gross_salary = gross
         self.net_salary = net

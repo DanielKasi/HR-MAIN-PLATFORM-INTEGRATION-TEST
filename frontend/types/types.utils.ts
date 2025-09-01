@@ -117,10 +117,35 @@ export enum PERMISSION_CODES {
   CAN_PROCESS_PAYROLL = "can_process_payroll",
   CAN_GENERATE_PAYSLIPS = "can_generate_payslips",
   CAN_MANAGE_ALLOWANCES = "can_manage_allowances",
+  CAN_VIEW_ALLOWANCE_TYPES = "can_view_allowance_types",
+  CAN_CREATE_ALLOWANCE_TYPES = "can_create_allowance_types",
+  CAN_EDIT_ALLOWANCE_TYPES = "can_edit_allowance_types",
+  CAN_DELETE_ALLOWANCE_TYPES = "can_delete_allowance_types",
+  CAN_VIEW_DEDUCTION_TYPES = "can_view_deduction_types",
+  CAN_CREATE_DEDUCTION_TYPES = "can_create_deduction_types",
+  CAN_EDIT_DEDUCTION_TYPES = "can_edit_deduction_types",
+  CAN_DELETE_DEDUCTION_TYPES = "can_delete_deduction_types",
+  CAN_VIEW_EMPLOYEE_DEDUCTIONS = "can_view_employee_deductions",
+  CAN_CREATE_EMPLOYEE_DEDUCTIONS = "can_create_employee_deductions",
+  CAN_EDIT_EMPLOYEE_DEDUCTIONS = "can_edit_employee_deductions",
+  CAN_DELETE_EMPLOYEE_DEDUCTIONS = "can_delete_employee_deductions",
+  CAN_VIEW_EMPLOYEE_TAX = "can_view_employee_tax",
+  CAN_CREATE_EMPLOYEE_TAX = "can_create_employee_tax",
+  CAN_EDIT_EMPLOYEE_TAX = "can_edit_employee_tax",
+  CAN_DELETE_EMPLOYEE_TAX = "can_delete_employee_tax",
+  CAN_VIEW_EMPLOYEE_ALLOWANCES = "can_view_employee_allowances",
+  CAN_CREATE_EMPLOYEE_ALLOWANCES = "can_create_employee_allowances",
+  CAN_EDIT_EMPLOYEE_ALLOWANCES = "can_edit_employee_allowances",
+  CAN_DELETE_EMPLOYEE_ALLOWANCES = "can_delete_employee_allowances",
+  CAN_VIEW_PAYROLL_PERIODS = "can_view_payroll_periods",
+  CAN_CREATE_PAYROLL_PERIODS = "can_create_payroll_periods",
+  CAN_EDIT_PAYROLL_PERIODS = "can_edit_payroll_periods",
+  CAN_DELETE_PAYROLL_PERIODS = "can_delete_payroll_periods",
   CAN_MANAGE_DEDUCTIONS = "can_manage_deductions",
   CAN_APPROVE_SALARY_CHANGES = "can_approve_salary_changes",
   CAN_VIEW_PAYROLL_REPORTS = "can_view_payroll_reports",
   CAN_MANAGE_COMPENSATION_POLICIES = "can_manage_compensation_policies",
+  CAN_DOWNLOAD_PAYSLIPS = "can_download_payslips",
 
   // Discipline Management
   CAN_VIEW_DISCIPLINE_CASES = "can_view_discipline_cases",
@@ -218,6 +243,19 @@ export enum PERMISSION_CODES {
   CAN_DELETE_DOCUMENTS = "can_delete_documents",
   CAN_APPROVE_DOCUMENTS = "can_approve_documents",
   CAN_ARCHIVE_DOCUMENTS = "can_archive_documents",
+
+  // Project Management
+  CAN_CREATE_PROJECTS = "can_create_projects",
+  CAN_VIEW_PROJECTS = "can_view_projects",
+  CAN_EDIT_PROJECTS = "can_edit_projects",
+  CAN_DELETE_PROJECTS = "can_delete_projects",
+  CAN_CREATE_TASKS = "can_create_tasks",
+  CAN_VIEW_TASKS = "can_view_tasks",
+  CAN_EDIT_TASKS = "can_edit_tasks",
+  CAN_DELETE_TASKS = "can_delete_tasks",
+  CAN_START_TASKS = "can_start_tasks",
+  CAN_COMPLETE_TASKS = "can_complete_tasks",
+  CAN_ASSIGN_TASKS = "can_assign_tasks",
   CAN_MANAGE_PAYROLL_PERIODS = "CAN_MANAGE_PAYROLL_PERIODS",
 
   //assets management
@@ -253,6 +291,7 @@ export enum PERMISSION_CODES {
   CAN_CREATE_ONBOARDING_RECORDS = "can_create_onboarding_records",
   CAN_VIEW_ONBOARDING_RECORDS = "can_view_onboarding_records",
   CAN_EDIT_ONBOARDING_RECORDS = "can_edit_onboarding_records",
+  CAN_DELETE_ONBOARDING_RECORDS = "can_delete_onboarding_records",
   CAN_CREATE_OFFBOARDING_STAGES = "can_create_offboarding_stages",
   CAN_VIEW_OFFBOARDING_STAGES = "can_view_offboarding_stages",
   CAN_EDIT_OFFBOARDING_STAGES = "can_edit_offboarding_stages",
@@ -278,7 +317,7 @@ export enum PERMISSION_CODES {
   CAN_VIEW_RETIREMENT_REQUESTS = "can_view_retirement_requests",
   CAN_EDIT_RETIREMENT_REQUESTS = "can_edit_retirement_requests",
   CAN_DELETE_RETIREMENT_REQUESTS = "can_delete_retirement_requests",
-  
+
   //penalties management
   CAN_CREATE_PENALTIES = "can_create_penalties",
   CAN_VIEW_PENALTIES = "can_view_penalties",
@@ -342,7 +381,6 @@ export interface IDepartment {
   institution_details?: IUserInstitution | null;
   job_positions?: { id: number; name: string; description: string; department_id: number }[];
 }
-
 
 export interface PaginatedEmployeeResponse {
   count: number;
@@ -589,11 +627,13 @@ export interface IEmployee {
 }
 
 export interface IPayrollItems {
+  penalties: any;
   allowance: Record<string, IPayslipItem[]>;
   deduction: Record<string, IPayslipItem[]>;
 }
 
 export interface IPayslip {
+  total_penalties: string;
   id: number;
   employee: IEmployee;
   payroll_period: IPayrollPeriod;
@@ -610,6 +650,128 @@ export interface IPayslip {
   created_at: string;
   updated_at: string;
   items: IPayrollItems;
+}
+
+export interface IRecruitmentDashboard {
+  total_job_positions: number
+  active_job_positions: number
+  total_adverts: number
+  active_adverts: number
+  total_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  total_interviews: number
+  interviews_by_status: Array<{
+    status: string
+    count: number
+  }>
+  upcoming_interviews: number
+  total_onboardings: number
+  onboardings_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_time_to_hire_days: number
+  applications_sources: Array<{
+    source: string
+    count: number
+  }>
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IEmployeeDashboard {
+  total_employees: number
+  employees_by_gender: Array<{
+    gender: string
+    count: number
+  }>
+  employees_by_employee_type: Array<{
+    employee_type: string
+    count: number
+  }>
+  employees_by_work_type: Array<{
+    work_type: string
+    count: number
+  }>
+  employees_by_department: Array<{
+    department: string
+    count: number
+  }>
+  shift_statuses: Array<{
+    status: string
+    count: number
+  }>
+  average_age: number
+  average_tenure_years: number
+  recent_hires: number
+  employees_by_marital_status: Array<{
+    marital_status: string
+    count: number
+  }>
+}
+
+export interface ILeaveDashboard {
+  total_leave_applications: number
+  applications_by_status: Array<{
+    status: string
+    count: number
+  }>
+  applications_by_leave_type: Array<{
+    leave_type: string
+    count: number
+  }>
+  leave_balances_by_type: Array<{
+    leave_type: string
+    total_allocated_days: number
+    total_used_days: number
+    total_available_days: number
+  }>
+  average_leave_days_taken: number
+  pending_approvals: number
+  applications_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IAttendanceDashboard {
+  total_attendance_records: number
+  attendance_by_status: Array<{
+    status: string
+    count: number
+  }>
+  average_overtime_hours: number
+  average_late_minutes: number
+  average_early_checkout_minutes: number
+  spot_check_response_rate: number
+  spot_checks_by_status: Array<{
+    status: string
+    count: number
+  }>
+  attendance_over_time: Array<{
+    date: string
+    count: number
+  }>
+}
+
+export interface IPayrollDashboard {
+  total_payroll_amount: number
+  payroll_by_department: Array<{
+    department: string
+    total_amount: number
+  }>
+  average_salary: number
+  total_penalties: number
+  average_overtime_pay: number
+  payroll_over_time: Array<{
+    month: string
+    total_amount: number
+  }>
 }
 
 export interface IInterviewStageFormData {
@@ -630,8 +792,7 @@ export interface IInterviewStage {
   candidates_count: number;
 }
 
-export type IInterviewType = "online" | "in_person"
-
+export type IInterviewType = "online" | "in_person";
 
 export interface IInterview {
   updated_at: any;
@@ -649,7 +810,6 @@ export interface IInterview {
   interview_time: string;
   interview_type: IInterviewType;
 }
-
 
 export interface IInterviewFormData {
   job_position_application: number;
@@ -728,7 +888,7 @@ export interface ICreateEmployeeForm {
   selected_branches: number[]; // Added for multi-branch selection
   emergency_contact_name: string;
   emergency_contact_phone: string;
-  emergency_contact_phone_country_code?: string
+  emergency_contact_phone_country_code?: string;
   emergency_contact_relationship: string;
   marital_status: string;
   children_count: number;
@@ -851,8 +1011,6 @@ export interface IBulkOnBoardingResponse {
     total_requested: number;
   };
 }
-
-
 
 export interface IWorkTypeFormData {
   name: string;
@@ -1077,9 +1235,7 @@ export interface IDisciplinaryAction {
   notes: string;
 }
 
-export const transformDisciplinaryActionData = (
-  apiData: IDisciplinaryAction[] | null,
-) => {
+export const transformDisciplinaryActionData = (apiData: IDisciplinaryAction[] | null) => {
   if (!apiData) return [];
 
   return apiData.map((action) => {
@@ -1130,8 +1286,6 @@ export const transformDisciplinaryActionData = (
     }
   });
 };
-
-
 
 export interface ILeaveTypeFormData {
   name: string;
@@ -1211,7 +1365,6 @@ export interface ILeavePolicyResponse extends ILeavePolicy {
 export type LeaveRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export type DurationType = "full_day" | "half_day" | "multiple_days";
-
 
 export interface ILeaveRequest {
   id?: number | string;
@@ -1397,11 +1550,11 @@ export interface IPayrollPeriodFormData {
 export interface IPayslipFormData {
   employee: number;
   payroll_period: number;
-  basic_salary: string|number;
-  total_allowances: string|number;
-  total_deductions: string|number;
-  gross_salary: string|number;
-  net_salary: string|number;
+  basic_salary: string | number;
+  total_allowances: string | number;
+  total_deductions: string | number;
+  gross_salary: string | number;
+  net_salary: string | number;
   days_worked: number;
   is_paid: boolean;
   paid_date: string | null;
@@ -1410,7 +1563,7 @@ export interface IPayslipFormData {
 export interface IPayslipItem {
   id: number;
   payslip: IPayslip;
-  item_type: "allowance" | "deduction" | "overtime";
+  item_type: "allowance" | "deduction" | "overtime" | "penalty";
   name: string;
   amount: string;
   description: string;
@@ -2200,7 +2353,6 @@ export interface ICalendarEvent {
   updated_at: string;
 }
 
-
 export interface AttendanceEmployee {
   id: number;
   full_name: string;
@@ -2228,7 +2380,6 @@ export interface AttendanceResponse {
   employees: AttendanceEmployeeData[];
 }
 
-
 // export interface PublicHoliday {
 //   id: number
 //   institution: number
@@ -2237,8 +2388,6 @@ export interface AttendanceResponse {
 //   created_at: string
 //   updated_at: string
 // }
-
-
 
 // export interface EventOccurrence {
 //   id: number
@@ -2258,10 +2407,9 @@ export interface AttendanceResponse {
 
 export type IBasicDasboardDataCounts = {
   employee_count: number;
-    department_count: number;
-    on_leave_count: number;
-}
-
+  department_count: number;
+  on_leave_count: number;
+};
 
 export interface IInstitutionAnalytics {
   basic_counts: IBasicDasboardDataCounts;
@@ -2291,10 +2439,6 @@ export interface IInstitutionAnalytics {
   }[];
 }
 
-
-
-
-
 export interface IKYCDocument {
   id: number;
   institution: number;
@@ -2312,33 +2456,33 @@ export interface ISpotCheck {
   updated_at: string;
   responded_at: string | null;
   address: string;
-  latitude: number|null;
-  longitude: number|null;
-  initiated_by: ISpotCheckInitiator,
-  spotcheck_time: string|null;
+  latitude: number | null;
+  longitude: number | null;
+  initiated_by: ISpotCheckInitiator;
+  spotcheck_time: string | null;
   status: ISpotCheckStatus;
-  duration: string|null;
-  notes:string|null
+  duration: string | null;
+  notes: string | null;
 }
 
 export interface ISpotCheckFormData {
   employee: number;
   latitude: number;
   longitude: number;
-  initiated_by: ISpotCheckInitiator,
-  notes:string
+  initiated_by: ISpotCheckInitiator;
+  notes: string;
 }
 
 export interface ISpotCheckStatus {
   id: number;
   code: string;
-  name: string;
+  status_name: string;
   description: string;
 }
 
 export interface ILocation {
   latitude: number;
-  longitude: number
+  longitude: number;
 }
 
 export interface IInstitutionPenaltyConfig {
@@ -2395,49 +2539,40 @@ export interface IBranchLocationComparisonConfigFormData {
 }
 
 
-export interface BranchDetailResponse {
-  id: number;
-  institution: number;
-  paying_bank_account: number;
-  institution_name: string;
-  branch_name: string;
-  branch_phone_number: string;
-  branch_location: string;
-  branch_latitude: number;
-  branch_longitude: number;
-  branch_email: string;
-  branch_opening_time: string;
-  branch_closing_time: string;
-  is_active: boolean;
-}
+export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT" | "ALLOCATION";
+export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
 
 export interface IBranchDay {
-  day_id: number;
-  day_code: string;
   id: number;
+  day_id: number;
   day_name: string;
-  day_type: string;
+  day_type: "PHYSICAL" | "REMOTE";
 }
+
 
 export interface IBranchWorkingDays {
   id: number;
-  branch: number;
+  branch: Branch;
   branch_days: IBranchDay[];
 }
 
-
-export type IEmployeeShiftContext = "REQUEST" | "ASSIGNMENT";
-export type IEmployeeShiftStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "ASSIGNED";
+export interface IShiftFormData {
+  name: string;
+  shift_day: number;
+  start_time: string;
+  end_time: string;
+  description: string;
+}
 
 export interface IEmployeeShift {
-  id: number;
+  id: string;
   employee: IEmployee;
   shift: IBranchShift;
   context: IEmployeeShiftContext;
   shift_status: IEmployeeShiftStatus;
   date: string;
   created_at: string;
-  created_by: number;
+  created_by: IUser;
 }
 
 export interface IEmployeeShiftFormData {
@@ -2470,8 +2605,14 @@ export interface IBranchShiftFormData {
 }
 
 
-export type IPenaltyType  = "late_coming" | "early_leaving" | "absent" | "no_response_spotcheck" | "late_spotcheck_response";
-export type IEmployeePenaltyStatus = "waived" | "applied";  
+
+export type IPenaltyType =
+  | "late_coming"
+  | "early_leaving"
+  | "absent"
+  | "no_response_spotcheck"
+  | "late_spotcheck_response";
+export type IEmployeePenaltyStatus = "waived" | "applied";
 
 export interface IEmployeePenalty {
   id: number;
@@ -2495,33 +2636,5 @@ export interface IEmployeePenaltyFormData {
   penalty_type: IPenaltyType;
   amount: string | number;
   notes?: string | null;
-  status?:IEmployeePenaltyStatus;
+  status?: IEmployeePenaltyStatus;
 }
-
-
-
-
-export interface BranchDetailResponse {
-  id: number;
-  institution: number;
-  paying_bank_account: number;
-  institution_name: string;
-  branch_name: string;
-  branch_phone_number: string;
-  branch_location: string;
-  branch_latitude: number;
-  branch_longitude: number;
-  branch_email: string;
-  branch_opening_time: string;
-  branch_closing_time: string;
-  is_active: boolean;
-}
-
-export interface IBranchDay {
-  day_id: number;
-  day_code: string;
-  id: number;
-  day_name: string;
-  day_type: string;
-}
-

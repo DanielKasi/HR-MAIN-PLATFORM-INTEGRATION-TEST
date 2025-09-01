@@ -1,46 +1,47 @@
 "use client";
 
-import React, {useRef} from "react";
+import React, { useRef } from "react";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {useSelector} from "react-redux";
-import type {IEmployeePenalty, IEmployee} from "@/types/types.utils";
-import {penaltiesAPI} from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useSelector } from "react-redux";
+import type { IEmployeePenalty, IEmployee } from "@/types/types.utils";
+import { penaltiesAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, MoreHorizontal, Trash } from "lucide-react";
+import { PENALTY_TYPES } from "@/app/constants";
 
 interface PenaltiesTableProps {
   searchTerm?: string;
   refreshTableRef?: React.RefObject<() => void>;
-  scope: {type: "employee"; employee: IEmployee} | {type: "branch"; branch: any} | {type: "default"};
+  scope: { type: "employee"; employee: IEmployee } | { type: "branch"; branch: any } | { type: "default" };
   onEdit?: (penalty: IEmployeePenalty) => void;
   onDelete?: (id: number) => void;
 }
 
-export default function PenaltiesTable({searchTerm, refreshTableRef, scope, onEdit, onDelete}: PenaltiesTableProps) {
+export default function PenaltiesTable({ searchTerm, refreshTableRef, scope, onEdit, onDelete }: PenaltiesTableProps) {
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const localRefreshRef = refreshTableRef || useRef<() => void>(() => {});
+  const localRefreshRef = refreshTableRef || useRef<() => void>(() => { });
 
   return (
     <PaginatedTableWrapper<IEmployeePenalty>
       fetchFirstPage={async () => {
         if (!selectedInstitution) throw new Error("No institution selected");
         if (scope.type === "employee") {
-          return await penaltiesAPI.EMPLOYEE.getPaginated({employee_id: scope.employee.id, page: 1, search: searchTerm || undefined});
+          return await penaltiesAPI.EMPLOYEE.getPaginated({ employee_id: scope.employee.id, page: 1, search: searchTerm || undefined });
         }
         // default: fetch empty set
         return { results: [], count: 0 } as any;
       }}
       onError={(error) => console.error(error)}
-      fetchFromUrl={async ({url}) => penaltiesAPI.COMMON.getPaginatedFromUrl({url})}
+      fetchFromUrl={async ({ url }) => penaltiesAPI.COMMON.getPaginatedFromUrl({ url })}
       deps={[selectedInstitution?.id, searchTerm]}
       className="space-y-4"
       footerClassName="pt-4"
     >
-      {({data, loading, refresh, goNext, goPrev}) => {
+      {({ data, loading, refresh, goNext, goPrev }) => {
         // store refresh
         React.useEffect(() => {
           if (localRefreshRef) {
@@ -69,7 +70,7 @@ export default function PenaltiesTable({searchTerm, refreshTableRef, scope, onEd
                 <TableBody>
                   {data.results.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{(r.penalty_type as any)?.name || r.penalty_type || "-"}</TableCell>
+                      <TableCell>{PENALTY_TYPES.find(p => p.value === r.penalty_type)?.label || "-"}</TableCell>
                       <TableCell>{r.amount}</TableCell>
                       <TableCell>{r.date}</TableCell>
                       <TableCell>
@@ -82,7 +83,7 @@ export default function PenaltiesTable({searchTerm, refreshTableRef, scope, onEd
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => onEdit && onEdit(r)}>
-                              <Edit className="h-4 w-4 mr-2"/> Edit
+                              <Edit className="h-4 w-4 mr-2" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => onDelete && onDelete(r.id)}>
                               <Trash className="h-4 w-4 mr-2" /> Delete
@@ -96,7 +97,7 @@ export default function PenaltiesTable({searchTerm, refreshTableRef, scope, onEd
               </Table>
             </div>
 
-            
+
           </>
         );
       }}

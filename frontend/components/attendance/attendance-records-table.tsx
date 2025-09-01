@@ -17,20 +17,20 @@ import { CheckOutModal } from "@/components/checkout-modal";
 import { getCurrentUserLocation } from "@/lib/helpers";
 
 
-interface AttendanceRecordsTableProps{
-  institutionId:number,
+interface AttendanceRecordsTableProps {
+  institutionId: number,
   selectedDate?: string;
   setSelectedDate?: (date: string) => void;
-  searchTerm?:string,
-  scope: {type:"default", employees:IEmployee[]} | {type:"employee", employee:IEmployee},
-  attendanceRefreshRef?:RefObject<(()=>void|null)>;
-  employeesLoading:boolean,
-  showingOnDashboard?:boolean
+  searchTerm?: string,
+  scope: { type: "default", employees: IEmployee[], employees_count: number } | { type: "employee", employee: IEmployee },
+  attendanceRefreshRef?: RefObject<(() => void | null)>;
+  employeesLoading: boolean,
+  showingOnDashboard?: boolean
 }
 
 
-export function AttendanceRecordsTable({institutionId, searchTerm, scope, attendanceRefreshRef:attendanceRef, employeesLoading, showingOnDashboard}:AttendanceRecordsTableProps) {
-  
+export function AttendanceRecordsTable({ institutionId, searchTerm, scope, attendanceRefreshRef: attendanceRef, employeesLoading, showingOnDashboard }: AttendanceRecordsTableProps) {
+
   const [search, setSearch] = useState(searchTerm);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkOutModalOpen, setCheckOutModalOpen] = useState(false);
@@ -39,16 +39,16 @@ export function AttendanceRecordsTable({institutionId, searchTerm, scope, attend
   const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<IAttendance | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [employees, setEmployees] = useState<IEmployee[]>([]);
-    const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  useEffect(()=>{
+  useEffect(() => {
     setSearch(searchTerm)
   }, [searchTerm])
 
-  useEffect(()=>{
-    if(scope.type === "default"){
+  useEffect(() => {
+    if (scope.type === "default") {
       setEmployees(scope.employees)
-    }else{
+    } else {
       setEmployees([scope.employee])
     }
   }, [scope])
@@ -119,15 +119,15 @@ export function AttendanceRecordsTable({institutionId, searchTerm, scope, attend
       showErrorToast({ error, defaultMessage: "Failed to record check-in!" });
     }
   };
-  
+
   return <PaginatedTableWrapper<IAttendance>
-    fetchFirstPage={async () =>{ 
-      if(scope.type === "default"){
+    fetchFirstPage={async () => {
+      if (scope.type === "default") {
         return AttendanceAPI.fetchAttendanceRecords({ date: selectedDate, search, page: 1, institutionId })
       };
-        return AttendanceAPI.fetchAttendanceRecordsByEmployee({employee_id:scope.employee.id, date: selectedDate, search, page: 1, institutionId })
-      }
-      
+      return AttendanceAPI.fetchAttendanceRecordsByEmployee({ employee_id: scope.employee.id, date: selectedDate, search, page: 1, institutionId })
+    }
+
     }
     fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
     deps={[selectedDate, search]}
@@ -137,8 +137,8 @@ export function AttendanceRecordsTable({institutionId, searchTerm, scope, attend
     {({ data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance }) => {
       attendanceRefreshRef.current = refreshAttendance;
 
-      useEffect(()=>{
-        if(attendanceData?.results){
+      useEffect(() => {
+        if (attendanceData?.results) {
           setAttendanceRecords(attendanceData.results)
         }
       }, [attendanceData?.results])
@@ -146,70 +146,70 @@ export function AttendanceRecordsTable({institutionId, searchTerm, scope, attend
 
       const stats =
         scope.type === "default" ?
-      [
-        { label: "Total Employees", value: employees.length || 0, icon: null },
-        { label: "Checked In", value: attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
-        { label: "Checked Out", value: attendanceRecords.filter((a) => a.check_out_time).length, icon: null },
-        { label: "Absent", value: employees.length - attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
-      ]:
-      []
+          [
+            { label: "Total Employees", value: scope.employees_count || 0, icon: null },
+            { label: "Checked In", value: attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
+            { label: "Checked Out", value: attendanceRecords.filter((a) => a.check_out_time).length, icon: null },
+            { label: "Absent", value: employees.length - attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
+          ] :
+          []
 
       return (
         <>
           <div className="">
             <CardHeader className="px-2 md:px-4">
-              { scope.type === "default" ?
-              <>
-              <CardTitle className="flex items-center justify-between">
-                <span className="mb-2">Attendance ({employees.length})</span>
-              </CardTitle>
-              {
-                !showingOnDashboard  && (
-              <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
-                {stats.map((stat, idx) => (
-                  <div
-                    key={idx}
-                    className="w-full md:flex-1 md:min-w-[14rem] md:max-w-[20rem] bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 px-6 py-4"
-                  >
-                    <div className="text-xl">{stat.icon}</div>
-                    <div>
-                      <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                      <div className="text-sm text-gray-500 font-medium">{stat.label}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-                )
-              }
-              </>:
-              <></>
+              {scope.type === "default" ?
+                <>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="mb-2">Attendance</span>
+                  </CardTitle>
+                  {
+                    !showingOnDashboard && (
+                      <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
+                        {stats.map((stat, idx) => (
+                          <div
+                            key={idx}
+                            className="w-full md:flex-1 md:min-w-[14rem] md:max-w-[20rem] bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 px-6 py-4"
+                          >
+                            <div className="text-xl">{stat.icon}</div>
+                            <div>
+                              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                              <div className="text-sm text-gray-500 font-medium">{stat.label}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
+                </> :
+                <></>
 
               }
 
               <div className="flex flex-col gap-4 py-4">
                 <div className="grid grid-cols-1  md:flex flex-col md:flex-row gap-4 w-full items-center justify-start">
-                  { scope.type === "default" &&
-                  (
-                  <div className="relative md:w-full md:max-w-lg lg:max-w-xl">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search employees..."
-                      value={search || ""}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-10  " />
-                  </div>
-                  )
+                  {scope.type === "default" &&
+                    (
+                      <div className="relative md:w-full md:max-w-lg lg:max-w-xl">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Search employees..."
+                          value={search || ""}
+                          onChange={(e) => setSearch(e.target.value)}
+                          className="pl-10  " />
+                      </div>
+                    )
 
                   }
                   {!showingOnDashboard &&
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="rounded-lg px-3 py-2 text-gray-700 md:max-w-[8rem] w-full"
-                    style={{ minWidth: 140 }}
-                    max={new Date().toISOString().slice(0, 10)}
-                    title="Filter by date" />
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="rounded-lg px-3 py-2 text-gray-700 md:max-w-[8rem] w-full"
+                      style={{ minWidth: 140 }}
+                      max={new Date().toISOString().slice(0, 10)}
+                      title="Filter by date" />
                   }
                 </div>
               </div>
@@ -308,7 +308,7 @@ export function AttendanceRecordsTable({institutionId, searchTerm, scope, attend
             checkInTime={attendanceRecords.find((r) => r.employee.id === selectedEmployee?.id)?.check_in_time || null} />
         </>
       );
-    } }
+    }}
   </PaginatedTableWrapper>;
 }
 

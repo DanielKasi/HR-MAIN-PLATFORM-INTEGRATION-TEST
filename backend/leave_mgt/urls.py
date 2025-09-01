@@ -28,4 +28,5 @@ urlpatterns = [
         views.LeaveAnalyticsAPI.as_view(),
         name='leave-analytics'
     ),
+    path('analytics/', views.LeaveDashboardAPIView.as_view(), name='leave-dashboard')
 ]

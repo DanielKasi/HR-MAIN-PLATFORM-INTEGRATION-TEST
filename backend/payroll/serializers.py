@@ -19,35 +19,36 @@ from recruitment.models import JobPosition
 from institution.serializers import InstitutionSerializer, InstitutionTaxSerializer
 from django.db import transaction
 from employee.serializers import EmployeeAttendanceSerializer
+from approval.serializers import BaseApprovableSerializer
+
 
 
 class BaseModelSerializer(serializers.ModelSerializer):
-    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all())
+    institution = serializers.PrimaryKeyRelatedField(queryset=Institution.objects.all(), required=False)
 
     class Meta:
-        model = None
-        fields = "__all__"
+        abstract = True
+        fields = ['id', 'institution']
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        rep["institution"] = InstitutionSerializer(instance.institution).data
+        if hasattr(instance, 'institution') and instance.institution:
+            rep['institution'] = InstitutionSerializer(instance.institution).data
+        else:
+            rep['institution'] = None
         return rep
 
-class EmployeePenaltySerializer(serializers.ModelSerializer):
+     
 
+
+class AllowanceTypeSerializer(BaseModelSerializer, BaseApprovableSerializer):
     class Meta:
-        model = EmployeePenalty
-        fields = "__all__"        
-
-
-class AllowanceTypeSerializer(BaseModelSerializer):
-    class Meta(BaseModelSerializer.Meta):
         model = AllowanceType
         fields = BaseModelSerializer.Meta.fields
 
 
-class DeductionTypeSerializer(BaseModelSerializer):
-    class Meta(BaseModelSerializer.Meta):
+class DeductionTypeSerializer(BaseModelSerializer, BaseApprovableSerializer):
+    class Meta:
         model = DeductionType
         fields = BaseModelSerializer.Meta.fields
 
@@ -84,6 +85,7 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
+        abstract = True
         fields = "__all__"
         read_only_fields = ["employee"]
 
@@ -185,13 +187,18 @@ class EmployeeRelatedSerializer(serializers.ModelSerializer):
             "This method should be implemented in the child serializer."
         )
 
+class EmployeePenaltySerializer(BaseApprovableSerializer):
 
-class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
+    class Meta:
+        model = EmployeePenalty
+        fields = "__all__"   
+
+class EmployeeAllowanceSerializer(EmployeeRelatedSerializer, BaseApprovableSerializer):
     allowance_type = serializers.PrimaryKeyRelatedField(
         queryset=AllowanceType.objects.all()
     )
 
-    class Meta(EmployeeRelatedSerializer.Meta):
+    class Meta:
         model = EmployeeAllowance
         fields = "__all__"
 
@@ -240,12 +247,12 @@ class EmployeeAllowanceSerializer(EmployeeRelatedSerializer):
         return rep
 
 
-class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
+class EmployeeDeductionSerializer(EmployeeRelatedSerializer, BaseApprovableSerializer):
     deduction_type = serializers.PrimaryKeyRelatedField(
         queryset=DeductionType.objects.all()
     )
 
-    class Meta(EmployeeRelatedSerializer.Meta):
+    class Meta:
         model = EmployeeDeduction
         fields = "__all__"
 
@@ -294,7 +301,7 @@ class EmployeeDeductionSerializer(EmployeeRelatedSerializer):
         return rep
 
 
-class EmployeeTaxSerializer(serializers.ModelSerializer):
+class EmployeeTaxSerializer(BaseApprovableSerializer):
 
     target_employees = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
@@ -374,7 +381,7 @@ class EmployeeTaxSerializer(serializers.ModelSerializer):
         return employee_tax_instances[0] if employee_tax_instances else None
 
 
-class PayrollPeriodSerializer(serializers.ModelSerializer):
+class PayrollPeriodSerializer(BaseApprovableSerializer):
     class Meta:
         model = PayrollPeriod
         fields = "__all__"
@@ -386,7 +393,7 @@ class PayslipItemSimpleSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class PayslipSerializer(serializers.ModelSerializer):
+class PayslipSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
     payroll_period = serializers.PrimaryKeyRelatedField(
         queryset=PayrollPeriod.objects.all()

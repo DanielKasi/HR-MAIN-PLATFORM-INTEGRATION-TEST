@@ -14,11 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "sonner"
-import type { IDeductionType } from "@/types/types.utils"
+import { IDeductionType, PERMISSION_CODES } from "@/types/types.utils"
+import ProtectedComponent from "@/components/ProtectedComponent"
 import { getPaginatedDeductionTypes, getPaginatedDeductionTypesFromUrl } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import { TableSkeleton } from "@/components/common/table-skeleton"
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog"
 import { EditDeductionTypeDialog } from "@/components/deduction-types/edit-deduction-type-dialog"
 import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-deduction-type-dialog"
@@ -88,10 +87,7 @@ const DeductionTypesComponent = () => {
 
 
 
-  const clearFilters = () => {
-    setSearchTerm("")
-    setStatusFilter("all")
-  }
+ 
 
 
 
@@ -136,10 +132,12 @@ const DeductionTypesComponent = () => {
             </div>
             </div>
             <div className="flex items-center gap-2">
-              <CreateDeductionTypeDialog
-                onSuccess={handleCreateSuccess}
-                disabled={!selectedInstitution?.id}
-              />
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_DEDUCTION_TYPES}>
+                <CreateDeductionTypeDialog
+                  onSuccess={handleCreateSuccess}
+                  disabled={!selectedInstitution?.id}
+                />
+              </ProtectedComponent>
             </div>
           </div>
         </div>
@@ -212,8 +210,9 @@ const DeductionTypesComponent = () => {
             }
 
             return (
-              <div className="overflow-x-auto">
-                <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEDUCTION_TYPES}>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                   <TableHeader className="bg-gray-50/50">
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -270,17 +269,21 @@ const DeductionTypesComponent = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditDeductionType(deductionType)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteDeductionType(deductionType)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEDUCTION_TYPES}>
+                                <DropdownMenuItem onClick={() => handleEditDeductionType(deductionType)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
+                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEDUCTION_TYPES}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteDeductionType(deductionType)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedComponent>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -288,7 +291,8 @@ const DeductionTypesComponent = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </ProtectedComponent>
             );
             }}
           </PaginatedTableWrapper>
