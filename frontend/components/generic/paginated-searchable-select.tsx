@@ -124,7 +124,8 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
         if (!sentinelNode) return;
         const observer = new IntersectionObserver((entries) => {
             const entry = entries[0];
-            if (entry.isIntersecting && !fetchingMore) {
+            if (entry.isIntersecting && !fetchingMore && data.next) {
+                console.log("\n\n Fetching with next url : ", data.next)
                 setFetchingMore(true);
                 fetchFromUrl({ url: data.next! })
                     .then((res) => {

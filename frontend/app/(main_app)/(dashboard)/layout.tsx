@@ -532,6 +532,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     return (
       <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
+          disabled={(!item.href || item.href.startsWith("#") && !item.submenu?.length)}
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
@@ -585,7 +586,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 <Button
                   key={`${sub.href}-${index}`}
                   variant="ghost"
+                  // disabled={!sub.href || sub.href.startsWith("#")}
                   className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
+                    (!sub.href || sub.href.startsWith("#")) ?
+                    " text-gray-500/80":
                     pathname === sub.href
                       ? "bg-primary/80  text-gray-100"
                       : "bg-gray-200/20  hover:bg-primary/60"
