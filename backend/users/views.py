@@ -32,6 +32,7 @@ from .serializers import (
     ResendOTPSerializer,
     ProfileSerializer,
     LogoutRequestSerializer,
+    ChangePasswordSerializer,
 )
 from .models import (
     CustomUser,
@@ -134,6 +135,21 @@ class UserListAPIView(APIView):
 
         serializer = CustomUserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ChangePasswordAPIView(APIView):
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={200: {"description": "Password changed successfully"}},
+        description="Change the authenticated user's password.",
+        summary="Change password",
+        tags=["User Management"],
+    )
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 class ChangeEmailAndResendOTPAPIView(APIView):
     permission_classes = [permissions.AllowAny]

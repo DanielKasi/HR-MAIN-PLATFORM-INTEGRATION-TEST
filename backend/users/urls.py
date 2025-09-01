@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    ChangePasswordAPIView,
     LoginView,
     CustomTokenRefreshView,
     UserDetailAPIView,
@@ -22,7 +23,8 @@ from .views import (
     UserDetailsWithInstitutions,
     CountryListAPIView,
     ChangeEmailAndResendOTPAPIView,
-    LogoutView
+    LogoutView,
+
 )
 
 
@@ -78,4 +80,5 @@ urlpatterns = [
     ),
     path("details/", UserDetailsWithInstitutions.as_view(), name="user-dets"),
     path("countries/", CountryListAPIView.as_view(), name="country-list"),
+    path('change-password/', ChangePasswordAPIView.as_view(), name='change-password'),
 ]

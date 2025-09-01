@@ -181,21 +181,55 @@ class EmployeeDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        request=EmployeeSerializer,
         responses={200: EmployeeSerializer, 404: "Employee not found"},
-        description="Retrieve details of a specific employee.",
+        description="Retrieve details of a specific employee by employee ID or user ID.",
         summary="Employee Detail",
         tags=["Employee Management"],
+        parameters=[
+            OpenApiParameter(
+                name='employee_id',
+                description='ID of the employee',
+                required=True,
+                type=int,
+                location=OpenApiParameter.PATH,
+            ),
+            OpenApiParameter(
+                name='by_user',
+                description='If true, treats employee_id as user_id instead',
+                required=False,
+                type=bool,
+                location=OpenApiParameter.QUERY,
+            )
+        ]
     )
     def get(self, request, employee_id):
-        """Retrieve details of a specific employee."""
+        """
+        Retrieve details of a specific employee.
+        
+        By default, looks up employee by employee ID.
+        Use ?by_user=true to lookup by user ID instead.
+        """
+        by_user = request.query_params.get('by_user', '').lower() == 'true'
+        
         try:
-            employee = Employee.objects.get(id=employee_id)
+            if by_user:
+                employee = Employee.objects.get(user_id=employee_id)
+            else:
+                employee = Employee.objects.get(id=employee_id)
+                
             serializer = EmployeeSerializer(employee)
             return Response(serializer.data, status=status.HTTP_200_OK)
+            
         except Employee.DoesNotExist:
+            lookup_type = "user ID" if by_user else "employee ID"
             return Response(
-                {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
+                {"detail": f"Employee not found for the specified {lookup_type}."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": "An error occurred while retrieving employee details."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
