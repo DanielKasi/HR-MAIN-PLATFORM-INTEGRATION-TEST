@@ -1,24 +1,40 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CalendarDays, Clock, CheckCircle, XCircle, AlertCircle, Users } from "lucide-react"
+import { CalendarDays, Clock, Users, TrendingUp } from "lucide-react"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts"
+import { formatCurrency } from "@/lib/helpers"
 import { getLeaveDashboard } from "@/lib/utils"
 import type { ILeaveDashboard } from "@/types/types.utils"
 
-export default function LeaveDashboard() {
+const COLORS = ["#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
+
+export function LeaveDashboard() {
   const [data, setData] = useState<ILeaveDashboard | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       try {
-        const dashboardData = await getLeaveDashboard()
-        setData(dashboardData)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch data")
+        const result = await getLeaveDashboard()
+        setData(result)
+      } catch (error) {
+        console.error("Failed to fetch leave dashboard:", error)
       } finally {
         setLoading(false)
       }
@@ -29,160 +45,154 @@ export default function LeaveDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading leave dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
       </div>
     )
   }
 
-  if (error) {
+  if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-slate-500">Failed to load leave dashboard data</p>
       </div>
     )
-  }
-
-  if (!data) return null
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "approved":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case "rejected":
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case "pending":
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
-    }
   }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "approved":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-emerald-100 text-emerald-800"
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-amber-100 text-amber-800"
+      case "rejected":
+        return "bg-red-100 text-red-800"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-slate-100 text-slate-800"
+    }
+  }
+
+  const getLeaveTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "annual":
+        return "bg-blue-100 text-blue-800"
+      case "sick":
+        return "bg-red-100 text-red-800"
+      case "maternity":
+        return "bg-pink-100 text-pink-800"
+      case "paternity":
+        return "bg-indigo-100 text-indigo-800"
+      default:
+        return "bg-slate-100 text-slate-800"
     }
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-balance">Leave Management Dashboard</h1>
-          <p className="text-muted-foreground text-pretty">
-            Monitor leave applications, balances, and approval workflows
-          </p>
-        </div>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-slate-900">Leave Management Dashboard</h1>
+        <p className="text-slate-600">Monitor leave applications, balances, and trends</p>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-l-4 border-l-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Applications</CardTitle>
+            <CalendarDays className="h-4 w-4 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.total_leave_applications}</div>
-            <p className="text-xs text-muted-foreground">All time applications</p>
+            <div className="text-2xl font-bold text-slate-900">{formatCurrency(data.total_leave_applications)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium text-slate-600">Pending Approvals</CardTitle>
+            <Clock className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{data.pending_approvals}</div>
-            <p className="text-xs text-muted-foreground">Awaiting review</p>
+            <div className="text-2xl font-bold text-slate-900">{formatCurrency(data.pending_approvals)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Days Taken</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Avg Days Taken</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.average_leave_days_taken}</div>
-            <p className="text-xs text-muted-foreground">Per approved application</p>
+            <div className="text-2xl font-bold text-slate-900">{data.average_leave_days_taken.toFixed(1)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Leave Types</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Leave Types</CardTitle>
+            <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.applications_by_leave_type.length}</div>
-            <p className="text-xs text-muted-foreground">Active leave types</p>
+            <div className="text-2xl font-bold text-slate-900">{data.applications_by_leave_type.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Applications by Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Applications by Status</CardTitle>
-            <CardDescription>Current status breakdown of all leave applications</CardDescription>
+            <CardTitle className="text-lg font-semibold text-slate-900">Applications by Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {data.applications_by_status.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(item.status)}
-                    <span className="font-medium capitalize">{item.status}</span>
-                  </div>
-                  <Badge variant="outline" className={getStatusColor(item.status)}>
-                    {item.count}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            {data.applications_by_status.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={data.applications_by_status}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ status, count }) => `${status}: ${count}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="count"
+                  >
+                    {data.applications_by_status.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-slate-500">No status data available</div>
+            )}
           </CardContent>
         </Card>
 
         {/* Applications by Leave Type */}
         <Card>
           <CardHeader>
-            <CardTitle>Applications by Leave Type</CardTitle>
-            <CardDescription>Distribution of applications across different leave types</CardDescription>
+            <CardTitle className="text-lg font-semibold text-slate-900">Applications by Leave Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {data.applications_by_leave_type.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <CalendarDays className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{item.leave_type}</span>
-                  </div>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    {item.count}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            {data.applications_by_leave_type.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.applications_by_leave_type}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="leave_type" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-slate-500">
+                No leave type data available
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -190,79 +200,83 @@ export default function LeaveDashboard() {
       {/* Leave Balances */}
       <Card>
         <CardHeader>
-          <CardTitle>Leave Balances by Type</CardTitle>
-          <CardDescription>Overview of allocated, used, and available leave days</CardDescription>
+          <CardTitle className="text-lg font-semibold text-slate-900">Leave Balances by Type</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Leave Type</th>
-                  <th className="text-right p-3 font-medium">Allocated</th>
-                  <th className="text-right p-3 font-medium">Used</th>
-                  <th className="text-right p-3 font-medium">Available</th>
-                  <th className="text-right p-3 font-medium">Usage %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.leave_balances_by_type.map((balance, index) => {
-                  const usagePercentage =
-                    balance.total_allocated_days > 0
-                      ? Math.round((balance.total_used_days / balance.total_allocated_days) * 100)
-                      : 0
+          {data.leave_balances_by_type.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-medium text-slate-600">Leave Type</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-600">Allocated</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-600">Used</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-600">Available</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-600">Usage %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.leave_balances_by_type.map((balance, index) => {
+                    const usagePercent =
+                      balance.total_allocated_days > 0
+                        ? ((balance.total_used_days / balance.total_allocated_days) * 100).toFixed(1)
+                        : "0.0"
 
-                  return (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="p-3 font-medium">{balance.leave_type}</td>
-                      <td className="p-3 text-right">{balance.total_allocated_days}</td>
-                      <td className="p-3 text-right">{balance.total_used_days}</td>
-                      <td className="p-3 text-right">{balance.total_available_days}</td>
-                      <td className="p-3 text-right">
-                        <Badge
-                          variant="outline"
-                          className={
-                            usagePercentage > 80
-                              ? "bg-red-100 text-red-800 border-red-200"
-                              : usagePercentage > 60
-                                ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                : "bg-green-100 text-green-800 border-green-200"
-                          }
-                        >
-                          {usagePercentage}%
-                        </Badge>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={index} className="border-b border-slate-100">
+                        <td className="py-3 px-4">
+                          <Badge className={getLeaveTypeColor(balance.leave_type)}>{balance.leave_type}</Badge>
+                        </td>
+                        <td className="text-right py-3 px-4 font-medium">{balance.total_allocated_days}</td>
+                        <td className="text-right py-3 px-4">{balance.total_used_days}</td>
+                        <td className="text-right py-3 px-4 text-emerald-600 font-medium">
+                          {balance.total_available_days}
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          <span
+                            className={`font-medium ${Number.parseFloat(usagePercent) > 80 ? "text-red-600" : Number.parseFloat(usagePercent) > 60 ? "text-amber-600" : "text-emerald-600"}`}
+                          >
+                            {usagePercent}%
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-[200px] text-slate-500">
+              No leave balance data available
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Applications Over Time */}
       <Card>
         <CardHeader>
-          <CardTitle>Applications Timeline</CardTitle>
-          <CardDescription>Leave applications submitted over the last 6 months</CardDescription>
+          <CardTitle className="text-lg font-semibold text-slate-900">Leave Applications Over Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {data.applications_over_time.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{item.date}</span>
-                </div>
-                <Badge variant="outline" className="bg-card text-card-foreground">
-                  {item.count} applications
-                </Badge>
-              </div>
-            ))}
-          </div>
+          {data.applications_over_time.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data.applications_over_time}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-slate-500">No timeline data available</div>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
+
+// Add default export
+export default LeaveDashboard

@@ -36,7 +36,7 @@ from .utils import PayrollProcessor, generate_eft_excel, generate_allpayslips_ex
 from django.http import HttpResponse
 from django.utils.encoding import escape_uri_path
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from institution.models import Institution
+from institution.models import Institution, PENALTY_TYPES
 from payroll.utils import generate_payslip_pdf
 from django.utils import timezone
 from django.db.models import Q, Sum, Q, Avg
@@ -1082,7 +1082,7 @@ class PayrollAnalyticsAPI(APIView):
 class PayrollDashboardAPIView(APIView):
     """
     API endpoint for payroll dashboard analytics.
-    Provides aggregated metrics on payroll (derived from employee salaries), penalties, and overtime,
+    Provides aggregated metrics on actual payroll data from Payslip model,
     filtered by the authenticated user's institution.
     """
 
@@ -1090,39 +1090,77 @@ class PayrollDashboardAPIView(APIView):
         tags=['Payroll Dashboard'],
         description=(
             'Retrieves key analytics for the payroll module dashboard, filtered by the authenticated user\'s institution. '
-            'Metrics include total payroll amount (based on employee salaries), payroll by department, '
-            'average salary per employee, total penalties, average overtime pay, and payroll trends over the last 6 months.'
+            'Metrics include total payroll amount from actual payslips, payroll by department, '
+            'average net salary per employee, total penalties applied, penalty breakdown by type, '
+            'allowances vs deductions comparison, and payroll trends over the last 6 months.'
         ),
         responses={
             200: {
                 'type': 'object',
                 'properties': {
-                    'total_payroll_amount': {'type': 'number', 'description': 'Total payroll amount for the current year'},
+                    'total_payroll_amount': {'type': 'number', 'description': 'Total net salary paid (current year)'},
+                    'total_gross_payroll': {'type': 'number', 'description': 'Total gross salary (current year)'},
                     'payroll_by_department': {
                         'type': 'array',
                         'items': {
                             'type': 'object',
                             'properties': {
                                 'department': {'type': 'string'},
-                                'total_amount': {'type': 'number'}
+                                'total_net': {'type': 'number'},
+                                'total_gross': {'type': 'number'},
+                                'employee_count': {'type': 'integer'}
                             }
                         },
                         'description': 'Payroll amounts by department (current year)'
                     },
-                    'average_salary': {'type': 'number', 'description': 'Average salary per employee (current year)'},
-                    'total_penalties': {'type': 'integer', 'description': 'Total penalty instances (current year)'},
-                    'average_overtime_pay': {'type': 'number', 'description': 'Average overtime pay per employee (current year)'},
+                    'average_net_salary': {'type': 'number', 'description': 'Average net salary per payslip (current year)'},
+                    'average_gross_salary': {'type': 'number', 'description': 'Average gross salary per payslip (current year)'},
+                    'total_penalties_amount': {'type': 'number', 'description': 'Total penalty amount applied (current year)'},
+                    'total_penalties_count': {'type': 'integer', 'description': 'Total penalty instances (current year)'},
+                    'penalty_breakdown': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'penalty_type': {'type': 'string'},
+                                'count': {'type': 'integer'},
+                                'total_amount': {'type': 'number'}
+                            }
+                        },
+                        'description': 'Penalties by type (current year)'
+                    },
+                    'allowances_vs_deductions': {
+                        'type': 'object',
+                        'properties': {
+                            'total_allowances': {'type': 'number'},
+                            'total_deductions': {'type': 'number'},
+                            'net_difference': {'type': 'number'}
+                        },
+                        'description': 'Total allowances vs deductions comparison (current year)'
+                    },
                     'payroll_over_time': {
                         'type': 'array',
                         'items': {
                             'type': 'object',
                             'properties': {
                                 'month': {'type': 'string'},
-                                'total_amount': {'type': 'number'}
+                                'total_net': {'type': 'number'},
+                                'total_gross': {'type': 'number'},
+                                'payslips_count': {'type': 'integer'}
                             }
                         },
                         'description': 'Payroll amounts by month (last 6 months)'
                     },
+                    'payroll_periods_summary': {
+                        'type': 'object',
+                        'properties': {
+                            'total_periods': {'type': 'integer'},
+                            'processed_periods': {'type': 'integer'},
+                            'pending_periods': {'type': 'integer'},
+                            'latest_period': {'type': 'string'}
+                        },
+                        'description': 'Summary of payroll periods (current year)'
+                    }
                 }
             },
             400: {
@@ -1143,97 +1181,152 @@ class PayrollDashboardAPIView(APIView):
                 status=400
             )
 
-        # Filter employees by institution and current year
         current_year = timezone.now().year
-        employees = Employee.objects.filter(
-            department__institution=institution,
-            deleted_at__isnull=True
-        )
 
-        # Total payroll amount (sum of salaries for all employees, assuming monthly salary)
-        total_payroll_amount = employees.aggregate(total=Sum('salary'))['total'] or 0.0
-        total_payroll_amount = float(total_payroll_amount) * 12
+        # Get all payslips for the institution in current year
+        payslips = Payslip.objects.filter(
+            employee__department__institution=institution,
+            employee__deleted_at__isnull=True,
+            payroll_period__start_date__year=current_year,
+            deleted_at__isnull=True
+        ).select_related('employee', 'employee__department', 'payroll_period')
+
+        # Total payroll amounts
+        payroll_totals = payslips.aggregate(
+            total_net=Sum('net_salary'),
+            total_gross=Sum('gross_salary'),
+            avg_net=Avg('net_salary'),
+            avg_gross=Avg('gross_salary')
+        )
+        
+        total_payroll_amount = float(payroll_totals['total_net'] or 0)
+        total_gross_payroll = float(payroll_totals['total_gross'] or 0)
+        average_net_salary = round(float(payroll_totals['avg_net'] or 0), 2)
+        average_gross_salary = round(float(payroll_totals['avg_gross'] or 0), 2)
 
         # Payroll by department
         payroll_by_department = list(
-            employees.values('department__name')
-            .annotate(total_amount=Sum('salary'))
-            .order_by('department__name')
+            payslips.values('employee__department__name')
+            .annotate(
+                total_net=Sum('net_salary'),
+                total_gross=Sum('gross_salary'),
+                employee_count=Count('employee', distinct=True)
+            )
+            .order_by('employee__department__name')
         )
         payroll_by_department = [
             {
-                'department': item['department__name'],
-                'total_amount': float((item['total_amount'] or 0) * 12)  # Annualize safely
+                'department': item['employee__department__name'],
+                'total_net': float(item['total_net'] or 0),
+                'total_gross': float(item['total_gross'] or 0),
+                'employee_count': item['employee_count']
             }
-            for item in payroll_by_department if item['department__name']
+            for item in payroll_by_department if item['employee__department__name']
         ]
 
-        # Average salary per employee
-        avg_salary = employees.aggregate(
-            avg_salary=Avg('salary')
-        )['avg_salary'] or 0
-        average_salary = round(float(avg_salary), 2) if avg_salary else 0.0
-
-        # Total penalties
-        total_penalties = EmployeePenalty.objects.filter(
-            employee__department__institution=institution,
-            employee__deleted_at__isnull=True,
-            created_at__year=current_year
-        ).count()
-
-        # Average overtime pay (using overtime_hours from EmployeeAttendance)
-        overtime_records = EmployeeAttendance.objects.filter(
+        # Penalty metrics
+        penalties = EmployeePenalty.objects.filter(
             employee__department__institution=institution,
             employee__deleted_at__isnull=True,
             date__year=current_year,
-            overtime_hours__gt=0
+            status='applied',
+            deleted_at__isnull=True
         )
-        avg_overtime_pay = overtime_records.aggregate(
-            avg_overtime=Avg(
-                ExpressionWrapper(
-                    F('overtime_hours') * 50.0,  # Assume $50/hour rate; adjust as needed
-                    output_field=FloatField()
-                )
-            )
-        )['avg_overtime'] or 0
-        average_overtime_pay = round(float(avg_overtime_pay), 2) if avg_overtime_pay else 0.0
+        
+        penalty_totals = penalties.aggregate(
+            total_amount=Sum('amount'),
+            total_count=Count('id')
+        )
+        
+        total_penalties_amount = float(penalty_totals['total_amount'] or 0)
+        total_penalties_count = penalty_totals['total_count'] or 0
 
-        # Payroll over time (last 6 months, based on salary and overtime)
-        six_months_ago = timezone.now() - timedelta(days=180)
-        monthly_salaries = employees.values('department__name').annotate(
-            monthly_salary=Sum('salary')
+        # Penalty breakdown by type
+        penalty_breakdown = list(
+            penalties.values('penalty_type')
+            .annotate(
+                count=Count('id'),
+                total_amount=Sum('amount')
+            )
+            .order_by('-total_amount')
         )
+        penalty_breakdown = [
+            {
+                'penalty_type': dict(PENALTY_TYPES).get(item['penalty_type'], item['penalty_type']),
+                'count': item['count'],
+                'total_amount': float(item['total_amount'] or 0)
+            }
+            for item in penalty_breakdown
+        ]
+
+        # Allowances vs Deductions
+        allowances_deductions = payslips.aggregate(
+            total_allowances=Sum('total_allowances'),
+            total_deductions=Sum('total_deductions')
+        )
+        
+        total_allowances = float(allowances_deductions['total_allowances'] or 0)
+        total_deductions = float(allowances_deductions['total_deductions'] or 0)
+        
+        allowances_vs_deductions = {
+            'total_allowances': total_allowances,
+            'total_deductions': total_deductions,
+            'net_difference': total_allowances - total_deductions
+        }
+
+        # Payroll over time (last 6 months)
         payroll_over_time = []
         for i in range(5, -1, -1):  # Last 6 months, including current
             month_date = (timezone.now() - timedelta(days=30 * i)).replace(day=1)
-            month_salary = sum(item['monthly_salary'] or 0 for item in monthly_salaries)
-            # Add overtime pay for the month
-            overtime_for_month = EmployeeAttendance.objects.filter(
-                employee__department__institution=institution,
-                employee__deleted_at__isnull=True,
-                date__year=month_date.year,
-                date__month=month_date.month,
-                overtime_hours__gt=0
+            month_payslips = payslips.filter(
+                payroll_period__start_date__year=month_date.year,
+                payroll_period__start_date__month=month_date.month
             ).aggregate(
-                total_overtime=Sum(
-                    ExpressionWrapper(
-                        F('overtime_hours') * 50.0,
-                        output_field=FloatField()
-                    )
-                )
-            )['total_overtime'] or 0
+                total_net=Sum('net_salary'),
+                total_gross=Sum('gross_salary'),
+                count=Count('id')
+            )
+            
             payroll_over_time.append({
                 'month': month_date.strftime('%b %Y'),
-                'total_amount': float(month_salary + overtime_for_month)
+                'total_net': float(month_payslips['total_net'] or 0),
+                'total_gross': float(month_payslips['total_gross'] or 0),
+                'payslips_count': month_payslips['count'] or 0
             })
+
+        # Payroll periods summary
+        payroll_periods = PayrollPeriod.objects.filter(
+            institution=institution,
+            start_date__year=current_year,
+            deleted_at__isnull=True
+        )
+        
+        periods_summary = payroll_periods.aggregate(
+            total_periods=Count('id'),
+            processed_periods=Count('id', filter=Q(is_processed=True))
+        )
+        
+        latest_period = payroll_periods.order_by('-start_date').first()
+        
+        payroll_periods_summary = {
+            'total_periods': periods_summary['total_periods'] or 0,
+            'processed_periods': periods_summary['processed_periods'] or 0,
+            'pending_periods': (periods_summary['total_periods'] or 0) - (periods_summary['processed_periods'] or 0),
+            'latest_period': latest_period.name if latest_period else 'No periods found'
+        }
 
         data = {
             'total_payroll_amount': total_payroll_amount,
+            'total_gross_payroll': total_gross_payroll,
             'payroll_by_department': payroll_by_department,
-            'average_salary': average_salary,
-            'total_penalties': total_penalties,
-            'average_overtime_pay': average_overtime_pay,
+            'average_net_salary': average_net_salary,
+            'average_gross_salary': average_gross_salary,
+            'total_penalties_amount': total_penalties_amount,
+            'total_penalties_count': total_penalties_count,
+            'penalty_breakdown': penalty_breakdown,
+            'allowances_vs_deductions': allowances_vs_deductions,
             'payroll_over_time': payroll_over_time,
+            'payroll_periods_summary': payroll_periods_summary,
         }
 
         return Response(data)
