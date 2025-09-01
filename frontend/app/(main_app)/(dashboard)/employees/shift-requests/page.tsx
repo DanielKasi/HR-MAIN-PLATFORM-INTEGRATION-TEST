@@ -45,6 +45,7 @@ import type {
 } from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import {selectSelectedBranch, selectSelectedInstitution} from "@/store/auth/selectors";
+import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
 
 interface IAllocationFormData {
   employee_id: string;
@@ -237,7 +238,7 @@ const EmployeeShiftsPage = () => {
               const response = await apiRequest.get(`employee/employee-shifts/${queryString}`);
               return response.data;
             }}
-            fetchFromUrl={async (url: string) => {
+            fetchFromUrl={async ({url}: {url: string}) => {
               const response = await apiRequest.get(url);
               return response.data;
             }}
@@ -371,21 +372,20 @@ const EmployeeShiftsPage = () => {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="employee">Employee</Label>
-              <Select
-                value={formData.employee_id}
-                onValueChange={(value) => setFormData({...formData, employee_id: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.user?.fullname}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <EmployeeSearchableSelect
+                value={formData.employee_id ? [formData.employee_id] : []}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    employee_id: value[0]?.toString() || "",
+                  })
+                }
+                disabled={isSubmitting}
+                placeholder="Search and select employee"
+                showEmployeeId={false}
+                showDepartment={false}
+                multiple={false}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="shift">Shift</Label>

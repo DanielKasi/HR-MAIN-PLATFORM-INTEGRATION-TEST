@@ -1,20 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Search,
-  Trash2,
-  Eye,
-  User,
-  Settings,
-  Loader2,
-  MoreVertical,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, {useState, useEffect, useRef, useCallback, useMemo} from "react";
+import {useSelector} from "react-redux";
+import {useRouter} from "next/navigation";
+import {Plus, Search, Trash2, Eye, User, Settings, Loader2, MoreVertical} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -22,15 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -40,28 +24,23 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {Label} from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import {
-  LeaveBalancesAPI,
-  getPaginatedEmployees,
-  getLeaveTypes,
-} from "@/lib/utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
+import {toast} from "sonner";
+import {LeaveBalancesAPI, getPaginatedEmployees, getLeaveTypes} from "@/lib/utils";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {ILeaveBalance, IEmployee, ILeaveType} from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
-
-
+import {PERMISSION_CODES} from "@/types/types.utils";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {Icon} from "@iconify/react";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 // Define grouped employee interface
 interface GroupedEmployee {
@@ -157,8 +136,8 @@ export default function LeaveBalanceComponent() {
 
       try {
         const [employeesData, leaveTypesData] = await Promise.all([
-          getPaginatedEmployees({ institutionId: selectedInstitution.id }),
-          getLeaveTypes({ institutionId: selectedInstitution.id }),
+          getPaginatedEmployees({institutionId: selectedInstitution.id}),
+          getLeaveTypes({institutionId: selectedInstitution.id}),
         ]);
 
         setEmployees(employeesData.results);
@@ -183,20 +162,19 @@ export default function LeaveBalanceComponent() {
       const emp = employees.find((emp) => emp.id === employee);
       return emp?.user?.fullname || "Unknown Employee";
     },
-    [employees]
+    [employees],
   );
 
   const getEmployeeCode = useCallback(
     (employee: any) => {
       if (typeof employee === "object" && employee?.employee_id !== undefined) {
-        return employee.employee_id || "N/A";  // return here
+        return employee.employee_id || "N/A"; // return here
       }
       const emp = employees.find((emp) => emp.id === employee);
-      return emp?.employee_id || "N/A";        // and here
+      return emp?.employee_id || "N/A"; // and here
     },
-    [employees]
+    [employees],
   );
-
 
   const getLeaveTypeName = useCallback(
     (leaveType: any) => {
@@ -206,7 +184,7 @@ export default function LeaveBalanceComponent() {
       const type = leaveTypes.find((type) => type.id === leaveType);
       return type ? type.name : "Unknown Leave Type";
     },
-    [leaveTypes]
+    [leaveTypes],
   );
 
   const getEmployeeId = (employee: any) => {
@@ -230,7 +208,7 @@ export default function LeaveBalanceComponent() {
   // Fetch functions for PaginatedTableWrapper
   const fetchFirstPage = async (search?: string) => {
     if (!selectedInstitution?.id) {
-      return { results: [], count: 0, next: null, previous: null };
+      return {results: [], count: 0, next: null, previous: null};
     }
 
     return LeaveBalancesAPI.getPaginated({
@@ -240,11 +218,9 @@ export default function LeaveBalanceComponent() {
     });
   };
 
-  const fetchFromUrl = async ({ url }: { url: string }) => {
-    return LeaveBalancesAPI.getPaginatedFromUrl({ url });
+  const fetchFromUrl = async ({url}: {url: string}) => {
+    return LeaveBalancesAPI.getPaginatedFromUrl({url});
   };
-
-
 
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -263,8 +239,8 @@ export default function LeaveBalanceComponent() {
     setIsSubmitting(true);
     try {
       const leaveBalanceData: Partial<ILeaveBalance> = {
-        employee: { id: parseInt(formData.employee) } as IEmployee,
-        leave_type: { id: parseInt(formData.leave_type) } as ILeaveType,
+        employee: {id: parseInt(formData.employee)} as IEmployee,
+        leave_type: {id: parseInt(formData.leave_type)} as ILeaveType,
         year: parseInt(formData.year),
         institution: selectedInstitution.id,
         allocated_days: (parseFloat(formData.allocated_days) || 0).toString(),
@@ -317,7 +293,7 @@ export default function LeaveBalanceComponent() {
 
   // Handle view
   const handleView = (employeeId: number) => {
-    toast.loading("Loading employee details...", { id: `loading-${employeeId}` });
+    toast.loading("Loading employee details...", {id: `loading-${employeeId}`});
     router.push(`/leave/leave-balances/${employeeId}`);
   };
 
@@ -346,9 +322,7 @@ export default function LeaveBalanceComponent() {
     setIsSubmitting(true);
     try {
       await Promise.all(
-        deletingEmployee.leaveBalances.map((balance) =>
-          LeaveBalancesAPI.delete(balance.id)
-        )
+        deletingEmployee.leaveBalances.map((balance) => LeaveBalancesAPI.delete(balance.id)),
       );
       handleDeleteSuccess();
       setIsDeleteDialogOpen(false);
@@ -361,8 +335,6 @@ export default function LeaveBalanceComponent() {
     }
   };
 
-
-
   // Get unique years and leave types from static data
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -370,7 +342,7 @@ export default function LeaveBalanceComponent() {
   }, []);
 
   const uniqueLeaveTypes = useMemo(() => {
-    return leaveTypes.map(type => type.name);
+    return leaveTypes.map((type) => type.name);
   }, [leaveTypes]);
 
   if (!selectedInstitution?.id) {
@@ -390,9 +362,6 @@ export default function LeaveBalanceComponent() {
     );
   }
 
-
-
-
   return (
     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
       <div className="flex flex-col w-full min-h-screen bg-white">
@@ -402,7 +371,6 @@ export default function LeaveBalanceComponent() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Leave Balances</h1>
             </div>
-
           </div>
 
           {/* Search and Filters */}
@@ -422,7 +390,9 @@ export default function LeaveBalanceComponent() {
                   <SelectValue placeholder="All Leave Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-sm sm:text-base">All Leave Types</SelectItem>
+                  <SelectItem value="all" className="text-sm sm:text-base">
+                    All Leave Types
+                  </SelectItem>
                   {uniqueLeaveTypes.map((type) => (
                     <SelectItem key={type} value={type} className="text-sm sm:text-base">
                       {type}
@@ -435,7 +405,9 @@ export default function LeaveBalanceComponent() {
                   <SelectValue placeholder="All Years" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-sm sm:text-base">All Years</SelectItem>
+                  <SelectItem value="all" className="text-sm sm:text-base">
+                    All Years
+                  </SelectItem>
                   {availableYears.map((year) => (
                     <SelectItem key={year} value={year.toString()} className="text-sm sm:text-base">
                       {year}
@@ -462,27 +434,28 @@ export default function LeaveBalanceComponent() {
                         Create a new leave balance record for an employee.
                       </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+                    <form
+                      onSubmit={handleSubmit}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 items-end"
+                    >
                       <div className="space-y-3">
                         <Label htmlFor="employee" className="text-sm font-semibold text-gray-800">
                           Employee *
                         </Label>
-                        <Select
-                          value={formData.employee}
-                          onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                        <EmployeeSearchableSelect
+                          value={formData.employee ? [formData.employee] : []}
+                          onValueChange={(value) =>
+                            setFormData({
+                              ...formData,
+                              employee: value[0]?.toString() || "",
+                            })
+                          }
                           disabled={isSubmitting}
-                        >
-                          <SelectTrigger className="h-12 rounded-xl">
-                            <SelectValue placeholder="Select employee" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {employees.map((employee) => (
-                              <SelectItem key={employee.id} value={employee.id.toString()}>
-                                {employee.user?.fullname || "Unknown Employee"} ({employee.employee_id || "N/A"})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Search and select employee"
+                          showEmployeeId={false}
+                          showDepartment={false}
+                          multiple={false}
+                        />
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">
@@ -490,7 +463,7 @@ export default function LeaveBalanceComponent() {
                         </Label>
                         <Select
                           value={formData.leave_type}
-                          onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                          onValueChange={(value) => setFormData({...formData, leave_type: value})}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-12 rounded-xl">
@@ -511,7 +484,7 @@ export default function LeaveBalanceComponent() {
                         </Label>
                         <Select
                           value={formData.year}
-                          onValueChange={(value) => setFormData({ ...formData, year: value })}
+                          onValueChange={(value) => setFormData({...formData, year: value})}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-12 rounded-xl">
@@ -527,7 +500,10 @@ export default function LeaveBalanceComponent() {
                         </Select>
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="allocated_days" className="text-sm font-semibold text-gray-800">
+                        <Label
+                          htmlFor="allocated_days"
+                          className="text-sm font-semibold text-gray-800"
+                        >
                           Allocated Days
                         </Label>
                         <Input
@@ -535,7 +511,9 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.allocated_days}
-                          onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({...formData, allocated_days: e.target.value})
+                          }
                           placeholder="e.g., 21"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -550,14 +528,17 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.used_days}
-                          onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
+                          onChange={(e) => setFormData({...formData, used_days: e.target.value})}
                           placeholder="e.g., 5"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="pending_days" className="text-sm font-semibold text-gray-800">
+                        <Label
+                          htmlFor="pending_days"
+                          className="text-sm font-semibold text-gray-800"
+                        >
                           Pending Days
                         </Label>
                         <Input
@@ -565,14 +546,17 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.pending_days}
-                          onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
+                          onChange={(e) => setFormData({...formData, pending_days: e.target.value})}
                           placeholder="e.g., 2"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="carried_forward_days" className="text-sm font-semibold text-gray-800">
+                        <Label
+                          htmlFor="carried_forward_days"
+                          className="text-sm font-semibold text-gray-800"
+                        >
                           Carried Forward Days
                         </Label>
                         <Input
@@ -580,7 +564,9 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.carried_forward_days}
-                          onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({...formData, carried_forward_days: e.target.value})
+                          }
                           placeholder="e.g., 3"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -588,8 +574,12 @@ export default function LeaveBalanceComponent() {
                       </div>
                       <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-gray-800">Available Days:</span>
-                          <span className="text-lg font-bold text-myOrange">{calculateAvailable(formData)}</span>
+                          <span className="text-sm font-semibold text-gray-800">
+                            Available Days:
+                          </span>
+                          <span className="text-lg font-bold text-myOrange">
+                            {calculateAvailable(formData)}
+                          </span>
                         </div>
                       </div>
                     </form>
@@ -601,9 +591,7 @@ export default function LeaveBalanceComponent() {
                       >
                         Cancel
                       </Button>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}>
+                      <Button onClick={handleSubmit} disabled={isSubmitting}>
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -628,7 +616,7 @@ export default function LeaveBalanceComponent() {
             fetchFromUrl={fetchFromUrl}
             deps={[selectedInstitution?.id, searchTerm]}
           >
-            {({ data, loading, refresh }) => {
+            {({data, loading, refresh}) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -640,10 +628,15 @@ export default function LeaveBalanceComponent() {
                     <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No leave balances found</h3>
                     <p className="text-muted-foreground mb-4">
-                      {searchTerm ? "No leave balances match your search." : "Get started by adding your first leave balance."}
+                      {searchTerm
+                        ? "No leave balances match your search."
+                        : "Get started by adding your first leave balance."}
                     </p>
                     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_LEAVE_BALANCES}>
-                      <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setIsAddDialogOpen(true)}
+                        className="flex items-center gap-2"
+                      >
                         <Plus className="h-4 w-4" />
                         Add First Leave Balance
                       </Button>
@@ -661,28 +654,32 @@ export default function LeaveBalanceComponent() {
               });
 
               // Group by employee
-              const groupedEmployees = filteredResults.reduce((acc, balance) => {
-                const employeeId = getEmployeeId(balance.employee);
-                if (!acc[employeeId]) {
-                  acc[employeeId] = {
-                    employeeId,
-                    employeeName: getEmployeeName(balance.employee),
-                    employeeCode: getEmployeeCode(balance.employee),
-                    leaveBalances: [],
-                    totalAvailable: 0,
-                    status: "good" as const,
-                  };
-                }
-                acc[employeeId].leaveBalances.push(balance);
-                return acc;
-              }, {} as Record<number, GroupedEmployee>);
+              const groupedEmployees = filteredResults.reduce(
+                (acc, balance) => {
+                  const employeeId = getEmployeeId(balance.employee);
+                  if (!acc[employeeId]) {
+                    acc[employeeId] = {
+                      employeeId,
+                      employeeName: getEmployeeName(balance.employee),
+                      employeeCode: getEmployeeCode(balance.employee),
+                      leaveBalances: [],
+                      totalAvailable: 0,
+                      status: "good" as const,
+                    };
+                  }
+                  acc[employeeId].leaveBalances.push(balance);
+                  return acc;
+                },
+                {} as Record<number, GroupedEmployee>,
+              );
 
               // Calculate totals and status for each group
               const groupedArray = Object.values(groupedEmployees).map((group) => {
                 const totalAvailable = group.leaveBalances.reduce((sum, balance) => {
-                  const available = typeof balance.available_days === "string"
-                    ? parseFloat(balance.available_days)
-                    : balance.available_days || 0;
+                  const available =
+                    typeof balance.available_days === "string"
+                      ? parseFloat(balance.available_days)
+                      : balance.available_days || 0;
                   return sum + available;
                 }, 0);
 
@@ -719,40 +716,46 @@ export default function LeaveBalanceComponent() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-8 w-8 rounded-full ${group.status === "good"
+                                className={`h-8 w-8 rounded-full ${
+                                  group.status === "good"
                                     ? "bg-green-50"
                                     : group.status === "low"
                                       ? "bg-yellow-50"
                                       : "bg-red-50"
-                                  } flex items-center justify-center`}
+                                } flex items-center justify-center`}
                               >
                                 <User
-                                  className={`h-4 w-4 ${group.status === "good"
+                                  className={`h-4 w-4 ${
+                                    group.status === "good"
                                       ? "text-green-600"
                                       : group.status === "low"
                                         ? "text-yellow-600"
                                         : "text-red-600"
-                                    }`}
+                                  }`}
                                 />
                               </div>
                               <div>
                                 <div className="font-medium">{group.employeeName}</div>
-                                <div className="text-sm text-muted-foreground">{group.employeeCode}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {group.employeeCode}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                              {group.leaveBalances.length} {group.leaveBalances.length === 1 ? "Type" : "Types"}
+                              {group.leaveBalances.length}{" "}
+                              {group.leaveBalances.length === 1 ? "Type" : "Types"}
                             </Badge>
                           </TableCell>
                           <TableCell
-                            className={`text-center font-bold text-lg ${group.status === "overused"
+                            className={`text-center font-bold text-lg ${
+                              group.status === "overused"
                                 ? "text-red-600"
                                 : group.status === "low"
                                   ? "text-yellow-600"
                                   : "text-green-600"
-                              }`}
+                            }`}
                           >
                             {group.totalAvailable}
                           </TableCell>
@@ -764,8 +767,10 @@ export default function LeaveBalanceComponent() {
                           <TableCell className="text-center">
                             {formatDate(
                               group.leaveBalances.reduce((latest, balance) =>
-                                new Date(balance.updated_at) > new Date(latest.updated_at) ? balance : latest
-                              ).updated_at
+                                new Date(balance.updated_at) > new Date(latest.updated_at)
+                                  ? balance
+                                  : latest,
+                              ).updated_at,
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -780,7 +785,9 @@ export default function LeaveBalanceComponent() {
                                   <Eye className="h-4 w-4 mr-2" />
                                   View
                                 </DropdownMenuItem>
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}>
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_BALANCES}
+                                >
                                   <DropdownMenuItem
                                     onClick={() => {
                                       setDeletingEmployee(group);
@@ -804,9 +811,6 @@ export default function LeaveBalanceComponent() {
             }}
           </PaginatedTableWrapper>
         </div>
-
-
-
 
         {/* Edit Dialog */}
         <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_BALANCES}>
@@ -844,7 +848,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.employee}
-                    onValueChange={(value) => setFormData({ ...formData, employee: value })}
+                    onValueChange={(value) => setFormData({...formData, employee: value})}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -865,7 +869,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.leave_type}
-                    onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                    onValueChange={(value) => setFormData({...formData, leave_type: value})}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -886,7 +890,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.year}
-                    onValueChange={(value) => setFormData({ ...formData, year: value })}
+                    onValueChange={(value) => setFormData({...formData, year: value})}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -902,7 +906,10 @@ export default function LeaveBalanceComponent() {
                   </Select>
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="edit-allocated_days" className="text-sm font-semibold text-gray-800">
+                  <Label
+                    htmlFor="edit-allocated_days"
+                    className="text-sm font-semibold text-gray-800"
+                  >
                     Allocated Days
                   </Label>
                   <Input
@@ -910,7 +917,7 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.allocated_days}
-                    onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
+                    onChange={(e) => setFormData({...formData, allocated_days: e.target.value})}
                     placeholder="e.g., 21"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -925,14 +932,17 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.used_days}
-                    onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
+                    onChange={(e) => setFormData({...formData, used_days: e.target.value})}
                     placeholder="e.g., 5"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="edit-pending_days" className="text-sm font-semibold text-gray-800">
+                  <Label
+                    htmlFor="edit-pending_days"
+                    className="text-sm font-semibold text-gray-800"
+                  >
                     Pending Days
                   </Label>
                   <Input
@@ -940,14 +950,17 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.pending_days}
-                    onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
+                    onChange={(e) => setFormData({...formData, pending_days: e.target.value})}
                     placeholder="e.g., 2"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="edit-carried_forward_days" className="text-sm font-semibold text-gray-800">
+                  <Label
+                    htmlFor="edit-carried_forward_days"
+                    className="text-sm font-semibold text-gray-800"
+                  >
                     Carried Forward Days
                   </Label>
                   <Input
@@ -955,7 +968,9 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.carried_forward_days}
-                    onChange={(e) => setFormData({ ...formData, carried_forward_days: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({...formData, carried_forward_days: e.target.value})
+                    }
                     placeholder="e.g., 3"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -964,7 +979,9 @@ export default function LeaveBalanceComponent() {
                 <div className="bg-gray-50 rounded-xl p-4 md:col-span-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-800">Available Days:</span>
-                    <span className="text-lg font-bold text-myOrange">{calculateAvailable(formData)}</span>
+                    <span className="text-lg font-bold text-myOrange">
+                      {calculateAvailable(formData)}
+                    </span>
                   </div>
                 </div>
               </form>
@@ -976,11 +993,7 @@ export default function LeaveBalanceComponent() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-
-                >
+                <Button onClick={handleSubmit} disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -1016,8 +1029,10 @@ export default function LeaveBalanceComponent() {
                 </DialogTitle>
                 <DialogDescription className="text-gray-600 text-center text-base leading-relaxed">
                   Are you sure you want to delete all leave balance records for{" "}
-                  <span className="font-semibold text-gray-900">"{deletingEmployee?.employeeName}"</span>? This action
-                  cannot be undone.
+                  <span className="font-semibold text-gray-900">
+                    "{deletingEmployee?.employeeName}"
+                  </span>
+                  ? This action cannot be undone.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -1028,11 +1043,7 @@ export default function LeaveBalanceComponent() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isSubmitting}
-                >
+                <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
