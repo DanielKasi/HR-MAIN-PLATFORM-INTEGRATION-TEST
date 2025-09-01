@@ -1,4 +1,4 @@
-from .utils import prompt_openai, prompt_groq
+from .utils import prompt_groq
 import re
 
 
