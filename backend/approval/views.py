@@ -21,7 +21,9 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from users.models import Role
 from rest_framework import serializers
-
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Q
 
 
 class ActionListAPIView(APIView):
@@ -537,7 +539,7 @@ class ApprovalTaskRejectAPIView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class PendingApprovalTaskdListView(APIView):
+class PendingApprovalTasksListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -577,3 +579,92 @@ class PendingApprovalTaskdListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class ApprovalTasksDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: OpenApiTypes.OBJECT},
+        description="Retrieve incoming tasks (not started yet for the user), open tasks (pending for the user), critical tasks (pending and approaching expiration threshold), expired tasks (pending and past expiration threshold), and outgoing tasks (recently approved or rejected by the user), along with counts for each category. Expiration is calculated based on time since the task became pending (critical: >5 days, expired: >7 days).",
+        tags=["Approval Workflow"],
+    )
+    def get(self, request):
+        user = request.user
+        profile = user.profile
+
+        # Get user's roles (assuming through model exists as per existing code)
+        user_roles = Role.objects.filter(user_roles__user=user)
+
+        # Get user's institution
+        try:
+            institution = profile.institution
+        except AttributeError:
+            return Response({"detail": "User profile does not have an associated institution."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get groups the user belongs to (directly or via roles), filtered by institution
+        user_groups = ApproverGroup.objects.filter(
+            Q(users=profile) | Q(roles__in=user_roles),
+            institution=institution
+            ).distinct()
+
+        # Get levels where user's groups are approvers
+        levels = ApprovalDocumentLevel.objects.filter(
+            approvers__in=user_groups
+        ).distinct()
+
+        # Base tasks for ongoing approvals in these levels
+        base_tasks = ApprovalTask.objects.filter(
+            level__in=levels,
+            approval__status='ongoing',
+            approval__document__institution=institution
+        )
+
+        # Incoming tasks: not started (future levels for the user)
+        incoming_tasks_qs = base_tasks.filter(status='not_started').order_by('approval__id', 'level__level')
+
+        # Open tasks: pending for the user
+        open_tasks_qs = base_tasks.filter(status='pending').order_by('-updated_at')
+
+        # Define thresholds (arbitrary, as no due_date in models; based on time since became pending)
+        current_time = timezone.now()
+        critical_threshold = timedelta(days=5)
+        expired_threshold = timedelta(days=7)
+
+        # Critical tasks: pending > 5 days since became pending
+        critical_tasks_qs = open_tasks_qs.filter(updated_at__lt=current_time - critical_threshold)
+
+        # Expired tasks: pending > 7 days since became pending (still pending, no auto-expiration)
+        expired_tasks_qs = open_tasks_qs.filter(updated_at__lt=current_time - expired_threshold)
+
+        # Outgoing tasks: recently (last 7 days) approved or rejected by this specific user
+        outgoing_tasks_qs = ApprovalTask.objects.filter(
+            approved_by=user,
+            status__in=('approved', 'rejected'),
+            updated_at__gte=current_time - timedelta(days=7),
+            approval__document__institution=institution
+        ).order_by('-updated_at')
+
+        # Prepare response data
+        data = {
+            'incoming': {
+                'count': incoming_tasks_qs.count(),
+                'tasks': ApprovalTaskSerializer(incoming_tasks_qs, many=True).data
+            },
+            'open': {
+                'count': open_tasks_qs.count(),
+                'tasks': ApprovalTaskSerializer(open_tasks_qs, many=True).data
+            },
+            'critical': {
+                'count': critical_tasks_qs.count(),
+                'tasks': ApprovalTaskSerializer(critical_tasks_qs, many=True).data
+            },
+            'expired': {
+                'count': expired_tasks_qs.count(),
+                'tasks': ApprovalTaskSerializer(expired_tasks_qs, many=True).data
+            },
+            'outgoing': {
+                'count': outgoing_tasks_qs.count(),
+                'tasks': ApprovalTaskSerializer(outgoing_tasks_qs, many=True).data
+            },
+        }
+
+        return Response(data, status=status.HTTP_200_OK)

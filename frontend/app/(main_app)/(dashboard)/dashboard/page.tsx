@@ -21,6 +21,8 @@ import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
 import { USER_GENDER } from "@/types";
+import { TasksCards } from "@/components/dashboard_components/tasks-cards";
+
 
 
 export default function Dashboard() {
@@ -87,6 +89,7 @@ const capitalizeFirstLetter = (str: string) => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="space-y-6">
         {/* Header */}
+        
         <div className="flex items-center justify-between">
           <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">{greeting}, {currentUser?.gender === USER_GENDER.MALE
                     ? "Mr"
@@ -94,6 +97,7 @@ const capitalizeFirstLetter = (str: string) => {
                       ? "Ms"
                       : ""}.{" "}
                  {capitalizeFirstLetter(currentUser?.fullname || "")}</h1>
+
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
               <Link href={"/employees/employee-list"} className="flex items-center justify-start gap-3">
@@ -116,6 +120,8 @@ const capitalizeFirstLetter = (str: string) => {
             </Button>
           </div>
         </div>
+
+        <TasksCards branchId={null} />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
