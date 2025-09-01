@@ -167,7 +167,7 @@ class AIAssistantView(APIView):
                     schema, question, institution_id
                 )
 
-                # print(initial_sql)
+                print(initial_sql)
 
                 # Step 3: Run SQL (with retry/fallback)
                 sql_result = run_sql_with_retry(
@@ -177,7 +177,7 @@ class AIAssistantView(APIView):
                     initial_sql=initial_sql,
                 )
 
-                # print(sql_result)
+                print(sql_result)
 
                 # Step 4: Interpret result using AI
                 interpretation = interpret_sql_results_with_groq(
