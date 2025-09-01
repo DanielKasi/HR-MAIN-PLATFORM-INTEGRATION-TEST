@@ -5,9 +5,10 @@ from django.conf import settings
 
 from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
-from approval.models import Action 
+from approval.models import Action
 from discipline.models import DisciplineType
 from institution.models import (
+    BranchWorkingDays,
     Institution,
     InstitutionBankType,
     InstitutionBankAccount,
@@ -19,9 +20,7 @@ from settings.models import SystemDay
 
 
 class Command(BaseCommand):
-    help = (
-        "Add/sync permissions, workflows, systems, discipline types, and approval actions from JSON files"
-    )
+    help = "Add/sync permissions, workflows, systems, discipline types, and approval actions from JSON files"
 
     def handle(self, *args, **kwargs):
         self.sync_permissions()
@@ -299,7 +298,7 @@ class Command(BaseCommand):
                 "description": "Action for creating new records that require approval",
             },
             {
-                "name": "update", 
+                "name": "update",
                 "description": "Action for updating existing records that require approval",
             },
             {
@@ -308,7 +307,7 @@ class Command(BaseCommand):
             },
             # {
             #     "name": "activate",
-            #     "description": "Action for activating records that require approval", 
+            #     "description": "Action for activating records that require approval",
             # },
             # {
             #     "name": "deactivate",
@@ -450,6 +449,7 @@ class Command(BaseCommand):
             branches = Branch.objects.filter(institution=institution)
 
             for branch in branches:
+
                 if branch.paying_bank_account is None:
 
                     branch.paying_bank_account = account
@@ -457,6 +457,18 @@ class Command(BaseCommand):
 
                     self.stdout.write(
                         f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
+                    )
+
+                branch_working_days, created = BranchWorkingDays.objects.get_or_create(
+                    branch=branch
+                )
+                if created:
+                    self.stdout.write(
+                        f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"
+                    )
+                else:
+                    self.stdout.write(
+                        f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"
                     )
 
             employees = Employee.objects.filter(department__institution=institution)

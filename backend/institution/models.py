@@ -289,7 +289,7 @@ class InstitutionBankType(BaseApprovableModel):
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
-    
+
     def get_institution(self):
         return self.institution
 
@@ -328,7 +328,7 @@ class InstitutionBankAccount(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.account_name} - {self.institution_bank.bank_fullname} - {self.institution_bank.institution.institution_name}"
-    
+
     def get_institution(self):
         return self.institution_bank.institution
 
@@ -361,7 +361,7 @@ class InstitutionWorkingDays(BaseApprovableModel):
 
     def __str__(self):
         return f"Working Days for {self.institution.institution_name}"
-    
+
     def get_institution(self):
         return self.institution
 
@@ -390,7 +390,7 @@ class InstitutionTax(BaseApprovableModel):
 
     def __str__(self):
         return self.tax_name
-    
+
     def get_institution(self):
         return self.institution
 
@@ -435,7 +435,7 @@ class InstitutionTaxRule(BaseApprovableModel):
 
     def __str__(self):
         return self.tax_rule_name
-    
+
     def get_institution(self):
         return self.institution_tax.institution
 
@@ -495,9 +495,9 @@ class Branch(BaseApprovableModel):
             + " - "
             + self.branch_name
         )
-        
+
     def get_institution(self):
-        return self.institution    
+        return self.institution
 
 
 class BranchWorkingDays(BaseApprovableModel):
@@ -521,7 +521,7 @@ class BranchWorkingDays(BaseApprovableModel):
             self._create_branch_days()
 
         else:
-            if not self.branch_days:
+            if not self.branch_days.exists():
                 self._update_branch_days()
 
     def _create_branch_days(self):
@@ -549,9 +549,9 @@ class BranchWorkingDays(BaseApprovableModel):
             )
 
         self.days.set(inst_working_days.days.all())
-        
+
     def get_institution(self):
-        return self.branch.institution    
+        return self.branch.institution
 
 
 class BranchDay(models.Model):
@@ -625,9 +625,9 @@ class BranchShift(BaseApprovableModel):
             "shift_day__day__level",
             "name",
         )
-        
+
     def get_institution(self):
-        return self.branch.institution    
+        return self.branch.institution
 
 
 class UserBranch(models.Model):
@@ -711,7 +711,7 @@ class Department(BaseApprovableModel):
 
     def __str__(self):
         return self.name
-    
+
     def get_institution(self):
         return self.institution
 
@@ -754,12 +754,12 @@ class InstitutionPenaltyConfig(BaseApprovableModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["institution", "penalty_type"],
-                name="unique_institution_penalty_type"
+                name="unique_institution_penalty_type",
             )
         ]
 
@@ -770,10 +770,11 @@ class InstitutionPenaltyConfig(BaseApprovableModel):
         super().clean()
 
         # prevent duplicates at validation level
-        if InstitutionPenaltyConfig.objects.exclude(pk=self.pk).filter(
-            institution=self.institution,
-            penalty_type=self.penalty_type
-        ).exists():
+        if (
+            InstitutionPenaltyConfig.objects.exclude(pk=self.pk)
+            .filter(institution=self.institution, penalty_type=self.penalty_type)
+            .exists()
+        ):
             raise ValidationError(
                 {"error": "This penalty type already exists for this institution."}
             )
@@ -781,17 +782,21 @@ class InstitutionPenaltyConfig(BaseApprovableModel):
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
+                    {
+                        "error": "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    }
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
+                    {
+                        "error": "Penalty value must be greater than 0 when penalty type is fixed"
+                    }
                 )
-                
+
     def save(self, *args, **kwargs):
         self.full_clean()  # ✅ ensures clean() is run
-        return super().save(*args, **kwargs)            
+        return super().save(*args, **kwargs)
 
     def get_calculated_amount(self, employee_salary):
         """Calculate penalty amount based on method"""
@@ -804,7 +809,7 @@ class InstitutionPenaltyConfig(BaseApprovableModel):
             return calculated
 
         return self.penalty_value
-    
+
     def get_institution(self):
         return self.institution
 
@@ -831,26 +836,26 @@ class BranchPenaltyConfig(BaseApprovableModel):
         blank=True,
         help_text="Percentage value when penalty_value_type is 'percentage'",
     )
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["branch", "penalty_type"],
-                name="unique_branch_penalty_type"
+                fields=["branch", "penalty_type"], name="unique_branch_penalty_type"
             )
         ]
 
     def __str__(self):
         return f"{self.get_penalty_type_display()} - {self.branch.branch_name}"
-    
+
     def clean(self):
         super().clean()
 
         # prevent duplicates at validation level
-        if BranchPenaltyConfig.objects.exclude(pk=self.pk).filter(
-            branch=self.branch,
-            penalty_type=self.penalty_type
-        ).exists():
+        if (
+            BranchPenaltyConfig.objects.exclude(pk=self.pk)
+            .filter(branch=self.branch, penalty_type=self.penalty_type)
+            .exists()
+        ):
             raise ValidationError(
                 {"error": "This penalty type already exists for this branch."}
             )
@@ -858,12 +863,16 @@ class BranchPenaltyConfig(BaseApprovableModel):
         if self.penalty_value_type == "percentage":
             if not self.percentage or self.percentage <= 0:
                 raise ValidationError(
-                    {"error": "Percentage must be provided and greater than 0 when penalty type is percentage"}
+                    {
+                        "error": "Percentage must be provided and greater than 0 when penalty type is percentage"
+                    }
                 )
         elif self.penalty_value_type == "fixed":
             if self.penalty_value <= 0:
                 raise ValidationError(
-                    {"error": "Penalty value must be greater than 0 when penalty type is fixed"}
+                    {
+                        "error": "Penalty value must be greater than 0 when penalty type is fixed"
+                    }
                 )
 
     def save(self, *args, **kwargs):
@@ -881,7 +890,7 @@ class BranchPenaltyConfig(BaseApprovableModel):
             return calculated
 
         return self.penalty_value
-    
+
     def get_institution(self):
         return self.branch.institution
 
@@ -894,6 +903,6 @@ class BranchLocationComparisonConfig(BaseApprovableModel):
 
     def __str__(self):
         return f"Location Comparison Settings for {self.branch.branch_name}"
-    
+
     def get_institution(self):
         return self.branch.institution
