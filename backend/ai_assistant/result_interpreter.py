@@ -21,7 +21,7 @@ def interpret_sql_results_with_groq(
         data_summary += f"... and {len(rows) - 10} more rows\n"
 
     system_prompt = """
-You are an AI assistant that interprets SQL query results for supermarket managers.
+You are an AI assistant that interprets SQL query results for institution(HR) managers.
 
 Your job is to convert database output into clear, insightful, and business-relevant summaries.
 

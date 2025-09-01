@@ -10,13 +10,13 @@ def generate_sql_from_question(
     using the Groq API.
     """
     system_prompt = f"""
-You are an expert SQL developer for a multi-tenant supermarket management system.
+You are an expert SQL developer for a multi-tenant HR management system.
 
 Your task is to convert natural language questions into PostgreSQL queries.
 
 CRITICAL REQUIREMENTS:
     1. ALWAYS include `institution_id = {institution_id}` in WHERE clauses to ensure tenant isolation.
-    2. NEVER access data across multiple shops.
+    2. NEVER access data across multiple institutions.
     3. Return ONLY the SQL query (no explanations, markdown, or comments).
     4. Use appropriate JOINs.
     5. Include LIMIT where applicable.
