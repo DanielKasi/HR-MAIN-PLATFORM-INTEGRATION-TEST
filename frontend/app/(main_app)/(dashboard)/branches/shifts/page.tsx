@@ -49,6 +49,7 @@ import {Badge} from "@/components/ui/badge";
 import {Edit, MoreVertical, Trash2} from "lucide-react";
 import type {IBranchShift, IBranchWorkingDays, IShiftFormData} from "@/types/types.utils";
 import {shiftsAPI} from "@/lib/utils";
+import {showErrorToast} from "@/lib/utils";
 
 const BranchShiftsPage = () => {
   const selectedBranch = useSelector(selectSelectedBranch);
@@ -96,6 +97,7 @@ const BranchShiftsPage = () => {
       }
     } catch (error) {
       console.error("Error adding shift:", error);
+      showErrorToast({error: error, defaultMessage: "Failed to add shift."});
     } finally {
       setLoading(false);
     }

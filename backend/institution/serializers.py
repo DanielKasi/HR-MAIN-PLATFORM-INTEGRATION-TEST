@@ -313,7 +313,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
                 institution=institution
             )
             raise serializers.ValidationError(
-                {"error": "Working days already exist for this institution."}
+                {"detail": "Working days already exist for this institution."}
             )
         except InstitutionWorkingDays.DoesNotExist:
             pass
@@ -794,19 +794,19 @@ class BranchShiftSerializer(BaseApprovableSerializer):
 
         if start_time >= end_time:
             raise serializers.ValidationError(
-                {"end_time": "Shift end time must be after start time."}
+                {"detail": "Shift end time must be after start time."}
             )
 
         if start_time < branch.branch_opening_time:
             raise serializers.ValidationError(
                 {
-                    "start_time": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
+                    "detail": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
                 }
             )
         if end_time > branch.branch_closing_time:
             raise serializers.ValidationError(
                 {
-                    "end_time": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
+                    "detail": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
                 }
             )
 
