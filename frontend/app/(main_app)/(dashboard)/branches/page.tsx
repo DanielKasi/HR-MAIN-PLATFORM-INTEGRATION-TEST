@@ -1,3 +1,4 @@
+// Update newBranch institution when selectedInstitution changes
 "use client";
 
 import type {Branch} from "@/types";
@@ -102,6 +103,7 @@ export default function BranchesPage() {
     }
   }, [selectedInstitution?.id]);
 
+  // Ensure branches is always an array before filtering
   const safeBranches = Array.isArray(branches) ? branches : [];
 
   const filteredBranches = safeBranches.filter(
@@ -120,7 +122,7 @@ export default function BranchesPage() {
     try {
       const branchData = {
         ...newBranch,
-        institution: selectedInstitution.id,
+        institution: selectedInstitution.id, // Use current institution ID
       };
       const response = await apiRequest.post("institution/branch/", branchData);
 
@@ -506,7 +508,7 @@ export default function BranchesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+                            {/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
                               <DropdownMenuItem
                                 onClick={() => {
                                   router.push(`/branches/${branch.id}`);
@@ -515,7 +517,7 @@ export default function BranchesPage() {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                            </ProtectedComponent>
+                            </ProtectedComponent> */}
                             <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -544,6 +546,12 @@ export default function BranchesPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={() => router.push("/branches/shifts")} variant="ghost">
+              Branch Shifts
+            </Button>
           </div>
         </CardContent>
       </div>
