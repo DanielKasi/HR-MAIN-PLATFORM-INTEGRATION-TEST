@@ -127,6 +127,7 @@ import {
   IBranchWorkingDays,
   OffboardingData,
   AssetsData,
+  ChangePasswordData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4111,6 +4112,16 @@ export const getLeaveDashboard = async () => {
     return response.data as ILeaveDashboard;
   } catch (error) {
     // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const changePassword = async (data: ChangePasswordData) => {
+  try {
+    const response = await apiRequest.post("users/change-password/", data);
+    return response.data as { message: string };
+  } catch (error) {
+    // console.error("Failed to change password:", error);
     throw error;
   }
 };

@@ -350,7 +350,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
         return rep
 
 
-class BranchDaySerializer(BaseApprovableSerializer):
+class BranchDaySerializer(serializers.ModelSerializer):
     day_name = serializers.CharField(source="day.day_name", read_only=True)
     day_id = serializers.PrimaryKeyRelatedField(
         queryset=SystemDay.objects.all(), source="day", write_only=True, required=False
