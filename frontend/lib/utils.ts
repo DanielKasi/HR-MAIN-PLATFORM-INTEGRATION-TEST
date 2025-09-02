@@ -129,7 +129,14 @@ import {
   AssetsData,
   ChangePasswordData,
   ApprovalTasksDashboardResponse,
-} from "@/types/types.utils";
+  ISpotCheckSetting,
+  IBranchSpotCheckSettingFormData,
+  IInstitutionSpotCheckSettingFormData,
+  IInstitutionSpotCheckSetting,
+  IBranchSpotCheckSetting,
+  IEmployeeSpotCheckSetting,
+  IEmployeeSpotCheckSettingFormData,
+  } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
@@ -6395,31 +6402,6 @@ export const spotcheckAPI = {
     }
   },
 
-  getSummary: async (
-    institutionId: number,
-  ): Promise<{
-    totalSpotChecks: number;
-    totalMissed: number;
-    missedThisMonth: number;
-    missedThisWeek: number;
-    missedToday: number;
-  }> => {
-    // try {
-    const response = await apiRequest.get(`/spotcheck/summary/?institution_id=${institutionId}`);
-    return response.data;
-    // } catch (error) {
-    //   console.error("Error fetching spotcheck summary:", error);
-    //   // Return dummy data for now
-    //   return {
-    //     totalSpotChecks: 156,
-    //     totalMissed: 23,
-    //     missedThisMonth: 8,
-    //     missedThisWeek: 3,
-    //     missedToday: 1,
-    //   };
-    // }
-  },
-
   getStatuses: async (): Promise<ISpotCheckStatus[]> => {
     const response = await apiRequest.get("/spotcheck/statuses/");
     return response.data.results || response.data;
@@ -6450,6 +6432,75 @@ export const spotcheckAPI = {
     const response = await apiRequest.delete(`/spotcheck/${id}/`);
     return response.status === 204;
   },
+
+  CONFIGS:{
+    INSTITUTION:{
+      getByInstitution: async ({
+        institutionId,
+      }: {
+        institutionId: number;
+      }) => {
+        const endpoint = `/spotcheck/institution/${institutionId}/setting/details/`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IInstitutionSpotCheckSetting;
+      },
+      
+      create: async ({institutionId, data}: {institutionId: number, data: IInstitutionSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/institution/${institutionId}/setting/`, data);
+        return response.data as IInstitutionSpotCheckSetting;
+      },
+      
+      update: async ({institutionId, data}: {institutionId: number, data: Partial<IInstitutionSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/details/`, data);
+        return response.data as IInstitutionSpotCheckSetting;
+      }
+    } ,
+
+    BRANCH:{
+      getByBranch: async ({
+        branchId,
+      }: {
+        branchId: number;
+      }) => {
+        const endpoint = `/spotcheck/branch/${branchId}/setting/details/`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+      create: async ({branchId, data}: {branchId: number, data: IBranchSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/branch/${branchId}/setting/`, data);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+      update: async ({branchId, data}: {branchId: number, data: Partial<IBranchSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/details/`, data);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+    },
+
+    EMPLOYEE:{
+      getByEmployee: async ({
+        employeeId,
+      }: {
+        employeeId: number;
+      }) => {
+        const endpoint = `/spotcheck/employee/${employeeId}/setting/details/`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+
+      create: async ({employeeId, data}: {employeeId: number, data: IEmployeeSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/employee/${employeeId}/setting/`, data);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+
+      update: async ({employeeId, data}: {employeeId: number, data: Partial<IEmployeeSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/details/`, data);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+    }
+  }
 };
 
 // Penalty Configuration API functions

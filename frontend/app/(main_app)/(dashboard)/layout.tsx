@@ -54,7 +54,7 @@ import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
-import { employeeAPI, showErrorToast } from "@/lib/utils";
+import {employeeAPI, showErrorToast} from "@/lib/utils";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -134,28 +134,28 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const dispatch = useDispatch();
   const router = useRouter();
   const appLayoutRef = useRef<HTMLDivElement | null>(null);
-    const [relatedEmployee, setRelatedEmployee] = useState<IEmployee|null>(null);
+  const [relatedEmployee, setRelatedEmployee] = useState<IEmployee | null>(null);
 
-  useEffect(()=>{
-    if(selectedInstitution && currentUser){
-      if(currentUser.id !== selectedInstitution.institution_owner_id){
-        fetchRelatedEmployeeByUserId()
+  useEffect(() => {
+    if (selectedInstitution && currentUser) {
+      if (currentUser.id !== selectedInstitution.institution_owner_id) {
+        fetchRelatedEmployeeByUserId();
       }
     }
-  }, 
-  [selectedInstitution, currentUser])
+  }, [selectedInstitution, currentUser]);
 
-      const fetchRelatedEmployeeByUserId = async () => {
-        if(!currentUser){return}
-        try {
-          const employee = await employeeAPI.getByUserId({user_id:currentUser.id});
-          setRelatedEmployee(employee)
-        } catch (error) {
-          showErrorToast({error, defaultMessage:"Failed to fetch related employee"})
-        }finally{
-          
-        }
-      }
+  const fetchRelatedEmployeeByUserId = async () => {
+    if (!currentUser) {
+      return;
+    }
+    try {
+      const employee = await employeeAPI.getByUserId({user_id: currentUser.id});
+      setRelatedEmployee(employee);
+    } catch (error) {
+      showErrorToast({error, defaultMessage: "Failed to fetch related employee"});
+    } finally {
+    }
+  };
 
   useEffect(() => {
     const handleActivity = () => {
@@ -241,6 +241,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: (
         <Icon icon="hugeicons:dashboard-browsing" className="!w-6 !h-6" width="28" height="28" />
       ),
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD
     },
     {
       title: "Recruitment",
@@ -264,20 +265,34 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       title: "Employees",
       href: "#1",
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/employees"},
-        {title: "My Profile", href: relatedEmployee ? `/employees/profile/${relatedEmployee.id}`: '#'},
-        {title: "Employee Information", href: "/employees/employee-list"},
-        {title: "Document Requests", href: "#"},
-        {title: "Shifts", href: "/employees/shift-requests"},
-        {title: "Employee Types", href: "/employees/employee-types"},
-        {title: "Work Types", href: "/employees/work-types"},
-        {title: "Rotating Shift Assign", href: "#"},
-        {title: "Rotating Work Type Assign", href: "#"},
-        {title: "Disciplinary Actions", href: "/employees/discipline"},
-        {title: "Policies", href: "#"},
-        {title: "Organization Chart", href: "#"},
-      ],
+      submenu: relatedEmployee
+        ? [
+            {title: "Analytics", href: "/analytics/employees", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "My Profile", href: `/employees/profile/${relatedEmployee.id}`},
+            {title: "Employee Information", href: "/employees/employee-list", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Document Requests", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Shifts", href: "/employees/shift-requests", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Employee Types", href: "/employees/employee-types", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Work Types", href: "/employees/work-types", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Rotating Shift Assign", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Rotating Work Type Assign", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Disciplinary Actions", href: "/employees/discipline", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Policies", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+            {title: "Organization Chart", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
+          ]
+        : [
+            {title: "Analytics", href: "/analytics/employees"},
+            {title: "Employee Information", href: "/employees/employee-list"},
+            {title: "Document Requests", href: "#"},
+            {title: "Shifts", href: "/employees/shift-requests"},
+            {title: "Employee Types", href: "/employees/employee-types"},
+            {title: "Work Types", href: "/employees/work-types"},
+            {title: "Rotating Shift Assign", href: "#"},
+            {title: "Rotating Work Type Assign", href: "#"},
+            {title: "Disciplinary Actions", href: "/employees/discipline"},
+            {title: "Policies", href: "#"},
+            {title: "Organization Chart", href: "#"},
+          ],
       // requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
     },
     {
@@ -295,6 +310,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Late Come Early Out", href: "#"},
         {title: "My Attendances", href: "#"},
       ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_ATTENDANCE_REPORTS
     },
     {
       title: "Leave",
@@ -311,6 +327,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Leave Balances", href: "/leave/leave-balances"},
         {title: "Leave Application", href: "/leave/leave-application"},
       ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_LEAVE_REPORTS
     },
     {
       title: "Payroll",
@@ -330,6 +347,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Encashments & Reimbursements", href: "#"},
         {title: "Federal Tax", href: "#"},
       ],
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_PAYROLL_REPORTS
     },
     {
       title: "Performance",
@@ -345,7 +363,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Period", href: "#"},
         {title: "Question Template", href: "#"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_PERFORMANCE_REPORTS,
+
     },
 
     {
@@ -361,7 +380,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Separation Policy", href: "/off-boarding/separation-policy"},
         {title: "Terminations", href: "/off-boarding/terminations"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES,
     },
 
     {
@@ -389,7 +408,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "FAQs", href: "#"},
         {title: "Tickets", href: "#"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+      // requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
     },
     {
       title: "Project",
@@ -401,7 +420,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Tasks", href: "#"},
         {title: "Timesheet", href: "#"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+      requiredPermission: PERMISSION_CODES.CAN_VIEW_PROJECTS,
     },
     {
       title: "Configuration",
@@ -415,7 +434,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         {title: "Company Leaves", href: "#"},
         {title: "Restrict Leaves", href: "#"},
       ],
-      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
+      requiredPermission: PERMISSION_CODES.CAN_MANAGE_APPROVAL_WORKFLOWS,
     },
     // {
     //   title: "Events & Holidays",
@@ -556,7 +575,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     return (
       <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
-          disabled={(!item.href || item.href.startsWith("#") && !item.submenu?.length)}
+          disabled={!item.href || (item.href.startsWith("#") && !item.submenu?.length)}
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
@@ -612,11 +631,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   variant="ghost"
                   // disabled={!sub.href || sub.href.startsWith("#")}
                   className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
-                    (!sub.href || sub.href.startsWith("#")) ?
-                    " text-gray-500/80":
-                    pathname === sub.href
-                      ? "bg-primary/80  text-gray-100"
-                      : "bg-gray-200/20  hover:bg-primary/60"
+                    !sub.href || sub.href.startsWith("#")
+                      ? " text-gray-500/80"
+                      : pathname === sub.href
+                        ? "bg-primary/80  text-gray-100"
+                        : "bg-gray-200/20  hover:bg-primary/60"
                   }`}
                   onClick={() => {
                     router.push(sub.href);

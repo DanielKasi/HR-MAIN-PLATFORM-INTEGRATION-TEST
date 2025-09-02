@@ -49,18 +49,6 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
         spotcheck.save()
         raise IntegrityError("Failed to send spotcheck email.")
 
-    # Schedule a follow-up check for response
-    employee_spotcheck_expires_after = get_employee_spotchecks_expires_after_minutes(
-        employee
-    )
-    employee_spotcheck_expires_after_in_secs = employee_spotcheck_expires_after * 60
-
-    print(f"Spotcheck with id: {spotcheck.id} is to be checked on in {employee_spotcheck_expires_after} minutes")
-    check_spotcheck_response.apply_async(
-        args=[spotcheck.id], countdown=employee_spotcheck_expires_after_in_secs
-    )
-
-    # Schedule the next spotcheck (if any left in DB)
     next_spotcheck = (
         EmployeeSpotCheck.objects.filter(
             employee_id=employee.id,
@@ -80,7 +68,10 @@ def initiate_next_spotcheck_for_an_employee(employee_id):
 
 @shared_task
 def check_spotcheck_response(spotcheck_id):
+    
     spotcheck = EmployeeSpotCheck.objects.get(id=spotcheck_id)
+
+    print(f"========================>Checking spotcheck response for spotcheck: {spotcheck_id} at {timezone.now()}<========================")
     if not spotcheck.responded_at:
         missed_status, _ = SpotCheckStatus.objects.get_or_create(status_name="MISSED")
         spotcheck.status = missed_status

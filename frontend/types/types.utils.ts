@@ -2742,3 +2742,38 @@ export interface IEmployeePenaltyFormData {
   notes?: string | null;
   status?: IEmployeePenaltyStatus;
 }
+
+
+
+
+export interface ISpotCheckSetting {
+  lower_threshold: number;
+  upper_threshold: number;
+  expires_after_minutes: number;
+  late_starts_after_minutes: number;
+}
+
+
+export interface IInstitutionSpotCheckSetting extends ISpotCheckSetting {
+  institution: IUserInstitution;
+}
+
+export interface IBranchSpotCheckSetting extends ISpotCheckSetting {
+  branch: Branch;
+}
+
+export interface IEmployeeSpotCheckSetting extends ISpotCheckSetting {
+  employee: IEmployee;
+}
+
+export interface IBranchSpotCheckSettingFormData extends ISpotCheckSetting {
+  branch: number;
+} 
+
+export interface IEmployeeSpotCheckSettingFormData extends ISpotCheckSetting {
+  employee: number;
+}
+
+export interface IInstitutionSpotCheckSettingFormData extends ISpotCheckSetting {
+  institution: number;
+}

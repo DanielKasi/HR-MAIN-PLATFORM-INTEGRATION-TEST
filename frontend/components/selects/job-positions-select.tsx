@@ -52,7 +52,7 @@ export const JobPositionSearchableSelect = ({
 
 
   const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
-    
+    console.log("\n\n Item with id : ", itemId, " selected as : ", _item)
     if (!selectedItems.includes(itemId)) {
       if (multiple) {
         onValueChange([...selectedItems, itemId]);

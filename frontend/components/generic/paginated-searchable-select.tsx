@@ -94,6 +94,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   }, []);
 
   React.useEffect(() => {
+    console.log("Values changed with selected items :", selectedItems, " \n and Data :  ", data )
     const itemMatch =
       !multiple && selectedItems.length > 0
         ? data?.results.find((item) => getItemId(item) === selectedItems[0])
@@ -101,15 +102,16 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     if (itemMatch) {
       setSelectedItem(itemMatch);
     }
-  }, [staticItems, selectedItems, multiple, data]);
+  }, [selectedItems, data]);
 
-  React.useEffect(() => {
-    if (setParentItems) {
-      if (data && data.results) {
-        setParentItems(data.results);
-      }
-    }
-  }, [data]);
+  // React.useEffect(()=> {
+  // if (setParentItems) {
+  //     if (data && data.results) {
+  //       setParentItems(data.results);
+  //     }
+  //   }
+  // }, [data])
+
 
   // Fetch first page for paginated mode
   React.useEffect(() => {
@@ -128,9 +130,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     // eslint-disable-next-line
   }, [paginated, fetchFirstPage, JSON.stringify(query), ...deps]);
 
-  React.useEffect(() => {
-    console.log("\n\n Data changed as  : ", data);
-  }, [data]);
 
   // Infinite scroll with intersection observer (using callback ref)
   React.useEffect(() => {
@@ -149,7 +148,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
             .then((res) => {
               if (res && (!data.next || data.next !== res.next)) {
                   setHasMore(!!res.next);
-                console.log("\n\n Adding items : ", res.results, "\n\n To data : ", data)
                 setData((prev) => ({
                   ...res,
                   results: [...(prev?.results || []), ...res.results],
@@ -186,6 +184,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 
   const handleSelect = (itemId: string | number) => {
     const item = data?.results.find((i) => getItemId(i) === itemId);
+    // console.log("\n\n Item selected : ", item)
     if (!item) return;
     if (multiple && selectedItems.includes(itemId) && onRemove) {
       onRemove(itemId, item);
