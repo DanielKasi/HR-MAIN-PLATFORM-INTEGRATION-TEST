@@ -494,7 +494,7 @@ class AssetRequestDetailView(APIView):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
         asset_request.approval_status = 'under_deletion'
         asset_request.save(update_fields=['approval_status'])
-        assset_request.confirm_delete()
+        asset_request.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(

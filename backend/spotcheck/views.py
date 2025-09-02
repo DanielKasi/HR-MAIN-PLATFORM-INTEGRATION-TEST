@@ -301,7 +301,7 @@ class EmployeeStopCheckListView(APIView):
             employee_id = request.query_params.get("employee_id", None)
             spotchecks = SpotCheckModels.EmployeeSpotCheck.objects.filter(
                 employee__position__department__institution=request.user.profile.institution
-            )
+            ).order_by("-id")
             if employee_id:
                 spotchecks = spotchecks.filter(employee_id=employee_id)
             paginator = CustomPageNumberPagination()
@@ -372,20 +372,12 @@ class EmployeeSpotCheckDetailView(APIView):
     def get(self, request, spotcheck_id):
         """Retrieve details of a specific emplpyee spot check setting."""
         try:
-            setting = SpotCheckModels.EmployeeSpotCheck.objects.filter(
-                id=spotcheck_id, deleted_at=None
-            ).order_by('-id').first()
-            
-            if not setting:
-                return Response(
-                    {"detail": "Employee spot check not found."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            
+            setting = SpotCheckModels.EmployeeSpotCheck.objects.get(
+                id=spotcheck_id
+            )
             serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
-            
-        except Exception as e:
+        except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
                 {"detail": "Employee spot check not found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -409,7 +401,7 @@ class EmployeeSpotCheckUpdateView(APIView):
         """Update details of a specific employee spot check."""
         try:
             setting = SpotCheckModels.EmployeeSpotCheck.objects.get(
-                id=spotcheck_id
+                id=spotcheck_id, deleted_at=None
             )
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
