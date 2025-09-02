@@ -91,7 +91,7 @@ export default function AddEmployeeForm() {
 
   const {branches, loading: branchesLoading, error: branchesError} = useBranches();
 
-  const [positions, setPositions] = useState<IJobPosition[]>([]);
+  // const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([]);
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
@@ -311,17 +311,13 @@ export default function AddEmployeeForm() {
     field: keyof ICreateEmployeeForm,
     value: string | boolean | File | null | number | number[],
   ) => {
-    if (field == "position") {
-      const position = positions.find((p) => p.id === value);
-      if (position) {
+    if (field == "position" && typeof value === "number" ) {
         const updatedFormData = {
           ...formData,
-          position: position.id,
-          department: position.department,
+          position: value as number
         };
         setFormData(updatedFormData);
         handleSaveLocalEmployeeCreateForm(updatedFormData);
-      }
     } else if (field === "department") {
       console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
@@ -912,12 +908,12 @@ export default function AddEmployeeForm() {
                 <Label htmlFor="position">Position *</Label>
 
                 <JobPositionSearchableSelect
-                  setPositions={(positions: IJobPosition[]) =>
-                    setPositions((prev) => [
-                      ...prev.filter((prevPos) => !positions.some((pos) => pos.id === prevPos.id)),
-                      ...positions,
-                    ])
-                  }
+                  // setPositions={(positions: IJobPosition[]) =>
+                  //   setPositions((prev) => [
+                  //     ...prev.filter((prevPos) => !positions.some((pos) => pos.id === prevPos.id)),
+                  //     ...positions,
+                  //   ])
+                  // }
                   value={[formData.position.toString() || ""]}
                   onValueChange={(values) => {
                     if (values.length > 0) {
