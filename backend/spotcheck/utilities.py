@@ -45,8 +45,6 @@ def send_spotcheck_email(spotcheck: EmployeeSpotCheck) -> bool:
         )
         return True
     except Exception as e:
-        # delete the spotcheck if email fails
-        print(f"Failed to send email to {spotcheck.employee.user.email}: {e}")
         return False
 
 
@@ -157,6 +155,7 @@ def create_spotchecks_for_today(employee: Employee):
     work_start_time: time = get_employee_day_working_start_time(employee, system_day)
     work_end_time: time = get_employee_day_working_end_time(employee, system_day)
 
+
     work_start = datetime.combine(today, work_start_time)
     work_end = datetime.combine(today, work_end_time)
 
@@ -196,24 +195,6 @@ def create_spotchecks_for_today(employee: Employee):
             status=status,
             initiated_by="system",
         )
-
-    print(
-        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    )
-    print(
-        f"max_spotchecks: {max_spotchecks} | min_spotchecks: {min_spotchecks} | today: {today} | weekday_str: {weekday_str}"
-    )
-
-    print(
-        f"system_day: {system_day} | work_start_time: {work_start_time} | work_end_time: {work_end_time} | work_start: {work_start} | work_end: {work_end}"
-    )
-
-    print(
-        f"now: {now} | num_spotchecks: {num_spotchecks} | delta_seconds: {delta_seconds} | scheduled_times: {scheduled_times} | future_spotchecks: {future_spotchecks}"
-    )
-    print(
-        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    )
 
     if future_spotchecks:
         initiate_next_spotcheck_for_an_employee.apply_async(

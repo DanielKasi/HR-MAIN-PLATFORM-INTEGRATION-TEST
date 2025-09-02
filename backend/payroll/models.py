@@ -476,28 +476,61 @@ class EmployeePenalty(BaseApprovableModel):
         return self.employee.get_institution()
 
     def save(self, *args, **kwargs):
+        print(f"[SAVE] Saving penalty for {self.employee} | penalty_type={self.penalty_type} | date={self.date}")
         if not self.date:
             if self.attendance:
                 self.date = self.attendance.date
+                print(f"[SAVE] Date set from attendance: {self.date}")
             elif self.spot_check:
                 self.date = self.spot_check.spotcheck_time.date()
+                print(f"[SAVE] Date set from spot_check: {self.date}")
         super().save(*args, **kwargs)
+        print(f"[SAVE] Penalty saved with ID {self.id}")
 
     @classmethod
-    def create_from_attendance(cls, attendance):  
-        """Create penalty based on attendance status"""
+    def update_or_remove_penalty_for_attendance(cls, attendance):
+        
+        existing_penalties = cls.objects.filter(attendance=attendance)
+
+        # Determine which penalties should exist based on actual metrics (not just final status)
+        required_penalties = []
+        
+        # Check for late arrival
+        if attendance.late_minutes > 0:
+            required_penalties.append('late_coming')
+        
+        # Check for early departure  
+        if attendance.early_checkout_minutes > 0:
+            required_penalties.append('early_leaving')
+        
+        # Check for absence
+        if attendance.attendance_status == 'absent':
+            required_penalties.append('absent')
+
+        if required_penalties:
+            # Create required penalties
+            created_penalties = []
+            for penalty_type in required_penalties:
+                penalty = cls.create_from_attendance_with_type(attendance, penalty_type)
+                if penalty:
+                    created_penalties.append(penalty.penalty_type)
+
+            # Remove penalties that are no longer needed
+            penalties_to_remove = existing_penalties.exclude(penalty_type__in=required_penalties)
+            removed_count = penalties_to_remove.count()
+            if removed_count > 0:
+                penalties_to_remove.delete()
+            
+        else:
+            # No penalty required for this status (on_time, overtime, pending)
+            deleted_count = existing_penalties.count()
+            existing_penalties.delete()
+
+    @classmethod 
+    def create_from_attendance_with_type(cls, attendance, penalty_type):
+        """Create penalty for specific type based on attendance"""
         employee = attendance.employee
-        penalty_type = None  
-
-        if attendance.attendance_status == 'late':
-            penalty_type = 'late_coming'
-        elif attendance.attendance_status == 'early_checkout':
-            penalty_type = 'early_leaving'
-        elif attendance.attendance_status == 'absent':
-            penalty_type = 'absent'   
-
-        if not penalty_type:
-            return None
+        
 
         # Check if penalty already exists
         existing = cls.objects.filter(
@@ -509,13 +542,16 @@ class EmployeePenalty(BaseApprovableModel):
         if existing:
             return existing
 
+        # Get penalty configuration
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
             return None 
 
+        # Calculate penalty amount
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)  
 
+        # Create the penalty
         penalty = cls.objects.create(
             employee=employee,
             attendance=attendance,
@@ -525,81 +561,59 @@ class EmployeePenalty(BaseApprovableModel):
             notes=f"Penalty for {penalty_type} on {attendance.date}"
         )
         
-
         return penalty
 
     @classmethod
-    def update_or_remove_penalty_for_attendance(cls, attendance):
-        """
-        Update or remove existing penalty when attendance status changes
-        """
-        
-        # Get all existing penalties for this attendance
-        existing_penalties = cls.objects.filter(attendance=attendance)
-        
-        # Determine what penalty should exist based on current status
-        required_penalty_type = None
-        if attendance.attendance_status == 'late':
-            required_penalty_type = 'late_coming'
-        elif attendance.attendance_status == 'early_checkout':
-            required_penalty_type = 'early_leaving'
-        elif attendance.attendance_status == 'absent':
-            required_penalty_type = 'absent'
-        
-        if required_penalty_type:
-            # Should have a penalty - create or update
-            penalty = cls.create_from_attendance(attendance)
-            
-            # Remove any other penalty types for this attendance
-            existing_penalties.exclude(penalty_type=required_penalty_type).delete()
-            
-        else:
-            existing_penalties.delete()
-
-    @classmethod
     def create_from_spotcheck(cls, spotcheck, penalty_type):    
+        print(f"[CREATE_SPOTCHECK] spotcheck={spotcheck.id}, penalty_type={penalty_type}")
         if penalty_type not in ['no_response_spotcheck', 'late_spotcheck_response']:
+            print("[CREATE_SPOTCHECK] Invalid penalty_type. Skipping.")
             return None
 
         employee = spotcheck.employee
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
+            print(f"[CREATE_SPOTCHECK] No config found for penalty_type={penalty_type}")
             return None
 
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)
+        print(f"[CREATE_SPOTCHECK] Calculated amount={amount} for employee={employee}")
 
-        return cls.objects.create(
+        penalty = cls.objects.create(
             employee=employee,
             spot_check=spotcheck,
             penalty_type=penalty_type,
             amount=amount,
             notes=f"Penalty for spotcheck: {penalty_type}"
         )
+        print(f"[CREATE_SPOTCHECK] Penalty created with ID={penalty.id}")
+        return penalty
 
     @classmethod
     def _get_penalty_config(cls, employee, penalty_type):
-        """Get penalty config: branch > institution"""
-        
+        print(f"[GET_CONFIG] Fetching penalty config for employee={employee}, penalty_type={penalty_type}")
         branch = employee.payroll_branch
         config = None
         
         if branch:
-
             config = BranchPenaltyConfig.objects.filter(
                 branch=branch, penalty_type=penalty_type
             ).first()
-
+            print(f"[GET_CONFIG] Branch config found: {config}")
 
         if not config:
-            # Fall back to institution config
-            institution = branch.institution if branch else employee.institution
+            institution = branch.institution if branch else employee.department.institution
             if institution:
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
                 ).first()
+                print(f"[GET_CONFIG] Institution config found: {config}")
         
-        return config      
+        if not config:
+            print("[GET_CONFIG] No config found")
+        return config
+  
 
 
 class PayrollPeriod(BaseApprovableModel):

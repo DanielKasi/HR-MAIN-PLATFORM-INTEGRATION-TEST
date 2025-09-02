@@ -1,4 +1,4 @@
-from .utils import prompt_openai, prompt_groq
+from .utils import prompt_groq
 import re
 
 
@@ -45,7 +45,6 @@ Generate a PostgreSQL query to answer this question. Ensure `institution_id = {i
 
     raw_response = prompt_groq(full_prompt).strip()
 
-    print("\n\n\nraw_response:", raw_response)
 
     code_block_match = re.search(
         r"```sql\s*(.*?)\s*```", raw_response, re.DOTALL | re.IGNORECASE

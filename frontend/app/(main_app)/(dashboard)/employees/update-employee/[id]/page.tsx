@@ -1,15 +1,21 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {useState, useEffect} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Separator} from "@/components/ui/separator";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +25,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Upload, User, X, Loader2, ArrowLeft, Plus } from "lucide-react";
+import {Textarea} from "@/components/ui/textarea";
+import {Upload, User, X, Loader2, ArrowLeft, Plus} from "lucide-react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import {useRouter, useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
 import {
   getEmployeeById,
   updateEmployee,
@@ -46,13 +52,11 @@ import type {
   ICountry,
   IEmployee,
 } from "@/types/types.utils";
-import type { IUserInstitution, Role , Branch} from "@/types";
-import { toast } from "sonner";
-import { getFileUrl, formatCurrency } from "@/lib/helpers";
-
-
-
-
+import type {IUserInstitution, Role, Branch} from "@/types";
+import {toast} from "sonner";
+import {getFileUrl, formatCurrency} from "@/lib/helpers";
+import {MultiSelectBranches} from "@/components/multi-select-branches";
+import {useBranches} from "@/hooks/use-branches";
 
 interface EmployeeUpdateFormState {
   fullname: string;
@@ -86,16 +90,16 @@ interface EmployeeUpdateFormState {
 }
 
 const maritalStatusOptions = [
-  { value: "single", label: "Single" },
-  { value: "married", label: "Married" },
-  { value: "divorced", label: "Divorced" },
-  { value: "widowed", label: "Widowed" },
+  {value: "single", label: "Single"},
+  {value: "married", label: "Married"},
+  {value: "divorced", label: "Divorced"},
+  {value: "widowed", label: "Widowed"},
 ];
 
 const steps = [
-  { id: 1, title: "Personal Information" },
-  { id: 2, title: "Work Information" },
-  { id: 3, title: "Financial Information" },
+  {id: 1, title: "Personal Information"},
+  {id: 2, title: "Work Information"},
+  {id: 3, title: "Financial Information"},
 ];
 
 export default function UpdateEmployeePage() {
@@ -113,6 +117,8 @@ export default function UpdateEmployeePage() {
   const [isValidating, setIsValidating] = useState(false);
   const [employee, setEmployee] = useState<IEmployee | null>(null);
 
+  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
+
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([]);
@@ -128,14 +134,14 @@ export default function UpdateEmployeePage() {
     name: "",
     description: "",
     code: "",
-    institution:selectedInstitution?.id || 0
+    institution: selectedInstitution?.id || 0,
   });
 
   const [employeeTypeFormData, setEmployeeTypeFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
-        institution:selectedInstitution?.id || 0
+    institution: selectedInstitution?.id || 0,
   });
 
   const [formData, setFormData] = useState<EmployeeUpdateFormState>({
@@ -179,23 +185,22 @@ export default function UpdateEmployeePage() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
     country: ICountry | null;
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
-
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   const showErrorToast = (message: string) => {
-    toast.error(message)
-  }
+    toast.error(message);
+  };
 
   const showSuccessToast = (message: string) => {
-    toast.success(message)
-  }
+    toast.success(message);
+  };
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -209,7 +214,6 @@ export default function UpdateEmployeePage() {
     loadEmployee();
   }, [employeeId]);
 
-
   useEffect(() => {
     loadDropdownData();
   }, [institutionId]);
@@ -221,8 +225,7 @@ export default function UpdateEmployeePage() {
       setIsLoading(true);
       let employeeData: IEmployee | null = null;
 
-      employeeData = await getEmployeeById({ employeeId: parseInt(employeeId) });
-
+      employeeData = await getEmployeeById({employeeId: parseInt(employeeId)});
 
       if (employeeData) {
         setEmployee(employeeData);
@@ -254,6 +257,7 @@ export default function UpdateEmployeePage() {
           children_count: employeeData.children_count || 0,
           employee_profile_picture: null,
           salary: Number(employeeData.salary) || 0,
+          selected_branches:employeeData.user?.branches.map(b => b.id) || []
         });
 
         if (employeeData.employee_profile_picture) {
@@ -263,6 +267,7 @@ export default function UpdateEmployeePage() {
         setSubmitError("Employee not found");
       }
     } catch (error) {
+      console.error(error);
       setSubmitError("Failed to load employee data");
     } finally {
       setIsLoading(false);
@@ -274,10 +279,10 @@ export default function UpdateEmployeePage() {
     try {
       setLoadingData(true);
       const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-        getJobPositions({ institutionId }),
-        getDepartments({ institutionId }),
-        getWorkTypes({ institutionId }),
-        getEmployeeTypes({ institutionId }),
+        getJobPositions({institutionId}),
+        getDepartments({institutionId}),
+        getWorkTypes({institutionId}),
+        getEmployeeTypes({institutionId}),
       ]);
 
       setPositions(Array.isArray(positionsData) ? positionsData : []);
@@ -291,8 +296,11 @@ export default function UpdateEmployeePage() {
     }
   };
 
-  const handleInputChange = (field: string, value: string | boolean | File | null | number | number[]) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof EmployeeUpdateFormState,
+    value: string | boolean | File | null | number | number[],
+  ) => {
+    setFormData((prev) => ({...prev, [field]: value}));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,7 +325,7 @@ export default function UpdateEmployeePage() {
       return;
     }
 
-    if (previewUrl && !previewUrl.startsWith('http')) {
+    if (previewUrl && !previewUrl.startsWith("http")) {
       URL.revokeObjectURL(previewUrl);
     }
 
@@ -334,7 +342,7 @@ export default function UpdateEmployeePage() {
   };
 
   const handleRemoveImage = () => {
-    if (previewUrl && !previewUrl.startsWith('http')) {
+    if (previewUrl && !previewUrl.startsWith("http")) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl("");
@@ -364,8 +372,13 @@ export default function UpdateEmployeePage() {
 
       if (newWorkType) {
         setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
-        setWorkTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
+        setFormData((prev) => ({...prev, work_type: newWorkType.id}));
+        setWorkTypeFormData({
+          name: "",
+          description: "",
+          code: "",
+          institution: selectedInstitution?.id || 0,
+        });
         setIsWorkTypeModalOpen(false);
         showSuccessToast("Work type added successfully");
       } else {
@@ -373,7 +386,9 @@ export default function UpdateEmployeePage() {
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred while adding work type.";
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while adding work type.";
       showErrorToast(errorMessage);
     } finally {
       setIsAddingWorkType(false);
@@ -396,8 +411,13 @@ export default function UpdateEmployeePage() {
 
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
-        setEmployeeTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
+        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
+        setEmployeeTypeFormData({
+          name: "",
+          description: "",
+          code: "",
+          institution: selectedInstitution?.id || 0,
+        });
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -405,7 +425,9 @@ export default function UpdateEmployeePage() {
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unknown error occurred while adding employee type name.";
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while adding employee type name.";
       showErrorToast(errorMessage);
     } finally {
       setIsAddingEmployeeType(false);
@@ -416,7 +438,10 @@ export default function UpdateEmployeePage() {
     const requiredFields = ["fullname", "email", "position", "department", "date_of_joining"];
 
     for (const field of requiredFields) {
-      if (!formData[field as keyof EmployeeUpdateFormState] || formData[field as keyof EmployeeUpdateFormState] === 0) {
+      if (
+        !formData[field as keyof EmployeeUpdateFormState] ||
+        formData[field as keyof EmployeeUpdateFormState] === 0
+      ) {
         setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
         return false;
       }
@@ -553,9 +578,9 @@ export default function UpdateEmployeePage() {
         position: formData.position,
         department: formData.department,
         // Only include work_type if it's a valid value (> 0)
-        ...(formData.work_type > 0 && { work_type: formData.work_type }),
+        ...(formData.work_type > 0 && {work_type: formData.work_type}),
         // Only include employee_type if it's a valid value (> 0)
-        ...(formData.employee_type > 0 && { employee_type: formData.employee_type }),
+        ...(formData.employee_type > 0 && {employee_type: formData.employee_type}),
         date_of_birth: formData.date_of_birth,
         date_of_joining: formData.date_of_joining,
         address: formData.address,
@@ -588,7 +613,6 @@ export default function UpdateEmployeePage() {
 
         localStorage.removeItem(`employee_${employeeId}`);
 
-
         router.push("/employees/employee-list");
       } else {
         setSubmitError("Failed to update employee. Please try again.");
@@ -620,7 +644,7 @@ export default function UpdateEmployeePage() {
 
   useEffect(() => {
     return () => {
-      if (previewUrl && !previewUrl.startsWith('http')) {
+      if (previewUrl && !previewUrl.startsWith("http")) {
         URL.revokeObjectURL(previewUrl);
       }
     };
@@ -701,7 +725,9 @@ export default function UpdateEmployeePage() {
                     type="number"
                     min="0"
                     value={formData.children_count}
-                    onChange={(e) => handleInputChange("children_count", parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleInputChange("children_count", parseInt(e.target.value) || 0)
+                    }
                     placeholder="0"
                   />
                 </div>
@@ -710,7 +736,9 @@ export default function UpdateEmployeePage() {
 
             {/* Address Information */}
             <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-700 border-b pb-2">Address Information</h4>
+              <h4 className="text-md font-medium text-gray-700 border-b pb-2">
+                Address Information
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
@@ -744,7 +772,9 @@ export default function UpdateEmployeePage() {
 
             {/* Emergency Contact Information */}
             <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-700 border-b pb-2">Emergency Contact Information</h4>
+              <h4 className="text-md font-medium text-gray-700 border-b pb-2">
+                Emergency Contact Information
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="emergencyContactName">Contact Name</Label>
@@ -769,7 +799,9 @@ export default function UpdateEmployeePage() {
                   <Input
                     id="emergencyContactRelationship"
                     value={formData.emergency_contact_relationship}
-                    onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("emergency_contact_relationship", e.target.value)
+                    }
                     placeholder="Relationship to employee"
                   />
                 </div>
@@ -880,7 +912,7 @@ export default function UpdateEmployeePage() {
                             id="workTypeName"
                             value={workTypeFormData.name}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, name: e.target.value }))
+                              setWorkTypeFormData((prev) => ({...prev, name: e.target.value}))
                             }
                             placeholder="Enter work type name"
                           />
@@ -891,7 +923,7 @@ export default function UpdateEmployeePage() {
                             id="workTypeCode"
                             value={workTypeFormData.code}
                             onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, code: e.target.value }))
+                              setWorkTypeFormData((prev) => ({...prev, code: e.target.value}))
                             }
                             placeholder="Enter work type code (optional)"
                             maxLength={10}
@@ -919,7 +951,12 @@ export default function UpdateEmployeePage() {
                           variant="outline"
                           onClick={() => {
                             setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({ name: "", description: "", code: "" , institution: selectedInstitution?.id || 0});
+                            setWorkTypeFormData({
+                              name: "",
+                              description: "",
+                              code: "",
+                              institution: selectedInstitution?.id || 0,
+                            });
                           }}
                           disabled={isAddingWorkType}
                         >
@@ -994,7 +1031,7 @@ export default function UpdateEmployeePage() {
                             id="employeeTypeName"
                             value={employeeTypeFormData.name}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, name: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
                             }
                             placeholder="Enter employee type name"
                           />
@@ -1005,7 +1042,7 @@ export default function UpdateEmployeePage() {
                             id="employeeTypeCode"
                             value={employeeTypeFormData.code}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, code: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
                             }
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
@@ -1033,7 +1070,12 @@ export default function UpdateEmployeePage() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({ name: "", description: "", code: "", institution: selectedInstitution?.id || 0 });
+                            setEmployeeTypeFormData({
+                              name: "",
+                              description: "",
+                              code: "",
+                              institution: selectedInstitution?.id || 0,
+                            });
                           }}
                           disabled={isAddingEmployeeType}
                         >
@@ -1095,6 +1137,19 @@ export default function UpdateEmployeePage() {
                   value={formData.skills}
                   onChange={(e) => handleInputChange("skills", e.target.value)}
                   placeholder="Enter skills"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <MultiSelectBranches
+                  branches={branches}
+                  selectedBranches={formData.selected_branches || []}
+                  onSelectionChange={(selectedIds) =>
+                    handleInputChange("selected_branches", selectedIds)
+                  }
+                  loading={branchesLoading}
+                  error={branchesError}
+                  placeholder="Select branches for this employee"
+                  label="Employee Branches"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -1161,7 +1216,7 @@ export default function UpdateEmployeePage() {
                     const raw = e.target.value.replace(/,/g, "");
                     const parsed = parseFloat(raw);
                     if (!isNaN(parsed)) {
-                      setFormData({ ...formData, salary: parsed });
+                      setFormData({...formData, salary: parsed});
                     }
                   }}
                 />
@@ -1200,174 +1255,172 @@ export default function UpdateEmployeePage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 bg-white">
-          <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Link href="/employees/employee-list">
-                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 rounded-full aspect-square">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                </Button>
-              </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
-            </div>
-            <CardDescription className="py-4">
-              Update {employee.user?.fullname || employee.email}'s information
-            </CardDescription>
-
-
-
-            {/* Progress indicator */}
-            <div className="flex items-center justify-between mt-5">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
-                      ? "bg-orange-600 text-white"
-                      : "bg-gray-200 text-gray-600"
-                      }`}
-                  >
-                    {step.id}
-                  </div>
-                  <span
-                    className={`ml-2 text-sm ${currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
-                      }`}
-                  >
-                    {step.title}
-                  </span>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`w-12 h-0.5 mx-4 ${currentStep > step.id ? "bg-orange-600" : "bg-gray-200"}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6">
-            {submitError && (
-              <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-                {submitError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Profile Picture Upload */}
-              <div className="flex flex-col items-center space-y-4">
-                <div className="relative">
-                  <Avatar className="w-24 h-24">
-                    <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
-                    <AvatarFallback>
-                      <User className="w-12 h-12" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {previewUrl && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
-                      title="Remove image"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="text-center">
-                  <Input
-                    id="profilePicture"
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <Label htmlFor="profilePicture" className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex items-center space-x-2 bg-transparent"
-                      asChild
-                    >
-                      <span>
-                        <Upload className="w-4 h-4" />
-                        <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
-                      </span>
-                    </Button>
-                  </Label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Max size: 5MB. Formats: JPEG, PNG, GIF, WebP
-                  </p>
-                </div>
-                {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-                {uploadSuccess && (
-                  <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Form Steps */}
-              {renderStep()}
-
-              <Separator />
-
-              {/* Navigation Buttons */}
-              <div className="flex justify-between">
-                <Link href="/employees/employee-list">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:w-auto bg-transparent"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                </Link>
-
-                <div className="flex gap-2">
-                  {currentStep > 1 && (
-                    <Button type="button" onClick={prevStep} variant="outline">
-                      Previous
-                    </Button>
-                  )}
-                  {currentStep < steps.length ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      className="bg-orange-600 hover:bg-orange-700 px-6"
-                      disabled={!isCurrentStepValid() || isValidating}
-                    >
-                      {isValidating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Validating...
-                        </>
-                      ) : (
-                        "Next"
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="bg-orange-600 hover:bg-orange-700"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating Employee...
-                        </>
-                      ) : (
-                        "Update Employee"
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </form>
-          </CardContent>
+      <CardHeader>
+        <div className="flex items-center space-x-4">
+          <Link href="/employees/employee-list">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900 rounded-full aspect-square"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+            </Button>
+          </Link>
+          <div className="h-6 w-px bg-gray-300" />
+          <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
         </div>
+        <CardDescription className="py-4">
+          Update {employee.user?.fullname || employee.email}'s information
+        </CardDescription>
 
+        {/* Progress indicator */}
+        <div className="flex items-center justify-between mt-5">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  currentStep >= step.id ? "bg-orange-600 text-white" : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {step.id}
+              </div>
+              <span
+                className={`ml-2 text-sm ${
+                  currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
+                }`}
+              >
+                {step.title}
+              </span>
+              {index < steps.length - 1 && (
+                <div
+                  className={`w-12 h-0.5 mx-4 ${currentStep > step.id ? "bg-orange-600" : "bg-gray-200"}`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-6">
+        {submitError && (
+          <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+            {submitError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Profile Picture Upload */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <Avatar className="w-24 h-24">
+                <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
+                <AvatarFallback>
+                  <User className="w-12 h-12" />
+                </AvatarFallback>
+              </Avatar>
+              {previewUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="text-center">
+              <Input
+                id="profilePicture"
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Label htmlFor="profilePicture" className="cursor-pointer">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center space-x-2 bg-transparent"
+                  asChild
+                >
+                  <span>
+                    <Upload className="w-4 h-4" />
+                    <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
+                  </span>
+                </Button>
+              </Label>
+              <p className="text-xs text-gray-500 mt-2">
+                Max size: 5MB. Formats: JPEG, PNG, GIF, WebP
+              </p>
+            </div>
+            {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
+            {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
+          </div>
+
+          <Separator />
+
+          {/* Form Steps */}
+          {renderStep()}
+
+          <Separator />
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between">
+            <Link href="/employees/employee-list">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto bg-transparent"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </Link>
+
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button type="button" onClick={prevStep} variant="outline">
+                  Previous
+                </Button>
+              )}
+              {currentStep < steps.length ? (
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-orange-600 hover:bg-orange-700 px-6"
+                  disabled={!isCurrentStepValid() || isValidating}
+                >
+                  {isValidating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Validating...
+                    </>
+                  ) : (
+                    "Next"
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="bg-orange-600 hover:bg-orange-700"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating Employee...
+                    </>
+                  ) : (
+                    "Update Employee"
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </form>
+      </CardContent>
+    </div>
   );
 }
-

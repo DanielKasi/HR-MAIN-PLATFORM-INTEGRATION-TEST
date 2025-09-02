@@ -21,10 +21,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   console.log("\n\n\n\n Main dasboard component has mounted !!")
 
   useEffect(()=>{
-    console.log("\n\n\n\n  Effect for fetching related employeed is running !")
     if(currentInstitution && currentUser){
-      console.log("\n\n Effect for fetching related employeed is running !")
-      if(currentUser.id !== currentInstitution.institution_owner_id && !hasPermission(PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD)){
+      if(currentUser.id !== currentInstitution.institution_owner_id){
+        console.log("\n\n\n\n  Effect for fetching related employeed is running with current user id !", currentUser.id, "And insitution owner id : ", currentInstitution.institution_owner_id)
         fetchRelatedEmployeeByUserId()
       }
     }
