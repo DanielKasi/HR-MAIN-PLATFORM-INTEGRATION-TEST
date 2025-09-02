@@ -13,11 +13,12 @@ import pytesseract
 from io import BytesIO
 from difflib import SequenceMatcher
 import re
-from django.db.models import UniqueConstraint, Q
+from django.db.models import UniqueConstraint, Q, Sum, Count
 import math
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
 from approval.models import BaseApprovableModel
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class EmployeeType(BaseApprovableModel):
@@ -534,6 +535,34 @@ class EmployeeShift(BaseApprovableModel):
     def get_institution(self):
         return self.employee.get_institution()
 
+class EmployeeMonthlyHourAccount(models.Model):
+    employee = models.ForeignKey(
+        Employee, 
+        on_delete=models.CASCADE, 
+        related_name="monthly_hour_accounts"
+    )
+    year = models.PositiveIntegerField()
+    month = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
+    total_worked_hours = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0.00
+    )
+    total_overtime_hours = models.DecimalField(
+        max_digits=6, decimal_places=2, default=0.00
+    )
+    total_late_minutes = models.PositiveIntegerField(default=0)
+    total_early_checkout_minutes = models.PositiveIntegerField(default=0)
+    total_absent_days = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ['employee', 'year', 'month']
+        ordering = ['-year', '-month']
+        verbose_name = "Employee Monthly Hour Account"
+        verbose_name_plural = "Employee Monthly Hour Accounts"
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.year}-{self.month:02d}"
 
 class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
@@ -660,12 +689,14 @@ class EmployeeAttendance(BaseApprovableModel):
             self.overtime_hours = 0
             self.late_minutes = 0
             self.early_checkout_minutes = 0
+            self.worked_hours = Decimal('0.00')
             return
 
         # Calculate metrics
         self.overtime_hours = self.calculate_overtime_hours()
         self.late_minutes = self.calculate_late_minutes()
         self.early_checkout_minutes = self.calculate_early_checkout_minutes()
+        self.worked_hours = self.calculate_worked_hours()
 
 
         # Determine status with priority order
@@ -733,6 +764,38 @@ class EmployeeAttendance(BaseApprovableModel):
                 return True
 
         return False
+    
+    def update_monthly_summary(self):
+        """Update or create the monthly hour account summary for this attendance's employee, year, and month."""
+        year = self.date.year
+        month = self.date.month
+
+        attendances = EmployeeAttendance.objects.filter(
+            employee=self.employee,
+            date__year=year,
+            date__month=month
+        )
+
+        agg = attendances.aggregate(
+            total_worked=Sum('worked_hours'),
+            total_overtime=Sum('overtime_hours'),
+            total_late=Sum('late_minutes'),
+            total_early=Sum('early_checkout_minutes'),
+            absent_count=Count('id', filter=Q(attendance_status='absent'))
+        )
+
+        EmployeeMonthlyHourAccount.objects.update_or_create(
+            employee=self.employee,
+            year=year,
+            month=month,
+            defaults={
+                'total_worked_hours': agg['total_worked'] or Decimal('0.00'),
+                'total_overtime_hours': agg['total_overtime'] or Decimal('0.00'),
+                'total_late_minutes': agg['total_late'] or 0,
+                'total_early_checkout_minutes': agg['total_early'] or 0,
+                'total_absent_days': agg['absent_count'] or 0,
+            }
+        )
 
     def save(self, *args, **kwargs):
         """
@@ -747,6 +810,7 @@ class EmployeeAttendance(BaseApprovableModel):
         old_late_minutes = 0
         old_early_checkout_minutes = 0
         old_overtime_hours = 0
+        old_worked_hours = Decimal('0.00') 
         is_new_record = not self.pk
         
         if self.pk:
@@ -756,6 +820,7 @@ class EmployeeAttendance(BaseApprovableModel):
                 old_late_minutes = old_instance.late_minutes
                 old_early_checkout_minutes = old_instance.early_checkout_minutes
                 old_overtime_hours = old_instance.overtime_hours
+                old_worked_hours = old_instance.worked_hours
             except EmployeeAttendance.DoesNotExist:
                 is_new_record = True
 
@@ -774,7 +839,8 @@ class EmployeeAttendance(BaseApprovableModel):
         metrics_changed = (
             old_late_minutes != self.late_minutes or
             old_early_checkout_minutes != self.early_checkout_minutes or
-            old_overtime_hours != self.overtime_hours
+            old_overtime_hours != self.overtime_hours or 
+            old_worked_hours != self.worked_hours
         )
         
         should_update_penalties = is_new_record or status_changed or metrics_changed
@@ -782,6 +848,7 @@ class EmployeeAttendance(BaseApprovableModel):
         if should_update_penalties:
             from payroll.models import EmployeePenalty  
             EmployeePenalty.update_or_remove_penalty_for_attendance(self)
+            self.update_monthly_summary()
 
 
     def recalculate_and_save(self):
