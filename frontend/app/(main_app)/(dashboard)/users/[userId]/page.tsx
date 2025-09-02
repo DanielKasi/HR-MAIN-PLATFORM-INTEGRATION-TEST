@@ -16,22 +16,36 @@ import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {capitalizeEachWord} from "@/lib/helpers";
 import apiRequest, {apiDelete} from "@/lib/apiRequest";
+import { AttendanceAPI, employeeAPI } from "@/lib/utils";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import type { IAttendance, IPaginatedResponse, IEmployee } from "@/types/types.utils";
+
+
 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
   const userId = params.userId as string;
   const [user, setUser] = useState<IUser | null>(null);
+  const [employee, setEmployee] = useState<IEmployee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("branches");
 
+  console.log("Employee", employee)
+
   const fetchUserDetails = async () => {
     setLoading(true);
     try {
-      const response = await apiRequest.get(`user/${userId}/`);
-
-      setUser(response.data);
+      const [userResponse, employeeResponse] = await Promise.all([
+        apiRequest.get(`user/${userId}/`),
+        employeeAPI.getByUserId({ user_id: Number(userId) }).catch(() => null)
+      ]);
+      
+      console.log("user data", userResponse);
+      console.log("employee data", employeeResponse)
+      setUser(userResponse.data);
+      setEmployee(employeeResponse);
       setError("");
     } catch (error: any) {
       setError(error.message || "Failed to fetch user details");
@@ -39,6 +53,8 @@ export default function UserProfilePage() {
       setLoading(false);
     }
   };
+
+
 
   const handleRemoveBranch = async (branchId: number) => {
     try {
@@ -80,15 +96,16 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 bg-[#f9f9f9] min-h-screen p-6">
+    <div className="flex flex-col gap-6 bg-white rounded-lg min-h-screen p-6">
       <div className="flex items-center gap-2">
-        <Button className="gap-2" size="sm" variant="ghost" onClick={() => router.back()}>
+        <Button className="border rounded-full h-10 w-10 flex items-center justify-center" size="sm" variant="ghost" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
-          User Profile
+          
         </Button>
+        <h1 className="text-2xl">User Profile</h1>
       </div>
 
-      <Card className="border-none shadow-sm bg-white">
+      <Card className="border-none">
         <CardContent className="p-0">
           <div className="p-6 flex flex-col md:flex-row md:items-center gap-6">
             <Avatar className="h-20 w-20 bg-[#f0f0f0]">
@@ -107,7 +124,7 @@ export default function UserProfilePage() {
                     <Badge
                       className={
                         user.is_active
-                          ? "bg-[#10b981] text-white font-normal hover:bg-[#10b981]"
+                          ? "bg-primary text-white font-normal hover:bg-primary"
                           : "bg-[#ef4444] text-white font-normal hover:bg-[#ef4444]"
                       }
                     >
@@ -123,22 +140,7 @@ export default function UserProfilePage() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    className="rounded-full border-[#e5e7eb] bg-white text-[#666] hover:bg-[#f9f9f9]"
-                    size="icon"
-                    variant="outline"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    className="rounded-full border-[#e5e7eb] bg-white text-[#ef4444] hover:bg-[#fef2f2]"
-                    size="icon"
-                    variant="outline"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+               
               </div>
             </div>
           </div>
@@ -148,7 +150,7 @@ export default function UserProfilePage() {
               <button
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === "branches"
-                    ? "border-b-2 border-[#10b981] text-[#10b981]"
+                    ? "border-b-2 border-primary text-primary"
                     : "text-[#666]"
                 }`}
                 onClick={() => setActiveTab("branches")}
@@ -158,7 +160,7 @@ export default function UserProfilePage() {
               <button
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === "permissions"
-                    ? "border-b-2 border-[#10b981] text-[#10b981]"
+                    ? "border-b-2 border-primary text-primary"
                     : "text-[#666]"
                 }`}
                 onClick={() => setActiveTab("permissions")}
@@ -168,7 +170,7 @@ export default function UserProfilePage() {
               <button
                 className={`px-6 py-3 text-sm font-medium ${
                   activeTab === "attendance"
-                    ? "border-b-2 border-[#10b981] text-[#10b981]"
+                    ? "border-b-2 border-primary text-primary"
                     : "text-[#666]"
                 }`}
                 onClick={() => setActiveTab("attendance")}
@@ -267,47 +269,110 @@ export default function UserProfilePage() {
             {activeTab === "attendance" && (
               <div className="p-6">
                 <h3 className="text-lg font-medium mb-4">Attendance Records</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-[#f9f9f9] text-[#666]">
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">Date</th>
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">Shift start</th>
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">Shift end</th>
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">Total hours</th>
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">Transactions</th>
-                        <th className="text-left p-3 border-b border-[#e5e7eb]">POS Handled</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-[#e5e7eb]">
-                        <td className="p-3">20 May, 2025</td>
-                        <td className="p-3">9:12 am</td>
-                        <td className="p-3">8:35 pm</td>
-                        <td className="p-3">11h 23 mins</td>
-                        <td className="p-3">112</td>
-                        <td className="p-3">8,345,700.00</td>
-                      </tr>
-                      <tr className="border-b border-[#e5e7eb]">
-                        <td className="p-3">19 May, 2025</td>
-                        <td className="p-3">10:00 am</td>
-                        <td className="p-3">9:00 pm</td>
-                        <td className="p-3">10h 45 mins</td>
-                        <td className="p-3">115</td>
-                        <td className="p-3">5,400,500.00</td>
-                      </tr>
-                      <tr className="border-b border-[#e5e7eb]">
-                        <td className="p-3">18 May, 2025</td>
-                        <td className="p-3">11:30 am</td>
-                        <td className="p-3">10:15 pm</td>
-                        <td className="p-3">12h 05 mins</td>
-                        <td className="p-3">118</td>
-                        <td className="p-3">9,450,000.00</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div className="text-sm text-[#666] mt-4">Showing 1-100 of 232</div>
+                {employee ? (
+                  <PaginatedTableWrapper<IAttendance>
+                    fetchFirstPage={async () => {
+                      return await AttendanceAPI.fetchAttendanceRecordsByEmployee({
+                        employee_id: employee.id,
+                        page: 1,
+                      });
+                    }}
+                    fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
+                    deps={[employee.id]}
+                    className=""
+                    footerClassName="pt-4"
+                  >
+                    {({ data: attendanceData, loading: attendanceLoading, refresh }) => {
+                      if (attendanceLoading) {
+                        return (
+                          <div className="flex items-center justify-center h-32">
+                            <div className="text-center text-[#666]">Loading attendance records...</div>
+                          </div>
+                        );
+                      }
+
+                      if (!attendanceData?.results || attendanceData.results.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-[#666]">
+                            No attendance records found
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-[#f9f9f9] text-[#666]">
+                                  <th className="text-left p-3 border-b border-[#e5e7eb]">Date</th>
+                                  <th className="text-left p-3 border-b border-[#e5e7eb]">Check In</th>
+                                  <th className="text-left p-3 border-b border-[#e5e7eb]">Check Out</th>
+                                  <th className="text-left p-3 border-b border-[#e5e7eb]">Status</th>
+                                  <th className="text-left p-3 border-b border-[#e5e7eb]">Overtime</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {attendanceData.results.map((record) => (
+                                  <tr key={record.id} className="border-b border-[#e5e7eb]">
+                                    <td className="p-3">
+                                      {new Date(record.date).toLocaleDateString('en-US', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                      })}
+                                    </td>
+                                    <td className="p-3">
+                                      {record.check_in_time 
+                                        ? new Date(`2000-01-01T${record.check_in_time}`).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                          })
+                                        : '-'
+                                      }
+                                    </td>
+                                    <td className="p-3">
+                                      {record.check_out_time 
+                                        ? new Date(`2000-01-01T${record.check_out_time}`).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                          })
+                                        : '-'
+                                      }
+                                    </td>
+                                    <td className="p-3">
+                                      <Badge
+                                        className={
+                                          record.status === 'approved'
+                                            ? "bg-[#10b981] text-white"
+                                            : record.status === 'rejected'
+                                            ? "bg-[#ef4444] text-white"
+                                            : "bg-[#f59e0b] text-white"
+                                        }
+                                      >
+                                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3">
+                                      {record.overtime_hours ? `${record.overtime_hours}h` : '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                        </>
+                      );
+                    }}
+                  </PaginatedTableWrapper>
+                ) : (
+                  <div className="text-center py-8 text-[#666]">
+                    No employee record found for this user
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -141,7 +141,7 @@ import {
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
-import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 import { create } from "domain";
 import { MAIN_DOMAIN_URL } from "@/app/constants";
@@ -6037,6 +6037,39 @@ export const employeeAPI = {
   }
 };
 
+export const getPaginatedUsers = async ({
+  institutionId,
+  page = 1,
+  search,
+  pageSize = 10,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+  pageSize?: number;
+}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+  const endpoint = `institution/profile/${institutionId}/?${params.toString()}`;
+  const response = await apiRequest.get(endpoint);
+  return response.data as IPaginatedResponse<UserProfile>;
+};
+
+export const getPaginatedUsersFromUrl = async ({
+  url,
+}: {
+  url: string;
+}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
+  return response.data as IPaginatedResponse<UserProfile>;
+};
+
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
@@ -6418,7 +6451,7 @@ export const spotcheckAPI = {
       },
       
       update: async ({institutionId, data}: {institutionId: number, data: Partial<IInstitutionSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/update/`, data);
         return response.data as IInstitutionSpotCheckSetting;
       }
     } ,
@@ -6440,7 +6473,7 @@ export const spotcheckAPI = {
       },
 
       update: async ({branchId, data}: {branchId: number, data: Partial<IBranchSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/update/`, data);
         return response.data as IBranchSpotCheckSetting;
       },
 
@@ -6452,7 +6485,7 @@ export const spotcheckAPI = {
       }: {
         employeeId: number;
       }) => {
-        const endpoint = `/spotcheck/employee/${employeeId}/setting/details/`;
+        const endpoint = `spotcheck/employee/${employeeId}/setting/details`;
         const response = await apiRequest.get(endpoint);
         return response.data as IEmployeeSpotCheckSetting;
       },
@@ -6463,7 +6496,7 @@ export const spotcheckAPI = {
       },
 
       update: async ({employeeId, data}: {employeeId: number, data: Partial<IEmployeeSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/update/`, data);
         return response.data as IEmployeeSpotCheckSetting;
       },
     }

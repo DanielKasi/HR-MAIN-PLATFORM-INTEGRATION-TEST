@@ -7,6 +7,10 @@ import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import type {IAttendance} from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
@@ -25,11 +29,14 @@ import {
   ArrowLeft,
   Trash2,
   FileText,
+  Plus,
+  Clock,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
-import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
+import {AttendanceAPI, getEmployeeById, spotcheckAPI} from "@/lib/utils";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
-import type {IEmployee} from "@/types/types.utils";
+import type {IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData} from "@/types/types.utils";
 import {toast} from "sonner";
 import {EmployeePayrollTable} from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
@@ -69,7 +76,21 @@ export default function EmployeeProfile() {
   const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
   const [documentsSubTab, setDocumentsSubTab] = useState<"contracts">("contracts");
   const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
+  const [spotcheckSubTab, setSpotcheckSubTab] = useState<"spotchecks" | "configs">("spotchecks");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Spotcheck Configuration state
+  const [spotcheckSetting, setSpotcheckSetting] = useState<IEmployeeSpotCheckSetting | null>(null);
+  const [spotcheckFormData, setSpotcheckFormData] = useState<IEmployeeSpotCheckSettingFormData>({
+    lower_threshold: 0,
+    upper_threshold: 0,
+    expires_after_minutes: 0,
+    late_starts_after_minutes: 0,
+    employee: 0,
+  });
+  const [isSpotcheckFormOpen, setIsSpotcheckFormOpen] = useState(false);
+  const [loadingSpotcheckConfig, setLoadingSpotcheckConfig] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Cache for tab data to prevent re-fetching
   const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
@@ -77,6 +98,8 @@ export default function EmployeeProfile() {
   const isMobile = useMobile();
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
+
+  console.log("Spot check setting",spotcheckSetting)
 
   // Memoized utility functions
   const formatDate = useCallback((dateString: string | null) => {
@@ -185,9 +208,126 @@ export default function EmployeeProfile() {
     }
   }, [selectedInstitution, employeeId]);
 
+  // Spotcheck Configuration helper functions
+  const handleSpotcheckInputChange = (field: keyof IEmployeeSpotCheckSettingFormData, value: number) => {
+    setSpotcheckFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetSpotcheckForm = () => {
+    setSpotcheckFormData({
+      lower_threshold: 0,
+      upper_threshold: 0,
+      expires_after_minutes: 0,
+      late_starts_after_minutes: 0,
+      employee: employee?.id || 0,
+    });
+    setIsSpotcheckFormOpen(false);
+  };
+
+  const handleCreateSpotcheckConfig = () => {
+    if (spotcheckSetting) {
+      // Prefill form with existing data when updating
+      setSpotcheckFormData({
+        lower_threshold: spotcheckSetting.lower_threshold,
+        upper_threshold: spotcheckSetting.upper_threshold,
+        expires_after_minutes: spotcheckSetting.expires_after_minutes,
+        late_starts_after_minutes: spotcheckSetting.late_starts_after_minutes,
+        employee: employee?.id || 0,
+      });
+    } else {
+      // Reset form for new configuration
+      resetSpotcheckForm();
+    }
+    setIsSpotcheckFormOpen(true);
+  };
+
+  const handleSaveSpotcheckConfig = async () => {
+    if (!employee?.id) return;
+
+    setLoadingSpotcheckConfig(true);
+    try {
+      if (spotcheckSetting) {
+        await spotcheckAPI.CONFIGS.EMPLOYEE.update({
+          employeeId: employee.id,
+          data: spotcheckFormData,
+        });
+        toast.success("Employee spotcheck configuration updated successfully");
+      } else {
+        await spotcheckAPI.CONFIGS.EMPLOYEE.create({
+          employeeId: employee.id,
+          data: spotcheckFormData,
+        });
+        toast.success("Employee spotcheck configuration created successfully");
+      }
+      resetSpotcheckForm();
+      // Refresh spotcheck setting
+      await fetchSpotcheckSetting();
+    } catch (error) {
+      toast.error("Failed to save employee spotcheck configuration");
+    } finally {
+      setLoadingSpotcheckConfig(false);
+    }
+  };
+
+  const fetchSpotcheckSetting = async () => {
+    if (!employee?.id) return;
+    try {
+      const setting = await spotcheckAPI.CONFIGS.EMPLOYEE.getByEmployee({ employeeId: employee.id });
+      setSpotcheckSetting(setting);
+      // Initialize form data with the fetched setting
+      setSpotcheckFormData({
+        lower_threshold: setting.lower_threshold,
+        upper_threshold: setting.upper_threshold,
+        expires_after_minutes: setting.expires_after_minutes,
+        late_starts_after_minutes: setting.late_starts_after_minutes,
+        employee: employee.id,
+      });
+    } catch (error) {
+      // Setting doesn't exist yet, that's okay
+      setSpotcheckSetting(null);
+      // Reset form data to default values
+      setSpotcheckFormData({
+        lower_threshold: 0,
+        upper_threshold: 0,
+        expires_after_minutes: 0,
+        late_starts_after_minutes: 0,
+        employee: employee.id,
+      });
+    }
+  };
+
+  const handleDeleteSpotcheckConfig = () => {
+    if (!employee?.id || !spotcheckSetting) return;
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteSpotcheckConfig = async () => {
+    if (!employee?.id || !spotcheckSetting) return;
+    
+    setLoadingSpotcheckConfig(true);
+    try {
+      
+      // await spotcheckAPI.CONFIGS.EMPLOYEE.delete(employee.id);
+      setSpotcheckSetting(null);
+      resetSpotcheckForm();
+      setIsDeleteModalOpen(false);
+      toast.success("Employee spotcheck configuration deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete employee spotcheck configuration");
+    } finally {
+      setLoadingSpotcheckConfig(false);
+    }
+  };
+
   useEffect(() => {
     fetchEmployee();
   }, [fetchEmployee]);
+
+  useEffect(() => {
+    if (employee && spotcheckSubTab === "configs") {
+      fetchSpotcheckSetting();
+    }
+  }, [employee, spotcheckSubTab]);
 
   useEffect(() => {
     if (activeTab === "attendance" && !tabDataCache.attendance) {
@@ -785,7 +925,272 @@ export default function EmployeeProfile() {
                   )}
 
                   {activeTab === "spotchecks" && employee && (
-                    <EmployeeSpotchecks employee={employee} />
+                    <div className="space-y-6">
+                      {/* Spotcheck Sub-tabs */}
+                      <div className="border-b border-[#e8e8f2]">
+                        <div className="flex gap-8">
+                          <button
+                            onClick={() => setSpotcheckSubTab("spotchecks")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              spotcheckSubTab === "spotchecks"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              Spotchecks
+                            </div>
+                            {spotcheckSubTab === "spotchecks" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setSpotcheckSubTab("configs")}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${
+                              spotcheckSubTab === "configs"
+                                ? "text-gray-800 font-semibold"
+                                : "text-[#848496] hover:text-gray-800"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Settings className="w-4 h-4" />
+                              Spotcheck Configs
+                            </div>
+                            {spotcheckSubTab === "configs" && (
+                              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Spotcheck Sub-tab Content */}
+                      {spotcheckSubTab === "spotchecks" && (
+                        <EmployeeSpotchecks employee={employee} />
+                      )}
+
+                      {spotcheckSubTab === "configs" && (
+                        <div className="space-y-6">
+                          <div className="flex items-center justify-between border-b pb-4">
+                            <h2 className="text-2xl font-bold text-gray-900">Employee Spotcheck Configuration</h2>
+                            <Button
+                              onClick={handleCreateSpotcheckConfig}
+                              className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>{spotcheckSetting ? "Update Configuration" : "Create Configuration"}</span>
+                            </Button>
+                          </div>
+
+                          {/* Current Configuration Display */}
+                          {spotcheckSetting ? (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                                    <Settings className="w-4 h-4 text-white" />
+                                  </div>
+                                  <h3 className="text-lg font-semibold text-green-900">Current Configuration</h3>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCreateSpotcheckConfig}
+                                    className="text-green-700 border-green-300 hover:bg-green-100"
+                                  >
+                                    <Edit className="w-4 h-4 mr-1" />
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleDeleteSpotcheckConfig}
+                                    className="text-red-700 border-red-300 hover:bg-red-100"
+                                    disabled={loadingSpotcheckConfig}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-lg p-4 border border-green-200">
+                                  <div className="text-sm text-gray-600 mb-1">Lower Threshold</div>
+                                  <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.lower_threshold} minutes</div>
+                                </div>
+                                <div className="bg-white rounded-lg p-4 border border-green-200">
+                                  <div className="text-sm text-gray-600 mb-1">Upper Threshold</div>
+                                  <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.upper_threshold} minutes</div>
+                                </div>
+                                <div className="bg-white rounded-lg p-4 border border-green-200">
+                                  <div className="text-sm text-gray-600 mb-1">Expires After</div>
+                                  <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.expires_after_minutes} minutes</div>
+                                </div>
+                                <div className="bg-white rounded-lg p-4 border border-green-200">
+                                  <div className="text-sm text-gray-600 mb-1">Late Starts After</div>
+                                  <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.late_starts_after_minutes} minutes</div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center">
+                                  <Settings className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-semibold text-yellow-900">No Configuration Found</h3>
+                                  <p className="text-sm text-yellow-700">Create a spotcheck configuration for this employee to manage spotcheck settings.</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Spotcheck Configuration Form Modal */}
+                          {isSpotcheckFormOpen && (
+                            <Dialog open={isSpotcheckFormOpen} onOpenChange={setIsSpotcheckFormOpen}>
+                              <DialogContent className="sm:max-w-[600px] rounded-2xl border-0 shadow-2xl">
+                                <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+                                  <DialogTitle className="text-2xl font-bold text-gray-900">
+                                    {spotcheckSetting ? "Update Employee Spotcheck Configuration" : "Create Employee Spotcheck Configuration"}
+                                  </DialogTitle>
+                                  <DialogDescription className="text-gray-600 text-base">
+                                    Configure spotcheck settings for {employee.user?.fullname || "this employee"}.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-1 gap-6 py-6">
+                                  <div className="space-y-3">
+                                    <Label htmlFor="lower_threshold" className="text-sm text-gray-800">
+                                      Lower Threshold (minutes) *
+                                    </Label>
+                                    <Input
+                                      id="lower_threshold"
+                                      type="number"
+                                      min="0"
+                                      value={spotcheckFormData.lower_threshold}
+                                      onChange={(e) => handleSpotcheckInputChange("lower_threshold", Number.parseInt(e.target.value) || 0)}
+                                      placeholder="Enter lower threshold"
+                                      disabled={loadingSpotcheckConfig}
+                                      className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <Label htmlFor="upper_threshold" className="text-sm text-gray-800">
+                                      Upper Threshold (minutes) *
+                                    </Label>
+                                    <Input
+                                      id="upper_threshold"
+                                      type="number"
+                                      min="0"
+                                      value={spotcheckFormData.upper_threshold}
+                                      onChange={(e) => handleSpotcheckInputChange("upper_threshold", Number.parseInt(e.target.value) || 0)}
+                                      placeholder="Enter upper threshold"
+                                      disabled={loadingSpotcheckConfig}
+                                      className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <Label htmlFor="expires_after_minutes" className="text-sm text-gray-800">
+                                      Expires After (minutes) *
+                                    </Label>
+                                    <Input
+                                      id="expires_after_minutes"
+                                      type="number"
+                                      min="0"
+                                      value={spotcheckFormData.expires_after_minutes}
+                                      onChange={(e) => handleSpotcheckInputChange("expires_after_minutes", Number.parseInt(e.target.value) || 0)}
+                                      placeholder="Enter expiration time"
+                                      disabled={loadingSpotcheckConfig}
+                                      className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <Label htmlFor="late_starts_after_minutes" className="text-sm text-gray-800">
+                                      Late Starts After (minutes) *
+                                    </Label>
+                                    <Input
+                                      id="late_starts_after_minutes"
+                                      type="number"
+                                      min="0"
+                                      value={spotcheckFormData.late_starts_after_minutes}
+                                      onChange={(e) => handleSpotcheckInputChange("late_starts_after_minutes", Number.parseInt(e.target.value) || 0)}
+                                      placeholder="Enter late start threshold"
+                                      disabled={loadingSpotcheckConfig}
+                                      className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+                                    />
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button
+                                    onClick={handleSaveSpotcheckConfig}
+                                    disabled={loadingSpotcheckConfig}
+                                    className="bg-primary rounded-full w-full"
+                                  >
+                                    {loadingSpotcheckConfig ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Saving...
+                                      </>
+                                    ) : (
+                                      spotcheckSetting ? "Update Configuration" : "Create Configuration"
+                                    )}
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+
+                          {/* Delete Confirmation Modal */}
+                          <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                            <DialogContent className="sm:max-w-[400px] rounded-2xl border-0 shadow-2xl">
+                              <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
+                                <DialogTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </div>
+                                  Delete Configuration
+                                </DialogTitle>
+                                <DialogDescription className="text-gray-600 text-base">
+                                  Are you sure you want to delete the spotcheck configuration for {employee.user?.fullname || "this employee"}? This action cannot be undone.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter className="flex gap-3 pt-6">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsDeleteModalOpen(false)}
+                                  disabled={loadingSpotcheckConfig}
+                                  className="flex-1 rounded-full"
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={confirmDeleteSpotcheckConfig}
+                                  disabled={loadingSpotcheckConfig}
+                                  className="flex-1 rounded-full"
+                                >
+                                  {loadingSpotcheckConfig ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </>
+                                  )}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {activeTab === "penalties" && employee && (

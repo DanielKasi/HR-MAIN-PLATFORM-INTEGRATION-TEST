@@ -1,36 +1,30 @@
 "use client";
 
 import type React from "react";
-
-import {useState, useEffect, useRef} from "react";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Switch} from "@/components/ui/switch";
-import {Icon} from "@iconify/react";
-import {toast} from "sonner";
-import {ConfirmationDialog} from "@/components/confirmation-dialog";
-import {useSelector} from "react-redux";
-import {selectAttachedInstitutions, selectSelectedInstitution} from "@/store/auth/selectors";
-import type {IUserInstitutionFormData} from "@/types";
-import {institutionAPI, showErrorToast} from "@/lib/utils";
-import {useDispatch} from "react-redux";
-import {setAttachedInstitutions, setSelectedInstitution} from "@/store/auth/actions";
-import {Upload, FileText, X, Check, Plus, Edit, Trash2, ArrowLeft} from "lucide-react";
-import {DocumentsList} from "@/components/documents-list";
-import Image from "next/image";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {penaltyConfigAPI, branchLocationComparisonConfigAPI} from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Icon } from "@iconify/react"
+import { toast } from "sonner"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { useSelector } from "react-redux"
+import { selectAttachedInstitutions, selectSelectedInstitution } from "@/store/auth/selectors"
+import type { IUserInstitutionFormData } from "@/types"
+import { institutionAPI, showErrorToast } from "@/lib/utils"
+import { useDispatch } from "react-redux"
+import { setAttachedInstitutions, setSelectedInstitution } from "@/store/auth/actions"
+import { Upload, FileText, X, Check, Plus, Edit, Trash2, ArrowLeft } from "lucide-react"
+import { DocumentsList } from "@/components/documents-list"
+import Image from "next/image"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
+import { TableSkeleton } from "@/components/common/table-skeleton"
+import { penaltyConfigAPI, branchLocationComparisonConfigAPI, spotcheckAPI } from "@/lib/utils"
 import type {
   IInstitutionPenaltyConfig,
   IInstitutionPenaltyConfigFormData,
@@ -38,10 +32,14 @@ import type {
   IBranchPenaltyConfigFormData,
   IBranchLocationComparisonConfig,
   IBranchLocationComparisonConfigFormData,
-} from "@/types/types.utils";
-import {formatCurrency} from "@/lib/helpers";
+  IInstitutionSpotCheckSetting,
+  IInstitutionSpotCheckSettingFormData,
+  IBranchSpotCheckSetting,
+  IBranchSpotCheckSettingFormData,
+} from "@/types/types.utils"
+import Link from "next/link"
+import { formatCurrency } from "@/lib/helpers"
 import FormatNumberInput from "@/components/format-number-input";
-import {useRouter} from "next/navigation";
 
 interface DocumentFile {
   id: string;
@@ -54,8 +52,8 @@ export default function SettingsPage() {
   const institution = useSelector(selectSelectedInstitution);
   const attachedInstitutions = useSelector(selectAttachedInstitutions);
   const [activeTab, setActiveTab] = useState<
-    "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison"
-  >("institution");
+    "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison" | "institution_spotcheck" | "branch_spotcheck"
+  >("institution")
   const [formData, setFormData] = useState({
     institution_name: "",
     institution_email: "",
@@ -136,6 +134,30 @@ export default function SettingsPage() {
     number | null
   >(null);
 
+  // Institution Spotcheck Configuration state
+  const [institutionSpotcheckSetting, setInstitutionSpotcheckSetting] = useState<IInstitutionSpotCheckSetting | null>(null)
+  const [institutionSpotcheckFormData, setInstitutionSpotcheckFormData] = useState<IInstitutionSpotCheckSettingFormData>({
+    lower_threshold: 0,
+    upper_threshold: 0,
+    expires_after_minutes: 0,
+    late_starts_after_minutes: 0,
+    institution: institution?.id || 0,
+  })
+  const [isInstitutionSpotcheckFormOpen, setIsInstitutionSpotcheckFormOpen] = useState(false)
+
+  // Branch Spotcheck Configuration state
+  const [branchSpotcheckSettings, setBranchSpotcheckSettings] = useState<IBranchSpotCheckSetting[]>([])
+  const [branchSpotcheckFormData, setBranchSpotcheckFormData] = useState<IBranchSpotCheckSettingFormData>({
+    lower_threshold: 0,
+    upper_threshold: 0,
+    expires_after_minutes: 0,
+    late_starts_after_minutes: 0,
+    branch: 0,
+  })
+  const [isBranchSpotcheckFormOpen, setIsBranchSpotcheckFormOpen] = useState(false)
+  const [editingBranchSpotcheckSetting, setEditingBranchSpotcheckSetting] = useState<IBranchSpotCheckSetting | null>(null)
+  const [selectedSpotcheckBranchId, setSelectedSpotcheckBranchId] = useState<number | null>(null)
+
   // Refs for table refresh functions
   const institutionPenaltyRefreshRef = useRef<(() => void) | null>(null);
   const branchPenaltyRefreshRef = useRef<(() => void) | null>(null);
@@ -154,7 +176,11 @@ export default function SettingsPage() {
         is_attendance_penalties_enabled: institution.is_attendance_penalties_enabled,
         latitude: institution.latitude,
         longitude: institution.longitude,
-      });
+      })
+      
+      // Fetch spotcheck settings
+      fetchInstitutionSpotcheckSetting()
+      fetchBranchSpotcheckSettings()
     }
   }, [institution]);
 
@@ -613,10 +639,183 @@ export default function SettingsPage() {
             defaultMessage: "Failed to delete location comparison configuration",
           });
         }
-        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
+        setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
       },
-    });
-  };
+    })
+  }
+
+  // Institution Spotcheck Configuration helper functions
+  const handleInstitutionSpotcheckInputChange = (field: keyof IInstitutionSpotCheckSettingFormData, value: number) => {
+    setInstitutionSpotcheckFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const resetInstitutionSpotcheckForm = () => {
+    setInstitutionSpotcheckFormData({
+      lower_threshold: 0,
+      upper_threshold: 0,
+      expires_after_minutes: 0,
+      late_starts_after_minutes: 0,
+      institution: institution?.id || 0,
+    })
+    setIsInstitutionSpotcheckFormOpen(false)
+  }
+
+  const handleCreateInstitutionSpotcheckConfig = () => {
+    if (institutionSpotcheckSetting) {
+      // Prefill form with existing data when updating
+      setInstitutionSpotcheckFormData({
+        lower_threshold: institutionSpotcheckSetting.lower_threshold,
+        upper_threshold: institutionSpotcheckSetting.upper_threshold,
+        expires_after_minutes: institutionSpotcheckSetting.expires_after_minutes,
+        late_starts_after_minutes: institutionSpotcheckSetting.late_starts_after_minutes,
+        institution: institution?.id || 0,
+      })
+    } else {
+      // Reset form for new configuration
+      resetInstitutionSpotcheckForm()
+    }
+    setIsInstitutionSpotcheckFormOpen(true)
+  }
+
+  const handleSaveInstitutionSpotcheckConfig = async () => {
+    if (!institution?.id) return
+
+    setIsLoading(true)
+    try {
+      if (institutionSpotcheckSetting) {
+        await spotcheckAPI.CONFIGS.INSTITUTION.update({
+          institutionId: institution.id,
+          data: institutionSpotcheckFormData,
+        })
+        toast.success("Institution spotcheck configuration updated successfully")
+      } else {
+        await spotcheckAPI.CONFIGS.INSTITUTION.create({
+          institutionId: institution.id,
+          data: institutionSpotcheckFormData,
+        })
+        toast.success("Institution spotcheck configuration created successfully")
+      }
+      resetInstitutionSpotcheckForm()
+      // Refresh institution spotcheck setting
+      await fetchInstitutionSpotcheckSetting()
+    } catch (error) {
+      showErrorToast({ error, defaultMessage: "Failed to save institution spotcheck configuration" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchInstitutionSpotcheckSetting = async () => {
+    if (!institution?.id) return
+    try {
+      const setting = await spotcheckAPI.CONFIGS.INSTITUTION.getByInstitution({ institutionId: institution.id })
+      setInstitutionSpotcheckSetting(setting)
+      // Initialize form data with the fetched setting
+      setInstitutionSpotcheckFormData({
+        lower_threshold: setting.lower_threshold,
+        upper_threshold: setting.upper_threshold,
+        expires_after_minutes: setting.expires_after_minutes,
+        late_starts_after_minutes: setting.late_starts_after_minutes,
+        institution: institution.id,
+      })
+    } catch (error) {
+      // Setting doesn't exist yet, that's okay
+      setInstitutionSpotcheckSetting(null)
+      // Reset form data to default values
+      setInstitutionSpotcheckFormData({
+        lower_threshold: 0,
+        upper_threshold: 0,
+        expires_after_minutes: 0,
+        late_starts_after_minutes: 0,
+        institution: institution.id,
+      })
+    }
+  }
+
+  // Branch Spotcheck Configuration helper functions
+  const handleBranchSpotcheckInputChange = (field: keyof IBranchSpotCheckSettingFormData, value: number) => {
+    setBranchSpotcheckFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const resetBranchSpotcheckForm = () => {
+    setBranchSpotcheckFormData({
+      lower_threshold: 0,
+      upper_threshold: 0,
+      expires_after_minutes: 0,
+      late_starts_after_minutes: 0,
+      branch: selectedSpotcheckBranchId || 0,
+    })
+    setEditingBranchSpotcheckSetting(null)
+    setIsBranchSpotcheckFormOpen(false)
+  }
+
+  const handleCreateBranchSpotcheckConfig = () => {
+    if (!selectedSpotcheckBranchId) {
+      toast.error("Please select a branch first")
+      return
+    }
+    resetBranchSpotcheckForm()
+    setIsBranchSpotcheckFormOpen(true)
+  }
+
+  const handleEditBranchSpotcheckConfig = (setting: IBranchSpotCheckSetting) => {
+    setBranchSpotcheckFormData({
+      lower_threshold: setting.lower_threshold,
+      upper_threshold: setting.upper_threshold,
+      expires_after_minutes: setting.expires_after_minutes,
+      late_starts_after_minutes: setting.late_starts_after_minutes,
+      branch: setting.branch.id,
+    })
+    setEditingBranchSpotcheckSetting(setting)
+    setIsBranchSpotcheckFormOpen(true)
+  }
+
+  const handleSaveBranchSpotcheckConfig = async () => {
+    if (!selectedSpotcheckBranchId) return
+
+    setIsLoading(true)
+    try {
+      if (editingBranchSpotcheckSetting) {
+        await spotcheckAPI.CONFIGS.BRANCH.update({
+          branchId: selectedSpotcheckBranchId,
+          data: branchSpotcheckFormData,
+        })
+        toast.success("Branch spotcheck configuration updated successfully")
+      } else {
+        await spotcheckAPI.CONFIGS.BRANCH.create({
+          branchId: selectedSpotcheckBranchId,
+          data: branchSpotcheckFormData,
+        })
+        toast.success("Branch spotcheck configuration created successfully")
+      }
+      resetBranchSpotcheckForm()
+      // Refresh branch spotcheck settings
+      await fetchBranchSpotcheckSettings()
+    } catch (error) {
+      showErrorToast({ error, defaultMessage: "Failed to save branch spotcheck configuration" })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchBranchSpotcheckSettings = async () => {
+    if (!institution?.branches) return
+    try {
+      const settings = await Promise.all(
+        institution.branches.map(async (branch) => {
+          try {
+            return await spotcheckAPI.CONFIGS.BRANCH.getByBranch({ branchId: branch.id })
+          } catch (error) {
+            // Branch doesn't have a setting yet, return null
+            return null
+          }
+        })
+      )
+      setBranchSpotcheckSettings(settings.filter(Boolean) as IBranchSpotCheckSetting[])
+    } catch (error) {
+      console.error("Error fetching branch spotcheck settings:", error)
+    }
+  }
 
   const renderInstitutionSettings = () => {
     return (
@@ -1531,6 +1730,322 @@ export default function SettingsPage() {
     </div>
   );
 
+  const renderInstitutionSpotcheckConfigurations = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-900">Institution Spotcheck Configuration</h2>
+        <Button
+          onClick={handleCreateInstitutionSpotcheckConfig}
+          className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+        >
+          <Plus className="w-4 h-4" />
+          <span>{institutionSpotcheckSetting ? "Update Configuration" : "Create Configuration"}</span>
+        </Button>
+      </div>
+
+      {/* Current Configuration Display */}
+      {institutionSpotcheckSetting ? (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Icon icon="hugeicons:check-circle" className="w-6 h-6 text-green-600" />
+            <h3 className="text-lg font-semibold text-green-900">Current Configuration</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="text-sm text-gray-600 mb-1">Lower Threshold</div>
+              <div className="text-lg font-semibold text-gray-900">{institutionSpotcheckSetting.lower_threshold} minutes</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="text-sm text-gray-600 mb-1">Upper Threshold</div>
+              <div className="text-lg font-semibold text-gray-900">{institutionSpotcheckSetting.upper_threshold} minutes</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="text-sm text-gray-600 mb-1">Expires After</div>
+              <div className="text-lg font-semibold text-gray-900">{institutionSpotcheckSetting.expires_after_minutes} minutes</div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="text-sm text-gray-600 mb-1">Late Starts After</div>
+              <div className="text-lg font-semibold text-gray-900">{institutionSpotcheckSetting.late_starts_after_minutes} minutes</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-center space-x-3">
+            <Icon icon="hugeicons:warning-triangle" className="w-6 h-6 text-yellow-600" />
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-900">No Configuration Found</h3>
+              <p className="text-sm text-yellow-700">Create a spotcheck configuration for your institution to manage spotcheck settings.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Institution Spotcheck Configuration Form Modal */}
+      {isInstitutionSpotcheckFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                {institutionSpotcheckSetting ? "Update Institution Spotcheck Configuration" : "Create Institution Spotcheck Configuration"}
+              </h3>
+              <Button variant="ghost" size="sm" onClick={resetInstitutionSpotcheckForm} className="h-8 w-8 p-0 hover:bg-gray-100">
+                <Icon icon="hugeicons:close-01" className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="lower_threshold">Lower Threshold (minutes)</Label>
+                <Input
+                  id="lower_threshold"
+                  type="number"
+                  min="0"
+                  value={institutionSpotcheckFormData.lower_threshold}
+                  onChange={(e) => handleInstitutionSpotcheckInputChange("lower_threshold", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter lower threshold"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="upper_threshold">Upper Threshold (minutes)</Label>
+                <Input
+                  id="upper_threshold"
+                  type="number"
+                  min="0"
+                  value={institutionSpotcheckFormData.upper_threshold}
+                  onChange={(e) => handleInstitutionSpotcheckInputChange("upper_threshold", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter upper threshold"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="expires_after_minutes">Expires After (minutes)</Label>
+                <Input
+                  id="expires_after_minutes"
+                  type="number"
+                  min="0"
+                  value={institutionSpotcheckFormData.expires_after_minutes}
+                  onChange={(e) => handleInstitutionSpotcheckInputChange("expires_after_minutes", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter expiration time"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="late_starts_after_minutes">Late Starts After (minutes)</Label>
+                <Input
+                  id="late_starts_after_minutes"
+                  type="number"
+                  min="0"
+                  value={institutionSpotcheckFormData.late_starts_after_minutes}
+                  onChange={(e) => handleInstitutionSpotcheckInputChange("late_starts_after_minutes", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter late start threshold"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={resetInstitutionSpotcheckForm}
+                disabled={isLoading}
+                className="flex-1 rounded-full bg-transparent"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveInstitutionSpotcheckConfig}
+                disabled={isLoading}
+                className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
+              >
+                {isLoading ? "Saving..." : institutionSpotcheckSetting ? "Update" : "Create"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderBranchSpotcheckConfigurations = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-900">Branch Spotcheck Configurations</h2>
+        <Button
+          onClick={handleCreateBranchSpotcheckConfig}
+          className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
+          disabled={!selectedSpotcheckBranchId}
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Branch Configuration</span>
+        </Button>
+      </div>
+
+      {/* Branch Selection */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center space-x-3">
+          <Icon icon="hugeicons:info-circle" className="w-5 h-5 text-blue-600" />
+          <div>
+            <h3 className="font-medium text-blue-900">Select Branch</h3>
+            <p className="text-sm text-blue-700">
+              Choose a branch to manage its spotcheck configuration. Each branch can have different spotcheck settings.
+            </p>
+          </div>
+        </div>
+        <div className="mt-3">
+          <Select
+            value={selectedSpotcheckBranchId?.toString() || ""}
+            onValueChange={(value) => setSelectedSpotcheckBranchId(Number.parseInt(value))}
+          >
+            <SelectTrigger className="w-[300px]">
+              <SelectValue placeholder="Select a branch" />
+            </SelectTrigger>
+            <SelectContent>
+              {institution?.branches?.map((branch) => (
+                <SelectItem key={branch.id} value={branch.id.toString()}>
+                  {branch.branch_name}
+                </SelectItem>
+              )) || []}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Branch Spotcheck Configurations Table */}
+      {branchSpotcheckSettings.length > 0 && (
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="min-w-full inline-block align-middle">
+            <div className="overflow-hidden border border-gray-200 sm:rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Branch Name</TableHead>
+                    <TableHead>Lower Threshold</TableHead>
+                    <TableHead>Upper Threshold</TableHead>
+                    <TableHead>Expires After</TableHead>
+                    <TableHead>Late Starts After</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {branchSpotcheckSettings.map((setting) => (
+                    <TableRow key={setting.branch.id}>
+                      <TableCell className="font-medium">{setting.branch.branch_name}</TableCell>
+                      <TableCell>{setting.lower_threshold} min</TableCell>
+                      <TableCell>{setting.upper_threshold} min</TableCell>
+                      <TableCell>{setting.expires_after_minutes} min</TableCell>
+                      <TableCell>{setting.late_starts_after_minutes} min</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditBranchSpotcheckConfig(setting)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Branch Spotcheck Configuration Form Modal */}
+      {isBranchSpotcheckFormOpen && selectedSpotcheckBranchId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                {editingBranchSpotcheckSetting ? "Edit Branch Spotcheck Configuration" : "Add Branch Spotcheck Configuration"}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetBranchSpotcheckForm}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
+                <Icon icon="hugeicons:close-01" className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="branch_lower_threshold">Lower Threshold (minutes)</Label>
+                <Input
+                  id="branch_lower_threshold"
+                  type="number"
+                  min="0"
+                  value={branchSpotcheckFormData.lower_threshold}
+                  onChange={(e) => handleBranchSpotcheckInputChange("lower_threshold", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter lower threshold"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="branch_upper_threshold">Upper Threshold (minutes)</Label>
+                <Input
+                  id="branch_upper_threshold"
+                  type="number"
+                  min="0"
+                  value={branchSpotcheckFormData.upper_threshold}
+                  onChange={(e) => handleBranchSpotcheckInputChange("upper_threshold", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter upper threshold"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="branch_expires_after_minutes">Expires After (minutes)</Label>
+                <Input
+                  id="branch_expires_after_minutes"
+                  type="number"
+                  min="0"
+                  value={branchSpotcheckFormData.expires_after_minutes}
+                  onChange={(e) => handleBranchSpotcheckInputChange("expires_after_minutes", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter expiration time"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="branch_late_starts_after_minutes">Late Starts After (minutes)</Label>
+                <Input
+                  id="branch_late_starts_after_minutes"
+                  type="number"
+                  min="0"
+                  value={branchSpotcheckFormData.late_starts_after_minutes}
+                  onChange={(e) => handleBranchSpotcheckInputChange("late_starts_after_minutes", Number.parseInt(e.target.value) || 0)}
+                  placeholder="Enter late start threshold"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={resetBranchSpotcheckForm}
+                disabled={isLoading}
+                className="flex-1 rounded-full bg-transparent"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveBranchSpotcheckConfig}
+                disabled={isLoading}
+                className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
+              >
+                {isLoading ? "Saving..." : editingBranchSpotcheckSetting ? "Update" : "Create"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   const renderLocationComparisonConfigurations = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b pb-4">
@@ -1550,12 +2065,12 @@ export default function SettingsPage() {
       {/* Branch Selection */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <div className="flex items-center space-x-3">
-          <Icon icon="hugeicons:info-circle" className="w-5 h-5 text-green-600" />
+          <Icon icon="hugeicons:info-circle" className="w-5 h-5 text-primary" />
           <div>
             <h3 className="font-medium text-green-900">Select Branch</h3>
-            <p className="text-sm text-green-700">
-              Choose a branch to manage its location comparison settings. Each branch can have
-              different location parameters.
+            <p className="text-sm text-primary">
+              Choose a branch to manage its location comparison settings. Each branch can have different location
+              parameters.
             </p>
           </div>
         </div>
@@ -1854,9 +2369,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => setActiveTab("branch_penalties")}
                 className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-                  activeTab === "branch_penalties"
-                    ? "bg-blue-50 border border-blue-200"
-                    : "hover:bg-gray-50"
+                  activeTab === "branch_penalties" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
                 }`}
               >
                 <Icon
@@ -1884,9 +2397,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => setActiveTab("location_comparison")}
                 className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-                  activeTab === "location_comparison"
-                    ? "bg-green-50 border border-green-200"
-                    : "hover:bg-gray-50"
+                  activeTab === "location_comparison" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
                 }`}
               >
                 <Icon
@@ -1910,6 +2421,62 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </button>
+
+              <button
+                onClick={() => setActiveTab("institution_spotcheck")}
+                className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+                  activeTab === "institution_spotcheck" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
+                }`}
+              >
+                <Icon
+                  icon="hugeicons:clock-01"
+                  className={`w-5 h-5 ${activeTab === "institution_spotcheck" ? "text-primary" : "text-gray-500"}`}
+                />
+                <div className="whitespace-nowrap lg:whitespace-normal">
+                  <div
+                    className={`font-medium text-sm lg:text-base ${
+                      activeTab === "institution_spotcheck" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
+                    Institution Spotcheck
+                  </div>
+                  <div
+                    className={`text-xs lg:text-sm hidden lg:block ${
+                      activeTab === "institution_spotcheck" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
+                    Manage institution-level spotcheck settings
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setActiveTab("branch_spotcheck")}
+                className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+                  activeTab === "branch_spotcheck" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
+                }`}
+              >
+                <Icon
+                  icon="hugeicons:clock-02"
+                  className={`w-5 h-5 ${activeTab === "branch_spotcheck" ? "text-primary" : "text-gray-500"}`}
+                />
+                <div className="whitespace-nowrap lg:whitespace-normal">
+                  <div
+                    className={`font-medium text-sm lg:text-base ${
+                      activeTab === "branch_spotcheck" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
+                    Branch Spotcheck
+                  </div>
+                  <div
+                    className={`text-xs lg:text-sm hidden lg:block ${
+                      activeTab === "branch_spotcheck" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
+                    Manage branch-specific spotcheck settings
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -1924,7 +2491,11 @@ export default function SettingsPage() {
                 ? renderPenaltyConfigurations()
                 : activeTab === "branch_penalties"
                   ? renderBranchPenaltyConfigurations()
-                  : renderLocationComparisonConfigurations()}
+                  : activeTab === "location_comparison"
+                    ? renderLocationComparisonConfigurations()
+                    : activeTab === "institution_spotcheck"
+                      ? renderInstitutionSpotcheckConfigurations()
+                      : renderBranchSpotcheckConfigurations()}
         </div>
       </div>
 
