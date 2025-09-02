@@ -39,7 +39,7 @@ class EmployeeSpotCheckSettingSerializer(BaseApprovableSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
 
     class Meta:
-        model = SpotCheckModels.EmployeeSpotCheck
+        model = SpotCheckModels.EmployeeSpotCheckSetting
         fields = "__all__"
 
     def to_representation(self, instance):

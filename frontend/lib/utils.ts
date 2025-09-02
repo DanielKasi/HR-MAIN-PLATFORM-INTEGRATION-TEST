@@ -6451,7 +6451,7 @@ export const spotcheckAPI = {
       },
       
       update: async ({institutionId, data}: {institutionId: number, data: Partial<IInstitutionSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/update/`, data);
         return response.data as IInstitutionSpotCheckSetting;
       }
     } ,
@@ -6473,7 +6473,7 @@ export const spotcheckAPI = {
       },
 
       update: async ({branchId, data}: {branchId: number, data: Partial<IBranchSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/update/`, data);
         return response.data as IBranchSpotCheckSetting;
       },
 
@@ -6485,7 +6485,7 @@ export const spotcheckAPI = {
       }: {
         employeeId: number;
       }) => {
-        const endpoint = `/spotcheck/employee/${employeeId}/setting/details/`;
+        const endpoint = `spotcheck/employee/${employeeId}/setting/details`;
         const response = await apiRequest.get(endpoint);
         return response.data as IEmployeeSpotCheckSetting;
       },
@@ -6496,7 +6496,7 @@ export const spotcheckAPI = {
       },
 
       update: async ({employeeId, data}: {employeeId: number, data: Partial<IEmployeeSpotCheckSettingFormData>}) => {
-        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/details/`, data);
+        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/update/`, data);
         return response.data as IEmployeeSpotCheckSetting;
       },
     }
