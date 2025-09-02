@@ -134,7 +134,7 @@ import {
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
-import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 import { create } from "domain";
 import { MAIN_DOMAIN_URL } from "@/app/constants";
@@ -6028,6 +6028,39 @@ export const employeeAPI = {
     const response = await apiRequest.get(`/employee/${user_id}/?by_user=true`);
       return response.data as IEmployee;
   }
+};
+
+export const getPaginatedUsers = async ({
+  institutionId,
+  page = 1,
+  search,
+  pageSize = 10,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+  pageSize?: number;
+}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+  const endpoint = `institution/profile/${institutionId}/?${params.toString()}`;
+  const response = await apiRequest.get(endpoint);
+  return response.data as IPaginatedResponse<UserProfile>;
+};
+
+export const getPaginatedUsersFromUrl = async ({
+  url,
+}: {
+  url: string;
+}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
+  return response.data as IPaginatedResponse<UserProfile>;
 };
 
 // Calendar API functions
