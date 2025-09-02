@@ -18,12 +18,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
-  console.log("\n\n\n\n Main dasboard component has mounted !!")
 
   useEffect(()=>{
     if(currentInstitution && currentUser){
       if(currentUser.id !== currentInstitution.institution_owner_id){
-        console.log("\n\n\n\n  Effect for fetching related employeed is running with current user id !", currentUser.id, "And insitution owner id : ", currentInstitution.institution_owner_id)
         fetchRelatedEmployeeByUserId()
       }
     }

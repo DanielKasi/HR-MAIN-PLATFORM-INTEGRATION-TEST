@@ -163,7 +163,7 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
                   <CardTitle className="flex items-center justify-between">
                     <span className="mb-2">Attendance</span>
                   </CardTitle>
-                  {
+                  {/* {
                     !showingOnDashboard && (
                       <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
                         {stats.map((stat, idx) => (
@@ -180,7 +180,7 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
                         ))}
                       </div>
                     )
-                  }
+                  } */}
                 </> :
                 <></>
 
