@@ -434,15 +434,21 @@ class EmployeeSpotCheckInView(APIView):
     def patch(self, request, spotcheck_id):
         """Record Spot check record when an employee responds to a spot check prompt."""
         try:
-            setting = SpotCheckModels.EmployeeSpotCheck.objects.get(id=spotcheck_id)
+            spotcheck = SpotCheckModels.EmployeeSpotCheck.objects.get(id=spotcheck_id)
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
                 {"detail": "Employee spot check not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        
+        if spotcheck.employee.user != request.user:
+            return Response(
+                {"detail": "You can only respond to your own spot checks."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(
-            instance=setting, data=request.data, partial=True
+            instance=spotcheck, data=request.data, partial=True
         )
         if serializer.is_valid():
             spotcheck = serializer.save()
