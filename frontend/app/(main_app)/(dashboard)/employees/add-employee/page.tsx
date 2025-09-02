@@ -781,7 +781,7 @@ export default function AddEmployeeForm() {
                     id="childrenCount"
                     type="number"
                     min="0"
-                    value={formData.children_count}
+                    value={formData.children_count === 0 ? "" : formData.children_count}
                     onChange={(e) =>
                       handleInputChange("children_count", Number.parseInt(e.target.value) || 0)
                     }
@@ -1107,7 +1107,7 @@ export default function AddEmployeeForm() {
                   id="experience"
                   type="number"
                   min="0"
-                  value={formData.experience}
+                  value={formData.experience === 0 ? "" : formData.experience}
                   onChange={(e) =>
                     handleInputChange("experience", Number.parseInt(e.target.value) || 0)
                   }

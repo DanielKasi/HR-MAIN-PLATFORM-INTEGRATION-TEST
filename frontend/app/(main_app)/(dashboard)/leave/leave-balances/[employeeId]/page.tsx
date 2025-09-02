@@ -1,19 +1,24 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useSelector } from "react-redux";
-import { useRouter, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {useState, useEffect, useMemo} from "react";
+import {useSelector} from "react-redux";
+import {useRouter, useParams} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { getAllLeaveBalances, updateLeaveBalance, createLeaveBalance, deleteLeaveBalance } from "@/lib/utils";
-import { getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
-import { IEmployee, ILeaveBalance, ILeaveType } from "@/types/types.utils";
-import { toast } from "sonner";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {User, Calendar, Edit, ArrowLeft, Trash2} from "lucide-react";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {
+  getAllLeaveBalances,
+  updateLeaveBalance,
+  createLeaveBalance,
+  deleteLeaveBalance,
+} from "@/lib/utils";
+import {getPaginatedEmployees, getLeaveTypes} from "@/lib/utils";
+import {IEmployee, ILeaveBalance, ILeaveType} from "@/types/types.utils";
+import {toast} from "sonner";
 
 const years = [2023, 2024, 2025, 2026];
 
@@ -89,42 +94,45 @@ export default function EmployeeLeaveBalanceDetails() {
 
       try {
         const [allBalances, allEmployees, allLeaveTypes] = await Promise.all([
-          getAllLeaveBalances({ institutionId: selectedInstitution.id }),
-          getPaginatedEmployees({ institutionId: selectedInstitution.id }),
-          getLeaveTypes({ institutionId: selectedInstitution.id })
+          getAllLeaveBalances({institutionId: selectedInstitution.id}),
+          getPaginatedEmployees({institutionId: selectedInstitution.id}),
+          getLeaveTypes({institutionId: selectedInstitution.id}),
         ]);
 
         setEmployees(allEmployees.results || []);
         setLeaveTypes(allLeaveTypes || []);
 
-        const foundEmployee = allEmployees.results?.find(emp => emp.id === employeeIdNum);
+        const foundEmployee = allEmployees.results?.find((emp) => emp.id === employeeIdNum);
 
         setEmployee(foundEmployee || null);
 
-        const employeeBalances = allBalances?.filter(balance => {
-          const balanceEmployeeId = typeof balance.employee === 'object'
-            ? balance.employee.id
-            : balance.employee;
-          return balanceEmployeeId === employeeIdNum;
-        }) || [];
+        const employeeBalances =
+          allBalances?.filter((balance) => {
+            const balanceEmployeeId =
+              typeof balance.employee === "object" ? balance.employee.id : balance.employee;
+            return balanceEmployeeId === employeeIdNum;
+          }) || [];
 
         setEmployeeLeaveBalances(employeeBalances);
 
         if (!foundEmployee && employeeBalances.length > 0) {
           const firstBalance = employeeBalances[0];
-          if (typeof firstBalance.employee === 'object') {
+          if (typeof firstBalance.employee === "object") {
             setEmployee(firstBalance.employee as any);
             setDebugInfo("Employee found from balance data");
           }
         }
 
         setDataFetched(true);
-        setDebugInfo(`Data loaded successfully. Employee: ${foundEmployee?.user?.fullname || 'Not found'}`);
+        setDebugInfo(
+          `Data loaded successfully. Employee: ${foundEmployee?.user?.fullname || "Not found"}`,
+        );
 
         toast.dismiss(`loading-${employeeIdNum}`);
-
       } catch (error) {
-        setDebugInfo(`Error fetching data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setDebugInfo(
+          `Error fetching data: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
         toast.error("Failed to load employee data");
         toast.dismiss(`loading-${employeeIdNum}`);
       } finally {
@@ -187,29 +195,27 @@ export default function EmployeeLeaveBalanceDetails() {
 
   const totalAvailable = useMemo(() => {
     return employeeLeaveBalances.reduce((total, balance) => {
-      const available = typeof balance.available_days === 'string'
-        ? parseFloat(balance.available_days)
-        : balance.available_days;
+      const available =
+        typeof balance.available_days === "string"
+          ? parseFloat(balance.available_days)
+          : balance.available_days;
       return total + (isNaN(available) ? 0 : available);
     }, 0);
   }, [employeeLeaveBalances]);
 
-
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
+          size="sm"
           onClick={() => router.push("../leave-balances")}
-          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+          className="rounded-full aspect-square"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
         </Button>
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-
             {employee?.user?.fullname || "Employee"} - Leave Balances
           </h1>
         </div>
@@ -245,9 +251,7 @@ export default function EmployeeLeaveBalanceDetails() {
 
             <div className="bg-orange-50 p-4 rounded-lg text-center">
               <p className="text-sm text-myOrange font-medium">Overall Status</p>
-              <div className="mt-2">
-                {getStatusBadge(totalAvailable)}
-              </div>
+              <div className="mt-2">{getStatusBadge(totalAvailable)}</div>
             </div>
           </div>
         </CardContent>
@@ -267,11 +271,15 @@ export default function EmployeeLeaveBalanceDetails() {
                 <TableRow className="hover:bg-gray-50">
                   <TableHead className="font-semibold text-gray-900">Leave Type</TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Year</TableHead>
-                  <TableHead className="font-semibold text-gray-900 text-center">Allocated</TableHead>
+                  <TableHead className="font-semibold text-gray-900 text-center">
+                    Allocated
+                  </TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Used</TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Pending</TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Carried</TableHead>
-                  <TableHead className="font-semibold text-gray-900 text-center">Available</TableHead>
+                  <TableHead className="font-semibold text-gray-900 text-center">
+                    Available
+                  </TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Status</TableHead>
                   <TableHead className="font-semibold text-gray-900 text-center">Actions</TableHead>
                 </TableRow>
@@ -286,14 +294,26 @@ export default function EmployeeLeaveBalanceDetails() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center font-medium">{item.year}</TableCell>
-                    <TableCell className="text-center font-medium text-blue-600">{item.allocated_days}</TableCell>
-                    <TableCell className="text-center font-medium text-green-600">{item.used_days}</TableCell>
-                    <TableCell className="text-center font-medium text-myOrange">{item.pending_days}</TableCell>
-                    <TableCell className="text-center font-medium text-purple-600">{item.carried_forward_days}</TableCell>
-                    <TableCell className={`text-center font-bold ${getStatusColor(item.available_days)}`}>
+                    <TableCell className="text-center font-medium text-blue-600">
+                      {item.allocated_days}
+                    </TableCell>
+                    <TableCell className="text-center font-medium text-green-600">
+                      {item.used_days}
+                    </TableCell>
+                    <TableCell className="text-center font-medium text-myOrange">
+                      {item.pending_days}
+                    </TableCell>
+                    <TableCell className="text-center font-medium text-purple-600">
+                      {item.carried_forward_days}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center font-bold ${getStatusColor(item.available_days)}`}
+                    >
                       {item.available_days}
                     </TableCell>
-                    <TableCell className="text-center">{getStatusBadge(item.available_days)}</TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(item.available_days)}
+                    </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button
@@ -322,7 +342,9 @@ export default function EmployeeLeaveBalanceDetails() {
             <div className="text-center py-12">
               <Calendar className="w-12 h-12 text-orange-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Leave Balances Found</h3>
-              <p className="text-gray-600">This employee doesn't have any leave balance records yet.</p>
+              <p className="text-gray-600">
+                This employee doesn't have any leave balance records yet.
+              </p>
             </div>
           )}
         </CardContent>

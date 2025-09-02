@@ -4,7 +4,17 @@
 import type {Branch} from "@/types";
 
 import {useEffect, useState} from "react";
-import {Edit, MapPin, Plus, Search, Trash, Loader2, Eye, MoreVertical} from "lucide-react";
+import {
+  Edit,
+  MapPin,
+  Plus,
+  Search,
+  Trash,
+  Loader2,
+  Eye,
+  MoreVertical,
+  ArrowLeft,
+} from "lucide-react";
 import {toast} from "sonner";
 import {useDispatch, useSelector} from "react-redux";
 
@@ -263,11 +273,22 @@ export default function BranchesPage() {
   };
 
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Branches</h1>
-          <p className="text-muted-foreground">Manage your business locations</p>
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -mt-5">
+      <div className="flex items-center">
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="rounded-full aspect-square -mt-4"
+            variant="outline"
+            onClick={() => router.push("/admin")}
+          >
+            <ArrowLeft />
+          </Button>
+
+          <div className="ml-2">
+            <h1 className="text-2xl font-bold tracking-tight mt-5">Branches</h1>
+            <p className="text-muted-foreground mt-4 -ml-14">Manage your business locations</p>
+          </div>
         </div>
       </div>
 
