@@ -6527,7 +6527,7 @@ export const penaltyConfigAPI = {
         params.append("penalty_type", penalty_type);
       }
 
-      const endpoint = `/institution/branch-penalties/?branch=${branchId}&${params.toString()}`;
+      const endpoint = `/institution/branch-penalties/?branch_id=${branchId}&${params.toString()}`;
       const response = await apiRequest.get(endpoint);
       return response.data as IPaginatedResponse<IBranchPenaltyConfig>;
     } catch (error) {
@@ -6589,22 +6589,22 @@ export const penaltyConfigAPI = {
 // Branch Location Comparison Config API functions
 export const branchLocationComparisonConfigAPI = {
   getBranchLocationComparisonConfigs: async ({
-    institutionId,
+    branchId,
     page = 1,
     search,
   }: {
-    institutionId: number;
+    branchId: number;
     page?: number;
     search?: string;
   }): Promise<IPaginatedResponse<IBranchLocationComparisonConfig>> => {
     const params = new URLSearchParams({
       page: page.toString(),
-      page_size: "10",
     });
 
     if (search) {
       params.append("search", search);
     }
+    params.append("branch_id", branchId.toString())
 
     const response = await apiRequest.get(
       `/institution/branch-location-comparison/?${params.toString()}`,

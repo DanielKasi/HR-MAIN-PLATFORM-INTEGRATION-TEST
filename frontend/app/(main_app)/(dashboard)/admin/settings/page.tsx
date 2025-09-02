@@ -400,7 +400,7 @@ export default function SettingsPage() {
   const getPenaltyTypeDisplay = (type: string) => {
     const types: { [key: string]: string } = {
       late_coming: "Late Coming",
-      early_leaving: "Early Leaving",
+      early_leaving: "Early Checkout",
       absent: "Absent",
       no_response_spotcheck: "No Response for Spotcheck",
       late_spotcheck_response: "Late Spotcheck Response",
@@ -947,7 +947,7 @@ export default function SettingsPage() {
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="late_coming">Late Coming</SelectItem>
-            <SelectItem value="early_leaving">Early Leaving</SelectItem>
+            <SelectItem value="early_leaving">Early Checkout</SelectItem>
             <SelectItem value="absent">Absent</SelectItem>
             <SelectItem value="no_response_spotcheck">No Response for Spotcheck</SelectItem>
             <SelectItem value="late_spotcheck_response">Late Spotcheck Response</SelectItem>
@@ -1079,7 +1079,7 @@ export default function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="late_coming">Late Coming</SelectItem>
-                    <SelectItem value="early_leaving">Early Leaving</SelectItem>
+                    <SelectItem value="early_leaving">Early Checkout</SelectItem>
                     <SelectItem value="absent">Absent</SelectItem>
                     <SelectItem value="no_response_spotcheck">No Response for Spotcheck</SelectItem>
                     <SelectItem value="late_spotcheck_response">Late Spotcheck Response</SelectItem>
@@ -1223,7 +1223,7 @@ export default function SettingsPage() {
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="late_coming">Late Coming</SelectItem>
-                <SelectItem value="early_leaving">Early Leaving</SelectItem>
+                <SelectItem value="early_leaving">Early Checkout</SelectItem>
                 <SelectItem value="absent">Absent</SelectItem>
                 <SelectItem value="no_response_spotcheck">No Response for Spotcheck</SelectItem>
                 <SelectItem value="late_spotcheck_response">Late Spotcheck Response</SelectItem>
@@ -1366,7 +1366,7 @@ export default function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="late_coming">Late Coming</SelectItem>
-                    <SelectItem value="early_leaving">Early Leaving</SelectItem>
+                    <SelectItem value="early_leaving">Early Checkout</SelectItem>
                     <SelectItem value="absent">Absent</SelectItem>
                     <SelectItem value="no_response_spotcheck">No Response for Spotcheck</SelectItem>
                     <SelectItem value="late_spotcheck_response">Late Spotcheck Response</SelectItem>
@@ -1516,13 +1516,13 @@ export default function SettingsPage() {
               fetchFirstPage={async () => {
                 if (!institution) throw new Error("No institution selected")
                 return await branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigs({
-                  institutionId: institution.id,
+                  branchId: selectedLocationComparisonBranchId,
                   page: 1,
                   search: locationComparisonSearchTerm || undefined,
                 })
               }}
               fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
-              deps={[institution?.id, locationComparisonSearchTerm]}
+              deps={[selectedLocationComparisonBranchId, locationComparisonSearchTerm]}
               className="space-y-4"
               footerClassName="pt-4"
             >

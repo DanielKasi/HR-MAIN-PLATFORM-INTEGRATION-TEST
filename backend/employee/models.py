@@ -91,8 +91,7 @@ class Employee(BaseApprovableModel):
     gender = models.CharField(
         max_length=10,
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        blank=True,
-        null=True,
+        default="other"
     )
     # TODO: Make department non-nullable in future
     department = models.ForeignKey(
@@ -156,24 +155,24 @@ class Employee(BaseApprovableModel):
     def get_institution(self):
         return self.department.institution
 
-    class Meta:
-        constraints = [
-            UniqueConstraint(
-                fields=["department", "user"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_user_per_department_institution",
-            ),
-            UniqueConstraint(
-                fields=["department", "email"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_email_per_department_institution",
-            ),
-            UniqueConstraint(
-                fields=["department", "nin"],
-                condition=Q(deleted_at__isnull=True),
-                name="unique_active_employee_nin_per_department_institution",
-            ),
-        ]
+    # class Meta:
+    #     constraints = [
+    #         UniqueConstraint(
+    #             fields=["department", "user"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_user_per_department_institution",
+    #         ),
+    #         UniqueConstraint(
+    #             fields=["department", "email"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_email_per_department_institution",
+    #         ),
+    #         UniqueConstraint(
+    #             fields=["department", "nin"],
+    #             condition=Q(deleted_at__isnull=True),
+    #             name="unique_active_employee_nin_per_department_institution",
+    #         ),
+    #     ]
 
     def clean(self):
         """Custom validation for the Employee model"""
@@ -566,9 +565,10 @@ class EmployeeAttendance(BaseApprovableModel):
             ("overtime", "Overtime"),
             ("on_time", "On Time"),
             ("absent", "Absent"),
+            ("late_and_early", "Late and Early Checkout"),
             ("pending", "Pending"),
         ],
-        default="pending",  # Added default value
+        default="pending",
     )
 
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
@@ -588,7 +588,6 @@ class EmployeeAttendance(BaseApprovableModel):
         return self.employee.get_institution()
 
     def calculate_overtime_hours(self):
-
         if (
             self.date
             and self.check_out_time
@@ -599,14 +598,11 @@ class EmployeeAttendance(BaseApprovableModel):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
 
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
-                print(f"    Overtime hours = {hours}")
                 return hours
-        print("    No overtime")
         return 0.0
 
     def calculate_late_minutes(self):
@@ -620,14 +616,10 @@ class EmployeeAttendance(BaseApprovableModel):
             datetime_checkin = datetime.combine(self.date, self.check_in_time)
             datetime_start = datetime.combine(self.date, branch_start_time)
 
-            print(f"    Branch start: {datetime_start}, Check-in: {datetime_checkin}")
-
             if datetime_checkin > datetime_start:
                 delay = datetime_checkin - datetime_start
                 minutes = int(delay.total_seconds() / 60)
-                print(f"    Late minutes = {minutes}")
                 return minutes
-        print("    Not late")
         return 0
 
     def calculate_early_checkout_minutes(self):
@@ -641,22 +633,17 @@ class EmployeeAttendance(BaseApprovableModel):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-            print(f"    Branch end: {datetime_end}, Checkout: {datetime_checkout}")
-
             if datetime_checkout < datetime_end:
                 early_leave = datetime_end - datetime_checkout
                 minutes = int(early_leave.total_seconds() / 60)
-                print(f"    Early checkout minutes = {minutes}")
                 return minutes
-        print("    No early checkout")
         return 0
 
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
-
+        
         # Check for absence first
         if not self.check_in_time and not self.check_out_time:
-            print("    Absent (no check-in or check-out)")
             self.attendance_status = "absent"
             self.overtime_hours = 0
             self.late_minutes = 0
@@ -668,8 +655,11 @@ class EmployeeAttendance(BaseApprovableModel):
         self.late_minutes = self.calculate_late_minutes()
         self.early_checkout_minutes = self.calculate_early_checkout_minutes()
 
+
         # Determine status with priority order
-        if self.late_minutes > 0:
+        if self.late_minutes > 0 and self.early_checkout_minutes > 0:
+            self.attendance_status = "late_and_early"
+        elif self.late_minutes > 0:
             self.attendance_status = "late"
         elif self.early_checkout_minutes > 0:
             self.attendance_status = "early_checkout"
@@ -678,18 +668,6 @@ class EmployeeAttendance(BaseApprovableModel):
         else:
             self.attendance_status = "on_time"
 
-        print(
-            f"    Final Status = {self.attendance_status}, "
-            f"Overtime = {self.overtime_hours}, "
-            f"Late = {self.late_minutes}, "
-            f"Early checkout = {self.early_checkout_minutes}"
-        )
-
-    def save(self, *args, **kwargs):
-        """
-        Simplified save method - status calculation is now handled by serializer.
-        """
-        super().save(*args, **kwargs)
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
@@ -745,14 +723,66 @@ class EmployeeAttendance(BaseApprovableModel):
         return False
 
     def save(self, *args, **kwargs):
-
+        """
+        Save the attendance record and update attendance status and penalties.
+        """
+        # Set date if not provided
         if self.date is None:
             self.date = datetime.today().date()
 
+        # Store previous data to detect significant changes
+        old_attendance_status = None
+        old_late_minutes = 0
+        old_early_checkout_minutes = 0
+        old_overtime_hours = 0
+        is_new_record = not self.pk
+        
+        if self.pk:
+            try:
+                old_instance = EmployeeAttendance.objects.get(pk=self.pk)
+                old_attendance_status = old_instance.attendance_status
+                old_late_minutes = old_instance.late_minutes
+                old_early_checkout_minutes = old_instance.early_checkout_minutes
+                old_overtime_hours = old_instance.overtime_hours
+            except EmployeeAttendance.DoesNotExist:
+                is_new_record = True
+
+        # Run validation
         self.full_clean()
 
-        self.overtime_hours = self.calculate_overtime_hours()
+        # Calculate attendance status and metrics
+        self.update_attendance_status()
+        
+        # Save the record
         super().save(*args, **kwargs)
+        
+        
+        # Check if we need to update penalties
+        status_changed = old_attendance_status != self.attendance_status
+        metrics_changed = (
+            old_late_minutes != self.late_minutes or
+            old_early_checkout_minutes != self.early_checkout_minutes or
+            old_overtime_hours != self.overtime_hours
+        )
+        
+        should_update_penalties = is_new_record or status_changed or metrics_changed
+        
+        if should_update_penalties:
+            from payroll.models import EmployeePenalty  
+            EmployeePenalty.update_or_remove_penalty_for_attendance(self)
+
+
+    def recalculate_and_save(self):
+        """
+        Manually trigger recalculation of attendance status and penalties.
+        Useful when called from serializers or management commands.
+        """
+        old_status = self.attendance_status
+        self.update_attendance_status()
+        
+        if old_status != self.attendance_status:
+            self.save()  # This will trigger penalty updates
+
 
 
 class EmployeeContract(BaseApprovableModel):
@@ -836,7 +866,6 @@ class EmployeeContract(BaseApprovableModel):
         for page_num, page in enumerate(pdf_reader.pages, 1):
             page_text = page.extract_text() or ""
             normalized_text = self.normalize_text(page_text)
-            print(f"Page {page_num} extracted text length: {len(normalized_text)}")
             pages_text.append(normalized_text)
         return pages_text
 
@@ -848,7 +877,6 @@ class EmployeeContract(BaseApprovableModel):
             for image_num, image in enumerate(images, 1):
                 page_text = pytesseract.image_to_string(image)
                 normalized_text = self.normalize_text(page_text)
-                print(f"OCR text length for image {image_num}: {len(normalized_text)}")
                 pages_text.append(normalized_text)
             return pages_text
         except Exception as e:

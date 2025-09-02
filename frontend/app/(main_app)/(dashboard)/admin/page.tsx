@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
-import { useEffect, useState } from "react";
-import type { Branch } from "@/types";
-import { Icon } from "@iconify/react";
+import {fetchAndSetData, fetchInstitutionBranchesFromAPI} from "@/lib/helpers";
+import {useEffect, useState} from "react";
+import type {Branch} from "@/types";
+import {Icon} from "@iconify/react";
 
 import {
   Users,
@@ -32,11 +32,12 @@ import {
   Landmark,
   CreditCard,
   LampDesk,
+  Clock,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import {Separator} from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/types/types.utils";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -178,6 +179,15 @@ export default function AdminPage() {
                   >
                     <GitBranch className="w-5 h-5 text-gray-500" />
                     <span>Branches</span>
+                  </Link>
+                </div>
+                <div className="space-y-4">
+                  <Link
+                    href="/branches/shifts/"
+                    className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+                  >
+                    <Clock className="w-5 h-5 text-gray-500" />
+                    <span>Branch Shifts</span>
                   </Link>
                 </div>
                 <div className="space-y-4">

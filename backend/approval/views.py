@@ -3,12 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.http import Http404
-from django.db.models import Q
-
+import re
 from institution.models import Institution
 from .models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
-    Approval, ApprovalTask
+    Approval, ApprovalTask, BaseApprovableModel
 )
 from .serializers import (
     ActionSerializer, ApproverGroupSerializer, ApprovalDocumentSerializer,
@@ -24,6 +23,8 @@ from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 
 
 class ActionListAPIView(APIView):
@@ -668,3 +669,38 @@ class ApprovalTasksDashboardAPIView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+    
+
+class ApprovableContentTypesListAPIView(APIView):
+    @extend_schema(
+        tags=['Approval Documents'],
+        description='List all available content types for models that inherit from BaseApprovableModel. These can be assigned to approval documents. The list is dynamically generated, so new inheriting models are automatically included.',
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request):
+        all_models = apps.get_models()
+        approvable_models = [
+            m for m in all_models 
+            if issubclass(m, BaseApprovableModel) and not m._meta.abstract
+        ]
+        
+        def humanize_model_name(name):
+            # Insert spaces before capital letters and title case
+            name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+            return name.title()
+        
+        content_types = []
+        for model in sorted(approvable_models, key=lambda m: m.__name__):
+            ct = ContentType.objects.get_for_model(model)
+            humanized_name = humanize_model_name(model.__name__)
+            humanized_plural = humanized_name + 's' if not humanized_name.endswith('s') else humanized_name + 'es'
+            
+            content_types.append({
+                'id': ct.id,
+                'app_label': ct.app_label,
+                'model': ct.model,
+                'name': humanized_name,
+                'plural_name': humanized_plural,
+            })
+        
+        return Response(content_types, status=status.HTTP_200_OK)    

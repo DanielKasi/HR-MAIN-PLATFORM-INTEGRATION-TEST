@@ -1,11 +1,11 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {useState, useEffect, useMemo} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
 import PhoneNumberInput from "@/components/phone-number-input";
 import CountrySelect from "@/components/common/country-select";
 import {
@@ -15,9 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Separator} from "@/components/ui/separator";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Upload, User, X, Loader2, Plus } from "lucide-react";
+import {Textarea} from "@/components/ui/textarea";
+import {Upload, User, X, Loader2, Plus} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {
   createEmployee,
   getDepartments,
@@ -40,9 +40,10 @@ import {
   createEmployeeType,
   getWorkTypes,
   getEmployeeTypes,
+  showErrorToast,
 } from "@/lib/utils";
-import { useBranches } from "@/hooks/use-branches";
-import { MultiSelectBranches } from "@/components/multi-select-branches";
+import {useBranches} from "@/hooks/use-branches";
+import {MultiSelectBranches} from "@/components/multi-select-branches";
 import {
   type IEmployeeFormData,
   type ICreateEmployeeForm,
@@ -55,26 +56,26 @@ import {
   type ICountry,
   PERMISSION_CODES,
 } from "@/types/types.utils";
-import { toast } from "sonner";
-import { selectEmployeeCreationForm } from "@/store/miscellaneous/selectors";
-import { useDispatch } from "react-redux";
-import { clearEmployeeForm, saveEmployeeForm } from "@/store/miscellaneous/actions";
-import { set } from "date-fns";
+import {toast} from "sonner";
+import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
+import {useDispatch} from "react-redux";
+import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
+import {set} from "date-fns";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
-
+import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 
 const maritalStatusOptions = [
-  { value: "single", label: "Single" },
-  { value: "married", label: "Married" },
-  { value: "divorced", label: "Divorced" },
-  { value: "widowed", label: "Widowed" },
+  {value: "single", label: "Single"},
+  {value: "married", label: "Married"},
+  {value: "divorced", label: "Divorced"},
+  {value: "widowed", label: "Widowed"},
 ];
 
 const steps = [
-  { id: 1, title: "Personal Information" },
-  { id: 2, title: "Work Information" },
-  { id: 3, title: "Financial Information" },
+  {id: 1, title: "Personal Information"},
+  {id: 2, title: "Work Information"},
+  {id: 3, title: "Financial Information"},
 ];
 
 export default function AddEmployeeForm() {
@@ -88,7 +89,7 @@ export default function AddEmployeeForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
-  const { branches, loading: branchesLoading, error: branchesError } = useBranches();
+  const {branches, loading: branchesLoading, error: branchesError} = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -126,10 +127,11 @@ export default function AddEmployeeForm() {
       ...prev,
       institution: selectedInstitution ? selectedInstitution.id : 0,
     }));
-
   }, [selectedInstitution]);
 
-  const [formData, setFormData] = useState<Omit<ICreateEmployeeForm, "phone_number_country_code" | "emergency_contact_phone_country_code">>({
+  const [formData, setFormData] = useState<
+    Omit<ICreateEmployeeForm, "phone_number_country_code" | "emergency_contact_phone_country_code">
+  >({
     fullname: "",
     email: "",
     phone_number: "",
@@ -176,7 +178,7 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   // Add state for emergency contact phone input
   const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
@@ -184,13 +186,9 @@ export default function AddEmployeeForm() {
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
-  }>({ country: null, countryCode: "", phoneNumber: "", isValid: false });
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
   const dispatch = useDispatch();
-
-  const showErrorToast = (message: string) => {
-    toast.error(message);
-  };
 
   const showSuccessToast = (message: string) => {
     toast.success(message);
@@ -214,7 +212,7 @@ export default function AddEmployeeForm() {
       }
 
       if (currentEmployeeCreationForm.country) {
-        setSelectedCountry({ name: { common: currentEmployeeCreationForm.country } } as ICountry);
+        setSelectedCountry({name: {common: currentEmployeeCreationForm.country}} as ICountry);
       }
 
       if (currentEmployeeCreationForm.emergency_contact_phone) {
@@ -228,7 +226,7 @@ export default function AddEmployeeForm() {
   }, [currentEmployeeCreationForm, formData.fullname]);
 
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, selected_branches: branches.map((br) => br.id) }));
+    setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
   }, [branches]);
 
   const loadDropdownData = async () => {
@@ -238,9 +236,9 @@ export default function AddEmployeeForm() {
     try {
       const [departmentsData, workTypesData, employeeTypesData] = await Promise.all([
         // getJobPositions({institutionId: selectedInstitution.id}),
-        getDepartments({ institutionId: selectedInstitution.id }),
-        getWorkTypes({ institutionId: selectedInstitution.id }),
-        getEmployeeTypes({ institutionId: selectedInstitution.id }),
+        getDepartments({institutionId: selectedInstitution.id}),
+        getWorkTypes({institutionId: selectedInstitution.id}),
+        getEmployeeTypes({institutionId: selectedInstitution.id}),
       ]);
 
       // setPositions(Array.isArray(positionsData) ? positionsData : []);
@@ -263,7 +261,6 @@ export default function AddEmployeeForm() {
   };
 
   const handleClearLocalEmployeeCreateForm = () => {
-
     dispatch(clearEmployeeForm());
     // Clear local form state
     setFormData({
@@ -315,7 +312,6 @@ export default function AddEmployeeForm() {
     value: string | boolean | File | null | number | number[],
   ) => {
     if (field == "position") {
-
       const position = positions.find((p) => p.id === value);
       if (position) {
         const updatedFormData = {
@@ -327,7 +323,7 @@ export default function AddEmployeeForm() {
         handleSaveLocalEmployeeCreateForm(updatedFormData);
       }
     } else if (field === "department") {
-      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n")
+      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -352,7 +348,7 @@ export default function AddEmployeeForm() {
     setEmployeeProfilePicture(value);
 
     // Also save the updated form data to Redux (without the profile picture)
-    const updatedFormData = { ...formData };
+    const updatedFormData = {...formData};
     setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
@@ -414,7 +410,7 @@ export default function AddEmployeeForm() {
     }
 
     // Save the updated form data to Redux after removing image
-    const updatedFormData = { ...formData };
+    const updatedFormData = {...formData};
     setFormData(updatedFormData);
     handleSaveLocalEmployeeCreateForm(updatedFormData);
   };
@@ -427,38 +423,15 @@ export default function AddEmployeeForm() {
     };
   }, [previewUrl]);
 
-  const handleAddWorkType = async () => {
-    if (!selectedInstitution) {
-      return;
-    }
-    if (!workTypeFormData.name.trim()) {
-      showErrorToast("Work type name is required");
-      return;
-    }
-
+  const handleAddWorkType = async (newWorkType: IWorkType) => {
     setIsAddingWorkType(true);
-
     try {
-      const newWorkType = await createWorkType({
-        institutionId: selectedInstitution.id,
-        workTypeData: workTypeFormData,
-      });
-
-      if (newWorkType) {
-        setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({ ...prev, work_type: newWorkType.id }));
-        setWorkTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
-        setIsWorkTypeModalOpen(false);
-        showSuccessToast("Work type added successfully");
-      } else {
-        throw new Error("Failed to create work type");
-      }
+      setWorkTypes((prev) => [...prev, newWorkType]);
+      setFormData((prev) => ({...prev, work_type: newWorkType.id}));
+      setWorkTypeFormData((prev) => ({...prev, name: "", description: "", code: ""}));
+      setIsWorkTypeModalOpen(false);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unknown error occurred while adding work type.";
-      showErrorToast(errorMessage);
+      showErrorToast({error, defaultMessage: "Failed to add a work type"});
     } finally {
       setIsAddingWorkType(false);
     }
@@ -469,7 +442,7 @@ export default function AddEmployeeForm() {
       return;
     }
     if (!employeeTypeFormData.name.trim()) {
-      showErrorToast("Employee type name is required");
+      toast.error("Employee type name is required");
       return;
     }
 
@@ -483,8 +456,8 @@ export default function AddEmployeeForm() {
 
       if (newEmployeeType) {
         setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({ ...prev, employee_type: newEmployeeType.id }));
-        setEmployeeTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
+        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
+        setEmployeeTypeFormData((prev) => ({...prev, name: "", description: "", code: ""}));
         setIsEmployeeTypeModalOpen(false);
         showSuccessToast("Employee type name added successfully");
       } else {
@@ -495,7 +468,7 @@ export default function AddEmployeeForm() {
         error instanceof Error
           ? error.message
           : "An unknown error occurred while adding employee type name.";
-      showErrorToast(errorMessage);
+      showErrorToast({error, defaultMessage: "Failed to add employee"});
     } finally {
       setIsAddingEmployeeType(false);
     }
@@ -545,7 +518,16 @@ export default function AddEmployeeForm() {
         break;
 
       case 2: // Work Information
-        const workRequiredFields = ["position", "department", "date_of_joining", "work_type", "employee_type", "selected_branches", "qualifications", "skills"];
+        const workRequiredFields = [
+          "position",
+          "department",
+          "date_of_joining",
+          "work_type",
+          "employee_type",
+          "selected_branches",
+          "qualifications",
+          "skills",
+        ];
         for (const field of workRequiredFields) {
           const value = formData[field as keyof typeof formData];
           if (!value || value === 0) {
@@ -685,7 +667,7 @@ export default function AddEmployeeForm() {
           ? error.message
           : "An unknown error occurred while creating the employee.";
 
-      showErrorToast(errorMessage);
+      showErrorToast({error, defaultMessage: "Failed to create employee"});
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -719,7 +701,11 @@ export default function AddEmployeeForm() {
         emergency_contact_phone: newEmergencyPhone,
       };
       setFormData(updatedFormData);
-      handleSaveLocalEmployeeCreateForm({ ...updatedFormData, phone_number_country_code: phoneInput.countryCode, emergency_contact_phone_country_code: emergencyPhoneInput.countryCode });
+      handleSaveLocalEmployeeCreateForm({
+        ...updatedFormData,
+        phone_number_country_code: phoneInput.countryCode,
+        emergency_contact_phone_country_code: emergencyPhoneInput.countryCode,
+      });
     }
   }, [phoneInput, selectedCountry?.name?.common, emergencyPhoneInput]);
 
@@ -871,7 +857,9 @@ export default function AddEmployeeForm() {
                     country={emergencyPhoneInput.country}
                     onChange={setEmergencyPhoneInput}
                     setError={setPhoneError}
-                    defaultCountryCode={currentEmployeeCreationForm?.emergency_contact_phone_country_code}
+                    defaultCountryCode={
+                      currentEmployeeCreationForm?.emergency_contact_phone_country_code
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -924,15 +912,18 @@ export default function AddEmployeeForm() {
                 <Label htmlFor="position">Position *</Label>
 
                 <JobPositionSearchableSelect
-                  setPositions={(positions: IJobPosition[]) => setPositions(prev => ([...prev.filter(prevPos => !positions.some(pos => pos.id === prevPos.id)), ...positions]))}
-
+                  setPositions={(positions: IJobPosition[]) =>
+                    setPositions((prev) => [
+                      ...prev.filter((prevPos) => !positions.some((pos) => pos.id === prevPos.id)),
+                      ...positions,
+                    ])
+                  }
                   value={[formData.position.toString() || ""]}
                   onValueChange={(values) => {
                     if (values.length > 0) {
-                      handleInputChange("position", Number(values[0]))
+                      handleInputChange("position", Number(values[0]));
                     }
-                  }
-                  }
+                  }}
                 />
               </div>
 
@@ -962,94 +953,25 @@ export default function AddEmployeeForm() {
                       )}
                     </SelectContent>
                   </Select>
-                  <Dialog open={isWorkTypeModalOpen} onOpenChange={setIsWorkTypeModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 bg-transparent"
-                        title="Add new work type"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Add New Work Type</DialogTitle>
-                        <DialogDescription>
-                          Create a new work type to add to your institution.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeName">Name *</Label>
-                          <Input
-                            id="workTypeName"
-                            value={workTypeFormData.name}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, name: e.target.value }))
-                            }
-                            placeholder="Enter work type name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeCode">Code</Label>
-                          <Input
-                            id="workTypeCode"
-                            value={workTypeFormData.code}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({ ...prev, code: e.target.value }))
-                            }
-                            placeholder="Enter work type code (optional)"
-                            maxLength={10}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeDescription">Description</Label>
-                          <Textarea
-                            id="workTypeDescription"
-                            value={workTypeFormData.description}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter work type description (optional)"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
-                          }}
-                          disabled={isAddingWorkType}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleAddWorkType}
-                          disabled={isAddingWorkType || !workTypeFormData.name.trim()}
-                        >
-                          {isAddingWorkType ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Work Type"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+
+                  <Button
+                    type="button"
+                    onClick={() => setIsWorkTypeModalOpen(true)}
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 bg-transparent"
+                    title="Add new work type"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+
+                  <WorkTypeModal
+                    isOpen={isWorkTypeModalOpen}
+                    onClose={() => setIsWorkTypeModalOpen(false)}
+                    editingType={null}
+                    onSaveSuccess={handleAddWorkType}
+                    isSubmitting={isSubmitting}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -1104,7 +1026,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeName"
                             value={employeeTypeFormData.name}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, name: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
                             }
                             placeholder="Enter employee type name"
                           />
@@ -1115,7 +1037,7 @@ export default function AddEmployeeForm() {
                             id="employeeTypeCode"
                             value={employeeTypeFormData.code}
                             onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({ ...prev, code: e.target.value }))
+                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
                             }
                             placeholder="Enter employee type code (optional)"
                             maxLength={10}
@@ -1143,7 +1065,12 @@ export default function AddEmployeeForm() {
                           variant="outline"
                           onClick={() => {
                             setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData(prev => ({ ...prev, name: "", description: "", code: "" }));
+                            setEmployeeTypeFormData((prev) => ({
+                              ...prev,
+                              name: "",
+                              description: "",
+                              code: "",
+                            }));
                           }}
                           disabled={isAddingEmployeeType}
                         >
@@ -1298,16 +1225,18 @@ export default function AddEmployeeForm() {
                 {steps.map((step, index) => (
                   <div key={step.id} className="flex items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step.id
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        currentStep >= step.id
                           ? "bg-orange-600 text-white"
                           : "bg-gray-200 text-gray-600"
-                        }`}
+                      }`}
                     >
                       {step.id}
                     </div>
                     <span
-                      className={`ml-2 text-sm ${currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
-                        }`}
+                      className={`ml-2 text-sm ${
+                        currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
+                      }`}
                     >
                       {step.title}
                     </span>
@@ -1336,7 +1265,6 @@ export default function AddEmployeeForm() {
               ) : (
                 <></>
               )}
-
 
               <form onSubmit={handleSubmit} className="space-y-8 w-full">
                 {/* Profile Picture Upload */}

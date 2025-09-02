@@ -547,12 +547,6 @@ export default function BranchesPage() {
               </TableBody>
             </Table>
           </div>
-
-          <div className="flex justify-end">
-            <Button onClick={() => router.push("/branches/shifts")} variant="ghost">
-              Branch Shifts
-            </Button>
-          </div>
         </CardContent>
       </div>
 

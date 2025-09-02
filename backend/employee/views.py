@@ -1319,7 +1319,7 @@ class EmployeeUpdateAPIView(APIView):
                 employee.user.set_password(random_password)
                 employee.user.is_password_verified = False
                 employee.user.save()
-                employee.setup_employee_password(request)
+                # employee.setup_employee_password(request)
 
         # if "salary" in final_data:
         #     employee.salary = final_data["salary"]

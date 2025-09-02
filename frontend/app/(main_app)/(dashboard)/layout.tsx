@@ -9,7 +9,7 @@ import {useSelector, useDispatch} from "react-redux";
 import {Icon} from "@iconify/react";
 
 import type {IUserInstitution} from "../../../types";
-import {PERMISSION_CODES} from "../../../types/types.utils";
+import {IEmployee, PERMISSION_CODES} from "../../../types/types.utils";
 import {selectAttachedInstitutions} from "@/store/auth/selectors";
 import {Button} from "@/components/ui/button";
 import {
@@ -54,6 +54,7 @@ import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
 import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
+import { employeeAPI, showErrorToast } from "@/lib/utils";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -133,6 +134,28 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const dispatch = useDispatch();
   const router = useRouter();
   const appLayoutRef = useRef<HTMLDivElement | null>(null);
+    const [relatedEmployee, setRelatedEmployee] = useState<IEmployee|null>(null);
+
+  useEffect(()=>{
+    if(selectedInstitution && currentUser){
+      if(currentUser.id !== selectedInstitution.institution_owner_id){
+        fetchRelatedEmployeeByUserId()
+      }
+    }
+  }, 
+  [selectedInstitution, currentUser])
+
+      const fetchRelatedEmployeeByUserId = async () => {
+        if(!currentUser){return}
+        try {
+          const employee = await employeeAPI.getByUserId({user_id:currentUser.id});
+          setRelatedEmployee(employee)
+        } catch (error) {
+          showErrorToast({error, defaultMessage:"Failed to fetch related employee"})
+        }finally{
+          
+        }
+      }
 
   useEffect(() => {
     const handleActivity = () => {
@@ -243,6 +266,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Analytics", href: "/analytics/employees"},
+        {title: "My Profile", href: relatedEmployee ? `/employees/profile/${relatedEmployee.id}`: '#'},
         {title: "Employee Information", href: "/employees/employee-list"},
         {title: "Document Requests", href: "#"},
         {title: "Shifts", href: "/employees/shift-requests"},
@@ -532,6 +556,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     return (
       <div key={`${item.title}-${index}`} className="w-full py-1">
         <Button
+          disabled={(!item.href || item.href.startsWith("#") && !item.submenu?.length)}
           variant="ghost"
           className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
             isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
@@ -585,7 +610,10 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                 <Button
                   key={`${sub.href}-${index}`}
                   variant="ghost"
+                  // disabled={!sub.href || sub.href.startsWith("#")}
                   className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
+                    (!sub.href || sub.href.startsWith("#")) ?
+                    " text-gray-500/80":
                     pathname === sub.href
                       ? "bg-primary/80  text-gray-100"
                       : "bg-gray-200/20  hover:bg-primary/60"

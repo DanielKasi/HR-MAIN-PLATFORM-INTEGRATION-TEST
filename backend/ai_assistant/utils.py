@@ -3,8 +3,27 @@ import os
 import re
 from django.conf import settings
 
+# from openai import OpenAI
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", settings.GROK_API_KEY)
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", settings.OPENAI_API_KEY)
+
+
+# client = OpenAI(api_key=OPENAI_API_KEY)
+
+
+# def prompt_openai(full_prompt: str) -> str:
+#     """
+#     Sends a prompt to the OpenAI Chat Completions API and returns the model's response text.
+#     """
+#     response = client.chat.completions.create(
+#         model="gpt-4.1",
+#         messages=[{"role": "user", "content": full_prompt}],
+#         temperature=1,
+#         max_tokens=500,
+#     )
+
+#     return response.choices[0].message.content
 
 
 def prompt_groq(full_prompt: str) -> str:
@@ -19,7 +38,7 @@ def prompt_groq(full_prompt: str) -> str:
     data = {
         "model": "meta-llama/llama-4-scout-17b-16e-instruct",
         "messages": [{"role": "user", "content": full_prompt}],
-        "temperature": 0.1,
+        "temperature": 0.6,
         "max_tokens": 500,
     }
     r = requests.post(url, headers=headers, json=data)
