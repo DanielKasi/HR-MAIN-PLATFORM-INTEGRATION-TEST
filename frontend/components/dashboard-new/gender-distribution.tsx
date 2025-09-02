@@ -2,8 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 import { useMobile } from "@/hooks/use-mobile";
 
 interface GenderDistributionProps {

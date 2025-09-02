@@ -14,14 +14,14 @@ const chartConfig = {
   gender: {
     male: { label: "Male", color: "hsl(var(--chart-1))" },
     female: { label: "Female", color: "hsl(var(--chart-2))" },
-    "non-binary": { label: "Non-Binary", color: "hsl(var(--chart-3))" },
+    "Other": { label: "Other", color: "hsl(var(--chart-3))" },
     unknown: { label: "Unknown", color: "hsl(var(--chart-4))" },
   },
   department: {
-    "Customer Service Department": { color: "hsl(var(--chart-1))" },
-    Engineering: { color: "hsl(var(--chart-2))" },
-    Marketing: { color: "hsl(var(--chart-3))" },
-    Sales: { color: "hsl(var(--chart-4))" },
+    "Customer Service Department": {label:"Customer Service Department", color: "hsl(var(--chart-1))" },
+    Engineering: { label:"Engineering", color: "hsl(var(--chart-2))" },
+    Marketing: {label:"Marketing", color: "hsl(var(--chart-3))" },
+    Sales: {label:"Sales", color: "hsl(var(--chart-4))" },
   },
   maritalStatus: {
     single: { label: "Single", color: "hsl(var(--chart-1))" },

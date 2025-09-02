@@ -6362,31 +6362,6 @@ export const spotcheckAPI = {
     }
   },
 
-  getSummary: async (
-    institutionId: number,
-  ): Promise<{
-    totalSpotChecks: number;
-    totalMissed: number;
-    missedThisMonth: number;
-    missedThisWeek: number;
-    missedToday: number;
-  }> => {
-    // try {
-    const response = await apiRequest.get(`/spotcheck/summary/?institution_id=${institutionId}`);
-    return response.data;
-    // } catch (error) {
-    //   console.error("Error fetching spotcheck summary:", error);
-    //   // Return dummy data for now
-    //   return {
-    //     totalSpotChecks: 156,
-    //     totalMissed: 23,
-    //     missedThisMonth: 8,
-    //     missedThisWeek: 3,
-    //     missedToday: 1,
-    //   };
-    // }
-  },
-
   getStatuses: async (): Promise<ISpotCheckStatus[]> => {
     const response = await apiRequest.get("/spotcheck/statuses/");
     return response.data.results || response.data;
@@ -6417,6 +6392,10 @@ export const spotcheckAPI = {
     const response = await apiRequest.delete(`/spotcheck/${id}/`);
     return response.status === 204;
   },
+
+  // CONFIGS:{
+
+  // }
 };
 
 // Penalty Configuration API functions

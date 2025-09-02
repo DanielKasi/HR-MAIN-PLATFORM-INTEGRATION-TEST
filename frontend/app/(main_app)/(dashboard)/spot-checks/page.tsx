@@ -31,22 +31,6 @@ const SpotchecksPage = () => {
   });
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  // Fetch summary data
-  // useEffect(() => {
-  //   const fetchSummary = async () => {
-  //     if (!selectedInstitution?.id) return;
-  //     try {
-  //       const summary = await spotcheckAPI.getSummary(selectedInstitution.id);
-  //       setSummaryData(summary);
-  //     } catch (error) {
-  //       showErrorToast({error, defaultMessage:"Failed to fetch spotcheck summary"});
-  //     }
-  //   };
-
-  //   fetchSummary();
-  // }, [selectedInstitution?.id]);
-
-  // Fetch spotcheck statuses
   useEffect(() => {
     const fetchStatuses = async () => {
       try {

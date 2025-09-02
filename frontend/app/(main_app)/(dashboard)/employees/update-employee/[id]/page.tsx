@@ -202,6 +202,11 @@ export default function UpdateEmployeePage() {
     toast.success(message);
   };
 
+  const handleBack = async () => {
+    router.back()
+  }
+
+
   useEffect(() => {
     if (selectedInstitution) {
       setInstitutionId(selectedInstitution.id);
@@ -1257,15 +1262,14 @@ export default function UpdateEmployeePage() {
     <div className="flex flex-col w-full min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 bg-white">
       <CardHeader>
         <div className="flex items-center space-x-4">
-          <Link href="/employees/employee-list">
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleBack}
               className="text-gray-600 hover:text-gray-900 rounded-full aspect-square"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
             </Button>
-          </Link>
           <div className="h-6 w-px bg-gray-300" />
           <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
         </div>
