@@ -118,4 +118,3 @@ df = pd.DataFrame(data)
 # Export to Excel
 df.to_excel("employee_data.xlsx", index=False)
 
-print("✅ Excel file 'employee_data.xlsx' created successfully!")

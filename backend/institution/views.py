@@ -2361,6 +2361,7 @@ class BranchLocationComparisonConfigListAPIView(APIView):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile
+        branch_id = request.query_params.get("branch_id", None)
 
         try:
             institution = user.institution
@@ -2370,6 +2371,9 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         configs = BranchLocationComparisonConfig.objects.filter(
             branch__institution=institution, deleted_at__isnull=True
         )
+
+        if branch_id:
+            configs = configs.filter(branch__id=branch_id)
 
         if search_query:
             configs = configs.filter(branch__branch_name__icontains=search_query)

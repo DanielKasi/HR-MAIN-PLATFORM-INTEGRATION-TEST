@@ -101,15 +101,13 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
                 result = mammoth.convert_to_html(file, style_map=style_map)
                 html_content = result.value
                 if result.messages:
-                    print("Mammoth conversion warnings:", result.messages)
-                print("Raw Word HTML content:", html_content)
-                return self._clean_html(html_content)
+
+                    return self._clean_html(html_content)
 
             else:
                 raise serializers.ValidationError({"error": f"Unsupported template type: {template_type}"})
 
         except Exception as e:
-            print("Error reading file:", str(e))
             raise serializers.ValidationError({"error": f"Error reading file: {str(e)}"})
 
     def _clean_html(self, html_content):
@@ -120,7 +118,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         if not html_content:
             return "<p></p>"
 
-        print("Raw HTML before cleaning:", html_content)
         soup = BeautifulSoup(html_content, "html.parser")
 
         # Remove unwanted tags (unchanged)
@@ -178,7 +175,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
             soup = BeautifulSoup(f"<p>{soup.get_text()}</p>", "html.parser")
 
         cleaned_html = str(soup).strip()
-        print("Cleaned HTML content:", cleaned_html)
         return cleaned_html if cleaned_html else "<p></p>"
 
     def _clean_html(self, html_content):
@@ -188,7 +184,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         if not html_content:
             return "<p></p>"
 
-        print("Raw HTML before cleaning:", html_content)
         soup = BeautifulSoup(html_content, "html.parser")
 
         for tag in soup(["img", "script", "style", "meta", "link"]):
@@ -228,7 +223,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
             tag["class"] = [c for c in tag.get("class", []) if c != "text-center"]
 
         cleaned_html = str(soup).strip()
-        print("Cleaned HTML content:", cleaned_html)
         return cleaned_html if cleaned_html else "<p></p>"
 
     def _extract_placeholders(self, content):
@@ -240,7 +234,7 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
             return []
 
         placeholders = set()
-        print("Raw content for placeholder extraction:", content)
+
 
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(content, "html.parser")
@@ -261,7 +255,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         matches = re.findall(combined_pattern, text_content, re.IGNORECASE)
         matches = [match for group in matches for match in group if match]
-        print("Matched placeholders:", matches)
 
         # Process underscore placeholders
         for tag in soup.find_all(["p", "div", "li", "span"]):
@@ -274,7 +267,6 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
                 phrase = match.group(1).strip()
                 placeholder_name = "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
                 placeholders.add(placeholder_name)
-                print("Added underscore placeholder:", placeholder_name)
 
         # Handle special cases
         special_cases = ["initials", "signature", "days", "state"]
@@ -282,7 +274,7 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
             if special.lower() in text_content.lower():
                 placeholder_name = f"{{{{{special}}}}}"
                 placeholders.add(placeholder_name)
-                print("Added special case placeholder:", placeholder_name)
+
 
         # Process other placeholder formats
         for match in matches:
@@ -292,9 +284,8 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
                 if cleaned_name:
                     normalized_name = "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
                     placeholders.add(normalized_name)
-                    print("Added normalized placeholder:", normalized_name)
 
-        print("Final placeholders:", list(placeholders))
+
         return list(placeholders)
 
     def validate(self, data):
