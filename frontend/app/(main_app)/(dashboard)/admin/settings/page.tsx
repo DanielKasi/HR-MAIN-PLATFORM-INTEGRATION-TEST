@@ -1516,13 +1516,13 @@ export default function SettingsPage() {
               fetchFirstPage={async () => {
                 if (!institution) throw new Error("No institution selected")
                 return await branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigs({
-                  institutionId: institution.id,
+                  branchId: selectedLocationComparisonBranchId,
                   page: 1,
                   search: locationComparisonSearchTerm || undefined,
                 })
               }}
               fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
-              deps={[institution?.id, locationComparisonSearchTerm]}
+              deps={[selectedLocationComparisonBranchId, locationComparisonSearchTerm]}
               className="space-y-4"
               footerClassName="pt-4"
             >
