@@ -40,16 +40,7 @@ class ActionListAPIView(APIView):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
         
-        try:
-            institution = Institution.objects.get(id=user.institution.id)
-        except Institution.DoesNotExist:
-            return Response(
-                {"detail": "Institution not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        
         actions = Action.objects.filter(
-            institution=institution,
             deleted_at__isnull=True
         )
         
@@ -59,10 +50,8 @@ class ActionListAPIView(APIView):
                 Q(description__icontains=search_query)
             )
         
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(actions, request)
-        serializer = ActionSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        serializer = ActionSerializer(actions, many=True)
+        return Response(serializer.data)
 
     @extend_schema(tags=['Actions'])
     def post(self, request):
@@ -275,7 +264,7 @@ class ApprovalDocumentLevelListAPIView(APIView):
             )
         
         levels = ApprovalDocumentLevel.objects.filter(
-            institution=institution,
+            approval_document__institution=institution,
             deleted_at__isnull=True
         )
         
@@ -352,7 +341,7 @@ class ApprovalListAPIView(APIView):
             )
         
         approvals = Approval.objects.filter(
-            institution=institution,
+            document__institution=institution,
             deleted_at__isnull=True
         )
         
@@ -435,7 +424,7 @@ class ApprovalTaskListAPIView(APIView):
             )
         
         tasks = ApprovalTask.objects.filter(
-            institution=institution,
+            approval__document__institution=institution,
             deleted_at__isnull=True
         )
         
