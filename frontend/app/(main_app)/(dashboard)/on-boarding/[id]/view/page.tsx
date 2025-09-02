@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import {useState, useEffect} from "react";
+import {useParams, useRouter} from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -17,65 +17,65 @@ import {
   AlertTriangle,
   GraduationCap,
   UserCheck,
-  UserX
-} from "lucide-react"
+  UserX,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Label} from "@/components/ui/label";
+import {Skeleton} from "@/components/ui/skeleton";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 
-import { getOnBoardingById } from "@/lib/utils"
-import type { IOnBoarding } from "@/types/types.utils"
-import { toast } from "sonner"
-import { DocumentGenerationDialog } from "@/components/document-generation-dialog"
+import {getOnBoardingById} from "@/lib/utils";
+import type {IOnBoarding} from "@/types/types.utils";
+import {toast} from "sonner";
+import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
 
 const ONBOARDING_STAGES = [
-  { value: 'initial', label: 'Initial', icon: AlertTriangle, color: 'text-gray-500' },
-  { value: 'training', label: 'Training', icon: GraduationCap, color: 'text-blue-500' },
-  { value: 'issued_contract', label: 'Contract Issued', icon: FileText, color: 'text-purple-500' },
-  { value: 'accepted_offer', label: 'Offer Accepted', icon: UserCheck, color: 'text-orange-500' },
-  { value: 'declined_offer', label: 'Offer Declined', icon: UserX, color: 'text-red-500' },
-] as const
+  {value: "initial", label: "Initial", icon: AlertTriangle, color: "text-gray-500"},
+  {value: "training", label: "Training", icon: GraduationCap, color: "text-blue-500"},
+  {value: "issued_contract", label: "Contract Issued", icon: FileText, color: "text-purple-500"},
+  {value: "accepted_offer", label: "Offer Accepted", icon: UserCheck, color: "text-orange-500"},
+  {value: "declined_offer", label: "Offer Declined", icon: UserX, color: "text-red-500"},
+] as const;
 
-type BadgeVariant = "default" | "secondary" | "outline" | "destructive"
+type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
 
 export default function ViewOnboardingDetails() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [showDocumentDialog, setShowDocumentDialog] = useState(false)
-  const params = useParams()
-  const onboardingId = params.id as unknown as number
-  const [onboarding, setOnboarding] = useState<IOnBoarding | null>(null)
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDocumentDialog, setShowDocumentDialog] = useState(false);
+  const params = useParams();
+  const onboardingId = params.id as unknown as number;
+  const [onboarding, setOnboarding] = useState<IOnBoarding | null>(null);
 
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    fetchOnboarding()
-  }, [onboardingId])
+    fetchOnboarding();
+  }, [onboardingId]);
 
   const fetchOnboarding = async () => {
     try {
-      setIsLoading(true)
-      const data = await getOnBoardingById({ onboardingId })
+      setIsLoading(true);
+      const data = await getOnBoardingById({onboardingId});
 
       if (data) {
-        setOnboarding(data)
+        setOnboarding(data);
       } else {
-        toast.error("Failed to load onboarding record")
-        router.push("/on-boarding")
+        toast.error("Failed to load onboarding record");
+        router.push("/on-boarding");
       }
     } catch (error) {
-      toast.error("Failed to load onboarding record")
-      router.push("/on-boarding")
+      toast.error("Failed to load onboarding record");
+      router.push("/on-boarding");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getApplicationData = (onboarding: IOnBoarding) => {
-    const applicationData = onboarding.application_details
+    const applicationData = onboarding.application_details;
 
     if (!applicationData) {
       return {
@@ -84,13 +84,13 @@ export default function ViewOnboardingDetails() {
         jobDesc: "N/A",
         applicantPhone: "N/A",
         applicantAddress: "N/A",
-        applicantPositions: "N/A"
-      }
+        applicantPositions: "N/A",
+      };
     }
 
-    const jobDetails = applicationData.job_position_advert_job_details
-    const jobName = jobDetails?.name || "N/A"
-    const jobDescription = jobDetails?.description || "N/A"
+    const jobDetails = applicationData.job_position_advert_job_details;
+    const jobName = jobDetails?.name || "N/A";
+    const jobDescription = jobDetails?.description || "N/A";
 
     return {
       applicantName: applicationData.applicant_name || "N/A",
@@ -98,61 +98,67 @@ export default function ViewOnboardingDetails() {
       jobDesc: jobName !== "N/A" ? jobName : jobDescription,
       applicantPhone: applicationData.applicant_phone || "N/A",
       applicantAddress: applicationData.address || "N/A",
-      applicantPositions: applicationData.positions?.toString() || "N/A"
-    }
-  }
+      applicantPositions: applicationData.positions?.toString() || "N/A",
+    };
+  };
 
-  const getStatusIcon = (status: IOnBoarding['status']) => {
-    if (!status) return <AlertTriangle className="h-5 w-5 text-gray-500" />
-    const stage = ONBOARDING_STAGES.find(s => s.value === status)
+  const getStatusIcon = (status: IOnBoarding["status"]) => {
+    if (!status) return <AlertTriangle className="h-5 w-5 text-gray-500" />;
+    const stage = ONBOARDING_STAGES.find((s) => s.value === status);
     if (stage) {
-      const IconComponent = stage.icon
-      return <IconComponent className={`h-5 w-5 ${stage.color}`} />
+      const IconComponent = stage.icon;
+      return <IconComponent className={`h-5 w-5 ${stage.color}`} />;
     }
-    return <AlertTriangle className="h-5 w-5 text-gray-500" />
-  }
+    return <AlertTriangle className="h-5 w-5 text-gray-500" />;
+  };
 
-  const getStatusBadgeVariant = (status: IOnBoarding['status']): BadgeVariant => {
-    if (!status) return "outline"
+  const getStatusBadgeVariant = (status: IOnBoarding["status"]): BadgeVariant => {
+    if (!status) return "outline";
     switch (status) {
-      case "accepted_offer": return "default"
-      case "issued_contract": return "secondary"
-      case "training": return "outline"
-      case "declined_offer": return "destructive"
-      case "initial": return "outline"
-      default: return "outline"
+      case "accepted_offer":
+        return "default";
+      case "issued_contract":
+        return "secondary";
+      case "training":
+        return "outline";
+      case "declined_offer":
+        return "destructive";
+      case "initial":
+        return "outline";
+      default:
+        return "outline";
     }
-  }
+  };
 
-  const formatStatus = (status: IOnBoarding['status']) => {
-    if (!status) return "Unknown Status"
-    return status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
-  }
+  const formatStatus = (status: IOnBoarding["status"]) => {
+    if (!status) return "Unknown Status";
+    return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A"
+    if (!dateString) return "N/A";
     try {
       return new Date(dateString).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
         hour: "2-digit",
-        minute: "2-digit"
-      })
+        minute: "2-digit",
+      });
     } catch {
-      return "N/A"
+      return "N/A";
     }
-  }
+  };
 
   const getInitials = (name: string) => {
-    if (!name || name === "N/A") return "NA"
+    if (!name || name === "N/A") return "NA";
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   if (isLoading) {
     return (
@@ -199,7 +205,7 @@ export default function ViewOnboardingDetails() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!onboarding) {
@@ -208,17 +214,19 @@ export default function ViewOnboardingDetails() {
         <div className="text-center space-y-4">
           <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto" />
           <h3 className="text-lg font-semibold">Onboarding Record Not Found</h3>
-          <p className="text-muted-foreground">The onboarding record you're looking for could not be found.</p>
+          <p className="text-muted-foreground">
+            The onboarding record you're looking for could not be found.
+          </p>
           <Button onClick={() => router.push("/on-boarding")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Onboarding
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const applicationData = getApplicationData(onboarding)
+  const applicationData = getApplicationData(onboarding);
 
   return (
     <div className="w-full h-full p-6 space-y-6 rounded-lg bg-white shadow-sm">
@@ -228,8 +236,9 @@ export default function ViewOnboardingDetails() {
           <div className="flex items-center gap-4 mb-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => router.back()}
-              className="flex items-center gap-2 rounded-full aspect-square"
+              className="rounded-full aspect-square"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -242,9 +251,7 @@ export default function ViewOnboardingDetails() {
               {formatStatus(onboarding.status)}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
       </div>
 
@@ -308,7 +315,9 @@ export default function ViewOnboardingDetails() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Job Position/ Title </Label>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Job Position/ Title{" "}
+                </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm font-medium">{applicationData.jobDesc}</p>
@@ -316,7 +325,9 @@ export default function ViewOnboardingDetails() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Number of Positions</Label>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Number of Positions
+                </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm">{applicationData.applicantPositions}</p>
@@ -365,7 +376,9 @@ export default function ViewOnboardingDetails() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Training Attendance</Label>
+                <Label className="text-sm font-medium text-muted-foreground">
+                  Training Attendance
+                </Label>
                 <div className="flex items-center gap-2 mt-2">
                   {onboarding.attended ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -378,7 +391,7 @@ export default function ViewOnboardingDetails() {
                 </div>
               </div>
 
-              {onboarding.status === 'training' && (
+              {onboarding.status === "training" && (
                 <div className="pt-4">
                   <Button
                     variant="outline"
@@ -429,5 +442,5 @@ export default function ViewOnboardingDetails() {
         </div>
       </div>
     </div>
-  )
+  );
 }

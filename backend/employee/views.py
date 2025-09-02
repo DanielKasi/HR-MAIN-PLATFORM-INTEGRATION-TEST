@@ -187,49 +187,49 @@ class EmployeeDetailAPIView(APIView):
         tags=["Employee Management"],
         parameters=[
             OpenApiParameter(
-                name='employee_id',
-                description='ID of the employee',
+                name="employee_id",
+                description="ID of the employee",
                 required=True,
                 type=int,
                 location=OpenApiParameter.PATH,
             ),
             OpenApiParameter(
-                name='by_user',
-                description='If true, treats employee_id as user_id instead',
+                name="by_user",
+                description="If true, treats employee_id as user_id instead",
                 required=False,
                 type=bool,
                 location=OpenApiParameter.QUERY,
-            )
-        ]
+            ),
+        ],
     )
     def get(self, request, employee_id):
         """
         Retrieve details of a specific employee.
-        
+
         By default, looks up employee by employee ID.
         Use ?by_user=true to lookup by user ID instead.
         """
-        by_user = request.query_params.get('by_user', '').lower() == 'true'
-        
+        by_user = request.query_params.get("by_user", "").lower() == "true"
+
         try:
             if by_user:
                 employee = Employee.objects.get(user_id=employee_id)
             else:
                 employee = Employee.objects.get(id=employee_id)
-                
+
             serializer = EmployeeSerializer(employee)
             return Response(serializer.data, status=status.HTTP_200_OK)
-            
+
         except Employee.DoesNotExist:
             lookup_type = "user ID" if by_user else "employee ID"
             return Response(
-                {"detail": f"Employee not found for the specified {lookup_type}."}, 
-                status=status.HTTP_404_NOT_FOUND
+                {"detail": f"Employee not found for the specified {lookup_type}."},
+                status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
             return Response(
                 {"detail": "An error occurred while retrieving employee details."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -367,7 +367,6 @@ class EmployeeCreateAPIView(APIView):
     def handle_bulk_upload(self, request):
         """Handle bulk employee creation from uploaded CSV/Excel file."""
         start_time = timezone.now()
-        print(f"Starting bulk upload at {start_time}")
 
         # Fetch institution and default role once (mirroring single creation)
         institution = getattr(request.user.profile, "institution", None)
@@ -448,7 +447,6 @@ class EmployeeCreateAPIView(APIView):
             }
 
             # Check for duplicate emails in the input file and existing database
-            print("Checking for duplicate emails")
             emails = df["user.email"].str.strip().dropna().tolist()
             duplicate_emails_in_file = [
                 email
@@ -642,7 +640,6 @@ class EmployeeCreateAPIView(APIView):
                         unique_values = unique_values[unique_values != ""].unique()
 
                         if len(unique_values) > 0:
-                            print(f"Processing {field} with values: {unique_values}")
 
                             # Determine if the model has institution field
                             has_institution = True  # All models have institution
@@ -728,10 +725,6 @@ class EmployeeCreateAPIView(APIView):
                                     dept_instance = instance_mappings["department"][
                                         dept_lower
                                     ]
-                                else:
-                                    print(
-                                        f"Department '{dept_name}' not found in mappings"
-                                    )
 
                                 # Check if this exact position already exists for this department
                                 filter_kwargs = {"name__iexact": pos_name}
@@ -748,9 +741,6 @@ class EmployeeCreateAPIView(APIView):
                                     position_mappings[(dept_lower, pos_lower)] = (
                                         existing_pos
                                     )
-                                    print(
-                                        f"Found existing position: {pos_name} (dept: {dept_name})"
-                                    )
                                 else:
                                     # Create new position with correct department
                                     try:
@@ -762,13 +752,9 @@ class EmployeeCreateAPIView(APIView):
                                         position_mappings[(dept_lower, pos_lower)] = (
                                             new_pos
                                         )
-                                        print(
-                                            f"✓ Created position: '{pos_name}' for department: '{dept_name}'"
-                                        )
+
                                     except Exception as e:
-                                        print(
-                                            f"✗ Error creating position '{pos_name}' for dept '{dept_name}': {str(e)}"
-                                        )
+
                                         raise
                     else:
                         # No department column, create positions without departments
@@ -788,7 +774,6 @@ class EmployeeCreateAPIView(APIView):
 
                             if existing_pos:
                                 position_mappings[(None, pos_lower)] = existing_pos
-                                print(f"Found existing position: {pos_name} (no dept)")
                             else:
                                 try:
                                     new_pos = JobPosition.objects.create(
@@ -797,11 +782,9 @@ class EmployeeCreateAPIView(APIView):
                                         department=None,
                                     )
                                     position_mappings[(None, pos_lower)] = new_pos
-                                    print(f"Created position: {pos_name} (no dept)")
+
                                 except Exception as e:
-                                    print(
-                                        f"Error creating position '{pos_name}': {str(e)}"
-                                    )
+
                                     raise
 
                 # Process employees in batches
@@ -809,13 +792,9 @@ class EmployeeCreateAPIView(APIView):
                 employees = []
                 created_count = 0
 
-                print(f"Starting batch processing with batch size {batch_size}")
                 for start_idx in range(0, len(df), batch_size):
                     batch = df[start_idx : start_idx + batch_size]
                     batch_start_time = timezone.now()
-                    print(
-                        f"Processing batch {start_idx//batch_size + 1} (rows {start_idx + 1} to {start_idx + len(batch)})"
-                    )
 
                     user_objects = []
                     employee_data_list = []
@@ -837,9 +816,7 @@ class EmployeeCreateAPIView(APIView):
                         )
 
                         if not fullname or not email:
-                            print(
-                                f"Skipping row {index + 2}: missing fullname or email"
-                            )
+
                             continue
 
                         plain_password = generate_compliant_password()
@@ -930,9 +907,7 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data["date_of_birth"]
                                 )
                             except Exception as e:
-                                print(
-                                    f"Error parsing date_of_birth for row {index + 2}: {e}"
-                                )
+
                                 employee_data["date_of_birth"] = None
 
                         if (
@@ -944,9 +919,7 @@ class EmployeeCreateAPIView(APIView):
                                     employee_data["date_of_joining"], "%Y-%m-%d"
                                 ).date()
                             except Exception as e:
-                                print(
-                                    f"Error parsing date_of_joining for row {index + 2}: {e}"
-                                )
+
                                 employee_data["date_of_joining"] = None
 
                         # Process numeric fields
@@ -1004,9 +977,7 @@ class EmployeeCreateAPIView(APIView):
                         employee_objects.append(Employee(**employee_data))
 
                     # Bulk create employees
-                    print(f"Creating {len(employee_objects)} employees")
                     created_employees = Employee.objects.bulk_create(employee_objects)
-                    print(f"Created {len(created_employees)} employees")
 
                     # After bulk create, handle post-creation logic
                     prefix = "EMP"
@@ -1038,47 +1009,33 @@ class EmployeeCreateAPIView(APIView):
                             employee.payroll_branch = employee.get_default_branch()
 
                         # Sync leave balances and working days
-                        try:
-                            if employee.is_active and employee.department:
-                                employee.sync_leave_balances()
-                            if employee.is_active:
-                                employee.sync_employee_working_days()
-                        except Exception as e:
-                            print(
-                                f"Error syncing employee data for {employee.user.email}: {e}"
-                            )
+
+                        if employee.is_active and employee.department:
+                            employee.sync_leave_balances()
+                        if employee.is_active:
+                            employee.sync_employee_working_days()
 
                     # Bulk update the updated fields
                     Employee.objects.bulk_update(created_employees, fields_to_update)
 
                     # Send password setup emails asynchronously using Celery
                     for idx, employee in enumerate(created_employees):
-                        try:
-                            send_employee_welcome_email.delay_on_commit(
-                                employee.user.email,
-                                employee.user.fullname,
-                                plain_passwords[idx],
-                            )
-                        except Exception as e:
-                            print(
-                                f"Error queuing email for employee {employee.user.email}: {str(e)}"
-                            )
+                        send_employee_welcome_email.delay_on_commit(
+                            employee.user.email,
+                            employee.user.fullname,
+                            plain_passwords[idx],
+                        )
 
                     employees.extend(created_employees)
                     created_count += len(created_employees)
 
-                    print(
-                        f"Batch {start_idx//batch_size + 1} completed in {(timezone.now() - batch_start_time).total_seconds()} seconds"
-                    )
 
             # Set default employee role if not already set (once after all batches)
             if not institution.default_employee_role:
                 institution.default_employee_role = role
                 institution.save()
 
-            print(
-                f"Total upload time: {(timezone.now() - start_time).total_seconds()} seconds"
-            )
+          
 
             return Response(
                 {
@@ -2414,7 +2371,6 @@ class ExportAttendanceExcelView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"Unexpected error during attendance export: {e}")
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel."
@@ -2463,7 +2419,6 @@ class AttendanceReportGetView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"Error generating attendance report: {e}")
             return Response(
                 {"error": "Internal server error while generating report."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -2500,7 +2455,6 @@ class EmployeeShiftListCreateView(APIView):
             shifts = shifts.filter(context=query_context)
 
         if is_employee_specific == "true" and employee_id:
-            print("employee_id found:", employee_id)
             shifts = shifts.filter(employee=int(employee_id))
 
         if search:
@@ -2856,10 +2810,19 @@ class EmployeeDashboardAPIView(APIView):
     )
     def get(self, request):
         from datetime import date
-        from django.db.models import Avg, Count, F, ExpressionWrapper, IntegerField, FloatField, Case, When
+        from django.db.models import (
+            Avg,
+            Count,
+            F,
+            ExpressionWrapper,
+            IntegerField,
+            FloatField,
+            Case,
+            When,
+        )
         from django.utils import timezone
         from datetime import timedelta
-        
+
         user = request.user
         institution = getattr(user.profile, "institution", None)
 
@@ -2917,30 +2880,30 @@ class EmployeeDashboardAPIView(APIView):
 
         # Method 1: Calculate average age using database aggregation (More efficient for large datasets)
         current_date = timezone.now().date()
-        
+
         # Calculate age in days then convert to years
         avg_age_result = employees.filter(date_of_birth__isnull=False).aggregate(
             avg_age=Avg(
                 ExpressionWrapper(
-                    F("date_of_birth__year") * -1 + current_date.year +
-                    Case(
-                        When(
-                            date_of_birth__month__gt=current_date.month,
-                            then=-1
-                        ),
+                    F("date_of_birth__year") * -1
+                    + current_date.year
+                    + Case(
+                        When(date_of_birth__month__gt=current_date.month, then=-1),
                         When(
                             date_of_birth__month=current_date.month,
                             date_of_birth__day__gt=current_date.day,
-                            then=-1
+                            then=-1,
                         ),
                         default=0,
-                        output_field=IntegerField()
+                        output_field=IntegerField(),
                     ),
                     output_field=FloatField(),
                 )
             )
         )
-        average_age = round(avg_age_result["avg_age"]) if avg_age_result["avg_age"] else 0
+        average_age = (
+            round(avg_age_result["avg_age"]) if avg_age_result["avg_age"] else 0
+        )
 
         # Method 2: Alternative calculation using Python (More accurate but less efficient for large datasets)
         # employees_with_birth_date = employees.filter(date_of_birth__isnull=False)
@@ -2959,25 +2922,27 @@ class EmployeeDashboardAPIView(APIView):
         avg_tenure_result = employees.filter(date_of_joining__isnull=False).aggregate(
             avg_tenure=Avg(
                 ExpressionWrapper(
-                    current_date.year - F("date_of_joining__year") +
-                    Case(
-                        When(
-                            date_of_joining__month__gt=current_date.month,
-                            then=-1
-                        ),
+                    current_date.year
+                    - F("date_of_joining__year")
+                    + Case(
+                        When(date_of_joining__month__gt=current_date.month, then=-1),
                         When(
                             date_of_joining__month=current_date.month,
                             date_of_joining__day__gt=current_date.day,
-                            then=-1
+                            then=-1,
                         ),
                         default=0,
-                        output_field=IntegerField()
+                        output_field=IntegerField(),
                     ),
                     output_field=FloatField(),
                 )
             )
         )
-        average_tenure_years = round(avg_tenure_result["avg_tenure"], 1) if avg_tenure_result["avg_tenure"] else 0
+        average_tenure_years = (
+            round(avg_tenure_result["avg_tenure"], 1)
+            if avg_tenure_result["avg_tenure"]
+            else 0
+        )
 
         # Alternative Python-based tenure calculation (more precise)
         # employees_with_join_date = employees.filter(date_of_joining__isnull=False)
@@ -2999,7 +2964,7 @@ class EmployeeDashboardAPIView(APIView):
         #             months_diff = 12 - emp.date_of_joining.month + current_date.month
         #             tenure_years -= 1
         #             days_diff = current_date.day - emp.date_of_joining.day if emp.date_of_joining.day <= current_date.day else 0
-        #         
+        #
         #         tenure_precise = tenure_years + (months_diff + days_diff/30.44) / 12  # 30.44 is average days per month
         #         tenures.append(tenure_precise)
         #     average_tenure_years = round(sum(tenures) / len(tenures), 1)
@@ -3007,7 +2972,9 @@ class EmployeeDashboardAPIView(APIView):
         #     average_tenure_years = 0
 
         # Recent hires (last 30 days)
-        recent_hires = employees.filter(date_of_joining__gte=thirty_days_ago.date()).count()
+        recent_hires = employees.filter(
+            date_of_joining__gte=thirty_days_ago.date()
+        ).count()
 
         # Employees by marital status
         employees_by_marital_status = list(

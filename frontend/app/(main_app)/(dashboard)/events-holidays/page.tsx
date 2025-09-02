@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { Calendar } from "lucide-react"
-import Link from "next/link"
-import { calendarAPI } from "@/lib/utils"
-import { Icon } from "@iconify/react"
-import { EditEventModal } from "@/components/events-holidays/edit-event-modal"
-import { EditHolidayModal } from "@/components/events-holidays/edit-holiday-modal"
-import { ICalendar, IEvent, IPublicHoliday } from "@/types/types.utils"
+import React, {useEffect, useState, useCallback, useMemo} from "react";
+import {Button} from "@/components/ui/button";
+import {ArrowLeft, ChevronLeft, ChevronRight, Plus} from "lucide-react";
+import {Calendar} from "lucide-react";
+import Link from "next/link";
+import {calendarAPI} from "@/lib/utils";
+import {Icon} from "@iconify/react";
+import {EditEventModal} from "@/components/events-holidays/edit-event-modal";
+import {EditHolidayModal} from "@/components/events-holidays/edit-holiday-modal";
+import {ICalendar, IEvent, IPublicHoliday} from "@/types/types.utils";
 
 // Define types inline to avoid import issues
 interface ICalendarEvent {
-  id: number
-  public_holidays: IPublicHoliday[]
+  id: number;
+  public_holidays: IPublicHoliday[];
 }
 
 const MONTHS = [
@@ -30,31 +30,33 @@ const MONTHS = [
   "October",
   "November",
   "December",
-]
+];
 
-const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 export default function EventsCalendarPage() {
-  const [calendar, setCalendar] = useState<ICalendar | null>(null)
-  const [publicHolidays, setPublicHolidays] = useState<any[]>([])
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [events, setEvents] = useState<IEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState("month")
-  const [eventSearchTerm, setEventSearchTerm] = useState("")
-  const [eventFilter, setEventFilter] = useState("all")
-  const [holidaySearchTerm, setHolidaySearchTerm] = useState("")
-  const [holidayFilter, setHolidayFilter] = useState("all")
-  const [activeTab, setActiveTab] = useState("events")
-  const [selectedItem, setSelectedItem] = useState<{ type: "event" | "holiday"; data: any } | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 })
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<IEvent | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [showEditHolidayModal, setShowEditHolidayModal] = useState(false)
-  const [editingHoliday, setEditingHoliday] = useState<IPublicHoliday | null>(null)
-  const [isEditingHoliday, setIsEditingHoliday] = useState(false)
+  const [calendar, setCalendar] = useState<ICalendar | null>(null);
+  const [publicHolidays, setPublicHolidays] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState<IEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("month");
+  const [eventSearchTerm, setEventSearchTerm] = useState("");
+  const [eventFilter, setEventFilter] = useState("all");
+  const [holidaySearchTerm, setHolidaySearchTerm] = useState("");
+  const [holidayFilter, setHolidayFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("events");
+  const [selectedItem, setSelectedItem] = useState<{type: "event" | "holiday"; data: any} | null>(
+    null,
+  );
+  const [showModal, setShowModal] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({x: 0, y: 0});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<IEvent | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showEditHolidayModal, setShowEditHolidayModal] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState<IPublicHoliday | null>(null);
+  const [isEditingHoliday, setIsEditingHoliday] = useState(false);
 
   const selectedInstitution = useMemo(
     () => ({
@@ -62,274 +64,271 @@ export default function EventsCalendarPage() {
       name: "Sample Institution",
     }),
     [],
-  )
+  );
 
   // Close popover when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showModal && !(event.target as Element).closest(".popover-content")) {
-        setShowModal(false)
-        setSelectedItem(null)
+        setShowModal(false);
+        setSelectedItem(null);
       }
-    }
+    };
 
     if (showModal) {
-      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showModal])
-
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showModal]);
 
   const fetchCalendar = useCallback(async (year: number) => {
     try {
-      setLoading(true)
-      const response = await calendarAPI.getInstitutionCalendar({year})
+      setLoading(true);
+      const response = await calendarAPI.getInstitutionCalendar({year});
       if (response) {
-        setCalendar(response)
-        setPublicHolidays(response.public_holidays || [])
+        setCalendar(response);
+        setPublicHolidays(response.public_holidays || []);
       }
     } catch (error) {
-      console.warn("Error fetching calendar:", error)
+      console.warn("Error fetching calendar:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
   const openEditModal = (event: IEvent) => {
-    setEditingEvent(event)
-    setShowEditModal(true)
-  }
+    setEditingEvent(event);
+    setShowEditModal(true);
+  };
 
   const openEditHolidayModal = (holiday: IPublicHoliday) => {
-    setEditingHoliday(holiday)
-    setShowEditHolidayModal(true)
-  }
+    setEditingHoliday(holiday);
+    setShowEditHolidayModal(true);
+  };
 
   const handleSaveEvent = async (eventId: number, updatedData: Partial<IEvent>) => {
-    setIsEditing(true)
+    setIsEditing(true);
     try {
       // Make API call to update the event in the database
-      const response = await calendarAPI.updateEvent(eventId, updatedData)
-      
+      const response = await calendarAPI.updateEvent(eventId, updatedData);
+
       // Update local state with the response from the API
-      setEvents(prev => prev.map(event => 
-        event.id === eventId 
-          ? { ...event, ...response }
-          : event
-      ))
-      
-      setShowEditModal(false)
-      setEditingEvent(null)
-      
+      setEvents((prev) =>
+        prev.map((event) => (event.id === eventId ? {...event, ...response} : event)),
+      );
+
+      setShowEditModal(false);
+      setEditingEvent(null);
+
       // You can add a success toast here
-      console.log("Event updated successfully:", response)
+      console.log("Event updated successfully:", response);
     } catch (error) {
-      console.error("Error updating event:", error)
+      console.error("Error updating event:", error);
       // You can add an error toast here
       // Don't close the modal on error so user can retry
-      throw error // Re-throw to let the modal handle the error display
+      throw error; // Re-throw to let the modal handle the error display
     } finally {
-      setIsEditing(false)
+      setIsEditing(false);
     }
-  }
+  };
 
   const handleSaveHoliday = async (holidayId: number, updatedData: Partial<IPublicHoliday>) => {
-    setIsEditingHoliday(true)
+    setIsEditingHoliday(true);
     try {
       // Make API call to update the holiday in the database
-      const response = await calendarAPI.updatePublicHoliday(holidayId, updatedData)
-      
+      const response = await calendarAPI.updatePublicHoliday(holidayId, updatedData);
+
       // Update local state with the response from the API
-      setPublicHolidays(prev => prev.map(holiday => 
-        holiday.id === holidayId 
-          ? { ...holiday, ...response }
-          : holiday
-      ))
-      
-      setShowEditHolidayModal(false)
-      setEditingHoliday(null)
-      
+      setPublicHolidays((prev) =>
+        prev.map((holiday) => (holiday.id === holidayId ? {...holiday, ...response} : holiday)),
+      );
+
+      setShowEditHolidayModal(false);
+      setEditingHoliday(null);
+
       // You can add a success toast here
-      console.log("Holiday updated successfully:", response)
+      console.log("Holiday updated successfully:", response);
     } catch (error) {
-      console.error("Error updating holiday:", error)
+      console.error("Error updating holiday:", error);
       // You can add an error toast here
       // Don't close the modal on error so user can retry
-      throw error // Re-throw to let the modal handle the error display
+      throw error; // Re-throw to let the modal handle the error display
     } finally {
-      setIsEditingHoliday(false)
+      setIsEditingHoliday(false);
     }
-  }
+  };
 
   const fetchEvents = useCallback(async () => {
-    if (!selectedInstitution) return
+    if (!selectedInstitution) return;
     try {
-      setLoading(true)
-      const response = await calendarAPI.getEvents()
-      setEvents(response.results || [])
+      setLoading(true);
+      const response = await calendarAPI.getEvents();
+      setEvents(response.results || []);
     } catch (error) {
-      console.error("Error fetching events:", error)
+      console.error("Error fetching events:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [selectedInstitution])
+  }, [selectedInstitution]);
 
   useEffect(() => {
     if (selectedInstitution) {
-      fetchCalendar(currentDate.getFullYear())
-      fetchEvents()
+      fetchCalendar(currentDate.getFullYear());
+      fetchEvents();
     }
-  }, [selectedInstitution, fetchCalendar, fetchEvents, currentDate])
+  }, [selectedInstitution, fetchCalendar, fetchEvents, currentDate]);
 
   const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay())
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
 
-    const days = []
-    const currentDate = new Date(startDate)
+    const days = [];
+    const currentDate = new Date(startDate);
 
     while (currentDate <= lastDay || days.length < 42) {
-      days.push(new Date(currentDate))
-      currentDate.setDate(currentDate.getDate() + 1)
+      days.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    return days
-  }
+    return days;
+  };
 
   const getEventsForDate = (date: Date) => {
     // Format date as YYYY-MM-DD without timezone conversion
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    const dateStr = `${year}-${month}-${day}`
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
 
     // Get events for this date from the events state
-    const eventsForDate = events.filter((event) => event.date === dateStr)
+    const eventsForDate = events.filter((event) => event.date === dateStr);
 
     // Get holidays for this date from the publicHolidays state
-    const holidaysForDate = publicHolidays.filter((holiday) => holiday.date === dateStr)
+    const holidaysForDate = publicHolidays.filter((holiday) => holiday.date === dateStr);
 
-    return { events: eventsForDate, holidays: holidaysForDate }
-  }
+    return {events: eventsForDate, holidays: holidaysForDate};
+  };
 
   const navigateMonth = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate)
+    const newDate = new Date(currentDate);
     if (direction === "prev") {
-      newDate.setMonth(newDate.getMonth() - 1)
+      newDate.setMonth(newDate.getMonth() - 1);
     } else {
-      newDate.setMonth(newDate.getMonth() + 1)
+      newDate.setMonth(newDate.getMonth() + 1);
     }
-    setCurrentDate(newDate)
-  }
+    setCurrentDate(newDate);
+  };
 
   const navigateWeek = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate)
+    const newDate = new Date(currentDate);
     if (direction === "prev") {
-      newDate.setDate(newDate.getDate() - 7)
+      newDate.setDate(newDate.getDate() - 7);
     } else {
-      newDate.setDate(newDate.getDate() + 7)
+      newDate.setDate(newDate.getDate() + 7);
     }
-    setCurrentDate(newDate)
-  }
+    setCurrentDate(newDate);
+  };
 
   const navigateDay = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate)
+    const newDate = new Date(currentDate);
     if (direction === "prev") {
-      newDate.setDate(newDate.getDate() - 1)
+      newDate.setDate(newDate.getDate() - 1);
     } else {
-      newDate.setDate(newDate.getDate() + 1)
+      newDate.setDate(newDate.getDate() + 1);
     }
-    setCurrentDate(newDate)
-  }
+    setCurrentDate(newDate);
+  };
 
   const navigateYear = (direction: "prev" | "next") => {
-    const newDate = new Date(currentDate)
+    const newDate = new Date(currentDate);
     if (direction === "prev") {
-      newDate.setFullYear(newDate.getFullYear() - 1)
+      newDate.setFullYear(newDate.getFullYear() - 1);
     } else {
-      newDate.setFullYear(newDate.getFullYear() + 1)
+      newDate.setFullYear(newDate.getFullYear() + 1);
     }
-    setCurrentDate(newDate)
-  }
+    setCurrentDate(newDate);
+  };
 
   const getNavigationFunction = () => {
     switch (viewMode) {
       case "day":
-        return navigateDay
+        return navigateDay;
       case "week":
-        return navigateWeek
+        return navigateWeek;
       case "month":
-        return navigateMonth
+        return navigateMonth;
       case "years":
-        return navigateYear
+        return navigateYear;
       default:
-        return navigateMonth
+        return navigateMonth;
     }
-  }
+  };
 
   const isToday = (date: Date) => {
-    const today = new Date()
+    const today = new Date();
     return (
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
       date.getFullYear() === today.getFullYear()
-    )
-  }
+    );
+  };
 
   const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear()
-  }
+    return (
+      date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear()
+    );
+  };
 
   const getWeekNumber = (date: Date) => {
-    const start = new Date(date.getFullYear(), 0, 1)
-    const days = Math.floor((date.getTime() - start.getTime()) / (24 * 60 * 60 * 1000))
-    return Math.ceil((days + start.getDay() + 1) / 7)
-  }
+    const start = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+    return Math.ceil((days + start.getDay() + 1) / 7);
+  };
 
   const getDaysInWeek = (date: Date) => {
-    const startOfWeek = new Date(date)
-    const day = date.getDay()
-    startOfWeek.setDate(date.getDate() - day)
+    const startOfWeek = new Date(date);
+    const day = date.getDay();
+    startOfWeek.setDate(date.getDate() - day);
 
-    const days = []
+    const days = [];
     for (let i = 0; i < 7; i++) {
-      const newDate = new Date(startOfWeek)
-      newDate.setDate(startOfWeek.getDate() + i)
-      days.push(newDate)
+      const newDate = new Date(startOfWeek);
+      newDate.setDate(startOfWeek.getDate() + i);
+      days.push(newDate);
     }
-    return days
-  }
+    return days;
+  };
 
   const getYearsRange = (currentYear: number) => {
-    const years = []
-    const startYear = currentYear - 5
-    const endYear = currentYear + 5
+    const years = [];
+    const startYear = currentYear - 5;
+    const endYear = currentYear + 5;
 
     for (let year = startYear; year <= endYear; year++) {
-      years.push(year)
+      years.push(year);
     }
-    return years
-  }
+    return years;
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-lg">Loading calendar...</div>
       </div>
-    )
+    );
   }
 
-  const days = getDaysInMonth(currentDate)
-  const weeks = []
+  const days = getDaysInMonth(currentDate);
+  const weeks = [];
   for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7))
+    weeks.push(days.slice(i, i + 7));
   }
 
   return (
@@ -340,15 +339,13 @@ export default function EventsCalendarPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 lg:gap-4 w-full">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Link href="/events-holidays" passHref>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shadow-sm bg-transparent rounded-full w-8 h-8 sm:w-9 sm:h-9 p-0 flex items-center justify-center flex-shrink-0"
-                >
+                <Button variant="outline" size="sm" className="rounded-full aspect-square">
                   <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </Link>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">Events Calendar</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">
+                Events Calendar
+              </h1>
             </div>
 
             {/* Add Event Button */}
@@ -373,7 +370,9 @@ export default function EventsCalendarPage() {
               <span className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground truncate">
                 {MONTHS[currentDate.getMonth()]}
               </span>
-              <span className="text-lg sm:text-xl lg:text-2xl text-muted-foreground">{currentDate.getFullYear()}</span>
+              <span className="text-lg sm:text-xl lg:text-2xl text-muted-foreground">
+                {currentDate.getFullYear()}
+              </span>
             </div>
 
             {/* View Mode Toggles */}
@@ -438,7 +437,9 @@ export default function EventsCalendarPage() {
                     <div className="space-y-4">
                       {/* All Day Events */}
                       <div className="border-b border-border pb-4">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-3">All Day Events</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                          All Day Events
+                        </h3>
                         <div className="space-y-2 lg:space-y-3">
                           {getEventsForDate(currentDate).events.map((event, idx) => (
                             <div
@@ -452,7 +453,9 @@ export default function EventsCalendarPage() {
                               }`}
                             >
                               <div className="font-medium text-sm sm:text-base">{event.title}</div>
-                              <div className="text-xs sm:text-sm opacity-75 mt-1">{event.description}</div>
+                              <div className="text-xs sm:text-sm opacity-75 mt-1">
+                                {event.description}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -461,14 +464,18 @@ export default function EventsCalendarPage() {
                       {/* Holidays */}
                       {getEventsForDate(currentDate).holidays.length > 0 && (
                         <div className="border-b border-border pb-4">
-                          <h3 className="text-sm font-medium text-muted-foreground mb-3">Holidays</h3>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                            Holidays
+                          </h3>
                           <div className="space-y-2 lg:space-y-3">
                             {getEventsForDate(currentDate).holidays.map((holiday, idx) => (
                               <div
                                 key={`day-holiday-${idx}`}
                                 className="p-3 lg:p-4 bg-green-100 text-green-800 rounded border border-green-200"
                               >
-                                <div className="font-medium text-sm sm:text-base">{holiday.title}</div>
+                                <div className="font-medium text-sm sm:text-base">
+                                  {holiday.title}
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -497,21 +504,23 @@ export default function EventsCalendarPage() {
                           key={day.toISOString()}
                           className="bg-muted p-1 sm:p-2 lg:p-3 text-center font-semibold text-foreground text-xs sm:text-sm border-r border-border"
                         >
-                          <div className="text-xs sm:text-sm">{day.toLocaleDateString("en-US", { weekday: "short" })}</div>
+                          <div className="text-xs sm:text-sm">
+                            {day.toLocaleDateString("en-US", {weekday: "short"})}
+                          </div>
                           <div className="text-xs text-muted-foreground">{day.getDate()}</div>
                         </div>
                       ))}
 
                       {/* Week Grid */}
                       {getDaysInWeek(currentDate).map((day) => {
-                        const { events, holidays } = getEventsForDate(day)
+                        const {events, holidays} = getEventsForDate(day);
                         return (
                           <div
                             key={day.toISOString()}
                             className="min-h-[120px] sm:min-h-[150px] lg:min-h-[200px] p-1 sm:p-2 bg-card border-r border-border"
                           >
                             <div className="text-xs font-medium text-muted-foreground mb-2">
-                              {day.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              {day.toLocaleDateString("en-US", {month: "short", day: "numeric"})}
                             </div>
 
                             {/* Events */}
@@ -541,13 +550,13 @@ export default function EventsCalendarPage() {
                                   className="text-xs p-1 bg-green-100 text-green-800 rounded border border-green-200 truncate cursor-pointer hover:bg-green-200 transition-colors"
                                   title={holiday.title}
                                   onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect()
+                                    const rect = e.currentTarget.getBoundingClientRect();
                                     setPopoverPosition({
                                       x: rect.left + rect.width / 2,
                                       y: rect.top,
-                                    })
-                                    setSelectedItem({ type: "holiday", data: holiday })
-                                    setShowModal(true)
+                                    });
+                                    setSelectedItem({type: "holiday", data: holiday});
+                                    setShowModal(true);
                                   }}
                                 >
                                   {holiday.title}
@@ -555,7 +564,7 @@ export default function EventsCalendarPage() {
                               ))}
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -596,11 +605,11 @@ export default function EventsCalendarPage() {
 
                             {/* Days in Week */}
                             {week.map((day, dayIndex) => {
-                              if (!day) return null
+                              if (!day) return null;
 
-                              const { events, holidays } = getEventsForDate(day)
-                              const isCurrentMonthDay = isCurrentMonth(day)
-                              const isTodayDate = isToday(day)
+                              const {events, holidays} = getEventsForDate(day);
+                              const isCurrentMonthDay = isCurrentMonth(day);
+                              const isTodayDate = isToday(day);
 
                               return (
                                 <div
@@ -634,13 +643,13 @@ export default function EventsCalendarPage() {
                                             className="text-[9px] sm:text-[10px] lg:text-xs p-0.5 sm:p-1 bg-green-100 text-green-800 rounded border border-green-200 truncate cursor-pointer hover:bg-green-200 transition-colors"
                                             title={holiday.title}
                                             onClick={(e) => {
-                                              const rect = e.currentTarget.getBoundingClientRect()
+                                              const rect = e.currentTarget.getBoundingClientRect();
                                               setPopoverPosition({
                                                 x: rect.left + rect.width / 2,
                                                 y: rect.top,
-                                              })
-                                              setSelectedItem({ type: "holiday", data: holiday })
-                                              setShowModal(true)
+                                              });
+                                              setSelectedItem({type: "holiday", data: holiday});
+                                              setShowModal(true);
                                             }}
                                           >
                                             {holiday.title}
@@ -660,13 +669,13 @@ export default function EventsCalendarPage() {
                                             }`}
                                             title={event.title}
                                             onClick={(e) => {
-                                              const rect = e.currentTarget.getBoundingClientRect()
+                                              const rect = e.currentTarget.getBoundingClientRect();
                                               setPopoverPosition({
                                                 x: rect.left + rect.width / 2,
                                                 y: rect.top,
-                                              })
-                                              setSelectedItem({ type: "event", data: event })
-                                              setShowModal(true)
+                                              });
+                                              setSelectedItem({type: "event", data: event});
+                                              setShowModal(true);
                                             }}
                                           >
                                             {event.title}
@@ -681,7 +690,7 @@ export default function EventsCalendarPage() {
                                     </div>
                                   </div>
                                 </div>
-                              )
+                              );
                             })}
                           </React.Fragment>
                         ))}
@@ -696,7 +705,9 @@ export default function EventsCalendarPage() {
               <div className="border border-border rounded-lg overflow-hidden">
                 <div className="p-4 sm:p-6">
                   <div className="text-center mb-4 sm:mb-6">
-                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">{currentDate.getFullYear()}</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+                      {currentDate.getFullYear()}
+                    </h2>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
@@ -713,16 +724,26 @@ export default function EventsCalendarPage() {
                         <div className="text-center">
                           <div
                             className={`text-sm sm:text-base lg:text-lg font-bold ${
-                              year === currentDate.getFullYear() ? "text-primary" : "text-foreground"
+                              year === currentDate.getFullYear()
+                                ? "text-primary"
+                                : "text-foreground"
                             }`}
                           >
                             {year}
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
-                            {events.filter((event) => new Date(event.date).getFullYear() === year).length} events
+                            {
+                              events.filter((event) => new Date(event.date).getFullYear() === year)
+                                .length
+                            }{" "}
+                            events
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            {publicHolidays.filter((holiday) => new Date(holiday.date).getFullYear() === year).length}{" "}
+                            {
+                              publicHolidays.filter(
+                                (holiday) => new Date(holiday.date).getFullYear() === year,
+                              ).length
+                            }{" "}
                             holidays
                           </div>
                         </div>
@@ -764,7 +785,9 @@ export default function EventsCalendarPage() {
               {/* Events Tab Content */}
               {activeTab === "events" && (
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Events</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                    Events
+                  </h3>
 
                   {/* Search and Filter Bar */}
                   <div className="flex flex-col sm:flex-row gap-2 mb-3">
@@ -777,7 +800,10 @@ export default function EventsCalendarPage() {
                         onChange={(e) => setEventSearchTerm(e.target.value)}
                       />
                       <div className="absolute right-3 top-2.5">
-                        <Icon icon="hugeicons:search-01" className="w-4 h-4 text-muted-foreground" />
+                        <Icon
+                          icon="hugeicons:search-01"
+                          className="w-4 h-4 text-muted-foreground"
+                        />
                       </div>
                     </div>
                     <select
@@ -793,7 +819,7 @@ export default function EventsCalendarPage() {
                   <div className="space-y-2 sm:space-y-3 max-h-64 overflow-y-auto">
                     {(() => {
                       // Filter and search events
-                      let filteredEvents = events
+                      let filteredEvents = events;
 
                       // Apply search filter
                       if (eventSearchTerm) {
@@ -801,14 +827,16 @@ export default function EventsCalendarPage() {
                           (event) =>
                             event.title.toLowerCase().includes(eventSearchTerm.toLowerCase()) ||
                             event.description.toLowerCase().includes(eventSearchTerm.toLowerCase()),
-                        )
+                        );
                       }
 
                       // Apply time filter
                       if (eventFilter === "recent") {
-                        const thirtyDaysAgo = new Date()
-                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-                        filteredEvents = filteredEvents.filter((event) => new Date(event.date) >= thirtyDaysAgo)
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        filteredEvents = filteredEvents.filter(
+                          (event) => new Date(event.date) >= thirtyDaysAgo,
+                        );
                       }
 
                       if (filteredEvents.length === 0) {
@@ -821,7 +849,7 @@ export default function EventsCalendarPage() {
                                 : "No upcoming events"}
                             </p>
                           </div>
-                        )
+                        );
                       }
 
                       return filteredEvents.map((event, idx) => (
@@ -852,14 +880,16 @@ export default function EventsCalendarPage() {
                               day: "numeric",
                             })}
                           </div>
-                          <p className="text-xs text-muted-foreground line-clamp-2">{event.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {event.description}
+                          </p>
                           <div className="mt-2 text-xs text-muted-foreground">
                             Audience: {event.target_audience.replace("_", " ")}
                           </div>
-                          
+
                           {/* Edit Event Button */}
                           <div className="mt-3 pt-2 border-t border-border">
-                            <Button 
+                            <Button
                               onClick={() => openEditModal(event)}
                               className="w-full text-xs py-1 bg-primary text-white"
                             >
@@ -868,7 +898,7 @@ export default function EventsCalendarPage() {
                             </Button>
                           </div>
                         </div>
-                      ))
+                      ));
                     })()}
                   </div>
                 </div>
@@ -877,7 +907,9 @@ export default function EventsCalendarPage() {
               {/* Holidays Tab Content */}
               {activeTab === "holidays" && (
                 <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Public Holidays</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                    Public Holidays
+                  </h3>
 
                   {/* Search and Filter Bar */}
                   <div className="flex flex-col sm:flex-row gap-2 mb-3">
@@ -890,7 +922,10 @@ export default function EventsCalendarPage() {
                         onChange={(e) => setHolidaySearchTerm(e.target.value)}
                       />
                       <div className="absolute right-3 top-2.5">
-                        <Icon icon="hugeicons:search-01" className="w-4 h-4 text-muted-foreground" />
+                        <Icon
+                          icon="hugeicons:search-01"
+                          className="w-4 h-4 text-muted-foreground"
+                        />
                       </div>
                     </div>
                     <select
@@ -908,20 +943,22 @@ export default function EventsCalendarPage() {
                       // Filter and search holidays
                       let filteredHolidays = publicHolidays
                         .filter((holiday) => new Date(holiday.date) >= new Date())
-                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
                       // Apply search filter
                       if (holidaySearchTerm) {
                         filteredHolidays = filteredHolidays.filter((holiday) =>
                           holiday.title.toLowerCase().includes(holidaySearchTerm.toLowerCase()),
-                        )
+                        );
                       }
 
                       // Apply time filter
                       if (holidayFilter === "recent") {
-                        const thirtyDaysAgo = new Date()
-                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-                        filteredHolidays = filteredHolidays.filter((holiday) => new Date(holiday.date) >= thirtyDaysAgo)
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        filteredHolidays = filteredHolidays.filter(
+                          (holiday) => new Date(holiday.date) >= thirtyDaysAgo,
+                        );
                       }
 
                       if (filteredHolidays.length === 0) {
@@ -933,7 +970,7 @@ export default function EventsCalendarPage() {
                                 : "No upcoming holidays"}
                             </p>
                           </div>
-                        )
+                        );
                       }
 
                       return filteredHolidays.slice(0, 3).map((holiday, idx) => (
@@ -952,10 +989,10 @@ export default function EventsCalendarPage() {
                               })}
                             </span>
                           </div>
-                          
+
                           {/* Edit Holiday Button */}
                           <div className="mt-2 pt-2 border-t border-green-200">
-                            <Button 
+                            <Button
                               className="w-full text-xs py-1 bg-primary text-white"
                               onClick={() => openEditHolidayModal(holiday)}
                             >
@@ -964,7 +1001,7 @@ export default function EventsCalendarPage() {
                             </Button>
                           </div>
                         </div>
-                      ))
+                      ));
                     })()}
                   </div>
                 </div>
@@ -973,7 +1010,9 @@ export default function EventsCalendarPage() {
 
             {/* Quick Stats */}
             <div className="bg-card border border-border rounded-lg p-3 sm:p-4">
-              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">This Month</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">
+                This Month
+              </h3>
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="text-base sm:text-lg font-bold text-blue-800">
@@ -1006,30 +1045,39 @@ export default function EventsCalendarPage() {
         <div
           className="fixed z-50 bg-white rounded-lg shadow-lg border border-border p-3 max-w-[90vw] sm:max-w-xs lg:max-w-sm popover-content"
           style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            maxWidth: 'calc(100vw - 2rem)',
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            maxWidth: "calc(100vw - 2rem)",
           }}
         >
           {/* Close button */}
           <button
             onClick={() => {
-              setShowModal(false)
-              setSelectedItem(null)
+              setShowModal(false);
+              setSelectedItem(null);
             }}
             className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors p-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
 
           {/* Content */}
           {selectedItem.type === "event" ? (
             <div className="space-y-2">
-              <h4 className="font-medium text-foreground text-sm pr-6">{selectedItem.data.title}</h4>
-              <p className="text-xs text-muted-foreground line-clamp-2">{selectedItem.data.description}</p>
+              <h4 className="font-medium text-foreground text-sm pr-6">
+                {selectedItem.data.title}
+              </h4>
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {selectedItem.data.description}
+              </p>
 
               <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
@@ -1060,13 +1108,17 @@ export default function EventsCalendarPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-foreground">Audience:</span>
-                  <span className="text-muted-foreground">{selectedItem.data.target_audience.replace("_", " ")}</span>
+                  <span className="text-muted-foreground">
+                    {selectedItem.data.target_audience.replace("_", " ")}
+                  </span>
                 </div>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
-              <h4 className="font-medium text-foreground text-sm pr-6">{selectedItem.data.title}</h4>
+              <h4 className="font-medium text-foreground text-sm pr-6">
+                {selectedItem.data.title}
+              </h4>
 
               <div className="space-y-1 text-xs">
                 <div className="flex items-center gap-2">
@@ -1105,5 +1157,5 @@ export default function EventsCalendarPage() {
         />
       )}
     </div>
-  )
+  );
 }
