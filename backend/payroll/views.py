@@ -131,7 +131,6 @@ class ExportEFTExcelView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel file."
@@ -807,7 +806,6 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"Unexpected error during attendance export: {e}")
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel."
@@ -865,7 +863,6 @@ class DownloadPayslipPDFView(APIView):
             return response
 
         except Exception as e:
-            print(f"Error generating PDF for payslip {payslip_id}: {e}")
             return Response(
                 {"error": "An internal server error occurred while generating the PDF."},
               

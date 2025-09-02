@@ -690,9 +690,6 @@ class JobInterview(BaseApprovableModel):
                 fail_silently=False,
             )
 
-            print(
-                f"Interview rescheduled email sent to {self.job_position_application.applicant_email}"
-            )
 
         except Exception as e:
             print(

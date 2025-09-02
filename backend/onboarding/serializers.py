@@ -462,15 +462,12 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
 
         user = user.profile
 
-        print(user)
-
         try:
             employee = Employee.objects.get(id=value)
         except Employee.DoesNotExist:
             raise serializers.ValidationError({"error": "Employee does not exist."})
 
         if getattr(user, "institution", None) != employee.department.institution:
-            print("\n\n\n Employee belongs to institution : ", employee.department.institution, "\n\n Your institution is ", getattr(user, "institution"))
             raise serializers.ValidationError(
                 {"error": "You are not authorized to terminate this employee."}
             )

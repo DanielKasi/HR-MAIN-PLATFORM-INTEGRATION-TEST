@@ -241,33 +241,48 @@ class AssetRequest(BaseApprovableModel):
         return self.asset.institution
 
     def finish_workflow(self, approval: Approval):
-        if approval.status == 'completed':
-            if approval.action.name == 'create':
-                self.asset_request_status = "approved"
-                allocation = AssetAllocation(
-                    asset=self.asset,
-                    allocated_to=self.requester,
-                    responding_to_request=self,
-                    allocated_by=None,
-                    allocation_status="allocated",
-                    status='active'  # Bypass approval for allocation from approved request
-                )
-                allocation.save()
-                self.status = 'active'
-            elif approval.action.name == 'update':
-                self.status = 'active'
-            elif approval.action.name == 'delete':
-                self.delete()  # Soft delete
-                return
-        elif approval.status == 'rejected':
-            if approval.action.name == 'create':
-                self.asset_request_status = "rejected"
-                self.status = 'active'  # Keep record instead of deleting
-            elif approval.action.name == 'update':
-                self.status = 'active'
-            elif approval.action.name == 'delete':
-                self.status = 'active'
-        self.save()
+        with transaction.atomic():  
+            if approval.status == 'completed':
+                if approval.action.name == 'create':
+                    self.asset_request_status = "approved"
+                    allocation = AssetAllocation(
+                        asset=self.asset,
+                        allocated_to=self.requester,
+                        responding_to_request=self,
+                        allocated_by=None,
+                        allocation_status="allocated",
+                        approval_status='active'  
+                    )
+                    allocation.save()
+                    self.approval_status = 'active'  
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'  
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == 'delete':
+                    self.asset_request_status = "cancelled"  
+                    self.approval_status = 'under_deletion'  
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.delete()  
+                    return
+            elif approval.status == 'rejected':
+                if approval.action.name == 'create':
+                    self.asset_request_status = "rejected"
+                    self.approval_status = 'active' 
+                    self.is_active = True  #
+                    self.deleted_at = None
+                elif approval.action.name == 'update':
+                    self.approval_status = 'active'  
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == 'delete':
+                    self.approval_status = 'active'  
+                    self.is_active = True
+                    self.deleted_at = None
+            self.save(update_fields=['approval_status', 'asset_request_status', 'is_active', 'deleted_at'])
 
 
 
@@ -353,20 +368,20 @@ class AssetAllocation(BaseApprovableModel):
                 self.asset.status = "allocated"
                 self.asset.current_holder = self.allocated_to
                 self.asset.save(update_fields=["status", "current_holder"])
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'update':
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'delete':
                 self.delete()  # Soft delete
                 return
         elif approval.status == 'rejected':
             if approval.action.name == 'create':
                 self.allocation_status = "rejected"
-                self.status = 'active'  # Keep record
+                self.approval_status = 'active'  # Keep record
             elif approval.action.name == 'update':
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'delete':
-                self.status = 'active'
+                self.approval_status = 'active'
         self.save()
 
     
@@ -420,9 +435,9 @@ class AssetReturn(BaseApprovableModel):
                     self.asset.status = "decommissioned"
                 self.asset.current_holder = None
                 self.asset.save(update_fields=["status", "current_holder"])
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'update':
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'delete':
                 self.delete()  # Soft delete
                 return
@@ -431,9 +446,9 @@ class AssetReturn(BaseApprovableModel):
                 self.delete()  # Soft delete on reject
                 return
             elif approval.action.name == 'update':
-                self.status = 'active'
+                self.approval_status = 'active'
             elif approval.action.name == 'delete':
-                self.status = 'active'
+                self.approval_status = 'active'
         self.save()
 
 class AssetHistory(SoftDeletableTimeStampedModel):

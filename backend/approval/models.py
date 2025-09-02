@@ -219,19 +219,28 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
         ).first()
 
         if not document:
-            # No approval required: auto-complete the action
+            # Auto-complete the action
             if action_name in ['create', 'update']:
                 self.approval_status = 'active'
                 self.is_active = True  
                 self.deleted_at = None
-            
             elif action_name == 'delete':
                 self.is_active = False  
                 self.deleted_at = timezone.now()
             self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
+            
+            # Simulate finish_workflow for subclass hooks (dummy approval not saved)
+            dummy_approval = Approval(
+                status='completed',
+                action=action,
+                document=None,  # Optional
+                content_type=content_type,
+                object_id=self.pk
+            )  # Not calling .save()
+            self.finish_workflow(dummy_approval)
             return  
 
-        # Proceed with approval creation
+        # Proceed with approval creation (existing code remains)
         with transaction.atomic():
             self.is_active = False  # Set is_active=False until approved
             self.save(update_fields=['is_active'])

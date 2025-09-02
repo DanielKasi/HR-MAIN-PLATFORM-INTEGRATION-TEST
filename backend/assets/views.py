@@ -382,7 +382,7 @@ class AssetRequestListCreateView(APIView):
         employee_id = request.query_params.get("employee_id", None)
         search_query = request.query_params.get("search", None)
         requester_id = request.query_params.get("requester_id", None)
-        status = request.query_params.get("status", None)
+        status_param = request.query_params.get("status", None)  # Renamed for clarity
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -398,45 +398,35 @@ class AssetRequestListCreateView(APIView):
         )
 
         if employee_id:
-
             try:
                 employee = Employee.objects.get(employee_id=employee_id)
-
             except Employee.DoesNotExist:
                 return Response(
                     {"detail": f"Employee with ID {employee_id} not found."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            # Step 2: Check if employee has a user
             if not employee.user:
                 return Response(
                     {"detail": f"Employee {employee_id} has no associated user."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Step 3: Check if user has a profile
             try:
                 profile = employee.user.profile
             except Profile.DoesNotExist:
-
                 return Response(
                     {"detail": f"User for employee {employee_id} has no profile."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            employee_asset_requests = asset_requests.filter(requester=profile)
-
-            all_requests = AssetRequest.objects.filter(asset__institution=institution)
-
-            for req in all_requests[:5]:  # Just first 5 for debugging
-
-                asset_requests = employee_asset_requests
+            
+            asset_requests = asset_requests.filter(requester=profile)  # Fixed assignment
 
         if requester_id:
             asset_requests = asset_requests.filter(requester__id=requester_id)
 
-        if status:
-            asset_requests = asset_requests.filter(status=asset_request_status)    
+        if status_param:
+            asset_requests = asset_requests.filter(asset_request_status=status_param)  # Fixed: Use asset_request_status
 
         if search_query:
             asset_requests = asset_requests.filter(
