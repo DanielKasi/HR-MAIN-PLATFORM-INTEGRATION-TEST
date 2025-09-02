@@ -401,7 +401,7 @@ class EmployeeSpotCheckUpdateView(APIView):
         """Update details of a specific employee spot check."""
         try:
             setting = SpotCheckModels.EmployeeSpotCheck.objects.get(
-                id=spotcheck_id, deleted_at=None
+                id=spotcheck_id
             )
         except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
             return Response(
