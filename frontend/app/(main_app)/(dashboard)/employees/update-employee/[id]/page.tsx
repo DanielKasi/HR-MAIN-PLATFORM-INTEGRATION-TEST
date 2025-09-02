@@ -262,7 +262,7 @@ export default function UpdateEmployeePage() {
           children_count: employeeData.children_count || 0,
           employee_profile_picture: null,
           salary: Number(employeeData.salary) || 0,
-          selected_branches:employeeData.user?.branches.map(b => b.id) || []
+          selected_branches: employeeData.user?.branches.map((b) => b.id) || [],
         });
 
         if (employeeData.employee_profile_picture) {
@@ -729,7 +729,7 @@ export default function UpdateEmployeePage() {
                     id="childrenCount"
                     type="number"
                     min="0"
-                    value={formData.children_count}
+                    value={formData.children_count === 0 ? "" : formData.children_count}
                     onChange={(e) =>
                       handleInputChange("children_count", parseInt(e.target.value) || 0)
                     }
@@ -1121,7 +1121,7 @@ export default function UpdateEmployeePage() {
                   id="experience"
                   type="number"
                   min="0"
-                  value={formData.experience}
+                  value={formData.experience === 0 ? "" : formData.experience}
                   onChange={(e) => handleInputChange("experience", parseInt(e.target.value) || 0)}
                   placeholder="Years of experience"
                 />
@@ -1262,12 +1262,8 @@ export default function UpdateEmployeePage() {
     <div className="flex flex-col w-full min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 bg-white">
       <CardHeader>
         <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="text-gray-600 hover:text-gray-900 rounded-full aspect-square"
-            >
+          <Link href="/employees/employee-list">
+            <Button variant="outline" size="sm" className="rounded-full aspect-square">
               <ArrowLeft className="w-4 h-4 mr-2" />
             </Button>
           <div className="h-6 w-px bg-gray-300" />

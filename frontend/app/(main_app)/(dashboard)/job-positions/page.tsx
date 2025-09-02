@@ -2,11 +2,7 @@
 import {useState, useRef} from "react";
 import {useRouter} from "next/navigation";
 import {useSelector} from "react-redux";
-import {
-  Plus,
-  Search,
-  Filter,
-} from "lucide-react";
+import {Plus, Search, Filter, ArrowLeft} from "lucide-react";
 
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -18,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 
@@ -75,68 +70,77 @@ export default function JobPositionsPage() {
   // Get salary ranges based on available positions
   const salaryRanges = generateSalaryRanges(jobPositions);
 
-
   return (
-    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
+    <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 -mt-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Job Positions / Titles</h1>
-          { selectedBranch && selectedInstitution && (
-                      <p className="text-muted-foreground">
-            Manage job positions / titles for {selectedBranch.branch_name} -{" "}
-            {selectedInstitution.institution_name}
-          </p>
-            )}
-
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-full aspect-square"
+              variant="outline"
+              onClick={() => router.push("/admin")}
+            >
+              <ArrowLeft />
+            </Button>
+            <div className="ml-2 mt-5">
+              <h1 className="text-2xl font-bold">Job Positions / Titles</h1>
+              {selectedBranch && selectedInstitution && (
+                <p className="text-muted-foreground">
+                  Manage job positions / titles for {selectedBranch.branch_name} -{" "}
+                  {selectedInstitution.institution_name}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 mt-10">
-          <Card className="shadow-sm border-none">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{jobPositionsCount}</div>
-              <p className="text-xs md:text-sm text-muted-foreground">Total Job Positions / Titles</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{jobPositions.length}</div>
-              <p className="text-xs md:text-sm text-muted-foreground">Results Displayed</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">
-                {formatCurrency(
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 mt-10">
+        <Card className="shadow-sm border">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{jobPositionsCount}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Total Job Positions / Titles</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm border">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{jobPositions.length}</div>
+            <p className="text-xs md:text-sm text-muted-foreground">Results Displayed</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm border">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                jobPositions.reduce((sum, pos) => {
+                  const min = Number(pos.salary_min || 0);
+                  const max = Number(pos.salary_max || 0);
+                  return sum + (min + max) / 2; // Use average of min/max for budget calculation
+                }, 0),
+              )}
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">Total Salary Budget</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm border">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                Math.round(
                   jobPositions.reduce((sum, pos) => {
                     const min = Number(pos.salary_min || 0);
                     const max = Number(pos.salary_max || 0);
-                    return sum + (min + max) / 2; // Use average of min/max for budget calculation
-                  }, 0),
-                )}
-              </div>
-              <p className="text-xs md:text-sm text-muted-foreground">Total Salary Budget</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-none">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">
-                {formatCurrency(
-                  Math.round(
-                    jobPositions.reduce((sum, pos) => {
-                      const min = Number(pos.salary_min || 0);
-                      const max = Number(pos.salary_max || 0);
-                      return sum + (min + max) / 2;
-                    }, 0) / jobPositions.length,
-                  ) || 0,
-                )}
-              </div>
-              <p className="text-xs md:text-sm text-muted-foreground">Average Salary</p>
-            </CardContent>
-          </Card>
-        </div>
+                    return sum + (min + max) / 2;
+                  }, 0) / jobPositions.length,
+                ) || 0,
+              )}
+            </div>
+            <p className="text-xs md:text-sm text-muted-foreground">Average Salary</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Search and Filters */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mb-6 mt-8">
@@ -168,21 +172,24 @@ export default function JobPositionsPage() {
           </Select>
         </div>
 
-
-        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_POSITIONS}> 
-        <Button
-          onClick={() => {
-            router.push("/job-positions/create");
-          }}
-          className="flex items-center gap-2 flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Create Job Position / Title
-        </Button>
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_POSITIONS}>
+          <Button
+            onClick={() => {
+              router.push("/job-positions/create");
+            }}
+            className="flex items-center gap-2 flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Create Job Position / Title
+          </Button>
         </ProtectedComponent>
       </div>
 
-      <JobPositionsTable setJobPositionsCount={setJobPositionsCount}  searchTerm={searchTerm} setCurrentJobPostions={setJobPositions} />
+      <JobPositionsTable
+        setJobPositionsCount={setJobPositionsCount}
+        searchTerm={searchTerm}
+        setCurrentJobPostions={setJobPositions}
+      />
     </div>
   );
 }

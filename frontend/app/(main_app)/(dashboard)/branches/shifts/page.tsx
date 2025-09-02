@@ -46,10 +46,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {Badge} from "@/components/ui/badge";
-import {Edit, MoreVertical, Trash2} from "lucide-react";
+import {ArrowLeft, Edit, MoreVertical, Trash2} from "lucide-react";
 import type {IBranchShift, IBranchWorkingDays, IShiftFormData} from "@/types/types.utils";
 import {shiftsAPI} from "@/lib/utils";
 import {showErrorToast} from "@/lib/utils";
+import {useRouter} from "next/navigation";
 
 const BranchShiftsPage = () => {
   const selectedBranch = useSelector(selectSelectedBranch);
@@ -60,6 +61,7 @@ const BranchShiftsPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const tableRefreshRef = useRef<(() => void) | null>(null);
+  const router = useRouter();
 
   const [formData, setFormData] = useState<IShiftFormData>({
     name: "",
@@ -190,13 +192,25 @@ const BranchShiftsPage = () => {
   }, [selectedBranch]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-white rounded-lg">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Branch Shifts Management</h1>
-          <p className="text-muted-foreground">
-            Manage shifts for {selectedBranch?.branch_name || "selected branch"}
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-full aspect-square"
+              variant="outline"
+              onClick={() => router.push("/admin")}
+            >
+              <ArrowLeft />
+            </Button>
+            <div className="mt-4 ml-2">
+              <h1 className="text-3xl font-bold">Branch Shifts Management</h1>
+              <p className="text-muted-foreground">
+                Manage shifts for {selectedBranch?.branch_name || "selected branch"}
+              </p>
+            </div>
+          </div>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -287,9 +301,9 @@ const BranchShiftsPage = () => {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="shadow-sm border-none rounded-3xl mt-18 -ml-9">
         <CardHeader>
-          <CardTitle>Current Shifts</CardTitle>
+          <CardTitle className="ml-4">Current Shifts</CardTitle>
         </CardHeader>
         <CardContent>
           <PaginatedTableWrapper<IBranchShift>

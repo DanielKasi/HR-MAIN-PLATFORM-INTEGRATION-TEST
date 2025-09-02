@@ -1,15 +1,15 @@
 "use client";
-import type { Role } from "@/types";
+import type {Role} from "@/types";
 
-import { Search, Plus, Pen, Eye, Trash2, ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import {Search, Plus, Pen, Eye, Trash2, ArrowLeft} from "lucide-react";
+import {useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import apiRequest, { apiDelete } from "@/lib/apiRequest";
-import { PaginationControls } from "@/components/ui/pagination-controls";
-import { PageSizeSelector } from "@/components/ui/page-size-selector";
+import apiRequest, {apiDelete} from "@/lib/apiRequest";
+import {PaginationControls} from "@/components/ui/pagination-controls";
+import {PageSizeSelector} from "@/components/ui/page-size-selector";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/types/types.utils";
-import { handleApiError } from "@/lib/apiErrorHandler";
+import {PERMISSION_CODES} from "@/types/types.utils";
+import {handleApiError} from "@/lib/apiErrorHandler";
 
 export default function RolesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,24 +120,27 @@ export default function RolesPage() {
 
   return (
     <ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_STAFF_ROLES}>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button size="sm" className="rounded-full aspect-square" variant="outline" onClick={() => router.push("/admin")}>
-              <ArrowLeft />
-            </Button>
-            <h1 className="text-2xl font-bold tracking-tight">Staff Roles</h1>
-          </div>
-          <Button onClick={() => router.push("/users/roles/add")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Role
-          </Button>
-        </div>
-
+      <div className="flex flex-col gap-4 mt-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Staff Roles</CardTitle>
-            <CardDescription className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-full aspect-square"
+                  variant="outline"
+                  onClick={() => router.push("/admin")}
+                >
+                  <ArrowLeft />
+                </Button>
+                <h1 className="text-2xl font-bold tracking-tight">Staff Roles</h1>
+              </div>
+              <Button onClick={() => router.push("/users/roles/add")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Role
+              </Button>
+            </div>
+            <CardDescription className="py-3 ml-3">
               Manage your account's roles and permissions
             </CardDescription>
           </CardHeader>

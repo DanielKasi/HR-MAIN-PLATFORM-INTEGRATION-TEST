@@ -1,30 +1,36 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Icon } from "@iconify/react"
-import { toast } from "sonner"
-import { ConfirmationDialog } from "@/components/confirmation-dialog"
-import { useSelector } from "react-redux"
-import { selectAttachedInstitutions, selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IUserInstitutionFormData } from "@/types"
-import { institutionAPI, showErrorToast } from "@/lib/utils"
-import { useDispatch } from "react-redux"
-import { setAttachedInstitutions, setSelectedInstitution } from "@/store/auth/actions"
-import { Upload, FileText, X, Check, Plus, Edit, Trash2 } from "lucide-react"
-import { DocumentsList } from "@/components/documents-list"
-import Image from "next/image"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
-import { TableSkeleton } from "@/components/common/table-skeleton"
-import { penaltyConfigAPI, branchLocationComparisonConfigAPI } from "@/lib/utils"
+import {useState, useEffect, useRef} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Switch} from "@/components/ui/switch";
+import {Icon} from "@iconify/react";
+import {toast} from "sonner";
+import {ConfirmationDialog} from "@/components/confirmation-dialog";
+import {useSelector} from "react-redux";
+import {selectAttachedInstitutions, selectSelectedInstitution} from "@/store/auth/selectors";
+import type {IUserInstitutionFormData} from "@/types";
+import {institutionAPI, showErrorToast} from "@/lib/utils";
+import {useDispatch} from "react-redux";
+import {setAttachedInstitutions, setSelectedInstitution} from "@/store/auth/actions";
+import {Upload, FileText, X, Check, Plus, Edit, Trash2, ArrowLeft} from "lucide-react";
+import {DocumentsList} from "@/components/documents-list";
+import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {penaltyConfigAPI, branchLocationComparisonConfigAPI} from "@/lib/utils";
 import type {
   IInstitutionPenaltyConfig,
   IInstitutionPenaltyConfigFormData,
@@ -32,23 +38,24 @@ import type {
   IBranchPenaltyConfigFormData,
   IBranchLocationComparisonConfig,
   IBranchLocationComparisonConfigFormData,
-} from "@/types/types.utils"
-import Link from "next/link"
-import { formatCurrency } from "@/lib/helpers"
+} from "@/types/types.utils";
+import {formatCurrency} from "@/lib/helpers";
+import FormatNumberInput from "@/components/format-number-input";
+import {useRouter} from "next/navigation";
 
 interface DocumentFile {
-  id: string
-  title: string
-  file: File | null
-  fileName: string
+  id: string;
+  title: string;
+  file: File | null;
+  fileName: string;
 }
 
 export default function SettingsPage() {
-  const institution = useSelector(selectSelectedInstitution)
-  const attachedInstitutions = useSelector(selectAttachedInstitutions)
+  const institution = useSelector(selectSelectedInstitution);
+  const attachedInstitutions = useSelector(selectAttachedInstitutions);
   const [activeTab, setActiveTab] = useState<
     "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison"
-  >("institution")
+  >("institution");
   const [formData, setFormData] = useState({
     institution_name: "",
     institution_email: "",
@@ -58,10 +65,10 @@ export default function SettingsPage() {
     is_attendance_penalties_enabled: false,
     latitude: 0,
     longitude: 0,
-  })
-  const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [documents, setDocuments] = useState<DocumentFile[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<DocumentFile[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState({
     institution_name: false,
     institution_email: false,
@@ -71,64 +78,70 @@ export default function SettingsPage() {
     is_attendance_penalties_enabled: false,
     logo: false,
     documents: false,
-  })
+  });
   const [confirmationDialog, setConfirmationDialog] = useState({
     isOpen: false,
     title: "",
     description: "",
     onConfirm: () => {},
-  })
-  const [documentsRefreshTrigger, setDocumentsRefreshTrigger] = useState(0)
+  });
+  const [documentsRefreshTrigger, setDocumentsRefreshTrigger] = useState(0);
 
   // Penalty Configuration state
-  const [penaltyConfigs, setPenaltyConfigs] = useState<IInstitutionPenaltyConfig[]>([])
+  const [penaltyConfigs, setPenaltyConfigs] = useState<IInstitutionPenaltyConfig[]>([]);
   const [penaltyFormData, setPenaltyFormData] = useState<IInstitutionPenaltyConfigFormData>({
     penalty_type: "late_coming",
     penalty_value: 0,
     penalty_value_type: "fixed",
     percentage: undefined,
     institution: institution?.id || 0,
-  })
-  const [isPenaltyFormOpen, setIsPenaltyFormOpen] = useState(false)
-  const [editingPenaltyConfig, setEditingPenaltyConfig] = useState<IInstitutionPenaltyConfig | null>(null)
-  const [penaltySearchTerm, setPenaltySearchTerm] = useState("")
-  const [penaltyTypeFilter, setPenaltyTypeFilter] = useState<string>("all")
+  });
+  const [isPenaltyFormOpen, setIsPenaltyFormOpen] = useState(false);
+  const [editingPenaltyConfig, setEditingPenaltyConfig] =
+    useState<IInstitutionPenaltyConfig | null>(null);
+  const [penaltySearchTerm, setPenaltySearchTerm] = useState("");
+  const [penaltyTypeFilter, setPenaltyTypeFilter] = useState<string>("all");
 
   // Branch Penalty Configuration state
-  const [branchPenaltyConfigs, setBranchPenaltyConfigs] = useState<IBranchPenaltyConfig[]>([])
+  const [branchPenaltyConfigs, setBranchPenaltyConfigs] = useState<IBranchPenaltyConfig[]>([]);
   const [branchPenaltyFormData, setBranchPenaltyFormData] = useState<IBranchPenaltyConfigFormData>({
     branch: 0,
     penalty_type: "late_coming",
     penalty_value: 0,
     penalty_value_type: "fixed",
     percentage: undefined,
-  })
-  const [isBranchPenaltyFormOpen, setIsBranchPenaltyFormOpen] = useState(false)
-  const [editingBranchPenaltyConfig, setEditingBranchPenaltyConfig] = useState<IBranchPenaltyConfig | null>(null)
-  const [branchPenaltySearchTerm, setBranchPenaltySearchTerm] = useState("")
-  const [branchPenaltyTypeFilter, setBranchPenaltyTypeFilter] = useState<string>("all")
-  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  });
+  const [isBranchPenaltyFormOpen, setIsBranchPenaltyFormOpen] = useState(false);
+  const [editingBranchPenaltyConfig, setEditingBranchPenaltyConfig] =
+    useState<IBranchPenaltyConfig | null>(null);
+  const [branchPenaltySearchTerm, setBranchPenaltySearchTerm] = useState("");
+  const [branchPenaltyTypeFilter, setBranchPenaltyTypeFilter] = useState<string>("all");
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const router = useRouter();
 
   // Location Comparison Config state
-  const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<IBranchLocationComparisonConfig[]>([])
-  const [locationComparisonFormData, setLocationComparisonFormData] = useState<IBranchLocationComparisonConfigFormData>(
-    {
+  const [locationComparisonConfigs, setLocationComparisonConfigs] = useState<
+    IBranchLocationComparisonConfig[]
+  >([]);
+  const [locationComparisonFormData, setLocationComparisonFormData] =
+    useState<IBranchLocationComparisonConfigFormData>({
       branch: 0,
       radius_in_meters: 100,
-    },
-  )
-  const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false)
+    });
+  const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false);
   const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] =
-    useState<IBranchLocationComparisonConfig | null>(null)
-  const [locationComparisonSearchTerm, setLocationComparisonSearchTerm] = useState("")
-  const [selectedLocationComparisonBranchId, setSelectedLocationComparisonBranchId] = useState<number | null>(null)
+    useState<IBranchLocationComparisonConfig | null>(null);
+  const [locationComparisonSearchTerm, setLocationComparisonSearchTerm] = useState("");
+  const [selectedLocationComparisonBranchId, setSelectedLocationComparisonBranchId] = useState<
+    number | null
+  >(null);
 
   // Refs for table refresh functions
-  const institutionPenaltyRefreshRef = useRef<(() => void) | null>(null)
-  const branchPenaltyRefreshRef = useRef<(() => void) | null>(null)
-  const locationComparisonRefreshRef = useRef<(() => void) | null>(null)
+  const institutionPenaltyRefreshRef = useRef<(() => void) | null>(null);
+  const branchPenaltyRefreshRef = useRef<(() => void) | null>(null);
+  const locationComparisonRefreshRef = useRef<(() => void) | null>(null);
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (institution) {
@@ -141,32 +154,32 @@ export default function SettingsPage() {
         is_attendance_penalties_enabled: institution.is_attendance_penalties_enabled,
         latitude: institution.latitude,
         longitude: institution.longitude,
-      })
+      });
     }
-  }, [institution])
+  }, [institution]);
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({...prev, [field]: value}));
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Logo file size must be less than 5MB")
-        return
+        toast.error("Logo file size must be less than 5MB");
+        return;
       }
       if (!file.type.startsWith("image/")) {
-        toast.error("Please select a valid image file")
-        return
+        toast.error("Please select a valid image file");
+        return;
       }
-      setLogoFile(file)
+      setLogoFile(file);
     }
-  }
+  };
 
   const toggleEdit = (field: keyof typeof isEditing) => {
-    setIsEditing((prev) => ({ ...prev, [field]: !prev[field] }))
-  }
+    setIsEditing((prev) => ({...prev, [field]: !prev[field]}));
+  };
 
   const handleUseCurrentLocation = () => {
     setConfirmationDialog({
@@ -178,45 +191,47 @@ export default function SettingsPage() {
         if ("geolocation" in navigator) {
           navigator.geolocation.getCurrentPosition(
             (position) => {
-              handleInputChange("latitude", position.coords.latitude)
-              handleInputChange("longitude", position.coords.longitude)
+              handleInputChange("latitude", position.coords.latitude);
+              handleInputChange("longitude", position.coords.longitude);
             },
             (error) => {
-              toast.error("Failed to get current location. Please check your location permissions.")
+              toast.error(
+                "Failed to get current location. Please check your location permissions.",
+              );
             },
-          )
+          );
         } else {
-          toast.error("Geolocation is not supported by this browser")
+          toast.error("Geolocation is not supported by this browser");
         }
-        setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
+        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
       },
-    })
-  }
+    });
+  };
 
   const handleSubmit = async () => {
     if (!institution) {
-      return
+      return;
     }
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const validDocuments = documents.filter((doc) => doc.file && doc.title.trim())
+      const validDocuments = documents.filter((doc) => doc.file && doc.title.trim());
       if (validDocuments.length > 0) {
         // Handle KYC document upload
         const kycDocuments = validDocuments.map((doc) => ({
           document_title: doc.title.trim(),
           document_file: doc.file!,
-        }))
+        }));
 
-        await institutionAPI.createKYCDocuments(kycDocuments)
+        await institutionAPI.createKYCDocuments(kycDocuments);
 
-        setDocuments([]) // Clear documents after successful submission
-        setIsEditing((prev) => ({ ...prev, documents: false })) // Close document editing mode
-        setDocumentsRefreshTrigger((prev) => prev + 1) // Trigger documents list refresh
-        toast.success("KYC documents uploaded successfully")
+        setDocuments([]); // Clear documents after successful submission
+        setIsEditing((prev) => ({...prev, documents: false})); // Close document editing mode
+        setDocumentsRefreshTrigger((prev) => prev + 1); // Trigger documents list refresh
+        toast.success("KYC documents uploaded successfully");
       } else {
         // Handle institution settings update
         const updateData: Partial<IUserInstitutionFormData> & {
-          institution_logo?: File
+          institution_logo?: File;
         } = {
           institution_name: formData.institution_name,
           institution_email: formData.institution_email,
@@ -226,45 +241,47 @@ export default function SettingsPage() {
           is_attendance_penalties_enabled: formData.is_attendance_penalties_enabled,
           latitude: formData.latitude,
           longitude: formData.longitude,
-        }
+        };
 
         if (logoFile) {
-          updateData.institution_logo = logoFile
+          updateData.institution_logo = logoFile;
         }
 
         const updatedInstitution = await institutionAPI.updateInstitution({
           institutionId: institution.id,
           data: updateData,
-        })
+        });
 
-        dispatch(setSelectedInstitution(updatedInstitution))
+        dispatch(setSelectedInstitution(updatedInstitution));
         dispatch(
           setAttachedInstitutions([
-            ...attachedInstitutions.map((inst) => (inst.id === updatedInstitution.id ? updatedInstitution : inst)),
+            ...attachedInstitutions.map((inst) =>
+              inst.id === updatedInstitution.id ? updatedInstitution : inst,
+            ),
           ]),
-        )
+        );
 
-        setLogoFile(null)
-        toast.success("Settings updated successfully")
+        setLogoFile(null);
+        toast.success("Settings updated successfully");
       }
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to update settings" })
+      showErrorToast({error, defaultMessage: "Failed to update settings"});
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-    setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
-  }
+    setConfirmationDialog((prev) => ({...prev, isOpen: false}));
+  };
 
   const handleSave = () => {
     // Check if we're uploading KYC documents
-    const validDocuments = documents.filter((doc) => doc.file && doc.title.trim())
-    const invalidDocuments = documents.filter((doc) => doc.file && !doc.title.trim())
+    const validDocuments = documents.filter((doc) => doc.file && doc.title.trim());
+    const invalidDocuments = documents.filter((doc) => doc.file && !doc.title.trim());
 
     if (validDocuments.length > 0) {
       // Validate KYC documents
       if (invalidDocuments.length > 0) {
-        toast.error("Please provide titles for all uploaded documents")
-        return
+        toast.error("Please provide titles for all uploaded documents");
+        return;
       }
 
       setConfirmationDialog({
@@ -272,7 +289,7 @@ export default function SettingsPage() {
         title: "Upload KYC Documents",
         description: `Are you sure you want to upload ${validDocuments.length} KYC document(s)? This will add these documents to your institution's records.`,
         onConfirm: handleSubmit,
-      })
+      });
     } else {
       // Validate institution settings
 
@@ -282,9 +299,9 @@ export default function SettingsPage() {
         description:
           "Are you sure you want to update these institution settings? This will affect all users in your institution.",
         onConfirm: handleSubmit,
-      })
+      });
     }
-  }
+  };
 
   // Document management functions
   const addDocument = () => {
@@ -293,39 +310,42 @@ export default function SettingsPage() {
       title: "",
       file: null,
       fileName: "",
-    }
-    setDocuments((prev) => [...prev, newDoc])
-  }
+    };
+    setDocuments((prev) => [...prev, newDoc]);
+  };
 
   const updateDocument = (id: string, field: keyof DocumentFile, value: any) => {
-    setDocuments((prev) => prev.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc)))
-  }
+    setDocuments((prev) => prev.map((doc) => (doc.id === id ? {...doc, [field]: value} : doc)));
+  };
 
   const removeDocument = (id: string) => {
-    setDocuments((prev) => prev.filter((doc) => doc.id !== id))
-  }
+    setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+  };
 
   const handleFileChange = (id: string, file: File | null) => {
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size must be less than 10MB")
-        return
+        toast.error("File size must be less than 10MB");
+        return;
       }
-      const allowedTypes = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"]
-      const fileExtension = file.name.split(".").pop()?.toLowerCase()
+      const allowedTypes = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
       if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
-        toast.error("File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG")
-        return
+        toast.error("File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG");
+        return;
       }
     }
-    updateDocument(id, "file", file)
-    updateDocument(id, "fileName", file ? file.name : "")
-  }
+    updateDocument(id, "file", file);
+    updateDocument(id, "fileName", file ? file.name : "");
+  };
 
   // Penalty Configuration helper functions
-  const handlePenaltyInputChange = (field: keyof IInstitutionPenaltyConfigFormData, value: string | number) => {
-    setPenaltyFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  const handlePenaltyInputChange = (
+    field: keyof IInstitutionPenaltyConfigFormData,
+    value: string | number,
+  ) => {
+    setPenaltyFormData((prev) => ({...prev, [field]: value}));
+  };
 
   const resetPenaltyForm = () => {
     setPenaltyFormData({
@@ -334,15 +354,15 @@ export default function SettingsPage() {
       penalty_value_type: "fixed",
       percentage: undefined,
       institution: institution?.id || 0,
-    })
-    setEditingPenaltyConfig(null)
-    setIsPenaltyFormOpen(false)
-  }
+    });
+    setEditingPenaltyConfig(null);
+    setIsPenaltyFormOpen(false);
+  };
 
   const handleCreatePenaltyConfig = () => {
-    resetPenaltyForm()
-    setIsPenaltyFormOpen(true)
-  }
+    resetPenaltyForm();
+    setIsPenaltyFormOpen(true);
+  };
 
   const handleEditPenaltyConfig = (config: IInstitutionPenaltyConfig) => {
     setPenaltyFormData({
@@ -351,32 +371,35 @@ export default function SettingsPage() {
       penalty_value_type: config.penalty_value_type,
       percentage: config.percentage || undefined,
       institution: institution?.id || 0,
-    })
-    setEditingPenaltyConfig(config)
-    setIsPenaltyFormOpen(true)
-  }
+    });
+    setEditingPenaltyConfig(config);
+    setIsPenaltyFormOpen(true);
+  };
 
   const handleSavePenaltyConfig = async () => {
-    if (!institution?.id) return
+    if (!institution?.id) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       if (editingPenaltyConfig) {
-        await penaltyConfigAPI.updateInstitutionPenaltyConfig(editingPenaltyConfig.id, penaltyFormData)
-        toast.success("Penalty configuration updated successfully")
+        await penaltyConfigAPI.updateInstitutionPenaltyConfig(
+          editingPenaltyConfig.id,
+          penaltyFormData,
+        );
+        toast.success("Penalty configuration updated successfully");
       } else {
-        await penaltyConfigAPI.createInstitutionPenaltyConfig(penaltyFormData)
-        toast.success("Penalty configuration created successfully")
+        await penaltyConfigAPI.createInstitutionPenaltyConfig(penaltyFormData);
+        toast.success("Penalty configuration created successfully");
       }
-      resetPenaltyForm()
+      resetPenaltyForm();
       // Trigger table refresh
-      institutionPenaltyRefreshRef.current?.()
+      institutionPenaltyRefreshRef.current?.();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save penalty configuration" })
+      showErrorToast({error, defaultMessage: "Failed to save penalty configuration"});
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDeletePenaltyConfig = async (config: IInstitutionPenaltyConfig) => {
     setConfirmationDialog({
@@ -385,44 +408,47 @@ export default function SettingsPage() {
       description: `Are you sure you want to delete the penalty configuration for ${config.penalty_type}?`,
       onConfirm: async () => {
         try {
-          await penaltyConfigAPI.deleteInstitutionPenaltyConfig(config.id)
-          toast.success("Penalty configuration deleted successfully")
+          await penaltyConfigAPI.deleteInstitutionPenaltyConfig(config.id);
+          toast.success("Penalty configuration deleted successfully");
           // Trigger table refresh
-          institutionPenaltyRefreshRef.current?.()
+          institutionPenaltyRefreshRef.current?.();
         } catch (error) {
-          showErrorToast({ error, defaultMessage: "Failed to delete penalty configuration" })
+          showErrorToast({error, defaultMessage: "Failed to delete penalty configuration"});
         }
-        setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
+        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
       },
-    })
-  }
+    });
+  };
 
   const getPenaltyTypeDisplay = (type: string) => {
-    const types: { [key: string]: string } = {
+    const types: {[key: string]: string} = {
       late_coming: "Late Coming",
       early_leaving: "Early Checkout",
       absent: "Absent",
       no_response_spotcheck: "No Response for Spotcheck",
       late_spotcheck_response: "Late Spotcheck Response",
-    }
-    return types[type] || type
-  }
+    };
+    return types[type] || type;
+  };
 
   const getPenaltyValueTypeDisplay = (type: string) => {
-    return type === "fixed" ? "Fixed Amount" : "Percentage"
-  }
+    return type === "fixed" ? "Fixed Amount" : "Percentage";
+  };
 
   const formatPenaltyValue = (config: IInstitutionPenaltyConfig) => {
     if (config.penalty_value_type === "percentage") {
-      return `${config.percentage}%`
+      return `${config.percentage}%`;
     }
-    return `${formatCurrency(config.penalty_value)}`
-  }
+    return `${formatCurrency(config.penalty_value)}`;
+  };
 
   // Branch Penalty Configuration helper functions
-  const handleBranchPenaltyInputChange = (field: keyof IBranchPenaltyConfigFormData, value: string | number) => {
-    setBranchPenaltyFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  const handleBranchPenaltyInputChange = (
+    field: keyof IBranchPenaltyConfigFormData,
+    value: string | number,
+  ) => {
+    setBranchPenaltyFormData((prev) => ({...prev, [field]: value}));
+  };
 
   const resetBranchPenaltyForm = () => {
     setBranchPenaltyFormData({
@@ -431,19 +457,19 @@ export default function SettingsPage() {
       penalty_value: 0,
       penalty_value_type: "fixed",
       percentage: undefined,
-    })
-    setEditingBranchPenaltyConfig(null)
-    setIsBranchPenaltyFormOpen(false)
-  }
+    });
+    setEditingBranchPenaltyConfig(null);
+    setIsBranchPenaltyFormOpen(false);
+  };
 
   const handleCreateBranchPenaltyConfig = () => {
     if (!selectedBranchId) {
-      toast.error("Please select a branch first")
-      return
+      toast.error("Please select a branch first");
+      return;
     }
-    resetBranchPenaltyForm()
-    setIsBranchPenaltyFormOpen(true)
-  }
+    resetBranchPenaltyForm();
+    setIsBranchPenaltyFormOpen(true);
+  };
 
   const handleEditBranchPenaltyConfig = (config: IBranchPenaltyConfig) => {
     setBranchPenaltyFormData({
@@ -452,32 +478,35 @@ export default function SettingsPage() {
       penalty_value: config.penalty_value,
       penalty_value_type: config.penalty_value_type,
       percentage: config.percentage || undefined,
-    })
-    setEditingBranchPenaltyConfig(config)
-    setIsBranchPenaltyFormOpen(true)
-  }
+    });
+    setEditingBranchPenaltyConfig(config);
+    setIsBranchPenaltyFormOpen(true);
+  };
 
   const handleSaveBranchPenaltyConfig = async () => {
-    if (!selectedBranchId) return
+    if (!selectedBranchId) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       if (editingBranchPenaltyConfig) {
-        await penaltyConfigAPI.updateBranchPenaltyConfig(editingBranchPenaltyConfig.id, branchPenaltyFormData)
-        toast.success("Branch penalty configuration updated successfully")
+        await penaltyConfigAPI.updateBranchPenaltyConfig(
+          editingBranchPenaltyConfig.id,
+          branchPenaltyFormData,
+        );
+        toast.success("Branch penalty configuration updated successfully");
       } else {
-        await penaltyConfigAPI.createBranchPenaltyConfig(branchPenaltyFormData)
-        toast.success("Branch penalty configuration created successfully")
+        await penaltyConfigAPI.createBranchPenaltyConfig(branchPenaltyFormData);
+        toast.success("Branch penalty configuration created successfully");
       }
-      resetBranchPenaltyForm()
+      resetBranchPenaltyForm();
       // Trigger table refresh
-      branchPenaltyRefreshRef.current?.()
+      branchPenaltyRefreshRef.current?.();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save branch penalty configuration" })
+      showErrorToast({error, defaultMessage: "Failed to save branch penalty configuration"});
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDeleteBranchPenaltyConfig = async (config: IBranchPenaltyConfig) => {
     setConfirmationDialog({
@@ -486,84 +515,86 @@ export default function SettingsPage() {
       description: `Are you sure you want to delete the penalty configuration for ${config.penalty_type}?`,
       onConfirm: async () => {
         try {
-          await penaltyConfigAPI.deleteBranchPenaltyConfig(config.id)
-          toast.success("Branch penalty configuration deleted successfully")
+          await penaltyConfigAPI.deleteBranchPenaltyConfig(config.id);
+          toast.success("Branch penalty configuration deleted successfully");
           // Trigger table refresh
-          branchPenaltyRefreshRef.current?.()
+          branchPenaltyRefreshRef.current?.();
         } catch (error) {
-          showErrorToast({ error, defaultMessage: "Failed to delete branch penalty configuration" })
+          showErrorToast({error, defaultMessage: "Failed to delete branch penalty configuration"});
         }
-        setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
+        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
       },
-    })
-  }
+    });
+  };
 
   const formatBranchPenaltyValue = (config: IBranchPenaltyConfig) => {
     if (config.penalty_value_type === "percentage") {
-      return `${config.percentage}%`
+      return `${config.percentage}%`;
     }
-    return `${formatCurrency(config.penalty_value)}`
-  }
+    return `${formatCurrency(config.penalty_value)}`;
+  };
 
   // Location Comparison Config helper functions
   const handleLocationComparisonInputChange = (
     field: keyof IBranchLocationComparisonConfigFormData,
     value: string | number,
   ) => {
-    setLocationComparisonFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setLocationComparisonFormData((prev) => ({...prev, [field]: value}));
+  };
 
   const resetLocationComparisonForm = () => {
     setLocationComparisonFormData({
       branch: selectedLocationComparisonBranchId || 0,
       radius_in_meters: 100,
-    })
-    setEditingLocationComparisonConfig(null)
-    setIsLocationComparisonFormOpen(false)
-  }
+    });
+    setEditingLocationComparisonConfig(null);
+    setIsLocationComparisonFormOpen(false);
+  };
 
   const handleCreateLocationComparisonConfig = () => {
     if (!selectedLocationComparisonBranchId) {
-      toast.error("Please select a branch first")
-      return
+      toast.error("Please select a branch first");
+      return;
     }
-    resetLocationComparisonForm()
-    setIsLocationComparisonFormOpen(true)
-  }
+    resetLocationComparisonForm();
+    setIsLocationComparisonFormOpen(true);
+  };
 
   const handleEditLocationComparisonConfig = (config: IBranchLocationComparisonConfig) => {
     setLocationComparisonFormData({
       branch: config.branch,
       radius_in_meters: config.radius_in_meters,
-    })
-    setEditingLocationComparisonConfig(config)
-    setIsLocationComparisonFormOpen(true)
-  }
+    });
+    setEditingLocationComparisonConfig(config);
+    setIsLocationComparisonFormOpen(true);
+  };
 
   const handleSaveLocationComparisonConfig = async () => {
-    if (!selectedLocationComparisonBranchId) return
+    if (!selectedLocationComparisonBranchId) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       if (editingLocationComparisonConfig) {
         await branchLocationComparisonConfigAPI.updateBranchLocationComparisonConfig(
           editingLocationComparisonConfig.id,
           locationComparisonFormData,
-        )
-        toast.success("Location comparison configuration updated successfully")
+        );
+        toast.success("Location comparison configuration updated successfully");
       } else {
-        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(locationComparisonFormData)
-        toast.success("Location comparison configuration created successfully")
+        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(
+          locationComparisonFormData,
+        );
+        toast.success("Location comparison configuration created successfully");
       }
-      resetLocationComparisonForm()
+      resetLocationComparisonForm();
       // Trigger table refresh
-      locationComparisonRefreshRef.current?.()
+      locationComparisonRefreshRef.current?.();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save location comparison configuration" })
+      showErrorToast({error, defaultMessage: "Failed to save location comparison configuration"});
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDeleteLocationComparisonConfig = async (config: IBranchLocationComparisonConfig) => {
     setConfirmationDialog({
@@ -572,20 +603,20 @@ export default function SettingsPage() {
       description: `Are you sure you want to delete the location comparison configuration for ${config.branch_name}?`,
       onConfirm: async () => {
         try {
-          await branchLocationComparisonConfigAPI.deleteBranchLocationComparisonConfig(config.id)
-          toast.success("Location comparison configuration deleted successfully")
+          await branchLocationComparisonConfigAPI.deleteBranchLocationComparisonConfig(config.id);
+          toast.success("Location comparison configuration deleted successfully");
           // Trigger table refresh
-          locationComparisonRefreshRef.current?.()
+          locationComparisonRefreshRef.current?.();
         } catch (error) {
           showErrorToast({
             error,
             defaultMessage: "Failed to delete location comparison configuration",
-          })
+          });
         }
-        setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))
+        setConfirmationDialog((prev) => ({...prev, isOpen: false}));
       },
-    })
-  }
+    });
+  };
 
   const renderInstitutionSettings = () => {
     return (
@@ -612,7 +643,10 @@ export default function SettingsPage() {
               </div>
             ) : (
               <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-primary/30 to-primary/50 rounded-lg flex items-center justify-center">
-                <Icon icon="hugeicons:building-04" className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                <Icon
+                  icon="hugeicons:building-04"
+                  className="w-10 h-10 md:w-12 md:h-12 text-white"
+                />
               </div>
             )}
             {isEditing.logo && (
@@ -622,7 +656,13 @@ export default function SettingsPage() {
                     <Icon icon="hugeicons:edit-01" className="w-3 h-3 text-white" />
                   </div>
                 </label>
-                <input id="logo-upload" type="file" accept="image/*" onChange={handleLogoChange} className="hidden" />
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="hidden"
+                />
               </div>
             )}
           </div>
@@ -651,7 +691,9 @@ export default function SettingsPage() {
                   className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
                 />
               ) : (
-                <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{formData.institution_name}</div>
+                <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                  {formData.institution_name}
+                </div>
               )}
               <Button
                 variant="outline"
@@ -679,7 +721,9 @@ export default function SettingsPage() {
                   className="flex-1 rounded-lg border-gray-200 focus:border-orange-400 focus:ring-orange-400"
                 />
               ) : (
-                <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{formData.institution_email}</div>
+                <div className="flex-1 px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                  {formData.institution_email}
+                </div>
               )}
             </div>
           </div>
@@ -760,10 +804,14 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Attendance Penalties</Label>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="text-gray-900">{formData.is_attendance_penalties_enabled ? "Enabled" : "Disabled"}</span>
+              <span className="text-gray-900">
+                {formData.is_attendance_penalties_enabled ? "Enabled" : "Disabled"}
+              </span>
               <Switch
                 checked={formData.is_attendance_penalties_enabled}
-                onCheckedChange={(checked) => handleInputChange("is_attendance_penalties_enabled", checked)}
+                onCheckedChange={(checked) =>
+                  handleInputChange("is_attendance_penalties_enabled", checked)
+                }
               />
             </div>
           </div>
@@ -786,8 +834,8 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   const renderKYCDocuments = () => (
     <div className="space-y-6">
@@ -851,7 +899,9 @@ export default function SettingsPage() {
                       <label htmlFor={`file-${doc.id}`} className="cursor-pointer flex-1">
                         <div className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 w-full">
                           <Upload className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-600 truncate">{doc.fileName || "Choose file"}</span>
+                          <span className="text-sm text-gray-600 truncate">
+                            {doc.fileName || "Choose file"}
+                          </span>
                         </div>
                       </label>
                       <input
@@ -911,7 +961,7 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
-  )
+  );
 
   const renderPenaltyConfigurations = () => (
     <div className="space-y-6">
@@ -959,26 +1009,26 @@ export default function SettingsPage() {
       <div className="">
         <PaginatedTableWrapper<IInstitutionPenaltyConfig>
           fetchFirstPage={async () => {
-            if (!institution) throw new Error("No institution selected")
+            if (!institution) throw new Error("No institution selected");
             return await penaltyConfigAPI.getInstitutionPenaltyConfigs({
               institutionId: institution.id,
               page: 1,
               search: penaltySearchTerm || undefined,
               penalty_type: penaltyTypeFilter !== "all" ? penaltyTypeFilter : undefined,
-            })
+            });
           }}
           fetchFromUrl={penaltyConfigAPI.getInstitutionPenaltyConfigsFromUrl}
           deps={[institution?.id, penaltySearchTerm, penaltyTypeFilter]}
           className="space-y-4"
           footerClassName="pt-4"
         >
-          {({ data, loading, refresh }) => {
+          {({data, loading, refresh}) => {
             if (refresh && institutionPenaltyRefreshRef.current !== refresh) {
-              institutionPenaltyRefreshRef.current = refresh
+              institutionPenaltyRefreshRef.current = refresh;
             }
 
             if (loading) {
-              return <TableSkeleton rows={5} columns={4} />
+              return <TableSkeleton rows={5} columns={4} />;
             }
 
             if (!data || data.results.length === 0) {
@@ -988,7 +1038,7 @@ export default function SettingsPage() {
                     ? "No penalty configurations found matching your search criteria"
                     : "No penalty configurations found"}
                 </div>
-              )
+              );
             }
 
             return (
@@ -998,9 +1048,15 @@ export default function SettingsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">Penalty Type</TableHead>
-                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">Value Type</TableHead>
-                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">Penalty Value</TableHead>
+                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
+                            Penalty Type
+                          </TableHead>
+                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
+                            Value Type
+                          </TableHead>
+                          <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
+                            Penalty Value
+                          </TableHead>
                           <TableHead className="w-12 sm:w-16 md:w-24 px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
                             Actions
                           </TableHead>
@@ -1049,7 +1105,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            )
+            );
           }}
         </PaginatedTableWrapper>
       </div>
@@ -1062,7 +1118,12 @@ export default function SettingsPage() {
               <h3 className="text-lg font-semibold">
                 {editingPenaltyConfig ? "Edit Penalty Configuration" : "Add Penalty Configuration"}
               </h3>
-              <Button variant="ghost" size="sm" onClick={resetPenaltyForm} className="h-8 w-8 p-0 hover:bg-gray-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetPenaltyForm}
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+              >
                 <Icon icon="hugeicons:close-01" className="h-4 w-4" />
               </Button>
             </div>
@@ -1106,14 +1167,20 @@ export default function SettingsPage() {
               {penaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
                   <Label htmlFor="penalty_value">Penalty Amount</Label>
-                  <Input
+                  <FormatNumberInput
                     id="penalty_value"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={penaltyFormData.penalty_value}
-                    onChange={(e) => handlePenaltyInputChange("penalty_value", Number.parseFloat(e.target.value) || 0)}
                     placeholder="Enter penalty amount"
+                    value={
+                      penaltyFormData.penalty_value === 0
+                        ? ""
+                        : penaltyFormData.penalty_value.toString()
+                    }
+                    onChange={(formatted, numeric) =>
+                      handlePenaltyInputChange("penalty_value", numeric)
+                    }
                   />
                 </div>
               ) : (
@@ -1126,7 +1193,9 @@ export default function SettingsPage() {
                     min="0"
                     max="100"
                     value={penaltyFormData.percentage || ""}
-                    onChange={(e) => handlePenaltyInputChange("percentage", Number.parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handlePenaltyInputChange("percentage", Number.parseFloat(e.target.value) || 0)
+                    }
                     placeholder="Enter percentage"
                   />
                 </div>
@@ -1154,7 +1223,7 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
-  )
+  );
 
   const renderBranchPenaltyConfigurations = () => (
     <div className="space-y-6">
@@ -1177,7 +1246,8 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium text-blue-900">Select Branch</h3>
             <p className="text-sm text-blue-700">
-              Choose a branch to manage its penalty configurations. Each branch can have different penalty settings.
+              Choose a branch to manage its penalty configurations. Each branch can have different
+              penalty settings.
             </p>
           </div>
         </div>
@@ -1235,26 +1305,27 @@ export default function SettingsPage() {
           <div className="">
             <PaginatedTableWrapper<IBranchPenaltyConfig>
               fetchFirstPage={async () => {
-                if (!selectedBranchId) throw new Error("No branch selected")
+                if (!selectedBranchId) throw new Error("No branch selected");
                 return await penaltyConfigAPI.getBranchPenaltyConfigs({
                   branchId: selectedBranchId,
                   page: 1,
                   search: branchPenaltySearchTerm || undefined,
-                  penalty_type: branchPenaltyTypeFilter !== "all" ? branchPenaltyTypeFilter : undefined,
-                })
+                  penalty_type:
+                    branchPenaltyTypeFilter !== "all" ? branchPenaltyTypeFilter : undefined,
+                });
               }}
               fetchFromUrl={penaltyConfigAPI.getBranchPenaltyConfigsFromUrl}
               deps={[selectedBranchId, branchPenaltySearchTerm, branchPenaltyTypeFilter]}
               className="space-y-4"
               footerClassName="pt-4"
             >
-              {({ data, loading, refresh }) => {
+              {({data, loading, refresh}) => {
                 if (refresh && branchPenaltyRefreshRef.current !== refresh) {
-                  branchPenaltyRefreshRef.current = refresh
+                  branchPenaltyRefreshRef.current = refresh;
                 }
 
                 if (loading) {
-                  return <TableSkeleton rows={5} columns={4} />
+                  return <TableSkeleton rows={5} columns={4} />;
                 }
 
                 if (!data || data.results.length === 0) {
@@ -1264,7 +1335,7 @@ export default function SettingsPage() {
                         ? "No branch penalty configurations found matching your search criteria"
                         : "No branch penalty configurations found"}
                     </div>
-                  )
+                  );
                 }
 
                 return (
@@ -1277,7 +1348,9 @@ export default function SettingsPage() {
                               <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
                                 Penalty Type
                               </TableHead>
-                              <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">Value Type</TableHead>
+                              <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
+                                Value Type
+                              </TableHead>
                               <TableHead className="px-2 py-2 sm:px-3 sm:py-2 md:px-6 md:py-3 text-xs sm:text-sm font-medium">
                                 Penalty Value
                               </TableHead>
@@ -1329,7 +1402,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                )
+                );
               }}
             </PaginatedTableWrapper>
           </div>
@@ -1342,7 +1415,9 @@ export default function SettingsPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingBranchPenaltyConfig ? "Edit Branch Penalty Configuration" : "Add Branch Penalty Configuration"}
+                {editingBranchPenaltyConfig
+                  ? "Edit Branch Penalty Configuration"
+                  : "Add Branch Penalty Configuration"}
               </h3>
               <Button
                 variant="ghost"
@@ -1378,7 +1453,9 @@ export default function SettingsPage() {
                 <Label htmlFor="branch_penalty_value_type">Value Type</Label>
                 <Select
                   value={branchPenaltyFormData.penalty_value_type}
-                  onValueChange={(value) => handleBranchPenaltyInputChange("penalty_value_type", value)}
+                  onValueChange={(value) =>
+                    handleBranchPenaltyInputChange("penalty_value_type", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select value type" />
@@ -1393,14 +1470,18 @@ export default function SettingsPage() {
               {branchPenaltyFormData.penalty_value_type === "fixed" ? (
                 <div>
                   <Label htmlFor="branch_penalty_value">Penalty Amount</Label>
-                  <Input
+                  <FormatNumberInput
                     id="branch_penalty_value"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={branchPenaltyFormData.penalty_value}
-                    onChange={(e) =>
-                      handleBranchPenaltyInputChange("penalty_value", Number.parseFloat(e.target.value) || 0)
+                    value={
+                      branchPenaltyFormData.penalty_value === 0
+                        ? ""
+                        : branchPenaltyFormData.penalty_value.toString()
+                    }
+                    onChange={(formatted, numeric) =>
+                      handleBranchPenaltyInputChange("penalty_value", numeric)
                     }
                     placeholder="Enter penalty amount"
                   />
@@ -1416,7 +1497,10 @@ export default function SettingsPage() {
                     max="100"
                     value={branchPenaltyFormData.percentage || ""}
                     onChange={(e) =>
-                      handleBranchPenaltyInputChange("percentage", Number.parseFloat(e.target.value) || 0)
+                      handleBranchPenaltyInputChange(
+                        "percentage",
+                        Number.parseFloat(e.target.value) || 0,
+                      )
                     }
                     placeholder="Enter percentage"
                   />
@@ -1445,12 +1529,14 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
-  )
+  );
 
   const renderLocationComparisonConfigurations = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Branch Location Comparison Configurations</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Branch Location Comparison Configurations
+        </h2>
         <Button
           onClick={handleCreateLocationComparisonConfig}
           className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
@@ -1468,8 +1554,8 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-medium text-green-900">Select Branch</h3>
             <p className="text-sm text-green-700">
-              Choose a branch to manage its location comparison settings. Each branch can have different location
-              parameters.
+              Choose a branch to manage its location comparison settings. Each branch can have
+              different location parameters.
             </p>
           </div>
         </div>
@@ -1514,25 +1600,25 @@ export default function SettingsPage() {
           <div className="">
             <PaginatedTableWrapper<IBranchLocationComparisonConfig>
               fetchFirstPage={async () => {
-                if (!institution) throw new Error("No institution selected")
+                if (!institution) throw new Error("No institution selected");
                 return await branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigs({
                   branchId: selectedLocationComparisonBranchId,
                   page: 1,
                   search: locationComparisonSearchTerm || undefined,
-                })
+                });
               }}
               fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
               deps={[selectedLocationComparisonBranchId, locationComparisonSearchTerm]}
               className="space-y-4"
               footerClassName="pt-4"
             >
-              {({ data, loading, refresh }) => {
+              {({data, loading, refresh}) => {
                 if (refresh && locationComparisonRefreshRef.current !== refresh) {
-                  locationComparisonRefreshRef.current = refresh
+                  locationComparisonRefreshRef.current = refresh;
                 }
 
                 if (loading) {
-                  return <TableSkeleton rows={5} columns={5} />
+                  return <TableSkeleton rows={5} columns={5} />;
                 }
 
                 if (!data || data.results.length === 0) {
@@ -1542,7 +1628,7 @@ export default function SettingsPage() {
                         ? "No location comparison configurations found matching your search criteria"
                         : "No location comparison configurations found"}
                     </div>
-                  )
+                  );
                 }
 
                 return (
@@ -1550,45 +1636,45 @@ export default function SettingsPage() {
                     <div className="min-w-full inline-block align-middle">
                       <div className="overflow-hidden border border-gray-200 sm:rounded-lg">
                         <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Branch Name</TableHead>
-                        <TableHead>Radius (meters)</TableHead>
-                        <TableHead className="w-24">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.results.map((config) => (
-                        <TableRow key={config.id}>
-                          <TableCell className="font-medium">{config.branch_name}</TableCell>
-                          <TableCell>{config.radius_in_meters}m</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditLocationComparisonConfig(config)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteLocationComparisonConfig(config)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Branch Name</TableHead>
+                              <TableHead>Radius (meters)</TableHead>
+                              <TableHead className="w-24">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.results.map((config) => (
+                              <TableRow key={config.id}>
+                                <TableCell className="font-medium">{config.branch_name}</TableCell>
+                                <TableCell>{config.radius_in_meters}m</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditLocationComparisonConfig(config)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteLocationComparisonConfig(config)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     </div>
                   </div>
-                )
+                );
               }}
             </PaginatedTableWrapper>
           </div>
@@ -1624,7 +1710,10 @@ export default function SettingsPage() {
                   min="1"
                   value={locationComparisonFormData.radius_in_meters}
                   onChange={(e) =>
-                    handleLocationComparisonInputChange("radius_in_meters", Number.parseInt(e.target.value) || 100)
+                    handleLocationComparisonInputChange(
+                      "radius_in_meters",
+                      Number.parseInt(e.target.value) || 100,
+                    )
                   }
                   placeholder="Enter radius in meters"
                 />
@@ -1652,16 +1741,21 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 rounded-lg">
       {/* Header */}
       <div className="bg-white border-gray-200 px-4 md:px-6 py-4">
         <div className="flex items-center gap-4">
-          <Link href="/admin" className="border rounded-full p-3">
-            <Icon icon="hugeicons:arrow-left-02" className="w-5 h-5" />
-          </Link>
+          <Button
+            size="sm"
+            className="rounded-full aspect-square"
+            variant="outline"
+            onClick={() => router.push("/admin")}
+          >
+            <ArrowLeft />
+          </Button>
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">Settings</h1>
         </div>
       </div>
@@ -1674,7 +1768,9 @@ export default function SettingsPage() {
               <button
                 onClick={() => setActiveTab("institution")}
                 className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-                  activeTab === "institution" ? "bg-red-50 border border-red-200" : "hover:bg-gray-50"
+                  activeTab === "institution"
+                    ? "bg-red-50 border border-red-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <Icon
@@ -1758,7 +1854,9 @@ export default function SettingsPage() {
               <button
                 onClick={() => setActiveTab("branch_penalties")}
                 className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-                  activeTab === "branch_penalties" ? "bg-blue-50 border border-blue-200" : "hover:bg-gray-50"
+                  activeTab === "branch_penalties"
+                    ? "bg-blue-50 border border-blue-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <Icon
@@ -1786,7 +1884,9 @@ export default function SettingsPage() {
               <button
                 onClick={() => setActiveTab("location_comparison")}
                 className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
-                  activeTab === "location_comparison" ? "bg-green-50 border border-green-200" : "hover:bg-gray-50"
+                  activeTab === "location_comparison"
+                    ? "bg-green-50 border border-green-200"
+                    : "hover:bg-gray-50"
                 }`}
               >
                 <Icon
@@ -1830,7 +1930,7 @@ export default function SettingsPage() {
 
       <ConfirmationDialog
         isOpen={confirmationDialog.isOpen}
-        onClose={() => setConfirmationDialog((prev) => ({ ...prev, isOpen: false }))}
+        onClose={() => setConfirmationDialog((prev) => ({...prev, isOpen: false}))}
         onConfirm={confirmationDialog.onConfirm}
         title={confirmationDialog.title}
         description={confirmationDialog.description}
@@ -1838,5 +1938,5 @@ export default function SettingsPage() {
         cancelText="Cancel"
       />
     </div>
-  )
+  );
 }

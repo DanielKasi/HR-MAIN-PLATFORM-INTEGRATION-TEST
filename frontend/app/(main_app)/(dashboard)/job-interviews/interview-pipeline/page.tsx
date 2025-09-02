@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useMemo } from "react"
-import { useSelector } from "react-redux"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import React, {useState, useEffect, useMemo} from "react";
+import {useSelector} from "react-redux";
+import {useRouter} from "next/navigation";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "@/components/ui/select"
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {Skeleton} from "@/components/ui/skeleton";
 import {
   ArrowLeft,
   Users,
@@ -52,82 +58,94 @@ import {
   Briefcase,
   Star,
   History,
-  Building2
-} from "lucide-react"
-import { toast } from "sonner"
-import type { IInterviewStage, IInterviewStageFormData, IEmployee, IInterview } from "@/types/types.utils"
-import { createInterviewStage, fetchEmployees, getInterviews, getInterviewStages, updateInterview, createInterview, bulkCreateOnBoarding } from "@/lib/utils"
-import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors"
-import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LocationAutocomplete } from "@/components/location-autocomplete";
-
+  Building2,
+} from "lucide-react";
+import {toast} from "sonner";
+import type {
+  IInterviewStage,
+  IInterviewStageFormData,
+  IEmployee,
+  IInterview,
+} from "@/types/types.utils";
+import {
+  createInterviewStage,
+  fetchEmployees,
+  getInterviews,
+  getInterviewStages,
+  updateInterview,
+  createInterview,
+  bulkCreateOnBoarding,
+} from "@/lib/utils";
+import {selectUser, selectSelectedInstitution} from "@/store/auth/selectors";
+import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {LocationAutocomplete} from "@/components/location-autocomplete";
 
 interface InterviewHistoryEntry {
-  stage_id: number
-  stage_name: string
-  stage_level: number
-  interviewer: string
-  interview_date?: string
-  interview_time?: string
-  location?: string
-  feedback?: string
-  rating?: number
-  status: string
-  created_at?: string
-  updated_at?: string
+  stage_id: number;
+  stage_name: string;
+  stage_level: number;
+  interviewer: string;
+  interview_date?: string;
+  interview_time?: string;
+  location?: string;
+  feedback?: string;
+  rating?: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface InterviewCandidateWithHistory extends InterviewCandidate {
-  interview_history: InterviewHistoryEntry[]
-  current_stage_level: number
-  current_stage_name: string
-  overall_rating: number
-  completion_rate: number
+  interview_history: InterviewHistoryEntry[];
+  current_stage_level: number;
+  current_stage_name: string;
+  overall_rating: number;
+  completion_rate: number;
 }
 interface JobPosition {
-  id: number
-  name: string
-  department: string
-  totalInterviews: number
+  id: number;
+  name: string;
+  department: string;
+  totalInterviews: number;
 }
 
 interface ProcessedStage {
-  id: string
-  name: string
-  count: number
-  icon: React.ReactNode
-  color: string
-  bgColor: string
-  level: number
-  interviewer: string
-  candidates: InterviewCandidate[]
+  id: string;
+  name: string;
+  count: number;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  level: number;
+  interviewer: string;
+  candidates: InterviewCandidate[];
 }
 
 interface InterviewCandidate {
-  id: number
-  applicant_name: string
-  applicant_email: string
-  applicant_phone: string
-  gender: string
-  state: string
-  address: string
-  country: string
-  source: string
-  feedback?: string
-  rating?: number
-  interview_date?: string
-  interview_time?: string
-  location?: string
-  interview_id?: number
-  interview?: IInterview
-  status: string
+  id: number;
+  applicant_name: string;
+  applicant_email: string;
+  applicant_phone: string;
+  gender: string;
+  state: string;
+  address: string;
+  country: string;
+  source: string;
+  feedback?: string;
+  rating?: number;
+  interview_date?: string;
+  interview_time?: string;
+  location?: string;
+  interview_id?: number;
+  interview?: IInterview;
+  status: string;
 }
 
 interface InterviewScheduleData {
-  interview_date: string
-  location: string
-  interview_type: "online" | "in_person"
+  interview_date: string;
+  location: string;
+  interview_type: "online" | "in_person";
 }
 
 type OnboardResult = {
@@ -136,22 +154,21 @@ type OnboardResult = {
   message?: string;
 };
 
-
 // Utility functions
 const getStageIcon = (stageName: string, index: number) => {
-  const iconMap: { [key: string]: React.ReactNode } = {
-    'initial': <Users className="h-5 w-5" />,
-    'assessment': <Users className="h-5 w-5" />,
-    'phone': <Phone className="h-5 w-5" />,
-    'technical': <Code className="h-5 w-5" />,
-    'final': <MessageSquare className="h-5 w-5" />,
-    'offer': <CheckCircle className="h-5 w-5" />,
-    'hired': <UserCheck className="h-5 w-5" />,
-  }
+  const iconMap: {[key: string]: React.ReactNode} = {
+    initial: <Users className="h-5 w-5" />,
+    assessment: <Users className="h-5 w-5" />,
+    phone: <Phone className="h-5 w-5" />,
+    technical: <Code className="h-5 w-5" />,
+    final: <MessageSquare className="h-5 w-5" />,
+    offer: <CheckCircle className="h-5 w-5" />,
+    hired: <UserCheck className="h-5 w-5" />,
+  };
 
-  const lowerStageName = stageName.toLowerCase()
+  const lowerStageName = stageName.toLowerCase();
   for (const [key, icon] of Object.entries(iconMap)) {
-    if (lowerStageName.includes(key)) return icon
+    if (lowerStageName.includes(key)) return icon;
   }
 
   const defaultIcons = [
@@ -161,77 +178,75 @@ const getStageIcon = (stageName: string, index: number) => {
     <MessageSquare className="h-5 w-5" />,
     <CheckCircle className="h-5 w-5" />,
     <UserCheck className="h-5 w-5" />,
-  ]
+  ];
 
-  return defaultIcons[index % defaultIcons.length]
-}
+  return defaultIcons[index % defaultIcons.length];
+};
 
 const getStageColors = (index: number) => {
   const colors = [
-    { color: "text-blue-600", bgColor: "bg-blue-100" },
-    { color: "text-purple-600", bgColor: "bg-purple-100" },
-    { color: "text-myOrange", bgColor: "bg-orange-100" },
-    { color: "text-yellow-600", bgColor: "bg-yellow-100" },
-    { color: "text-green-600", bgColor: "bg-green-100" },
-    { color: "text-emerald-600", bgColor: "bg-emerald-100" },
-  ]
-  return colors[index % colors.length]
-}
+    {color: "text-blue-600", bgColor: "bg-blue-100"},
+    {color: "text-purple-600", bgColor: "bg-purple-100"},
+    {color: "text-myOrange", bgColor: "bg-orange-100"},
+    {color: "text-yellow-600", bgColor: "bg-yellow-100"},
+    {color: "text-green-600", bgColor: "bg-green-100"},
+    {color: "text-emerald-600", bgColor: "bg-emerald-100"},
+  ];
+  return colors[index % colors.length];
+};
 
 const buildCandidateHistory = (
   candidates: InterviewCandidate[],
   interviews: IInterview[],
-  stages: ProcessedStage[]
+  stages: ProcessedStage[],
 ): InterviewCandidateWithHistory[] => {
-  return candidates.map(candidate => {
+  return candidates.map((candidate) => {
     const candidateInterviews = interviews
-      .filter(interview => interview.job_position_application === candidate.id)
+      .filter((interview) => interview.job_position_application === candidate.id)
       .sort((a, b) => {
-        const stageA = stages.find(s => s.id === a.interview_stage.toString());
-        const stageB = stages.find(s => s.id === b.interview_stage.toString());
+        const stageA = stages.find((s) => s.id === a.interview_stage.toString());
+        const stageB = stages.find((s) => s.id === b.interview_stage.toString());
         return (stageA?.level || 0) - (stageB?.level || 0);
       });
 
     // Build interview history entries
-    const interview_history = candidateInterviews.map(interview => {
-      const stage = stages.find(s => s.id === interview.interview_stage.toString());
+    const interview_history = candidateInterviews.map((interview) => {
+      const stage = stages.find((s) => s.id === interview.interview_stage.toString());
       return {
         stage_id: interview.interview_stage,
-        stage_name: stage?.name || 'Unknown Stage',
+        stage_name: stage?.name || "Unknown Stage",
         stage_level: stage?.level || 0,
-        interviewer: stage?.interviewer || 'Unknown',
+        interviewer: stage?.interviewer || "Unknown",
         interview_date: interview.interview_date,
         interview_time: interview.interview_time,
         location: interview.location,
         feedback: interview.feedback,
         rating: interview.rating ?? undefined,
-        status: interview.status || 'completed',
+        status: interview.status || "completed",
         created_at: interview.created_at,
         updated_at: interview.updated_at,
       };
     });
 
-    // Determine current stage (last one)
-    const currentStageEntry = interview_history.length > 0
-      ? interview_history[interview_history.length - 1]
-      : null;
+    const currentStageEntry =
+      interview_history.length > 0 ? interview_history[interview_history.length - 1] : null;
 
     const current_stage_level = currentStageEntry?.stage_level || 0;
-    const current_stage_name = currentStageEntry?.stage_name || 'Not Started';
+    const current_stage_name = currentStageEntry?.stage_name || "Not Started";
 
-    // Calculate overall rating
-    const ratings = interview_history.filter(h => h.rating && h.rating > 0);
-    const overall_rating = ratings.length > 0
-      ? Math.round(
-        (ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10
-      ) / 10
-      : 0;
+    const ratings = interview_history.filter((h) => h.rating && h.rating > 0);
+    const overall_rating =
+      ratings.length > 0
+        ? Math.round((ratings.reduce((sum, h) => sum + (h.rating || 0), 0) / ratings.length) * 10) /
+          10
+        : 0;
 
     // Completion rate
-    const feedbacks = interview_history.filter(h => h.feedback && h.feedback.trim().length > 0);
-    const completion_rate = interview_history.length > 0
-      ? Math.round((feedbacks.length / interview_history.length) * 100)
-      : 0;
+    const feedbacks = interview_history.filter((h) => h.feedback && h.feedback.trim().length > 0);
+    const completion_rate =
+      interview_history.length > 0
+        ? Math.round((feedbacks.length / interview_history.length) * 100)
+        : 0;
 
     return {
       ...candidate,
@@ -244,26 +259,26 @@ const buildCandidateHistory = (
   });
 };
 
-
-
-
-
 // Helper function to process interviews into candidates for a specific job
-const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number): InterviewCandidate[] => {
+const processInterviewsForJob = (
+  interviews: IInterview[],
+  jobPositionId: number,
+): InterviewCandidate[] => {
   return interviews
-    .filter(interview =>
-      interview.job_position_application_details?.job_position_advert === jobPositionId
+    .filter(
+      (interview) =>
+        interview.job_position_application_details?.job_position_advert === jobPositionId,
     )
-    .map(interview => ({
+    .map((interview) => ({
       id: interview.job_position_application,
-      applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
-      applicant_email: interview.job_position_application_details?.applicant_email || '',
-      applicant_phone: interview.job_position_application_details?.applicant_phone || '',
-      gender: interview.job_position_application_details?.gender || '',
-      state: interview.job_position_application_details?.state || '',
-      address: interview.job_position_application_details?.address || '',
-      country: interview.job_position_application_details?.country || '',
-      source: interview.job_position_application_details?.source || '',
+      applicant_name: interview.job_position_application_details?.applicant_name || "Unknown",
+      applicant_email: interview.job_position_application_details?.applicant_email || "",
+      applicant_phone: interview.job_position_application_details?.applicant_phone || "",
+      gender: interview.job_position_application_details?.gender || "",
+      state: interview.job_position_application_details?.state || "",
+      address: interview.job_position_application_details?.address || "",
+      country: interview.job_position_application_details?.country || "",
+      source: interview.job_position_application_details?.source || "",
       feedback: interview.feedback || undefined,
       rating: interview.rating || undefined,
       interview_date: interview.interview_date,
@@ -271,58 +286,55 @@ const processInterviewsForJob = (interviews: IInterview[], jobPositionId: number
       location: interview.location,
       interview_id: interview.id,
       interview: interview,
-      status: interview.status
-    }))
-}
-
-
+      status: interview.status,
+    }));
+};
 
 // Group interviews by stage for a specific job
 // Group interviews by stage for a specific job
 const buildStagesForJob = (
   interviewStages: IInterviewStage[],
   interviews: IInterview[],
-  jobPositionId: number
+  jobPositionId: number,
 ): ProcessedStage[] => {
   // Filter stages for the specific job position
-  const jobStages = interviewStages.filter(
-    stage => stage.job_position_advert === jobPositionId
-  )
+  const jobStages = interviewStages.filter((stage) => stage.job_position_advert === jobPositionId);
 
   // Filter interviews for the specific job position and exclude rejected ones
   const jobInterviews = interviews.filter(
-    interview => interview.job_position_application_details?.job_position_advert === jobPositionId
+    (interview) =>
+      interview.job_position_application_details?.job_position_advert === jobPositionId,
     // Note: We don't filter by status here because we want to show all interviews in their respective stages
     // but we'll handle rejected ones in the UI
-  )
+  );
 
   // Build processed stages
   const processedStages: ProcessedStage[] = jobStages.map((stage, index) => {
-    const colors = getStageColors(index)
+    const colors = getStageColors(index);
 
     // Find interviews for this stage
     const stageInterviews = jobInterviews.filter(
-      interview => interview.interview_stage_details?.id === stage.id
-    )
+      (interview) => interview.interview_stage_details?.id === stage.id,
+    );
 
     // Process candidates for this stage
-    const allCandidates = processInterviewsForJob(stageInterviews, jobPositionId)
+    const allCandidates = processInterviewsForJob(stageInterviews, jobPositionId);
 
     // Separate active and rejected candidates for counting
-    const activeCandidates = allCandidates.filter(candidate =>
-      candidate.status !== 'rejected' && candidate.status !== 'cancelled'
-    )
+    const activeCandidates = allCandidates.filter(
+      (candidate) => candidate.status !== "rejected" && candidate.status !== "cancelled",
+    );
 
     // Use all candidates for the candidates array (UI will handle display)
     // but use active candidates for count
-    const candidates = allCandidates
+    const candidates = allCandidates;
 
     // Get interviewer names
     const interviewerNames = Array.isArray(stage.interviewers_details)
-      ? stage.interviewers_details.map(emp =>
-        emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || 'Unknown'
-      ).join(', ')
-      : 'Not assigned'
+      ? stage.interviewers_details
+          .map((emp) => emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || "Unknown")
+          .join(", ")
+      : "Not assigned";
 
     return {
       id: stage.id.toString(),
@@ -332,21 +344,21 @@ const buildStagesForJob = (
       interviewer: interviewerNames,
       icon: getStageIcon(stage.name, index),
       candidates,
-      ...colors
-    }
-  })
+      ...colors,
+    };
+  });
 
   // Sort by level
-  return processedStages.sort((a, b) => a.level - b.level)
-}
+  return processedStages.sort((a, b) => a.level - b.level);
+};
 
 // Sub-components
 const RatingInput = ({
   rating,
-  onRatingChange
+  onRatingChange,
 }: {
-  rating: number
-  onRatingChange?: (rating: number) => void
+  rating: number;
+  onRatingChange?: (rating: number) => void;
 }) => {
   return (
     <div className="space-y-2">
@@ -354,14 +366,14 @@ const RatingInput = ({
         type="number"
         min="1"
         max="10"
-        value={rating || ''}
+        value={rating || ""}
         onChange={(e) => onRatingChange?.(Number(e.target.value))}
         className="w-20"
       />
       <p className="text-xs text-muted-foreground">Rate 1-10</p>
     </div>
-  )
-}
+  );
+};
 
 const FeedbackDialog = ({
   candidate,
@@ -370,93 +382,93 @@ const FeedbackDialog = ({
   onClose,
   nextStage,
   onReject,
-  onScheduleAndMove
+  onScheduleAndMove,
 }: {
-  candidate: InterviewCandidate | null
-  onSave: (feedback: string, rating: number) => void
-  isOpen: boolean
-  onClose: () => void
-  nextStage?: ProcessedStage | null
-  onReject?: () => void
-  onScheduleAndMove?: () => void
+  candidate: InterviewCandidate | null;
+  onSave: (feedback: string, rating: number) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  nextStage?: ProcessedStage | null;
+  onReject?: () => void;
+  onScheduleAndMove?: () => void;
 }) => {
-  const [feedback, setFeedback] = useState('')
-  const [rating, setRating] = useState(0)
-  const [isSaving, setIsSaving] = useState(false)
-  const [action, setAction] = useState<'save' | 'cancel' | 'schedule' | null>(null)
+  const [feedback, setFeedback] = useState("");
+  const [rating, setRating] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [action, setAction] = useState<"save" | "cancel" | "schedule" | null>(null);
 
   useEffect(() => {
     if (candidate) {
-      setFeedback(candidate.feedback || '')
-      setRating(candidate.rating || 0)
+      setFeedback(candidate.feedback || "");
+      setRating(candidate.rating || 0);
     }
-  }, [candidate])
+  }, [candidate]);
 
-  if (!candidate) return null
+  if (!candidate) return null;
 
   const handleSave = async () => {
     if (!feedback.trim() || !rating) {
-      toast.error('Please provide both feedback and rating')
-      return
+      toast.error("Please provide both feedback and rating");
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
-      await onSave(feedback, rating)
-      onClose()
-      toast.success('Feedback updated successfully')
+      await onSave(feedback, rating);
+      onClose();
+      toast.success("Feedback updated successfully");
     } catch (error) {
-      toast.error('Failed to update feedback')
+      toast.error("Failed to update feedback");
     } finally {
-      setIsSaving(false)
-      setAction(null)
+      setIsSaving(false);
+      setAction(null);
     }
-  }
+  };
 
   const handleScheduleAndMove = async () => {
     if (!feedback.trim() || !rating) {
-      toast.error('Please provide both feedback and rating before scheduling')
-      return
+      toast.error("Please provide both feedback and rating before scheduling");
+      return;
     }
 
-    setIsSaving(true)
-    setAction('schedule')
+    setIsSaving(true);
+    setAction("schedule");
     try {
-      await onSave(feedback, rating)
+      await onSave(feedback, rating);
       if (onScheduleAndMove) {
-        onScheduleAndMove()
+        onScheduleAndMove();
       }
-      onClose()
+      onClose();
     } catch (error) {
-      toast.error('Failed to save feedback')
+      toast.error("Failed to save feedback");
     } finally {
-      setIsSaving(false)
-      setAction(null)
+      setIsSaving(false);
+      setAction(null);
     }
-  }
+  };
 
   const handleReject = async () => {
     if (!feedback.trim()) {
-      toast.error('Please provide feedback for rejection')
-      return
+      toast.error("Please provide feedback for rejection");
+      return;
     }
 
-    setIsSaving(true)
-    setAction('cancel')
+    setIsSaving(true);
+    setAction("cancel");
     try {
-      await onSave(feedback, rating || 1)
+      await onSave(feedback, rating || 1);
       if (onReject) {
-        await onReject()
+        await onReject();
       }
-      onClose()
-      toast.success('Candidate rejected')
+      onClose();
+      toast.success("Candidate rejected");
     } catch (error) {
-      toast.error('Failed to reject candidate')
+      toast.error("Failed to reject candidate");
     } finally {
-      setIsSaving(false)
-      setAction(null)
+      setIsSaving(false);
+      setAction(null);
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -493,12 +505,12 @@ const FeedbackDialog = ({
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setAction('save')
-                    handleSave()
+                    setAction("save");
+                    handleSave();
                   }}
                   disabled={isSaving}
                 >
-                  {isSaving && action === 'save' ? (
+                  {isSaving && action === "save" ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Saving...
@@ -513,12 +525,8 @@ const FeedbackDialog = ({
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={handleReject}
-                  disabled={isSaving}
-                >
-                  {isSaving && action === 'cancel' ? (
+                <Button variant="destructive" onClick={handleReject} disabled={isSaving}>
+                  {isSaving && action === "cancel" ? (
                     <>
                       <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                       Rejecting...
@@ -537,7 +545,7 @@ const FeedbackDialog = ({
                     disabled={isSaving}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {isSaving && action === 'schedule' ? (
+                    {isSaving && action === "schedule" ? (
                       <>
                         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                         Processing...
@@ -556,8 +564,8 @@ const FeedbackDialog = ({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
 const InterviewSchedulingDialog = ({
   isOpen,
@@ -565,65 +573,65 @@ const InterviewSchedulingDialog = ({
   onSchedule,
   candidates,
   targetStage,
-  isScheduling
+  isScheduling,
 }: {
-  isOpen: boolean
-  onClose: () => void
-  onSchedule: (scheduleData: InterviewScheduleData) => void
-  candidates: InterviewCandidate[]
-  targetStage: ProcessedStage | null
-  isScheduling: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  onSchedule: (scheduleData: InterviewScheduleData) => void;
+  candidates: InterviewCandidate[];
+  targetStage: ProcessedStage | null;
+  isScheduling: boolean;
 }) => {
   const [scheduleData, setScheduleData] = useState<InterviewScheduleData>(() => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(10, 0, 0, 0)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
 
     return {
       interview_date: tomorrow.toISOString().slice(0, 16),
       location: "Conference Room",
-      interview_type: "online"
-    }
-  })
+      interview_type: "online",
+    };
+  });
 
-  const [errors, setErrors] = useState<any>({})
+  const [errors, setErrors] = useState<any>({});
 
   const updateScheduleData = (field: keyof InterviewScheduleData, value: string) => {
-    setScheduleData(prev => ({ ...prev, [field]: value }))
+    setScheduleData((prev) => ({...prev, [field]: value}));
     if (errors[field]) {
-      setErrors((prev: any) => ({ ...prev, [field]: undefined }))
+      setErrors((prev: any) => ({...prev, [field]: undefined}));
     }
-  }
+  };
 
   const validateScheduleForm = (): boolean => {
-    const newErrors: any = {}
+    const newErrors: any = {};
 
     if (!scheduleData.interview_date || scheduleData.interview_date.trim() === "") {
-      newErrors.interview_date = "Interview date is required"
+      newErrors.interview_date = "Interview date is required";
     } else {
-      const interviewDate = new Date(scheduleData.interview_date)
-      const now = new Date()
+      const interviewDate = new Date(scheduleData.interview_date);
+      const now = new Date();
       if (interviewDate <= now) {
-        newErrors.interview_date = "Interview date must be in the future"
+        newErrors.interview_date = "Interview date must be in the future";
       }
     }
 
     if (!scheduleData.location || scheduleData.location.trim() === "") {
-      newErrors.location = "Interview location is required"
+      newErrors.location = "Interview location is required";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSchedule = () => {
     if (!validateScheduleForm()) {
-      toast.error("Please fix the form errors before scheduling")
-      return
+      toast.error("Please fix the form errors before scheduling");
+      return;
     }
 
-    onSchedule(scheduleData)
-  }
+    onSchedule(scheduleData);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -653,7 +661,9 @@ const InterviewSchedulingDialog = ({
             <div className="bg-green-50 p-4 rounded-md">
               <h4 className="font-semibold text-sm mb-2 text-green-800">Target Stage</h4>
               <div className="text-sm text-green-700">
-                <p><strong>{targetStage.name}</strong> (Level {targetStage.level})</p>
+                <p>
+                  <strong>{targetStage.name}</strong> (Level {targetStage.level})
+                </p>
                 <p>Interviewer: {targetStage.interviewer}</p>
               </div>
             </div>
@@ -690,14 +700,11 @@ const InterviewSchedulingDialog = ({
                 placeholder="Search for interview location..."
                 showCurrentLocationButton={true}
               />
-              {errors.location && (
-                <p className="text-sm text-destructive">{errors.location}</p>
-              )}
+              {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
               <p className="text-xs text-muted-foreground">
                 Search for the interview location or specify if virtual (e.g., "Zoom Meeting")
               </p>
             </div>
-
 
             <div className="space-y-2">
               <Label htmlFor="interview_type" className="text-sm font-medium">
@@ -705,7 +712,9 @@ const InterviewSchedulingDialog = ({
               </Label>
               <Select
                 value={scheduleData.interview_type}
-                onValueChange={(value: "online" | "in_person") => updateScheduleData("interview_type", value)}
+                onValueChange={(value: "online" | "in_person") =>
+                  updateScheduleData("interview_type", value)
+                }
               >
                 <SelectTrigger className={errors.interview_type ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select interview type" />
@@ -739,419 +748,420 @@ const InterviewSchedulingDialog = ({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-
-
+  );
+};
 
 // Main Component
 export default function JobSpecificInterviewPipeline() {
-  const router = useRouter()
-  const selectedInstitution = useSelector(selectSelectedInstitution)
+  const router = useRouter();
+  const selectedInstitution = useSelector(selectSelectedInstitution);
   const userData = useSelector(selectUser);
   const createdBy = userData?.id ?? 0;
 
   // State management
-  const [interviews, setInterviews] = useState<IInterview[]>([])
-  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([])
-  const [processedStages, setProcessedStages] = useState<ProcessedStage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [interviews, setInterviews] = useState<IInterview[]>([]);
+  const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
+  const [processedStages, setProcessedStages] = useState<ProcessedStage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Job position state
-  const [selectedJobPosition, setSelectedJobPosition] = useState<JobPosition | null>(null)
-  const [availableJobPositions, setAvailableJobPositions] = useState<JobPosition[]>([])
+  const [selectedJobPosition, setSelectedJobPosition] = useState<JobPosition | null>(null);
+  const [availableJobPositions, setAvailableJobPositions] = useState<JobPosition[]>([]);
 
   // UI State
-  const [activeStageId, setActiveStageId] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
+  const [activeStageId, setActiveStageId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
 
   // Dialog states
-  const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false)
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false)
-  const [isSchedulingDialogOpen, setIsSchedulingDialogOpen] = useState(false)
-  const [selectedCandidate, setSelectedCandidate] = useState<InterviewCandidate | null>(null)
-  const [candidatesToSchedule, setCandidatesToSchedule] = useState<InterviewCandidate[]>([])
+  const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [isSchedulingDialogOpen, setIsSchedulingDialogOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<InterviewCandidate | null>(null);
+  const [candidatesToSchedule, setCandidatesToSchedule] = useState<InterviewCandidate[]>([]);
 
-
-  const [viewMode, setViewMode] = useState<'current' | 'history'>('current')
-  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
-  const [selectedCandidateWithHistory, setSelectedCandidateWithHistory] = useState<InterviewCandidateWithHistory | null>(null)
-
+  const [viewMode, setViewMode] = useState<"current" | "history">("current");
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedCandidateWithHistory, setSelectedCandidateWithHistory] =
+    useState<InterviewCandidateWithHistory | null>(null);
 
   // Form states
-  const [isCreatingStage, setIsCreatingStage] = useState(false)
-  const [isProcessingProgression, setIsProcessingProgression] = useState(false)
+  const [isCreatingStage, setIsCreatingStage] = useState(false);
+  const [isProcessingProgression, setIsProcessingProgression] = useState(false);
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
     name: "",
     level: 1,
     interviewers: [],
     job_position_advert: 0,
-  })
-  const [stageErrors, setStageErrors] = useState<any>({})
+  });
+  const [stageErrors, setStageErrors] = useState<any>({});
 
   // Computed values
-  const activeStage = processedStages.find(stage => stage.id === activeStageId)
-  const nextStageForActive = processedStages.find(stage =>
-    activeStage && stage.level === activeStage.level + 1
-  )
+  const activeStage = processedStages.find((stage) => stage.id === activeStageId);
+  const nextStageForActive = processedStages.find(
+    (stage) => activeStage && stage.level === activeStage.level + 1,
+  );
 
   // Filter candidates based on search
   const filteredCandidates = useMemo(() => {
-    if (!activeStage) return []
+    if (!activeStage) return [];
 
-    let candidates = activeStage.candidates
+    let candidates = activeStage.candidates;
 
     // Apply search filter
     if (searchTerm) {
-      candidates = candidates.filter(candidate =>
-        candidate.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.applicant_phone?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      candidates = candidates.filter(
+        (candidate) =>
+          candidate.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          candidate.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          candidate.applicant_phone?.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
     }
 
-    return candidates
-  }, [activeStage, searchTerm])
+    return candidates;
+  }, [activeStage, searchTerm]);
 
   // Smart filtered candidates for selection (only those that need action)
   const selectableCandidates = useMemo(() => {
-    return filteredCandidates.filter(candidate => {
+    return filteredCandidates.filter((candidate) => {
       // Only select candidates who DON'T have feedback yet (need action)
-      return !(candidate.feedback && candidate.rating)
-    })
-  }, [filteredCandidates])
-
+      return !(candidate.feedback && candidate.rating);
+    });
+  }, [filteredCandidates]);
 
   // Helper functions for candidate validation
   const canCandidateBeSelected = (candidate: InterviewCandidate): boolean => {
     // Cannot select rejected or cancelled candidates
-    if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    if (candidate.status === "rejected" || candidate.status === "cancelled") {
       return false;
     }
 
     // Only select candidates who DON'T have feedback yet (need action)
     // This ensures we only select candidates who need feedback/rating
-    return !(candidate.feedback && candidate.rating && candidate.rating > 0)
-  }
-
+    return !(candidate.feedback && candidate.rating && candidate.rating > 0);
+  };
 
   const canCandidateBeMoved = (candidate: InterviewCandidate): boolean => {
-
-    if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    if (candidate.status === "rejected" || candidate.status === "cancelled") {
       return false;
     }
 
-    return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
-  }
+    return !!(candidate.feedback && candidate.rating && candidate.rating > 0);
+  };
 
-  const canCandidateBeOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
-    if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+  const canCandidateBeOnboarded = (
+    candidate: InterviewCandidate | InterviewCandidateWithHistory,
+  ): boolean => {
+    if (candidate.status === "rejected" || candidate.status === "cancelled") {
       return false;
     }
 
-    return !!(candidate.feedback && candidate.rating && candidate.rating > 0)
-  }
+    return !!(candidate.feedback && candidate.rating && candidate.rating > 0);
+  };
 
-  const isCandidateRejected = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
-    return candidate.status === 'rejected' || candidate.status === 'cancelled'
-  }
+  const isCandidateRejected = (
+    candidate: InterviewCandidate | InterviewCandidateWithHistory,
+  ): boolean => {
+    return candidate.status === "rejected" || candidate.status === "cancelled";
+  };
 
-  const isCandidateAlreadyOnboarded = (candidate: InterviewCandidate | InterviewCandidateWithHistory): boolean => {
-    return candidate.status === 'onboarded' || candidate.status === 'hired'
-  }
+  const isCandidateAlreadyOnboarded = (
+    candidate: InterviewCandidate | InterviewCandidateWithHistory,
+  ): boolean => {
+    return candidate.status === "onboarded" || candidate.status === "hired";
+  };
 
   const candidatesEligibleForOnboarding = useMemo(() => {
-    return filteredCandidates.filter(candidate =>
-      selectedCandidates.includes(candidate.id) &&
-      canCandidateBeOnboarded(candidate) &&
-      !isCandidateAlreadyOnboarded(candidate)
-    )
-  }, [filteredCandidates, selectedCandidates])
-
-
+    return filteredCandidates.filter(
+      (candidate) =>
+        selectedCandidates.includes(candidate.id) &&
+        canCandidateBeOnboarded(candidate) &&
+        !isCandidateAlreadyOnboarded(candidate),
+    );
+  }, [filteredCandidates, selectedCandidates]);
 
   const candidatesEligibleForMoving = useMemo(() => {
-    return filteredCandidates.filter(candidate =>
-      selectedCandidates.includes(candidate.id) &&
-      canCandidateBeMoved(candidate)
-    )
-  }, [filteredCandidates, selectedCandidates])
+    return filteredCandidates.filter(
+      (candidate) => selectedCandidates.includes(candidate.id) && canCandidateBeMoved(candidate),
+    );
+  }, [filteredCandidates, selectedCandidates]);
 
   // Data fetching
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!selectedInstitution?.id) {
-        throw new Error('Institution information is missing')
+        throw new Error("Institution information is missing");
       }
 
       const [fetchedInterviews, fetchedStages] = await Promise.all([
-        getInterviews({ institutionId: selectedInstitution.id }),
-        getInterviewStages({ institutionId: selectedInstitution.id })
-      ])
+        getInterviews({institutionId: selectedInstitution.id}),
+        getInterviewStages({institutionId: selectedInstitution.id}),
+      ]);
 
-      setInterviews(fetchedInterviews || []),
-        setInterviewStages(fetchedStages || [])
+      (setInterviews(fetchedInterviews || []), setInterviewStages(fetchedStages || []));
 
       // Extract unique job position/titles /titles from interviews
-      const jobPositionsMap = new Map<number, JobPosition>()
+      const jobPositionsMap = new Map<number, JobPosition>();
 
-      fetchedInterviews?.forEach(interview => {
-        const jobAdvert = interview.job_position_application_details?.job_position_advert
-        const jobName = interview.job_position_application_details?.job_position_advert_job_details?.name
-        const jobDepartment = interview.job_position_application_details?.job_position_advert_job_details?.department
+      fetchedInterviews?.forEach((interview) => {
+        const jobAdvert = interview.job_position_application_details?.job_position_advert;
+        const jobName =
+          interview.job_position_application_details?.job_position_advert_job_details?.name;
+        const jobDepartment =
+          interview.job_position_application_details?.job_position_advert_job_details?.department;
 
         if (jobAdvert && jobName) {
           if (!jobPositionsMap.has(jobAdvert)) {
             jobPositionsMap.set(jobAdvert, {
               id: jobAdvert,
               name: jobName,
-              department: jobDepartment || '',
-              totalInterviews: 0
-            })
+              department: jobDepartment || "",
+              totalInterviews: 0,
+            });
           }
-          jobPositionsMap.get(jobAdvert)!.totalInterviews++
+          jobPositionsMap.get(jobAdvert)!.totalInterviews++;
         }
-      })
+      });
 
-
-
-      const positions = Array.from(jobPositionsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
-      setAvailableJobPositions(positions)
+      const positions = Array.from(jobPositionsMap.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+      setAvailableJobPositions(positions);
 
       // Auto-select the first job position/title if none selected
       if (!selectedJobPosition && positions.length > 0) {
-        setSelectedJobPosition(positions[0])
+        setSelectedJobPosition(positions[0]);
       }
-
     } catch (err) {
-      setError(`Failed to load interview pipeline: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(
+        `Failed to load interview pipeline: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
   const openHistoryDialog = (candidate: InterviewCandidateWithHistory) => {
-    setSelectedCandidateWithHistory(candidate)
-    setIsHistoryDialogOpen(true)
-  }
+    setSelectedCandidateWithHistory(candidate);
+    setIsHistoryDialogOpen(true);
+  };
 
   const allCandidatesWithHistory = React.useMemo(() => {
-    if (!selectedJobPosition) return []
+    if (!selectedJobPosition) return [];
 
     // Get all candidates for the selected job position from interviews
     const allCandidates = interviews
-      .filter(interview =>
-        interview.job_position_application_details?.job_position_advert === selectedJobPosition.id
+      .filter(
+        (interview) =>
+          interview.job_position_application_details?.job_position_advert ===
+          selectedJobPosition.id,
       )
-      .map(interview => ({
+      .map((interview) => ({
         id: interview.job_position_application,
-        applicant_name: interview.job_position_application_details?.applicant_name || 'Unknown',
-        applicant_email: interview.job_position_application_details?.applicant_email || '',
-        applicant_phone: interview.job_position_application_details?.applicant_phone || '',
-        gender: interview.job_position_application_details?.gender || '',
-        state: interview.job_position_application_details?.state || '',
-        address: interview.job_position_application_details?.address || '',
-        country: interview.job_position_application_details?.country || '',
-        source: interview.job_position_application_details?.source || '',
-        status: interview.status
+        applicant_name: interview.job_position_application_details?.applicant_name || "Unknown",
+        applicant_email: interview.job_position_application_details?.applicant_email || "",
+        applicant_phone: interview.job_position_application_details?.applicant_phone || "",
+        gender: interview.job_position_application_details?.gender || "",
+        state: interview.job_position_application_details?.state || "",
+        address: interview.job_position_application_details?.address || "",
+        country: interview.job_position_application_details?.country || "",
+        source: interview.job_position_application_details?.source || "",
+        status: interview.status,
       }))
       // Remove duplicates based on candidate ID
-      .filter((candidate, index, array) =>
-        array.findIndex(c => c.id === candidate.id) === index
-      )
+      .filter((candidate, index, array) => array.findIndex((c) => c.id === candidate.id) === index);
 
-    return buildCandidateHistory(allCandidates, interviews, processedStages)
-  }, [selectedJobPosition, interviews, processedStages])
+    return buildCandidateHistory(allCandidates, interviews, processedStages);
+  }, [selectedJobPosition, interviews, processedStages]);
 
-  const filteredHistoryCandidates = allCandidatesWithHistory.filter(candidate =>
-    candidate.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    candidate.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    candidate.applicant_phone?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-
-
+  const filteredHistoryCandidates = allCandidatesWithHistory.filter(
+    (candidate) =>
+      candidate.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.applicant_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.applicant_phone?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   useEffect(() => {
     if (interviewStages.length > 0 && selectedJobPosition) {
-      const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id)
-      setProcessedStages(stages)
+      const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id);
+      setProcessedStages(stages);
 
       // Set active stage to first stage if none selected
       if (!activeStageId && stages.length > 0) {
-        setActiveStageId(stages[0].id)
+        setActiveStageId(stages[0].id);
       }
     } else {
-      setProcessedStages([])
-      setActiveStageId(null)
+      setProcessedStages([]);
+      setActiveStageId(null);
     }
-  }, [interviewStages, interviews, selectedJobPosition])
+  }, [interviewStages, interviews, selectedJobPosition]);
 
   useEffect(() => {
     if (selectedInstitution) {
-      fetchData()
+      fetchData();
     }
-  }, [selectedInstitution])
+  }, [selectedInstitution]);
 
   // Stage management functions
   const updateStageFormData = (field: string, value: any) => {
-    setStageFormData((prev) => ({ ...prev, [field]: value }))
+    setStageFormData((prev) => ({...prev, [field]: value}));
     if (stageErrors[field]) {
-      setStageErrors((prev: any) => ({ ...prev, [field]: undefined }))
+      setStageErrors((prev: any) => ({...prev, [field]: undefined}));
     }
-  }
+  };
 
   const handleCreateStage = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedInstitution) {
-      toast.error("Missing organization information")
-      return
+      toast.error("Missing organization information");
+      return;
     }
 
     if (!selectedJobPosition) {
-      toast.error("Please select a job position/title first")
-      return
+      toast.error("Please select a job position/title first");
+      return;
     }
 
-    const newStageErrors: any = {}
+    const newStageErrors: any = {};
     if (!stageFormData.name.trim()) {
-      newStageErrors.name = "Stage name is required"
+      newStageErrors.name = "Stage name is required";
     }
     if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-      newStageErrors.interviewers = "Please select at least one interviewer"
+      newStageErrors.interviewers = "Please select at least one interviewer";
     }
 
     if (Object.keys(newStageErrors).length > 0) {
-      setStageErrors(newStageErrors)
-      return
+      setStageErrors(newStageErrors);
+      return;
     }
 
-    setIsCreatingStage(true)
+    setIsCreatingStage(true);
 
     try {
       const stageDataWithJob = {
         ...stageFormData,
-        job_position_advert: selectedJobPosition.id
-      }
+        job_position_advert: selectedJobPosition.id,
+      };
 
       const newStage = await createInterviewStage({
         institutionId: selectedInstitution.id,
         stageData: stageDataWithJob,
-      })
+      });
 
       if (newStage) {
         setStageFormData({
           name: "",
           level: 1,
           interviewers: [],
-          job_position_advert: selectedJobPosition.id
-        })
-        setStageErrors({})
-        setIsCreateStageDialogOpen(false)
+          job_position_advert: selectedJobPosition.id,
+        });
+        setStageErrors({});
+        setIsCreateStageDialogOpen(false);
 
-        toast.success("Interview stage created successfully!")
-        await fetchData() // Refresh data
+        toast.success("Interview stage created successfully!");
+        await fetchData(); // Refresh data
       } else {
-        toast.error("Failed to create interview stage")
+        toast.error("Failed to create interview stage");
       }
     } catch (error) {
-      toast.error("Failed to create interview stage")
+      toast.error("Failed to create interview stage");
     } finally {
-      setIsCreatingStage(false)
+      setIsCreatingStage(false);
     }
-  }
+  };
 
   // Auto-fill the next level for new stage
   useEffect(() => {
     if (isCreateStageDialogOpen && processedStages.length > 0) {
-      const maxLevel = Math.max(...processedStages.map(stage => stage.level))
-      const nextLevel = maxLevel + 1
-      setStageFormData(prev => ({ ...prev, level: nextLevel }))
+      const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
+      const nextLevel = maxLevel + 1;
+      setStageFormData((prev) => ({...prev, level: nextLevel}));
     } else if (isCreateStageDialogOpen) {
-      setStageFormData(prev => ({ ...prev, level: 1 }))
+      setStageFormData((prev) => ({...prev, level: 1}));
     }
-  }, [isCreateStageDialogOpen, processedStages])
+  }, [isCreateStageDialogOpen, processedStages]);
 
   // Candidate management functions
   const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
     // Extract candidate ID from the key (format: "candidateId" or "candidateId-interviewId")
-    const candidateId = parseInt(candidateKey.split('-')[0])
+    const candidateId = parseInt(candidateKey.split("-")[0]);
 
     // Find the candidate to validate
-    const candidate = filteredCandidates.find(c => c.id === candidateId)
+    const candidate = filteredCandidates.find((c) => c.id === candidateId);
 
     if (checked) {
       if (!candidate) {
-        toast.error("Candidate not found")
-        return
+        toast.error("Candidate not found");
+        return;
       }
 
       // Check if candidate is rejected
       if (isCandidateRejected(candidate)) {
-        toast.error("Cannot select rejected or cancelled candidates")
-        return
+        toast.error("Cannot select rejected or cancelled candidates");
+        return;
       }
 
       // Check if candidate already has feedback and rating
       if (candidate.feedback && candidate.rating && candidate.rating > 0) {
-        toast.error("This candidate already has feedback and rating. Use individual actions to onboard or move them.")
-        return
+        toast.error(
+          "This candidate already has feedback and rating. Use individual actions to onboard or move them.",
+        );
+        return;
       }
 
       // Only allow selection if candidate needs feedback
       if (!canCandidateBeSelected(candidate)) {
-        toast.error("This candidate cannot be selected for bulk actions")
-        return
+        toast.error("This candidate cannot be selected for bulk actions");
+        return;
       }
 
-      setSelectedCandidates((prev) => [...prev, candidateId])
+      setSelectedCandidates((prev) => [...prev, candidateId]);
     } else {
-      setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId))
+      setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId));
     }
-  }
-
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       // Only select candidates who need feedback (don't have feedback and rating yet)
-      const candidatesNeedingFeedback = filteredCandidates.filter(candidate =>
-        canCandidateBeSelected(candidate)
-      )
+      const candidatesNeedingFeedback = filteredCandidates.filter((candidate) =>
+        canCandidateBeSelected(candidate),
+      );
 
       if (candidatesNeedingFeedback.length === 0) {
-        toast.info("No candidates need feedback. All candidates have already been reviewed.")
-        return
+        toast.info("No candidates need feedback. All candidates have already been reviewed.");
+        return;
       }
 
       // Select only candidates who need feedback
-      const candidateIds = candidatesNeedingFeedback.map(candidate => candidate.id)
-      setSelectedCandidates(candidateIds)
+      const candidateIds = candidatesNeedingFeedback.map((candidate) => candidate.id);
+      setSelectedCandidates(candidateIds);
 
-      const alreadyReviewed = filteredCandidates.length - candidatesNeedingFeedback.length
+      const alreadyReviewed = filteredCandidates.length - candidatesNeedingFeedback.length;
       if (alreadyReviewed > 0) {
-        toast.info(`Selected ${candidatesNeedingFeedback.length} candidates needing feedback. ${alreadyReviewed} candidates already reviewed.`)
+        toast.info(
+          `Selected ${candidatesNeedingFeedback.length} candidates needing feedback. ${alreadyReviewed} candidates already reviewed.`,
+        );
       } else {
-        toast.success(`Selected ${candidatesNeedingFeedback.length} candidates for feedback.`)
+        toast.success(`Selected ${candidatesNeedingFeedback.length} candidates for feedback.`);
       }
     } else {
-      setSelectedCandidates([])
+      setSelectedCandidates([]);
     }
-  }
+  };
 
   const handleUpdateFeedback = async (feedback: string, rating: number) => {
-    if (!selectedCandidate) return
+    if (!selectedCandidate) return;
 
     try {
       const interviewId = selectedCandidate.interview_id;
 
       if (!interviewId) {
-        throw new Error('No interview found for this candidate');
+        throw new Error("No interview found for this candidate");
       }
 
       // Only update feedback and rating, keep status as is (should remain "scheduled")
@@ -1159,106 +1169,106 @@ export default function JobSpecificInterviewPipeline() {
         feedback: feedback,
         rating: rating,
         // DO NOT change status - it should remain "scheduled" until onboarded
-      }
+      };
 
       const result = await updateInterview({
         interviewId: interviewId,
-        interviewData: interviewData
+        interviewData: interviewData,
       });
 
       if (!result) {
-        throw new Error('Failed to update interview feedback');
+        throw new Error("Failed to update interview feedback");
       }
 
       // Update local state
-      setInterviews(prev =>
-        prev.map(interview => {
+      setInterviews((prev) =>
+        prev.map((interview) => {
           if (interview.id === interviewId) {
             return {
               ...interview,
               feedback: result.feedback,
               rating: result.rating,
               // Keep the original status, don't change it
-              status: interview.status
-            }
+              status: interview.status,
+            };
           }
-          return interview
-        })
-      )
+          return interview;
+        }),
+      );
 
-      setSelectedCandidate(prev => {
-        if (!prev || prev.interview_id !== interviewId) return prev
+      setSelectedCandidate((prev) => {
+        if (!prev || prev.interview_id !== interviewId) return prev;
         return {
           ...prev,
           feedback: result.feedback || undefined,
           rating: result.rating || undefined,
           // Keep the original status
-          status: prev.status
-        }
-      })
+          status: prev.status,
+        };
+      });
 
-      await fetchData() // Refresh data
+      await fetchData(); // Refresh data
     } catch (error) {
-      throw error
+      throw error;
     }
-  }
+  };
 
   const rejectCandidate = async (candidateId: number) => {
     try {
-      const candidate = filteredCandidates.find(c => c.id === candidateId);
+      const candidate = filteredCandidates.find((c) => c.id === candidateId);
 
       if (!candidate || !candidate.interview_id) {
         throw new Error(`No interview found for candidate ${candidateId}`);
       }
 
       const interviewData = {
-        status: 'cancelled'
+        status: "cancelled",
       };
 
       const result = await updateInterview({
         interviewId: candidate.interview_id,
-        interviewData: interviewData
+        interviewData: interviewData,
       });
 
       if (!result) {
-        throw new Error('Failed to reject candidate');
+        throw new Error("Failed to reject candidate");
       }
-      return { success: true, data: result };
+      return {success: true, data: result};
     } catch (error) {
       throw error;
     }
-  }
+  };
 
   const scheduleInterviewsForNextStage = async (
     candidates: InterviewCandidate[],
-    scheduleData: InterviewScheduleData
+    scheduleData: InterviewScheduleData,
   ) => {
     if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
-      throw new Error('Missing institution, next stage, or job position/title data');
+      throw new Error("Missing institution, next stage, or job position/title data");
     }
 
     try {
       const interviewPromises = candidates.map(async (candidate) => {
         // Extract time from datetime-local input
-        let interviewTime = "10:00:00" // Default fallback
-        let interviewDate = scheduleData.interview_date
+        let interviewTime = "10:00:00"; // Default fallback
+        let interviewDate = scheduleData.interview_date;
 
         if (scheduleData.interview_date) {
           try {
-            const dateTime = new Date(scheduleData.interview_date)
+            const dateTime = new Date(scheduleData.interview_date);
             if (!isNaN(dateTime.getTime())) {
-              const hours = dateTime.getHours().toString().padStart(2, '0')
-              const minutes = dateTime.getMinutes().toString().padStart(2, '0')
-              interviewTime = `${hours}:${minutes}:00`
-              interviewDate = dateTime.toISOString()
+              const hours = dateTime.getHours().toString().padStart(2, "0");
+              const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+              interviewTime = `${hours}:${minutes}:00`;
+              interviewDate = dateTime.toISOString();
             }
           } catch (error) {
-            console.error('Error parsing interview date:', error)
+            console.error("Error parsing interview date:", error);
           }
         }
 
-        const location = (scheduleData.location || "").trim() || "To be determined"
-        const interview_type = scheduleData.interview_type || "online"
+        const location = (scheduleData.location || "").trim() || "To be determined";
+        const interview_type = scheduleData.interview_type || "online";
 
         const createData = {
           job_position_application: candidate.id,
@@ -1278,25 +1288,29 @@ export default function JobSpecificInterviewPipeline() {
             institutionId: selectedInstitution.id,
             interviewData: createData,
           });
-          return result
+          return result;
         } catch (apiError) {
-          console.error('Failed to create interview:', apiError)
-          return null
+          console.error("Failed to create interview:", apiError);
+          return null;
         }
       });
 
       const results = await Promise.all(interviewPromises);
-      const successCount = results.filter(result => result !== null).length;
+      const successCount = results.filter((result) => result !== null).length;
 
       if (successCount === 0) {
-        throw new Error('Failed to schedule any interviews');
+        throw new Error("Failed to schedule any interviews");
       }
 
-      return { successCount, totalCount: candidates.length, failureCount: results.length - successCount };
+      return {
+        successCount,
+        totalCount: candidates.length,
+        failureCount: results.length - successCount,
+      };
     } catch (error) {
       throw error;
     }
-  }
+  };
 
   // const moveToNextStage = async (candidateId: number) => {
   //   try {
@@ -1327,68 +1341,76 @@ export default function JobSpecificInterviewPipeline() {
 
   const moveToNextStage = async (candidateId: number) => {
     try {
-      const candidate = filteredCandidates.find(c => c.id === candidateId);
+      const candidate = filteredCandidates.find((c) => c.id === candidateId);
 
       if (!candidate || !candidate.interview_id) {
         throw new Error(`No interview found for candidate ${candidateId}`);
       }
 
-      return { success: true, data: { message: 'Ready to schedule next stage' } };
+      return {success: true, data: {message: "Ready to schedule next stage"}};
     } catch (error) {
       throw error;
     }
-  }
+  };
   const handleScheduleAndMove = async (scheduleData: InterviewScheduleData) => {
-    setIsProcessingProgression(true)
+    setIsProcessingProgression(true);
 
     try {
       // Step 1: Schedule interviews for next stage
-      const scheduleResult = await scheduleInterviewsForNextStage(candidatesToSchedule, scheduleData)
+      const scheduleResult = await scheduleInterviewsForNextStage(
+        candidatesToSchedule,
+        scheduleData,
+      );
 
       if (scheduleResult.successCount > 0) {
         // We don't need to update the current interviews' status
         // They should remain "scheduled" until the candidate is onboarded
         // Only the onboarding process should change status to "completed"
 
-        toast.success(`Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`)
+        toast.success(
+          `Successfully scheduled interviews and moved ${candidatesToSchedule.length} candidates to ${nextStageForActive?.name}`,
+        );
 
-        setSelectedCandidates([])
-        setIsSchedulingDialogOpen(false)
-        setCandidatesToSchedule([])
+        setSelectedCandidates([]);
+        setIsSchedulingDialogOpen(false);
+        setCandidatesToSchedule([]);
 
-        await fetchData()
+        await fetchData();
       } else {
-        toast.error('Failed to schedule interviews')
+        toast.error("Failed to schedule interviews");
       }
     } catch (error) {
-      toast.error('Failed to schedule interviews and move candidates')
+      toast.error("Failed to schedule interviews and move candidates");
     } finally {
-      setIsProcessingProgression(false)
+      setIsProcessingProgression(false);
     }
-  }
+  };
   const handleBulkOnboard = async () => {
     // Filter candidates who have feedback and rating (don't require completed status)
-    const eligibleCandidates = filteredCandidates.filter(candidate =>
-      selectedCandidates.includes(candidate.id) &&
-      candidate.feedback &&
-      candidate.rating &&
-      candidate.rating > 0 &&
-      candidate.status !== 'rejected' &&
-      candidate.status !== 'cancelled'
-    )
+    const eligibleCandidates = filteredCandidates.filter(
+      (candidate) =>
+        selectedCandidates.includes(candidate.id) &&
+        candidate.feedback &&
+        candidate.rating &&
+        candidate.rating > 0 &&
+        candidate.status !== "rejected" &&
+        candidate.status !== "cancelled",
+    );
 
     if (eligibleCandidates.length === 0) {
-      toast.error('No candidates eligible for onboarding. Candidates need feedback and rating first.')
-      return
+      toast.error(
+        "No candidates eligible for onboarding. Candidates need feedback and rating first.",
+      );
+      return;
     }
 
     try {
-      const eligibleIds = eligibleCandidates.map(c => c.id)
-      const result = await bulkCreateOnBoarding({ applicationIds: eligibleIds })
+      const eligibleIds = eligibleCandidates.map((c) => c.id);
+      const result = await bulkCreateOnBoarding({applicationIds: eligibleIds});
 
       if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+        const createdCount = result.summary?.created_count || result.created?.length || 0;
+        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0;
 
         // Update interview statuses to completed for successfully onboarded candidates
         if (createdCount > 0) {
@@ -1397,148 +1419,155 @@ export default function JobSpecificInterviewPipeline() {
               try {
                 await updateInterview({
                   interviewId: candidate.interview_id,
-                  interviewData: { status: 'completed' }
-                })
+                  interviewData: {status: "completed"},
+                });
               } catch (error) {
-                console.error(`Failed to update status for candidate ${candidate.id}:`, error)
+                console.error(`Failed to update status for candidate ${candidate.id}:`, error);
               }
             }
-          })
+          });
 
           // Execute all status updates
-          await Promise.allSettled(updatePromises)
+          await Promise.allSettled(updatePromises);
         }
 
         if (createdCount > 0 && skippedCount === 0) {
-          toast.success(`Successfully onboarded ${createdCount} candidate(s)`)
-          setSelectedCandidates([])
-          await fetchData()
+          toast.success(`Successfully onboarded ${createdCount} candidate(s)`);
+          setSelectedCandidates([]);
+          await fetchData();
         } else if (createdCount > 0 && skippedCount > 0) {
-          toast.warning(`${createdCount} candidates onboarded successfully, ${skippedCount} were already onboarded`)
-          setSelectedCandidates([])
-          await fetchData()
+          toast.warning(
+            `${createdCount} candidates onboarded successfully, ${skippedCount} were already onboarded`,
+          );
+          setSelectedCandidates([]);
+          await fetchData();
         } else if (createdCount === 0 && skippedCount > 0) {
-          toast.warning(`All ${skippedCount} selected candidate(s) are already onboarded`)
-          setSelectedCandidates([])
-          await fetchData()
+          toast.warning(`All ${skippedCount} selected candidate(s) are already onboarded`);
+          setSelectedCandidates([]);
+          await fetchData();
         } else {
-          toast.error('No candidates were processed successfully')
+          toast.error("No candidates were processed successfully");
         }
       } else {
-        toast.error('Failed to onboard candidates - API returned no response')
+        toast.error("Failed to onboard candidates - API returned no response");
       }
     } catch (error) {
-      toast.error(`Failed to onboard candidates: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(
+        `Failed to onboard candidates: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
-  }
+  };
 
-  const handleIndividualOnboard = async (candidate: InterviewCandidate | InterviewCandidateWithHistory): Promise<OnboardResult> => {
+  const handleIndividualOnboard = async (
+    candidate: InterviewCandidate | InterviewCandidateWithHistory,
+  ): Promise<OnboardResult> => {
     // Check if candidate has feedback and rating but don't require completed status
     if (!candidate.feedback || !candidate.rating || candidate.rating <= 0) {
       return {
         success: false,
-        message: 'Candidate must have feedback and rating to be onboarded'
-      }
+        message: "Candidate must have feedback and rating to be onboarded",
+      };
     }
 
     // Don't allow onboarding rejected candidates
-    if (candidate.status === 'rejected' || candidate.status === 'cancelled') {
+    if (candidate.status === "rejected" || candidate.status === "cancelled") {
       return {
         success: false,
-        message: 'Cannot onboard rejected or cancelled candidates'
-      }
+        message: "Cannot onboard rejected or cancelled candidates",
+      };
     }
 
     try {
-      const result = await bulkCreateOnBoarding({ applicationIds: [candidate.id] })
+      const result = await bulkCreateOnBoarding({applicationIds: [candidate.id]});
 
       if (result) {
-        const createdCount = result.summary?.created_count || result.created?.length || 0
-        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0
+        const createdCount = result.summary?.created_count || result.created?.length || 0;
+        const skippedCount = result.summary?.skipped_count || result.skipped?.length || 0;
 
         if (createdCount > 0) {
           // Update the interview status to completed after successful onboarding
           try {
-            const candidateWithHistory = candidate as InterviewCandidateWithHistory
-            const interviewId = candidateWithHistory.interview_id ||
-              (candidate as InterviewCandidate).interview_id
+            const candidateWithHistory = candidate as InterviewCandidateWithHistory;
+            const interviewId =
+              candidateWithHistory.interview_id || (candidate as InterviewCandidate).interview_id;
 
             if (interviewId) {
               await updateInterview({
                 interviewId: interviewId,
-                interviewData: { status: 'completed' }
-              })
+                interviewData: {status: "completed"},
+              });
             }
           } catch (statusUpdateError) {
-            console.error('Failed to update interview status after onboarding:', statusUpdateError)
+            console.error("Failed to update interview status after onboarding:", statusUpdateError);
             // Don't fail the onboarding if status update fails
           }
 
-          await fetchData()
-          return { success: true }
+          await fetchData();
+          return {success: true};
         } else if (skippedCount > 0) {
-          return { success: true, alreadyOnboarded: true, message: 'Candidate is already onboarded' }
+          return {success: true, alreadyOnboarded: true, message: "Candidate is already onboarded"};
         } else {
-          return { success: false, message: 'No candidates were processed successfully' }
+          return {success: false, message: "No candidates were processed successfully"};
         }
       } else {
-        return { success: false, message: 'API returned no response' }
+        return {success: false, message: "API returned no response"};
       }
     } catch (error) {
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      }
+        message: error instanceof Error ? error.message : "Unknown error occurred",
+      };
     }
-  }
+  };
 
   // UI Event Handlers
   const handleBack = () => {
-    router.push('/job-interviews')
-  }
+    router.push("/job-interviews");
+  };
 
   const openFeedbackDialog = (candidate: InterviewCandidate) => {
-    setSelectedCandidate(candidate)
-    setIsFeedbackDialogOpen(true)
-  }
+    setSelectedCandidate(candidate);
+    setIsFeedbackDialogOpen(true);
+  };
 
   const handleIndividualScheduleAndMove = () => {
-    if (!selectedCandidate) return
-    setCandidatesToSchedule([selectedCandidate])
-    setIsFeedbackDialogOpen(false)
-    setIsSchedulingDialogOpen(true)
-  }
+    if (!selectedCandidate) return;
+    setCandidatesToSchedule([selectedCandidate]);
+    setIsFeedbackDialogOpen(false);
+    setIsSchedulingDialogOpen(true);
+  };
 
   const handleBulkScheduleAndMove = () => {
-    const eligibleCandidates = filteredCandidates.filter(candidate =>
-      selectedCandidates.includes(candidate.id) &&
-      candidate.feedback &&
-      candidate.rating &&
-      candidate.rating > 0 &&
-      candidate.status === 'completed'
-    )
+    const eligibleCandidates = filteredCandidates.filter(
+      (candidate) =>
+        selectedCandidates.includes(candidate.id) &&
+        candidate.feedback &&
+        candidate.rating &&
+        candidate.rating > 0 &&
+        candidate.status === "completed",
+    );
 
     if (eligibleCandidates.length === 0) {
-      toast.error('No candidates eligible for moving. Candidates need feedback and rating first.')
-      return
+      toast.error("No candidates eligible for moving. Candidates need feedback and rating first.");
+      return;
     }
 
     if (!nextStageForActive) {
-      toast.error('No next stage available')
-      return
+      toast.error("No next stage available");
+      return;
     }
 
-    setCandidatesToSchedule(eligibleCandidates)
-    setIsSchedulingDialogOpen(true)
-  }
+    setCandidatesToSchedule(eligibleCandidates);
+    setIsSchedulingDialogOpen(true);
+  };
 
   const handleJobPositionChange = (jobPositionId: string) => {
-    const jobPosition = availableJobPositions.find(job => job.id.toString() === jobPositionId)
-    setSelectedJobPosition(jobPosition || null)
-    setActiveStageId(null)
-    setSelectedCandidates([])
-    setSearchTerm('')
-  }
+    const jobPosition = availableJobPositions.find((job) => job.id.toString() === jobPositionId);
+    setSelectedJobPosition(jobPosition || null);
+    setActiveStageId(null);
+    setSelectedCandidates([]);
+    setSearchTerm("");
+  };
 
   // Loading and error states
   if (loading) {
@@ -1553,7 +1582,7 @@ export default function JobSpecificInterviewPipeline() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -1571,7 +1600,7 @@ export default function JobSpecificInterviewPipeline() {
         <Card>
           <CardContent className="p-6">
             <div className="space-y-4">
-              {[1, 2, 3, 4].map(i => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center space-x-4">
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="space-y-2 flex-1">
@@ -1586,7 +1615,7 @@ export default function JobSpecificInterviewPipeline() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -1609,38 +1638,38 @@ export default function JobSpecificInterviewPipeline() {
           </div>
         </Card>
       </div>
-    )
+    );
   }
 
   const CandidateHistoryDialog = ({
     candidate,
     isOpen,
     onClose,
-    stages
+    stages,
   }: {
-    candidate: InterviewCandidateWithHistory | null
-    isOpen: boolean
-    onClose: () => void
-    stages: ProcessedStage[]
+    candidate: InterviewCandidateWithHistory | null;
+    isOpen: boolean;
+    onClose: () => void;
+    stages: ProcessedStage[];
   }) => {
-    if (!candidate) return null
+    if (!candidate) return null;
 
     const getStageStatusIcon = (entry: InterviewHistoryEntry) => {
       if (entry.feedback && entry.rating) {
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       } else if (entry.feedback) {
-        return <Clock className="h-4 w-4 text-yellow-600" />
+        return <Clock className="h-4 w-4 text-yellow-600" />;
       } else {
-        return <XCircle className="h-4 w-4 text-gray-400" />
+        return <XCircle className="h-4 w-4 text-gray-400" />;
       }
-    }
+    };
 
     const getRatingColor = (rating: number) => {
-      if (rating >= 8) return "text-green-600 bg-green-100"
-      if (rating >= 6) return "text-yellow-600 bg-yellow-100"
-      if (rating >= 4) return "text-myOrange bg-orange-100"
-      return "text-red-600 bg-red-100"
-    }
+      if (rating >= 8) return "text-green-600 bg-green-100";
+      if (rating >= 6) return "text-yellow-600 bg-yellow-100";
+      if (rating >= 4) return "text-myOrange bg-orange-100";
+      return "text-red-600 bg-red-100";
+    };
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -1661,7 +1690,9 @@ export default function JobSpecificInterviewPipeline() {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{candidate.current_stage_level}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {candidate.current_stage_level}
+                    </div>
                     <div className="text-sm text-gray-600">Current Stage Level</div>
                   </div>
                 </CardContent>
@@ -1669,7 +1700,9 @@ export default function JobSpecificInterviewPipeline() {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{candidate.overall_rating}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {candidate.overall_rating}
+                    </div>
                     <div className="text-sm text-gray-600">Overall Rating</div>
                   </div>
                 </CardContent>
@@ -1677,7 +1710,9 @@ export default function JobSpecificInterviewPipeline() {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{candidate.completion_rate}%</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {candidate.completion_rate}%
+                    </div>
                     <div className="text-sm text-gray-600">Completion Rate</div>
                   </div>
                 </CardContent>
@@ -1707,7 +1742,9 @@ export default function JobSpecificInterviewPipeline() {
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
-                    <span>{candidate.state}, {candidate.country}</span>
+                    <span>
+                      {candidate.state}, {candidate.country}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -1746,7 +1783,9 @@ export default function JobSpecificInterviewPipeline() {
                                 <div className="flex items-start justify-between mb-3">
                                   <div>
                                     <h4 className="font-semibold text-lg">{entry.stage_name}</h4>
-                                    <p className="text-sm text-gray-600">Level {entry.stage_level} • {entry.interviewer}</p>
+                                    <p className="text-sm text-gray-600">
+                                      Level {entry.stage_level} • {entry.interviewer}
+                                    </p>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     {entry.rating && (
@@ -1824,18 +1863,25 @@ export default function JobSpecificInterviewPipeline() {
                     <h4 className="font-medium mb-3">Stage Ratings</h4>
                     <div className="space-y-2">
                       {candidate.interview_history
-                        .filter(entry => entry.rating)
+                        .filter((entry) => entry.rating)
                         .map((entry, index) => (
                           <div key={index} className="flex items-center gap-3">
-                            <span className="text-sm min-w-0 flex-1 truncate">{entry.stage_name}</span>
+                            <span className="text-sm min-w-0 flex-1 truncate">
+                              {entry.stage_name}
+                            </span>
                             <div className="flex items-center gap-2">
                               <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full ${entry.rating! >= 8 ? 'bg-green-500' :
-                                    entry.rating! >= 6 ? 'bg-yellow-500' :
-                                      entry.rating! >= 4 ? 'bg-orange-500' : 'bg-red-500'
-                                    }`}
-                                  style={{ width: `${(entry.rating! / 10) * 100}%` }}
+                                  className={`h-full rounded-full ${
+                                    entry.rating! >= 8
+                                      ? "bg-green-500"
+                                      : entry.rating! >= 6
+                                        ? "bg-yellow-500"
+                                        : entry.rating! >= 4
+                                          ? "bg-orange-500"
+                                          : "bg-red-500"
+                                  }`}
+                                  style={{width: `${(entry.rating! / 10) * 100}%`}}
                                 />
                               </div>
                               <span className="text-sm font-medium w-8">{entry.rating}/10</span>
@@ -1856,12 +1902,12 @@ export default function JobSpecificInterviewPipeline() {
                       <div className="flex justify-between">
                         <span className="text-sm">Stages with Feedback</span>
                         <span className="font-medium">
-                          {candidate.interview_history.filter(h => h.feedback).length}
+                          {candidate.interview_history.filter((h) => h.feedback).length}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Average Rating</span>
-                        <span className="font-medium">{candidate.overall_rating || 'N/A'}</span>
+                        <span className="font-medium">{candidate.overall_rating || "N/A"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Completion Rate</span>
@@ -1879,30 +1925,36 @@ export default function JobSpecificInterviewPipeline() {
           </div>
         </DialogContent>
       </Dialog>
-    )
-  }
-
+    );
+  };
 
   // Calculate stats for selected job position
   const jobInterviews = selectedJobPosition
-    ? interviews.filter(i => i.job_position_application_details?.job_position_advert === selectedJobPosition.id)
-    : []
-  const totalInterviews = jobInterviews.length
-  const completedInterviews = jobInterviews.filter(i => i.status === 'completed').length
-  const scheduledInterviews = jobInterviews.filter(i => i.status === 'scheduled').length
-  const pendingFeedback = jobInterviews.filter(i => i.status === 'completed' && (!i.feedback || !i.rating)).length
-
+    ? interviews.filter(
+        (i) => i.job_position_application_details?.job_position_advert === selectedJobPosition.id,
+      )
+    : [];
+  const totalInterviews = jobInterviews.length;
+  const completedInterviews = jobInterviews.filter((i) => i.status === "completed").length;
+  const scheduledInterviews = jobInterviews.filter((i) => i.status === "scheduled").length;
+  const pendingFeedback = jobInterviews.filter(
+    (i) => i.status === "completed" && (!i.feedback || !i.rating),
+  ).length;
 
   return (
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
+          <Button
+            size="sm"
+            className="rounded-full aspect-square"
+            variant="outline"
+            onClick={handleBack}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-
             <h1 className="text-3xl font-bold text-gray-900">Job-Specific Interview Pipeline</h1>
             <p className="text-gray-600">
               Manage interview stages and candidates for specific job position/titles
@@ -1919,7 +1971,11 @@ export default function JobSpecificInterviewPipeline() {
             Select Job Position / Title
           </CardTitle>
           <p className="text-muted-foreground py-4 my-4 text-sm">
-            Organize and track candidates through multiple interview stages for each job position. Create custom interview stages, assign interviewers, manage candidate progression, provide feedback, and monitor the entire recruitment pipeline from initial screening to final selection. View comprehensive interview history and make data-driven hiring decisions.
+            Organize and track candidates through multiple interview stages for each job position.
+            Create custom interview stages, assign interviewers, manage candidate progression,
+            provide feedback, and monitor the entire recruitment pipeline from initial screening to
+            final selection. View comprehensive interview history and make data-driven hiring
+            decisions.
           </p>
         </CardHeader>
         <CardContent>
@@ -1977,20 +2033,21 @@ export default function JobSpecificInterviewPipeline() {
                         placeholder="e.g., Technical Interview, HR Round"
                         className={stageErrors.name ? "border-destructive" : ""}
                       />
-                      {stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
+                      {stageErrors.name && (
+                        <p className="text-sm text-destructive">{stageErrors.name}</p>
+                      )}
                     </div>
-
 
                     <div className="space-y-2">
                       <Label htmlFor="stage_interviewer">Interviewers *</Label>
                       <EmployeeSearchableSelect
-                        value={stageFormData.interviewers.map(id => id.toString())}
+                        value={stageFormData.interviewers.map((id) => id.toString())}
                         onValueChange={(values) => {
                           const numberValues = Array.isArray(values)
-                            ? values.map(v => Number(v))
-                            : [Number(values)]
-                          const uniqueValues = [...new Set(numberValues)]
-                          updateStageFormData("interviewers", uniqueValues)
+                            ? values.map((v) => Number(v))
+                            : [Number(values)];
+                          const uniqueValues = [...new Set(numberValues)];
+                          updateStageFormData("interviewers", uniqueValues);
                         }}
                         disabled={isCreatingStage}
                         placeholder="Search and select interviewers"
@@ -2001,7 +2058,6 @@ export default function JobSpecificInterviewPipeline() {
                       {stageErrors.interviewers && (
                         <p className="text-sm text-destructive">{stageErrors.interviewers}</p>
                       )}
-
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
@@ -2047,7 +2103,8 @@ export default function JobSpecificInterviewPipeline() {
               </p>
               {availableJobPositions.length === 0 && (
                 <p className="text-sm text-gray-500">
-                  No job position/titles /titles with interviews found. Schedule some interviews first.
+                  No job position/titles /titles with interviews found. Schedule some interviews
+                  first.
                 </p>
               )}
             </div>
@@ -2122,9 +2179,13 @@ export default function JobSpecificInterviewPipeline() {
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No Interview Stages</h3>
                   <p className="text-muted-foreground mb-4">
-                    Create interview stages for {selectedJobPosition.name} to start managing the pipeline
+                    Create interview stages for {selectedJobPosition.name} to start managing the
+                    pipeline
                   </p>
-                  <Button onClick={() => setIsCreateStageDialogOpen(true)} className="bg-orange-500 hover:bg-orange-600">
+                  <Button
+                    onClick={() => setIsCreateStageDialogOpen(true)}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Interview Stage
                   </Button>
@@ -2133,11 +2194,14 @@ export default function JobSpecificInterviewPipeline() {
             </Card>
           ) : (
             /* Main Pipeline Interface */
-            <Tabs value={viewMode} onValueChange={(value) => {
-              setViewMode(value as 'current' | 'history')
-              setSelectedCandidates([])
-              setSearchTerm('')
-            }}>
+            <Tabs
+              value={viewMode}
+              onValueChange={(value) => {
+                setViewMode(value as "current" | "history");
+                setSelectedCandidates([]);
+                setSearchTerm("");
+              }}
+            >
               <div className="flex items-center justify-between mb-4 mt-8">
                 <TabsList className="grid w-fit grid-cols-2">
                   <TabsTrigger value="current" className="flex items-center gap-2">
@@ -2167,14 +2231,15 @@ export default function JobSpecificInterviewPipeline() {
                           {processedStages.map((stage) => (
                             <div
                               key={stage.id}
-                              className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${activeStageId === stage.id
-                                ? 'bg-blue-50 border-l-blue-500 shadow-sm'
-                                : 'border-l-transparent hover:border-l-gray-300'
-                                }`}
+                              className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${
+                                activeStageId === stage.id
+                                  ? "bg-blue-50 border-l-blue-500 shadow-sm"
+                                  : "border-l-transparent hover:border-l-gray-300"
+                              }`}
                               onClick={() => {
-                                setActiveStageId(stage.id)
-                                setSelectedCandidates([])
-                                setSearchTerm('')
+                                setActiveStageId(stage.id);
+                                setSelectedCandidates([]);
+                                setSearchTerm("");
                               }}
                             >
                               <div className="flex items-center justify-between mb-2">
@@ -2189,8 +2254,11 @@ export default function JobSpecificInterviewPipeline() {
                                 </div>
                                 <Badge
                                   variant="secondary"
-                                  className={`font-bold ${stage.count > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                                    }`}
+                                  className={`font-bold ${
+                                    stage.count > 0
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-gray-100 text-gray-500"
+                                  }`}
                                 >
                                   {stage.count}
                                 </Badge>
@@ -2223,7 +2291,8 @@ export default function JobSpecificInterviewPipeline() {
                                 {activeStage.name} - Candidates
                               </CardTitle>
                               <p className="text-sm text-muted-foreground">
-                                Level {activeStage.level} • Interviewer: {activeStage.interviewer} • {filteredCandidates.length} candidates
+                                Level {activeStage.level} • Interviewer: {activeStage.interviewer} •{" "}
+                                {filteredCandidates.length} candidates
                               </p>
                             </div>
                             {nextStageForActive && (
@@ -2257,14 +2326,21 @@ export default function JobSpecificInterviewPipeline() {
                                     {selectedCandidates.length} candidate(s) selected
                                   </span>
                                   {/* Show warning if selected candidates need feedback first */}
-                                  {selectedCandidates.some(id => {
-                                    const candidate = filteredCandidates.find(c => c.id === id)
-                                    return candidate && !(candidate.feedback && candidate.rating && candidate.rating > 0)
+                                  {selectedCandidates.some((id) => {
+                                    const candidate = filteredCandidates.find((c) => c.id === id);
+                                    return (
+                                      candidate &&
+                                      !(
+                                        candidate.feedback &&
+                                        candidate.rating &&
+                                        candidate.rating > 0
+                                      )
+                                    );
                                   }) && (
-                                      <span className="text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full">
-                                        Selected candidates need feedback & rating first
-                                      </span>
-                                    )}
+                                    <span className="text-xs text-myOrange bg-orange-100 px-2 py-1 rounded-full">
+                                      Selected candidates need feedback & rating first
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Button
@@ -2281,9 +2357,11 @@ export default function JobSpecificInterviewPipeline() {
                                       size="sm"
                                       variant="outline"
                                       onClick={() => {
-                                        const eligibleIds = candidatesEligibleForOnboarding.map(c => c.id)
-                                        setSelectedCandidates(eligibleIds)
-                                        handleBulkOnboard()
+                                        const eligibleIds = candidatesEligibleForOnboarding.map(
+                                          (c) => c.id,
+                                        );
+                                        setSelectedCandidates(eligibleIds);
+                                        handleBulkOnboard();
                                       }}
                                       className="text-purple-600 border-purple-200 hover:bg-purple-50"
                                       title={`Onboard ${candidatesEligibleForOnboarding.length} eligible candidates`}
@@ -2297,24 +2375,28 @@ export default function JobSpecificInterviewPipeline() {
                                     <Button
                                       size="sm"
                                       onClick={() => {
-                                        const eligibleIds = candidatesEligibleForMoving.map(c => c.id)
-                                        setSelectedCandidates(eligibleIds)
-                                        handleBulkScheduleAndMove()
+                                        const eligibleIds = candidatesEligibleForMoving.map(
+                                          (c) => c.id,
+                                        );
+                                        setSelectedCandidates(eligibleIds);
+                                        handleBulkScheduleAndMove();
                                       }}
                                       className="bg-green-600 hover:bg-green-700"
                                       title={`Move ${candidatesEligibleForMoving.length} candidates with feedback to ${nextStageForActive.name}`}
                                     >
                                       <Calendar className="h-4 w-4 mr-2" />
-                                      Move to {nextStageForActive.name} ({candidatesEligibleForMoving.length})
+                                      Move to {nextStageForActive.name} (
+                                      {candidatesEligibleForMoving.length})
                                     </Button>
                                   )}
 
                                   {/* Show message when no candidates are eligible for actions */}
-                                  {candidatesEligibleForOnboarding.length === 0 && candidatesEligibleForMoving.length === 0 && (
-                                    <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-                                      Please provide feedback & rating first
-                                    </div>
-                                  )}
+                                  {candidatesEligibleForOnboarding.length === 0 &&
+                                    candidatesEligibleForMoving.length === 0 && (
+                                      <div className="text-xs text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                                        Please provide feedback & rating first
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             </div>
@@ -2338,11 +2420,16 @@ export default function JobSpecificInterviewPipeline() {
                                     <TableHead className="w-12">
                                       <Checkbox
                                         checked={(() => {
-                                          const candidatesNeedingFeedback = filteredCandidates.filter(candidate =>
-                                            canCandidateBeSelected(candidate)
-                                          )
-                                          return candidatesNeedingFeedback.length > 0 &&
-                                            candidatesNeedingFeedback.every(c => selectedCandidates.includes(c.id))
+                                          const candidatesNeedingFeedback =
+                                            filteredCandidates.filter((candidate) =>
+                                              canCandidateBeSelected(candidate),
+                                            );
+                                          return (
+                                            candidatesNeedingFeedback.length > 0 &&
+                                            candidatesNeedingFeedback.every((c) =>
+                                              selectedCandidates.includes(c.id),
+                                            )
+                                          );
                                         })()}
                                         onCheckedChange={handleSelectAll}
                                         title="Select candidates who need feedback"
@@ -2363,15 +2450,21 @@ export default function JobSpecificInterviewPipeline() {
                                     <TableRow
                                       key={idx}
                                       className={
-                                        candidate.status === 'rejected' || candidate.status === 'cancelled'
-                                          ? 'opacity-60 bg-red-50'
-                                          : ''
+                                        candidate.status === "rejected" ||
+                                        candidate.status === "cancelled"
+                                          ? "opacity-60 bg-red-50"
+                                          : ""
                                       }
                                     >
                                       <TableCell>
                                         <Checkbox
                                           checked={selectedCandidates.includes(candidate.id)}
-                                          onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
+                                          onCheckedChange={(checked) =>
+                                            handleSelectCandidate(
+                                              candidate.id.toString(),
+                                              checked as boolean,
+                                            )
+                                          }
                                           disabled={!canCandidateBeSelected(candidate)}
                                           title={
                                             isCandidateRejected(candidate)
@@ -2382,14 +2475,20 @@ export default function JobSpecificInterviewPipeline() {
                                                   ? "Already has feedback and rating - use individual actions"
                                                   : "Cannot be selected"
                                           }
-                                          className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
+                                          className={
+                                            !canCandidateBeSelected(candidate) ? "opacity-50" : ""
+                                          }
                                         />
                                       </TableCell>
 
                                       <TableCell>
                                         <div className="space-y-1">
-                                          <div className="font-medium">{candidate.applicant_name}</div>
-                                          <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                          <div className="font-medium">
+                                            {candidate.applicant_name}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground capitalize">
+                                            {candidate.gender}
+                                          </div>
                                         </div>
                                       </TableCell>
 
@@ -2411,11 +2510,16 @@ export default function JobSpecificInterviewPipeline() {
                                       <TableCell>
                                         <div className="max-w-xs">
                                           {candidate.feedback ? (
-                                            <p className="text-sm text-gray-600 truncate" title={candidate.feedback}>
+                                            <p
+                                              className="text-sm text-gray-600 truncate"
+                                              title={candidate.feedback}
+                                            >
                                               {candidate.feedback}
                                             </p>
                                           ) : (
-                                            <p className="text-sm text-gray-400 italic">No feedback yet</p>
+                                            <p className="text-sm text-gray-400 italic">
+                                              No feedback yet
+                                            </p>
                                           )}
                                         </div>
                                       </TableCell>
@@ -2425,7 +2529,9 @@ export default function JobSpecificInterviewPipeline() {
                                           {candidate.rating ? (
                                             <div className="flex items-center gap-1">
                                               <Star className="h-4 w-4 text-yellow-500" />
-                                              <span className="font-semibold">{candidate.rating}/10</span>
+                                              <span className="font-semibold">
+                                                {candidate.rating}/10
+                                              </span>
                                             </div>
                                           ) : (
                                             <span className="text-sm text-gray-400">-</span>
@@ -2436,50 +2542,72 @@ export default function JobSpecificInterviewPipeline() {
                                       <TableCell>
                                         <div className="flex items-center">
                                           {(() => {
-                                            const status = candidate.status?.toLowerCase() || 'unknown';
+                                            const status =
+                                              candidate.status?.toLowerCase() || "unknown";
 
                                             switch (status) {
-                                              case 'scheduled':
+                                              case "scheduled":
                                                 return (
-                                                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-blue-100 text-blue-700"
+                                                  >
                                                     <Clock className="h-3 w-3 mr-1" />
                                                     Scheduled
                                                   </Badge>
                                                 );
-                                              case 'completed':
+                                              case "completed":
                                                 return (
-                                                  <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-green-100 text-green-700"
+                                                  >
                                                     <CheckCircle className="h-3 w-3 mr-1" />
                                                     Onboarded
                                                   </Badge>
                                                 );
-                                              case 'cancelled':
-                                              case 'rejected':
+                                              case "cancelled":
+                                              case "rejected":
                                                 return (
-                                                  <Badge variant="secondary" className="bg-red-100 text-red-700">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-red-100 text-red-700"
+                                                  >
                                                     <XCircle className="h-3 w-3 mr-1" />
-                                                    {status === 'cancelled' ? 'Cancelled' : 'Rejected'}
+                                                    {status === "cancelled"
+                                                      ? "Cancelled"
+                                                      : "Rejected"}
                                                   </Badge>
                                                 );
-                                              case 'rescheduled':
+                                              case "rescheduled":
                                                 return (
-                                                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-yellow-100 text-yellow-700"
+                                                  >
                                                     <Calendar className="h-3 w-3 mr-1" />
                                                     Rescheduled
                                                   </Badge>
                                                 );
-                                              case 'no_show':
+                                              case "no_show":
                                                 return (
-                                                  <Badge variant="secondary" className="bg-gray-100 text-gray-700">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-gray-100 text-gray-700"
+                                                  >
                                                     <XCircle className="h-3 w-3 mr-1" />
                                                     No Show
                                                   </Badge>
                                                 );
                                               default:
                                                 return (
-                                                  <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+                                                  <Badge
+                                                    variant="secondary"
+                                                    className="bg-gray-100 text-gray-500"
+                                                  >
                                                     <Clock className="h-3 w-3 mr-1" />
-                                                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                                                    {status.charAt(0).toUpperCase() +
+                                                      status.slice(1)}
                                                   </Badge>
                                                 );
                                             }
@@ -2490,7 +2618,11 @@ export default function JobSpecificInterviewPipeline() {
                                       <TableCell>
                                         <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                            >
                                               <MoreVertical className="h-4 w-4" />
                                             </Button>
                                           </DropdownMenuTrigger>
@@ -2503,7 +2635,9 @@ export default function JobSpecificInterviewPipeline() {
                                                   <XCircle className="h-4 w-4 mr-2" />
                                                   Candidate Rejected
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
+                                                <DropdownMenuItem
+                                                  onClick={() => openFeedbackDialog(candidate)}
+                                                >
                                                   <Eye className="h-4 w-4 mr-2" />
                                                   View Details
                                                 </DropdownMenuItem>
@@ -2511,7 +2645,9 @@ export default function JobSpecificInterviewPipeline() {
                                             ) : (
                                               // For active candidates, show full menu
                                               <>
-                                                <DropdownMenuItem onClick={() => openFeedbackDialog(candidate)}>
+                                                <DropdownMenuItem
+                                                  onClick={() => openFeedbackDialog(candidate)}
+                                                >
                                                   <Edit className="h-4 w-4 mr-2" />
                                                   Provide Feedback
                                                 </DropdownMenuItem>
@@ -2519,71 +2655,95 @@ export default function JobSpecificInterviewPipeline() {
                                                 <DropdownMenuSeparator />
 
                                                 {/* Only show onboard option if candidate has feedback and rating and isn't already onboarded */}
-                                                {canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
-                                                  <DropdownMenuItem
-                                                    onClick={async () => {
-                                                      try {
-                                                        const result = await handleIndividualOnboard(candidate);
+                                                {canCandidateBeOnboarded(candidate) &&
+                                                  !isCandidateAlreadyOnboarded(candidate) && (
+                                                    <DropdownMenuItem
+                                                      onClick={async () => {
+                                                        try {
+                                                          const result =
+                                                            await handleIndividualOnboard(
+                                                              candidate,
+                                                            );
 
-                                                        if (result.success) {
-                                                          if (result.alreadyOnboarded) {
-                                                            toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                                          if (result.success) {
+                                                            if (result.alreadyOnboarded) {
+                                                              toast.warning(
+                                                                `${candidate.applicant_name} is already onboarded`,
+                                                              );
+                                                            } else {
+                                                              toast.success(
+                                                                `${candidate.applicant_name} onboarded successfully`,
+                                                              );
+                                                            }
                                                           } else {
-                                                            toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                                            toast.error(
+                                                              `Failed to onboard ${candidate.applicant_name}: ${result.message}`,
+                                                            );
                                                           }
-                                                        } else {
-                                                          toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
+                                                        } catch (error) {
+                                                          toast.error(
+                                                            `Unexpected error occurred while onboarding ${candidate.applicant_name}`,
+                                                          );
                                                         }
-                                                      } catch (error) {
-                                                        toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
-                                                      }
-                                                    }}
-                                                    className="text-purple-600"
-                                                  >
-                                                    <Users className="h-4 w-4 mr-2" />
-                                                    Onboard Candidate
-                                                  </DropdownMenuItem>
-                                                )}
+                                                      }}
+                                                      className="text-purple-600"
+                                                    >
+                                                      <Users className="h-4 w-4 mr-2" />
+                                                      Onboard Candidate
+                                                    </DropdownMenuItem>
+                                                  )}
 
                                                 {/* Show message if candidate is already onboarded */}
                                                 {isCandidateAlreadyOnboarded(candidate) && (
-                                                  <DropdownMenuItem disabled className="text-gray-400">
+                                                  <DropdownMenuItem
+                                                    disabled
+                                                    className="text-gray-400"
+                                                  >
                                                     <UserCheck className="h-4 w-4 mr-2" />
                                                     Already Onboarded
                                                   </DropdownMenuItem>
                                                 )}
 
                                                 {/* Show message if candidate needs feedback first */}
-                                                {!canCandidateBeOnboarded(candidate) && !isCandidateAlreadyOnboarded(candidate) && (
-                                                  <DropdownMenuItem disabled className="text-gray-400">
-                                                    <Clock className="h-4 w-4 mr-2" />
-                                                    Needs Feedback & Rating First
-                                                  </DropdownMenuItem>
-                                                )}
+                                                {!canCandidateBeOnboarded(candidate) &&
+                                                  !isCandidateAlreadyOnboarded(candidate) && (
+                                                    <DropdownMenuItem
+                                                      disabled
+                                                      className="text-gray-400"
+                                                    >
+                                                      <Clock className="h-4 w-4 mr-2" />
+                                                      Needs Feedback & Rating First
+                                                    </DropdownMenuItem>
+                                                  )}
 
                                                 {/* Only show move options if candidate has feedback and rating */}
-                                                {nextStageForActive && canCandidateBeMoved(candidate) && (
-                                                  <>
-                                                    <DropdownMenuItem
-                                                      onClick={async () => {
-                                                        setCandidatesToSchedule([candidate])
-                                                        setIsSchedulingDialogOpen(true)
-                                                      }}
-                                                      className="text-green-600"
-                                                    >
-                                                      <Calendar className="h-4 w-4 mr-2" />
-                                                      Schedule & Move to {nextStageForActive.name}
-                                                    </DropdownMenuItem>
-                                                  </>
-                                                )}
+                                                {nextStageForActive &&
+                                                  canCandidateBeMoved(candidate) && (
+                                                    <>
+                                                      <DropdownMenuItem
+                                                        onClick={async () => {
+                                                          setCandidatesToSchedule([candidate]);
+                                                          setIsSchedulingDialogOpen(true);
+                                                        }}
+                                                        className="text-green-600"
+                                                      >
+                                                        <Calendar className="h-4 w-4 mr-2" />
+                                                        Schedule & Move to {nextStageForActive.name}
+                                                      </DropdownMenuItem>
+                                                    </>
+                                                  )}
 
                                                 {/* Show message if candidate can't be moved yet */}
-                                                {nextStageForActive && !canCandidateBeMoved(candidate) && (
-                                                  <DropdownMenuItem disabled className="text-gray-400">
-                                                    <Clock className="h-4 w-4 mr-2" />
-                                                    Provide Feedback & Rating to Move
-                                                  </DropdownMenuItem>
-                                                )}
+                                                {nextStageForActive &&
+                                                  !canCandidateBeMoved(candidate) && (
+                                                    <DropdownMenuItem
+                                                      disabled
+                                                      className="text-gray-400"
+                                                    >
+                                                      <Clock className="h-4 w-4 mr-2" />
+                                                      Provide Feedback & Rating to Move
+                                                    </DropdownMenuItem>
+                                                  )}
 
                                                 <DropdownMenuSeparator />
 
@@ -2592,10 +2752,14 @@ export default function JobSpecificInterviewPipeline() {
                                                   onClick={async () => {
                                                     try {
                                                       await rejectCandidate(candidate.id);
-                                                      toast.success(`${candidate.applicant_name} rejected`);
+                                                      toast.success(
+                                                        `${candidate.applicant_name} rejected`,
+                                                      );
                                                       await fetchData();
                                                     } catch (error) {
-                                                      toast.error(`Failed to reject ${candidate.applicant_name}`);
+                                                      toast.error(
+                                                        `Failed to reject ${candidate.applicant_name}`,
+                                                      );
                                                     }
                                                   }}
                                                   className="text-red-600"
@@ -2622,7 +2786,9 @@ export default function JobSpecificInterviewPipeline() {
                         <CardContent className="flex items-center justify-center h-full">
                           <div className="text-center">
                             <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Select an Interview Stage</h3>
+                            <h3 className="text-lg font-semibold mb-2">
+                              Select an Interview Stage
+                            </h3>
                             <p className="text-muted-foreground">
                               Choose a stage from the left panel to view and manage candidates
                             </p>
@@ -2730,16 +2896,24 @@ export default function JobSpecificInterviewPipeline() {
                           </TableHeader>
                           <TableBody>
                             {filteredHistoryCandidates.map((candidate) => (
-                              <TableRow key={candidate.id}
+                              <TableRow
+                                key={candidate.id}
                                 className={
-                                  candidate.status === 'rejected' || candidate.status === 'cancelled'
-                                    ? 'opacity-60 bg-red-50'
-                                    : ''
-                                }>
+                                  candidate.status === "rejected" ||
+                                  candidate.status === "cancelled"
+                                    ? "opacity-60 bg-red-50"
+                                    : ""
+                                }
+                              >
                                 <TableCell>
                                   <Checkbox
                                     checked={selectedCandidates.includes(candidate.id)}
-                                    onCheckedChange={(checked) => handleSelectCandidate(candidate.id.toString(), checked as boolean)}
+                                    onCheckedChange={(checked) =>
+                                      handleSelectCandidate(
+                                        candidate.id.toString(),
+                                        checked as boolean,
+                                      )
+                                    }
                                     disabled={!canCandidateBeSelected(candidate)}
                                     title={
                                       isCandidateRejected(candidate)
@@ -2750,13 +2924,17 @@ export default function JobSpecificInterviewPipeline() {
                                             ? "Already has feedback and rating - use individual actions"
                                             : "Cannot be selected"
                                     }
-                                    className={!canCandidateBeSelected(candidate) ? "opacity-50" : ""}
+                                    className={
+                                      !canCandidateBeSelected(candidate) ? "opacity-50" : ""
+                                    }
                                   />
                                 </TableCell>
                                 <TableCell>
                                   <div className="space-y-1">
                                     <div className="font-medium">{candidate.applicant_name}</div>
-                                    <div className="text-xs text-muted-foreground capitalize">{candidate.gender}</div>
+                                    <div className="text-xs text-muted-foreground capitalize">
+                                      {candidate.gender}
+                                    </div>
                                   </div>
                                 </TableCell>
                                 <TableCell>
@@ -2776,11 +2954,17 @@ export default function JobSpecificInterviewPipeline() {
                                 <TableCell>
                                   <div className="text-center">
                                     {candidate.current_stage_level > 0 ? (
-                                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-blue-100 text-blue-700"
+                                      >
                                         {candidate.current_stage_name}
                                       </Badge>
                                     ) : (
-                                      <Badge variant="secondary" className="bg-gray-100 text-gray-500">
+                                      <Badge
+                                        variant="secondary"
+                                        className="bg-gray-100 text-gray-500"
+                                      >
                                         Not Started
                                       </Badge>
                                     )}
@@ -2791,7 +2975,9 @@ export default function JobSpecificInterviewPipeline() {
                                     {candidate.overall_rating > 0 ? (
                                       <div className="flex items-center gap-1 justify-center">
                                         <Star className="h-4 w-4 text-yellow-500" />
-                                        <span className="font-semibold">{candidate.overall_rating}/10</span>
+                                        <span className="font-semibold">
+                                          {candidate.overall_rating}/10
+                                        </span>
                                       </div>
                                     ) : (
                                       <span className="text-sm text-gray-400">-</span>
@@ -2805,10 +2991,12 @@ export default function JobSpecificInterviewPipeline() {
                                         <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                                           <div
                                             className="h-full bg-blue-500 rounded-full transition-all"
-                                            style={{ width: `${candidate.completion_rate}%` }}
+                                            style={{width: `${candidate.completion_rate}%`}}
                                           />
                                         </div>
-                                        <span className="text-sm font-medium">{candidate.completion_rate}%</span>
+                                        <span className="text-sm font-medium">
+                                          {candidate.completion_rate}%
+                                        </span>
                                       </div>
                                       <div className="text-xs text-gray-500 mt-1">
                                         {candidate.interview_history.length} stages completed
@@ -2837,19 +3025,28 @@ export default function JobSpecificInterviewPipeline() {
                                         <DropdownMenuItem
                                           onClick={async () => {
                                             try {
-                                              const result = await handleIndividualOnboard(candidate);
+                                              const result =
+                                                await handleIndividualOnboard(candidate);
 
                                               if (result.success) {
                                                 if (result.alreadyOnboarded) {
-                                                  toast.warning(`${candidate.applicant_name} is already onboarded`);
+                                                  toast.warning(
+                                                    `${candidate.applicant_name} is already onboarded`,
+                                                  );
                                                 } else {
-                                                  toast.success(`${candidate.applicant_name} onboarded successfully`);
+                                                  toast.success(
+                                                    `${candidate.applicant_name} onboarded successfully`,
+                                                  );
                                                 }
                                               } else {
-                                                toast.error(`Failed to onboard ${candidate.applicant_name}: ${result.message}`);
+                                                toast.error(
+                                                  `Failed to onboard ${candidate.applicant_name}: ${result.message}`,
+                                                );
                                               }
                                             } catch (error) {
-                                              toast.error(`Unexpected error occurred while onboarding ${candidate.applicant_name}`);
+                                              toast.error(
+                                                `Unexpected error occurred while onboarding ${candidate.applicant_name}`,
+                                              );
                                             }
                                           }}
                                           className="text-purple-600"
@@ -2874,27 +3071,33 @@ export default function JobSpecificInterviewPipeline() {
           )}
 
           {/* Progress Indicator */}
-          {processedStages.length > 0 && viewMode === 'current' && (
+          {processedStages.length > 0 && viewMode === "current" && (
             <div className="mt-6">
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress for {selectedJobPosition.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Pipeline Progress for {selectedJobPosition.name}
+                  </h3>
                   <div className="flex items-center space-x-2 overflow-x-auto pb-4 px-2">
                     {processedStages.map((stage, index) => (
                       <div key={stage.id} className="flex items-center flex-shrink-0">
                         <div
-                          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${stage.count > 0
-                            ? 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100'
-                            : 'border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100'
-                            } ${activeStageId === stage.id ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+                          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 cursor-pointer transition-all ${
+                            stage.count > 0
+                              ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100"
+                              : "border-gray-300 bg-gray-50 text-gray-400 hover:bg-gray-100"
+                          } ${activeStageId === stage.id ? "ring-2 ring-blue-500 ring-offset-2" : ""}`}
                           onClick={() => setActiveStageId(stage.id)}
                           title={`Click to view ${stage.name}`}
                         >
                           <span className="text-sm font-bold">{stage.count}</span>
                         </div>
                         {index < processedStages.length - 1 && (
-                          <div className={`h-0.5 w-8 mx-2 ${stage.count > 0 ? 'bg-green-500' : 'bg-gray-300'
-                            }`} />
+                          <div
+                            className={`h-0.5 w-8 mx-2 ${
+                              stage.count > 0 ? "bg-green-500" : "bg-gray-300"
+                            }`}
+                          />
                         )}
                       </div>
                     ))}
@@ -2904,17 +3107,16 @@ export default function JobSpecificInterviewPipeline() {
                       <div key={stage.id} className="flex items-center flex-shrink-0">
                         <div className="w-12 text-center">
                           <span
-                            className={`text-xs font-medium truncate block cursor-pointer ${activeStageId === stage.id ? 'text-blue-600' : 'text-gray-600'
-                              }`}
+                            className={`text-xs font-medium truncate block cursor-pointer ${
+                              activeStageId === stage.id ? "text-blue-600" : "text-gray-600"
+                            }`}
                             onClick={() => setActiveStageId(stage.id)}
                             title={stage.name}
                           >
                             {stage.name}
                           </span>
                         </div>
-                        {index < processedStages.length - 1 && (
-                          <div className="w-8 mx-2" />
-                        )}
+                        {index < processedStages.length - 1 && <div className="w-8 mx-2" />}
                       </div>
                     ))}
                   </div>
@@ -2931,8 +3133,8 @@ export default function JobSpecificInterviewPipeline() {
         onSave={handleUpdateFeedback}
         isOpen={isFeedbackDialogOpen}
         onClose={() => {
-          setIsFeedbackDialogOpen(false)
-          setSelectedCandidate(null)
+          setIsFeedbackDialogOpen(false);
+          setSelectedCandidate(null);
         }}
         nextStage={nextStageForActive}
         onReject={async () => {
@@ -2952,8 +3154,8 @@ export default function JobSpecificInterviewPipeline() {
       <InterviewSchedulingDialog
         isOpen={isSchedulingDialogOpen}
         onClose={() => {
-          setIsSchedulingDialogOpen(false)
-          setCandidatesToSchedule([])
+          setIsSchedulingDialogOpen(false);
+          setCandidatesToSchedule([]);
         }}
         onSchedule={handleScheduleAndMove}
         candidates={candidatesToSchedule}
@@ -2965,11 +3167,11 @@ export default function JobSpecificInterviewPipeline() {
         candidate={selectedCandidateWithHistory}
         isOpen={isHistoryDialogOpen}
         onClose={() => {
-          setIsHistoryDialogOpen(false)
-          setSelectedCandidateWithHistory(null)
+          setIsHistoryDialogOpen(false);
+          setSelectedCandidateWithHistory(null);
         }}
         stages={processedStages}
       />
     </div>
-  )
+  );
 }

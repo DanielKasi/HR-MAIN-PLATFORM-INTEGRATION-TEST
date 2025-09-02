@@ -1,207 +1,224 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { useSelector } from "react-redux"
-import { Megaphone, ArrowLeft, Check, Loader2 } from "lucide-react"
+import type React from "react";
+import {useState, useEffect} from "react";
+import {useRouter, useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Megaphone, ArrowLeft, Check, Loader2} from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Skeleton } from "@/components/ui/skeleton"
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {Skeleton} from "@/components/ui/skeleton";
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors"
-import { getJobPositions, getJobPositionAdvertById, updateJobPositionAdvert, getJobPosition } from "@/lib/utils"
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {
+  getJobPositions,
+  getJobPositionAdvertById,
+  updateJobPositionAdvert,
+  getJobPosition,
+} from "@/lib/utils";
 import type {
   JobPositionAdvertFormData,
   IJobPosition,
   JobAdvertStatus,
   JobPositionAdvert,
-} from "@/types/types.utils"
-import { toast } from "sonner"
-import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
-import { RichEditorField } from "@/components/common/rich-editor"
+} from "@/types/types.utils";
+import {toast} from "sonner";
+import {SearchableSelect, SearchableSelectItem} from "@/components/searchable-select";
+import {RichEditorField} from "@/components/common/rich-editor";
 
 export default function EditJobAdvertPage() {
-  const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null)
-  const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null)
+  const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null);
+  const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
   const [formData, setFormData] = useState<JobPositionAdvertFormData>({
-  job_position: 0,
-  job_position_advert_status: "active" as JobAdvertStatus,
-  expiry_date: "",
-  number_of_employees_expected: 1,
-  extra_information: "",
-  level: 0, // Provide a default value
-  interviewers: [], // Provide a default value
-});
+    job_position: 0,
+    job_position_advert_status: "active" as JobAdvertStatus,
+    expiry_date: "",
+    number_of_employees_expected: 1,
+    extra_information: "",
+    level: 0, // Provide a default value
+    interviewers: [], // Provide a default value
+  });
 
-  const [jobPositions, setJobPositions] = useState<IJobPosition[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof JobPositionAdvertFormData, string>>>({})
+  const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof JobPositionAdvertFormData, string>>>(
+    {},
+  );
 
-  const router = useRouter()
-  const params = useParams()
-  const jobAdvertId = Number.parseInt(params.id as string)
+  const router = useRouter();
+  const params = useParams();
+  const jobAdvertId = Number.parseInt(params.id as string);
 
-  const selectedInstitution = useSelector(selectSelectedInstitution)
-  const selectedBranch = useSelector(selectSelectedBranch)
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const selectedBranch = useSelector(selectSelectedBranch);
 
   useEffect(() => {
     if (!selectedInstitution || !selectedBranch) {
-      router.push("/dashboard")
-      return
+      router.push("/dashboard");
+      return;
     }
 
     if (isNaN(jobAdvertId)) {
-      toast.error("Invalid job opening ID")
-      router.push("/job-adverts")
-      return
+      toast.error("Invalid job opening ID");
+      router.push("/job-adverts");
+      return;
     }
 
-    fetchInitialData()
-  }, [selectedInstitution, selectedBranch, jobAdvertId, router])
+    fetchInitialData();
+  }, [selectedInstitution, selectedBranch, jobAdvertId, router]);
 
   const fetchInitialData = async () => {
-    if (!selectedInstitution) return
+    if (!selectedInstitution) return;
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Fetch job opening details
-      const fetchedJobAdvert = await getJobPositionAdvertById({ advertId: jobAdvertId })
+      const fetchedJobAdvert = await getJobPositionAdvertById({advertId: jobAdvertId});
 
       if (!fetchedJobAdvert) {
-        toast.error("Job position not found")
-        router.push("/job-adverts")
-        return
+        toast.error("Job position not found");
+        router.push("/job-adverts");
+        return;
       }
 
-      setJobAdvert(fetchedJobAdvert)
+      setJobAdvert(fetchedJobAdvert);
 
       const [fetchedJobPositionsResponse, fetchedJobPosition] = await Promise.all([
-        getJobPositions({ institutionId: selectedInstitution.id }),
-        getJobPosition({ jobPositionId: fetchedJobAdvert.job_position }),
-      ])
+        getJobPositions({institutionId: selectedInstitution.id}),
+        getJobPosition({jobPositionId: fetchedJobAdvert.job_position}),
+      ]);
 
       // Handle paginated job positions/titles response
-      if (fetchedJobPositionsResponse && 'results' in fetchedJobPositionsResponse && Array.isArray(fetchedJobPositionsResponse.results)) {
-        setJobPositions(fetchedJobPositionsResponse.results)
+      if (
+        fetchedJobPositionsResponse &&
+        "results" in fetchedJobPositionsResponse &&
+        Array.isArray(fetchedJobPositionsResponse.results)
+      ) {
+        setJobPositions(fetchedJobPositionsResponse.results);
       } else if (Array.isArray(fetchedJobPositionsResponse)) {
-        setJobPositions(fetchedJobPositionsResponse)
+        setJobPositions(fetchedJobPositionsResponse);
       } else {
-        setJobPositions([])
+        setJobPositions([]);
       }
 
       if (fetchedJobPosition) {
-        setJobPosition(fetchedJobPosition)
+        setJobPosition(fetchedJobPosition);
       }
 
       const expiryDate = fetchedJobAdvert.expiry_date
-        ? new Date(fetchedJobAdvert.expiry_date).toISOString().split('T')[0]
-        : ""
+        ? new Date(fetchedJobAdvert.expiry_date).toISOString().split("T")[0]
+        : "";
 
-     const formDataToSet: JobPositionAdvertFormData = {
+      const formDataToSet: JobPositionAdvertFormData = {
         job_position: 0,
         job_position_advert_status: "active",
         expiry_date: "",
         number_of_employees_expected: 1,
         extra_information: "",
-        level: 0, 
-        interviewers: [] 
+        level: 0,
+        interviewers: [],
       };
 
       setFormData(formDataToSet);
-
     } catch (error) {
-      toast.error("Failed to load job opening data")
-      router.push("/job-adverts")
+      toast.error("Failed to load job opening data");
+      router.push("/job-adverts");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateFormData = (field: keyof JobPositionAdvertFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({...prev, [field]: value}));
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+      setErrors((prev) => ({...prev, [field]: undefined}));
     }
-  }
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {}
+    const newErrors: Partial<Record<keyof JobPositionAdvertFormData, string>> = {};
 
     if (!formData.job_position || formData.job_position === 0) {
-      newErrors.job_position = "Please select a job position"
+      newErrors.job_position = "Please select a job position";
     }
 
     if (!formData.job_position_advert_status) {
-      newErrors.job_position_advert_status = "Status is required"
+      newErrors.job_position_advert_status = "Status is required";
     }
 
     if (!formData.expiry_date) {
-      newErrors.expiry_date = "Expiry date is required"
+      newErrors.expiry_date = "Expiry date is required";
     } else {
-      const expiryDate = new Date(formData.expiry_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+      const expiryDate = new Date(formData.expiry_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       if (expiryDate <= today) {
-        newErrors.expiry_date = "Expiry date must be in the future"
+        newErrors.expiry_date = "Expiry date must be in the future";
       }
 
-      const maxDate = new Date()
-      maxDate.setFullYear(maxDate.getFullYear() + 2)
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 2);
       if (expiryDate > maxDate) {
-        newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future"
+        newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future";
       }
     }
 
     if (formData.job_position && !jobPositions.some((pos) => pos.id === formData.job_position)) {
-      newErrors.job_position = "Selected job position/title does not exist"
+      newErrors.job_position = "Selected job position/title does not exist";
     }
 
-    if (formData.number_of_employees_expected !== undefined && formData.number_of_employees_expected !== null) {
-      const numEmployees = Number(formData.number_of_employees_expected)
+    if (
+      formData.number_of_employees_expected !== undefined &&
+      formData.number_of_employees_expected !== null
+    ) {
+      const numEmployees = Number(formData.number_of_employees_expected);
 
       if (!Number.isInteger(numEmployees)) {
-        newErrors.number_of_employees_expected = "Number of employees must be a whole number"
+        newErrors.number_of_employees_expected = "Number of employees must be a whole number";
       } else if (numEmployees < 1) {
-        newErrors.number_of_employees_expected = "Number of employees must be at least 1"
+        newErrors.number_of_employees_expected = "Number of employees must be at least 1";
       } else if (numEmployees > 1000) {
-        newErrors.number_of_employees_expected = "Number of employees cannot exceed 1000"
+        newErrors.number_of_employees_expected = "Number of employees cannot exceed 1000";
       }
     }
 
-    if (formData.extra_information && formData.extra_information.length > 0 && formData.extra_information.length < 10) {
-      newErrors.extra_information = "Extra information must be at least 10 characters"
+    if (
+      formData.extra_information &&
+      formData.extra_information.length > 0 &&
+      formData.extra_information.length < 10
+    ) {
+      newErrors.extra_information = "Extra information must be at least 10 characters";
     }
 
     if (formData.extra_information && formData.extra_information.length > 2000) {
-      newErrors.extra_information = "Extra information cannot exceed 2000 characters"
+      newErrors.extra_information = "Extra information cannot exceed 2000 characters";
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedInstitution || !selectedBranch || !jobAdvert) {
-      toast.error("Missing required information")
-      return
+      toast.error("Missing required information");
+      return;
     }
 
     if (!validateForm()) {
-      toast.error("Please fix the form errors before submitting")
-      return
+      toast.error("Please fix the form errors before submitting");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       const updateData: Partial<JobPositionAdvertFormData> = {
@@ -210,29 +227,29 @@ export default function EditJobAdvertPage() {
         expiry_date: formData.expiry_date,
         number_of_employees_expected: formData.number_of_employees_expected || undefined,
         extra_information: formData.extra_information || undefined,
-      }
+      };
 
       const updatedJobAdvert = await updateJobPositionAdvert({
         advertId: jobAdvertId,
         advertData: updateData,
-      })
+      });
 
       if (updatedJobAdvert) {
-        toast.success("Job position updated successfully!")
-        router.push(`/job-adverts`)
+        toast.success("Job position updated successfully!");
+        router.push(`/job-adverts`);
       } else {
-        toast.error("Failed to update job position. Please try again.")
+        toast.error("Failed to update job position. Please try again.");
       }
     } catch (error) {
-      toast.error("Failed to update job opening. Please try again.")
+      toast.error("Failed to update job opening. Please try again.");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleBack = () => {
-    router.back()
-  }
+    router.back();
+  };
 
   // Prepare job positions for searchable select
   const jobPositionItems: SearchableSelectItem[] = jobPositions.map((position) => ({
@@ -243,14 +260,14 @@ export default function EditJobAdvertPage() {
 
   // Prepare status options for searchable select
   const statusItems: SearchableSelectItem[] = [
-    { id: "active", label: "Active", value: "active" },
-    { id: "expired", label: "Expired", value: "expired" },
-    { id: "archived", label: "Archived", value: "archived" },
-    { id: "closed", label: "Closed", value: "closed" },
+    {id: "active", label: "Active", value: "active"},
+    {id: "expired", label: "Expired", value: "expired"},
+    {id: "archived", label: "Archived", value: "archived"},
+    {id: "closed", label: "Closed", value: "closed"},
   ];
 
   if (!selectedInstitution || !selectedBranch) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (isLoading) {
@@ -290,26 +307,30 @@ export default function EditJobAdvertPage() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="w-full h-full p-6">
       <div className="w-full space-y-6">
-
-
         <Card className="w-full -ml-6">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div>
                 <div className="flex items-center justify-start">
-                  <Button variant="ghost" size="sm" onClick={handleBack} className="flex items-center gap-2 rounded-full aspect-square">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBack}
+                    className="rounded-full aspect-square"
+                  >
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
-                  <CardTitle className="text-xl">Edit Job Opening</CardTitle>
+                  <CardTitle className="text-xl ml-5">Edit Job Opening</CardTitle>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Update job opening for {selectedBranch.branch_name} - {selectedInstitution.institution_name}
+                <p className="text-sm text-muted-foreground mt-2 ml-14">
+                  Update job opening for {selectedBranch.branch_name} -{" "}
+                  {selectedInstitution.institution_name}
                 </p>
               </div>
             </div>
@@ -335,7 +356,9 @@ export default function EditJobAdvertPage() {
                     triggerClassName={errors.job_position ? "border-destructive" : ""}
                     popoverClassName="w-[400px]"
                   />
-                  {errors.job_position && <p className="text-sm text-destructive">{errors.job_position}</p>}
+                  {errors.job_position && (
+                    <p className="text-sm text-destructive">{errors.job_position}</p>
+                  )}
                 </div>
 
                 {/* Status */}
@@ -345,11 +368,17 @@ export default function EditJobAdvertPage() {
                   </Label>
                   <SearchableSelect
                     items={statusItems}
-                    selectedItems={formData.job_position_advert_status ? [formData.job_position_advert_status] : []}
+                    selectedItems={
+                      formData.job_position_advert_status
+                        ? [formData.job_position_advert_status]
+                        : []
+                    }
                     placeholder="Select status"
                     searchPlaceholder="Search status..."
                     emptyMessage="No status options found."
-                    onSelect={(itemId) => updateFormData("job_position_advert_status", itemId as JobAdvertStatus)}
+                    onSelect={(itemId) =>
+                      updateFormData("job_position_advert_status", itemId as JobAdvertStatus)
+                    }
                     multiple={false}
                     triggerClassName={errors.job_position_advert_status ? "border-destructive" : ""}
                     popoverClassName="w-[200px]"
@@ -372,8 +401,12 @@ export default function EditJobAdvertPage() {
                     className={errors.expiry_date ? "border-destructive" : ""}
                     min={new Date().toISOString().split("T")[0]} // Prevent past dates
                   />
-                  {errors.expiry_date && <p className="text-sm text-destructive">{errors.expiry_date}</p>}
-                  <p className="text-xs text-muted-foreground">Must be a future date (max 2 years ahead)</p>
+                  {errors.expiry_date && (
+                    <p className="text-sm text-destructive">{errors.expiry_date}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Must be a future date (max 2 years ahead)
+                  </p>
                 </div>
 
                 {/* Number of Employees Required */}
@@ -390,32 +423,39 @@ export default function EditJobAdvertPage() {
                     placeholder="1"
                     value={formData.number_of_employees_expected || ""}
                     onChange={(e) => {
-                      const value = e.target.value
-                      const numValue = value === "" ? undefined : Number(value)
-                      updateFormData("number_of_employees_expected", numValue)
+                      const value = e.target.value;
+                      const numValue = value === "" ? undefined : Number(value);
+                      updateFormData("number_of_employees_expected", numValue);
                     }}
                     className={errors.number_of_employees_expected ? "border-destructive" : ""}
                   />
                   {errors.number_of_employees_expected && (
-                    <p className="text-sm text-destructive">{errors.number_of_employees_expected}</p>
+                    <p className="text-sm text-destructive">
+                      {errors.number_of_employees_expected}
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Must be a positive integer (1-1000)</p>
+                  <p className="text-xs text-muted-foreground">
+                    Must be a positive integer (1-1000)
+                  </p>
                 </div>
               </div>
 
               {/* Extra Information - Full Width */}
-              <div >
+              <div>
                 <Label htmlFor="extra_information" className="text-sm font-medium">
                   Job Description (Optional)
                 </Label>
 
-                <RichEditorField id="extra_information"
+                <RichEditorField
+                  id="extra_information"
                   placeholder="Add any additional information about this job opening..."
                   value={formData.extra_information || ""}
                   onChange={(value) => updateFormData("extra_information", value)}
                   className={errors.extra_information ? "border-destructive" : ""}
                 />
-                {errors.extra_information && <p className="text-sm text-destructive">{errors.extra_information}</p>}
+                {errors.extra_information && (
+                  <p className="text-sm text-destructive">{errors.extra_information}</p>
+                )}
               </div>
 
               {/* Form Actions */}
@@ -452,5 +492,5 @@ export default function EditJobAdvertPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
