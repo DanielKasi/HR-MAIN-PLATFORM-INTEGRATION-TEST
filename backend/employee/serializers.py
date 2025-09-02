@@ -152,7 +152,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        print("==> Validated data passed to update():", validated_data)
         user_data = validated_data.pop("user", None)
 
         if user_data:
@@ -169,10 +168,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             and validated_data["position"] != instance.position
         )
 
-        # Update employee fields
-        print(f"\n\n\n{validated_data}")
         for attr, value in validated_data.items():
-            print(f"Setting {attr} = {value}")
             setattr(instance, attr, value)
 
         # 🔧 FIX: If position changed and no explicit salary provided, use position's salary_min
@@ -185,10 +181,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
         instance.save()
 
         instance.refresh_from_db()
-        print("\n\nFinal employee salary in memory:", instance.salary)
-        print(
-            "Final employee salary in DB:", Employee.objects.get(id=instance.id).salary
-        )
 
         return instance
 
@@ -428,7 +420,6 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
         """
         Create a new attendance record and calculate status after creation.
         """
-        print(f"[SERIALIZER] Creating new attendance record...")
 
         # Create the instance without triggering status calculation in save()
         instance = EmployeeAttendance(**validated_data)
@@ -439,15 +430,12 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
         # Now calculate and update the attendance status
         self._calculate_and_update_status(instance)
 
-        print(f"[SERIALIZER] Created attendance record: {instance}")
         return instance
 
     def update(self, instance, validated_data):
         """
         Update an existing attendance record and recalculate status.
         """
-        print(f"[SERIALIZER] Updating attendance record: {instance}")
-
         # Update the instance fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -458,7 +446,6 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
         # Recalculate and update the attendance status
         self._calculate_and_update_status(instance)
 
-        print(f"[SERIALIZER] Updated attendance record: {instance}")
         return instance
 
     def _calculate_and_update_status(self, instance):
@@ -468,7 +455,6 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
         try:
             # Ensure we have the employee relationship loaded
             if not hasattr(instance, "employee") or not instance.employee:
-                print("[SERIALIZER] No employee relationship found")
                 return
 
             # Check if employee has payroll_branch
@@ -476,12 +462,7 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
                 not hasattr(instance.employee, "payroll_branch")
                 or not instance.employee.payroll_branch
             ):
-                print(
-                    f"[SERIALIZER] Employee {instance.employee} has no payroll_branch"
-                )
                 return
-
-            print(f"[SERIALIZER] Calculating status for {instance}")
 
             # Store the old status to check if it changed
             old_status = instance.attendance_status
@@ -499,14 +480,12 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
                 ]
             )
 
-            print(f"[SERIALIZER] Status updated: {instance.attendance_status}")
 
             # Create penalty if status changed and warrants a penalty
             if old_status != instance.attendance_status or old_status == "pending":
                 self._create_penalty_if_needed(instance)
 
         except Exception as e:
-            print(f"[SERIALIZER] Error calculating status: {e}")
             # Don't fail the entire operation if status calculation fails
             pass
 
@@ -546,14 +525,11 @@ class EmployeeActivationSerializer(serializers.Serializer):
 
 def validate_pdf(file):
     """Validate that the file is a valid PDF."""
-    print(f"Validating PDF: {file.name}")
     try:
         file.seek(0)
         PyPDF2.PdfReader(BytesIO(file.read()))
         file.seek(0)
-        print("PDF validation successful")
     except Exception as e:
-        print(f"PDF validation failed: {str(e)}")
         raise serializers.ValidationError({"error": f"Invalid PDF file: {str(e)}"})
     return file
 
@@ -811,7 +787,7 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
                 }
             )
 
-        print("data", data)
+      
         return data
 
     def create(self, validated_data):
