@@ -574,6 +574,7 @@ class EmployeeAttendance(BaseApprovableModel):
     overtime_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     late_minutes = models.IntegerField(default=0)
     early_checkout_minutes = models.IntegerField(default=0)
+    worked_hours = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("employee", "date")
@@ -638,6 +639,17 @@ class EmployeeAttendance(BaseApprovableModel):
                 minutes = int(early_leave.total_seconds() / 60)
                 return minutes
         return 0
+
+    def calculate_worked_hours(self):
+        """Calculate total worked hours based on check-in and check-out."""
+        if self.check_in_time and self.check_out_time:
+            datetime_checkin = datetime.combine(self.date, self.check_in_time)
+            datetime_checkout = datetime.combine(self.date, self.check_out_time)
+            if datetime_checkout > datetime_checkin:
+                duration = datetime_checkout - datetime_checkin
+                hours = duration.total_seconds() / 3600
+                return Decimal(round(hours, 2))
+        return Decimal('0.00')    
 
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
