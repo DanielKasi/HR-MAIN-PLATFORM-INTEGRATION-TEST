@@ -37,8 +37,8 @@ import { ITermination } from "@/types/types.utils"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import ProtectedComponent from "@/components/ProtectedComponent"
-import { PERMISSION_CODES } from "@/types/types.utils"
-import { MAIN_DOMAIN_URL } from "@/app/constants"
+import { PERMISSION_CODES } from "@/constants"
+import { MAIN_DOMAIN_URL } from "@/constants"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",

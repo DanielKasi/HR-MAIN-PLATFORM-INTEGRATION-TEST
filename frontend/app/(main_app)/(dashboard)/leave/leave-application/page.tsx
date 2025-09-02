@@ -74,7 +74,7 @@ import { handleDownload, getFileUrl, getFileName } from "@/lib/helpers";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 const STATUS_CHOICES = [
   { value: "pending", label: "Pending" },

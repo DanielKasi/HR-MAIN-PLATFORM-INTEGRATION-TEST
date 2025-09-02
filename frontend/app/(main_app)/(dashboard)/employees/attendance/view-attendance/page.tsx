@@ -22,7 +22,7 @@ import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selecto
 import {getDepartments, getJobPositions, fetchEmployees} from "@/lib/utils";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { MAIN_DOMAIN_URL } from "@/app/constants";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 const attendanceCodes = {
   "P-onT": {label: "Present on Time", color: "bg-green-100 text-green-800"},

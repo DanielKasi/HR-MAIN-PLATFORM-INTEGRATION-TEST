@@ -1,6 +1,6 @@
 import {AxiosError} from "axios";
 
-import {CUSTOM_CODES} from "@/types/types.utils";
+import {CUSTOM_CODES} from "@/constants";
 import {AuthError} from "@/store/auth/reducer";
 
 export const getAuthError = (error: any): AuthError => {

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hasPermission } from "@/lib/helpers";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import { selectTemporaryPermissions, selectUser } from "@/store/auth/selectors";
 
 export function TopNavigation() {

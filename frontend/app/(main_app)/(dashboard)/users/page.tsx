@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { getPaginatedUsers, getPaginatedUsersFromUrl } from "@/lib/utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";

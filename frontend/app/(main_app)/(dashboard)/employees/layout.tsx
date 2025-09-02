@@ -1,6 +1,6 @@
 "use client";
 
-// import { PERMISSION_CODES } from "@/types/types.utils";
+// import { PERMISSION_CODES } from "@/app/constants";
 // import ProtectedPage from "@/components/ProtectedPage";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 

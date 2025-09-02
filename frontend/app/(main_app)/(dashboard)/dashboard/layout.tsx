@@ -1,6 +1,7 @@
 "use client"
 
-import { IEmployee, PERMISSION_CODES } from "@/types/types.utils";
+import { IEmployee } from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";

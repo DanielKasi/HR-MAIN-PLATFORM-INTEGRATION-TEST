@@ -11,8 +11,7 @@ import {
   Eye,
   X
 } from 'lucide-react';
-import { PERMISSION_CODES } from "@/types/types.utils";
-import { hasPermission } from "@/lib/helpers";
+import {PERMISSION_CODES} from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

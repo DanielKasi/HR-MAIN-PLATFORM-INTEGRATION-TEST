@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { type IEmployee, PERMISSION_CODES } from "@/types/types.utils";
+import { type IEmployee } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { deleteEmployee, getPaginatedEmployees, getPaginatedEmployeesFromUrl, showErrorToast } from "@/lib/utils";
 import {

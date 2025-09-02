@@ -11,7 +11,7 @@ import {Card, CardHeader} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {useRouter} from "next/navigation";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 
 const AttendancePage = () => {
   const [loading, setLoading] = useState(true);

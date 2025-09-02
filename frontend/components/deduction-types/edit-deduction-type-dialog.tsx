@@ -19,7 +19,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { updateDeductionType } from "@/lib/utils"
 import type { IDeductionType } from "@/types/types.utils"
-import { ALLOWANCE_FREQUENCIES, IAllowanceFrequency, IDeductionTypeFormData } from "@/types/types.utils"
+import { IDeductionTypeFormData } from "@/types/types.utils"
+import { ALLOWANCE_FREQUENCIES } from "@/constants"
+
 
 
 interface EditDeductionTypeDialogProps {

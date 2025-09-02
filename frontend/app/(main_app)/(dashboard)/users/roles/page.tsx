@@ -24,8 +24,8 @@ import apiRequest, {apiDelete} from "@/lib/apiRequest";
 import {PaginationControls} from "@/components/ui/pagination-controls";
 import {PageSizeSelector} from "@/components/ui/page-size-selector";
 import ProtectedPage from "@/components/ProtectedPage";
-import {PERMISSION_CODES} from "@/types/types.utils";
-import {handleApiError} from "@/lib/apiErrorHandler";
+import { PERMISSION_CODES } from "@/constants";
+import { handleApiError } from "@/lib/apiErrorHandler";
 
 export default function RolesPage() {
   const [searchQuery, setSearchQuery] = useState("");

@@ -45,7 +45,7 @@ import {toast} from "sonner";
 import type {ILeaveType, ILeaveTypeFormData} from "@/types/types.utils";
 import {LeaveTypesAPI} from "@/lib/utils";
 import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import type {IUserInstitution} from "@/types";
 import {TableSkeleton} from "@/components/common/table-skeleton";
