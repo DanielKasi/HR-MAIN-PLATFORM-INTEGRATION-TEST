@@ -203,9 +203,8 @@ export default function UpdateEmployeePage() {
   };
 
   const handleBack = async () => {
-    router.back()
-  }
-
+    router.back();
+  };
 
   useEffect(() => {
     if (selectedInstitution) {
@@ -1266,6 +1265,7 @@ export default function UpdateEmployeePage() {
             <Button variant="outline" size="sm" className="rounded-full aspect-square">
               <ArrowLeft className="w-4 h-4 mr-2" />
             </Button>
+          </Link>
           <div className="h-6 w-px bg-gray-300" />
           <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
         </div>
