@@ -241,7 +241,7 @@ export default function OffboardingDashboard() {
         </Card>
 
         {/* Recent Separations Table */}
-        <Card className="bg-card border-border">
+        {/* <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-card-foreground">Recent Separations</CardTitle>
             <CardDescription>Latest employee separation activities</CardDescription>
@@ -283,7 +283,7 @@ export default function OffboardingDashboard() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   )
