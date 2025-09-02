@@ -5,6 +5,7 @@ from datetime import timedelta
 from approval.models import BaseApprovableModel
 from django.utils import timezone
 
+
 # spotcheck settings
 class InstitutionSpotCheckSetting(BaseApprovableModel):
     institution = models.OneToOneField(
@@ -16,12 +17,11 @@ class InstitutionSpotCheckSetting(BaseApprovableModel):
     expires_after_minutes = models.IntegerField(default=60)
     late_starts_after_minutes = models.IntegerField(default=10)
 
-    
     def __str__(self):
         return f"{self.institution.name} SpotCheck Settings"
 
     def get_institution(self):
-        return self.institution       
+        return self.institution
 
 
 class BranchSpotCheckSetting(BaseApprovableModel):
@@ -34,13 +34,12 @@ class BranchSpotCheckSetting(BaseApprovableModel):
     expires_after_minutes = models.IntegerField(default=60)
     late_starts_after_minutes = models.IntegerField(default=10)
 
-    
     def __str__(self):
         return f"{self.branch.name} SpotCheck Settings"
 
     def get_institution(self):
-        return self.branch.institution       
-    
+        return self.branch.institution
+
 
 class EmployeeSpotCheckSetting(BaseApprovableModel):
     employee = models.OneToOneField(
@@ -52,12 +51,12 @@ class EmployeeSpotCheckSetting(BaseApprovableModel):
     expires_after_minutes = models.IntegerField(default=60)
     late_starts_after_minutes = models.IntegerField(default=10)
 
-    
     def __str__(self):
         return f"{self.employee.user.fullname} SpotCheck Settings"
 
     def get_institution(self):
-        return self.employee.department.institution       
+        return self.employee.department.institution
+
 
 class SpotCheckStatus(TimeStampedModel):
     status_name = models.CharField(max_length=255)
@@ -65,7 +64,7 @@ class SpotCheckStatus(TimeStampedModel):
 
     def __str__(self):
         return self.status_name
-    
+
 
 class EmployeeSpotCheck(TimeStampedModel):
     employee = models.ForeignKey(
@@ -84,39 +83,72 @@ class EmployeeSpotCheck(TimeStampedModel):
     longitude = models.FloatField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
-    initiated_by = models.CharField(choices=[("system", "System"), ("user", "User")], max_length=20, default="system")
+    initiated_by = models.CharField(
+        choices=[("system", "System"), ("user", "User")],
+        max_length=20,
+        default="system",
+    )
 
     def __str__(self):
         return f"SpotCheck for {self.employee.user.fullname} at {self.spotcheck_time}"
 
-
     def check_if_location_is_valid(self):
         return self.employee._is_location_valid(self.latitude, self.longitude)
 
-    def issue_penalty(self):    
+    def issue_penalty(self):
         employee = self.employee
         setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
         if not setting:
-            branch = employee.payroll_branch  
+            branch = employee.payroll_branch
             setting = BranchSpotCheckSetting.objects.filter(branch=branch).first()
         if not setting:
-            institution = branch.institution if branch else employee.department.institution
-            setting = InstitutionSpotCheckSetting.objects.filter(institution=institution).first()
+            institution = (
+                branch.institution if branch else employee.department.institution
+            )
+            setting = InstitutionSpotCheckSetting.objects.filter(
+                institution=institution
+            ).first()
 
         if not setting:
-            return    
+            return
 
-        expiry_time = self.spotcheck_time + timedelta(minutes=setting.expires_after_minutes)
-        late_time = self.spotcheck_time + timedelta(minutes=setting.late_starts_after_minutes)
+        expiry_time = self.spotcheck_time + timedelta(
+            minutes=setting.expires_after_minutes
+        )
+        late_time = self.spotcheck_time + timedelta(
+            minutes=setting.late_starts_after_minutes
+        )
 
-        now = timezone.now()  
+        now = timezone.now()
 
         if self.responded_at:
             if self.responded_at <= expiry_time:
-                EmployeePenalty.create_from_spotcheck(self, 'late_spotcheck_response')
+                EmployeePenalty.create_from_spotcheck(self, "late_spotcheck_response")
 
-        else:   
+        else:
             if now > expiry_time:
-                EmployeePenalty.create_from_spotcheck(self, 'no_response_spotcheck')
-        
-        self.save()     
+                EmployeePenalty.create_from_spotcheck(self, "no_response_spotcheck")
+
+        self.save()
+
+    def save(self, *args, **kwargs):
+        from spotcheck.tasks import check_spotcheck_response
+        from spotcheck.utilities import get_employee_spotchecks_expires_after_minutes
+
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+
+        if is_new:
+            employee_spotcheck_expires_after = (
+                get_employee_spotchecks_expires_after_minutes(self.employee)
+            )
+
+            send_time = self.spotcheck_time + timezone.timedelta(
+                minutes=employee_spotcheck_expires_after
+            )
+
+            check_spotcheck_response.apply_async(args=[self.id], eta=send_time)
+
+            print(
+                f"=======================>Scheduled check_spotcheck_response for spotcheck {self.id} at {send_time}<===================="
+            )
