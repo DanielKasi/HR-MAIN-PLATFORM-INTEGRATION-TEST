@@ -88,7 +88,7 @@ export function AddBranchForm({userId, onBranchAdded}: AddBranchFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#10b981] hover:bg-[#0d9668] text-white" size="sm">
+        <Button className="bg-primary hover:bg-primary text-white" size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Add Branch
         </Button>
