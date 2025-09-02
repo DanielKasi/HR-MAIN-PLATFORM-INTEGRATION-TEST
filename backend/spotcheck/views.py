@@ -372,12 +372,20 @@ class EmployeeSpotCheckDetailView(APIView):
     def get(self, request, spotcheck_id):
         """Retrieve details of a specific emplpyee spot check setting."""
         try:
-            setting = SpotCheckModels.EmployeeSpotCheck.objects.get(
+            setting = SpotCheckModels.EmployeeSpotCheck.objects.filter(
                 id=spotcheck_id, deleted_at=None
-            )
+            ).order_by('-id').first()
+            
+            if not setting:
+                return Response(
+                    {"detail": "Employee spot check not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
             serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except SpotCheckModels.EmployeeSpotCheck.DoesNotExist:
+            
+        except Exception as e:
             return Response(
                 {"detail": "Employee spot check not found."},
                 status=status.HTTP_404_NOT_FOUND,

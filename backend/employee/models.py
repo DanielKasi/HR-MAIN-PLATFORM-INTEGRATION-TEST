@@ -91,8 +91,7 @@ class Employee(BaseApprovableModel):
     gender = models.CharField(
         max_length=10,
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        blank=True,
-        null=True,
+        default="other"
     )
     # TODO: Make department non-nullable in future
     department = models.ForeignKey(
