@@ -43,7 +43,7 @@ import {ScrollArea} from "@/components/ui/scroll-area";
 import apiRequest from "@/lib/apiRequest";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {fetchUpToDateInstitution} from "@/store/auth/actions";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {useRouter} from "next/navigation";

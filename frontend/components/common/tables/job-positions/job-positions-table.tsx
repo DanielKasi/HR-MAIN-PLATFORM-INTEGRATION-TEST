@@ -31,8 +31,8 @@ import {
 } from "@/lib/utils";
 import {
   type IJobPosition,
-  PERMISSION_CODES,
 } from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {toast} from "sonner";
 import {formatCurrency} from "@/lib/helpers";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";

@@ -1,4 +1,4 @@
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedPage from "@/components/ProtectedPage";
 
 export default function JobPositionsLayout({children}: {children: React.ReactNode}) {

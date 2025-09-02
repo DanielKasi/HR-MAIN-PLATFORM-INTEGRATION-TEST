@@ -37,7 +37,7 @@ import {
 import {Separator} from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);

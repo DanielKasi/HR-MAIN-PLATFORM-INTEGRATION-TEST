@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function SeparationPoliciesPage() {
   const [deleteDialog, setDeleteDialog] = useState<{

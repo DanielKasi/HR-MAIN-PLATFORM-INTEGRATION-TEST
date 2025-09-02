@@ -51,10 +51,10 @@ import {
   getPaginatedDisciplinaryActionsFromUrl,
 } from "@/lib/utils";
 import {
-  PERMISSION_CODES,
   IDisciplinaryAction,
 } from "@/types/types.utils";
 import {toast} from "sonner";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {useSelector} from "react-redux";

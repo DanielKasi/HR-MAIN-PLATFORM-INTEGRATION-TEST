@@ -1,10 +1,10 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 
-import { CustomApiRequestError } from "@/types/types.utils";
+import { CustomApiRequestError } from "@/constants";
 import { store } from "@/store";
 import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
 import { LoginResponse } from "@/utils/authUtils";
-import { MAIN_DOMAIN_URL } from "@/app/constants";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 const axiosJsonInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || `${MAIN_DOMAIN_URL}/api`,

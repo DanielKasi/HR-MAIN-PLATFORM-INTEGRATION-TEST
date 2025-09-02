@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import PenaltiesTable from "@/components/common/tables/penalties/penalties-table";
 import { showErrorToast, penaltiesAPI } from "@/lib/utils";
 import { toast } from "sonner";
-import { PERMISSION_CODES, type IEmployee, type IEmployeePenaltyFormData } from "@/types/types.utils";
+import { type IEmployee, type IEmployeePenaltyFormData } from "@/types/types.utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import EmployeePenaltyDialog from "@/components/common/tables/penalties/employee-penalty-dialog";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import {PERMISSION_CODES} from "@/constants";
 
 interface Props {
   employee: IEmployee;

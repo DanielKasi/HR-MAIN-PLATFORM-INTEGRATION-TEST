@@ -52,7 +52,7 @@ const EmployeeAttendance: React.FC<EmployeeAttendanceProps> = ({
             {selectedInstitution ? (
               <AttendanceRecordsTable
                 showingOnDashboard={showingOnDashboard}
-                employeesLoading={employeesLoading}
+                employeesLoading={scope.type === "default" ? employeesLoading : false}
                 institutionId={selectedInstitution.id}
                 searchTerm={searchTerm}
                 attendanceRefreshRef={attendanceRefreshRef}

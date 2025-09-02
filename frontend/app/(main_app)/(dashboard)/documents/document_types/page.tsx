@@ -17,30 +17,25 @@ import {Label} from "@/components/ui/label";
 import {Textarea} from "@/components/ui/textarea";
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {Badge} from "@/components/ui/badge";
-import {Plus, Edit, Trash2, FileText, ArrowLeft} from "lucide-react";
-import {useToast} from "@/hooks/use-toast";
-import {IDocumentType, IDocumentTypeFormData} from "@/types/types.utils";
-import {
-  createDocumentType,
-  getDocumentTypes,
-  updateDocumentType,
-  deleteDocumentType,
-} from "@/lib/utils";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {PERMISSION_CODES} from "@/types/types.utils";
-import ProtectedComponent from "@/components/ProtectedComponent";
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Plus, Edit, Trash2, FileText, ArrowLeft } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { IDocumentType, IDocumentTypeFormData } from "@/types/types.utils"
+import { createDocumentType, getDocumentTypes, updateDocumentType, deleteDocumentType } from "@/lib/utils"
+import { useSelector } from "react-redux"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+import {PERMISSION_CODES} from "@/constants";
+import ProtectedComponent from "@/components/ProtectedComponent"
 import {useRouter} from "next/navigation";
 
 export default function DocumentTypesPage() {

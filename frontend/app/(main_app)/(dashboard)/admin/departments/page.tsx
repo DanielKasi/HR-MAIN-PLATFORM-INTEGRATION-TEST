@@ -41,7 +41,8 @@ import {
   getPaginatedDepartmentsFromUrl,
   showErrorToast,
 } from "@/lib/utils";
-import {type IDepartment, PERMISSION_CODES} from "@/types/types.utils";
+import {type IDepartment} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {useDocumentTitle} from "@/hooks/use-document-title";

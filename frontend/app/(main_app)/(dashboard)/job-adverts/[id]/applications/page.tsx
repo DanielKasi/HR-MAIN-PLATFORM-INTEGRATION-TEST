@@ -85,7 +85,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import {
   createInterviewStage,
   getInterviewStages,

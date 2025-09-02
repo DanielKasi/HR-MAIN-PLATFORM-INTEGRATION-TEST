@@ -132,7 +132,7 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
     fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
     deps={[selectedDate, search]}
     className=""
-    paginated
+    paginated={scope.type === "default"}
     footerClassName="hidden"
   >
     {({ data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance }) => {

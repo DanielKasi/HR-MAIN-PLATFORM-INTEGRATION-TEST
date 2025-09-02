@@ -36,7 +36,8 @@ import {
 import Link from "next/link";
 import {useRouter} from "next/navigation";
 import {getDocumentTemplates, deleteDocumentTemplate} from "@/lib/utils";
-import {IDocumentTemplate, PERMISSION_CODES} from "@/types/types.utils";
+import {IDocumentTemplate} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import RichTextDisplay from "@/components/common/rich-text-display";

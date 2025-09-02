@@ -27,7 +27,7 @@ import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {extractRequiredPermissions, hasAnyRequiredPermissions} from "@/lib/helpers";
 import {loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout} from "@/utils/authUtils";
 import { IPermission } from "@/types/index";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 interface UserProfile {
   id: number;

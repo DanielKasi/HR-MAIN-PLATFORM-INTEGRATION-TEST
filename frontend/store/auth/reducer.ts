@@ -2,7 +2,7 @@ import { AuthAction } from "./actions";
 import { AUTH_ACTION_TYPES } from "./types";
 
 import { Branch, IPermission, ITill, IUser, IUserInstitution, StoredColorData } from "@/types";
-import { CUSTOM_CODES } from "@/types/types.utils";
+import { CUSTOM_CODES } from "@/constants";
 
 export type AuthError = {
   customCode: CUSTOM_CODES;
