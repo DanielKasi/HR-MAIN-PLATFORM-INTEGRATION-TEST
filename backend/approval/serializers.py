@@ -57,13 +57,16 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
         fields = ['id', 'level', 'name', 'description', 'public_uuid', 'approvers', 'overriders']
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
-    actions = ActionSerializer(many=True, read_only=True)
+    actions = serializers.SerializerMethodField()
     levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
 
     class Meta:
         model = ApprovalDocument
         fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'actions', 'levels']
+    
+    def get_actions(self, obj):
+        return [action.name for action in obj.actions.all()]
 
 class ApprovalTaskSerializer(serializers.ModelSerializer):
     level_name = serializers.CharField(source='level.name', read_only=True)
