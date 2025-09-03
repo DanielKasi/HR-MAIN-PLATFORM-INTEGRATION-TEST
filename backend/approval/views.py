@@ -25,6 +25,8 @@ from datetime import timedelta
 from django.db.models import Q
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 
 class ActionListAPIView(APIView):
@@ -226,14 +228,137 @@ class ApprovalDocumentDetailAPIView(APIView):
         serializer = ApprovalDocumentSerializer(document)
         return Response(serializer.data)
 
-    @extend_schema(tags=['Approval Documents'])
+    @extend_schema(
+        operation_id='approval_document_partial_update',
+        summary='Partially update an Approval Document',
+        description='Update specific fields of an approval document. Only provided fields will be updated.',
+        parameters=[
+            OpenApiParameter(
+                name='id',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.PATH,
+                description='ID of the approval document to update',
+                required=True,
+            ),
+        ],
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'description': {
+                        'type': 'string',
+                        'description': 'Description of the approval document',
+                        'nullable': True
+                    },
+                    'actions': {
+                        'type': 'array',
+                        'items': {'type': 'integer'},
+                        'description': 'List of action IDs to associate with this document'
+                    }
+                },
+                'example': {
+                    'description': 'Updated approval document description',
+                    'actions': [1, 2, 3]
+                }
+            }
+        },
+        responses={
+            200: {
+                'description': 'Approval document updated successfully',
+                'content': {
+                    'application/json': {
+                        'schema': ApprovalDocumentSerializer,
+                        'example': {
+                            'id': 1,
+                            'institution': 1,
+                            'institution_name': 'Example Institution',
+                            'public_uuid': '550e8400-e29b-41d4-a716-446655440000',
+                            'description': 'Updated approval document description',
+                            'content_type': 1,
+                            'actions': ['Action 1', 'Action 2', 'Action 3'],
+                            'levels': []
+                        }
+                    }
+                }
+            },
+            400: {
+                'description': 'Bad request - validation errors',
+                'content': {
+                    'application/json': {
+                        'example': {
+                            'actions': ['Invalid action ID: 999']
+                        }
+                    }
+                }
+            },
+            404: {
+                'description': 'Approval document not found',
+                'content': {
+                    'application/json': {
+                        'example': {
+                            'detail': 'Not found.'
+                        }
+                    }
+                }
+            }
+        },
+        tags=['Approval Documents']
+    )
     def patch(self, request, pk):
-        document = self.get_object(pk)
-        serializer = ApprovalDocumentSerializer(document, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """
+        Partially update an approval document.
+        
+        Args:
+            request: HTTP request object
+            id: ID of the approval document to update
+            
+        Returns:
+            Response with updated approval document data
+        """
+        # Get the approval document instance
+        approval_document = get_object_or_404(ApprovalDocument, pk=pk)
+        
+        # Extract data from request
+        data = request.data
+        
+        try:
+            with transaction.atomic():
+                # Update basic fields if provided
+                if 'description' in data:
+                    approval_document.description = data['description']
+                
+                # Handle actions update if provided
+                if 'actions' in data:
+                    action_ids = data['actions']
+                    
+                    # Validate action IDs exist
+                    if action_ids:  # Only validate if actions list is not empty
+                        existing_actions = Action.objects.filter(id__in=action_ids)
+                        existing_action_ids = set(existing_actions.values_list('id', flat=True))
+                        provided_action_ids = set(action_ids)
+                        
+                        invalid_ids = provided_action_ids - existing_action_ids
+                        if invalid_ids:
+                            return Response(
+                                {'actions': [f'Invalid action ID(s): {", ".join(map(str, invalid_ids))}']},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                    
+                    # Update actions relationship
+                    approval_document.actions.set(action_ids)
+                
+                # Save the instance
+                approval_document.save()
+                
+                # Serialize and return updated instance
+                serializer = ApprovalDocumentSerializer(approval_document)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            return Response(
+                {'detail': f'An error occurred while updating: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @extend_schema(tags=['Approval Documents'])
     def delete(self, request, pk):
