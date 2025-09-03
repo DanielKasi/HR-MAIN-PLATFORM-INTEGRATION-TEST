@@ -172,6 +172,9 @@ class ApprovalDocumentListAPIView(APIView):
         tags=['Approval Documents'],
         parameters=[
             OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search approval documents by name or description'),
+            OpenApiParameter(name='content_type_id', type=int, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType ID'),
+            OpenApiParameter(name='app_label', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType app_label (must be used with model)'),
+            OpenApiParameter(name='model', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType model (must be used with app_label)'),
             OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, required=False, description='Page number'),
             OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, required=False, description='Number of results per page'),
         ]
@@ -179,7 +182,10 @@ class ApprovalDocumentListAPIView(APIView):
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
-        
+        content_type_id = request.query_params.get('content_type_id', None)
+        app_label = request.query_params.get('app_label', None)
+        model = request.query_params.get('model', None)
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -187,19 +193,47 @@ class ApprovalDocumentListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         documents = ApprovalDocument.objects.filter(
             institution=institution,
             deleted_at__isnull=True
         )
-        
+
+        # Filter by ContentType ID if provided
+        if content_type_id:
+            try:
+                documents = documents.filter(content_type__id=content_type_id)
+            except ValueError:
+                return Response(
+                    {"detail": "Invalid content_type_id provided."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Filter by app_label and model if both are provided
+        if app_label and model:
+            try:
+                content_type = ContentType.objects.get(app_label=app_label, model=model)
+                documents = documents.filter(content_type=content_type)
+            except ContentType.DoesNotExist:
+                return Response(
+                    {"detail": "ContentType with provided app_label and model not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        elif app_label or model:
+            return Response(
+                {"detail": "Both app_label and model must be provided together."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Apply search query if provided
         if search_query:
             documents = documents.filter(
-                Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
-                Q(document_type__icontains=search_query)
+                Q(content_type__model__icontains=search_query) |
+                Q(content_type__app_label__icontains=search_query)
             )
-        
+
+        # Paginate and serialize the results
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(documents, request)
         serializer = ApprovalDocumentSerializer(paginated_qs, many=True)
