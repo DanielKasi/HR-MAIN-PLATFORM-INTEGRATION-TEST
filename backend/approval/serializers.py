@@ -50,12 +50,50 @@ class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
         fields = ['id', 'approver_group']
 
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
-    approvers = ApprovalDocumentLevelApproverSerializer(source='approvaldocumentlevelapprovers_set', many=True, read_only=True)
-    overriders = ApprovalDocumentLevelOverriderSerializer(source='approvaldocumentleveloverriders_set', many=True, read_only=True)
+    approvers = serializers.PrimaryKeyRelatedField(
+        queryset=ApproverGroup.objects.all(),
+        many=True,
+        write_only=True
+    )
+    overriders = serializers.PrimaryKeyRelatedField(
+        queryset=ApproverGroup.objects.all(),
+        many=True,
+        write_only=True
+    )
+
+    approvers_detail = ApprovalDocumentLevelApproverSerializer(
+        source='approvaldocumentlevelapprovers_set', many=True, read_only=True
+    )
+    overriders_detail = ApprovalDocumentLevelOverriderSerializer(
+        source='approvaldocumentleveloverriders_set', many=True, read_only=True
+    )
 
     class Meta:
         model = ApprovalDocumentLevel
-        fields = ['id', 'level', 'name', 'description', 'public_uuid', 'approvers', 'overriders']
+        fields = [
+            'id',
+            'approval_document',
+            'level',
+            'name',
+            'description',
+            'public_uuid',
+            'approvers',         
+            'overriders',        
+            'approvers_detail',  
+            'overriders_detail', 
+        ]
+
+    def create(self, validated_data):
+        approvers = validated_data.pop("approvers", [])
+        overriders = validated_data.pop("overriders", [])
+
+        level = ApprovalDocumentLevel.objects.create(**validated_data)
+
+        level.approvers.set(approvers)
+        level.overriders.set(overriders)
+
+        return level
+
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)

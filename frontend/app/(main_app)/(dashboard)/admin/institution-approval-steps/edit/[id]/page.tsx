@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
 import apiRequest from "@/lib/apiRequest";
-import { fetchInstitutionRoles } from "@/lib/helpers";
+import { getRoles } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useSelector } from "react-redux";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -42,14 +42,15 @@ export default function EditApprovalStep() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if(!institutionId){return}
       try {
         const [rolesResponse, actionsResponse, stepResponse] = await Promise.all([
-          fetchInstitutionRoles(),
+          getRoles({institutionId}),
           apiRequest.get("workflow/workflow-action/"),
           apiRequest.get(`workflow/institution-approval-step/${institutionId}/?step=${stepId}`),
         ]);
 
-        setRoles(rolesResponse.data.results);
+        setRoles(rolesResponse);
         setActions(actionsResponse.data);
 
         // Set form data from the step

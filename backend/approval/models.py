@@ -69,7 +69,7 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
         return f"Approval Document for {self.content_type}"
 
 class ApprovalDocumentLevel(models.Model):
-    level = models.PositiveIntegerField(editable=True)
+    level = models.PositiveIntegerField(null=True, blank=True)
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
     approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')

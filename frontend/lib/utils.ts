@@ -1449,16 +1449,12 @@ export const getEmployeeById = async ({employeeId}: {employeeId: number | string
 
 // Helper function to get roles for an institution
 export const getRoles = async ({institutionId}: {institutionId: number}): Promise<Role[]> => {
-  try {
     const response = await apiRequest.get(`user/role/?institution_id=${institutionId}`);
-    if (response.data && response.data.results) {
+    if (response.data && response.data.results) {                                                                                                                                                            
       return response.data.results || [];
     }
     return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    // console.error("Error fetching roles:", error);
-    return [];
-  }
+
 };
 
 // Helper function to get positions for an institution
@@ -6348,6 +6344,10 @@ export const showErrorToast = ({error, defaultMessage}: {error: any; defaultMess
   toast.error(errorMessage);
 };
 
+export const showSuccessToast = (message:string) => {
+  toast.success(message)
+}
+
 // Spotcheck API functions
 export const spotcheckAPI = {
   getPaginated: async ({
@@ -6835,12 +6835,14 @@ export const shiftsAPI = {
     getPaginatedFromUrl: async ({
       url,
       is_employee_specific,
+      employee_id
     }: {
       url: string;
       is_employee_specific: boolean;
+      employee_id?:number
     }) => {
       const separator = url.includes("?") ? "&" : "?";
-      url = `${url}${separator}is_employee_specific=${is_employee_specific}`;
+      url = `${url}${separator}is_employee_specific=${is_employee_specific}&employee_id=${employee_id}`;
       const response = await apiRequest.get(url);
       return response.data as IPaginatedResponse<IEmployeeShift>;
     },
@@ -6933,3 +6935,14 @@ export const branchesAPI = {
     },
   },
 };
+
+
+
+
+export const usersAPI = {
+  getProfilesByInstitutionId: async ({institutionId}:{institutionId:number}) =>  {
+    const response  = await apiRequest.get(`/institution/profile/${institutionId}/`);
+    return response.data as IPaginatedResponse<UserProfile>;
+
+  }
+}
