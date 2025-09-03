@@ -5,6 +5,7 @@ from approval.models import (
     Approval, ApprovalTask, ApproverGroupUser, ApproverGroupRole,
     ApprovalDocumentLevelApprovers, ApprovalDocumentLevelOverriders
 )
+import re
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,13 +58,30 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
         fields = ['id', 'level', 'name', 'description', 'public_uuid', 'approvers', 'overriders']
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
-    actions = ActionSerializer(many=True, read_only=True)
-    levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
+    levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
+    content_type_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ApprovalDocument
-        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'actions', 'levels']
+        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'content_type_name', 'actions', 'levels']
+
+    def get_content_type_name(self, obj):
+        model_class = obj.content_type.model_class()
+        if not model_class:
+            return obj.content_type.name  # fallback
+        name = model_class.__name__  # e.g., "AssetCategory"
+        name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)  # insert space before caps
+        return name.strip()
+
+    def to_representation(self, instance):
+        # Customize the representation to include actions as a list of objects
+        representation = super().to_representation(instance)
+        representation['actions'] = [
+            {'id': action.id, 'name': action.name}
+            for action in instance.actions.all()
+        ]
+        return representation
 
 class ApprovalTaskSerializer(serializers.ModelSerializer):
     level_name = serializers.CharField(source='level.name', read_only=True)

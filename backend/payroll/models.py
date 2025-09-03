@@ -10,6 +10,7 @@ from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, 
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
+from django.core.exceptions import ValidationError
 
 
 class BaseModel(models.Model):
@@ -448,6 +449,7 @@ class EmployeePenalty(BaseApprovableModel):
     status = models.CharField(
         max_length=50, choices=PENALTY_STATUS_CHOICES, default="applied"
     )
+    
 
     class Meta:
         ordering = ['-date']
@@ -683,6 +685,41 @@ class EmployeePenalty(BaseApprovableModel):
                     institution=institution, penalty_type=penalty_type
                 ).first()
   
+class PenaltyWaiveRequest(BaseApprovableModel):
+    penalty = models.ForeignKey(EmployeePenalty, on_delete=models.CASCADE, related_name='waiverequests')
+    reason = models.TextField()
+    request_date = models.DateField(auto_now_add=True)
+    notes = models.TextField()
+
+    class Meta:
+        ordering = ['-request_date']
+
+    def __str__(self):
+        return f"Waive Request for Penalty {self.penalty.id} by {self.applicant}"
+
+    def get_institution(self):
+        return self.penalty.get_institution()
+
+    def save(self, *args, **kwargs):
+        if self.penalty.status == "waived":
+            raise ValidationError({"error": "Cannot request waive for an already waived penalty"})
+        super().save(*args, **kwargs)
+
+    def finish_workflow(self, approval):
+        super().finish_workflow(approval)
+
+        if approval.status == 'completed':
+            self.penalty.status = 'waived'
+            waive_note = f"Waived on {timezone.now().date()} based on request: {self.reason}"
+            if self.penalty.notes:
+                self.penalty.notes += f"\n{waive_note}"
+
+            else:
+                self.penalty.notes = waive_note 
+            self.penalty.save(update_fields=['status', 'notes']) 
+
+        elif approval.status == 'rejected':
+            pass          
 
 
 class PayrollPeriod(BaseApprovableModel):

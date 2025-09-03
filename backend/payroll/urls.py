@@ -91,6 +91,8 @@ urlpatterns = [
         PayrollAnalyticsAPI.as_view(),
         name='payroll-analytics-period'
     ),
-    path('analytics/', PayrollDashboardAPIView.as_view(), name='payroll-analytics')
+    path('analytics/', PayrollDashboardAPIView.as_view(), name='payroll-analytics'),
+    path('penalty-waive-requests/', PenaltyWaiveRequestListCreateView.as_view(), name='penalty-waive-request-list'),
+    path('penalty-waive-requests/<int:pk>/', PenaltyWaiveRequestDetailAPIView.as_view(), name='penalty-waive-request-detail'),
 
 ]
