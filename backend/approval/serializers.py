@@ -5,6 +5,7 @@ from approval.models import (
     Approval, ApprovalTask, ApproverGroupUser, ApproverGroupRole,
     ApprovalDocumentLevelApprovers, ApprovalDocumentLevelOverriders
 )
+import re
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,16 +58,28 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
         fields = ['id', 'level', 'name', 'description', 'public_uuid', 'approvers', 'overriders']
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
-    actions = serializers.SerializerMethodField()
-    levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
+    levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
+    content_type_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ApprovalDocument
-        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'actions', 'levels']
-    
-    def get_actions(self, obj):
-        return [action.name for action in obj.actions.all()]
+        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'content_type_name', 'actions', 'levels']
+
+    def get_content_type_name(self, obj):
+        # Humanize the content type model name
+        name = obj.content_type.model
+        name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+        return name.title()
+
+    def to_representation(self, instance):
+        # Customize the representation to include actions as a list of objects
+        representation = super().to_representation(instance)
+        representation['actions'] = [
+            {'id': action.id, 'name': action.name}
+            for action in instance.actions.all()
+        ]
+        return representation
 
 class ApprovalTaskSerializer(serializers.ModelSerializer):
     level_name = serializers.CharField(source='level.name', read_only=True)
