@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.http import Http404
 import re
 from institution.models import Institution
@@ -15,7 +14,7 @@ from .serializers import (
 )
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse,OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from users.models import Role
@@ -232,76 +231,6 @@ class ApprovalDocumentDetailAPIView(APIView):
         operation_id='approval_document_partial_update',
         summary='Partially update an Approval Document',
         description='Update specific fields of an approval document. Only provided fields will be updated.',
-        parameters=[
-            OpenApiParameter(
-                name='id',
-                type=OpenApiTypes.INT,
-                location=OpenApiParameter.PATH,
-                description='ID of the approval document to update',
-                required=True,
-            ),
-        ],
-        request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'description': {
-                        'type': 'string',
-                        'description': 'Description of the approval document',
-                        'nullable': True
-                    },
-                    'actions': {
-                        'type': 'array',
-                        'items': {'type': 'integer'},
-                        'description': 'List of action IDs to associate with this document'
-                    }
-                },
-                'example': {
-                    'description': 'Updated approval document description',
-                    'actions': [1, 2, 3]
-                }
-            }
-        },
-        responses={
-            200: {
-                'description': 'Approval document updated successfully',
-                'content': {
-                    'application/json': {
-                        'schema': ApprovalDocumentSerializer,
-                        'example': {
-                            'id': 1,
-                            'institution': 1,
-                            'institution_name': 'Example Institution',
-                            'public_uuid': '550e8400-e29b-41d4-a716-446655440000',
-                            'description': 'Updated approval document description',
-                            'content_type': 1,
-                            'actions': ['Action 1', 'Action 2', 'Action 3'],
-                            'levels': []
-                        }
-                    }
-                }
-            },
-            400: {
-                'description': 'Bad request - validation errors',
-                'content': {
-                    'application/json': {
-                        'example': {
-                            'actions': ['Invalid action ID: 999']
-                        }
-                    }
-                }
-            },
-            404: {
-                'description': 'Approval document not found',
-                'content': {
-                    'application/json': {
-                        'example': {
-                            'detail': 'Not found.'
-                        }
-                    }
-                }
-            }
-        },
         tags=['Approval Documents']
     )
     def patch(self, request, pk):
