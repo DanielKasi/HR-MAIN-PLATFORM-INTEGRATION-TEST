@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {fetchAndSetData, fetchInstitutionBranchesFromAPI} from "@/lib/helpers";
-import {useEffect, useState} from "react";
-import type {Branch} from "@/types";
-import {Icon} from "@iconify/react";
+import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
+import { useEffect, useState } from "react";
+import type { Branch } from "@/types";
+import { Icon } from "@iconify/react";
 
 import {
   Users,
@@ -34,10 +34,10 @@ import {
   LampDesk,
   Clock,
 } from "lucide-react";
-import {Separator} from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function AdminPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -192,7 +192,7 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-4">
                   <Link
-                    href="/admin/institution-approval-steps/"
+                    href="/admin/settings/approvals"
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
                     <Store className="w-5 h-5 text-gray-500" />

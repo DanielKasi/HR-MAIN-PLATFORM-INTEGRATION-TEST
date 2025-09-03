@@ -178,9 +178,9 @@ export default function ApprovalDetailsPage() {
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                         <span className="font-medium">Approver Groups</span>
                       </div>
-                      {level.approvers && level.approvers.length > 0 ? (
+                      {level.approvers_detail && level.approvers_detail.length > 0 ? (
                         <div className="space-y-2">
-                          {level.approvers.map((approver) => (
+                          {level.approvers_detail.map((approver) => (
                             <div
                               key={approver.id}
                               className="flex items-center justify-between p-2 bg-muted/50 rounded"
@@ -203,9 +203,9 @@ export default function ApprovalDetailsPage() {
                         <Shield className="h-4 w-4 text-orange-600" />
                         <span className="font-medium">Overrider Groups</span>
                       </div>
-                      {level.overriders && level.overriders.length > 0 ? (
+                      {level.overriders_detail && level.overriders_detail.length > 0 ? (
                         <div className="space-y-2">
-                          {level.overriders.map((overrider) => (
+                          {level.overriders_detail.map((overrider) => (
                             <div
                               key={overrider.id}
                               className="flex items-center justify-between p-2 bg-muted/50 rounded"

@@ -57,9 +57,9 @@ export interface ApprovalDocumentLevel {
   name: string | null;
   description: string;
   public_uuid: string;
-  approvers: ApprovalDocumentLevelApprover[];
-  overriders: ApprovalDocumentLevelOverrider[];
-  approval_document:number
+  approvers_detail: ApprovalDocumentLevelApprover[];
+  overriders_detail: ApprovalDocumentLevelOverrider[];
+  approval_document: number
 }
 
 export interface ApprovalDocumentLevelFormData {
@@ -67,7 +67,7 @@ export interface ApprovalDocumentLevelFormData {
   description: string;
   approvers: number[];
   overriders: number[];
-  approval_document:number
+  approval_document: number
 }
 
 export interface ApprovalDocument {
@@ -75,8 +75,8 @@ export interface ApprovalDocument {
   institution: number;
   institution_name?: string;
   public_uuid: string;
-  description: string|null;
-  content_type:number
+  description: string | null;
+  content_type: number
   content_type_name: string; // ContentType id
   actions: Action[];
   levels: ApprovalDocumentLevel[];
@@ -118,13 +118,6 @@ export interface Approval {
   tasks: ApprovalTask[];
 }
 
-export interface ContentTypeLite {
-  id: number;
-  app_label: string;
-  model: string;
-  name: string;
-  plural_name: string;
-}
 
 export type ApprovableEntityStatus =
   | "under_creation"
@@ -133,9 +126,18 @@ export type ApprovableEntityStatus =
   | "active";
 
 export interface IBaseApprovable {
-  approval_status: ApprovableEntityStatus;
-  approvals: Approval[];
+  approval_status?: ApprovableEntityStatus;
+  approvals?: Approval[];
 }
+
+export interface ContentTypeLite {
+  id: number;
+  app_label: string;
+  model: string;
+  name: string;
+  plural_name: string;
+}
+
 
 // Helper to build approvable read types without mutating existing interfaces
 export type Approvable<T> = T & IBaseApprovable;

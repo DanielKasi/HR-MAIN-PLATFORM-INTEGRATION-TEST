@@ -11,6 +11,7 @@ import type {
   ApproverGroup,
   ApproverGroupFormData,
 } from "@/types/approvals.types";
+import { IPaginatedResponse } from "@/types/types.utils";
 
 const BASE = "approval";
 
@@ -24,7 +25,7 @@ export const fetchApprovableModels = async () => {
   return res.data as ContentTypeLite[];
 };
 
-export const fetchApprovableModelById = async ({id}:{id:number}) => {
+export const fetchApprovableModelById = async ({ id }: { id: number }) => {
   const res = await apiRequest.get(`${BASE}/approvable-models/${id}`);
   return res.data as ContentTypeLite;
 };
@@ -58,13 +59,13 @@ export const fetchApprovalTaskById = async (id: number) => {
 export const approveApprovalTask = async (id: number, comment?: string) => {
   const url = comment ? `${BASE}/approval-tasks/${id}/approve/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
   const res = await apiRequest.patch(url, {});
-  return res.data as { status: "approved" };
+  return res.data as ApprovalTask;
 };
 
 export const rejectApprovalTask = async (id: number, comment?: string) => {
   const url = comment ? `${BASE}/approval-tasks/${id}/reject/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/reject/`;
   const res = await apiRequest.patch(url, {});
-  return res.data as { status: "rejected" };
+  return res.data as ApprovalTask;
 };
 
 export type DashboardCategory<T = ApprovalTask> = { count: number; tasks: T[] };
@@ -82,17 +83,16 @@ export const fetchApprovalTasksDashboard = async () => {
 };
 
 // Approval Documents
-export const fetchApprovalDocuments = async (params?: { search?: string; page?: number; page_size?: number }) => {
+export const fetchApprovalDocuments = async (params?: { search?: string; page?: number, content_type_id?: number, app_label?: string }) => {
   const res = await apiRequest.get(`${BASE}/approval-documents/`, null, {}, params ? { params } : {});
-  return res.data as { count: number; next: string | null; previous: string | null; results: ApprovalDocument[] };
+  return res.data as IPaginatedResponse<ApprovalDocument>
 };
-
 export const createApprovalDocument = async (payload: Partial<ApprovalDocumentFormData>) => {
   const res = await apiRequest.post(`${BASE}/approval-documents/`, payload);
   return res.data as ApprovalDocument;
 };
 
-export const fetchApprovalDocumentById =  async (id: number) => {
+export const fetchApprovalDocumentById = async (id: number) => {
   const res = await apiRequest.get(`${BASE}/approval-documents/${id}/`);
   return res.data as ApprovalDocument;
 };
@@ -111,11 +111,10 @@ export const deleteApprovalDocument = async (id: number) => {
 export const fetchApprovalDocumentLevels = async (params?: {
   search?: string
   page?: number
-  page_size?: number
   approval_document?: number
 }) => {
   const res = await apiRequest.get(`${BASE}/approval-document-levels/`, null, {}, params ? { params } : {})
-  return res.data as { count: number; next: string | null; previous: string | null; results: ApprovalDocumentLevel[] }
+  return res.data as IPaginatedResponse<ApprovalDocumentLevel>
 }
 
 export const fetchApprovalDocumentLevelById = async (id: number) => {
