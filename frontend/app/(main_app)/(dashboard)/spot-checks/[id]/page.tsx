@@ -5,9 +5,11 @@ import {useRouter, usePathname, useParams} from "next/navigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
-import { showErrorToast, spotcheckAPI } from "@/lib/utils";
+import { employeeAPI, showErrorToast, spotcheckAPI } from "@/lib/utils";
 import { clearRedirect } from "@/store/redirects/actions";
 import { useDispatch } from "react-redux";
+import { ISpotCheck } from "@/types/types.utils";
+import { SpotcheckExpiredModal } from "@/components/spotcheck-expired-modal";
 
 export default function SpotCheckCheckinPage() {
   const router = useRouter();
@@ -15,6 +17,10 @@ export default function SpotCheckCheckinPage() {
   const params = useParams();
   const [loading, setLoading] = useState(false);
   const [permissionState, setPermissionState] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
+  const [spotCheck, SetSpotCheck] = useState<ISpotCheck>();
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
+
+ 
 
 
   const id = params.id as string
@@ -30,9 +36,31 @@ export default function SpotCheckCheckinPage() {
         setPermissionState('unknown');
       }
     }
+    fetchSpotCheck()
     // clear any pending redirects to avoid unwanted navigation later
     dispatch(clearRedirect());
   }, []);
+
+
+
+
+
+  const fetchSpotCheck = async ()=> {
+    try{
+      const spotcheck = await spotcheckAPI.getById(Number(id))
+      console.log(spotcheck)
+      SetSpotCheck(spotcheck)
+      
+      // Show modal if status is not SENT
+      if (spotcheck?.status?.status_name !== "SENT") {
+        setShowExpiredModal(true);
+      }
+    }catch (e) {
+      console.warn("Failed to fetch spot check",e)
+    }
+  }
+
+ 
 
   const requestAndCheckIn = async () => {
     if (!navigator || !navigator.geolocation) {
@@ -73,6 +101,20 @@ export default function SpotCheckCheckinPage() {
     );
   };
 
+  const handleRedirectToProfile = () => {
+    if (spotCheck?.employee) {
+      router.push(`/employees/profile/${spotCheck.employee}`);
+    } else {
+      // Fallback to dashboard if no employee ID
+      router.push('/dashboard');
+    }
+  };
+
+  const handleCloseExpiredModal = () => {
+    setShowExpiredModal(false);
+    handleRedirectToProfile();
+  };
+
   return (
     <div className="min-h-[70vh] px-4 shadow-sm bg-white border-none rounded">
       <Card className="w-full mt-4 border-none shadow-none">
@@ -90,7 +132,7 @@ export default function SpotCheckCheckinPage() {
             <Button
               onClick={requestAndCheckIn}
               className="rounded-xl px-6 py-3 shadow-md hover:opacity-95"
-              disabled={loading}
+              disabled={loading || spotCheck?.status.status_name !== 'SENT'}
             >
               {loading ? 'Checking in...' : 'Allow location & Check in'}
             </Button>
@@ -107,6 +149,12 @@ export default function SpotCheckCheckinPage() {
           <div className="text-sm text-gray-500">Your location will only be used to validate this check-in.</div>
         </CardContent>
       </Card>
+
+      <SpotcheckExpiredModal
+        isOpen={showExpiredModal}
+        onClose={handleCloseExpiredModal}
+        onRedirectToProfile={handleRedirectToProfile}
+      />
     </div>
   );
 }

@@ -6394,7 +6394,7 @@ export const spotcheckAPI = {
 
   getById: async (id: number): Promise<ISpotCheck> => {
     try {
-      const response = await apiRequest.get(`/spotcheck/${id}/`);
+      const response = await apiRequest.get(`/spotcheck/${id}/details`);
       return response.data;
     } catch (error) {
       console.warn("Error fetching spotcheck:", error);
