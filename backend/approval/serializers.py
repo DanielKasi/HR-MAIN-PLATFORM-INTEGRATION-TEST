@@ -67,10 +67,12 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
         fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'content_type_name', 'actions', 'levels']
 
     def get_content_type_name(self, obj):
-        # Humanize the content type model name
-        name = obj.content_type.model
-        name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
-        return name.title()
+        model_class = obj.content_type.model_class()
+        if not model_class:
+            return obj.content_type.name  # fallback
+        name = model_class.__name__  # e.g., "AssetCategory"
+        name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)  # insert space before caps
+        return name.strip()
 
     def to_representation(self, instance):
         # Customize the representation to include actions as a list of objects

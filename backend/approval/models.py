@@ -6,7 +6,8 @@ import uuid
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
-
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 
 class Action(SoftDeletableTimeStampedModel):
@@ -68,7 +69,7 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
         return f"Approval Document for {self.content_type}"
 
 class ApprovalDocumentLevel(models.Model):
-    level = models.PositiveIntegerField()
+    level = models.PositiveIntegerField(editable=True)
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
     approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')
@@ -82,6 +83,21 @@ class ApprovalDocumentLevel(models.Model):
     class Meta:
         unique_together = ('approval_document', 'level')
         ordering = ['level']
+
+@receiver(pre_save, sender=ApprovalDocumentLevel)
+def set_approval_level(sender, instance, **kwargs):
+    if not instance.pk and not instance.level:  # Only for new instances
+        max_level = ApprovalDocumentLevel.objects.filter(
+            approval_document=instance.approval_document
+        ).aggregate(models.Max('level'))['level__max'] or 0
+        instance.level = max_level + 1
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.level:
+            self.level = ApprovalDocumentLevel.objects.filter(
+                approval_document=self.approval_document
+            ).aggregate(models.Max('level'))['level__max'] or 0
+        super().save(*args, **kwargs)
 
 class ApprovalDocumentLevelApprovers(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
