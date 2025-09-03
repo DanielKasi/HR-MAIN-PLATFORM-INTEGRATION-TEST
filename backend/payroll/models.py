@@ -686,7 +686,7 @@ class EmployeePenalty(BaseApprovableModel):
                 ).first()
   
 class PenaltyWaiveRequest(BaseApprovableModel):
-    penalty = models.ForeignKey(EmployeePenalty, on_delete=models.CASCADE, related_name='waive-penalty-requests')
+    penalty = models.ForeignKey(EmployeePenalty, on_delete=models.CASCADE, related_name='waiverequests')
     reason = models.TextField()
     request_date = models.DateField(auto_now_add=True)
     notes = models.TextField()

@@ -693,3 +693,30 @@ class ApprovableContentTypesListAPIView(APIView):
             })
         
         return Response(content_types, status=status.HTTP_200_OK)    
+    
+
+class ApprovableContentTypeDetailAPIView(APIView):
+    @extend_schema(
+        tags=['Approval Documents'],
+        description='Retrieve details for a specific content type corresponding to a model that inherits from BaseApprovableModel. The details include the humanized name and other metadata. The content type must be valid and linked to an approvable model.',
+        responses={200: OpenApiTypes.OBJECT},       
+    )    
+    def get(self, request, pk):
+        try:
+            ct = ContentType.objects.get(pk=pk)
+        except ContentType.DoesNotExist:
+            return Response({'error': 'Content type not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        model = ct.model_class()
+        if not (model and issubclass(model, BaseApprovableModel) and not model._meta.abstract):
+            return Response({"error": "This Model doest not correspond to an approvable model"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Add the success response
+        return Response({
+            'id': ct.id,
+            'name': ct.name,
+            'model': ct.model,
+            'app_label': ct.app_label,
+            'humanized_name': model._meta.verbose_name.title(),
+            # Add any other metadata you want to return
+        }, status=status.HTTP_200_OK)
