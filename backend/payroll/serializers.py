@@ -12,6 +12,7 @@ from .models import (
     PayslipItem,
     EmployeeTax,
     EmployeePenalty,
+    PenaltyWaiveRequest,
 )
 from employee.models import Employee, EmployeeAttendance
 from institution.models import Institution, Department
@@ -39,7 +40,10 @@ class BaseModelSerializer(serializers.ModelSerializer):
         return rep
 
      
-
+class PenaltyWaiveRequestSerializer(BaseApprovableSerializer):
+    class Meta:
+        model = PenaltyWaiveRequest
+        fields = '__all__'
 
 class AllowanceTypeSerializer(BaseModelSerializer, BaseApprovableSerializer):
     class Meta:
