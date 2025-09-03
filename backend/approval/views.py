@@ -370,6 +370,7 @@ class ApprovalDocumentLevelListAPIView(APIView):
     @extend_schema(tags=['Approval Document Levels'])
     def post(self, request):
         serializer = ApprovalDocumentLevelSerializer(data=request.data)
+        print("data:", request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

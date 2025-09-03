@@ -7,7 +7,7 @@ import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {showErrorToast, shiftsAPI} from "@/lib/utils";
-import type {IEmployee, IBranchShift, IEmployeeShift} from "@/types/types.utils";
+import type {IEmployee, IEmployeeShift} from "@/types/types.utils";
 
 interface ShiftsTableProps {
   searchTerm?: string;
@@ -29,7 +29,6 @@ export default function ShiftsTable({searchTerm, refreshTableRef, scope}: Shifts
       fetchFirstPage={async () => {
         if (!selectedInstitution) throw new Error("No institution selected");
         if (scope.type === "employee") {
-          console.log("Fetching employee shifts for employee_id:", scope.employee.id);
           return await shiftsAPI.EMPLOYEE.getPaginatedForEmployee({
             search: searchTerm,
             page: 1,
@@ -40,13 +39,13 @@ export default function ShiftsTable({searchTerm, refreshTableRef, scope}: Shifts
           return await shiftsAPI.EMPLOYEE.getPaginatedForInstitution({search: searchTerm, page: 1});
         }
         if (scope.type === "branch") {
-          return await shiftsAPI.BRANCH.getAll(scope.branch.id);
+          return await shiftsAPI.BRANCH.getAll({branch_id:scope.branch.id});
         }
         return {results: [], count: 0} as any;
       }}
       onError={(error) => showErrorToast({error, defaultMessage: "Failed to fetch shifts"})}
       fetchFromUrl={async (args: {url: string}) =>
-        shiftsAPI.COMMON.getPaginatedFromUrl({
+        shiftsAPI.EMPLOYEE.getPaginatedFromUrl({
           url: args.url,
           is_employee_specific: scope.type === "employee",
           employee_id: scope.type === "employee" ? scope.employee.id : undefined,

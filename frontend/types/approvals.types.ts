@@ -33,6 +33,14 @@ export interface ApproverGroup {
   roles: ApproverGroupRole[];
 }
 
+export interface ApproverGroupFormData {
+  institution: number
+  name: string
+  description?: string
+  users: number[]
+  roles: number[]
+}
+
 export interface ApprovalDocumentLevelApprover {
   id: number;
   approver_group: ApproverGroup;
@@ -51,6 +59,15 @@ export interface ApprovalDocumentLevel {
   public_uuid: string;
   approvers: ApprovalDocumentLevelApprover[];
   overriders: ApprovalDocumentLevelOverrider[];
+  approval_document:number
+}
+
+export interface ApprovalDocumentLevelFormData {
+  name: string | null;
+  description: string;
+  approvers: number[];
+  overriders: number[];
+  approval_document:number
 }
 
 export interface ApprovalDocument {
@@ -58,10 +75,18 @@ export interface ApprovalDocument {
   institution: number;
   institution_name?: string;
   public_uuid: string;
-  description: string | null;
-  content_type: number; // ContentType id
+  description: string|null;
+  content_type:number
+  content_type_name: string; // ContentType id
   actions: Action[];
   levels: ApprovalDocumentLevel[];
+}
+
+export interface ApprovalDocumentFormData {
+  institution: number;
+  description: string | null;
+  content_type: number; // ContentType id
+  actions: number[];
 }
 
 export type ApprovalStatus = "ongoing" | "rejected" | "completed";
