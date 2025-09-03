@@ -52,7 +52,7 @@ class InstitutionSpotCheckSettingDetailView(APIView):
         """Retrieve details of a specific institution setting."""
         try:
             setting = SpotCheckModels.InstitutionSpotCheckSetting.objects.get(
-                id=institution_id, deleted_at=None
+                institution__id=institution_id, deleted_at=None
             )
             serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(
                 setting
@@ -82,7 +82,7 @@ class InstitutionSpotCheckSettingUpdateView(APIView):
         """Update details of a specific institution setting."""
         try:
             setting = SpotCheckModels.InstitutionSpotCheckSetting.objects.get(
-                id=institution_id, deleted_at=None
+                institution__id=institution_id, deleted_at=None
             )
         except SpotCheckModels.InstitutionSpotCheckSetting.DoesNotExist:
             return Response(
@@ -144,7 +144,7 @@ class BranchSpotCheckSettingDetailView(APIView):
         """Retrieve details of a specific branch setting."""
         try:
             setting = SpotCheckModels.BranchSpotCheckSetting.objects.get(
-                id=branch_id, deleted_at=None
+                branch__id=branch_id, deleted_at=None
             )
             serializer = SpotCheckSerializers.BranchSpotCheckSettingSerializer(setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -172,7 +172,7 @@ class BranchSpotCheckSettingUpdateView(APIView):
         """Update details of a specific branch setting."""
         try:
             setting = SpotCheckModels.BranchSpotCheckSetting.objects.get(
-                id=branch_id, deleted_at=None
+                branch__id=branch_id, deleted_at=None
             )
         except SpotCheckModels.BranchSpotCheckSetting.DoesNotExist:
             return Response(

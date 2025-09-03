@@ -242,7 +242,7 @@ export default function JobAdvertDetailsPage() {
   const expired = isExpired(jobAdvert.expiry_date);
 
   return (
-    <div className="w-full h-full bg-gray-50 rounded-xl p-6">
+    <div className="w-full h-full bg-white rounded-xl p-6">
       <div className="w-full space-y-8">
         {/* Header */}
         <div className="grid grid-cols-1 md:flex items-center justify-between">
@@ -253,7 +253,7 @@ export default function JobAdvertDetailsPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleBack}
-                  className="rounded-full aspect-square"
+                  className="border rounded-full h-10 w-10 flex items-center justify-center"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -357,7 +357,7 @@ export default function JobAdvertDetailsPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 border-none">
             {/* Advert Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Advert Information */}
