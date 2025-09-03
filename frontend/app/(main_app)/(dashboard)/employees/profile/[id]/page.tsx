@@ -1,23 +1,23 @@
 "use client";
 
-import {useState, useEffect, useCallback, useMemo} from "react";
-import {useParams} from "next/navigation";
-import {useSelector} from "react-redux";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
-import type {IAttendance} from "@/types/types.utils";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import type { IAttendance } from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
 import EmployeeDiscipline from "@/components/employee/employee-discipline";
 import AssetRequests from "@/components/employee/asset-request";
 import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
-import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import {
   Mail,
   Phone,
@@ -34,19 +34,20 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
-import {AttendanceAPI, getEmployeeById, spotcheckAPI} from "@/lib/utils";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import type {IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData} from "@/types/types.utils";
-import {toast} from "sonner";
-import {EmployeePayrollTable} from "@/components/employee/employee-payroll";
+import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import type { IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData } from "@/types/types.utils";
+import { toast } from "sonner";
+import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import {formatCurrency, getFileUrl} from "@/lib/helpers";
-import {useMobile} from "@/hooks/use-mobile";
+import { formatCurrency, getFileUrl } from "@/lib/helpers";
+import { useMobile } from "@/hooks/use-mobile";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
 import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -99,7 +100,7 @@ export default function EmployeeProfile() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  console.log("Spot check setting",spotcheckSetting)
+  console.log("Spot check setting", spotcheckSetting)
 
   // Memoized utility functions
   const formatDate = useCallback((dateString: string | null) => {
@@ -113,7 +114,7 @@ export default function EmployeeProfile() {
 
   const getMaritalStatusLabel = useCallback((status: string | null) => {
     if (!status) return null;
-    const statusMap: {[key: string]: string} = {
+    const statusMap: { [key: string]: string } = {
       single: "Single",
       married: "Married",
       divorced: "Divorced",
@@ -194,7 +195,7 @@ export default function EmployeeProfile() {
     setLoading(true);
     setError(null);
     try {
-      const fetchedEmployee = await getEmployeeById({employeeId});
+      const fetchedEmployee = await getEmployeeById({ employeeId });
       setEmployee(fetchedEmployee);
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee";
@@ -303,10 +304,10 @@ export default function EmployeeProfile() {
 
   const confirmDeleteSpotcheckConfig = async () => {
     if (!employee?.id || !spotcheckSetting) return;
-    
+
     setLoadingSpotcheckConfig(true);
     try {
-      
+
       // await spotcheckAPI.CONFIGS.EMPLOYEE.delete(employee.id);
       setSpotcheckSetting(null);
       resetSpotcheckForm();
@@ -336,18 +337,18 @@ export default function EmployeeProfile() {
   }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
 
   // Tab configuration with lazy loading indicators
-  const tabConfig: Array<{id: typeof activeTab; label: string; hasData: boolean}> = useMemo(
+  const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
     () => [
-      {id: "bio_data", label: "Bio Data", hasData: true}, // Component handles own loading
-      {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
-      {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
-      {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
-      {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
-      {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
-      {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
-      {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
-      {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
-      {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
+      { id: "bio_data", label: "Bio Data", hasData: true }, // Component handles own loading
+      { id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
+      { id: "discipline", label: "Discipline", hasData: true }, // Component handles own loading
+      { id: "leave", label: "Leave", hasData: true }, // Component handles own loading
+      { id: "assets", label: "Assets", hasData: true }, // Component handles own loading
+      { id: "payroll", label: "Payroll", hasData: true }, // Component handles own loading
+      { id: "documents", label: "Documents", hasData: true }, // Component handles own loading
+      { id: "spotchecks", label: "Spotchecks", hasData: true }, // Component handles own loading
+      { id: "penalties", label: "Penalties", hasData: true }, // Component handles own loading
+      { id: "shifts", label: "Shifts", hasData: true }, // Component handles own loading
     ],
     [tabDataCache],
   );
@@ -441,6 +442,7 @@ export default function EmployeeProfile() {
                 <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Generate Document</span>
               </Button>
+              {/* <ApprovalWorkflow approvals={employee.approvals} /> */}
             </div>
           </div>
 
@@ -564,11 +566,10 @@ export default function EmployeeProfile() {
                         <button
                           key={tab.id}
                           onClick={() => handleTabChange(tab.id as any)}
-                          className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-                            activeTab === tab.id
-                              ? "text-gray-800 font-semibold"
-                              : "text-[#848496] hover:text-gray-800"
-                          }`}
+                          className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+                            ? "text-gray-800 font-semibold"
+                            : "text-[#848496] hover:text-gray-800"
+                            }`}
                         >
                           {tab.label}
                           {activeTab === tab.id && (
@@ -582,7 +583,7 @@ export default function EmployeeProfile() {
 
                 <CardContent className="p-4 md:p-6">
                   {activeTab === "attendance" && (
-                    <EmployeeAttendance scope={{type: "employee", employee}} />
+                    <EmployeeAttendance scope={{ type: "employee", employee }} />
                   )}
 
                   {activeTab === "bio_data" && (
@@ -677,27 +678,27 @@ export default function EmployeeProfile() {
                             )}
                             {(employee.emergency_contact_name ||
                               employee.emergency_contact_phone) && (
-                              <div>
-                                <label className="text-sm font-medium text-[#848496]">
-                                  Emergency Contact
-                                </label>
-                                {employee.emergency_contact_name && (
-                                  <p className="text-gray-800 font-medium break-words">
-                                    {employee.emergency_contact_name}{" "}
-                                    {employee.emergency_contact_relationship && (
-                                      <span className="text-[#848496]">
-                                        ({employee.emergency_contact_relationship})
-                                      </span>
-                                    )}
-                                  </p>
-                                )}
-                                {employee.emergency_contact_phone && (
-                                  <p className="text-[#848496] text-sm break-all">
-                                    {employee.emergency_contact_phone}
-                                  </p>
-                                )}
-                              </div>
-                            )}
+                                <div>
+                                  <label className="text-sm font-medium text-[#848496]">
+                                    Emergency Contact
+                                  </label>
+                                  {employee.emergency_contact_name && (
+                                    <p className="text-gray-800 font-medium break-words">
+                                      {employee.emergency_contact_name}{" "}
+                                      {employee.emergency_contact_relationship && (
+                                        <span className="text-[#848496]">
+                                          ({employee.emergency_contact_relationship})
+                                        </span>
+                                      )}
+                                    </p>
+                                  )}
+                                  {employee.emergency_contact_phone && (
+                                    <p className="text-[#848496] text-sm break-all">
+                                      {employee.emergency_contact_phone}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             {(employee.bank || employee.bank_account_number) && (
                               <div>
                                 <label className="text-sm font-medium text-[#848496]">
@@ -729,42 +730,42 @@ export default function EmployeeProfile() {
                         {(employee.qualifications ||
                           employee.experience > 0 ||
                           employee.skills) && (
-                          <div className="border-t border-[#e8e8f2] pt-6">
-                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                              <GraduationCap className="w-5 h-5" />
-                              Qualifications & Experience
-                            </h3>
-                            <div className="space-y-3">
-                              {employee.qualifications && (
-                                <div>
-                                  <label className="text-xs text-[#848496]">Education</label>
-                                  <p className="text-gray-800 font-medium">
-                                    {employee.qualifications}
-                                  </p>
-                                </div>
-                              )}
-                              {employee.experience > 0 && (
-                                <div>
-                                  <label className="text-xs text-[#848496]">
-                                    Years of Experience
-                                  </label>
-                                  <p className="text-gray-800 font-medium">
-                                    {employee.experience} years
-                                  </p>
-                                </div>
-                              )}
-                              {employee.skills && (
-                                <div>
-                                  <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
-                                    <Award className="w-5 h-5" />
-                                    Skills
-                                  </h4>
-                                  <p className="text-gray-800">{employee.skills}</p>
-                                </div>
-                              )}
+                            <div className="border-t border-[#e8e8f2] pt-6">
+                              <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                                <GraduationCap className="w-5 h-5" />
+                                Qualifications & Experience
+                              </h3>
+                              <div className="space-y-3">
+                                {employee.qualifications && (
+                                  <div>
+                                    <label className="text-xs text-[#848496]">Education</label>
+                                    <p className="text-gray-800 font-medium">
+                                      {employee.qualifications}
+                                    </p>
+                                  </div>
+                                )}
+                                {employee.experience > 0 && (
+                                  <div>
+                                    <label className="text-xs text-[#848496]">
+                                      Years of Experience
+                                    </label>
+                                    <p className="text-gray-800 font-medium">
+                                      {employee.experience} years
+                                    </p>
+                                  </div>
+                                )}
+                                {employee.skills && (
+                                  <div>
+                                    <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                                      <Award className="w-5 h-5" />
+                                      Skills
+                                    </h4>
+                                    <p className="text-gray-800">{employee.skills}</p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </CardContent>
                     </Card>
                   )}
@@ -783,11 +784,10 @@ export default function EmployeeProfile() {
                         <div className="flex gap-8">
                           <button
                             onClick={() => setLeaveSubTab("balances")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              leaveSubTab === "balances"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "balances"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             Leave Balances
                             {leaveSubTab === "balances" && (
@@ -796,11 +796,10 @@ export default function EmployeeProfile() {
                           </button>
                           <button
                             onClick={() => setLeaveSubTab("applications")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              leaveSubTab === "applications"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "applications"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             Leave Applications
                             {leaveSubTab === "applications" && (
@@ -834,11 +833,10 @@ export default function EmployeeProfile() {
                         <div className="flex gap-8">
                           <button
                             onClick={() => setAssetSubTab("requests")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              assetSubTab === "requests"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "requests"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             Asset Requests
                             {assetSubTab === "requests" && (
@@ -847,11 +845,10 @@ export default function EmployeeProfile() {
                           </button>
                           <button
                             onClick={() => setAssetSubTab("allocations")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              assetSubTab === "allocations"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "allocations"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             Asset Allocations
                             {assetSubTab === "allocations" && (
@@ -888,7 +885,7 @@ export default function EmployeeProfile() {
                   {activeTab === "payroll" && selectedInstitution && (
                     <EmployeePayrollTable
                       institutionId={selectedInstitution.id}
-                      scope={{type: "employee", employeeId: employeeId}}
+                      scope={{ type: "employee", employeeId: employeeId }}
                       showEmployeeName={false}
                     />
                   )}
@@ -900,11 +897,10 @@ export default function EmployeeProfile() {
                         <div className="flex gap-8">
                           <button
                             onClick={() => setDocumentsSubTab("contracts")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              documentsSubTab === "contracts"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${documentsSubTab === "contracts"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             Contracts
                             {documentsSubTab === "contracts" && (
@@ -918,7 +914,7 @@ export default function EmployeeProfile() {
                       {documentsSubTab === "contracts" && (
                         <ContractsTable
                           searchTerm={searchTerm}
-                          scope={{type: "employee", employeeId}}
+                          scope={{ type: "employee", employeeId }}
                         />
                       )}
                     </div>
@@ -931,11 +927,10 @@ export default function EmployeeProfile() {
                         <div className="flex gap-8">
                           <button
                             onClick={() => setSpotcheckSubTab("spotchecks")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              spotcheckSubTab === "spotchecks"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "spotchecks"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
@@ -947,11 +942,10 @@ export default function EmployeeProfile() {
                           </button>
                           <button
                             onClick={() => setSpotcheckSubTab("configs")}
-                            className={`pb-3 text-sm font-medium transition-colors relative ${
-                              spotcheckSubTab === "configs"
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                            }`}
+                            className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "configs"
+                              ? "text-gray-800 font-semibold"
+                              : "text-[#848496] hover:text-gray-800"
+                              }`}
                           >
                             <div className="flex items-center gap-2">
                               <Settings className="w-4 h-4" />

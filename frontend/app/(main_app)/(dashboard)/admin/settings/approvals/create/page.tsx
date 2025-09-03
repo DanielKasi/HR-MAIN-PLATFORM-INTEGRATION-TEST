@@ -12,6 +12,7 @@ import {
   fetchApprovalDocumentLevels,
   fetchApproverGroups,
   createApproverGroup,
+  fetchApprovalDocuments, // Added fetchApprovalDocuments import
 } from "@/lib/api/approvals/utils"
 import type {
   Action,
@@ -40,6 +41,7 @@ import type { Role, UserProfile } from "@/types"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 export default function ApprovalCreatePage() {
   const searchParams = useSearchParams()
@@ -83,9 +85,36 @@ export default function ApprovalCreatePage() {
   const [selectedGroupUserIds, setSelectedGroupUserIds] = useState<number[]>([])
   const [selectedGroupRoleIds, setSelectedGroupRoleIds] = useState<number[]>([])
 
+  // Confirmation dialog states for delete level
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [levelToDelete, setLevelToDelete] = useState<number | null>(null)
+  const [deletingLevel, setDeletingLevel] = useState(false)
+
   useEffect(() => {
     loadData()
   }, [contentTypeId, currentInstitution])
+
+  useEffect(() => {
+    const checkExistingApprovalDocument = async () => {
+      if (!contentTypeId || !currentInstitution) return
+
+      try {
+        const response = await fetchApprovalDocuments({
+          content_type_id: Number(contentTypeId),
+        })
+
+        if (response.results && response.results.length > 0) {
+          const existingApprovalDoc = response.results[0]
+          router.push(`/admin/settings/approvals/${existingApprovalDoc.id}/edit`)
+        }
+      } catch (error) {
+        // If there's an error or no existing document, continue with creation flow
+        console.log("No existing approval document found, continuing with creation")
+      }
+    }
+
+    checkExistingApprovalDocument()
+  }, [contentTypeId, currentInstitution, router])
 
   const loadData = async () => {
     if (!currentInstitution) {
@@ -131,6 +160,10 @@ export default function ApprovalCreatePage() {
   }
 
   const createApprovalDocumentWithLevels = async () => {
+    if (createdApprovalDocument) {
+      toast.error("Another approval already exists for this instance");
+      return
+    }
     if (!currentInstitution) {
       setError("Missing institution")
       return
@@ -258,6 +291,7 @@ export default function ApprovalCreatePage() {
 
   const removeLevelFromList = async (levelId: number) => {
     try {
+      setDeletingLevel(true)
       await deleteApprovalDocumentLevel(levelId)
 
       // Refetch levels to ensure data consistency
@@ -271,7 +305,27 @@ export default function ApprovalCreatePage() {
       showSuccessToast("Approval level deleted successfully!")
     } catch (e: any) {
       showErrorToast({ error: e, defaultMessage: "Failed to delete approval level" })
+    } finally {
+      setDeletingLevel(false)
+      setDeleteConfirmOpen(false)
+      setLevelToDelete(null)
     }
+  }
+
+  const handleDeleteLevel = (levelId: number) => {
+    setLevelToDelete(levelId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDeleteLevel = () => {
+    if (levelToDelete) {
+      removeLevelFromList(levelToDelete)
+    }
+  }
+
+  const cancelDeleteLevel = () => {
+    setDeleteConfirmOpen(false)
+    setLevelToDelete(null)
   }
 
   if (loading) {
@@ -401,289 +455,294 @@ export default function ApprovalCreatePage() {
           <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
             <Button
               onClick={createApprovalDocumentWithLevels}
-              disabled={savingDocument || selectedActionIds.length === 0}
+              disabled={savingDocument || selectedActionIds.length === 0 || !!createdApprovalDocument}
             >
               {savingDocument ? "Creating..." : "Create Approval"}
             </Button>
           </div>
         </Card>
 
-        {/* Approval Levels */}
-        <Card className="border-none shadow-none">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Approval Levels
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Create sequential approval levels with approver groups
-                </p>
-              </div>
-              <Dialog open={openLevelDialog} onOpenChange={setOpenLevelDialog}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Level
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create Approval Level</DialogTitle>
-                  </DialogHeader>
+        {/* Approval Levels - Only show after approval document is created */}
+        {createdApprovalDocument && (
+          <Card className="border-none shadow-none">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Approval Levels
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create sequential approval levels with approver groups
+                  </p>
+                </div>
+                <Dialog open={openLevelDialog} onOpenChange={setOpenLevelDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Level
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Create Approval Level</DialogTitle>
+                    </DialogHeader>
 
-                  <div className="space-y-6 py-4">
-                    {/* Basic Info */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          Level Name <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          placeholder="e.g., Manager Approval, HR Review..."
-                          value={newLevelName}
-                          onChange={(e) => setNewLevelName(e.target.value)}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Description</label>
-                        <Textarea
-                          placeholder="Optional description of this approval level..."
-                          value={newLevelDescription}
-                          onChange={(e) => setNewLevelDescription(e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Approver Groups Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          <h4 className="font-medium">Approver Groups</h4>
-                          <Badge variant="secondary" className="text-xs">
-                            Required
-                          </Badge>
+                    <div className="space-y-6 py-4">
+                      {/* Basic Info */}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Level Name <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            placeholder="e.g., Manager Approval, HR Review..."
+                            value={newLevelName}
+                            onChange={(e) => setNewLevelName(e.target.value)}
+                          />
                         </div>
-                        <Dialog open={openApproverGroupDialog} onOpenChange={setOpenApproverGroupDialog}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Create Group
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-xl">
-                            <DialogHeader>
-                              <DialogTitle>Create Approver Group</DialogTitle>
-                            </DialogHeader>
 
-                            <div className="space-y-4 py-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">
-                                  Group Name <span className="text-destructive">*</span>
-                                </label>
-                                <Input
-                                  placeholder="e.g., Finance Team, HR Managers..."
-                                  value={newGroupName}
-                                  onChange={(e) => setNewGroupName(e.target.value)}
-                                />
-                              </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <Textarea
+                            placeholder="Optional description of this approval level..."
+                            value={newLevelDescription}
+                            onChange={(e) => setNewLevelDescription(e.target.value)}
+                            rows={2}
+                          />
+                        </div>
+                      </div>
 
-                              <div>
-                                <label className="block text-sm font-medium mb-2">Description</label>
-                                <Textarea
-                                  placeholder="Optional description of this approver group..."
-                                  value={newGroupDescription}
-                                  onChange={(e) => setNewGroupDescription(e.target.value)}
-                                  rows={2}
-                                />
-                              </div>
+                      <Separator />
 
-                              <Separator />
+                      {/* Approver Groups Section */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            <h4 className="font-medium">Approver Groups</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              Required
+                            </Badge>
+                          </div>
+                          <Dialog open={openApproverGroupDialog} onOpenChange={setOpenApproverGroupDialog}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Group
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-xl">
+                              <DialogHeader>
+                                <DialogTitle>Create Approver Group</DialogTitle>
+                              </DialogHeader>
 
-                              <div className="grid md:grid-cols-2 gap-4">
+                              <div className="space-y-4 py-4">
                                 <div>
-                                  <label className="block text-sm font-medium mb-2">Roles</label>
-                                  <MultiSelectPopover
-                                    items={availableRoles.map((role) => ({
-                                      id: role.id,
-                                      name: role.name,
-                                      label: role.name,
-                                    }))}
-                                    selectedIds={selectedGroupRoleIds}
-                                    onSelectionChange={setSelectedGroupRoleIds}
-                                    placeholder="Select roles..."
-                                    emptyMessage="No roles available"
+                                  <label className="block text-sm font-medium mb-2">
+                                    Group Name <span className="text-destructive">*</span>
+                                  </label>
+                                  <Input
+                                    placeholder="e.g., Finance Team, HR Managers..."
+                                    value={newGroupName}
+                                    onChange={(e) => setNewGroupName(e.target.value)}
                                   />
                                 </div>
 
                                 <div>
-                                  <label className="block text-sm font-medium mb-2">Users</label>
-                                  <MultiSelectPopover
-                                    items={availableUsers.map((user) => ({
-                                      id: user.id,
-                                      name: user.user?.fullname || `User ${user.id}`,
-                                      label: user.user?.fullname || `User ${user.id}`,
-                                    }))}
-                                    selectedIds={selectedGroupUserIds}
-                                    onSelectionChange={setSelectedGroupUserIds}
-                                    placeholder="Select users..."
-                                    emptyMessage="No users available"
+                                  <label className="block text-sm font-medium mb-2">Description</label>
+                                  <Textarea
+                                    placeholder="Optional description of this approver group..."
+                                    value={newGroupDescription}
+                                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                                    rows={2}
                                   />
                                 </div>
+
+                                <Separator />
+
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-sm font-medium mb-2">Roles</label>
+                                    <MultiSelectPopover
+                                      items={availableRoles.map((role) => ({
+                                        id: role.id,
+                                        name: role.name,
+                                        label: role.name,
+                                      }))}
+                                      selectedIds={selectedGroupRoleIds}
+                                      onSelectionChange={setSelectedGroupRoleIds}
+                                      placeholder="Select roles..."
+                                      emptyMessage="No roles available"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-sm font-medium mb-2">Users</label>
+                                    <MultiSelectPopover
+                                      items={availableUsers.map((user) => ({
+                                        id: user.id,
+                                        name: user.user?.fullname || `User ${user.id}`,
+                                        label: user.user?.fullname || `User ${user.id}`,
+                                      }))}
+                                      selectedIds={selectedGroupUserIds}
+                                      onSelectionChange={setSelectedGroupUserIds}
+                                      placeholder="Select users..."
+                                      emptyMessage="No users available"
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                            </div>
 
-                            <DialogFooter>
-                              <Button variant="outline" onClick={resetApproverGroupDialog}>
-                                Cancel
-                              </Button>
-                              <Button onClick={createNewApproverGroup} disabled={savingApproverGroup}>
-                                {savingApproverGroup ? "Creating..." : "Create Group"}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={resetApproverGroupDialog}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={createNewApproverGroup} disabled={savingApproverGroup}>
+                                  {savingApproverGroup ? "Creating..." : "Create Group"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Select Approver Groups</label>
+                          <MultiSelectPopover
+                            items={approverGroups.map((group) => ({
+                              id: group.id,
+                              name: group.name,
+                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                            }))}
+                            selectedIds={selectedApproverGroupIds}
+                            onSelectionChange={setSelectedApproverGroupIds}
+                            placeholder="Select approver groups..."
+                            emptyMessage="No approver groups available. Create one first."
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Select Approver Groups</label>
-                        <MultiSelectPopover
-                          items={approverGroups.map((group) => ({
-                            id: group.id,
-                            name: group.name,
-                            label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
-                          }))}
-                          selectedIds={selectedApproverGroupIds}
-                          onSelectionChange={setSelectedApproverGroupIds}
-                          placeholder="Select approver groups..."
-                          emptyMessage="No approver groups available. Create one first."
-                        />
-                      </div>
-                    </div>
+                      <Separator />
 
-                    <Separator />
-
-                    {/* Overrider Groups Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-orange-600" />
-                        <h4 className="font-medium">Overrider Groups</h4>
-                        <Badge variant="outline" className="text-xs">
-                          Optional
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Approver groups that can override this approval level
-                      </p>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Select Overrider Groups</label>
-                        <MultiSelectPopover
-                          items={approverGroups.map((group) => ({
-                            id: group.id,
-                            name: group.name,
-                            label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
-                          }))}
-                          selectedIds={selectedOverriderGroupIds}
-                          onSelectionChange={setSelectedOverriderGroupIds}
-                          placeholder="Select overrider groups..."
-                          emptyMessage="No approver groups available. Create one first."
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button variant="outline" onClick={resetLevelDialog}>
-                      Cancel
-                    </Button>
-                    <Button onClick={addLevel} disabled={savingLevel}>
-                      {savingLevel ? "Creating..." : "Create Level"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {createdLevels.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="mb-2">No approval levels created yet</p>
-                <p className="text-sm">Create levels to define your approval workflow</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {createdLevels.map((level, index) => (
-                  <div key={level.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
+                      {/* Overrider Groups Section */}
+                      <div className="space-y-4">
                         <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-orange-600" />
+                          <h4 className="font-medium">Overrider Groups</h4>
                           <Badge variant="outline" className="text-xs">
-                            Level {index + 1}
+                            Optional
                           </Badge>
-                          <span className="font-medium">{level.name}</span>
                         </div>
-                        {level.description && <p className="text-sm text-muted-foreground mt-1">{level.description}</p>}
+                        <p className="text-sm text-muted-foreground">
+                          Approver groups that can override this approval level
+                        </p>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Select Overrider Groups</label>
+                          <MultiSelectPopover
+                            items={approverGroups.map((group) => ({
+                              id: group.id,
+                              name: group.name,
+                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                            }))}
+                            selectedIds={selectedOverriderGroupIds}
+                            onSelectionChange={setSelectedOverriderGroupIds}
+                            placeholder="Select overrider groups..."
+                            emptyMessage="No approver groups available. Create one first."
+                          />
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLevelFromList(level.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" onClick={resetLevelDialog}>
+                        Cancel
                       </Button>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <CheckCircle2 className="h-3 w-3 text-green-600" />
-                          <span className="font-medium">Approver Groups</span>
-                        </div>
-                        <div className="text-muted-foreground">{level.approvers?.length || 0} groups assigned</div>
-                        {level.approvers && level.approvers.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {level.approvers.map((approver) => (
-                              <Badge key={approver.id} variant="secondary" className="text-xs">
-                                {approver.approver_group.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <Shield className="h-3 w-3 text-orange-600" />
-                          <span className="font-medium">Overrider Groups</span>
-                        </div>
-                        <div className="text-muted-foreground">{level.overriders?.length || 0} groups assigned</div>
-                        {level.overriders && level.overriders.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {level.overriders.map((overrider) => (
-                              <Badge key={overrider.id} variant="outline" className="text-xs">
-                                {overrider.approver_group.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      <Button onClick={addLevel} disabled={savingLevel}>
+                        {savingLevel ? "Creating..." : "Create Level"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+
+            <CardContent>
+              {createdLevels.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="mb-2">No approval levels created yet</p>
+                  <p className="text-sm">Create levels to define your approval workflow</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {createdLevels.map((level, index) => (
+                    <div key={level.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              Level {index + 1}
+                            </Badge>
+                            <span className="font-medium">{level.name}</span>
+                          </div>
+                          {level.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{level.description}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteLevel(level.id)}
+                          className="text-destructive hover:text-destructive"
+                          disabled={deletingLevel}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <CheckCircle2 className="h-3 w-3 text-green-600" />
+                            <span className="font-medium">Approver Groups</span>
+                          </div>
+                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} groups assigned</div>
+                          {level.approvers_detail && level.approvers_detail.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {level.approvers_detail.map((approver) => (
+                                <Badge key={approver.id} variant="secondary" className="text-xs">
+                                  {approver.approver_group.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-1 mb-1">
+                            <Shield className="h-3 w-3 text-orange-600" />
+                            <span className="font-medium">Overrider Groups</span>
+                          </div>
+                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} groups assigned</div>
+                          {level.overriders_detail && level.overriders_detail.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {level.overriders_detail.map((overrider) => (
+                                <Badge key={overrider.id} variant="outline" className="text-xs">
+                                  {overrider.approver_group.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
@@ -691,6 +750,18 @@ export default function ApprovalCreatePage() {
           Finish
         </Button>
       </div>
+
+      {/* Confirmation dialog for delete level */}
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onClose={cancelDeleteLevel}
+        onConfirm={confirmDeleteLevel}
+        title="Delete Approval Level"
+        description="Are you sure you want to delete this approval level? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        disabled={deletingLevel}
+      />
     </div>
   )
 }

@@ -217,8 +217,8 @@ export default function ApprovalEditPage() {
       setEditingLevel(level)
       setNewLevelName(level.name || "Unknown ")
       setNewLevelDescription(level.description || "")
-      setSelectedApproverGroupIds(level.approvers?.map((a) => a.approver_group.id) || [])
-      setSelectedOverriderGroupIds(level.overriders?.map((o) => o.approver_group.id) || [])
+      setSelectedApproverGroupIds(level.approvers_detail?.map((a) => a.approver_group.id) || [])
+      setSelectedOverriderGroupIds(level.overriders_detail?.map((o) => o.approver_group.id) || [])
     } else {
       setEditingLevel(null)
       setNewLevelName("")
@@ -486,10 +486,10 @@ export default function ApprovalEditPage() {
                           <CheckCircle2 className="h-3 w-3 text-green-600" />
                           <span className="font-medium">Approver Groups</span>
                         </div>
-                        <div className="text-muted-foreground">{level.approvers?.length || 0} groups assigned</div>
-                        {level.approvers && level.approvers.length > 0 && (
+                        <div className="text-muted-foreground">{level.approvers_detail?.length || 0} groups assigned</div>
+                        {level.approvers_detail && level.approvers_detail.length && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {level.approvers.map((approver) => (
+                            {level.approvers_detail.map((approver) => (
                               <Badge key={approver.id} variant="secondary" className="text-xs">
                                 {approver.approver_group.name}
                               </Badge>
@@ -503,10 +503,10 @@ export default function ApprovalEditPage() {
                           <Shield className="h-3 w-3 text-orange-600" />
                           <span className="font-medium">Overrider Groups</span>
                         </div>
-                        <div className="text-muted-foreground">{level.overriders?.length || 0} groups assigned</div>
-                        {level.overriders && level.overriders.length > 0 && (
+                        <div className="text-muted-foreground">{level.overriders_detail?.length || 0} groups assigned</div>
+                        {level.overriders_detail && level.overriders_detail.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {level.overriders.map((overrider) => (
+                            {level.overriders_detail.map((overrider) => (
                               <Badge key={overrider.id} variant="outline" className="text-xs">
                                 {overrider.approver_group.name}
                               </Badge>
