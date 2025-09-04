@@ -268,7 +268,7 @@ class EventOccurrence(models.Model):
         return f"{self.event.title} on {self.date}"
 
 
-class Calendar(BaseApprovableModel):
+class Calendar(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey(
         "institution.Institution",
         on_delete=models.CASCADE,
@@ -323,5 +323,3 @@ class Calendar(BaseApprovableModel):
 
         return calendar
 
-    def get_institution(self):
-        return self.institution    

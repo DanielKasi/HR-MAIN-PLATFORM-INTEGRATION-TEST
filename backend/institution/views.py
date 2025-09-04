@@ -1,4 +1,5 @@
 from django.http import Http404
+from employee.service import create_owner_employee
 from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
@@ -213,12 +214,14 @@ class AIAssistantView(APIView):
 
 class DefaultDataAPIView(APIView):
     @extend_schema(
-        responses={200: dict},
-        description="Retrieve default departments and their job positions",
+        responses={200: list},
+        description="Retrieve default departments and their job positions. Supports searching by department or job position.",
         summary="Get default departments and job positions",
         tags=["Institution Management"],
     )
     def get(self, request):
+        search_query = request.query_params.get('search')
+
         modified_data = [
             {
                 "id": str(uuid.uuid4()),
@@ -237,7 +240,30 @@ class DefaultDataAPIView(APIView):
             }
             for dept in default_data
         ]
+
+        if search_query:
+            search_query = search_query.lower()
+            filtered_data = []
+            for dept in modified_data:
+                # check department name/description
+                if search_query in dept["name"].lower() or search_query in dept["description"].lower():
+                    filtered_data.append(dept)
+                    continue  # no need to check jobs if dept matches fully
+
+                # check job positions
+                matching_jobs = [
+                    job for job in dept["job_positions"]
+                    if search_query in job["name"].lower() or search_query in job["description"].lower()
+                ]
+                if matching_jobs:
+                    dept_copy = dept.copy()
+                    dept_copy["job_positions"] = matching_jobs
+                    filtered_data.append(dept_copy)
+
+            modified_data = filtered_data
+
         return Response(modified_data, status=status.HTTP_200_OK)
+
 
 
 class BranchWorkingDaysListAPIView(APIView):
@@ -421,6 +447,7 @@ class InstitutionListAPIView(APIView):
         summary="Create a new institution",
         tags=["Institution Management"],
     )
+    @transaction.atomic()
     def post(self, request):
         if Institution.objects.filter(
             institution_owner__id=request.data.get("institution_owner_id"),
@@ -457,6 +484,8 @@ class InstitutionListAPIView(APIView):
                 logger.info(
                     f"Institution created: {institution.institution_name}, Country: {institution.country_code}"
                 )
+
+                employee = create_owner_employee(institution)
 
                 # Load defaults from JSON file
                 current_dir = os.path.dirname(__file__)  # institution folder
@@ -1809,6 +1838,7 @@ class SystemActivationView(APIView):
             institution = Institution.objects.create(
                 institution_owner=owner_user, created_by=owner_user, **validated_data
             )
+
 
             created_branches = []
             for branch_data in branches_data:

@@ -1,5 +1,9 @@
 from django.db import transaction
-from .models import UserBranch, Branch
+from django.utils import timezone
+from decimal import Decimal
+from institution.models import Department
+from recruitment.models import JobPosition
+from .models import EmployeeType, UserBranch, Branch, WorkType
 from employee.models import Employee
 import logging
 from datetime import timedelta
@@ -304,3 +308,51 @@ def build_attendance_report_data(start_date, end_date, context, institution):
         "end_date": end_date,
         "employees": report_data,
     }
+
+
+def create_owner_employee(institution):
+    default_dept, dept_created = Department.objects.get_or_create(
+        institution=institution,
+        name="Default Department",
+        defaults = {
+            'description': 'This is the default department for the institution.'
+            }
+    )
+
+    default_position, pos_created = JobPosition.objects.get_or_create(
+        name="Institution Owner",
+        department=default_dept,
+        defaults={
+            "description": "This is the default position for the institution owner.",
+            'salary_min': Decimal('0.00'),
+            'is_active': True,
+        }
+    )
+
+    owner = institution.institution_owner
+
+    if not Employee.objects.filter(user=owner, department=default_dept).exists():
+        # Create Employee instance
+        employee = Employee.objects.create(
+            user=owner,
+            position=default_position,
+            department=default_dept,
+            email=owner.email,  
+            gender=owner.gender,  
+            date_of_joining=timezone.now().date(),
+            work_type=WorkType.objects.first(),  
+            employee_type=EmployeeType.objects.first(), 
+            salary=default_position.salary_min if hasattr(default_position, 'salary_min') else Decimal('0.00'),
+            is_active=True,  
+        )
+
+        employee.sync_leave_balances()
+        employee.sync_employee_working_days()
+
+        return employee
+    else:
+        return Employee.objects.get(user=owner, department=default_dept)
+    
+    
+
+    
