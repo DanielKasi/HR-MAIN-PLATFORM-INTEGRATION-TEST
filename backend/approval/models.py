@@ -8,6 +8,8 @@ from rest_framework.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.db.models import Q
+
 
 
 class Action(SoftDeletableTimeStampedModel):
@@ -156,6 +158,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         ('rejected', 'Rejected'),
         ('approved', 'Approved'),
         ('terminated', 'Terminated'),
+        ('overridden', 'Overridden'),  # Added new status
     ]
 
     approval = models.ForeignKey(Approval, on_delete=models.CASCADE, related_name='tasks')
@@ -218,6 +221,39 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 self.approval.content_object.finish_workflow(self.approval)
             # Notify task rejection and terminated tasks
 
+    def mark_overridden(self, user, comment: str = None):
+        with transaction.atomic():
+            if self.status != 'pending':
+                raise ValidationError({"error": "Task must be in pending state to be overridden"})
+
+            # Check if user belongs to an overrider group for this level
+            profile = user.profile
+            user_roles = user.roles.all()
+            overrider_groups = self.level.overriders.filter(
+                Q(users=profile) | Q(roles__in=user_roles)
+            ).distinct()
+            if not overrider_groups.exists():
+                raise ValidationError({"error": "User is not authorized to override this task"})
+
+            # Mark this task as overridden
+            self.status = 'overridden'
+            self.approved_by = user
+            if comment:
+                self.comment = comment
+            self.save(update_fields=["status", "updated_at", "comment", "approved_by"])
+
+            # Mark the entire approval process as completed
+            self.approval.status = 'completed'
+            self.approval.save()
+
+            # Terminate all other tasks (not_started or pending)
+            other_tasks = self.approval.tasks.exclude(id=self.id).filter(status__in=['not_started', 'pending'])
+            other_tasks.update(status='terminated')
+
+            if self.approval.content_object:
+                self.approval.content_object.finish_workflow(self.approval)
+            # Notify approval completion due to override
+
 class BaseApprovableModel(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
         ('under_creation', 'Under Creation'),
@@ -270,7 +306,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
             self.finish_workflow(dummy_approval)
             return  
 
-        # Proceed with approval creation (existing code remains)
+        # Proceed with approval creation
         with transaction.atomic():
             self.is_active = False  # Set is_active=False until approved
             self.save(update_fields=['is_active'])
@@ -327,5 +363,3 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                     self.is_active = True  # Revert to active
                     self.deleted_at = None
             self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
-
-    

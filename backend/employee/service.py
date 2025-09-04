@@ -1,9 +1,10 @@
 from django.db import transaction
 from django.utils import timezone
 from decimal import Decimal
+from leave_mgt.models import LeaveApplication
 from institution.models import Department
 from recruitment.models import JobPosition
-from .models import EmployeeType, UserBranch, Branch, WorkType
+from .models import EmployeeAttendance, EmployeeType, UserBranch, Branch, WorkType
 from employee.models import Employee
 import logging
 from datetime import timedelta
@@ -231,8 +232,113 @@ class EmployeeBranchService:
             raise
 
 
-def build_attendance_report_data(start_date, end_date, context, institution):
 
+
+def is_non_working_day(date, employee, institution):
+    """
+    Determine if a date is a non-working day for the employee's branch or institution.
+    Checks branch working days first, then institution working days, then holidays.
+    """
+    try:
+        # Assume branch has a working_days field (e.g., list of integers 0-6 for Monday-Sunday)
+        branch = employee.payroll_branch
+        if branch and hasattr(branch, "working_days"):
+            # Example: working_days = [0, 1, 2, 3, 4] for Monday-Friday
+            if date.weekday() not in branch.working_days:
+                return True
+
+        # Fall back to institution working days
+        elif hasattr(institution, "working_days"):
+            if date.weekday() not in institution.working_days:
+                return True
+
+        # Check for holidays (assuming a Holiday model exists)
+        from institution.models import Holiday
+        if Holiday.objects.filter(
+            institution=institution,
+            date=date
+        ).exists():
+            return True
+
+        return False
+
+    except Exception:
+        # Default to assuming it's a working day if data is missing
+        return False
+    
+def get_employee_attendance_status_for_date(employee_id, date, attendance_cache=None, institution=None):
+    """
+    Determine the attendance or leave status for an employee on a specific date.
+    Returns a status code compatible with the Excel report (e.g., 'P-on-T', 'A-L', 'N-W-D').
+    """
+    if attendance_cache is None:
+        attendance_cache = {}
+
+    cache_key = f"{employee_id}_{date}"
+    if cache_key in attendance_cache:
+        return attendance_cache[cache_key]
+
+    try:
+        # Get the employee
+        employee = Employee.objects.get(id=employee_id)
+
+        # Check for approved leave first
+        leave = LeaveApplication.objects.filter(
+            employee_id=employee_id,
+            start_date__lte=date,
+            end_date__gte=date,
+            status="approved"
+        ).select_related("leave_type").first()
+
+        if leave:
+            leave_type_map = {
+                "annual": "A-L",
+                "sick": "S-L",
+                "maternity": "M-L",
+                "paternity": "P-L",
+                "compassionate": "C-L",
+                "study": "Sty-L",
+                "unpaid": "UN-P-L",
+            }
+            status = leave_type_map.get(leave.leave_type.name.lower(), "ERR")
+            attendance_cache[cache_key] = status
+            return status
+
+        # Check attendance record
+        attendance = EmployeeAttendance.objects.filter(
+            employee_id=employee_id, date=date
+        ).first()
+
+        if not attendance:
+            # Check if it's a non-working day
+            if institution and is_non_working_day(date, employee, institution):
+                status = "N-W-D"
+            else:
+                status = "absent"
+            attendance_cache[cache_key] = status
+            return status
+
+        # Map attendance status to Excel status
+        status_map = {
+            "on_time": "P-on-T",
+            "late": "P-past-T",
+            "early_checkout": "P-past-T",
+            "late_and_early": "P-past-T",
+            "overtime": "P-on-T",
+            "absent": "absent",
+            "pending": "ERR",
+        }
+        status = status_map.get(attendance.attendance_status, "ERR")
+        attendance_cache[cache_key] = status
+        return status
+
+    except Exception as e:
+        print(f"Error in get_employee_attendance_status_for_date: {str(e)}")  # Debug
+        attendance_cache[cache_key] = "ERR"
+        return "ERR" 
+
+
+def build_attendance_report_data(start_date, end_date, context, institution):
     employee_qs = Employee.objects.filter(
         is_active=True, payroll_branch__institution=institution
     ).select_related("user")
@@ -252,6 +358,7 @@ def build_attendance_report_data(start_date, end_date, context, institution):
     date_list = [start_date + timedelta(days=i) for i in range(num_days)]
 
     report_data = []
+    attendance_cache = {}  # Cache to reduce database queries
 
     for employee in employees:
         summary = {
@@ -265,11 +372,11 @@ def build_attendance_report_data(start_date, end_date, context, institution):
 
         for current_date in date_list:
             try:
-                # status = get_employee_attendance_status_for_date(
-                #     employee.id, current_date
-                # )
-                status = []
-            except Exception:
+                status = get_employee_attendance_status_for_date(
+                    employee.id, current_date, attendance_cache, institution
+                )
+            except Exception as e:
+                print(f"Error for Employee {employee.id}, Date {current_date}: {str(e)}")  # Debug
                 status = "ERR"
 
             # Tally summary counts
@@ -307,8 +414,7 @@ def build_attendance_report_data(start_date, end_date, context, institution):
         "start_date": start_date,
         "end_date": end_date,
         "employees": report_data,
-    }
-
+    }       
 
 def create_owner_employee(institution):
     default_dept, dept_created = Department.objects.get_or_create(

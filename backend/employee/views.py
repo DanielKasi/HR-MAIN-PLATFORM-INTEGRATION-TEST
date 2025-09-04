@@ -2337,6 +2337,7 @@ class ExportAttendanceExcelView(APIView):
     API endpoint to generate and download an Attendance Excel Report.
     Access this endpoint with a POST request containing start_date, end_date, and any applicable filters.
     """
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         tags=["export-attendance2excel"],
@@ -2349,6 +2350,17 @@ class ExportAttendanceExcelView(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
+        user = request.user.profile
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            logger.error(f"Institution not found for user {request.user.id}")
+            return Response(
+                {"error": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         serializer = AttendanceReportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -2357,8 +2369,8 @@ class ExportAttendanceExcelView(APIView):
         context = serializer.get_report_context()
 
         try:
-            excel_file = generate_attendance_excel(start_date, end_date, context)
-
+            logger.info(f"Generating Excel for {start_date} to {end_date}, context: {context}")
+            excel_file = generate_attendance_excel(start_date, end_date, context, institution)
             filename = f"ATTENDANCE_REPORT_{start_date}_{end_date}_{timezone.now().strftime('%Y%m%d')}.xlsx"
             response = HttpResponse(
                 excel_file.getvalue(),
@@ -2370,13 +2382,13 @@ class ExportAttendanceExcelView(APIView):
             return response
 
         except ValueError as e:
+            logger.error(f"ValueError in generate_attendance_excel: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
+            logger.error(f"Unexpected error in generate_attendance_excel: {str(e)}", exc_info=True)
             return Response(
-                {
-                    "error": "An internal server error occurred while generating the Excel."
-                },
+                {"error": "An internal server error occurred while generating the Excel."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
