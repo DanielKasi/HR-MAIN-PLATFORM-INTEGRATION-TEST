@@ -7,6 +7,9 @@ from approval.models import (
 )
 import re
 
+from users.models import Profile, Role
+
+
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Action
@@ -28,13 +31,66 @@ class ApproverGroupRoleSerializer(serializers.ModelSerializer):
 
 class ApproverGroupSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
-    users = ApproverGroupUserSerializer(source='approvergroupuser_set', many=True, read_only=True)
-    roles = ApproverGroupRoleSerializer(source='approvergrouprole_set', many=True, read_only=True)
+    users = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.all(),
+        many=True,
+        required=False,
+        allow_empty=True,
+        write_only=True  # Only for POST/PATCH
+    )
+    roles = serializers.PrimaryKeyRelatedField(
+        queryset=Role.objects.all(),
+        many=True,
+        required=False,
+        allow_empty=True,
+        write_only=True  # Only for POST/PATCH
+    )
+    users_display = serializers.SerializerMethodField(read_only=True)  # For GET
+    roles_display = serializers.SerializerMethodField(read_only=True)  # For GET
 
     class Meta:
         model = ApproverGroup
-        fields = ['id', 'institution', 'institution_name', 'name', 'description', 'public_uuid', 'users', 'roles']
+        fields = ['id', 'institution', 'institution_name', 'name', 'description', 'public_uuid', 'users', 'roles', 'users_display', 'roles_display']
+        read_only_fields = ['public_uuid', 'institution_name', 'users_display', 'roles_display']
 
+    def get_users_display(self, obj):
+        from users.serializers import ProfileSerializer
+        # Return only fullname
+        return ProfileSerializer(obj.users.all(), many=True, context=self.context).data
+
+    def get_roles_display(self, obj):
+        from users.serializers import RoleSerializer
+        # Return only name
+        return RoleSerializer(obj.roles.all(), many=True, context=self.context).data
+
+    def validate(self, data):
+        # Only validate for write operations (POST/PATCH)
+        if self.context.get('request') and self.context['request'].method in ['POST', 'PATCH']:
+            institution = data.get('institution')
+            users = data.get('users', [])
+            roles = data.get('roles', [])
+
+            if users:
+                invalid_users = Profile.objects.filter(id__in=[u.id for u in users]).exclude(institution=institution)
+                if invalid_users.exists():
+                    raise serializers.ValidationError("All users must belong to the same institution as the group.")
+
+            if roles:
+                invalid_roles = Role.objects.filter(id__in=[r.id for r in roles]).exclude(institution=institution)
+                if invalid_roles.exists():
+                    raise serializers.ValidationError("All roles must be associated with the same institution as the group.")
+
+        return data
+
+    def create(self, validated_data):
+        users = validated_data.pop('users', [])
+        roles = validated_data.pop('roles', [])
+        group = ApproverGroup.objects.create(**validated_data)
+        for user in users:
+            ApproverGroupUser.objects.create(approver_group=group, user=user)
+        for role in roles:
+            ApproverGroupRole.objects.create(approver_group=group, role=role)
+        return group
 class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
     approver_group = ApproverGroupSerializer(read_only=True)
 
