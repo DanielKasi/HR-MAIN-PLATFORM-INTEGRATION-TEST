@@ -152,7 +152,7 @@ class EmployeeListAPIView(APIView):
             if filters:
                 employees = employees.filter(**filters)
 
-            employees = employees.order_by("-created_at")
+
             if search_query:
                 employees = employees.filter(
                     Q(employee_id__icontains=search_query)
@@ -163,6 +163,8 @@ class EmployeeListAPIView(APIView):
                     | Q(user__email__icontains=search_query)
                     | Q(department__name__icontains=search_query)
                 )
+
+                
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
