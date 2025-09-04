@@ -609,10 +609,8 @@ FONT_GRAY = Font(color="808080")
 BOLD_FONT = Font(bold=True)
 
 
-def generate_attendance_excel(
-    start_date: date, end_date: date, context: dict
-) -> BytesIO:
-    employee_qs = Employee.objects.filter(is_active=True).select_related("user")
+def generate_attendance_excel(start_date: date, end_date: date, context: dict, institution) -> BytesIO:
+    employee_qs = Employee.objects.filter(is_active=True).select_related("user", "payroll_branch")
 
     target_ids = context.get("target_employees")
     target_departments = context.get("target_departments")
@@ -700,6 +698,8 @@ def generate_attendance_excel(
         cell.border = thin_border
         ws.column_dimensions[cell.column_letter].width = 12
 
+    attendance_cache = {}  # Cache to reduce database queries
+
     for row_offset, employee in enumerate(employees, start=start_data_row + 1):
         present_count = 0
         absent_count = 0
@@ -714,10 +714,11 @@ def generate_attendance_excel(
         for col_offset, current_date in enumerate(date_list, start=len(headers) + 1):
             try:
                 status = get_employee_attendance_status_for_date(
-                    employee.id, current_date
+                    employee.id, current_date, attendance_cache, institution
                 )
-            except Exception:
+            except Exception as e:
                 status = "ERR"
+                print(f"Error for Employee {employee.id}, Date {current_date}: {str(e)}")  # Debug
 
             if status == "P-on-T":
                 present_count += 1

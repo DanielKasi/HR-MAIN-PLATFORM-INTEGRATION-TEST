@@ -6,7 +6,6 @@ from approval.models import (
     ApprovalDocumentLevelApprovers, ApprovalDocumentLevelOverriders
 )
 import re
-
 from users.models import Profile, Role
 
 
@@ -36,17 +35,17 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
         many=True,
         required=False,
         allow_empty=True,
-        write_only=True  # Only for POST/PATCH
+        write_only=True
     )
     roles = serializers.PrimaryKeyRelatedField(
         queryset=Role.objects.all(),
         many=True,
         required=False,
         allow_empty=True,
-        write_only=True  # Only for POST/PATCH
+        write_only=True
     )
-    users_display = serializers.SerializerMethodField(read_only=True)  # For GET
-    roles_display = serializers.SerializerMethodField(read_only=True)  # For GET
+    users_display = serializers.SerializerMethodField(read_only=True)
+    roles_display = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApproverGroup
@@ -55,16 +54,13 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
 
     def get_users_display(self, obj):
         from users.serializers import ProfileSerializer
-        # Return only fullname
         return ProfileSerializer(obj.users.all(), many=True, context=self.context).data
 
     def get_roles_display(self, obj):
         from users.serializers import RoleSerializer
-        # Return only name
         return RoleSerializer(obj.roles.all(), many=True, context=self.context).data
 
     def validate(self, data):
-        # Only validate for write operations (POST/PATCH)
         if self.context.get('request') and self.context['request'].method in ['POST', 'PATCH']:
             institution = data.get('institution')
             users = data.get('users', [])
@@ -91,6 +87,7 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
         for role in roles:
             ApproverGroupRole.objects.create(approver_group=group, role=role)
         return group
+
 class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
     approver_group = serializers.SerializerMethodField(read_only=True)
 
@@ -154,7 +151,7 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if self.context.get('request') and self.context['request'].method in ['POST', 'PATCH']:
             approval_document = data.get('approval_document')
-            institution = approval_document.institution  # Assuming ApprovalDocument has institution
+            institution = approval_document.institution
             approvers = data.get('approvers', [])
             overriders = data.get('overriders', [])
 
@@ -180,7 +177,6 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
             ApprovalDocumentLevelOverriders.objects.create(approval_document_level=level, approver_group=overrider)
         return level
 
-
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
     levels = ApprovalDocumentLevelSerializer(many=True, read_only=True)
@@ -193,13 +189,12 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
     def get_content_type_name(self, obj):
         model_class = obj.content_type.model_class()
         if not model_class:
-            return obj.content_type.name  # fallback
-        name = model_class.__name__  # e.g., "AssetCategory"
-        name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)  # insert space before caps
+            return obj.content_type.name
+        name = model_class.__name__
+        name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)
         return name.strip()
 
     def to_representation(self, instance):
-        # Customize the representation to include actions as a list of objects
         representation = super().to_representation(instance)
         representation['actions'] = [
             {'id': action.id, 'name': action.name}

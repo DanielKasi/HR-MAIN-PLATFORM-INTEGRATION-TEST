@@ -26,6 +26,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import ValidationError
 
 
 class ActionListAPIView(APIView):
@@ -809,3 +810,29 @@ class ApprovableContentTypeDetailAPIView(APIView):
             'humanized_name': model._meta.verbose_name.title(),
             # Add any other metadata you want to return
         }, status=status.HTTP_200_OK)
+
+
+class ApprovalTaskOverrideAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return ApprovalTask.objects.get(pk=pk)
+        except ApprovalTask.DoesNotExist:
+            raise Http404
+
+    @extend_schema(
+        tags=['Approval Tasks'],
+        parameters=[
+            OpenApiParameter(name='comment', type=str, location=OpenApiParameter.QUERY, required=False, description='Optional comment for the override action')
+        ],
+        description='Allows an authorized overrider to override the approval task, marking the entire approval process as completed and terminating all remaining tasks.'
+    )
+    def patch(self, request, pk):
+        task = self.get_object(pk)
+        comment = request.query_params.get('comment')
+        try:
+            task.mark_overridden(request.user, comment)
+            return Response({'status': 'overridden'}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)        
