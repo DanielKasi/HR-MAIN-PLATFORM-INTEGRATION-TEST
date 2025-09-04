@@ -212,11 +212,12 @@ export function ApprovalWorkflow({
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 ">
             {approval.tasks.map((task, taskIndex) => (
               <div key={task.id} className="relative">
                 <div className="flex flex-col items-start gap-3">
-                  <div
+                  <div className="w-full p-3 flex items-start justify-start bg-gray-100 rounded-xl">
+                    <div
                     className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
                       task.status === "approved"
                         ? "bg-green-100 border-green-500"
@@ -237,8 +238,7 @@ export function ApprovalWorkflow({
                       {taskIndex + 1}
                     </span>
                   </div>
-                  <div className="ml-8 w-[calc(100%-2rem)]">
-                  <div className="flex flex-col bg-gray-50 rounded-lg p-4 w-full">
+                  <div className="flex flex-col pl-4 w-full">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
                       <h4 className="text-sm font-medium text-gray-900">
                         {task.level?.name || `Approval Step ${taskIndex + 1}`}
@@ -269,10 +269,10 @@ export function ApprovalWorkflow({
                     )}
 
                     {task.status === "pending" && !showCommentFor && (
-                      <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                      <div className="flex flex-col sm:grid grid-cols-2 w-full gap-2 sm:gap-4  mt-3">
                         <Button
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 rounded-full"
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs !h-8 rounded-full "
                           onClick={() => handleActionClick(task.id, "approve")}
                           disabled={isProcessing}
                         >
@@ -280,8 +280,8 @@ export function ApprovalWorkflow({
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-300 hover:bg-red-50 text-xs h-8 rounded-full bg-transparent"
+                          variant="destructive"
+                          className="text-xs !h-8 rounded-full"
                           onClick={() => handleActionClick(task.id, "reject")}
                           disabled={isProcessing}
                         >
@@ -345,7 +345,7 @@ export function ApprovalWorkflow({
 
                 {taskIndex < approval.tasks.length - 1 && (
                   <div
-                    className="absolute left-4 top-8 w-0.5 h-8 ml-1"
+                    className="absolute left-1/2 -translate-x-1/2 w-0.5 h-12 ml-1"
                     style={{
                       backgroundImage:
                         "repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)",

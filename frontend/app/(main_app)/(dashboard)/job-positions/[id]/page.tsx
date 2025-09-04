@@ -3,15 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import apiRequest from "@/lib/apiRequest";
+
 import {
   Briefcase,
   ArrowLeft,
@@ -25,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -47,12 +39,6 @@ export default function JobPositionDetailsPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
-
-  // const [approvingTaskId, setApprovingTaskId] = useState<string | null>(null);
-  // const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
-  // const [approvalComment, setApprovalComment] = useState<string>("");
-  // const [showApproveDialog, setShowApproveDialog] = useState<string | null>(null);
-  // const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
   const router = useRouter();
   const params = useParams();
@@ -186,26 +172,6 @@ export default function JobPositionDetailsPage() {
     );
   }
 
-  // const handleStatusUpdate = async (taskId: string, status: "completed" | "rejected") => {
-  //   try {
-  //     status === "rejected" ? setRejectingTaskId(taskId) : setApprovingTaskId(taskId);
-  //     await apiRequest.patch(`/workflow/task/${taskId}/status/`, {
-  //       status,
-  //       comment: approvalComment,
-  //     });
-  //     // Reset comment after submission
-  //     setApprovalComment("");
-  //     // Refresh data after status update
-  //     await fetchJobPosition();
-
-  //     toast.success(`Position ${status === "rejected" ? "rejected" : "approved"} successfully`);
-  //   } catch (err: any) {
-  //     console.error(`${status === "rejected" ? "Rejection" : "Approval"} failed:`, err);
-  //     toast.error(`Failed to ${status === "rejected" ? "reject" : "approve"} position`);
-  //   } finally {
-  //     status === "rejected" ? setRejectingTaskId(null) : setApprovingTaskId(null);
-  //   }
-  // };
 
   return (
     <div className="w-full h-full p-4">
