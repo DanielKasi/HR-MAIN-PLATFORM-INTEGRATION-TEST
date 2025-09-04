@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { fetchApprovalDocumentById, fetchApprovalDocumentLevels } from "@/lib/api/approvals/utils"
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import FixedLoader from "@/components/fixed-loader"
 import { showErrorToast } from "@/lib/utils"
 import { ArrowLeft, FileText, Users, Shield, CheckCircle2, Edit, Calendar } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 
 export default function ApprovalDetailsPage() {
   const params = useParams()
@@ -18,7 +19,7 @@ export default function ApprovalDetailsPage() {
   const approvalId = params.id as string
 
   const [approvalDocument, setApprovalDocument] = useState<ApprovalDocument | null>(null)
-  const [levels, setLevels] = useState<ApprovalDocumentLevel[]>([])
+  // const [levels, setLevels] = useState<ApprovalDocumentLevel[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>("")
 
@@ -29,13 +30,10 @@ export default function ApprovalDetailsPage() {
   const loadApprovalDetails = async () => {
     try {
       setLoading(true)
-      const [documentRes, levelsRes] = await Promise.all([
-        fetchApprovalDocumentById(Number.parseInt(approvalId)),
-        fetchApprovalDocumentLevels({ approval_document: Number.parseInt(approvalId) }),
+      const [documentRes] = await Promise.all([
+        fetchApprovalDocumentById(Number.parseInt(approvalId))
       ])
-
       setApprovalDocument(documentRes)
-      setLevels(levelsRes.results)
     } catch (e: any) {
       showErrorToast({ error: e, defaultMessage: "Failed to load approval details" })
       setError(e?.message || "Failed to load approval details")
@@ -88,7 +86,7 @@ export default function ApprovalDetailsPage() {
       </div>
 
       {/* Document Overview */}
-      <Card className="mb-6">
+      <Card className="mb-6 ">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -146,11 +144,11 @@ export default function ApprovalDetailsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Approval Levels ({levels.length})
+            Approval Levels ({approvalDocument.levels.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {levels.length === 0 ? (
+          {approvalDocument.levels.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="mb-2">No approval levels configured</p>
@@ -158,8 +156,9 @@ export default function ApprovalDetailsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {levels.map((level, index) => (
-                <div key={level.id} className="border rounded-lg p-4">
+              {approvalDocument.levels.map((level, index) => (
+                <Fragment key={index}>
+                <div className="rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -187,7 +186,7 @@ export default function ApprovalDetailsPage() {
                             >
                               <span className="font-medium">{approver.approver_group.name}</span>
                               <div className="text-xs text-muted-foreground">
-                                {approver.approver_group.users.length} users, {approver.approver_group.roles.length}{" "}
+                                {approver.approver_group.users_display.length} users, {approver.approver_group.roles_display.length}{" "}
                                 roles
                               </div>
                             </div>
@@ -212,7 +211,7 @@ export default function ApprovalDetailsPage() {
                             >
                               <span className="font-medium">{overrider.approver_group.name}</span>
                               <div className="text-xs text-muted-foreground">
-                                {overrider.approver_group.users.length} users, {overrider.approver_group.roles.length}{" "}
+                                {overrider.approver_group.users_display.length} users, {overrider.approver_group.roles_display.length}{" "}
                                 roles
                               </div>
                             </div>
@@ -224,6 +223,8 @@ export default function ApprovalDetailsPage() {
                     </div>
                   </div>
                 </div>
+                {index !== approvalDocument.levels.length -1 && <Separator/> }
+                </Fragment>
               ))}
             </div>
           )}

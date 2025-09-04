@@ -23,8 +23,9 @@ import {
   type IDepartment,
   type IJobPosition,
   type CreateJobPositionData,
-  PERMISSION_CODES,
 } from "@/types/types.utils";
+
+import { PERMISSION_CODES } from "@/constants";
 import {toast} from "sonner";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import {RichEditorField} from "@/components/common/rich-editor";

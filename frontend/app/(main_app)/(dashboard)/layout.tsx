@@ -599,7 +599,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         >
           <div className="flex items-center space-x-2 relative">
             {item.icon}
-            {isSideBarOpen ? <span>{item.title}</span> : <></>}
+            {isSideBarOpen ? <span className="truncate">{item.title}</span> : <></>}
 
             {/* Tooltip shown only on hover when sidebar is closed and not mobile */}
             {/* {!isSideBarOpen && !isMobile && isTooltipVisible && (
@@ -645,7 +645,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                     }
                   }}
                 >
-                  <span className="!w-full !text-left !bg-transparent">{sub.title}</span>
+                  <span className="!w-full !text-left !bg-transparent truncate">{sub.title}</span>
                 </Button>
               ))}
           </div>
