@@ -153,7 +153,7 @@ export default function ApprovalCreatePage() {
     }
   }
 
-  const model = useMemo(() => models.find((m) => m.id === contentTypeId), [models, contentTypeId])
+  const model = useMemo(() => models.find((m) => m.id === Number(contentTypeId)), [models, contentTypeId])
 
   const toggleAction = (id: number) => {
     setSelectedActionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -376,7 +376,7 @@ export default function ApprovalCreatePage() {
       )}
 
       {/* Target Model Info */}
-      {model && (
+      {/* {model && (
         <Card className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -396,11 +396,11 @@ export default function ApprovalCreatePage() {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${createdApprovalDocument ? "lg:grid-cols-2":''} gap-6`}>
         {/* Actions Configuration */}
-        <Card className="border-none shadow-none">
+        <Card className={`border-none shadow-none ${!createdApprovalDocument ? "max-w-7xl": ''}`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
@@ -451,8 +451,7 @@ export default function ApprovalCreatePage() {
                 rows={3}
               />
             </div>
-          </CardContent>
-          <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
+          <div className="flex justify-end gap-4 pt-6">
             <Button
               onClick={createApprovalDocumentWithLevels}
               disabled={savingDocument || selectedActionIds.length === 0 || !!createdApprovalDocument}
@@ -460,6 +459,7 @@ export default function ApprovalCreatePage() {
               {savingDocument ? "Creating..." : "Create Approval"}
             </Button>
           </div>
+          </CardContent>
         </Card>
 
         {/* Approval Levels - Only show after approval document is created */}
@@ -612,7 +612,7 @@ export default function ApprovalCreatePage() {
                             items={approverGroups.map((group) => ({
                               id: group.id,
                               name: group.name,
-                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                              label: `${group.name} (${group.users_display.length} users, ${group.roles_display.length} roles)`,
                             }))}
                             selectedIds={selectedApproverGroupIds}
                             onSelectionChange={setSelectedApproverGroupIds}
@@ -643,7 +643,7 @@ export default function ApprovalCreatePage() {
                             items={approverGroups.map((group) => ({
                               id: group.id,
                               name: group.name,
-                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                              label: `${group.name} (${group.users_display.length} users, ${group.roles_display.length} roles)`,
                             }))}
                             selectedIds={selectedOverriderGroupIds}
                             onSelectionChange={setSelectedOverriderGroupIds}
@@ -707,7 +707,7 @@ export default function ApprovalCreatePage() {
                             <CheckCircle2 className="h-3 w-3 text-green-600" />
                             <span className="font-medium">Approver Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} groups assigned</div>
+                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} {`group${level.approvers_detail?.length > 1  ? 's':''} assigned`}</div>
                           {level.approvers_detail && level.approvers_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.approvers_detail.map((approver) => (
@@ -724,7 +724,7 @@ export default function ApprovalCreatePage() {
                             <Shield className="h-3 w-3 text-orange-600" />
                             <span className="font-medium">Overrider Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} groups assigned</div>
+                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} {`group${level.overriders_detail?.length > 1  ? 's':''} assigned`}</div>
                           {level.overriders_detail && level.overriders_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.overriders_detail.map((overrider) => (

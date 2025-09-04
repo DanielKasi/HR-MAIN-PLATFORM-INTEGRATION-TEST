@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   fetchApprovalDocumentById,
-  fetchApprovalDocumentLevels,
   updateApprovalDocument,
   fetchActions,
   createApprovalDocumentLevel,
@@ -50,7 +49,6 @@ export default function ApprovalEditPage() {
 
   // Data states
   const [approvalDocument, setApprovalDocument] = useState<ApprovalDocument | null>(null)
-  const [levels, setLevels] = useState<ApprovalDocumentLevel[]>([])
   const [actions, setActions] = useState<Action[]>([])
   const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([])
   const [availableRoles, setAvailableRoles] = useState<Role[]>([])
@@ -99,9 +97,8 @@ export default function ApprovalEditPage() {
     }
     try {
       setLoading(true)
-      const [documentRes, levelsRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
+      const [documentRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
         fetchApprovalDocumentById(Number.parseInt(approvalId)),
-        fetchApprovalDocumentLevels({ approval_document: Number.parseInt(approvalId) }),
         fetchActions(),
         usersAPI.getProfilesByInstitutionId({ institutionId: currentInstitution.id }),
         getRoles({ institutionId: currentInstitution.id }),
@@ -115,7 +112,6 @@ export default function ApprovalEditPage() {
           : []
 
       setApprovalDocument(documentRes)
-      setLevels(levelsRes.results)
       setActions(normalizedActions)
       setDocumentDescription(documentRes.description || "")
       setSelectedActionIds(documentRes.actions?.map((a) => a.id) || [])
@@ -134,6 +130,8 @@ export default function ApprovalEditPage() {
       setLoading(false)
     }
   }
+
+
 
   const toggleAction = (id: number) => {
     setSelectedActionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -257,18 +255,13 @@ export default function ApprovalEditPage() {
       }
 
       if (editingLevel) {
-        await updateApprovalDocumentLevel(editingLevel.id, levelData)
+        await updateApprovalDocumentLevel(editingLevel.id, levelData);
         showSuccessToast("Approval level updated successfully!")
       } else {
         await createApprovalDocumentLevel(levelData)
         showSuccessToast("Approval level created successfully!")
       }
-
-      // Refetch levels
-      const levelsResponse = await fetchApprovalDocumentLevels({
-        approval_document: approvalDocument.id,
-      })
-      setLevels(levelsResponse.results)
+      loadData()
       resetLevelDialog()
     } catch (e: any) {
       showErrorToast({ error: e, defaultMessage: "Failed to save approval level" })
@@ -297,12 +290,6 @@ export default function ApprovalEditPage() {
     try {
       setDeletingLevel(true)
       await deleteApprovalDocumentLevel(levelToDelete)
-
-      // Refetch levels
-      const levelsResponse = await fetchApprovalDocumentLevels({
-        approval_document: approvalDocument.id,
-      })
-      setLevels(levelsResponse.results)
       showSuccessToast("Approval level deleted successfully!")
     } catch (e: any) {
       showErrorToast({ error: e, defaultMessage: "Failed to delete approval level" })
@@ -444,7 +431,7 @@ export default function ApprovalEditPage() {
           </CardHeader>
 
           <CardContent>
-            {levels.length === 0 ? (
+            {approvalDocument.levels.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p className="mb-2">No approval levels created yet</p>
@@ -452,7 +439,7 @@ export default function ApprovalEditPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {levels.map((level, index) => (
+                {approvalDocument.levels.map((level, index) => (
                   <div key={level.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -486,7 +473,7 @@ export default function ApprovalEditPage() {
                           <CheckCircle2 className="h-3 w-3 text-green-600" />
                           <span className="font-medium">Approver Groups</span>
                         </div>
-                        <div className="text-muted-foreground">{level.approvers_detail?.length || 0} groups assigned</div>
+                        <div className="text-muted-foreground">{level.approvers_detail?.length || 0} {`group${level.approvers_detail?.length > 1  ? 's':''} assigned`}</div>
                         {level.approvers_detail && level.approvers_detail.length && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {level.approvers_detail.map((approver) => (
@@ -503,7 +490,7 @@ export default function ApprovalEditPage() {
                           <Shield className="h-3 w-3 text-orange-600" />
                           <span className="font-medium">Overrider Groups</span>
                         </div>
-                        <div className="text-muted-foreground">{level.overriders_detail?.length || 0} groups assigned</div>
+                        <div className="text-muted-foreground">{level.overriders_detail?.length || 0} {`group${level.overriders_detail?.length > 1  ? 's':''} assigned`}</div>
                         {level.overriders_detail && level.overriders_detail.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {level.overriders_detail.map((overrider) => (
@@ -654,7 +641,7 @@ export default function ApprovalEditPage() {
                   items={approverGroups.map((group) => ({
                     id: group.id,
                     name: group.name,
-                    label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                    label: `${group.name} (${group.users_display.length} users, ${group.users_display.length} roles)`,
                   }))}
                   selectedIds={selectedApproverGroupIds}
                   onSelectionChange={setSelectedApproverGroupIds}
@@ -683,7 +670,7 @@ export default function ApprovalEditPage() {
                   items={approverGroups.map((group) => ({
                     id: group.id,
                     name: group.name,
-                    label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                    label: `${group.name} (${group.users_display.length} users, ${group.users_display.length} roles)`,
                   }))}
                   selectedIds={selectedOverriderGroupIds}
                   onSelectionChange={setSelectedOverriderGroupIds}

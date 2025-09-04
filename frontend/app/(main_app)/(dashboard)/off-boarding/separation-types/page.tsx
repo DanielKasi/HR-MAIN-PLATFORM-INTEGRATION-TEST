@@ -47,7 +47,8 @@ import * as z from "zod";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
-import {ISeparationType, IOffboardingStage, SeparationCategory, PERMISSION_CODES} from "@/types/types.utils";
+import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"

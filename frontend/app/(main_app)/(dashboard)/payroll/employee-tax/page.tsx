@@ -17,7 +17,8 @@ import {
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {taxAPI, getPaginatedEmployees, showErrorToast} from "@/lib/utils";
-import {IEmployeeTax, IEmployee, ITax, PERMISSION_CODES} from "@/types/types.utils";
+import {IEmployeeTax, IEmployee, ITax} from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {EmployeeTaxFormDialog} from "@/components/employee-taxes/employee-tax-form-dialog";
@@ -27,11 +28,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
-import {DeleteConfirmationDialog} from "@/components/common/dialogs/delete-confirmation-dialog";
-import {DropdownMenuLabel} from "@/components/ui/dropdown-menu";
-import {CardHeader} from "@/components/ui/card";
+
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { CardHeader } from "@/components/ui/card";
 
 const getStatusColor = (status: string) => {
   switch (status) {

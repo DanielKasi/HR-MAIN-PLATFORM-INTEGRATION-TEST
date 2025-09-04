@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { IAllowanceType, PERMISSION_CODES } from "@/types/types.utils";
+import { IAllowanceType } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { getPaginatedAllowanceTypes, getPaginatedAllowanceTypesFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";

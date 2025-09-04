@@ -48,11 +48,11 @@ export default function JobPositionDetailsPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [approvingTaskId, setApprovingTaskId] = useState<string | null>(null);
-  const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
-  const [approvalComment, setApprovalComment] = useState<string>("");
-  const [showApproveDialog, setShowApproveDialog] = useState<string | null>(null);
-  const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
+  // const [approvingTaskId, setApprovingTaskId] = useState<string | null>(null);
+  // const [rejectingTaskId, setRejectingTaskId] = useState<string | null>(null);
+  // const [approvalComment, setApprovalComment] = useState<string>("");
+  // const [showApproveDialog, setShowApproveDialog] = useState<string | null>(null);
+  // const [showRejectDialog, setShowRejectDialog] = useState<string | null>(null);
 
   const router = useRouter();
   const params = useParams();
@@ -186,26 +186,26 @@ export default function JobPositionDetailsPage() {
     );
   }
 
-  const handleStatusUpdate = async (taskId: string, status: "completed" | "rejected") => {
-    try {
-      status === "rejected" ? setRejectingTaskId(taskId) : setApprovingTaskId(taskId);
-      await apiRequest.patch(`/workflow/task/${taskId}/status/`, {
-        status,
-        comment: approvalComment,
-      });
-      // Reset comment after submission
-      setApprovalComment("");
-      // Refresh data after status update
-      await fetchJobPosition();
+  // const handleStatusUpdate = async (taskId: string, status: "completed" | "rejected") => {
+  //   try {
+  //     status === "rejected" ? setRejectingTaskId(taskId) : setApprovingTaskId(taskId);
+  //     await apiRequest.patch(`/workflow/task/${taskId}/status/`, {
+  //       status,
+  //       comment: approvalComment,
+  //     });
+  //     // Reset comment after submission
+  //     setApprovalComment("");
+  //     // Refresh data after status update
+  //     await fetchJobPosition();
 
-      toast.success(`Position ${status === "rejected" ? "rejected" : "approved"} successfully`);
-    } catch (err: any) {
-      console.error(`${status === "rejected" ? "Rejection" : "Approval"} failed:`, err);
-      toast.error(`Failed to ${status === "rejected" ? "reject" : "approve"} position`);
-    } finally {
-      status === "rejected" ? setRejectingTaskId(null) : setApprovingTaskId(null);
-    }
-  };
+  //     toast.success(`Position ${status === "rejected" ? "rejected" : "approved"} successfully`);
+  //   } catch (err: any) {
+  //     console.error(`${status === "rejected" ? "Rejection" : "Approval"} failed:`, err);
+  //     toast.error(`Failed to ${status === "rejected" ? "reject" : "approve"} position`);
+  //   } finally {
+  //     status === "rejected" ? setRejectingTaskId(null) : setApprovingTaskId(null);
+  //   }
+  // };
 
   return (
     <div className="w-full h-full p-4">
@@ -213,7 +213,7 @@ export default function JobPositionDetailsPage() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Details - Left Column (2/3 width) */}
-          <div className={`${jobPosition.tasks?.length ? "lg:col-span-2" : "lg:col-span-3"}`}>
+          <div className={`${"lg:col-span-2"}`}>
             {/* Main Details Card */}
             <Card>
               <CardHeader>
@@ -425,263 +425,7 @@ export default function JobPositionDetailsPage() {
             </Card>
           </div>
 
-          {/* Approval Steps - Right Column (1/3 width) */}
-
-          {jobPosition.tasks?.length ? (
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Approval Steps</CardTitle>
-                  <CardDescription>Position approval workflow</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {jobPosition.tasks &&
-                      jobPosition.tasks.map((task, index) => {
-                        const isCompleted = task.status === "completed";
-                        const isPending = task.status === "pending";
-                        const isRejected = task.status === "rejected";
-                        const isTerminated = task.status === "terminated";
-                        const userHasRole =
-                          currentUser &&
-                          // Check if user has any of the required roles
-                          (task.step.roles_details?.some((role) =>
-                            currentUser.roles.some((userRole) => userRole.name === role.name),
-                          ) ||
-                            // Or check if user is an explicit approver
-                            task.step.approvers_details?.some(
-                              (approver) => approver.approver_user.user.id === currentUser.id,
-                            ) ||
-                            // Or check if user is the institution owner
-                            currentUser.id === selectedInstitution?.institution_owner_id);
-                        const isCurrentStep =
-                          isPending &&
-                          index === jobPosition.tasks.findIndex((t) => t.status === "pending");
-
-                        return (
-                          <div key={task.step.level} className="relative">
-                            {/* Timeline connector */}
-                            {index < jobPosition.tasks.length - 1 && (
-                              <div className="absolute left-3 top-6 bottom-0 w-0.5 bg-gray-200 z-0" />
-                            )}
-
-                            <div className="flex gap-4 relative z-10">
-                              {/* Status indicator */}
-                              <div
-                                className={`w-6 h-6 rounded-full flex items-center justify-center mt-1 ${isCompleted
-                                  ? "bg-green-100 text-green-600 border border-green-600"
-                                  : isRejected
-                                    ? "bg-red-100 text-red-600 border border-red-600"
-                                    : isTerminated
-                                      ? "bg-red-100 text-red-600 border border-red-600"
-                                      : isCurrentStep
-                                        ? "bg-amber-100 text-amber-600 border border-amber-600"
-                                        : "bg-gray-100 text-gray-400 border border-gray-400"
-                                  }`}
-                              >
-                                {isCompleted ? "✓" : isRejected || isTerminated ? "✕" : index + 1}
-                              </div>
-
-                              {/* Step details */}
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h4 className="font-semibold text-sm">{task.step.step_name}</h4>
-                                    <p className="text-xs text-gray-500">
-                                      Approver Roles:{" "}
-                                      {task.step.roles_details.length > 0
-                                        ? task.step.roles_details
-                                          .map((role) => role.name)
-                                          .join(", ")
-                                        : "No roles, It's User-Based"}
-                                    </p>
-                                  </div>
-
-                                  <div>
-                                    {isCompleted ? (
-                                      <Badge className="text-xs" variant="success">
-                                        Approved
-                                      </Badge>
-                                    ) : isRejected ? (
-                                      <Badge className="text-xs" variant="destructive">
-                                        Rejected
-                                      </Badge>
-                                    ) : isTerminated ? (
-                                      <Badge
-                                        className="text-xs bg-red-50 text-red-600 border-red-200"
-                                        variant="destructive"
-                                      >
-                                        Terminated
-                                      </Badge>
-                                    ) : isPending ? (
-                                      <Badge
-                                        className="text-xs bg-amber-50 text-amber-600 border-amber-200"
-                                        variant="outline"
-                                      >
-                                        Pending
-                                      </Badge>
-                                    ) : (
-                                      <Badge className="text-xs" variant="outline">
-                                        Waiting
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Approval button - only show for current user's role and pending tasks */}
-                                {isPending && userHasRole && (
-                                  <div className="mt-2 space-y-2">
-                                    <textarea
-                                      className="w-full p-2 text-sm border rounded-md"
-                                      placeholder="Add a comment (optional)"
-                                      rows={2}
-                                      value={approvalComment}
-                                      onChange={(e) => setApprovalComment(e.target.value)}
-                                    />
-                                    <div className="flex gap-2">
-                                      <Button
-                                        className="flex-1"
-                                        disabled={
-                                          approvingTaskId === task.id || rejectingTaskId === task.id
-                                        }
-                                        size="sm"
-                                        onClick={() => setShowApproveDialog(task.id)}
-                                      >
-                                        Approve
-                                      </Button>
-                                      <Button
-                                        className="flex-1"
-                                        disabled={
-                                          approvingTaskId === task.id || rejectingTaskId === task.id
-                                        }
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => setShowRejectDialog(task.id)}
-                                      >
-                                        Reject
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Show terminated info if task was terminated */}
-                                {isTerminated && (
-                                  <div className="text-xs text-gray-500 mt-2">
-                                    <div className="mt-1 p-2 bg-red-50 rounded-md">
-                                      <p className="font-medium text-red-600">
-                                        This step was terminated because another step was rejected.
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Show approved/rejected by info if completed/rejected */}
-                                {(isCompleted || isRejected) && (
-                                  <div className="text-xs text-gray-500 mt-2">
-                                    <p>
-                                      {isCompleted ? "Approved" : "Rejected"} by:{" "}
-                                      {task.approved_by?.user.fullname}
-                                    </p>
-                                    {task.comment && (
-                                      <div className="mt-1 p-2 bg-gray-50 rounded-md">
-                                        <p className="font-medium">Comment:</p>
-                                        <p>{task.comment}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <></>
-          )}
         </div>
-
-        {/* Approve Confirmation Dialog */}
-        <Dialog open={showApproveDialog !== null} onOpenChange={() => setShowApproveDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Approval</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to approve this position? This action will move the workflow
-                to the next step.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-3">
-              {approvalComment && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                  <p className="font-medium text-sm">Your comment:</p>
-                  <p className="text-sm">{approvalComment}</p>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowApproveDialog(null)}>
-                Cancel
-              </Button>
-              <Button
-                disabled={approvingTaskId !== null}
-                onClick={() => {
-                  if (showApproveDialog !== null) {
-                    handleStatusUpdate(showApproveDialog, "completed");
-                    setShowApproveDialog(null);
-                  }
-                }}
-              >
-                {approvingTaskId !== null ? "Approving..." : "Confirm Approval"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Reject Confirmation Dialog */}
-        <Dialog open={showRejectDialog !== null} onOpenChange={() => setShowRejectDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirm Rejection</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to reject this position? This action will terminate all other
-                pending approval steps.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-3">
-              {approvalComment ? (
-                <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                  <p className="font-medium text-sm">Your comment:</p>
-                  <p className="text-sm">{approvalComment}</p>
-                </div>
-              ) : (
-                <div className="text-amber-600 text-sm">
-                  It's recommended to provide a comment explaining the reason for rejection.
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowRejectDialog(null)}>
-                Cancel
-              </Button>
-              <Button
-                disabled={rejectingTaskId !== null}
-                variant="destructive"
-                onClick={() => {
-                  if (showRejectDialog !== null) {
-                    handleStatusUpdate(showRejectDialog, "rejected");
-                    setShowRejectDialog(null);
-                  }
-                }}
-              >
-                {rejectingTaskId !== null ? "Rejecting..." : "Confirm Rejection"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

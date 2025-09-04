@@ -1,26 +1,7 @@
 // Approval domain types (aligned to backend serializers)
 
-export interface Action {
-  id: number;
-  name: string;
-  code: string;
-  description: string | null;
-  public_uuid: string;
-}
+import { Role, UserProfile } from ".";
 
-export interface ApproverGroupUser {
-  id: number;
-  user: number; // users.Profile id
-  user_fullname: string;
-  public_uuid: string;
-}
-
-export interface ApproverGroupRole {
-  id: number;
-  role: number; // users.Role id
-  role_name: string;
-  public_uuid: string;
-}
 
 export interface ApproverGroup {
   id: number;
@@ -29,8 +10,8 @@ export interface ApproverGroup {
   name: string;
   description?: string;
   public_uuid: string;
-  users: ApproverGroupUser[];
-  roles: ApproverGroupRole[];
+  users_display: UserProfile[];
+  roles_display: Role[];
 }
 
 export interface ApproverGroupFormData {
@@ -105,6 +86,15 @@ export interface ApprovalTask {
   approved_by_fullname?: string | null;
   updated_at: string;
   level: ApprovalDocumentLevel;
+}
+
+
+export interface Action {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  public_uuid: string;
 }
 
 export interface Approval {

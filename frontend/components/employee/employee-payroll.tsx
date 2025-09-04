@@ -260,10 +260,10 @@ export function EmployeePayrollTable({
                         {itemName}
                       </TableHead>
                     ))}
-                    <TableHead className="font-semibold text-gray-700 min-w-[8rem] sticky right-[8rem] bg-white z-10">
+                    <TableHead className="font-semibold text-gray-700 min-w-[8rem] !w-[8rem] sticky right-[8rem] bg-white border border-l z-10">
                       Net Salary
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 border-l min-w-[8rem]">
+                    <TableHead className="font-semibold text-gray-700 text-center sticky right-0 bg-white z-10 min-w-[8rem] !w-[8rem]">
                       Actions
                     </TableHead>
                   </TableRow>

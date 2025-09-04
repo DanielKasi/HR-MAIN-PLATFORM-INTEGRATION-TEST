@@ -442,10 +442,40 @@ export default function EmployeeProfile() {
                 <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Generate Document</span>
               </Button>
-              {/* <ApprovalWorkflow approvals={employee.approvals} /> */}
+
             </div>
           </div>
 
+          {/* <div className={`pt-4  ${payrollPeriod?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3":""} `}>
+          
+          {payrollPeriod?.approvals && 
+          <ApprovalWorkflow className="order-1 md:order-2" approvals={payrollPeriod.approvals} instance_approval_status={payrollPeriod.approval_status} />
+          }
+          <div className="xl:col-span-2 order-2 md:order-1 mx-0 md:mx-2">
+
+          <>{ selectedInstitution &&
+
+            <EmployeePayrollTable
+            institutionId={selectedInstitution.id}
+            scope={{type:"default", payrollPeriodId}}
+            setParentPayslips={setDisplayedPayslips}
+            refreshTableRef={refreshFunctionRef}
+            searchTerm={searchTerm}
+            showEmployeeAvatar={false}
+            />
+          }
+
+          </>
+          </div>
+        </div> */}
+
+        <div className={`pt-4  ${employee?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3":""} `}></div>
+        
+        {/* {employee?.approvals &&  */}
+          <ApprovalWorkflow className="order-1 md:order-2" approvals={employee?.approvals || []} instance_approval_status={employee.approval_status} />
+          {/* } */}
+
+        <div className="flex flex-col xl:col-span-2 order-2 md:order-1 ">
           {/* Profile card */}
           <div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6 -mt-5">
             <div className="p-4 md:p-6">
@@ -1203,6 +1233,8 @@ export default function EmployeeProfile() {
             contextId={Number.parseInt(employeeId)}
             context="employee"
           />
+        </div>
+
         </div>
       )}
     </div>

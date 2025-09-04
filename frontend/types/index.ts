@@ -59,105 +59,8 @@ export interface IUserInstitutionFormData {
 }
 
 
-export interface IUnitOfMeasure {
-  id: number;
-  unit_name: string;
-  unit_abbreviation: string;
-  unit_description: string | null;
-  institution: number | null;
-}
 
-export interface ICartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-}
 
-export interface Product {
-  product: any;
-  id: number;
-  product_name: string;
-  product_description: string | null;
-  barcode: string | null;
-  product_buying_price: number;
-  product_selling_price: number;
-  unallocated_stock: number;
-  returned_stock: number;
-  Institution_unallocated_stock_threshold: number;
-  unit_of_measure?: number;
-  unit_of_measure_details?: IUnitOfMeasure;
-  categories?: number[];
-  category_details?: IProductCategoryDetail[];
-  is_out_of_stock: boolean;
-  product_image: string | null;
-  is_active: boolean;
-  is_approved: boolean;
-}
-
-export interface IProductReturned {
-  id: number;
-  product: number;
-  product_details: Product;
-  quantity: string;
-  condition: "GOOD" | "OPENED" | "DAMAGED" | "EXPIRED";
-  reason: string;
-}
-
-export interface IReturnRequest {
-  id: number;
-  sale_transaction: number;
-  sale_transaction_code: string;
-  branch: number;
-  request_date: string;
-  return_status: "PENDING" | "APPROVED" | "REJECTED";
-  notes: string;
-  reference_code: string;
-  replacement_transaction?: number;
-  replacement_transaction_code?: string;
-  created_by: number;
-  products_returned: IProductReturned[];
-  tasks: Array<ITask>;
-  status: string;
-}
-
-export interface IBranchStoreProduct {
-  id: number;
-  branch: number;
-  product: Product;
-  quantity_in_stock: number;
-  quantity_in_shelf: number;
-  stock_threshold: number | null;
-  shelf_threshold: number | null;
-  branch_selling_price: number;
-}
-
-export interface IPurchaseOrderProduct {
-  id: number;
-  purchase_order: number;
-  product: number;
-  quantity: string;
-  unit_price: string;
-  total_price: string;
-  product_details: Product;
-}
-
-export interface ISupplier {
-  id: number;
-  supplier_name: string;
-  supplier_email: string;
-  supplier_phone_number: string;
-  institution: number;
-}
-
-export interface IPurchaseOrder {
-  id: number;
-  supplier: ISupplier;
-  order_date: string;
-  order_status: string;
-  total_amount: string;
-  purchase_order_products: IPurchaseOrderProduct[];
-}
 
 export interface ITask {
   id: number;
@@ -170,37 +73,8 @@ export interface ITask {
   approved_by: UserProfile | null;
 }
 
-export interface IApprovalProductDetails extends Product {
-  id: number;
-  institution: number;
-  status: string;
-  tasks: Array<ITask>;
-}
 
-export interface IApprovalPurchaseOrderDetails extends IPurchaseOrder {
-  id: number;
-  institution: number;
-  status: string;
-  tasks: Array<ITask>;
-}
 
-export interface Role {
-  id: number;
-  name: string;
-  description: string;
-  institution: number;
-  permissions_details?: Permission[];
-}
-
-export type WorkflowAction = {
-  id: number;
-  code: string;
-  label: string;
-  category: {
-    code: string;
-    label: string;
-  };
-};
 
 export interface Branch {
   id: number;
@@ -226,6 +100,16 @@ export enum USER_TYPES {
   STAFF = "STAFF"
 }
 
+
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+  institution: number;
+  permissions_details?: Permission[];
+}
+
 export interface IUser {
   id: number;
   fullname: string;
@@ -243,14 +127,6 @@ export interface IUser {
   user_type?: USER_TYPES;
 }
 
-
-
-export interface ICustomerProfile {
-  user: IUser;
-  phone_number: string;
-  profile_picture: string;
-  created_at: string;
-}
 
 export interface UserProfile {
   id: number;
@@ -279,64 +155,7 @@ export interface RoleDetail {
   permissions_details: Permission[];
 }
 
-export interface SalesTransactionProduct {
-  product: number;
-  product_details: Product;
-  quantity: string;
-  unit_price: string;
-  total_price: string;
-  discount: string;
-}
 
-export interface SalesTransaction {
-  id: number;
-  transaction_code: string;
-  transaction_date: string;
-  cashier_details: UserProfile;
-  branch_details: Branch;
-  payment_method?: "CARD" | "MOBILE_MONEY" | "CASH";
-  payment_source?: "POS" | "ONLINE_MARKETPLACE";
-  sub_total?: number;
-  vat_amount?: number;
-  total_amount: number;
-  products: SalesTransactionProduct[];
-}
-
-export interface IMarketPlaceOrderProduct {
-  product: IBranchStoreProduct;
-  price: number;
-  quantity: number;
-}
-
-export type IOrderStatus = {
-  code: string;
-  name: string;
-  description: string;
-};
-
-export type IOrderSubStatus = {
-  code: string;
-  name: string;
-  description: string;
-  order_status: IOrderStatus;
-};
-
-export interface IMarketPlaceOrder {
-  branch: Branch;
-  order_id: string;
-  order_date: string;
-  order_sub_status: IOrderSubStatus;
-  total_amount: number;
-  is_to_be_delivered: boolean;
-  delivery_address: string;
-  created_at: string;
-  products: IMarketPlaceOrderProduct[];
-  updated_at: string;
-  sale_transaction: SalesTransaction;
-  customer_profile: ICustomerProfile;
-  delivery_info: string | null;
-  customer: IUser;
-}
 
 export interface StoredColorData {
   colors: string[];
@@ -422,53 +241,3 @@ export interface ICustomUser {
 }
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
-
-
-
-// export interface IEmployee {
-//   id: number;
-
-//   /** nested serializer */
-//   user: ICustomUser | null;
-
-//   firstName?: string | null;
-//   lastName?: string | null;
-//   email?: string | null;
-//   phoneNumber?: string | null;
-
-//   /**
-//    * Since position & department are FK fields without
-//    * nested serializers here, they’ll come through as IDs.
-//    */
-//   position?: number | null;
-//   department?: number | null;
-
-//   /** dates as ISO‐strings */
-//   dateOfBirth?: string | null;    // e.g. "1985-06-15"
-//   dateOfJoining: string;          // defaulted by Django
-
-//   address?: string | null;
-//   isActive: boolean;
-
-//   /** server‐set timestamps */
-//   createdAt?: string | null;
-//   updatedAt: string;
-
-//   experience: number;
-//   qualifications?: string | null;
-//   skills?: string | null;
-
-//   emergencyContactName?: string | null;
-//   emergencyContactPhone?: string | null;
-//   emergencyContactRelationship?: string | null;
-
-//   maritalStatus: MaritalStatus;
-//   childrenCount?: number | null;
-
-//   /**
-//    * DRF will serialize an ImageField as the URL (string) or null
-//    */
-//   employeeProfilePicture?: string | null;
-// }
-
-

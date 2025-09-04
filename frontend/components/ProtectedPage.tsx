@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import type {PERMISSION_CODES} from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 import {useState, useEffect} from "react";
 import {useSelector} from "react-redux";

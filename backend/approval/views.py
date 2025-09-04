@@ -353,7 +353,7 @@ class ApprovalDocumentLevelListAPIView(APIView):
         
         levels = ApprovalDocumentLevel.objects.filter(
             approval_document__institution=institution,
-            # deleted_at__isnull=True
+            deleted_at__isnull=True
         )
         
         if search_query:
