@@ -92,13 +92,6 @@ def set_approval_level(sender, instance, **kwargs):
         ).aggregate(models.Max('level'))['level__max'] or 0
         instance.level = max_level + 1
 
-    def save(self, *args, **kwargs):
-        if not self.pk and not self.level:
-            self.level = ApprovalDocumentLevel.objects.filter(
-                approval_document=self.approval_document
-            ).aggregate(models.Max('level'))['level__max'] or 0
-        super().save(*args, **kwargs)
-
 class ApprovalDocumentLevelApprovers(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
