@@ -92,31 +92,42 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
             ApproverGroupRole.objects.create(approver_group=group, role=role)
         return group
 class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
-    approver_group = ApproverGroupSerializer(read_only=True)
+    approver_group = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelApprovers
         fields = ['id', 'approver_group']
 
+    def get_approver_group(self, obj):
+        from .serializers import ApproverGroupSerializer
+        return ApproverGroupSerializer(obj.approver_group, context=self.context).data
+
 class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
-    approver_group = ApproverGroupSerializer(read_only=True)
+    approver_group = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelOverriders
         fields = ['id', 'approver_group']
 
+    def get_approver_group(self, obj):
+        from .serializers import ApproverGroupSerializer
+        return ApproverGroupSerializer(obj.approver_group, context=self.context).data
+
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
     approvers = serializers.PrimaryKeyRelatedField(
         queryset=ApproverGroup.objects.all(),
         many=True,
+        required=False,
+        allow_empty=True,
         write_only=True
     )
     overriders = serializers.PrimaryKeyRelatedField(
         queryset=ApproverGroup.objects.all(),
         many=True,
+        required=False,
+        allow_empty=True,
         write_only=True
     )
-
     approvers_detail = ApprovalDocumentLevelApproverSerializer(
         source='approvaldocumentlevelapprovers_set', many=True, read_only=True
     )
@@ -133,21 +144,40 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'public_uuid',
-            'approvers',         
-            'overriders',        
-            'approvers_detail',  
-            'overriders_detail', 
+            'approvers',
+            'overriders',
+            'approvers_detail',
+            'overriders_detail',
         ]
+        read_only_fields = ['public_uuid', 'level', 'approvers_detail', 'overriders_detail']
+
+    def validate(self, data):
+        if self.context.get('request') and self.context['request'].method in ['POST', 'PATCH']:
+            approval_document = data.get('approval_document')
+            institution = approval_document.institution  # Assuming ApprovalDocument has institution
+            approvers = data.get('approvers', [])
+            overriders = data.get('overriders', [])
+
+            if approvers:
+                invalid_approvers = ApproverGroup.objects.filter(id__in=[a.id for a in approvers]).exclude(institution=institution)
+                if invalid_approvers.exists():
+                    raise serializers.ValidationError("All approvers must belong to the same institution as the approval document.")
+
+            if overriders:
+                invalid_overriders = ApproverGroup.objects.filter(id__in=[o.id for o in overriders]).exclude(institution=institution)
+                if invalid_overriders.exists():
+                    raise serializers.ValidationError("All overriders must belong to the same institution as the approval document.")
+
+        return data
 
     def create(self, validated_data):
-        approvers = validated_data.pop("approvers", [])
-        overriders = validated_data.pop("overriders", [])
-
+        approvers = validated_data.pop('approvers', [])
+        overriders = validated_data.pop('overriders', [])
         level = ApprovalDocumentLevel.objects.create(**validated_data)
-
-        level.approvers.set(approvers)
-        level.overriders.set(overriders)
-
+        for approver in approvers:
+            ApprovalDocumentLevelApprovers.objects.create(approval_document_level=level, approver_group=approver)
+        for overrider in overriders:
+            ApprovalDocumentLevelOverriders.objects.create(approval_document_level=level, approver_group=overrider)
         return level
 
 
