@@ -152,7 +152,7 @@ class EmployeeListAPIView(APIView):
             if filters:
                 employees = employees.filter(**filters)
 
-            employees = employees.order_by("-created_at")
+
             if search_query:
                 employees = employees.filter(
                     Q(employee_id__icontains=search_query)

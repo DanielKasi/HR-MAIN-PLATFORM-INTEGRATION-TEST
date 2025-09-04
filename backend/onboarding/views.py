@@ -141,25 +141,34 @@ class BulkOnBoardingCreateAPI(APIView):
             "required": ["application_ids"],
         },
         responses={
-            201: serializers.Serializer(
-                "BulkOnBoardingResponse",
-                {
+            201: {
+                "type": "object",
+                "properties": {
                     "created": OnBoardingSerializer(many=True),
-                    "skipped": serializers.ListSerializer(
-                        child=serializers.DictField()
-                    ),
-                    "summary": serializers.DictField(),
+                    "skipped": {
+                        "type": "array",
+                        "items": {"type": "object", "properties": {"application_id": {"type": "integer"}, "reason": {"type": "string"}}},
+                    },
+                    "summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_requested": {"type": "integer"},
+                            "created_count": {"type": "integer"},
+                            "skipped_count": {"type": "integer"},
+                        },
+                    },
                 },
-            ),
-            400: serializers.Serializer(
-                "ErrorResponse", {"error": serializers.CharField()}
-            ),
+            },
+            400: {
+                "type": "object",
+                "properties": {"error": {"type": "string"}},
+            },
         },
         summary="Bulk Create Onboarding Records",
         description="Create onboarding records for multiple applications with initial status",
         tags=["Onboarding"],
     )
-    
+    @transaction.atomic()
     def post(self, request):
         application_ids = request.data.get("application_ids", [])
 
@@ -172,6 +181,13 @@ class BulkOnBoardingCreateAPI(APIView):
         if not isinstance(application_ids, list):
             return Response(
                 {"error": "application_ids must be a list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate that all application_ids are integers
+        if not all(isinstance(app_id, int) for app_id in application_ids):
+            return Response(
+                {"error": "All application_ids must be integers"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -200,7 +216,7 @@ class BulkOnBoardingCreateAPI(APIView):
                 # Process valid applications
                 for application in valid_applications:
                     # Check if onboarding record already exists
-                    if hasattr(application, "onboarding"):
+                    if hasattr(application, "onboarding") and application.onboarding:
                         skipped_applications.append(
                             {
                                 "application_id": application.id,
@@ -213,6 +229,8 @@ class BulkOnBoardingCreateAPI(APIView):
                     onboarding = OnBoarding.objects.create(
                         application=application, status="initial"
                     )
+                    # Trigger approval workflow for the created onboarding
+                    onboarding.confirm_create()
                     created_onboardings.append(onboarding)
 
         except Exception as e:
@@ -223,7 +241,6 @@ class BulkOnBoardingCreateAPI(APIView):
 
         # Serialize created onboarding records
         serializer = OnBoardingSerializer(created_onboardings, many=True)
-        serializer.confirm_create()
 
         response_data = {
             "created": serializer.data,

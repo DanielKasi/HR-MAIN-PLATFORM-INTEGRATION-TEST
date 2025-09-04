@@ -65,8 +65,29 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
     description = models.TextField(blank=True, null=True)
     actions = models.ManyToManyField('Action', related_name='approval_documents', blank=True)
 
-    def __str__(self):
+    def str(self):
         return f"Approval Document for {self.content_type}"
+
+    def clean(self):
+        super().clean()
+        if self.pk:  
+            current_actions = set(self.actions.values_list('id', flat=True))
+            
+            for doc in ApprovalDocument.objects.filter(
+                institution=self.institution,
+                content_type=self.content_type
+            ).exclude(pk=self.pk):
+                doc_actions = set(doc.actions.values_list('id', flat=True))
+                if current_actions == doc_actions:
+                    raise ValidationError(
+                        {"error":"An approval document with the same content type and actions already exists."}
+                    )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+        
 
 class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
     level = models.PositiveIntegerField(null=True, blank=True)

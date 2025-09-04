@@ -59,7 +59,7 @@ class Employee(BaseApprovableModel):
     class Meta:
         verbose_name = "Employee"
         verbose_name_plural = "Employees"
-        ordering = ["-created_at"]
+        ordering = ["user__fullname"]
 
     choices = (
         ("single", "Single"),
