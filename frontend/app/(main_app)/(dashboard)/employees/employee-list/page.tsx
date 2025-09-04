@@ -104,7 +104,7 @@ export default function EmployeesPage() {
             <div className="flex-shrink-0 lg:flex-[0.2]"></div>
           </div>
         </CardHeader>
-        <EmployeesTable refreshFunctionRef={refreshFunctionRef} />
+        <EmployeesTable searchTerm={searchTerm} refreshFunctionRef={refreshFunctionRef} />
 
         <BulkUploadEmployeesDialog
           isOpen={isBulkUploadDialogOpen}

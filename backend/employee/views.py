@@ -164,6 +164,8 @@ class EmployeeListAPIView(APIView):
                     | Q(department__name__icontains=search_query)
                 )
 
+                
+
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
             serializer = EmployeeSerializer(paginated_qs, many=True)
