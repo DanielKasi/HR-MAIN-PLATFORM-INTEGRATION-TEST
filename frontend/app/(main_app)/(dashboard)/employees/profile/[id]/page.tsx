@@ -1,23 +1,29 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import type { IAttendance } from "@/types/types.utils";
-import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
-import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
-import EmployeeDiscipline from "@/components/employee/employee-discipline";
-import AssetRequests from "@/components/employee/asset-request";
-import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
-import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { useParams } from "next/navigation"
+import { useSelector } from "react-redux"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import type { IAttendance } from "@/types/types.utils"
+import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances"
+import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications"
+import EmployeeDiscipline from "@/components/employee/employee-discipline"
+import AssetRequests from "@/components/employee/asset-request"
+import EmployeeAssetAllocations from "@/components/employee/asset-allocation"
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog"
 import {
   Mail,
   Phone,
@@ -32,22 +38,21 @@ import {
   Plus,
   Clock,
   Settings,
-} from "lucide-react";
-import Link from "next/link";
-import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData } from "@/types/types.utils";
-import { toast } from "sonner";
-import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
-import ContractsTable from "@/components/contracts/contracts-table";
-import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { formatCurrency, getFileUrl } from "@/lib/helpers";
-import { useMobile } from "@/hooks/use-mobile";
-import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
-import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
-import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
-import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+} from "lucide-react"
+import Link from "next/link"
+import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+import type { IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData } from "@/types/types.utils"
+import { toast } from "sonner"
+import { EmployeePayrollTable } from "@/components/employee/employee-payroll"
+import ContractsTable from "@/components/contracts/contracts-table"
+import EmployeeAttendance from "@/components/attendance/employee-attendance"
+import { formatCurrency, getFileUrl } from "@/lib/helpers"
+import { useMobile } from "@/hooks/use-mobile"
+import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks"
+import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts"
+import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties"
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow"
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -418,7 +423,7 @@ export default function EmployeeProfile() {
                 <Button
                   variant="outline"
                   size={isMobile ? "sm" : "default"}
-                  className="text-gray-500 hover:text-gray-600 flex items-center gap-2"
+                  className="text-gray-500 hover:text-gray-600 flex items-center gap-2 bg-transparent"
                 >
                   <Edit className="w-4 h-4" />
                   <span className="hidden md:inline">Edit</span>
@@ -427,7 +432,7 @@ export default function EmployeeProfile() {
               <Button
                 variant="outline"
                 size={isMobile ? "sm" : "default"}
-                className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2"
+                className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2 bg-transparent"
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden md:inline">Delete</span>
@@ -446,38 +451,21 @@ export default function EmployeeProfile() {
             </div>
           </div>
 
-          {/* <div className={`pt-4  ${payrollPeriod?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3":""} `}>
-          
-          {payrollPeriod?.approvals && 
-          <ApprovalWorkflow className="order-1 md:order-2" approvals={payrollPeriod.approvals} instance_approval_status={payrollPeriod.approval_status} />
-          }
-          <div className="xl:col-span-2 order-2 md:order-1 mx-0 md:mx-2">
 
-          <>{ selectedInstitution &&
-
-            <EmployeePayrollTable
-            institutionId={selectedInstitution.id}
-            scope={{type:"default", payrollPeriodId}}
-            setParentPayslips={setDisplayedPayslips}
-            refreshTableRef={refreshFunctionRef}
-            searchTerm={searchTerm}
-            showEmployeeAvatar={false}
+        <div className={`pt-4 w-full ${employee?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+          {employee?.approvals && employee.approvals.length > 0 && (
+            <ApprovalWorkflow 
+              className="order-1 md:order-2" 
+              approvals={employee.approvals} 
+              instance_approval_status={employee.approval_status}
+              onRefresh={fetchEmployee}
             />
-          }
+          )}
 
-          </>
-          </div>
-        </div> */}
+          <div className={`flex flex-col order-2 md:order-1 ${employee?.approval_status !== "active" && employee?.approvals && employee.approvals.length > 0 ? "md:col-span-1 lg:col-span-2 xl:col-span-3" : ""}`}>
+            {/* Profile card */}
+            <div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6 -mt-5">
 
-        <div className={`pt-4  ${employee?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3":""} `}></div>
-        
-        {/* {employee?.approvals &&  */}
-          <ApprovalWorkflow className="order-1 md:order-2" approvals={employee?.approvals || []} instance_approval_status={employee.approval_status} />
-          {/* } */}
-
-        <div className="flex flex-col xl:col-span-2 order-2 md:order-1 ">
-          {/* Profile card */}
-          <div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6 -mt-5">
             <div className="p-4 md:p-6">
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                 {/* Left side - Avatar and basic info */}
@@ -1021,7 +1009,7 @@ export default function EmployeeProfile() {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleCreateSpotcheckConfig}
-                                    className="text-green-700 border-green-300 hover:bg-green-100"
+                                    className="text-green-700 border-green-300 hover:bg-green-100 bg-transparent"
                                   >
                                     <Edit className="w-4 h-4 mr-1" />
                                     Edit
@@ -1030,7 +1018,7 @@ export default function EmployeeProfile() {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleDeleteSpotcheckConfig}
-                                    className="text-red-700 border-red-300 hover:bg-red-100"
+                                    className="text-red-700 border-red-300 hover:bg-red-100 bg-transparent"
                                     disabled={loadingSpotcheckConfig}
                                   >
                                     <Trash2 className="w-4 h-4 mr-1" />
@@ -1236,7 +1224,8 @@ export default function EmployeeProfile() {
         </div>
 
         </div>
+        </div>
       )}
     </div>
-  );
-}
+
+  )}

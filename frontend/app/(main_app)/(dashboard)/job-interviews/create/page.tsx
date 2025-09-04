@@ -917,12 +917,6 @@ export default function CreateInterviewPage() {
 
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-                {/* Debug Info */}
-                <div className="w-full text-xs text-muted-foreground mb-2">
-                  Debug: selectedJobPosition: {selectedJobPosition}, selectedApplications:{" "}
-                  {selectedApplications.length}, jobApplications: {jobApplications.length}
-                </div>
-
                 <Button
                   type="button"
                   variant="outline"

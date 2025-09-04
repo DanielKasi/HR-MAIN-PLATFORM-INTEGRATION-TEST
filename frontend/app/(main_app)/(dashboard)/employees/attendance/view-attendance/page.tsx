@@ -16,7 +16,7 @@ import {Badge} from "@/components/ui/badge";
 import {Users, Building, Info, FileSpreadsheet, UserCheck} from "lucide-react";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {fetchAttendanceData} from "@/lib/utils";
-import { type AttendanceResponse, type IDepartment, type IEmployee, type IJobPosition} from "@/types/types.utils";
+import {type AttendanceResponse, type IDepartment, type IEmployee, type IJobPosition} from "@/types/types.utils";
 import {useSelector} from "react-redux";
 import { PERMISSION_CODES } from "@/constants";
 import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
