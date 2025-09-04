@@ -68,7 +68,7 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Approval Document for {self.content_type}"
 
-class ApprovalDocumentLevel(models.Model):
+class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
     level = models.PositiveIntegerField(null=True, blank=True)
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
