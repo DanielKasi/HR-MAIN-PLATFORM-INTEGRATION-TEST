@@ -93,24 +93,32 @@ class UserListAPIView(APIView):
         tags=["User Management"],
     )
     def post(self, request):
+
         serializer = CustomUserSerializer(data=request.data)
         if serializer.is_valid():
+
             user = serializer.save()
+
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
-            print(f"otp {otp}")
+
             send_otp_to_user(user, otp)
+            print("📨 OTP sent to user")
 
             cleanup_expired_otps()
+            print("🧹 Expired OTPs cleaned up")
 
             return Response(
                 CustomUserSerializer(user).data,
                 status=status.HTTP_201_CREATED,
             )
+
+        print("❌ Serializer validation errors:", serializer.errors)
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+
 
     @extend_schema(
         responses={200: CustomUserSerializer(many=True)},
