@@ -2,7 +2,7 @@
 
 import {useEffect, useState} from "react";
 import type {UserProfile} from "@/types";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {apiGet} from "@/lib/apiRequest";
 import {Button} from "@/components/ui/button";

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {Textarea} from "@/components/ui/textarea";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface IProjectTask {

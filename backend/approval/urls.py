@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ActionListAPIView, ActionDetailAPIView,
+    ActionListAPIView, ActionDetailAPIView, ApprovableContentTypeDetailAPIView,
     ApproverGroupListAPIView, ApproverGroupDetailAPIView,
     ApprovalDocumentListAPIView, ApprovalDocumentDetailAPIView,
     ApprovalDocumentLevelListAPIView, ApprovalDocumentLevelDetailAPIView,
@@ -41,4 +41,5 @@ urlpatterns = [
 
     path('tasks-analytics/', ApprovalTasksDashboardAPIView.as_view(), name='tasks-analytics'),
     path('approvable-models/', ApprovableContentTypesListAPIView.as_view(), name='approvable-content-types-list'),
+    path('approvable-models/<int:pk>/', ApprovableContentTypeDetailAPIView.as_view(), name='approvable-model-details')
 ]

@@ -14,7 +14,8 @@ from .models import (
     Payslip,
     PayslipItem,
     EmployeeTax,
-    EmployeePenalty
+    EmployeePenalty,
+    PenaltyWaiveRequest
 )
 from .serializers import (
     EmployeeAllowanceSerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     AttendanceReportSerializer,
     PayslipsExcelReportSerializer,
     EmployeePenaltySerializer,
+    PenaltyWaiveRequestSerializer,
     
 )
 from employee.models import Employee, EmployeeAttendance
@@ -131,7 +133,6 @@ class ExportEFTExcelView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel file."
@@ -807,7 +808,6 @@ class PayrollPeriodPayslipsExcelReportAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(f"Unexpected error during attendance export: {e}")
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel."
@@ -865,12 +865,51 @@ class DownloadPayslipPDFView(APIView):
             return response
 
         except Exception as e:
-            print(f"Error generating PDF for payslip {payslip_id}: {e}")
             return Response(
                 {"error": "An internal server error occurred while generating the PDF."},
               
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+@extend_schema(tags=['Penalty WaiveRequest'])
+class PenaltyWaiveRequestListCreateView(APIView):
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get('search', None)
+        employee_id = request.query_params.get('employee_id', None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        waive_requests = PenaltyWaiveRequest.objects.filter(
+            penalty__employee__payroll_branch__institution=institution,
+            deleted_at__isnull=True
+        )
+
+        if employee_id:
+            waive_requests = waive_requests.filter(penalty__employee__id=employee_id)
+
+        if search_query:
+            waive_requests = waive_requests.filter(
+                Q(employee__user__fullname__icontains=search_query) |
+                Q(penalty__penalty_type__icontains=search_query)
+            )   
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(waive_requests, request)
+        serializer = PenaltyWaiveRequestSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data) 
+
+    def post(self, request):
+        serializer = PenaltyWaiveRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            instance = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
 class EmployeePenaltyListAPIView(APIView):
     @extend_schema(
@@ -930,6 +969,41 @@ class EmployeePenaltyListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(tags=['Penalty WaiveRequest'])
+class PenaltyWaiveRequestDetailAPIView(APIView):
+    def get(self, request, pk):
+        try:
+            waive_request = PenaltyWaiveRequest.objects.get(pk=pk)
+        except PenaltyWaiveRequest.DoesNotExist:
+            return Response({"detail": "Penalty waive request not found."}, status=status.HTTP_404_NOT_FOUND) 
+
+        serializer = PenaltyWaiveRequestSerializer(waive_request)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        try:
+            waive_request = PenaltyWaiveRequest.objects.get(pk=pk)
+        except PenaltyWaiveRequest.DoesNotExist:
+            return Response({"detail": "Penalty waive request not found."}, status=status.HTTP_404_NOT_FOUND)    
+
+        waive_request.approval_status = 'under_update'
+        serializer = PenaltyWaiveRequestSerializer(waive_request, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()   
+            waive_request.confirm_update()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        try:
+            waive_request = PenaltyWaiveRequest.objects.get(pk=pk)
+        except PenaltyWaiveRequest.DoesNotExist:
+            return Response({"detail": "Penalty waive request not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        waive_request.approval_status = 'under_deletion'
+        waive_request.delete()
+        waive_request.confirm_delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class EmployeePenaltyDetailAPIView(APIView):
     @extend_schema(tags=["Employee Penalties"])

@@ -1,5 +1,5 @@
 "use client";
-import type { ApprovalStep } from "@/types";
+import type {ApprovalStep} from "@/types";
 
 import {
   Search,
@@ -13,13 +13,13 @@ import {
   Save,
   ArrowLeft,
 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import {Fragment, useEffect, useState} from "react";
+import {useRouter} from "next/navigation";
+import {toast} from "react-toastify";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -27,14 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {Input} from "@/components/ui/input";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import apiRequest from "@/lib/apiRequest";
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
-import { capitalizeEachWord } from "@/lib/helpers";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import {DeleteConfirmationDialog} from "@/components/delete-confirmation-dialog";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {useSelector} from "react-redux";
+import {capitalizeEachWord} from "@/lib/helpers";
+import {ConfirmationDialog} from "@/components/confirmation-dialog";
 
 export default function ShopApprovalStepsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution);
@@ -57,7 +57,9 @@ export default function ShopApprovalStepsPage() {
         throw new Error("No institution context found");
       }
 
-      const response = await apiRequest.get(`workflow/institution-approval-step/${currentInstitution.id}/`);
+      const response = await apiRequest.get(
+        `workflow/institution-approval-step/${currentInstitution.id}/`,
+      );
       const responseData: ApprovalStep[] = response.data.results;
 
       setApprovalSteps(responseData.sort((a, b) => a.level - b.level));
@@ -99,7 +101,7 @@ export default function ShopApprovalStepsPage() {
 
       return acc;
     },
-    {} as Record<string, { action: ApprovalStep["action_details"]; steps: ApprovalStep[] }>,
+    {} as Record<string, {action: ApprovalStep["action_details"]; steps: ApprovalStep[]}>,
   );
 
   // Sort steps by level within each action group
@@ -179,7 +181,7 @@ export default function ShopApprovalStepsPage() {
           };
 
           // Mark this action as reordered
-          setReorderedActions((prev) => ({ ...prev, [actionId]: true }));
+          setReorderedActions((prev) => ({...prev, [actionId]: true}));
         }
       }
 
@@ -219,7 +221,7 @@ export default function ShopApprovalStepsPage() {
           };
 
           // Mark this action as reordered
-          setReorderedActions((prev) => ({ ...prev, [actionId]: true }));
+          setReorderedActions((prev) => ({...prev, [actionId]: true}));
         }
       }
 
@@ -229,7 +231,7 @@ export default function ShopApprovalStepsPage() {
 
   const saveReorderedSteps = async (actionId: number) => {
     try {
-      setSavingOrder((prev) => ({ ...prev, [actionId]: true }));
+      setSavingOrder((prev) => ({...prev, [actionId]: true}));
 
       if (!currentInstitution?.id) {
         throw new Error("No institution context found");
@@ -244,13 +246,16 @@ export default function ShopApprovalStepsPage() {
         }));
 
       // Send the update request
-      await apiRequest.patch(`workflow/institution-approval-step/${currentInstitution.id}/reorder/`, {
-        steps: stepsToUpdate,
-      });
+      await apiRequest.patch(
+        `workflow/institution-approval-step/${currentInstitution.id}/reorder/`,
+        {
+          steps: stepsToUpdate,
+        },
+      );
 
       // Update success state
       setReorderedActions((prev) => {
-        const newState = { ...prev };
+        const newState = {...prev};
 
         delete newState[actionId];
 
@@ -263,7 +268,7 @@ export default function ShopApprovalStepsPage() {
       toast.error("Failed to update the approval steps order.");
     } finally {
       setSavingOrder((prev) => {
-        const newState = { ...prev };
+        const newState = {...prev};
 
         delete newState[actionId];
 
@@ -326,12 +331,19 @@ export default function ShopApprovalStepsPage() {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Button size="sm" className="rounded-full aspect-square" variant="outline" onClick={() => router.back()}>
+          <Button
+            size="sm"
+            className="rounded-full aspect-square"
+            variant="outline"
+            onClick={() => router.back()}
+          >
             <ArrowLeft />
           </Button>
-          <div>
+          <div className="mt-3 ml-2">
             <h1 className="text-2xl font-bold tracking-tight">Approval Steps</h1>
-            <p className="text-muted-foreground">Manage the multi-step approval process for your institution workflows</p>
+            <p className="text-muted-foreground">
+              Manage the multi-step approval process for your institution workflows
+            </p>
           </div>
         </div>
       </div>
@@ -364,7 +376,9 @@ export default function ShopApprovalStepsPage() {
                 <SelectItem value="100">100</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Entries Per Page</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
+              Entries Per Page
+            </span>
           </div>
         </div>
 
@@ -386,14 +400,14 @@ export default function ShopApprovalStepsPage() {
       )}
 
       {/* Table without card wrapper */}
-        <div className="overflow-x-auto mt-10">
-            <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-              <TableHeader className="bg-gray-50/50">
+      <div className="overflow-x-auto mt-10">
+        <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+          <TableHeader className="bg-gray-50/50">
             <TableRow>
               <TableHead className="w-10" />
               <TableHead>Action</TableHead>
               <TableHead>Category</TableHead>
-         
+
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -405,7 +419,7 @@ export default function ShopApprovalStepsPage() {
                 </TableCell>
               </TableRow>
             ) : Object.keys(stepsByAction).length > 0 ? (
-              Object.entries(stepsByAction).map(([actionId, { action, steps }], idx) => (
+              Object.entries(stepsByAction).map(([actionId, {action, steps}], idx) => (
                 <Fragment key={idx}>
                   <TableRow
                     key={`${actionId}-${idx}-${action.code}`}
@@ -421,7 +435,7 @@ export default function ShopApprovalStepsPage() {
                     </TableCell>
                     <TableCell className="font-medium">{action.label}</TableCell>
                     <TableCell>{action.category.label}</TableCell>
-               
+
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {reorderedActions[action.id] && (
@@ -479,9 +493,9 @@ export default function ShopApprovalStepsPage() {
                                   <TableCell>
                                     {step.approvers_details && step.approvers_details.length > 0
                                       ? formatItemsList(
-                                        step.approvers_details,
-                                        "approver_user.user.fullname",
-                                      )
+                                          step.approvers_details,
+                                          "approver_user.user.fullname",
+                                        )
                                       : "None"}
                                   </TableCell>
                                   <TableCell>
@@ -490,8 +504,7 @@ export default function ShopApprovalStepsPage() {
                                       <span className="text-xs text-muted-foreground">
                                         {step.level === Math.min(...steps.map((s) => s.level))
                                           ? "(First)"
-                                          : step.level ===
-                                            Math.max(...steps.map((s) => s.level))
+                                          : step.level === Math.max(...steps.map((s) => s.level))
                                             ? "(Last)"
                                             : ""}
                                       </span>
@@ -602,7 +615,7 @@ export default function ShopApprovalStepsPage() {
         onConfirm={confirmDelete}
         onClose={() => {
           setIsDeleting(false);
-          setDeleteDialogOpen(false)
+          setDeleteDialogOpen(false);
         }}
       />
     </div>

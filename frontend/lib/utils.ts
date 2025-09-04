@@ -129,15 +129,22 @@ import {
   AssetsData,
   ChangePasswordData,
   ApprovalTasksDashboardResponse,
-} from "@/types/types.utils";
+  ISpotCheckSetting,
+  IBranchSpotCheckSettingFormData,
+  IInstitutionSpotCheckSettingFormData,
+  IInstitutionSpotCheckSetting,
+  IBranchSpotCheckSetting,
+  IEmployeeSpotCheckSetting,
+  IEmployeeSpotCheckSettingFormData,
+  } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
-import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role } from "@/types";
+import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 import { create } from "domain";
-import { MAIN_DOMAIN_URL } from "@/app/constants";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 
 export function cn(...inputs: ClassValue[]) {
@@ -1442,16 +1449,12 @@ export const getEmployeeById = async ({employeeId}: {employeeId: number | string
 
 // Helper function to get roles for an institution
 export const getRoles = async ({institutionId}: {institutionId: number}): Promise<Role[]> => {
-  try {
-    const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
-    if (response.data && response.data.results) {
+    const response = await apiRequest.get(`user/role/?institution_id=${institutionId}`);
+    if (response.data && response.data.results) {                                                                                                                                                            
       return response.data.results || [];
     }
     return Array.isArray(response.data) ? response.data : [];
-  } catch (error) {
-    // console.error("Error fetching roles:", error);
-    return [];
-  }
+
 };
 
 // Helper function to get positions for an institution
@@ -6030,6 +6033,39 @@ export const employeeAPI = {
   }
 };
 
+export const getPaginatedUsers = async ({
+  institutionId,
+  page = 1,
+  search,
+  pageSize = 10,
+}: {
+  institutionId: number;
+  page?: number;
+  search?: string;
+  pageSize?: number;
+}) => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString(),
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+  const endpoint = `institution/profile/${institutionId}/?${params.toString()}`;
+  const response = await apiRequest.get(endpoint);
+  return response.data as IPaginatedResponse<UserProfile>;
+};
+
+export const getPaginatedUsersFromUrl = async ({
+  url,
+}: {
+  url: string;
+}) => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
+  return response.data as IPaginatedResponse<UserProfile>;
+};
+
 // Calendar API functions
 export const calendarAPI = {
   // Get calendar data for a specific institution and year
@@ -6308,6 +6344,10 @@ export const showErrorToast = ({error, defaultMessage}: {error: any; defaultMess
   toast.error(errorMessage);
 };
 
+export const showSuccessToast = (message:string) => {
+  toast.success(message)
+}
+
 // Spotcheck API functions
 export const spotcheckAPI = {
   getPaginated: async ({
@@ -6354,7 +6394,7 @@ export const spotcheckAPI = {
 
   getById: async (id: number): Promise<ISpotCheck> => {
     try {
-      const response = await apiRequest.get(`/spotcheck/${id}/`);
+      const response = await apiRequest.get(`/spotcheck/${id}/details`);
       return response.data;
     } catch (error) {
       console.warn("Error fetching spotcheck:", error);
@@ -6393,9 +6433,74 @@ export const spotcheckAPI = {
     return response.status === 204;
   },
 
-  // CONFIGS:{
+  CONFIGS:{
+    INSTITUTION:{
+      getByInstitution: async ({
+        institutionId,
+      }: {
+        institutionId: number;
+      }) => {
+        const endpoint = `/spotcheck/institution/${institutionId}/setting/details/`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IInstitutionSpotCheckSetting;
+      },
+      
+      create: async ({institutionId, data}: {institutionId: number, data: IInstitutionSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/institution/${institutionId}/setting/`, data);
+        return response.data as IInstitutionSpotCheckSetting;
+      },
+      
+      update: async ({institutionId, data}: {institutionId: number, data: Partial<IInstitutionSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/institution/${institutionId}/setting/update/`, data);
+        return response.data as IInstitutionSpotCheckSetting;
+      }
+    } ,
 
-  // }
+    BRANCH:{
+      getByBranch: async ({
+        branchId,
+      }: {
+        branchId: number;
+      }) => {
+        const endpoint = `/spotcheck/branch/${branchId}/setting/details/`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+      create: async ({branchId, data}: {branchId: number, data: IBranchSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/branch/${branchId}/setting/`, data);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+      update: async ({branchId, data}: {branchId: number, data: Partial<IBranchSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/branch/${branchId}/setting/update/`, data);
+        return response.data as IBranchSpotCheckSetting;
+      },
+
+    },
+
+    EMPLOYEE:{
+      getByEmployee: async ({
+        employeeId,
+      }: {
+        employeeId: number;
+      }) => {
+        const endpoint = `spotcheck/employee/${employeeId}/setting/details`;
+        const response = await apiRequest.get(endpoint);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+
+      create: async ({employeeId, data}: {employeeId: number, data: IEmployeeSpotCheckSettingFormData}) => {
+        const response = await apiRequest.post(`spotcheck/employee/${employeeId}/setting/`, data);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+
+      update: async ({employeeId, data}: {employeeId: number, data: Partial<IEmployeeSpotCheckSettingFormData>}) => {
+        const response = await apiRequest.patch(`spotcheck/employee/${employeeId}/setting/update/`, data);
+        return response.data as IEmployeeSpotCheckSetting;
+      },
+    }
+  }
 };
 
 // Penalty Configuration API functions
@@ -6730,12 +6835,14 @@ export const shiftsAPI = {
     getPaginatedFromUrl: async ({
       url,
       is_employee_specific,
+      employee_id
     }: {
       url: string;
       is_employee_specific: boolean;
+      employee_id?:number
     }) => {
       const separator = url.includes("?") ? "&" : "?";
-      url = `${url}${separator}is_employee_specific=${is_employee_specific}`;
+      url = `${url}${separator}is_employee_specific=${is_employee_specific}&employee_id=${employee_id}`;
       const response = await apiRequest.get(url);
       return response.data as IPaginatedResponse<IEmployeeShift>;
     },
@@ -6828,3 +6935,14 @@ export const branchesAPI = {
     },
   },
 };
+
+
+
+
+export const usersAPI = {
+  getProfilesByInstitutionId: async ({institutionId}:{institutionId:number}) =>  {
+    const response  = await apiRequest.get(`/institution/profile/${institutionId}/`);
+    return response.data as IPaginatedResponse<UserProfile>;
+
+  }
+}

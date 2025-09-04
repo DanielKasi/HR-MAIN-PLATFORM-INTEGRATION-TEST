@@ -4,7 +4,7 @@ import { getInstitutionById } from "@/lib/helpers";
 import { store } from "@/store";
 import { clearTemporaryPermissions, setTemporaryPermissions } from "@/store/auth/actions";
 import axios from "axios";
-import { MAIN_DOMAIN_URL } from "@/app/constants";
+import { MAIN_DOMAIN_URL } from "@/constants";
 
 export type LoginResponse = {
   tokens: {

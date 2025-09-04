@@ -136,22 +136,25 @@ export default function CreateTemplatePage() {
   }
 
   return (
-    <div className="w-full py-8 px-4 ">
+    <div className="w-full py-8 px-4 bg-white">
       <div className="mb-8">
-        <div className="flex items-center justify-start gap-6">
-          <Link
-            href="/documents/templates"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        <div className="flex items-center gap-2 -mt-6">
+          <Button
+            size="sm"
+            className="rounded-full aspect-square"
+            variant="outline"
+            onClick={() => router.push("/documents/templates")}
           >
-            <Button variant={"ghost"} className="rounded-full aspect-square">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">Create Document Template</h1>
+            <ArrowLeft />
+          </Button>
+          <div className="mt-7 ml-2">
+            <h1 className="text-3xl font-bold">Create Document Template</h1>
+            <p className="text-muted-foreground mt-2">
+              Create a new template for generating documents
+            </p>
+          </div>
         </div>
-        <p className="text-muted-foreground mt-2">Create a new template for generating documents</p>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>

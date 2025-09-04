@@ -17,7 +17,7 @@ import {
   AlertCircle,
   FileText,
 } from "lucide-react";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import { hasPermission } from "@/lib/helpers";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";

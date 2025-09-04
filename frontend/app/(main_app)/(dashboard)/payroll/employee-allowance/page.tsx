@@ -15,7 +15,8 @@ import {
   getAllowanceTypes,
   getPaginatedEmployees,
 } from "@/lib/utils";
-import { IEmployeeAllowance, IAllowanceType, IEmployee, PERMISSION_CODES } from "@/types/types.utils";
+import { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog";

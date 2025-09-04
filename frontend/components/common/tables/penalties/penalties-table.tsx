@@ -11,7 +11,7 @@ import { penaltiesAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Edit, MoreHorizontal, Trash } from "lucide-react";
-import { PENALTY_TYPES } from "@/app/constants";
+import { PENALTY_TYPES } from "@/constants";
 import { formatCurrency } from "@/lib/helpers";
 
 interface PenaltiesTableProps {

@@ -35,7 +35,7 @@ class BranchSpotCheckSetting(BaseApprovableModel):
     late_starts_after_minutes = models.IntegerField(default=10)
 
     def __str__(self):
-        return f"{self.branch.name} SpotCheck Settings"
+        return f"{self.branch.branch_name} SpotCheck Settings"
 
     def get_institution(self):
         return self.branch.institution

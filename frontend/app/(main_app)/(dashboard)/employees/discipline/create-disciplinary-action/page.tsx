@@ -1,26 +1,44 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes, getPaginatedEmployees } from "@/lib/utils";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
-import { IUserInstitution } from "@/types";
-import { IDisciplineTypeFormData, DisciplinaryActionForm, IEmployee } from "@/types/types.utils";
-import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-
+import {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Checkbox} from "@/components/ui/checkbox";
+import {ArrowLeft, Loader2, Plus} from "lucide-react";
+import {Badge} from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  createDisciplinaryAction,
+  createDisciplineType,
+  getDisciplineTypes,
+  getPaginatedEmployees,
+} from "@/lib/utils";
+import {toast} from "sonner";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
+import {IUserInstitution} from "@/types";
+import {IDisciplineTypeFormData, DisciplinaryActionForm, IEmployee} from "@/types/types.utils";
+import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
 
 interface IDisciplineType {
   id?: number;
@@ -83,14 +101,13 @@ export default function DisciplinaryForm() {
     }
   }, [institutionsAttached, selectedInstitution]);
 
-
   useEffect(() => {
     const fetchDisciplineTypes = async () => {
       if (!institutionId) return;
 
       setIsLoadingDisciplineTypes(true);
       try {
-        const fetchedDisciplineTypes = await getDisciplineTypes({ institutionId });
+        const fetchedDisciplineTypes = await getDisciplineTypes({institutionId});
 
         if (fetchedDisciplineTypes) {
           const formattedTypes = fetchedDisciplineTypes.map((type) => ({
@@ -114,29 +131,29 @@ export default function DisciplinaryForm() {
   }, [institutionId]);
 
   const severityOptions = [
-    { value: "low", label: "Low", color: "bg-green-200 text-green-900" },
-    { value: "medium", label: "Medium", color: "bg-yellow-100 text-yellow-800" },
-    { value: "high", label: "High", color: "bg-orange-100 text-orange-800" },
-    { value: "critical", label: "Critical", color: "bg-red-100 text-red-800" },
+    {value: "low", label: "Low", color: "bg-green-200 text-green-900"},
+    {value: "medium", label: "Medium", color: "bg-yellow-100 text-yellow-800"},
+    {value: "high", label: "High", color: "bg-orange-100 text-orange-800"},
+    {value: "critical", label: "Critical", color: "bg-red-100 text-red-800"},
   ];
 
   const statusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
-    { value: "dismissed", label: "Dismissed" },
+    {value: "pending", label: "Pending"},
+    {value: "in_progress", label: "In Progress"},
+    {value: "completed", label: "Completed"},
+    {value: "dismissed", label: "Dismissed"},
   ];
 
   const validateForm = (): boolean => {
     const requiredFields = [
-      { field: disciplinaryAction.employee, name: "Employee" },
-      { field: disciplinaryAction.discipline_type, name: "Discipline Type" },
-      { field: disciplinaryAction.incident_date, name: "Incident Date" },
-      { field: disciplinaryAction.description, name: "Description" },
-      { field: disciplinaryAction.reported_by, name: "Reported By" },
+      {field: disciplinaryAction.employee, name: "Employee"},
+      {field: disciplinaryAction.discipline_type, name: "Discipline Type"},
+      {field: disciplinaryAction.incident_date, name: "Incident Date"},
+      {field: disciplinaryAction.description, name: "Description"},
+      {field: disciplinaryAction.reported_by, name: "Reported By"},
     ];
 
-    for (const { field, name } of requiredFields) {
+    for (const {field, name} of requiredFields) {
       if (!field || field.trim() === "" || field === "0") {
         toast.error(`${name} is required`);
         return false;
@@ -202,11 +219,15 @@ export default function DisciplinaryForm() {
         const newDisciplineType = {
           id: result.id?.toString() || Date.now().toString(),
           name: result.name || disciplineType.name,
-          severity: (result.severity || disciplineType.severity) as "low" | "medium" | "high" | "critical",
+          severity: (result.severity || disciplineType.severity) as
+            | "low"
+            | "medium"
+            | "high"
+            | "critical",
         };
 
         setDisciplineTypes((prev) => [...prev, newDisciplineType]);
-        setDisciplinaryAction((prev) => ({ ...prev, discipline_type: newDisciplineType.id }));
+        setDisciplinaryAction((prev) => ({...prev, discipline_type: newDisciplineType.id}));
 
         setDisciplineType({
           name: "",
@@ -219,7 +240,10 @@ export default function DisciplinaryForm() {
         toast.error("Failed to create discipline type. Please try again.");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create discipline type. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create discipline type. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsAddingDisciplineType(false);
@@ -247,7 +271,10 @@ export default function DisciplinaryForm() {
         toast.error("Failed to create disciplinary action. Please try again.");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create disciplinary action. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create disciplinary action. Please try again.";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -270,19 +297,18 @@ export default function DisciplinaryForm() {
 
   const handleBack = () => {
     router.back();
-  }
+  };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 rounded-lg">
-
-      <Card className="w-full border-none shadow-none p-0 bg-transparent">
+    <div className="min-h-screen w-full bg-white-50 rounded-lg">
+      <Card className="w-full">
         <CardHeader>
           <div className="flex items-center justify-start gap-4">
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={handleBack}
-              className="rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+              className="rounded-full aspect-ratio"
             >
               <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
             </Button>
@@ -298,7 +324,9 @@ export default function DisciplinaryForm() {
                 <Label htmlFor="employee">Employee *</Label>
                 <EmployeeSearchableSelect
                   value={[disciplinaryAction.employee]}
-                  onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, employee: value.toString() })}
+                  onValueChange={(value) =>
+                    setDisciplinaryAction({...disciplinaryAction, employee: value.toString()})
+                  }
                   disabled={isSubmitting}
                   placeholder="Search and select employee"
                   showEmployeeId={false}
@@ -311,11 +339,17 @@ export default function DisciplinaryForm() {
                 <div className="flex gap-2">
                   <Select
                     value={disciplinaryAction.discipline_type}
-                    onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, discipline_type: value })}
+                    onValueChange={(value) =>
+                      setDisciplinaryAction({...disciplinaryAction, discipline_type: value})
+                    }
                     disabled={isSubmitting || isLoadingDisciplineTypes}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={isLoadingDisciplineTypes ? "Loading..." : "Select discipline type"} />
+                      <SelectValue
+                        placeholder={
+                          isLoadingDisciplineTypes ? "Loading..." : "Select discipline type"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {disciplineTypes.length > 0 ? (
@@ -323,7 +357,12 @@ export default function DisciplinaryForm() {
                           <SelectItem key={type.id} value={type.id}>
                             <div className="flex items-center gap-2">
                               {type.name}
-                              <Badge variant="outline" className={severityOptions.find((s) => s.value === type.severity)?.color}>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  severityOptions.find((s) => s.value === type.severity)?.color
+                                }
+                              >
                                 {type.severity}
                               </Badge>
                             </div>
@@ -331,21 +370,34 @@ export default function DisciplinaryForm() {
                         ))
                       ) : (
                         <div className="px-2 py-1.5 text-sm text-gray-500">
-                          {isLoadingDisciplineTypes ? "Loading discipline types..." : "No discipline types available"}
+                          {isLoadingDisciplineTypes
+                            ? "Loading discipline types..."
+                            : "No discipline types available"}
                         </div>
                       )}
                     </SelectContent>
                   </Select>
-                  <Dialog open={isDisciplineTypeModalOpen} onOpenChange={setIsDisciplineTypeModalOpen}>
+                  <Dialog
+                    open={isDisciplineTypeModalOpen}
+                    onOpenChange={setIsDisciplineTypeModalOpen}
+                  >
                     <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="icon" className="shrink-0" title="Add new discipline type">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        title="Add new discipline type"
+                      >
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
                         <DialogTitle>Add New Discipline Type</DialogTitle>
-                        <DialogDescription>Create a new discipline type for your organization.</DialogDescription>
+                        <DialogDescription>
+                          Create a new discipline type for your organization.
+                        </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
                         <div className="space-y-2">
@@ -353,17 +405,23 @@ export default function DisciplinaryForm() {
                           <Input
                             id="disciplineTypeName"
                             value={disciplineType.name}
-                            onChange={(e) => setDisciplineType({ ...disciplineType, name: e.target.value })}
+                            onChange={(e) =>
+                              setDisciplineType({...disciplineType, name: e.target.value})
+                            }
                             placeholder="e.g., Tardiness, Insubordination, Safety Violation"
                             maxLength={100}
                           />
-                          <p className="text-xs text-muted-foreground">{disciplineType.name.length}/100 characters</p>
+                          <p className="text-xs text-muted-foreground">
+                            {disciplineType.name.length}/100 characters
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="disciplineTypeSeverity">Severity Level *</Label>
                           <Select
                             value={disciplineType.severity}
-                            onValueChange={(value: any) => setDisciplineType({ ...disciplineType, severity: value })}
+                            onValueChange={(value: any) =>
+                              setDisciplineType({...disciplineType, severity: value})
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -386,7 +444,9 @@ export default function DisciplinaryForm() {
                           <Textarea
                             id="disciplineTypeDescription"
                             value={disciplineType.description}
-                            onChange={(e) => setDisciplineType({ ...disciplineType, description: e.target.value })}
+                            onChange={(e) =>
+                              setDisciplineType({...disciplineType, description: e.target.value})
+                            }
                             placeholder="Detailed description of this discipline type"
                             rows={3}
                           />
@@ -395,7 +455,9 @@ export default function DisciplinaryForm() {
                           <Checkbox
                             id="disciplineTypeActive"
                             checked={disciplineType.is_active}
-                            onCheckedChange={(checked) => setDisciplineType({ ...disciplineType, is_active: !!checked })}
+                            onCheckedChange={(checked) =>
+                              setDisciplineType({...disciplineType, is_active: !!checked})
+                            }
                           />
                           <Label htmlFor="disciplineTypeActive" className="text-sm">
                             Active (inactive types won't be available for new actions)
@@ -403,7 +465,12 @@ export default function DisciplinaryForm() {
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button type="button" variant="outline" onClick={handleDisciplineTypeCancel} disabled={isAddingDisciplineType}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleDisciplineTypeCancel}
+                          disabled={isAddingDisciplineType}
+                        >
                           Cancel
                         </Button>
                         <Button
@@ -430,7 +497,9 @@ export default function DisciplinaryForm() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={disciplinaryAction.status}
-                  onValueChange={(value: any) => setDisciplinaryAction({ ...disciplinaryAction, status: value })}
+                  onValueChange={(value: any) =>
+                    setDisciplinaryAction({...disciplinaryAction, status: value})
+                  }
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>
@@ -451,7 +520,9 @@ export default function DisciplinaryForm() {
                   id="incident_date"
                   type="date"
                   value={disciplinaryAction.incident_date}
-                  onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, incident_date: e.target.value })}
+                  onChange={(e) =>
+                    setDisciplinaryAction({...disciplinaryAction, incident_date: e.target.value})
+                  }
                   required
                   disabled={isSubmitting}
                 />
@@ -466,7 +537,9 @@ export default function DisciplinaryForm() {
                   id="resolution_date"
                   type="date"
                   value={disciplinaryAction.resolution_date}
-                  onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, resolution_date: e.target.value })}
+                  onChange={(e) =>
+                    setDisciplinaryAction({...disciplinaryAction, resolution_date: e.target.value})
+                  }
                   disabled={isSubmitting}
                 />
               </div>
@@ -491,12 +564,19 @@ export default function DisciplinaryForm() {
                 </div>
                 {disciplinaryAction.follow_up_required && (
                   <div className="flex-1">
-                    <Label htmlFor="follow_up_date" className="sr-only">Follow-up Date *</Label>
+                    <Label htmlFor="follow_up_date" className="sr-only">
+                      Follow-up Date *
+                    </Label>
                     <Input
                       id="follow_up_date"
                       type="date"
                       value={disciplinaryAction.follow_up_date || ""}
-                      onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, follow_up_date: e.target.value })}
+                      onChange={(e) =>
+                        setDisciplinaryAction({
+                          ...disciplinaryAction,
+                          follow_up_date: e.target.value,
+                        })
+                      }
                       disabled={isSubmitting}
                       required
                       placeholder="Follow-up Date"
@@ -512,7 +592,9 @@ export default function DisciplinaryForm() {
                 <Label htmlFor="reported_by">Reported By *</Label>
                 <EmployeeSearchableSelect
                   value={[disciplinaryAction.reported_by]}
-                  onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, reported_by: value.toString() })}
+                  onValueChange={(value) =>
+                    setDisciplinaryAction({...disciplinaryAction, reported_by: value.toString()})
+                  }
                   disabled={isSubmitting}
                   placeholder="Search and select reporter"
                   showEmployeeId={false}
@@ -524,7 +606,9 @@ export default function DisciplinaryForm() {
                 <Label htmlFor="assigned_to">Assigned To</Label>
                 <EmployeeSearchableSelect
                   value={[disciplinaryAction.assigned_to]}
-                  onValueChange={(value) => setDisciplinaryAction({ ...disciplinaryAction, assigned_to: value.toString() })}
+                  onValueChange={(value) =>
+                    setDisciplinaryAction({...disciplinaryAction, assigned_to: value.toString()})
+                  }
                   disabled={isSubmitting}
                   placeholder="Search and select assignee"
                   showEmployeeId={false}
@@ -541,14 +625,18 @@ export default function DisciplinaryForm() {
                   id="description"
                   placeholder="Describe the incident (minimum 10 characters)"
                   value={disciplinaryAction.description}
-                  onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, description: e.target.value })}
+                  onChange={(e) =>
+                    setDisciplinaryAction({...disciplinaryAction, description: e.target.value})
+                  }
                   required
                   minLength={10}
                   rows={5}
                   className="resize-none"
                   disabled={isSubmitting}
                 />
-                <p className="text-sm text-muted-foreground">{disciplinaryAction.description.length}/10 characters minimum</p>
+                <p className="text-sm text-muted-foreground">
+                  {disciplinaryAction.description.length}/10 characters minimum
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -557,7 +645,9 @@ export default function DisciplinaryForm() {
                   id="evidence"
                   placeholder="Any supporting evidence or documentation"
                   value={disciplinaryAction.evidence}
-                  onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, evidence: e.target.value })}
+                  onChange={(e) =>
+                    setDisciplinaryAction({...disciplinaryAction, evidence: e.target.value})
+                  }
                   rows={5}
                   className="resize-none"
                   disabled={isSubmitting}
@@ -572,7 +662,9 @@ export default function DisciplinaryForm() {
                 id="action_taken"
                 placeholder="Describe the action taken to resolve this issue"
                 value={disciplinaryAction.action_taken}
-                onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, action_taken: e.target.value })}
+                onChange={(e) =>
+                  setDisciplinaryAction({...disciplinaryAction, action_taken: e.target.value})
+                }
                 rows={4}
                 className="resize-none"
                 disabled={isSubmitting}
@@ -586,7 +678,9 @@ export default function DisciplinaryForm() {
                 id="notes"
                 placeholder="Any additional notes or comments"
                 value={disciplinaryAction.notes}
-                onChange={(e) => setDisciplinaryAction({ ...disciplinaryAction, notes: e.target.value })}
+                onChange={(e) =>
+                  setDisciplinaryAction({...disciplinaryAction, notes: e.target.value})
+                }
                 rows={4}
                 className="resize-none"
                 disabled={isSubmitting}
@@ -594,7 +688,13 @@ export default function DisciplinaryForm() {
             </div>
 
             <div className="flex items-center justify-end gap-4 md:gap-8 pt-6">
-              <Button type="button" variant="outline" className="px-6" onClick={handleDisciplinaryActionCancel} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                className="px-6"
+                onClick={handleDisciplinaryActionCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>

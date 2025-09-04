@@ -192,9 +192,9 @@ const EmployeeShiftsPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-6 p-6 bg-white">
+      <div className="flex items-center justify-between pt-5">
+        <div className="ml-5">
           <h1 className="text-2xl font-semibold tracking-tight">Employee Shifts</h1>
           <p className="text-muted-foreground">
             Manage employee shift allocations and requests for your institution
@@ -206,7 +206,7 @@ const EmployeeShiftsPage = () => {
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-none">
         <CardHeader>
           <CardTitle>Shifts Management</CardTitle>
           <div className="flex items-center justify-between space-x-4">

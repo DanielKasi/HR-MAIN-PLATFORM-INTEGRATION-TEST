@@ -44,7 +44,7 @@ import { toast } from "sonner";
 import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType } from "@/types/types.utils";
 import { LeavePoliciesAPI, getLeaveTypes } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";

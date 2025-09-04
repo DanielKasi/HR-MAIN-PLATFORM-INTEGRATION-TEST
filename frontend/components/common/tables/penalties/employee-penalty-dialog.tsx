@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showErrorToast } from "@/lib/utils";
 import {
-  PERMISSION_CODES,
   type IEmployee,
   type IEmployeePenalty,
   type IEmployeePenaltyFormData,
@@ -22,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import FormattedNumberInput from "../../inputs/formatted-number-input";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PENALTY_TYPES } from "@/app/constants";
+import { PENALTY_TYPES, PERMISSION_CODES } from "@/constants";
 
 interface Props {
   isOpen: boolean;

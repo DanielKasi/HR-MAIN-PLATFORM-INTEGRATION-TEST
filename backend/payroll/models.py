@@ -10,6 +10,7 @@ from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, 
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
+from django.core.exceptions import ValidationError
 
 
 class BaseModel(models.Model):
@@ -404,10 +405,6 @@ class EmployeeTax(BaseApprovableModel):
             salary_from__lte=employee_salary, salary_to__gte=employee_salary
         ).order_by("salary_from")
 
-        print(
-            f"\n\nrules checked: {rules.count()} for employee salary: {employee_salary}"
-        )
-
         return rules.first()
 
     def get_tax_amount(self):
@@ -421,21 +418,8 @@ class EmployeeTax(BaseApprovableModel):
         if rule.tax_rule_fixed_amount is not None:
             return rule.tax_rule_fixed_amount
         if rule.tax_rule_percentage is not None:
-            print(f"\n\n")
-            print(
-                f"Calculating tax for employee {self.employee} with salary {self.employee.salary}"
-            )
-            print(
-                f"Using rule: {rule.tax_rule_name} with percentage {rule.tax_rule_percentage}"
-            )
-            print(
-                f"Tax amount: {(self.employee.salary * rule.tax_rule_percentage) / 100}"
-            )
             return (self.employee.salary * rule.tax_rule_percentage) / 100
 
-        print(
-            f"Warning: No valid tax rule found for employee {self.employee} with salary {self.employee.salary}"
-        )
 
         return Decimal(0.00)
 
@@ -465,6 +449,7 @@ class EmployeePenalty(BaseApprovableModel):
     status = models.CharField(
         max_length=50, choices=PENALTY_STATUS_CHOICES, default="applied"
     )
+    
 
     class Meta:
         ordering = ['-date']
@@ -476,16 +461,12 @@ class EmployeePenalty(BaseApprovableModel):
         return self.employee.get_institution()
 
     def save(self, *args, **kwargs):
-        print(f"[SAVE] Saving penalty for {self.employee} | penalty_type={self.penalty_type} | date={self.date}")
         if not self.date:
             if self.attendance:
                 self.date = self.attendance.date
-                print(f"[SAVE] Date set from attendance: {self.date}")
             elif self.spot_check:
                 self.date = self.spot_check.spotcheck_time.date()
-                print(f"[SAVE] Date set from spot_check: {self.date}")
         super().save(*args, **kwargs)
-        print(f"[SAVE] Penalty saved with ID {self.id}")
 
     @classmethod
     def update_or_remove_penalty_for_attendance(cls, attendance):
@@ -551,6 +532,9 @@ class EmployeePenalty(BaseApprovableModel):
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)  
 
+        # Generate descriptive notes based on penalty type
+        notes = cls._generate_attendance_penalty_notes(attendance, penalty_type)
+
         # Create the penalty
         penalty = cls.objects.create(
             employee=employee,
@@ -558,41 +542,134 @@ class EmployeePenalty(BaseApprovableModel):
             date=attendance.date,
             penalty_type=penalty_type,
             amount=amount,
-            notes=f"Penalty for {penalty_type} on {attendance.date}"
+            notes=notes
         )
         
         return penalty
 
     @classmethod
     def create_from_spotcheck(cls, spotcheck, penalty_type):    
-        print(f"[CREATE_SPOTCHECK] spotcheck={spotcheck.id}, penalty_type={penalty_type}")
         if penalty_type not in ['no_response_spotcheck', 'late_spotcheck_response']:
-            print("[CREATE_SPOTCHECK] Invalid penalty_type. Skipping.")
             return None
 
         employee = spotcheck.employee
         config = cls._get_penalty_config(employee, penalty_type)
         if not config:
-            print(f"[CREATE_SPOTCHECK] No config found for penalty_type={penalty_type}")
             return None
 
         employee_salary = getattr(employee, 'salary', 0.00)
         amount = config.get_calculated_amount(employee_salary)
-        print(f"[CREATE_SPOTCHECK] Calculated amount={amount} for employee={employee}")
+
+
+        # Generate descriptive notes for spotcheck penalty
+        notes = cls._generate_spotcheck_penalty_notes(spotcheck, penalty_type)
 
         penalty = cls.objects.create(
             employee=employee,
             spot_check=spotcheck,
             penalty_type=penalty_type,
             amount=amount,
-            notes=f"Penalty for spotcheck: {penalty_type}"
+            notes=notes
         )
-        print(f"[CREATE_SPOTCHECK] Penalty created with ID={penalty.id}")
+
         return penalty
 
     @classmethod
+    def _generate_attendance_penalty_notes(cls, attendance, penalty_type):
+        """Generate descriptive notes for attendance-based penalties"""
+        notes_map = {
+            'late_coming': f"Late arrival penalty - Employee arrived {attendance.late_minutes} minutes late on {attendance.date.strftime('%B %d, %Y')}. Scheduled time: {attendance.employee.payroll_branch.opening_time}, Actual check-in: {attendance.check_in_time}",
+            'early_leaving': f"Early departure penalty - Employee left {attendance.early_checkout_minutes} minutes early on {attendance.date.strftime('%B %d, %Y')}. Scheduled end: {attendance.employee.payroll_branch.closing_time}, Actual check-out: {attendance.check_out_time}",
+            'absent': f"Absence penalty - Employee was marked absent on {attendance.date.strftime('%B %d, %Y')}. No check-in or check-out recorded for scheduled shift."
+        }
+        
+        return notes_map.get(penalty_type, f"Penalty for {penalty_type} on {attendance.date.strftime('%B %d, %Y')}")
+
+    @classmethod
+    def _generate_spotcheck_penalty_notes(cls, spotcheck, penalty_type):
+        """Generate descriptive notes for spotcheck-based penalties"""
+        from spotcheck.models import EmployeeSpotCheckSetting, BranchSpotCheckSetting, InstitutionSpotCheckSetting
+        spotcheck_time = spotcheck.spotcheck_time
+        spotcheck_date = spotcheck_time.strftime('%B %d, %Y')
+        spotcheck_time_formatted = spotcheck_time.strftime('%I:%M %p')
+        
+        # Get spotcheck settings to determine deadlines
+        employee = spotcheck.employee
+        setting = None
+        
+        # Try employee-specific setting first
+        try:
+            setting = EmployeeSpotCheckSetting.objects.filter(employee=employee).first()
+        except:
+            pass
+            
+        # Then branch setting
+        if not setting:
+            try:
+                branch = employee.payroll_branch
+                setting = BranchSpotCheckSetting.objects.filter(branch=branch).first()
+            except:
+                pass
+                
+        # Finally institution setting
+        if not setting:
+            try:
+                institution = getattr(employee.payroll_branch, 'institution', None) or getattr(employee.department, 'institution', None)
+                if institution:
+                    setting = InstitutionSpotCheckSetting.objects.filter(institution=institution).first()
+            except:
+                pass
+        
+        # Default expiry minutes if no setting found
+        expires_after_minutes = getattr(setting, 'expires_after_minutes', 30) if setting else 30
+        late_starts_after_minutes = getattr(setting, 'late_starts_after_minutes', 15) if setting else 15
+        
+        # Calculate deadline times
+        late_deadline = spotcheck_time + timedelta(minutes=late_starts_after_minutes)
+        expiry_deadline = spotcheck_time + timedelta(minutes=expires_after_minutes)
+        
+        # Format location info
+        location_info = ""
+        if spotcheck.address:
+            location_info = f"Location: {spotcheck.address}"
+        elif spotcheck.latitude and spotcheck.longitude:
+            location_info = f"Coordinates: {spotcheck.latitude:.6f}, {spotcheck.longitude:.6f}"
+        else:
+            location_info = "Location: Not specified"
+        
+        if penalty_type == 'no_response_spotcheck':
+            expiry_formatted = expiry_deadline.strftime('%I:%M %p')
+            notes = (f"No response to spotcheck penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
+                    f"Employee failed to respond by the deadline of {expiry_formatted} "
+                    f"({expires_after_minutes} minutes window). {location_info}. "
+                    f"Initiated by: {spotcheck.get_initiated_by_display()}")
+                    
+        elif penalty_type == 'late_spotcheck_response':
+            if spotcheck.responded_at:
+                response_formatted = spotcheck.responded_at.strftime('%I:%M %p')
+                delay_minutes = int((spotcheck.responded_at - spotcheck_time).total_seconds() / 60)
+                late_deadline_formatted = late_deadline.strftime('%I:%M %p')
+                
+                notes = (f"Late spotcheck response penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
+                        f"Employee responded {delay_minutes} minutes late at {response_formatted} "
+                        f"(should have responded by {late_deadline_formatted}). {location_info}. "
+                        f"Initiated by: {spotcheck.get_initiated_by_display()}")
+            else:
+                notes = (f"Late spotcheck response penalty - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
+                        f"Employee response was recorded as late. {location_info}. "
+                        f"Initiated by: {spotcheck.get_initiated_by_display()}")
+        else:
+            notes = (f"Spotcheck penalty ({penalty_type}) - Spotcheck sent on {spotcheck_date} at {spotcheck_time_formatted}. "
+                    f"{location_info}. Initiated by: {spotcheck.get_initiated_by_display()}")
+        
+        # Add notes from spotcheck if available
+        if spotcheck.notes:
+            notes += f" Additional notes: {spotcheck.notes}"
+        
+        return notes
+
+    @classmethod
     def _get_penalty_config(cls, employee, penalty_type):
-        print(f"[GET_CONFIG] Fetching penalty config for employee={employee}, penalty_type={penalty_type}")
         branch = employee.payroll_branch
         config = None
         
@@ -600,7 +677,6 @@ class EmployeePenalty(BaseApprovableModel):
             config = BranchPenaltyConfig.objects.filter(
                 branch=branch, penalty_type=penalty_type
             ).first()
-            print(f"[GET_CONFIG] Branch config found: {config}")
 
         if not config:
             institution = branch.institution if branch else employee.department.institution
@@ -608,12 +684,42 @@ class EmployeePenalty(BaseApprovableModel):
                 config = InstitutionPenaltyConfig.objects.filter(
                     institution=institution, penalty_type=penalty_type
                 ).first()
-                print(f"[GET_CONFIG] Institution config found: {config}")
-        
-        if not config:
-            print("[GET_CONFIG] No config found")
-        return config
   
+class PenaltyWaiveRequest(BaseApprovableModel):
+    penalty = models.ForeignKey(EmployeePenalty, on_delete=models.CASCADE, related_name='waiverequests')
+    reason = models.TextField()
+    request_date = models.DateField(auto_now_add=True)
+    notes = models.TextField()
+
+    class Meta:
+        ordering = ['-request_date']
+
+    def __str__(self):
+        return f"Waive Request for Penalty {self.penalty.id} by {self.applicant}"
+
+    def get_institution(self):
+        return self.penalty.get_institution()
+
+    def save(self, *args, **kwargs):
+        if self.penalty.status == "waived":
+            raise ValidationError({"error": "Cannot request waive for an already waived penalty"})
+        super().save(*args, **kwargs)
+
+    def finish_workflow(self, approval):
+        super().finish_workflow(approval)
+
+        if approval.status == 'completed':
+            self.penalty.status = 'waived'
+            waive_note = f"Waived on {timezone.now().date()} based on request: {self.reason}"
+            if self.penalty.notes:
+                self.penalty.notes += f"\n{waive_note}"
+
+            else:
+                self.penalty.notes = waive_note 
+            self.penalty.save(update_fields=['status', 'notes']) 
+
+        elif approval.status == 'rejected':
+            pass          
 
 
 class PayrollPeriod(BaseApprovableModel):
@@ -717,7 +823,8 @@ class Payslip(BaseApprovableModel):
                 non_taxable_allowances += amount
 
         penalties = self.employee.penalties.filter(
-            status='applied',  # Only applied penalties
+            status='applied',
+            is_active=True,
             date__gte=self.payroll_period.start_date,
             date__lte=self.payroll_period.end_date
         )

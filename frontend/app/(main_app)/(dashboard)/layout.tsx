@@ -9,7 +9,8 @@ import {useSelector, useDispatch} from "react-redux";
 import {Icon} from "@iconify/react";
 
 import type {IUserInstitution} from "../../../types";
-import {IEmployee, PERMISSION_CODES} from "../../../types/types.utils";
+import {IEmployee} from "../../../types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {selectAttachedInstitutions} from "@/store/auth/selectors";
 import {Button} from "@/components/ui/button";
 import {

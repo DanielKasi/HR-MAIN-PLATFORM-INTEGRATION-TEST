@@ -1,7 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.http import Http404
 import re
 from institution.models import Institution
@@ -15,7 +14,7 @@ from .serializers import (
 )
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiResponse,OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view
 from users.models import Role
@@ -25,6 +24,8 @@ from datetime import timedelta
 from django.db.models import Q
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 
 class ActionListAPIView(APIView):
@@ -40,16 +41,7 @@ class ActionListAPIView(APIView):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
         
-        try:
-            institution = Institution.objects.get(id=user.institution.id)
-        except Institution.DoesNotExist:
-            return Response(
-                {"detail": "Institution not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        
         actions = Action.objects.filter(
-            institution=institution,
             deleted_at__isnull=True
         )
         
@@ -59,10 +51,8 @@ class ActionListAPIView(APIView):
                 Q(description__icontains=search_query)
             )
         
-        paginator = CustomPageNumberPagination()
-        paginated_qs = paginator.paginate_queryset(actions, request)
-        serializer = ActionSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        serializer = ActionSerializer(actions, many=True)
+        return Response(serializer.data)
 
     @extend_schema(tags=['Actions'])
     def post(self, request):
@@ -182,6 +172,9 @@ class ApprovalDocumentListAPIView(APIView):
         tags=['Approval Documents'],
         parameters=[
             OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search approval documents by name or description'),
+            OpenApiParameter(name='content_type_id', type=int, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType ID'),
+            OpenApiParameter(name='app_label', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType app_label (must be used with model)'),
+            OpenApiParameter(name='model', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by ContentType model (must be used with app_label)'),
             OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, required=False, description='Page number'),
             OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, required=False, description='Number of results per page'),
         ]
@@ -189,7 +182,10 @@ class ApprovalDocumentListAPIView(APIView):
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
-        
+        content_type_id = request.query_params.get('content_type_id', None)
+        app_label = request.query_params.get('app_label', None)
+        model = request.query_params.get('model', None)
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -197,19 +193,47 @@ class ApprovalDocumentListAPIView(APIView):
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
         documents = ApprovalDocument.objects.filter(
             institution=institution,
             deleted_at__isnull=True
         )
-        
+
+        # Filter by ContentType ID if provided
+        if content_type_id:
+            try:
+                documents = documents.filter(content_type__id=content_type_id)
+            except ValueError:
+                return Response(
+                    {"detail": "Invalid content_type_id provided."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # Filter by app_label and model if both are provided
+        if app_label and model:
+            try:
+                content_type = ContentType.objects.get(app_label=app_label, model=model)
+                documents = documents.filter(content_type=content_type)
+            except ContentType.DoesNotExist:
+                return Response(
+                    {"detail": "ContentType with provided app_label and model not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        elif app_label or model:
+            return Response(
+                {"detail": "Both app_label and model must be provided together."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Apply search query if provided
         if search_query:
             documents = documents.filter(
-                Q(name__icontains=search_query) |
                 Q(description__icontains=search_query) |
-                Q(document_type__icontains=search_query)
+                Q(content_type__model__icontains=search_query) |
+                Q(content_type__app_label__icontains=search_query)
             )
-        
+
+        # Paginate and serialize the results
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(documents, request)
         serializer = ApprovalDocumentSerializer(paginated_qs, many=True)
@@ -237,14 +261,67 @@ class ApprovalDocumentDetailAPIView(APIView):
         serializer = ApprovalDocumentSerializer(document)
         return Response(serializer.data)
 
-    @extend_schema(tags=['Approval Documents'])
+    @extend_schema(
+        operation_id='approval_document_partial_update',
+        summary='Partially update an Approval Document',
+        description='Update specific fields of an approval document. Only provided fields will be updated.',
+        tags=['Approval Documents']
+    )
     def patch(self, request, pk):
-        document = self.get_object(pk)
-        serializer = ApprovalDocumentSerializer(document, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        """
+        Partially update an approval document.
+        
+        Args:
+            request: HTTP request object
+            id: ID of the approval document to update
+            
+        Returns:
+            Response with updated approval document data
+        """
+        # Get the approval document instance
+        approval_document = get_object_or_404(ApprovalDocument, pk=pk)
+        
+        # Extract data from request
+        data = request.data
+        
+        try:
+            with transaction.atomic():
+                # Update basic fields if provided
+                if 'description' in data:
+                    approval_document.description = data['description']
+                
+                # Handle actions update if provided
+                if 'actions' in data:
+                    action_ids = data['actions']
+                    
+                    # Validate action IDs exist
+                    if action_ids:  # Only validate if actions list is not empty
+                        existing_actions = Action.objects.filter(id__in=action_ids)
+                        existing_action_ids = set(existing_actions.values_list('id', flat=True))
+                        provided_action_ids = set(action_ids)
+                        
+                        invalid_ids = provided_action_ids - existing_action_ids
+                        if invalid_ids:
+                            return Response(
+                                {'actions': [f'Invalid action ID(s): {", ".join(map(str, invalid_ids))}']},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                    
+                    # Update actions relationship
+                    approval_document.actions.set(action_ids)
+                
+                # Save the instance
+                approval_document.save()
+                
+                # Serialize and return updated instance
+                serializer = ApprovalDocumentSerializer(approval_document)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            return Response(
+                {'detail': f'An error occurred while updating: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @extend_schema(tags=['Approval Documents'])
     def delete(self, request, pk):
@@ -275,8 +352,8 @@ class ApprovalDocumentLevelListAPIView(APIView):
             )
         
         levels = ApprovalDocumentLevel.objects.filter(
-            institution=institution,
-            deleted_at__isnull=True
+            approval_document__institution=institution,
+            # deleted_at__isnull=True
         )
         
         if search_query:
@@ -293,6 +370,7 @@ class ApprovalDocumentLevelListAPIView(APIView):
     @extend_schema(tags=['Approval Document Levels'])
     def post(self, request):
         serializer = ApprovalDocumentLevelSerializer(data=request.data)
+        print("data:", request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -352,7 +430,7 @@ class ApprovalListAPIView(APIView):
             )
         
         approvals = Approval.objects.filter(
-            institution=institution,
+            document__institution=institution,
             deleted_at__isnull=True
         )
         
@@ -435,7 +513,7 @@ class ApprovalTaskListAPIView(APIView):
             )
         
         tasks = ApprovalTask.objects.filter(
-            institution=institution,
+            approval__document__institution=institution,
             deleted_at__isnull=True
         )
         
@@ -704,3 +782,30 @@ class ApprovableContentTypesListAPIView(APIView):
             })
         
         return Response(content_types, status=status.HTTP_200_OK)    
+    
+
+class ApprovableContentTypeDetailAPIView(APIView):
+    @extend_schema(
+        tags=['Approval Documents'],
+        description='Retrieve details for a specific content type corresponding to a model that inherits from BaseApprovableModel. The details include the humanized name and other metadata. The content type must be valid and linked to an approvable model.',
+        responses={200: OpenApiTypes.OBJECT},       
+    )    
+    def get(self, request, pk):
+        try:
+            ct = ContentType.objects.get(pk=pk)
+        except ContentType.DoesNotExist:
+            return Response({'error': 'Content type not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        model = ct.model_class()
+        if not (model and issubclass(model, BaseApprovableModel) and not model._meta.abstract):
+            return Response({"error": "This Model doest not correspond to an approvable model"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Add the success response
+        return Response({
+            'id': ct.id,
+            'name': ct.name,
+            'model': ct.model,
+            'app_label': ct.app_label,
+            'humanized_name': model._meta.verbose_name.title(),
+            # Add any other metadata you want to return
+        }, status=status.HTTP_200_OK)

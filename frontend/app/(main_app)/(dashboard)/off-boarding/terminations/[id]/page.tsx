@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { ArrowLeft, FileText } from "lucide-react"
 import { TerminationInitiationsAPI } from "@/lib/utils"
 import { ITermination } from "@/types/types.utils"
-import { MAIN_DOMAIN_URL } from "@/app/constants"
+import { MAIN_DOMAIN_URL } from "@/constants"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",

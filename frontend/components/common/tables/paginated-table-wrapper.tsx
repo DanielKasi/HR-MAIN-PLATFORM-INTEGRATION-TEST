@@ -12,11 +12,12 @@ type FetchFirstPageFn<T, Q> = (query?: Q) => Promise<IPaginatedResponse<T>>;
 
 export type PaginatedTableWrapperProps<T, Q = unknown> = {
   // Required fetchers
-  fetchFirstPage: FetchFirstPageFn<T, Q>;
-  fetchFromUrl: FetchFromUrlFn<T>;
+  fetchFirstPage?: FetchFirstPageFn<T, Q>|null;
+  fetchFromUrl?: FetchFromUrlFn<T>|null;
   // Optional query/deps to refetch first page
   query?: Q;
   deps?: DependencyList;
+  paginated?:boolean
   // UI controls
   className?: string;
   footerClassName?: string;
@@ -45,14 +46,16 @@ export function PaginatedTableWrapper<T, Q = unknown>({
   fetchFromUrl,
   query,
   deps = [],
+  paginated = true,
   className,
   footerClassName,
   showFooter = true,
   onError,
   children,
+
 }: PaginatedTableWrapperProps<T, Q>) {
   const [data, setData] = useState<IPaginatedResponse<T> | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(paginated);
 
   const handleError = (err: unknown) => {
     if (onError) onError(err);
@@ -60,6 +63,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
   };
 
   const refresh = useCallback(async () => {
+    if(!fetchFirstPage){return}
     setLoading(true);
     try {
       const res = await fetchFirstPage(query);
@@ -72,7 +76,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
   }, [fetchFirstPage, onError, JSON.stringify(query)]); // stringify query to re-run when its content changes
 
   const goPrev = useCallback(async () => {
-    if (!data?.previous) return;
+    if (!fetchFromUrl ||!data?.previous) return;
     setLoading(true);
     try {
       const res = await fetchFromUrl({url: forceUrlToHttps(data.previous)});
@@ -86,7 +90,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
   }, [data?.previous, fetchFromUrl]);
 
   const goNext = useCallback(async () => {
-    if (!data?.next) return;
+    if (!fetchFromUrl || !data?.next) return;
     setLoading(true);
     try {
       const res = await fetchFromUrl({url: forceUrlToHttps(data.next)});
@@ -110,7 +114,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
     <div className={cn("space-y-4", className)}>
       {children({data, loading, refresh, goNext, goPrev})}
 
-      {showFooter && data && (
+      {showFooter && data && paginated && (
         <div className={cn("flex items-center justify-between pt-2", footerClassName)}>
           <p className="text-sm text-gray-500">
             Showing {data.results?.length} results of {data.count} total

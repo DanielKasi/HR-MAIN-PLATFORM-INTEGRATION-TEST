@@ -7,6 +7,7 @@ from .models import (
     EmployeeContract,
     EmployeeWorkingDays,
 EmployeeShift,EmployeeDay,
+EmployeeMonthlyHourAccount
 )
 
 admin.site.register(Employee)
@@ -17,4 +18,5 @@ admin.site.register(EmployeeContract)
 admin.site.register(EmployeeShift)
 admin.site.register(EmployeeWorkingDays)
 admin.site.register(EmployeeDay)
+admin.site.register(EmployeeMonthlyHourAccount)
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { IDeductionType, PERMISSION_CODES } from "@/types/types.utils"
+import { IDeductionType } from "@/types/types.utils"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { getPaginatedDeductionTypes, getPaginatedDeductionTypesFromUrl } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -22,7 +22,7 @@ import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-d
 import { EditDeductionTypeDialog } from "@/components/deduction-types/edit-deduction-type-dialog"
 import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-deduction-type-dialog"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
-import { ALLOWANCE_FREQUENCIES } from "@/types/types.utils"
+import { ALLOWANCE_FREQUENCIES, PERMISSION_CODES } from "@/constants"
 import { useMobile } from "@/hooks/use-mobile"
 
 

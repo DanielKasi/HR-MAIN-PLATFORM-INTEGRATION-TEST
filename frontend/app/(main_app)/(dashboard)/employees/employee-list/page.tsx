@@ -16,7 +16,7 @@ import {Plus, UserPlus, ChevronDown, Upload, Search} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Select} from "@/components/ui/select";
 import {useRouter} from "next/navigation";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 

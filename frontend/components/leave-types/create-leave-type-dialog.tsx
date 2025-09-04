@@ -5,11 +5,11 @@ import { Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select } from "../ui/select";
-import { GENDER_CHOICES, LEAVE_CATEGORIES } from "@/app/constants";
+import { GENDER_CHOICES, LEAVE_CATEGORIES } from "@/constants";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import ProtectedComponent from "../ProtectedComponent";
-import { PERMISSION_CODES } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 interface CreateLeaveTypeDialogProps {
   isOpen: boolean;

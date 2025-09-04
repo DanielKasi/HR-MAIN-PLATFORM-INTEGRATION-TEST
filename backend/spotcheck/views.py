@@ -22,8 +22,9 @@ class InstitutionSpotCheckSettingCreateView(APIView):
         tags=["Institution Setting Management"],
     )
     @transaction.atomic()
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Create a institution setting."""
+        print("Request data", request.data)
 
         serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(
             data=request.data
@@ -51,7 +52,7 @@ class InstitutionSpotCheckSettingDetailView(APIView):
         """Retrieve details of a specific institution setting."""
         try:
             setting = SpotCheckModels.InstitutionSpotCheckSetting.objects.get(
-                id=institution_id, deleted_at=None
+                institution__id=institution_id, deleted_at=None
             )
             serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(
                 setting
@@ -81,7 +82,7 @@ class InstitutionSpotCheckSettingUpdateView(APIView):
         """Update details of a specific institution setting."""
         try:
             setting = SpotCheckModels.InstitutionSpotCheckSetting.objects.get(
-                id=institution_id, deleted_at=None
+                institution__id=institution_id, deleted_at=None
             )
         except SpotCheckModels.InstitutionSpotCheckSetting.DoesNotExist:
             return Response(
@@ -114,7 +115,7 @@ class BranchSpotCheckSettingCreateView(APIView):
         tags=["Branch Setting Management"],
     )
     @transaction.atomic()
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Create a brnach setting."""
 
         serializer = SpotCheckSerializers.BranchSpotCheckSettingSerializer(
@@ -143,7 +144,7 @@ class BranchSpotCheckSettingDetailView(APIView):
         """Retrieve details of a specific branch setting."""
         try:
             setting = SpotCheckModels.BranchSpotCheckSetting.objects.get(
-                id=branch_id, deleted_at=None
+                branch__id=branch_id, deleted_at=None
             )
             serializer = SpotCheckSerializers.BranchSpotCheckSettingSerializer(setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -171,7 +172,7 @@ class BranchSpotCheckSettingUpdateView(APIView):
         """Update details of a specific branch setting."""
         try:
             setting = SpotCheckModels.BranchSpotCheckSetting.objects.get(
-                id=branch_id, deleted_at=None
+                branch__id=branch_id, deleted_at=None
             )
         except SpotCheckModels.BranchSpotCheckSetting.DoesNotExist:
             return Response(
@@ -204,7 +205,7 @@ class EmployeeSpotCheckSettingCreateView(APIView):
         tags=["Employee Setting Management"],
     )
     @transaction.atomic()
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Create a employee setting."""
 
         serializer = SpotCheckSerializers.EmployeeSpotCheckSettingSerializer(
@@ -231,14 +232,17 @@ class EmployeeSpotCheckSettingDetailView(APIView):
         tags=["Employee spot check Setting Management"],
     )
     def get(self, request, employee_id):
-        """Retrieve details of a specific emplpyee spot check setting."""
+        """Retrieve details of a specific employee spot check setting."""
+        print("Employee id", employee_id)
         try:
+            
             setting = SpotCheckModels.EmployeeSpotCheckSetting.objects.get(
-                id=employee_id, deleted_at=None
+                employee__id=employee_id, deleted_at=None
             )
             serializer = SpotCheckSerializers.EmployeeSpotCheckSettingSerializer(
                 setting
             )
+            print("setting", setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except SpotCheckModels.EmployeeSpotCheckSetting.DoesNotExist:
             return Response(
@@ -264,7 +268,7 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         """Update details of a specific employee spot check setting."""
         try:
             setting = SpotCheckModels.EmployeeSpotCheckSetting.objects.get(
-                id=employee_id, deleted_at=None
+                employee__id=employee_id, deleted_at=None
             )
         except SpotCheckModels.EmployeeSpotCheckSetting.DoesNotExist:
             return Response(

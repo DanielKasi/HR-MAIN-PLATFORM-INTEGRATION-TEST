@@ -242,21 +242,21 @@ export default function JobAdvertDetailsPage() {
   const expired = isExpired(jobAdvert.expiry_date);
 
   return (
-    <div className="w-full h-full bg-gray-50 rounded-xl p-6">
+    <div className="w-full h-full bg-white rounded-xl p-6">
       <div className="w-full space-y-8">
         {/* Header */}
         <div className="grid grid-cols-1 md:flex items-center justify-between">
           <div className="">
             <div className="grid grid-cols-1 md:flex items-center justify-start gap-2">
               <div className="flex flex-wrap items-center sm:gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="flex items-center gap-2 rounded-full aspect-square"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBack}
+                  className="border rounded-full h-10 w-10 flex items-center justify-center"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
                 <CardTitle className="text-2xl">{jobPosition?.name || "Job Opening"}</CardTitle>
 
                 <Button
@@ -280,10 +280,10 @@ export default function JobAdvertDetailsPage() {
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">{interviewStagesCount} Interview Stages</span>
                 </Button>
-                            <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)} ml-0`}>
-              {jobAdvert.job_position_advert_status.toUpperCase()}
-            </Badge>
-            {expired && <Badge variant="destructive">EXPIRED</Badge>}
+                <Badge className={`${getStatusColor(jobAdvert.job_position_advert_status)} ml-0`}>
+                  {jobAdvert.job_position_advert_status.toUpperCase()}
+                </Badge>
+                {expired && <Badge variant="destructive">EXPIRED</Badge>}
               </div>
             </div>
           </div>
@@ -320,33 +320,33 @@ export default function JobAdvertDetailsPage() {
           <CardHeader className="py-1 my-0">
             <div className="flex items-start justify-between">
               {jobPosition && (
-              <>
-                <div className="">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    Job Opening Details
-                  </h3>
-                  <div className="bg-muted/50 py-1 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      {jobPosition.salary_max || jobPosition.salary_min ? (
-                        <p className="flex items-center gap-1 text-lg font-bold text-green-600">
-                          {formatCurrency(jobPosition.salary_min || 0)} -{" "}
-                          {formatCurrency(jobPosition.salary_max || 0)}
-                        </p>
-                      ) : (
-                        <> </>
+                <>
+                  <div className="">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Briefcase className="h-5 w-5" />
+                      Job Opening Details
+                    </h3>
+                    <div className="bg-muted/50 py-1 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        {jobPosition.salary_max || jobPosition.salary_min ? (
+                          <p className="flex items-center gap-1 text-lg font-bold text-green-600">
+                            {formatCurrency(jobPosition.salary_min || 0)} -{" "}
+                            {formatCurrency(jobPosition.salary_max || 0)}
+                          </p>
+                        ) : (
+                          <> </>
+                        )}
+                      </div>
+                      {jobPosition.description && (
+                        <RichTextDisplay
+                          className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
+                          htmlContent={jobPosition.description}
+                        />
                       )}
                     </div>
-                    {jobPosition.description && (
-                      <RichTextDisplay
-                        className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
-                        htmlContent={jobPosition.description}
-                      />
-                    )}
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
               <div className="text-right">
                 <div className="flex items-center gap-1 text-lg font-bold">
                   <Calendar className="h-4 w-4" />
@@ -357,7 +357,7 @@ export default function JobAdvertDetailsPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 border-none">
             {/* Advert Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Advert Information */}

@@ -1,6 +1,6 @@
 "use client";
 
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {hasPermission} from "@/lib/helpers";
 
 interface ProtectedComponentProps {

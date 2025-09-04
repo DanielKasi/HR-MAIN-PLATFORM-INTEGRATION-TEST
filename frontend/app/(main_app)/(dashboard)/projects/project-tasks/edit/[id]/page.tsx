@@ -20,7 +20,7 @@ import {ArrowLeft, Save, Calendar, FileText, Users, AlertTriangle} from "lucide-
 import Link from "next/link";
 import {Badge} from "@/components/ui/badge";
 import {Checkbox} from "@/components/ui/checkbox";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface IProjectTask {

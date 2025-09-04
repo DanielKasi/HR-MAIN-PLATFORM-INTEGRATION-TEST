@@ -13,6 +13,7 @@ import {
   Trash2,
   RefreshCw,
   AlertTriangle,
+  ArrowLeft,
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
@@ -40,13 +41,13 @@ import {
   getPaginatedDepartmentsFromUrl,
   showErrorToast,
 } from "@/lib/utils";
-import {type IDepartment, PERMISSION_CODES} from "@/types/types.utils";
+import {type IDepartment} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {useDocumentTitle} from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -90,9 +91,9 @@ export default function DepartmentsPage() {
       toast.success("Department deleted successfully");
       setDeleteModalOpen(false);
       setDepartmentToDelete(null);
-      refreshFunctionRef.current?.()
+      refreshFunctionRef.current?.();
     } catch (error) {
-      showErrorToast({error, defaultMessage:"Failed to delete department"})
+      showErrorToast({error, defaultMessage: "Failed to delete department"});
     } finally {
       setIsDeleting(false);
     }
@@ -107,14 +108,26 @@ export default function DepartmentsPage() {
     <div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Departments</h1>
-          {selectedInstitution && selectedBranch && (
-            <p className="text-muted-foreground">
-              Manage departments for {selectedBranch.branch_name} -{" "}
-              {selectedInstitution.institution_name}
-            </p>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-full aspect-square"
+              variant="outline"
+              onClick={() => router.push("/admin")}
+            >
+              <ArrowLeft />
+            </Button>
+            <div className="ml-2 mt-3">
+              <h1 className="text-2xl font-bold">Departments</h1>
+              {selectedInstitution && selectedBranch && (
+                <p className="text-muted-foreground">
+                  Manage departments for {selectedBranch.branch_name} -{" "}
+                  {selectedInstitution.institution_name}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -124,7 +137,7 @@ export default function DepartmentsPage() {
             <div className="flex items-end justify-start">
               <div className="flex flex-col justify-start items-start">
                 <div className="text-xl md:text-2xl font-bold">{departmentsCount}</div>
-            <p className="text-xs md:text-sm text-muted-foreground">Total Departments</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Total Departments</p>
               </div>
             </div>
           </CardContent>
@@ -134,10 +147,9 @@ export default function DepartmentsPage() {
             <div className="flex items-end justify-start">
               <div className="flex flex-col justify-start items-start">
                 <div className="text-xl md:text-2xl font-bold">{departments.length}</div>
-            <p className="text-xs md:text-sm text-muted-foreground">Results displayed</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Results displayed</p>
               </div>
             </div>
-            
           </CardContent>
         </Card>
       </div>
@@ -161,8 +173,6 @@ export default function DepartmentsPage() {
           Create Department
         </Button>
       </div>
-
-
 
       <div className="">
         <PaginatedTableWrapper<IDepartment>

@@ -1,4 +1,5 @@
-import { PERMISSION_CODES, IInstitutionDocument } from "./types.utils";
+import { IInstitutionDocument } from "./types.utils";
+import { PERMISSION_CODES } from "@/constants";
 
 export interface IProductCategoryDetail {
   id: number;
@@ -187,6 +188,7 @@ export interface Role {
   id: number;
   name: string;
   description: string;
+  institution: number;
   permissions_details?: Permission[];
 }
 

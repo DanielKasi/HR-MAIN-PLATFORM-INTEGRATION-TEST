@@ -54,13 +54,12 @@ import {
   type IWorkTypeFormData,
   type IEmployeeTypeFormData,
   type ICountry,
-  PERMISSION_CODES,
 } from "@/types/types.utils";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
 import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
-import {set} from "date-fns";
+import {PERMISSION_CODES} from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
@@ -781,7 +780,7 @@ export default function AddEmployeeForm() {
                     id="childrenCount"
                     type="number"
                     min="0"
-                    value={formData.children_count}
+                    value={formData.children_count === 0 ? "" : formData.children_count}
                     onChange={(e) =>
                       handleInputChange("children_count", Number.parseInt(e.target.value) || 0)
                     }
@@ -1107,7 +1106,7 @@ export default function AddEmployeeForm() {
                   id="experience"
                   type="number"
                   min="0"
-                  value={formData.experience}
+                  value={formData.experience === 0 ? "" : formData.experience}
                   onChange={(e) =>
                     handleInputChange("experience", Number.parseInt(e.target.value) || 0)
                   }

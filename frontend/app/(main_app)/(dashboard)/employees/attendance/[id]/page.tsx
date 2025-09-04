@@ -1,20 +1,16 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lucide-react";
+import React, {useState, useEffect} from "react";
+import {useParams, useRouter} from "next/navigation";
+import {Card, CardHeader, CardTitle, CardContent} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User} from "lucide-react";
 
-import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
+import {AttendanceAPI, getEmployeeById} from "@/lib/utils";
 
 import Link from "next/link";
-import { IAttendance, IEmployee } from "@/types/types.utils";
-
-
-
-
+import {IAttendance, IEmployee} from "@/types/types.utils";
 
 const EmployeeAttendanceHistory = () => {
   const params = useParams();
@@ -42,7 +38,7 @@ const EmployeeAttendanceHistory = () => {
       return;
     }
     try {
-      const data = await getEmployeeById({ employeeId });
+      const data = await getEmployeeById({employeeId});
       setEmployee(data);
     } catch (err) {
       setError("Failed to load employee details");
@@ -200,23 +196,28 @@ const EmployeeAttendanceHistory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white p-6">
+      <div className="max-w">
         {/* Header */}
         <div className="mb-8 ">
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/employees/attendance">
-              <Button variant="outline" size="sm" className="rounded-full aspect-square">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-              </Button>
-            </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="rounded-full aspect-square"
+              variant="outline"
+              onClick={() => router.push("/employees/attendance")}
+            >
+              <ArrowLeft />
+            </Button>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 mt-3 ml-2">Attendance History</h1>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Attendance History</h1>
           {employee && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <User className="w-5 h-5 text-gray-500" />
-                <span className="text-lg font-semibold text-gray-700">{employee.user?.fullname || ""}</span>
+                <span className="text-lg font-semibold text-gray-700">
+                  {employee.user?.fullname || ""}
+                </span>
               </div>
               <Badge variant="outline">{employee.department.name}</Badge>
               <span className="text-gray-500">{employee.email}</span>

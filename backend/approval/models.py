@@ -6,7 +6,8 @@ import uuid
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
-
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 
 class Action(SoftDeletableTimeStampedModel):
@@ -67,8 +68,8 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"Approval Document for {self.content_type}"
 
-class ApprovalDocumentLevel(models.Model):
-    level = models.PositiveIntegerField()
+class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
+    level = models.PositiveIntegerField(null=True, blank=True)
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
     approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')
@@ -82,6 +83,14 @@ class ApprovalDocumentLevel(models.Model):
     class Meta:
         unique_together = ('approval_document', 'level')
         ordering = ['level']
+
+@receiver(pre_save, sender=ApprovalDocumentLevel)
+def set_approval_level(sender, instance, **kwargs):
+    if not instance.pk and not instance.level:  # Only for new instances
+        max_level = ApprovalDocumentLevel.objects.filter(
+            approval_document=instance.approval_document
+        ).aggregate(models.Max('level'))['level__max'] or 0
+        instance.level = max_level + 1
 
 class ApprovalDocumentLevelApprovers(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
@@ -219,19 +228,28 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
         ).first()
 
         if not document:
-            # No approval required: auto-complete the action
+            # Auto-complete the action
             if action_name in ['create', 'update']:
                 self.approval_status = 'active'
                 self.is_active = True  
                 self.deleted_at = None
-            
             elif action_name == 'delete':
                 self.is_active = False  
                 self.deleted_at = timezone.now()
             self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
+            
+            # Simulate finish_workflow for subclass hooks (dummy approval not saved)
+            dummy_approval = Approval(
+                status='completed',
+                action=action,
+                document=None,  # Optional
+                content_type=content_type,
+                object_id=self.pk
+            )  # Not calling .save()
+            self.finish_workflow(dummy_approval)
             return  
 
-        # Proceed with approval creation
+        # Proceed with approval creation (existing code remains)
         with transaction.atomic():
             self.is_active = False  # Set is_active=False until approved
             self.save(update_fields=['is_active'])

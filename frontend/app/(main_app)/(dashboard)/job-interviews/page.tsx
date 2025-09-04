@@ -53,7 +53,7 @@ import {
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {getInterviews, bulkCreateOnBoarding, getPaginatedInterviews, getPaginatedInterviewsFromUrl} from "@/lib/utils";
 import type {IInterview} from "@/types/types.utils";
-import {PERMISSION_CODES} from "@/types/types.utils";
+import {PERMISSION_CODES} from "@/constants";
 import {toast} from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {formatCurrency} from "@/lib/helpers";

@@ -7,7 +7,7 @@ import {ArrowLeft} from "lucide-react";
 import {useSelector} from "react-redux";
 import {useDispatch} from "react-redux";
 import {toast} from "sonner";
-
+import {useRouter} from "next/navigation";
 import {Button} from "@/components/ui/button";
 import apiRequest from "@/lib/apiRequest";
 import {hexToHSL} from "@/app/(main_app)/(dashboard)/layout";
@@ -78,6 +78,7 @@ export default function ThemeColorCustomization() {
   const InstitutionId = getDefaultInstitutionId();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const dispatch = useDispatch();
+  const router = useRouter();
 
   // Initialize theme color from selected Institution
   useEffect(() => {
@@ -372,10 +373,15 @@ export default function ThemeColorCustomization() {
   return (
     <div className="p-6 bg-white">
       <div className="flex items-center mb-6">
-        <a aria-label="Go back" className="mr-4 p-2 rounded-full bg-white border" href="/admin">
-          <ArrowLeft size={20} />
-        </a>
-        <h1 className="text-2xl font-semibold">Customize theme color</h1>
+        <Button
+          size="sm"
+          className="rounded-full aspect-square"
+          variant="outline"
+          onClick={() => router.push("/admin")}
+        >
+          <ArrowLeft />
+        </Button>
+        <h1 className="text-2xl font-semibold ml-5">Customize theme color</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

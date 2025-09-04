@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
-import apiRequest from "@/lib/apiRequest";
-import {CUSTOM_CODES} from "@/types/types.utils";
+import {CUSTOM_CODES} from "@/constants";
 import {selectUser, selectAuthError, selectUserLoading} from "@/store/auth/selectors";
 import {clearAuthError, loginStart} from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";

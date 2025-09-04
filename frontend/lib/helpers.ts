@@ -102,13 +102,6 @@ export async function fetchInstitutionBranchesFromAPI() {
   }
 }
 
-export async function fetchInstitutionRoles() {
-  try {
-    return await apiRequest.get(`user/role/?Institution_id=${getDefaultInstitutionId()}`);
-  } catch (error: any) {
-    throw error;
-  }
-}
 
 export async function fetchUserTasks() {
   try {
