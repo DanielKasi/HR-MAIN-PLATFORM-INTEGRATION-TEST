@@ -7,7 +7,14 @@ from .models import (
     EmployeeContract,
     EmployeeWorkingDays,
 EmployeeShift,EmployeeDay,
-EmployeeMonthlyHourAccount
+EmployeeMonthlyHourAccount,
+Spouse,
+Education,
+EmployeeBankAccount,
+NextOfKin,
+WorkExperience,
+Child,
+QualificationAward,
 )
 
 admin.site.register(Employee)
@@ -19,4 +26,11 @@ admin.site.register(EmployeeShift)
 admin.site.register(EmployeeWorkingDays)
 admin.site.register(EmployeeDay)
 admin.site.register(EmployeeMonthlyHourAccount)
+admin.site.register(Spouse)
+admin.site.register(Education)
+admin.site.register(EmployeeBankAccount)
+admin.site.register(NextOfKin)
+admin.site.register(WorkExperience)
+admin.site.register(Child)
+admin.site.register(QualificationAward)
 
