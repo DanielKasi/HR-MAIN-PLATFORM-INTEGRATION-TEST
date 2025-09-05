@@ -1449,7 +1449,7 @@ export const getEmployeeById = async ({employeeId}: {employeeId: number | string
 
 // Helper function to get roles for an institution
 export const getRoles = async ({institutionId}: {institutionId: number}): Promise<Role[]> => {
-    const response = await apiRequest.get(`user/role/?institution_id=${institutionId}`);
+    const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
     if (response.data && response.data.results) {                                                                                                                                                            
       return response.data.results || [];
     }

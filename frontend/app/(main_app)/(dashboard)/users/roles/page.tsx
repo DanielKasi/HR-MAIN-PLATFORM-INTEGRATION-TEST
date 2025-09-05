@@ -1,7 +1,7 @@
 "use client";
 import type {Role} from "@/types";
 
-import {Search, Plus, Pen, Eye, Trash2, ArrowLeft} from "lucide-react";
+import {Search, Plus, Pen, Eye, Trash2, ArrowLeft, Edit, MoreVertical} from "lucide-react";
 import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
 
@@ -24,8 +24,14 @@ import apiRequest, {apiDelete} from "@/lib/apiRequest";
 import {PaginationControls} from "@/components/ui/pagination-controls";
 import {PageSizeSelector} from "@/components/ui/page-size-selector";
 import ProtectedPage from "@/components/ProtectedPage";
-import { PERMISSION_CODES } from "@/constants";
-import { handleApiError } from "@/lib/apiErrorHandler";
+import {PERMISSION_CODES} from "@/constants";
+import {handleApiError} from "@/lib/apiErrorHandler";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function RolesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -191,7 +197,44 @@ export default function RolesPage() {
                         </TableCell>
                         <TableCell className="max-w-md truncate">{role.description}</TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                              >
+                                <MoreVertical className="h-4 w-4 text-gray-600" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-48 bg-white border border-gray-200 shadow-lg"
+                            >
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/users/roles/${role.id}`)}
+                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                              >
+                                <Eye className="h-4 w-4 mr-3 text-gray-500" />
+                                View details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/users/roles/edit/${role.id}`)}
+                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4 mr-3 text-gray-500" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClick(role)}
+                                className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4 mr-3 text-red-500" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {/* <div className="flex justify-end gap-2">
                             <Button
                               size="icon"
                               variant="ghost"
@@ -214,7 +257,7 @@ export default function RolesPage() {
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          </div>
+                          </div> */}
                         </TableCell>
                       </TableRow>
                     ))

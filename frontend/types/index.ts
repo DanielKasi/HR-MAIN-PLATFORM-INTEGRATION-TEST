@@ -231,16 +231,18 @@ export interface SeparationPolicy {
 }
 
 
-// replace the fields below with whatever your CustomUserSerializer emits
-export interface ICustomUser {
-  id: number;
-  username: string;
-  email: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  isActive: boolean;
-  dateJoined: string; // ISO datetime
-  // …any other fields your CustomUserSerializer provides
+export interface SubMenuItem {
+  title: string;
+  href: string;
+  requiredPermission?: string;
+}
+
+export interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+  submenu?: SubMenuItem[];
+  requiredPermission?: string;
 }
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
