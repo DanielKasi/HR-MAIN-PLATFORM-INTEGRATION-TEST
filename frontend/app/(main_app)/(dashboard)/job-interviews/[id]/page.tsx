@@ -1,8 +1,8 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useRouter, useParams} from "next/navigation";
-import {useSelector} from "react-redux";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   ArrowLeft,
   Calendar,
@@ -26,18 +26,19 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getInterviewById} from "@/lib/utils";
-import type {IInterview} from "@/types/types.utils";
-import {toast} from "sonner";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { getInterviewById } from "@/lib/utils";
+import type { IInterview } from "@/types/types.utils";
+import { toast } from "sonner";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function InterviewViewPage() {
   const [interview, setInterview] = useState<IInterview | null>(null);
@@ -70,11 +71,11 @@ export default function InterviewViewPage() {
       setIsLoading(true);
       setError("");
 
-      const fetchedInterview = await getInterviewById({interviewId});
+      const fetchedInterview = await getInterviewById({ interviewId });
 
       if (fetchedInterview) {
         setInterview(fetchedInterview);
-      } 
+      }
     } catch (err) {
       setError("Failed to fetch interview details");
       toast.error("Failed to load interview details");
@@ -96,18 +97,6 @@ export default function InterviewViewPage() {
     router.push("/job-interviews");
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "scheduled":
-        return <Clock className="h-5 w-5 text-blue-500" />;
-      case "cancelled":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-    }
-  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -134,7 +123,7 @@ export default function InterviewViewPage() {
   };
 
   const getRatingStars = (rating: number) => {
-    return Array.from({length: 10}, (_, i) => (
+    return Array.from({ length: 10 }, (_, i) => (
       <Star
         key={i}
         className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
@@ -231,357 +220,372 @@ export default function InterviewViewPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="overview">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="applicant">Applicant Details</TabsTrigger>
-              <TabsTrigger value="feedback">Feedback</TabsTrigger>
-            </TabsList>
+      <div className={` gap-6 ${(interview?.approval_status !== "active" && interview?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+        {interview?.approvals && interview.approvals.length > 0 &&
+          <div className="order-1 lg:order-2">
+            <ApprovalWorkflow
+              approvals={interview.approvals}
+              instance_approval_status={interview.approval_status}
+              onRefresh={fetchInterview}
+            />
+          </div>
+        }
 
-            <TabsContent value="overview" className="space-y-6">
-              {/* Interview Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Interview Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Interview Stage
-                      </label>
-                      <p className="text-sm mt-1">{interview.interview_stage_details?.name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Stage Level
-                      </label>
-                      <p className="text-sm mt-1">
-                        Level {interview.interview_stage_details?.level}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Date & Time
-                      </label>
-                      <p className="text-sm mt-1">{formatDate(interview.interview_date)}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Application Status
-                      </label>
-                      <Badge variant="outline" className="mt-1">
-                        {interview.job_position_application_details?.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        <div className={`${(interview?.approval_status !== "active" && interview?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
 
-              {/* Interviewer Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Interviewer Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage
-                        src={
-                          interview.interview_stage_details?.interviewers_details?.[0]
-                            ?.employee_profile_picture ?? undefined
-                        }
-                      />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="overview">
+                <TabsList>
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="applicant">Applicant Details</TabsTrigger>
+                  <TabsTrigger value="feedback">Feedback</TabsTrigger>
+                </TabsList>
 
-                      <AvatarFallback>
-                        {getInitials(
-                          interview.interview_stage_details?.interviewers_details?.[0]
-                            ?.first_name || "",
-                          interview.interview_stage_details?.interviewers_details?.[0]?.last_name ||
-                            "",
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h4 className="font-medium">
-                        {interview.interview_stage_details?.interviewers_details?.[0]?.first_name}{" "}
-                        {interview.interview_stage_details?.interviewers_details?.[0]?.last_name}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {interview.interview_stage_details?.interviewers_details?.[0]?.email}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {interview.interview_stage_details?.interviewers_details?.[0]?.phone_number}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <Badge variant="outline">
-                          {interview.interview_stage_details?.interviewers_details?.[0]?.experience}{" "}
-                          years exp
-                        </Badge>
-                        <Badge variant="outline">
-                          {
-                            interview.interview_stage_details?.interviewers_details?.[0]
-                              ?.qualifications
-                          }
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="applicant" className="space-y-6">
-              {/* Applicant Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Applicant Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                      <p className="text-sm mt-1">
-                        {interview.job_position_application_details?.applicant_name}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Gender</label>
-                      <p className="text-sm mt-1 capitalize">
-                        {interview.job_position_application_details?.gender}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <p className="text-sm mt-1">
-                        {interview.job_position_application_details?.applicant_email}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                      <p className="text-sm mt-1">
-                        {interview.job_position_application_details?.applicant_phone}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Location</label>
-                      <p className="text-sm mt-1">
-                        {interview.job_position_application_details?.address},{" "}
-                        {interview.job_position_application_details?.state}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Country</label>
-                      <p className="text-sm mt-1">
-                        {interview.job_position_application_details?.country}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Application Date
-                      </label>
-                      <p className="text-sm mt-1">
-                        {new Date(
-                          interview.job_position_application_details?.application_date ?? "",
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Source</label>
-                      <Badge variant="outline" className="mt-1 capitalize">
-                        {interview.job_position_application_details?.source}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Application Documents */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Application Documents
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {interview.job_position_application_details?.resume && (
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
+                <TabsContent value="overview" className="space-y-6">
+                  {/* Interview Details */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Interview Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm font-medium">Resume</p>
-                          <p className="text-xs text-muted-foreground">
-                            {interview.job_position_application_details.resume.split("/").pop()}
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Interview Stage
+                          </label>
+                          <p className="text-sm mt-1">{interview.interview_stage_details?.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Stage Level
+                          </label>
+                          <p className="text-sm mt-1">
+                            Level {interview.interview_stage_details?.level}
                           </p>
                         </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          downloadFile(
-                            interview.job_position_application_details?.resume || "",
-                            "Resume",
-                          )
-                        }
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  )}
-                  {interview.job_position_application_details?.cover_letter && (
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
                         <div>
-                          <p className="text-sm font-medium">Cover Letter</p>
-                          <p className="text-xs text-muted-foreground">
-                            {interview.job_position_application_details.cover_letter
-                              .split("/")
-                              .pop()}
-                          </p>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Date & Time
+                          </label>
+                          <p className="text-sm mt-1">{formatDate(interview.interview_date)}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Application Status
+                          </label>
+                          <Badge variant="outline" className="mt-1">
+                            {interview.job_position_application_details?.status}
+                          </Badge>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          downloadFile(
-                            interview.job_position_application_details?.cover_letter || "",
-                            "Cover Letter",
-                          )
-                        }
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </CardContent>
+                  </Card>
 
-            <TabsContent value="feedback" className="space-y-6">
-              {/* Interview Feedback */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Interview Feedback
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {interview.feedback ? (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <p className="text-sm leading-relaxed">{interview.feedback}</p>
+                  {/* Interviewer Information */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Interviewer Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage
+                            src={
+                              interview.interview_stage_details?.interviewers_details?.[0]
+                                ?.employee_profile_picture ?? undefined
+                            }
+                          />
+
+                          <AvatarFallback>
+                            {getInitials(
+                              interview.interview_stage_details?.interviewers_details?.[0]
+                                ?.first_name || "",
+                              interview.interview_stage_details?.interviewers_details?.[0]?.last_name ||
+                              "",
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-medium">
+                            {interview.interview_stage_details?.interviewers_details?.[0]?.first_name}{" "}
+                            {interview.interview_stage_details?.interviewers_details?.[0]?.last_name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {interview.interview_stage_details?.interviewers_details?.[0]?.email}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {interview.interview_stage_details?.interviewers_details?.[0]?.phone_number}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Badge variant="outline">
+                              {interview.interview_stage_details?.interviewers_details?.[0]?.experience}{" "}
+                              years exp
+                            </Badge>
+                            <Badge variant="outline">
+                              {
+                                interview.interview_stage_details?.interviewers_details?.[0]
+                                  ?.qualifications
+                              }
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                      {interview.rating && (
-                        <div className="flex items-center gap-4 pt-4 border-t">
-                          <div className="flex items-center gap-2">
-                            <Award className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm font-medium">Overall Rating:</span>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="applicant" className="space-y-6">
+                  {/* Applicant Details */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Applicant Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                          <p className="text-sm mt-1">
+                            {interview.job_position_application_details?.applicant_name}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                          <p className="text-sm mt-1 capitalize">
+                            {interview.job_position_application_details?.gender}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Email</label>
+                          <p className="text-sm mt-1">
+                            {interview.job_position_application_details?.applicant_email}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                          <p className="text-sm mt-1">
+                            {interview.job_position_application_details?.applicant_phone}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Location</label>
+                          <p className="text-sm mt-1">
+                            {interview.job_position_application_details?.address},{" "}
+                            {interview.job_position_application_details?.state}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Country</label>
+                          <p className="text-sm mt-1">
+                            {interview.job_position_application_details?.country}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Application Date
+                          </label>
+                          <p className="text-sm mt-1">
+                            {new Date(
+                              interview.job_position_application_details?.application_date ?? "",
+                            ).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Source</label>
+                          <Badge variant="outline" className="mt-1 capitalize">
+                            {interview.job_position_application_details?.source}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Application Documents */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Application Documents
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {interview.job_position_application_details?.resume && (
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">Resume</p>
+                              <p className="text-xs text-muted-foreground">
+                                {interview.job_position_application_details.resume.split("/").pop()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex">{getRatingStars(interview.rating)}</div>
-                            <span className="text-sm font-bold">{interview.rating}/10</span>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              downloadFile(
+                                interview.job_position_application_details?.resume || "",
+                                "Resume",
+                              )
+                            }
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
                         </div>
                       )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No feedback available yet</p>
-                    </div>
-                  )}
+                      {interview.job_position_application_details?.cover_letter && (
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">Cover Letter</p>
+                              <p className="text-xs text-muted-foreground">
+                                {interview.job_position_application_details.cover_letter
+                                  .split("/")
+                                  .pop()}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              downloadFile(
+                                interview.job_position_application_details?.cover_letter || "",
+                                "Cover Letter",
+                              )
+                            }
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="feedback" className="space-y-6">
+                  {/* Interview Feedback */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        Interview Feedback
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {interview.feedback ? (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-muted/50 rounded-lg">
+                            <p className="text-sm leading-relaxed">{interview.feedback}</p>
+                          </div>
+                          {interview.rating && (
+                            <div className="flex items-center gap-4 pt-4 border-t">
+                              <div className="flex items-center gap-2">
+                                <Award className="h-5 w-5 text-muted-foreground" />
+                                <span className="text-sm font-medium">Overall Rating:</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="flex">{getRatingStars(interview.rating)}</div>
+                                <span className="text-sm font-bold">{interview.rating}/10</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">No feedback available yet</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <Card className="mt-12">
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Interview
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={fetchInterview}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline">
+                    <Phone className="h-4 w-4 mr-2" />
+                    Schedule Call
+                  </Button>
+                  <Separator />
+                  <Button
+                    className="w-full justify-start text-destructive"
+                    variant="outline"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Interview
+                  </Button>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="mt-12">
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button className="w-full justify-start" variant="outline" onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Interview
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                size="sm"
-                onClick={fetchInterview}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Mail className="h-4 w-4 mr-2" />
-                Send Email
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Phone className="h-4 w-4 mr-2" />
-                Schedule Call
-              </Button>
-              <Separator />
-              <Button
-                className="w-full justify-start text-destructive"
-                variant="outline"
-                onClick={handleDelete}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Interview
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Interview Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Interview ID</span>
-                <span className="text-sm font-medium">#{interview.id}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Application ID</span>
-                <span className="text-sm font-medium">#{interview.job_position_application}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Stage Level</span>
-                <span className="text-sm font-medium">
-                  Level {interview.interview_stage_details?.level}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={getStatusBadgeVariant(interview.status)}>{interview.status}</Badge>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Interview Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Interview ID</span>
+                    <span className="text-sm font-medium">#{interview.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Application ID</span>
+                    <span className="text-sm font-medium">#{interview.job_position_application}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Stage Level</span>
+                    <span className="text-sm font-medium">
+                      Level {interview.interview_stage_details?.level}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <Badge variant={getStatusBadgeVariant(interview.status)}>{interview.status}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

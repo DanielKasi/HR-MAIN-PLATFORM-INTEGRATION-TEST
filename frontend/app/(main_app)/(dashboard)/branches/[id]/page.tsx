@@ -1,7 +1,7 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Clock,
@@ -17,24 +17,26 @@ import {
   Save,
   RotateCcw,
 } from "lucide-react";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-import {cn, showErrorToast} from "@/lib/utils";
+import { cn, showErrorToast } from "@/lib/utils";
 import apiRequest from "@/lib/apiRequest";
-import {BranchDetailResponse, IBranchWorkingDays, IBranchDay} from "@/types/types.utils";
+import { IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
+import { Branch } from "@/types";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function BranchDetailPage() {
   const params = useParams();
   const router = useRouter();
   const branchId = params.id as string;
 
-  const [branch, setBranch] = useState<BranchDetailResponse | null>(null);
+  const [branch, setBranch] = useState<Branch | null>(null);
   const [branchWorkingDays, setBranchWorkingDays] = useState<IBranchWorkingDays | null>(null);
   // const [selectedDays, setSelectedDays] = useState<SelectedDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function BranchDetailPage() {
       );
       setBranchWorkingDays(response.data as IBranchWorkingDays);
     } catch (error: any) {
-      showErrorToast({error, defaultMessage: "Failed to load working days"});
+      showErrorToast({ error, defaultMessage: "Failed to load working days" });
     } finally {
       setIsWorkingDaysLoading(false);
     }
@@ -107,7 +109,7 @@ export default function BranchDetailPage() {
 
       const formData = {
         branch: parseInt(branchId),
-        branch_days: days.map((day) => ({day_id: day.id, day_type: day.day_type})),
+        branch_days: days.map((day) => ({ day_id: day.id, day_type: day.day_type })),
       };
 
       let response;
@@ -124,7 +126,7 @@ export default function BranchDetailPage() {
       setHasChanges(false);
       toast.success("Branch working days updated successfully");
     } catch (error: any) {
-      showErrorToast({error, defaultMessage: "Failed to update working days"});
+      showErrorToast({ error, defaultMessage: "Failed to update working days" });
     } finally {
       setIsSaving(false);
       setAddingDayId(null);
@@ -145,15 +147,6 @@ export default function BranchDetailPage() {
     }
   };
 
-  // const getDisplayDays = (): IBranchDay[] => {
-  //   const fetchedDays = branchWorkingDays?.branch_days || [];
-  //   return fetchedDays.map((defaultDay) => {
-  //     const fetchedDay = fetchedDays.find(
-  //       (day: IBranchDay) => day.day_name === defaultDay.day_name,
-  //     );
-  //     return fetchedDay || {...defaultDay, id: 0, day_type: ""};
-  //   });
-  // };
 
   const getDayColor = (dayName: string) => {
     const colors = {
@@ -199,7 +192,7 @@ export default function BranchDetailPage() {
     try {
       await handleWorkingDaysUpdate(newSelectedDays || []);
     } catch (error) {
-      showErrorToast({error, defaultMessage: "Failed to remove day. Please try again."});
+      showErrorToast({ error, defaultMessage: "Failed to remove day. Please try again." });
     } finally {
       setRemovingDayId(null);
     }
@@ -235,7 +228,7 @@ export default function BranchDetailPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 mt-10">
+    <div className="flex flex-col gap-6 bg-white rounded-xl ">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/branches")}>
@@ -243,7 +236,7 @@ export default function BranchDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{branch.branch_name}</h1>
-            <p className="text-muted-foreground">{branch.institution_name} - Branch details</p>
+            <p className="text-muted-foreground">{branch.institution} - Branch details</p>
           </div>
         </div>
         <Button className="variant">Branch Shift</Button>
@@ -252,178 +245,190 @@ export default function BranchDetailPage() {
         </Badge>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Branch Information</CardTitle>
-          <CardDescription>View branch details</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Phone:</span>
-                  <span>{branch.branch_phone_number || "Not provided"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Email:</span>
-                  <span>{branch.branch_email || "Not provided"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Operating Hours:</span>
-                  <span>
-                    {branch.branch_opening_time && branch.branch_closing_time
-                      ? `${branch.branch_opening_time} - ${branch.branch_closing_time}`
-                      : "Not specified"}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium">Institution:</span>
-                  <span className="ml-2">{branch.institution_name}</span>
-                </div>
-                <div>
-                  <span className="font-medium">Paying Bank Account:</span>
-                  <span className="ml-2">{branch.paying_bank_account}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-              <div>
-                <span className="font-medium">Location:</span>
-                <p className="text-sm text-muted-foreground mt-1">{branch.branch_location}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Coordinates: {branch.branch_latitude}, {branch.branch_longitude}
-                </p>
-              </div>
-            </div>
+      <div className={` gap-6 ${(branch?.approval_status !== "active" && branch?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+        {branch?.approvals && branch.approvals.length > 0 &&
+          <div className="order-1 lg:order-2">
+            <ApprovalWorkflow
+              approvals={branch.approvals}
+              instance_approval_status={branch.approval_status}
+              onRefresh={fetchBranch}
+            />
           </div>
-        </CardContent>
-      </Card>
+        }
 
-      <Separator />
-
-      <Collapsible open={isWorkingDaysOpen} onOpenChange={handleWorkingDaysToggle}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <CardTitle>Branch Working Days</CardTitle>
-                    <CardDescription>Configure the working days for this branch</CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {branchWorkingDays && (
-                    <Badge variant="outline">
-                      {branchWorkingDays.branch_days.length}{" "}
-                      {branchWorkingDays.branch_days.length === 1 ? "day" : "days"}
-                    </Badge>
-                  )}
-                  {isWorkingDaysOpen ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </div>
-              </div>
+        <div className={`${(branch?.approval_status !== "active" && branch?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
+          <Card className="shadow-none border-none">
+            <CardHeader>
+              <CardTitle>Branch Information</CardTitle>
+              <CardDescription>View branch details</CardDescription>
             </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="pt-0">
-              {isWorkingDaysLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex items-center">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    <span className="text-sm text-muted-foreground">Loading working days...</span>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Phone:</span>
+                      <span>{branch.branch_phone_number || "Not provided"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Email:</span>
+                      <span>{branch.branch_email || "Not provided"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">Operating Hours:</span>
+                      <span>
+                        {branch.branch_opening_time && branch.branch_closing_time
+                          ? `${branch.branch_opening_time} - ${branch.branch_closing_time}`
+                          : "Not specified"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="font-medium">Institution:</span>
+                      <span className="ml-2">{branch.institution_name}</span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Paying Bank Account:</span>
+                      <span className="ml-2">{branch.paying_bank_account}</span>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
-                      Branch Working Days Manager
-                    </h2>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Click the plus (+) button to add a day, or the cross (×) to remove a day.
-                      Select the day type (Physical/Remote) when adding.
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+                  <div>
+                    <span className="font-medium">Location:</span>
+                    <p className="text-sm text-muted-foreground mt-1">{branch.branch_location}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Coordinates: {branch.branch_latitude}, {branch.branch_longitude}
                     </p>
                   </div>
-                  <div className="p-6 space-y-6">
-                    {sortedDays?.every((day) => day.id === 0) ? (
-                      <div className="text-center py-8">
-                        <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          No Working Days Set
-                        </h3>
-                        <p className="text-gray-500">
-                          Configure your branch's working days to get started.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          <Collapsible open={isWorkingDaysOpen} onOpenChange={handleWorkingDaysToggle}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <CardTitle>Branch Working Days</CardTitle>
+                        <CardDescription>Configure the working days for this branch</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {branchWorkingDays && (
+                        <Badge variant="outline">
+                          {branchWorkingDays.branch_days.length}{" "}
+                          {branchWorkingDays.branch_days.length === 1 ? "day" : "days"}
+                        </Badge>
+                      )}
+                      {isWorkingDaysOpen ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  {isWorkingDaysLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm text-muted-foreground">Loading working days...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                      <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                          <Calendar className="h-5 w-5" />
+                          Branch Working Days Manager
+                        </h2>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Click the plus (+) button to add a day, or the cross (×) to remove a day.
+                          Select the day type (Physical/Remote) when adding.
                         </p>
                       </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                          {sortedDays?.map((day) => {
-                            const isSelected = branchWorkingDays?.branch_days.some(
-                              (d) => d.day_id === day.id,
-                            );
-                            const isSelectable = day.id !== 0;
-                            return (
-                              <div key={day.day_name} className="relative">
-                                <div className="text-center transition-all duration-200 rounded-lg p-2">
-                                  <div
-                                    className={cn(
-                                      "w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-2 border-2 transition-all duration-200 relative",
-                                      isSelected
-                                        ? getDayColor(day.day_name)
-                                        : isSelectable
-                                          ? "bg-gray-100 text-gray-400 border-gray-200 hover:border-green-300 hover:bg-green-50 cursor-pointer"
-                                          : "bg-gray-100 text-gray-400 border-gray-200 opacity-50",
-                                    )}
-                                    onClick={() => {
-                                      if (!isSelected && isSelectable) {
-                                        handleDayClick(day.id);
-                                      }
-                                    }}
-                                  >
-                                    {addingDayId === day.id ? (
-                                      <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                                    ) : isSelected ? (
-                                      getDayIcon(day.day_name)
-                                    ) : (
-                                      <Plus
+                      <div className="p-6 space-y-6">
+                        {sortedDays?.every((day) => day.id === 0) ? (
+                          <div className="text-center py-8">
+                            <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                              No Working Days Set
+                            </h3>
+                            <p className="text-gray-500">
+                              Configure your branch's working days to get started.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                              {sortedDays?.map((day) => {
+                                const isSelected = branchWorkingDays?.branch_days.some(
+                                  (d) => d.day_id === day.id,
+                                );
+                                const isSelectable = day.id !== 0;
+                                return (
+                                  <div key={day.day_name} className="relative">
+                                    <div className="text-center transition-all duration-200 rounded-lg p-2">
+                                      <div
                                         className={cn(
-                                          "w-6 h-6",
-                                          isSelectable ? "text-green-600" : "text-gray-400",
+                                          "w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-2 border-2 transition-all duration-200 relative",
+                                          isSelected
+                                            ? getDayColor(day.day_name)
+                                            : isSelectable
+                                              ? "bg-gray-100 text-gray-400 border-gray-200 hover:border-green-300 hover:bg-green-50 cursor-pointer"
+                                              : "bg-gray-100 text-gray-400 border-gray-200 opacity-50",
                                         )}
-                                      />
-                                    )}
-                                  </div>
-                                  <p
-                                    className={cn(
-                                      "font-medium text-sm mb-1",
-                                      isSelected ? "text-gray-900" : "text-gray-500",
-                                    )}
-                                  >
-                                    {day.day_name}
-                                  </p>
-                                  {isSelected && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {
-                                        branchWorkingDays?.branch_days.find((d) => d.id === day.id)
-                                          ?.day_type
-                                      }
-                                    </Badge>
-                                  )}
-                                  {/* {!isSelected && isSelectable && (
+                                        onClick={() => {
+                                          if (!isSelected && isSelectable) {
+                                            handleDayClick(day.id);
+                                          }
+                                        }}
+                                      >
+                                        {addingDayId === day.id ? (
+                                          <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                                        ) : isSelected ? (
+                                          getDayIcon(day.day_name)
+                                        ) : (
+                                          <Plus
+                                            className={cn(
+                                              "w-6 h-6",
+                                              isSelectable ? "text-green-600" : "text-gray-400",
+                                            )}
+                                          />
+                                        )}
+                                      </div>
+                                      <p
+                                        className={cn(
+                                          "font-medium text-sm mb-1",
+                                          isSelected ? "text-gray-900" : "text-gray-500",
+                                        )}
+                                      >
+                                        {day.day_name}
+                                      </p>
+                                      {isSelected && (
+                                        <Badge variant="outline" className="text-xs">
+                                          {
+                                            branchWorkingDays?.branch_days.find((d) => d.id === day.id)
+                                              ?.day_type
+                                          }
+                                        </Badge>
+                                      )}
+                                      {/* {!isSelected && isSelectable && (
                                     <Select
                                       onValueChange={(value) =>
                                         handleDayClick(day.id, value as "PHYSICAL" | "REMOTE")
@@ -439,41 +444,41 @@ export default function BranchDetailPage() {
                                       </SelectContent>
                                     </Select>
                                   )} */}
-                                </div>
-                                {isSelected && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDayClick(day.id)}
-                                    className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200 z-10"
-                                    title={`Remove ${day.day_name}`}
-                                    disabled={isSaving || removingDayId === day.id}
-                                  >
-                                    {removingDayId === day.id ? (
-                                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                      <X className="w-4 h-4 text-red-600" />
+                                    </div>
+                                    {isSelected && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDayClick(day.id)}
+                                        className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-100 hover:bg-red-200 flex items-center justify-center transition-colors duration-200 z-10"
+                                        title={`Remove ${day.day_name}`}
+                                        disabled={isSaving || removingDayId === day.id}
+                                      >
+                                        {removingDayId === day.id ? (
+                                          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <X className="w-4 h-4 text-red-600" />
+                                        )}
+                                      </button>
                                     )}
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-500" />
-                              {/* <span className="text-gray-600">
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-gray-500" />
+                                  {/* <span className="text-gray-600">
                                 <strong>{selectedDays.length}</strong> working days selected
                               </span> */}
+                                </div>
+                                <span className="text-gray-500">
+                                  Last updated:{" "}
+                                  {branchWorkingDays ? new Date().toLocaleDateString() : "Never"}
+                                </span>
+                              </div>
                             </div>
-                            <span className="text-gray-500">
-                              Last updated:{" "}
-                              {branchWorkingDays ? new Date().toLocaleDateString() : "Never"}
-                            </span>
-                          </div>
-                        </div>
-                        {/* {hasChanges && (
+                            {/* {hasChanges && (
                           <div className="flex items-center gap-3 pt-4 border-t">
                             <Button
                               onClick={handleSave}
@@ -494,15 +499,17 @@ export default function BranchDetailPage() {
                             </Button>
                           </div>
                         )} */}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
+      </div>
     </div>
   );
 }

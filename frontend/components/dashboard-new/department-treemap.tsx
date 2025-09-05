@@ -1,27 +1,25 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select"
 
 interface DepartmentTreemapProps {
   data?: Array<{ dept_name: string; count: number; year: number }>
-  onRefresh: (year?:number) => void
+  onRefresh: (year?: number) => void
   loading: boolean
 }
 
 export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreemapProps) {
   const maxCount = Math.max(...(data?.map((d) => d.count) || [1]));
-    const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [year, setYear] = useState<number>(new Date().getFullYear());
 
   return (
     <Card className="shadow-sm border-none">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base font-medium">Employees Per Department</CardTitle>
         <div className="flex items-center gap-2">
-                    <Select
+          <Select
             value={year.toString()}
             onValueChange={(e) => {
               const newTime = new Date();

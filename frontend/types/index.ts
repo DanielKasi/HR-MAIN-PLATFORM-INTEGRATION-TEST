@@ -1,3 +1,4 @@
+import { IBaseApprovable } from "./approvals.types";
 import { IInstitutionDocument } from "./types.utils";
 import { PERMISSION_CODES } from "@/constants";
 
@@ -79,8 +80,9 @@ export interface ITask {
 export interface Branch {
   id: number;
   institution: number;
-  tills: ITill[];
+  paying_bank_account: number;
   branch_name: string;
+  institution_name: string;
   branch_phone_number?: string;
   branch_location: string;
   branch_longitude: string;
@@ -88,6 +90,7 @@ export interface Branch {
   branch_email?: string;
   branch_opening_time?: string;
   branch_closing_time?: string;
+  is_active: boolean;
 }
 
 export enum USER_GENDER {
@@ -241,3 +244,6 @@ export interface ICustomUser {
 }
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+export interface Role extends IBaseApprovable { }
+export interface Branch extends IBaseApprovable { }
+export interface IUser extends IBaseApprovable { }

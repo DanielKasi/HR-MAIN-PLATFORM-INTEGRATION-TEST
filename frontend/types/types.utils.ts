@@ -1601,8 +1601,8 @@ export interface ITaxRuleFormData {
 }
 
 // Legacy interfaces for backward compatibility
-export interface Itax extends ITax {}
-export interface ItaxRules extends ITaxRule {}
+export interface Itax extends ITax { }
+export interface ItaxRules extends ITaxRule { }
 
 export interface IAssetCategory {
   id: number
@@ -2279,56 +2279,100 @@ export interface IInstitutionSpotCheckSettingFormData extends ISpotCheckSetting 
   institution: number
 }
 
+
+export interface IProjectTask {
+  id: number;
+  project: number;
+  task_name: string;
+  description: string;
+  leaders: UserProfile[];
+  assigned_to: UserProfile[];
+  start_date: string;
+  end_date: string;
+  task_status: "not_started" | "in_progress" | "completed" | "on_hold";
+  priority: "low" | "medium" | "high" | "urgent";
+}
+
+export interface IProject {
+  id: number;
+  institution: number;
+  project_name: string;
+  leaders: UserProfile[];
+  members: UserProfile[];
+  description: string;
+  start_date: string;
+  end_date: string;
+  project_status:
+  | "not_started"
+  | "in_progress"
+  | "planning"
+  | "on_hold"
+  | "cancelled"
+  | "completed";
+  project_tasks: IProjectTask[];
+}
+
 // Apply approvals to existing READ interfaces via declaration merging
-export interface IAllowanceType extends IBaseApprovable {}
-export interface IAsset extends IBaseApprovable {}
-export interface IAssetAllocation extends IBaseApprovable {}
-export interface IAssetCategory extends IBaseApprovable {}
-export interface IAssetRequest extends IBaseApprovable {}
-export interface IAssetReturn extends IBaseApprovable {}
+export interface IAllowanceType extends IBaseApprovable { }
+export interface IAsset extends IBaseApprovable { }
+export interface IAssetAllocation extends IBaseApprovable { }
+export interface IAssetCategory extends IBaseApprovable { }
+export interface IAssetRequest extends IBaseApprovable { }
+export interface IAssetReturn extends IBaseApprovable { }
 
-export interface IBranchPenaltyConfig extends IBaseApprovable {}
-export interface IBranchShift extends IBaseApprovable {}
-export interface IBranchSpotCheckSetting extends IBaseApprovable {}
-export interface IBranchWorkingDays extends IBaseApprovable {}
+export interface IBranchPenaltyConfig extends IBaseApprovable { }
+export interface IBranchShift extends IBaseApprovable { }
+export interface IBranchSpotCheckSetting extends IBaseApprovable { }
+export interface IBranchWorkingDays extends IBaseApprovable { }
 
-export interface ICalendar extends IBaseApprovable {}
-export interface ICompany extends IBaseApprovable {}
-export interface ICompanyBranch extends IBaseApprovable {}
-export interface ICompanyDepartment extends IBaseApprovable {}
-export interface ICompanyPosition extends IBaseApprovable {}
+export interface ICalendar extends IBaseApprovable { }
+export interface ICompany extends IBaseApprovable { }
+export interface ICompanyBranch extends IBaseApprovable { }
+export interface ICompanyDepartment extends IBaseApprovable { }
+export interface ICompanyPosition extends IBaseApprovable { }
 
-export interface IDeduction extends IBaseApprovable {}
-export interface IDeductionType extends IBaseApprovable {}
+export interface IDeduction extends IBaseApprovable { }
+export interface IDeductionType extends IBaseApprovable { }
 
-export interface IEmployee extends IBaseApprovable {}
-export interface IEmployeeAllowance extends IBaseApprovable {}
-export interface IEmployeeContract extends IBaseApprovable {}
-export interface IEmployeeDeduction extends IBaseApprovable {}
-export interface IEmployeeDocument extends IBaseApprovable {}
-export interface IEmployeeEmergencyContact extends IBaseApprovable {}
-export interface IEmployeeLeave extends IBaseApprovable {}
-export interface IEmployeeLeaveBalance extends IBaseApprovable {}
-export interface IEmployeeOvertime extends IBaseApprovable {}
-export interface IEmployeePenalty extends IBaseApprovable {}
-export interface IEmployeeShift extends IBaseApprovable {}
+export interface IEmployee extends IBaseApprovable { }
+export interface IEmployeeAllowance extends IBaseApprovable { }
+export interface IEmployeeContract extends IBaseApprovable { }
+export interface IEmployeeDeduction extends IBaseApprovable { }
+export interface IEmployeeDocument extends IBaseApprovable { }
+export interface IEmployeeEmergencyContact extends IBaseApprovable { }
+export interface IEmployeeLeave extends IBaseApprovable { }
+export interface IEmployeeLeaveBalance extends IBaseApprovable { }
+export interface IEmployeeOvertime extends IBaseApprovable { }
+export interface IEmployeePenalty extends IBaseApprovable { }
+export interface IEmployeeShift extends IBaseApprovable { }
 
-export interface IHoliday extends IBaseApprovable {}
+export interface IHoliday extends IBaseApprovable { }
 
-export interface ILeaveType extends IBaseApprovable {}
-export interface ILoan extends IBaseApprovable {}
-export interface ILoanType extends IBaseApprovable {}
+export interface ILeaveType extends IBaseApprovable { }
+export interface ILoan extends IBaseApprovable { }
+export interface ILoanType extends IBaseApprovable { }
 
-export interface IOvertimeType extends IBaseApprovable {}
+export interface IOvertimeType extends IBaseApprovable { }
 
-export interface IPayrollPeriod extends IBaseApprovable {}
-export interface IPayrollPeriodEmployee extends IBaseApprovable {}
-export interface IPenalty extends IBaseApprovable {}
+export interface IPayrollPeriod extends IBaseApprovable { }
+export interface IPayrollPeriodEmployee extends IBaseApprovable { }
+export interface IPenalty extends IBaseApprovable { }
 
-export interface IRole extends IBaseApprovable {}
+export interface IRole extends IBaseApprovable { }
 
-export interface IShift extends IBaseApprovable {}
-export interface ISpotCheck extends IBaseApprovable {}
+export interface IShift extends IBaseApprovable { }
+export interface ISpotCheck extends IBaseApprovable { }
 
-export interface ITimesheet extends IBaseApprovable {}
-export interface ITimesheetEntry extends IBaseApprovable {}
+export interface ITimesheet extends IBaseApprovable { }
+export interface ITimesheetEntry extends IBaseApprovable { }
+export interface IJobPosition extends IBaseApprovable { }
+export interface IDepartment extends IBaseApprovable { }
+export interface JobPositionAdvert extends IBaseApprovable { }
+export interface JobApplication extends IBaseApprovable { }
+export interface ISeparationPolicy extends IBaseApprovable { }
+export interface IProject extends IBaseApprovable { }
+export interface IInterview extends IBaseApprovable { }
+export interface ITermination extends IBaseApprovable { }
+export interface IOnBoarding extends IBaseApprovable { }
+export interface ITax extends IBaseApprovable { }
+export interface IProjectTask extends IBaseApprovable { }
