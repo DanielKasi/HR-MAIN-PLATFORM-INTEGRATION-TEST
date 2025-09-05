@@ -140,30 +140,30 @@ class BulkOnBoardingCreateAPI(APIView):
             },
             "required": ["application_ids"],
         },
-        responses={
-            201: {
-                "type": "object",
-                "properties": {
-                    "created": OnBoardingSerializer(many=True),
-                    "skipped": {
-                        "type": "array",
-                        "items": {"type": "object", "properties": {"application_id": {"type": "integer"}, "reason": {"type": "string"}}},
-                    },
-                    "summary": {
-                        "type": "object",
-                        "properties": {
-                            "total_requested": {"type": "integer"},
-                            "created_count": {"type": "integer"},
-                            "skipped_count": {"type": "integer"},
-                        },
-                    },
-                },
-            },
-            400: {
-                "type": "object",
-                "properties": {"error": {"type": "string"}},
-            },
-        },
+        # responses={
+        #     201: {
+        #         "type": "object",
+        #         "properties": {
+        #             "created": OnBoardingSerializer(many=True),
+        #             "skipped": {
+        #                 "type": "array",
+        #                 "items": {"type": "object", "properties": {"application_id": {"type": "integer"}, "reason": {"type": "string"}}},
+        #             },
+        #             "summary": {
+        #                 "type": "object",
+        #                 "properties": {
+        #                     "total_requested": {"type": "integer"},
+        #                     "created_count": {"type": "integer"},
+        #                     "skipped_count": {"type": "integer"},
+        #                 },
+        #             },
+        #         },
+        #     },
+        #     400: {
+        #         "type": "object",
+        #         "properties": {"error": {"type": "string"}},
+        #     },
+        # },
         summary="Bulk Create Onboarding Records",
         description="Create onboarding records for multiple applications with initial status",
         tags=["Onboarding"],

@@ -264,9 +264,11 @@ class LogoutRequestSerializer(serializers.Serializer):
 
 
 class InstitutionUserLoginResponseSerializer(LoginResponseSerializer):
-    from institution.serializers import InstitutionSerializer
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    institution_attached = InstitutionSerializer(many=True)
+        from institution.serializers import InstitutionSerializer  
+        self.fields['institution_attached'] = InstitutionSerializer(many=True)
 
 
 class RolePermissionSerializer(BaseApprovableSerializer):

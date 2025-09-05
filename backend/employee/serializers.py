@@ -1,8 +1,15 @@
 from approval.serializers import BaseApprovableSerializer
 from .models import (
+    Child,
+    Education,
     Employee,
     EmployeeAttendance,
+    EmployeeBankAccount,
     EmployeeType,
+    NextOfKin,
+    QualificationAward,
+    Spouse,
+    WorkExperience,
     WorkType,
     EmployeeContract,
     EmployeeDay,
@@ -13,7 +20,7 @@ from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
-from institution.models import Branch, UserBranch
+from institution.models import Branch, InstitutionBankType, UserBranch
 from employee.models import EmployeeContract
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -52,7 +59,112 @@ class WorkTypeSerializer(BaseApprovableSerializer):
         model = WorkType
         fields = "__all__"
 
+class NextOfKinSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
 
+    class Meta:
+        model = NextOfKin
+        fields = '__all__'
+
+    def validate(self, data):
+        required_fields = ["name", "phone_number", "address", "relationship"]
+        errors = {}
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                errors[field] = f"{field} is required."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
+
+class QualificationAwardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QualificationAward
+        fields = '__all__'
+
+class EducationSerializer(serializers.ModelSerializer):
+    qualification = QualificationAwardSerializer(read_only=True)
+    qualification_id = serializers.PrimaryKeyRelatedField(
+        queryset=QualificationAward.objects.all(),
+        source='qualification',
+        write_only=True,
+        required=True
+    )
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
+
+    class Meta:
+        model = Education
+        fields = '__all__'
+
+class WorkExperienceSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
+    class Meta:
+        model = WorkExperience
+        fields = '__all__'
+
+class ChildSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
+    class Meta:
+        model = Child
+        fields = '__all__'
+
+class SpouseSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
+    class Meta:
+        model = Spouse
+        fields = '__all__'   
+
+class BankAccountSerializer(serializers.ModelSerializer):
+    bank = serializers.SerializerMethodField(read_only=True)
+    bank_id = serializers.PrimaryKeyRelatedField(
+        queryset=InstitutionBankType.objects.all(),
+        source='bank',
+        write_only=True,
+        required=True
+    )
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        required=False,
+        write_only=True
+    )
+
+    class Meta:
+        model = EmployeeBankAccount
+        fields = '__all__'
+
+    def get_bank(self, obj):
+        from institution.serializers import InstitutionBankTypeSerializer
+        return InstitutionBankTypeSerializer(obj.bank).data
+
+    def validate(self, data):
+        required_fields = ["account_name", "account_number"]
+        errors = {}
+        for field in required_fields:
+            if field not in data or data[field] is None:
+                errors[field] = f"{field} is required."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
+    
 class EmployeeSerializer(BaseApprovableSerializer):
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
@@ -67,6 +179,12 @@ class EmployeeSerializer(BaseApprovableSerializer):
     employee_type = serializers.PrimaryKeyRelatedField(
         queryset=EmployeeType.objects.all()
     )
+    bank_accounts = BankAccountSerializer(many=True, required=False)
+    next_of_kin = NextOfKinSerializer(many=True, required=False)
+    educations = EducationSerializer(many=True, required=False)
+    work_experiences = WorkExperienceSerializer(many=True, required=False)
+    children = ChildSerializer(many=True, required=False)
+    spouse = SpouseSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Employee
@@ -89,15 +207,32 @@ class EmployeeSerializer(BaseApprovableSerializer):
             if msgs:
                 raise serializers.ValidationError({"error": " ".join(msgs)})
         return value
+    
+    # def validate(self, data):
+    #     marital_status = data.get('marital_status', getattr(self.instance, 'marital_status', 'single'))
+    #     spouse_data = data.get('spouse')
+    #     if marital_status == 'married' and not spouse_data:
+    #         raise serializers.ValidationError({"error": "Spouse details are required for married employees."})
+    #     if marital_status != 'married' and spouse_data:
+    #         raise serializers.ValidationError({"error": "Spouse details should only be provided for married employees."})
+    #     return data
 
     @transaction.atomic
     def create(self, validated_data):
-
-        request = self.context.get("request")
+        print(f"Validated data: {validated_data}")
 
         user_data = validated_data.pop("user", None)
-
         selected_branches = validated_data.pop("selected_branches", None)
+        bank_accounts_data = validated_data.pop("bank_accounts", [])
+        next_of_kin_data = validated_data.pop("next_of_kin", [])
+        educations_data = validated_data.pop("educations", [])
+        work_experiences_data = validated_data.pop("work_experiences", [])
+        children_data = validated_data.pop("children", [])
+        spouse_data = validated_data.pop("spouse", None)
+
+        print(f"Bank accounts data: {bank_accounts_data}")
+        print(f"Next of kin data: {next_of_kin_data}")
+        print(f"Educations data: {educations_data}")
 
         if user_data:
             user_serializer = CustomUserSerializer(data=user_data)
@@ -105,27 +240,24 @@ class EmployeeSerializer(BaseApprovableSerializer):
             user = user_serializer.save()
             validated_data["user"] = user
 
-            institution = getattr(request.user.profile, "institution", None)
+            request = self.context.get("request")
+            if not request:
+                raise serializers.ValidationError({"error": "Request context is required."})
 
+            institution = getattr(request.user.profile, "institution", None)
             institution_id = getattr(institution, "id", None) if institution else None
 
             if institution_id:
                 from institution.models import Institution
-
                 try:
                     institution = Institution.objects.get(id=institution_id)
-
                     role = get_or_create_default_role_with_permissions(institution)
-
                     from users.models import UserRole, Profile
-
                     UserRole.objects.get_or_create(user=user, role=role)
                     Profile.objects.create(user=user, institution=institution, bio="")
-
                     if not institution.default_employee_role:
                         institution.default_employee_role = role
                         institution.save()
-
                 except Institution.DoesNotExist:
                     raise serializers.ValidationError(
                         {"error": f"Institution does not exist for the provided user."}
@@ -133,15 +265,39 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
         employee = Employee.objects.create(**validated_data)
 
+        # Create BankAccount instances
+        for bank_data in bank_accounts_data:
+            bank_type = bank_data.pop('bank')
+            EmployeeBankAccount.objects.create(employee=employee, bank=bank_type, **bank_data)
+
+        # Create NextOfKin instances
+        for kin_data in next_of_kin_data:
+            NextOfKin.objects.create(employee=employee, **kin_data)
+
+        # Create Education instances
+        for edu_data in educations_data:
+            qualification = edu_data.pop('qualification')  # Already a QualificationAward instance
+            Education.objects.create(employee=employee, qualification=qualification, **edu_data)
+
+        # Create WorkExperience instances
+        for exp_data in work_experiences_data:
+            WorkExperience.objects.create(employee=employee, **exp_data)
+
+        # Create Child instances
+        for child_data in children_data:
+            Child.objects.create(employee=employee, **child_data)
+
+        # Create Spouse instance if provided
+        if spouse_data:
+            Spouse.objects.create(employee=employee, **spouse_data)
+
         for i, branch_id in enumerate(selected_branches or []):
             try:
                 branch = Branch.objects.get(id=branch_id)
                 UserBranch.objects.get_or_create(
                     user=employee.user,
                     branch=branch,
-                    defaults={
-                        "is_default": i == 0,
-                    },
+                    defaults={"is_default": i == 0}
                 )
             except Branch.DoesNotExist:
                 raise serializers.ValidationError(
@@ -152,37 +308,88 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        user_data = validated_data.pop("user", None)
+        print(f"Update validated data: {validated_data}")
 
+        user_data = validated_data.pop("user", None)
+        selected_branches = validated_data.pop("selected_branches", None)
+        bank_accounts_data = validated_data.pop("bank_accounts", [])
+        next_of_kin_data = validated_data.pop("next_of_kin", [])
+        educations_data = validated_data.pop("educations", [])
+        work_experiences_data = validated_data.pop("work_experiences", [])
+        children_data = validated_data.pop("children", [])
+        spouse_data = validated_data.pop("spouse", None)
+
+        print(f"Update bank accounts data: {bank_accounts_data}")
+        print(f"Update next of kin data: {next_of_kin_data}")
+        print(f"Update educations data: {educations_data}")
+
+        # Update Employee instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update User instance if provided
         if user_data:
-            user_serializer = CustomUserSerializer(
-                instance.user, data=user_data, partial=True
-            )
+            user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
 
-        # 🔧 FIX: Handle salary logic before updating other fields
-        salary_value = validated_data.pop("salary", None)
-        position_changed = (
-            "position" in validated_data
-            and validated_data["position"] != instance.position
-        )
+        # Update or create BankAccount instances
+        if bank_accounts_data:
+            # Optionally clear existing bank accounts
+            instance.bank_accounts.all().delete()
+            for bank_data in bank_accounts_data:
+                bank_type = bank_data.pop('bank')
+                EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+        # Update or create NextOfKin instances
+        if next_of_kin_data:
+            instance.next_of_kin.all().delete()
+            for kin_data in next_of_kin_data:
+                NextOfKin.objects.create(employee=instance, **kin_data)
 
-        # 🔧 FIX: If position changed and no explicit salary provided, use position's salary_min
-        if position_changed and salary_value is None and instance.position:
-            if hasattr(instance.position, "salary_min"):
-                instance.salary = instance.position.salary_min
-        elif salary_value is not None:
-            instance.salary = salary_value
+        # Update or create Education instances
+        if educations_data:
+            instance.educations.all().delete()
+            for edu_data in educations_data:
+                qualification = edu_data.pop('qualification')
+                Education.objects.create(employee=instance, qualification=qualification, **edu_data)
 
-        instance.save()
+        # Update or create WorkExperience instances
+        if work_experiences_data:
+            instance.work_experiences.all().delete()
+            for exp_data in work_experiences_data:
+                WorkExperience.objects.create(employee=instance, **exp_data)
 
-        instance.refresh_from_db()
+        # Update or create Child instances
+        if children_data:
+            instance.children.all().delete()
+            for child_data in children_data:
+                Child.objects.create(employee=instance, **child_data)
+
+        # Update or create Spouse instance
+        if spouse_data is not None:
+            instance.spouse.delete() if instance.spouse else None
+            Spouse.objects.create(employee=instance, **spouse_data)
+
+        # Update UserBranch instances
+        if selected_branches is not None:
+            instance.user.userbranch_set.all().delete()
+            for i, branch_id in enumerate(selected_branches):
+                try:
+                    branch = Branch.objects.get(id=branch_id)
+                    UserBranch.objects.get_or_create(
+                        user=instance.user,
+                        branch=branch,
+                        defaults={"is_default": i == 0}
+                    )
+                except Branch.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {"error": f"Branch with ID {branch_id} does not exist."}
+                    )
 
         return instance
+
 
     def get_roles(self, obj):
         """Get roles for the employee's user"""
@@ -501,26 +708,6 @@ class EmployeeAttendanceSerializer(BaseApprovableSerializer):
         except Exception as e:
             pass
 
-
-class EmployeeActivationSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=False, allow_blank=True)
-    phone_number = serializers.CharField(
-        max_length=20, required=False, allow_blank=True
-    )
-    full_name = serializers.CharField(max_length=100, required=True)
-    date_of_birth = serializers.DateField(required=False, allow_null=True)
-    address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    gender = serializers.ChoiceField(
-        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        required=False,
-        allow_blank=True,
-    )
-    # Optional fields for branch and department assignment
-    branch_location = serializers.CharField(
-        max_length=200, required=False, allow_blank=True
-    )
-    department = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    date_of_joining = serializers.DateField(required=False, allow_null=True)
 
 
 def validate_pdf(file):

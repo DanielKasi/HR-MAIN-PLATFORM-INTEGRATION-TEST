@@ -1068,7 +1068,9 @@ class InstitutionTaxListAPIView(APIView):
             elif status == "all":
                 pass
 
-        serializer = InstitutionTaxSerializer(taxes, many=True)
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(taxes, request)
+        serializer = InstitutionTaxSerializer(paginated_qs, many=True)
         return Response(serializer.data)
 
     @extend_schema(
@@ -1192,7 +1194,9 @@ class InstitutionTaxRuleListAPIView(APIView):
             elif status == "all":
                 pass
 
-        serializer = InstitutionTaxRuleSerializer(tax_rules, many=True)
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(tax_rules, request)
+        serializer = InstitutionTaxRuleSerializer(paginated_qs, many=True)
 
         return Response(serializer.data)
 

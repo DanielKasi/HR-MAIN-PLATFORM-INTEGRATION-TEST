@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from django.db import models
 from datetime import datetime
-from institution.models import Branch, UserBranch
+from institution.models import Branch, InstitutionBankType, UserBranch
 from datetime import date, datetime
 from django.core.exceptions import ValidationError
 import PyPDF2
@@ -49,6 +49,96 @@ class WorkType(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+
+class EmployeeBankAccount(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="bank_accounts")
+    bank = models.ForeignKey(InstitutionBankType, on_delete=models.PROTECT, related_name="employee_bank_accounts")
+    account_name = models.CharField(max_length=50)
+    account_number = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.bank.bank_fullname} - {self.account_number}"
+    
+
+class NextOfKin(SoftDeletableTimeStampedModel):
+    RELATIONSHIP_CHOICES = [
+        ("father", "Father"),
+        ("mother", "Mother"),
+        ("spouse", "Spouse"),
+        ("child", "Child"),
+        ("other", "Other"),
+    ]
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="next_of_kins")    
+    name = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=50)
+    address = models.CharField(max_length=50)
+    relationship = models.CharField(
+        max_length=50,
+        choices=RELATIONSHIP_CHOICES
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.relationship}"
+
+class Child(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="children")   
+    name = models.CharField(max_length=50)
+    date_of_birth = models.DateField()
+    gender = models.CharField(
+        max_length=10,
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
+        default="other"
+    )     
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.name}"
+    
+class Spouse(SoftDeletableTimeStampedModel):
+    employee = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='spouse')
+    name = models.CharField(max_length=50)
+    date_of_birth = models.DateField(blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.name}"
+    
+class QualificationAward(SoftDeletableTimeStampedModel):    
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+    
+class Education(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey(
+        'Employee',
+        on_delete=models.CASCADE,
+        related_name='educations'
+    )
+    institution = models.CharField(max_length=100)
+    year = models.PositiveIntegerField()
+    qualification = models.ForeignKey(
+        QualificationAward,
+        on_delete=models.PROTECT,
+        related_name='educations'
+    )
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.qualification}"
+    
+class WorkExperience(SoftDeletableTimeStampedModel):
+    employee = models.ForeignKey(
+        'Employee',
+        on_delete=models.CASCADE,
+        related_name='work_experiences'
+    )
+    company = models.CharField(max_length=100)
+    position = models.CharField(max_length=100)
+    duration = models.CharField(max_length=50)
+    reason_of_leaving = models.CharField(max_length=255, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.employee.user.fullname} - {self.company}"
 
 
 class Employee(BaseApprovableModel):
@@ -130,19 +220,9 @@ class Employee(BaseApprovableModel):
     nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
     tin = models.CharField(max_length=12, blank=True, null=True)
-    bank = models.CharField(max_length=50, blank=True, null=True)
-    # bank_account_name = models.CharField(max_length=100, blank=True, null=True)
-    bank_account_number = models.CharField(max_length=20, blank=True, null=True)
-    experience = models.PositiveIntegerField(default=0)
-    qualifications = models.TextField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
-    emergency_contact_name = models.CharField(max_length=50, blank=True, null=True)
-    emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
-    emergency_contact_relationship = models.CharField(
-        max_length=30, blank=True, null=True
-    )
     marital_status = models.CharField(max_length=10, choices=choices, default="single")
-    children_count = models.PositiveIntegerField(default=0, blank=True, null=True)
+    has_children = models.BooleanField(default=False)
     employee_profile_picture = models.ImageField(
         upload_to="employee_pictures/", blank=True, null=True
     )
