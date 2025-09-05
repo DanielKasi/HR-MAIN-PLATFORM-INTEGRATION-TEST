@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useParams, useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -20,24 +20,25 @@ import {
   UserX,
 } from "lucide-react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Label} from "@/components/ui/label";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-import {getOnBoardingById} from "@/lib/utils";
-import type {IOnBoarding} from "@/types/types.utils";
-import {toast} from "sonner";
-import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
+import { getOnBoardingById } from "@/lib/utils";
+import type { IOnBoarding } from "@/types/types.utils";
+import { toast } from "sonner";
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 const ONBOARDING_STAGES = [
-  {value: "initial", label: "Initial", icon: AlertTriangle, color: "text-gray-500"},
-  {value: "training", label: "Training", icon: GraduationCap, color: "text-blue-500"},
-  {value: "issued_contract", label: "Contract Issued", icon: FileText, color: "text-purple-500"},
-  {value: "accepted_offer", label: "Offer Accepted", icon: UserCheck, color: "text-orange-500"},
-  {value: "declined_offer", label: "Offer Declined", icon: UserX, color: "text-red-500"},
+  { value: "initial", label: "Initial", icon: AlertTriangle, color: "text-gray-500" },
+  { value: "training", label: "Training", icon: GraduationCap, color: "text-blue-500" },
+  { value: "issued_contract", label: "Contract Issued", icon: FileText, color: "text-purple-500" },
+  { value: "accepted_offer", label: "Offer Accepted", icon: UserCheck, color: "text-orange-500" },
+  { value: "declined_offer", label: "Offer Declined", icon: UserX, color: "text-red-500" },
 ] as const;
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
@@ -58,7 +59,7 @@ export default function ViewOnboardingDetails() {
   const fetchOnboarding = async () => {
     try {
       setIsLoading(true);
-      const data = await getOnBoardingById({onboardingId});
+      const data = await getOnBoardingById({ onboardingId });
 
       if (data) {
         setOnboarding(data);
@@ -255,190 +256,207 @@ export default function ViewOnboardingDetails() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Candidate Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Candidate Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">{applicationData.applicantName}</p>
+
+      <div className={` gap-6 ${(onboarding?.approval_status !== "active" && onboarding?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+        {onboarding?.approvals && onboarding.approvals.length > 0 &&
+          <div className="order-1 lg:order-2">
+            <ApprovalWorkflow
+              approvals={onboarding.approvals}
+              instance_approval_status={onboarding.approval_status}
+              onRefresh={fetchOnboarding}
+            />
+          </div>
+        }
+
+        <div className={`${(onboarding?.approval_status !== "active" && onboarding?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
+
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Candidate Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Candidate Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium">{applicationData.applicantName}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm">{applicationData.applicantEmail}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Email Address</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm">{applicationData.applicantEmail}</p>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm">{applicationData.applicantPhone}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm">{applicationData.applicantAddress}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Phone Number</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm">{applicationData.applicantPhone}</p>
+              {/* Position Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Position Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Job Position/ Title{" "}
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium">{applicationData.jobDesc}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Address</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm">{applicationData.applicantAddress}</p>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Number of Positions
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{applicationData.applicantPositions}</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Position Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
-                Position Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Job Position/ Title{" "}
-                </Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">{applicationData.jobDesc}</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Number of Positions
-                </Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm">{applicationData.applicantPositions}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Remarks */}
-          {onboarding.remarks && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Remarks & Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <p className="text-sm whitespace-pre-wrap">{onboarding.remarks}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status & Progress */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Status & Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Current Status</Label>
-                <div className="flex items-center gap-2 mt-2">
-                  {onboarding.status && getStatusIcon(onboarding.status)}
-                  <Badge variant={getStatusBadgeVariant(onboarding.status)}>
-                    {formatStatus(onboarding.status)}
-                  </Badge>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">
-                  Training Attendance
-                </Label>
-                <div className="flex items-center gap-2 mt-2">
-                  {onboarding.attended ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )}
-                  <span className="text-sm font-medium">
-                    {onboarding.attended ? "Attended" : "Not Attended"}
-                  </span>
-                </div>
-              </div>
-
-              {onboarding.status === "training" && (
-                <div className="pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowDocumentDialog(true)}
-                    className="w-full"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Document
-                  </Button>
-                </div>
+              {/* Remarks */}
+              {onboarding.remarks && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Remarks & Notes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm whitespace-pre-wrap">{onboarding.remarks}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          <DocumentGenerationDialog
-            open={showDocumentDialog}
-            onOpenChange={setShowDocumentDialog}
-            contextId={onboardingId}
-            context="onboarding"
-          />
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Status & Progress */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Status & Progress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Current Status</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      {onboarding.status && getStatusIcon(onboarding.status)}
+                      <Badge variant={getStatusBadgeVariant(onboarding.status)}>
+                        {formatStatus(onboarding.status)}
+                      </Badge>
+                    </div>
+                  </div>
 
-          {/* Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Created</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm">{formatDate(onboarding.created_at)}</p>
-                </div>
-              </div>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Training Attendance
+                    </Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      {onboarding.attended ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-500" />
+                      )}
+                      <span className="text-sm font-medium">
+                        {onboarding.attended ? "Attended" : "Not Attended"}
+                      </span>
+                    </div>
+                  </div>
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm">{formatDate(onboarding.updated_at)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  {onboarding.status === "training" && (
+                    <div className="pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowDocumentDialog(true)}
+                        className="w-full"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Generate Document
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <DocumentGenerationDialog
+                open={showDocumentDialog}
+                onOpenChange={setShowDocumentDialog}
+                contextId={onboardingId}
+                context="onboarding"
+              />
+
+              {/* Timeline */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Created</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{formatDate(onboarding.created_at)}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{formatDate(onboarding.updated_at)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
