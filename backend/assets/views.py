@@ -31,10 +31,14 @@ from users.models import Profile
 from django.db.models import Q
 from employee.models import Employee
 from django.db import transaction
+from utilities.sortable_api import SortableAPIMixin
 
 
-class AssetCategoryListCreateView(APIView):
+
+class AssetCategoryListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['category_name', 'created_at', 'code', 'is_active']
+    default_ordering = ['category_name']
 
     @extend_schema(
         request=AssetCategorySerializer,
@@ -62,20 +66,27 @@ class AssetCategoryListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by name, description, or code"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "status", "type": "str", "description": "Filter by status (active/inactive)"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'category_name,-is_active,created_at,asset_count')"},
+        ],
         responses={
             200: OpenApiResponse(
                 response=AssetCategorySerializer(many=True),
                 description="List of asset categories.",
             ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
         },
         tags=["Asset Mgt"],
     )
     def get(self, request):
-
         user = request.user.profile
         search_query = request.query_params.get("search", None)
         created_at = request.query_params.get("created_at", None)
-        status_filter = request.query_params.get("status", None)  
+        status_filter = request.query_params.get("status", None)
 
         try:
             institution = Institution.objects.get(id=user.institution.id)
@@ -97,12 +108,17 @@ class AssetCategoryListCreateView(APIView):
             )
 
         if created_at:
-            categories = categories.filter(created_at=created_at)   
+            categories = categories.filter(created_at=created_at)
 
         if status_filter == "active":
             categories = categories.filter(is_active=True)
         elif status_filter == "inactive":
-            categories = categories.filter(is_active=False)     
+            categories = categories.filter(is_active=False)
+
+        try:
+            categories = self.apply_sorting(categories, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(categories, request)
