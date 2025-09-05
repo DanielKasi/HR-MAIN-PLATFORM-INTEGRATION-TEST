@@ -1,21 +1,21 @@
 "use client";
 
-import type { UserProfile } from "@/types";
-import type { IPaginatedResponse } from "@/types/types.utils";
+import type {UserProfile} from "@/types";
+import type {IPaginatedResponse} from "@/types/types.utils";
 
-import { useState } from "react";
-import { Search, ChevronDown, Eye, Trash2, ArrowLeft, MoreVertical, Edit } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Icon } from "@iconify/react";
+import {useEffect, useState} from "react";
+import {Search, ChevronDown, Eye, Trash2, ArrowLeft, MoreVertical, Edit} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {Icon} from "@iconify/react";
 
 import {AddUserForm} from "./addUser";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
+import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,17 +23,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/constants";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { getPaginatedUsers, getPaginatedUsersFromUrl } from "@/lib/utils";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import {PERMISSION_CODES} from "@/constants";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {getPaginatedUsers, getPaginatedUsersFromUrl} from "@/lib/utils";
+import {TableSkeleton} from "@/components/common/table-skeleton";
 
 export default function StaffPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("All Branches");
   const [selectedRole, setSelectedRole] = useState("All Roles");
   const [selectedStatus, setSelectedStatus] = useState("All status");
-  const [pageSize, setPageSize] = useState(10);
   const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>([]);
   const router = useRouter();
 
@@ -60,7 +59,10 @@ export default function StaffPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4 justify-between">
               <div className="relative flex-1 max-w-sm">
-                <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5" />
+                <Icon
+                  icon="hugeicons:search-01"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5"
+                />
                 <Input
                   placeholder="Search Staff"
                   value={searchQuery}
@@ -72,7 +74,10 @@ export default function StaffPage() {
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none" variant="outline">
+                  <Button
+                    className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
+                    variant="outline"
+                  >
                     {selectedBranch} <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -97,7 +102,10 @@ export default function StaffPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none" variant="outline">
+                  <Button
+                    className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
+                    variant="outline"
+                  >
                     {selectedRole} <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -121,7 +129,10 @@ export default function StaffPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none" variant="outline">
+                  <Button
+                    className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
+                    variant="outline"
+                  >
                     {selectedStatus} <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -146,7 +157,6 @@ export default function StaffPage() {
           </div>
         </div>
         <div className="p-6">
-
           <PaginatedTableWrapper<UserProfile>
             fetchFirstPage={async () => {
               const institutionId = getDefaultInstitutionId();
@@ -157,19 +167,19 @@ export default function StaffPage() {
                 institutionId,
                 page: 1,
                 search: searchQuery || undefined,
-                pageSize,
               });
             }}
-            fetchFromUrl={({ url }) => getPaginatedUsersFromUrl({ url })}
-            deps={[searchQuery, pageSize]}
+            fetchFromUrl={({url}) => getPaginatedUsersFromUrl({url})}
+            deps={[searchQuery]}
             className=""
             footerClassName="pt-4"
           >
-            {({ data: userData, loading: userLoading, refresh }) => {
-              // Update allUserProfiles for filter dropdowns
-              if (userData?.results) {
-                setAllUserProfiles(userData.results);
-              }
+            {({data: userData, loading: userLoading, refresh}) => {
+              useEffect(() => {
+                if (userData?.results) {
+                  setAllUserProfiles(userData.results);
+                }
+              }, [userData?.results]);
 
               if (userLoading) {
                 return <TableSkeleton rows={10} columns={6} />;
@@ -178,7 +188,9 @@ export default function StaffPage() {
               if (!userData?.results || userData.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchQuery ? "No users found matching your search criteria" : "No users found"}
+                    {searchQuery
+                      ? "No users found matching your search criteria"
+                      : "No users found"}
                   </div>
                 );
               }
@@ -188,7 +200,9 @@ export default function StaffPage() {
                 // Branch filter
                 const matchesBranch =
                   selectedBranch === "All Branches" ||
-                  userProfile.user.branches?.some((branch) => branch.branch_name === selectedBranch);
+                  userProfile.user.branches?.some(
+                    (branch) => branch.branch_name === selectedBranch,
+                  );
 
                 // Role filter
                 const matchesRole =
@@ -236,7 +250,8 @@ export default function StaffPage() {
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-8 w-8 bg-gray-200">
                                   <AvatarFallback className="text-gray-600">
-                                    {userProfile.user.fullname?.substring(0, 2).toUpperCase() || "??"}
+                                    {userProfile.user.fullname?.substring(0, 2).toUpperCase() ||
+                                      "??"}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className="font-medium">
@@ -246,21 +261,26 @@ export default function StaffPage() {
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell className="text-gray-600">{userProfile.user.email}</TableCell>
+                            <TableCell className="text-gray-600">
+                              {userProfile.user.email}
+                            </TableCell>
                             <TableCell className="text-gray-600">
                               {getUserRoleName(userProfile)}
                             </TableCell>
                             <TableCell className="text-gray-600">
                               {userProfile.user.branches?.length
-                                ? userProfile.user.branches.map((branch) => branch.branch_name).join(", ")
+                                ? userProfile.user.branches
+                                    .map((branch) => branch.branch_name)
+                                    .join(", ")
                                 : "No branches assigned"}
                             </TableCell>
                             <TableCell>
                               <span
-                                className={`px-2 py-1 text-xs rounded-full ${userProfile.user.is_active
+                                className={`px-2 py-1 text-xs rounded-full ${
+                                  userProfile.user.is_active
                                     ? "bg-[#dcfce7] text-[#10b981]"
                                     : "bg-[#fee2e2] text-[#ef4444]"
-                                  }`}
+                                }`}
                               >
                                 {userProfile.user.is_active ? "Active" : "Inactive"}
                               </span>
@@ -269,11 +289,16 @@ export default function StaffPage() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">
-                                    <Icon icon="hugeicons:more-horizontal-square-01" className="!h-4 !w-4 text-dark" />
+                                    <Icon
+                                      icon="hugeicons:more-horizontal-square-01"
+                                      className="!h-4 !w-4 text-dark"
+                                    />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => router.push(`/users/${userProfile.user.id}`)}>
+                                  <DropdownMenuItem
+                                    onClick={() => router.push(`/users/${userProfile.user.id}`)}
+                                  >
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
@@ -313,23 +338,25 @@ export default function StaffPage() {
                               </h3>
                             </div>
                             <div className="space-y-1 mb-2">
-                              <p className="text-sm text-gray-600">
-                                {userProfile.user.email}
-                              </p>
+                              <p className="text-sm text-gray-600">{userProfile.user.email}</p>
                               <p className="text-sm text-gray-600">
                                 Role: {getUserRoleName(userProfile)}
                               </p>
                               <p className="text-sm text-gray-600">
-                                Branches: {userProfile.user.branches?.length
-                                  ? userProfile.user.branches.map((branch) => branch.branch_name).join(", ")
+                                Branches:{" "}
+                                {userProfile.user.branches?.length
+                                  ? userProfile.user.branches
+                                      .map((branch) => branch.branch_name)
+                                      .join(", ")
                                   : "No branches assigned"}
                               </p>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`px-2 py-1 text-xs rounded-full ${userProfile.user.is_active
+                                  className={`px-2 py-1 text-xs rounded-full ${
+                                    userProfile.user.is_active
                                       ? "bg-[#dcfce7] text-[#10b981]"
                                       : "bg-[#fee2e2] text-[#ef4444]"
-                                    }`}
+                                  }`}
                                 >
                                   {userProfile.user.is_active ? "Active" : "Inactive"}
                                 </span>
@@ -343,7 +370,9 @@ export default function StaffPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/users/${userProfile.user.id}`)}>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/users/${userProfile.user.id}`)}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>

@@ -82,7 +82,7 @@ export default function AdminPage() {
                   href="/users"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
-                  <Users className="w-5 h-5 text-gray-500" />
+                  <Icon icon="hugeicons:user-group-03" className="!w-5 !h-5" />
                   <span>Staff</span>
                 </Link>
                 <Link
@@ -195,8 +195,8 @@ export default function AdminPage() {
                     href="/admin/settings/approvals"
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
-                    <Store className="w-5 h-5 text-gray-500" />
-                    <span>Organization Approval Steps</span>
+                    <Icon icon="hugeicons:computer-check" className="!w-5 !h-5" />
+                    <span>Organization Approvals</span>
                   </Link>
                 </div>
 
@@ -205,7 +205,7 @@ export default function AdminPage() {
                     href="/admin/departments"
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
-                    <LucideHouse className="w-5 h-5 text-gray-500" />
+                    <Icon icon="hugeicons:departement" className="!w-5 !h-5"  />
                     <span>Departments</span>
                   </Link>
                 </div>

@@ -12,7 +12,7 @@ import {
   fetchApprovalDocumentLevels,
   fetchApproverGroups,
   createApproverGroup,
-  fetchApprovalDocuments, // Added fetchApprovalDocuments import
+  fetchApprovalDocumentById,
 } from "@/lib/api/approvals/utils"
 import type {
   Action,
@@ -54,7 +54,6 @@ export default function ApprovalCreatePage() {
   const [models, setModels] = useState<ContentTypeLite[]>([])
   const [actions, setActions] = useState<Action[]>([])
   const [selectedActionIds, setSelectedActionIds] = useState<number[]>([])
-  const [createdLevels, setCreatedLevels] = useState<ApprovalDocumentLevel[]>([])
   const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([])
 
   // Form states
@@ -94,27 +93,18 @@ export default function ApprovalCreatePage() {
     loadData()
   }, [contentTypeId, currentInstitution])
 
-  useEffect(() => {
-    const checkExistingApprovalDocument = async () => {
-      if (!contentTypeId || !currentInstitution) return
+
+      const fetchExistingApprovalDocument = async () => {
+      if (!createdApprovalDocument || !currentInstitution) return
 
       try {
-        const response = await fetchApprovalDocuments({
-          content_type_id: Number(contentTypeId),
-        })
-
-        if (response.results && response.results.length > 0) {
-          const existingApprovalDoc = response.results[0]
-          router.push(`/admin/settings/approvals/${existingApprovalDoc.id}/edit`)
-        }
+        const response = await fetchApprovalDocumentById(createdApprovalDocument.id)
+        setCreatedApprovalDocument(response);
       } catch (error) {
         // If there's an error or no existing document, continue with creation flow
         console.log("No existing approval document found, continuing with creation")
       }
     }
-
-    checkExistingApprovalDocument()
-  }, [contentTypeId, currentInstitution, router])
 
   const loadData = async () => {
     if (!currentInstitution) {
@@ -268,9 +258,8 @@ export default function ApprovalCreatePage() {
         approval_document: createdApprovalDocument?.id,
       }
 
-      const created = await createApprovalDocumentLevel(levelData)
-
-      setCreatedLevels((prev) => [...prev, created])
+      await createApprovalDocumentLevel(levelData)
+      await fetchExistingApprovalDocument()
       resetLevelDialog()
       showSuccessToast("Approval level created successfully!")
     } catch (e: any) {
@@ -296,10 +285,7 @@ export default function ApprovalCreatePage() {
 
       // Refetch levels to ensure data consistency
       if (createdApprovalDocument) {
-        const levelsResponse = await fetchApprovalDocumentLevels({
-          approval_document: createdApprovalDocument.id,
-        })
-        setCreatedLevels(levelsResponse.results)
+        await fetchExistingApprovalDocument();
       }
 
       showSuccessToast("Approval level deleted successfully!")
@@ -375,28 +361,6 @@ export default function ApprovalCreatePage() {
         </div>
       )}
 
-      {/* Target Model Info */}
-      {/* {model && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Target Model
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="font-medium">{model.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {model.app_label}.{model.model}
-                </p>
-              </div>
-              <Badge variant="secondary">{model.plural_name}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )} */}
 
       <div className={`grid grid-cols-1 ${createdApprovalDocument ? "lg:grid-cols-2":''} gap-6`}>
         {/* Actions Configuration */}
@@ -668,7 +632,7 @@ export default function ApprovalCreatePage() {
             </CardHeader>
 
             <CardContent>
-              {createdLevels.length === 0 ? (
+              {createdApprovalDocument.levels.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="mb-2">No approval levels created yet</p>
@@ -676,7 +640,7 @@ export default function ApprovalCreatePage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {createdLevels.map((level, index) => (
+                  {createdApprovalDocument.levels.map((level, index) => (
                     <div key={level.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -747,7 +711,7 @@ export default function ApprovalCreatePage() {
 
       <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
         <Button disabled={!createdApprovalDocument} onClick={() => router.push("/admin/settings/approvals")}>
-          Finish
+          Back to Approvals
         </Button>
       </div>
 

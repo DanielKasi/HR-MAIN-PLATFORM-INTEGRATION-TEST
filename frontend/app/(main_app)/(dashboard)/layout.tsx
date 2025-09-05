@@ -56,6 +56,7 @@ import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
 import {employeeAPI, showErrorToast} from "@/lib/utils";
+import DashboardSideBar from "@/components/dashboard_components/dashboard-sidebar";
 
 export function hexToHSL(hex: string) {
   hex = hex.replace("#", "");
@@ -94,19 +95,6 @@ export function hexToHSL(hex: string) {
   return `${h} ${s}% ${l}%`;
 }
 
-interface SubMenuItem {
-  title: string;
-  href: string;
-  requiredPermission?: string;
-}
-
-interface NavItem {
-  title: string;
-  href: string;
-  icon: React.ReactNode;
-  submenu?: SubMenuItem[];
-  requiredPermission?: string;
-}
 
 export default function DashboardLayout({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
@@ -116,16 +104,13 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const [canViewAdmin, setCanViewAdmin] = useState(false);
   const [canViewSettings, setCanViewSettings] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [InstitutionId, setInstitutionId] = useState<string | null>(null);
   // const [isPathLoading, setIsPathLoading] = useState(false);
 
   const InstitutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
-  const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
-  const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
-  const [filteredNavItems, setFilteredNavItems] = useState<NavItem[]>([]);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const currentUser = useSelector(selectUser);
@@ -135,28 +120,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const dispatch = useDispatch();
   const router = useRouter();
   const appLayoutRef = useRef<HTMLDivElement | null>(null);
-  const [relatedEmployee, setRelatedEmployee] = useState<IEmployee | null>(null);
 
-  useEffect(() => {
-    if (selectedInstitution && currentUser) {
-      if (currentUser.id !== selectedInstitution.institution_owner_id) {
-        fetchRelatedEmployeeByUserId();
-      }
-    }
-  }, [selectedInstitution, currentUser]);
-
-  const fetchRelatedEmployeeByUserId = async () => {
-    if (!currentUser) {
-      return;
-    }
-    try {
-      const employee = await employeeAPI.getByUserId({user_id: currentUser.id});
-      setRelatedEmployee(employee);
-    } catch (error) {
-      showErrorToast({error, defaultMessage: "Failed to fetch related employee"});
-    } finally {
-    }
-  };
 
   useEffect(() => {
     const handleActivity = () => {
@@ -176,9 +140,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     dispatch(fetchUpToDateInstitution());
   }, [dispatch]);
 
-  useEffect(() => {
-    setMobileMenuOpen(isSideBarOpen);
-  }, [isSideBarOpen]);
 
   useEffect(() => {
     if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
@@ -221,229 +182,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
   }, [pathname]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (mobileMenuOpen && isMobile) {
-        const target = event.target as HTMLElement;
-        if (!target.closest(".mobile-nav-drawer") && !target.closest(".mobile-menu-button")) {
-          onCloseSidebar();
-        }
-      }
-    };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [mobileMenuOpen, isMobile]);
-
-  const navItems: NavItem[] = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: (
-        <Icon icon="hugeicons:dashboard-browsing" className="!w-6 !h-6" width="28" height="28" />
-      ),
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD
-    },
-    {
-      title: "Recruitment",
-      href: "#1",
-      icon: <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/recruitment"},
-        {title: "Recruitment Pipeline", href: "/job-interviews/interview-pipeline"},
-        {title: "Recruitment Survey", href: "#"},
-        {title: "Candidates", href: "/applications"},
-        {title: "Interviews", href: "/job-interviews"},
-        {title: "Recruitment", href: "#"},
-        {title: "Open Jobs", href: "/job-adverts"},
-        {title: "Stages", href: "#"},
-        {title: "Skill Zone", href: "#"},
-        {title: "Onboarding", href: "/on-boarding"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
-    },
-    {
-      title: "Employees",
-      href: "#1",
-      icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: relatedEmployee
-        ? [
-            {title: "Analytics", href: "/analytics/employees", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "My Profile", href: `/employees/profile/${relatedEmployee.id}`},
-            {title: "Employee Information", href: "/employees/employee-list", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Document Requests", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Shifts", href: "/employees/shift-requests", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Employee Types", href: "/employees/employee-types", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Work Types", href: "/employees/work-types", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Rotating Shift Assign", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Rotating Work Type Assign", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Disciplinary Actions", href: "/employees/discipline", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Policies", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-            {title: "Organization Chart", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES},
-          ]
-        : [
-            {title: "Analytics", href: "/analytics/employees"},
-            {title: "Employee Information", href: "/employees/employee-list"},
-            {title: "Document Requests", href: "#"},
-            {title: "Shifts", href: "/employees/shift-requests"},
-            {title: "Employee Types", href: "/employees/employee-types"},
-            {title: "Work Types", href: "/employees/work-types"},
-            {title: "Rotating Shift Assign", href: "#"},
-            {title: "Rotating Work Type Assign", href: "#"},
-            {title: "Disciplinary Actions", href: "/employees/discipline"},
-            {title: "Policies", href: "#"},
-            {title: "Organization Chart", href: "#"},
-          ],
-      // requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-    },
-    {
-      title: "Attendance",
-      href: "#",
-      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/attendance"},
-        {title: "Biometric Devices", href: "#"},
-        {title: "Attendance", href: "/employees/attendance"},
-        {title: "Attendance Requests", href: "#"},
-        {title: "Hour Account", href: "#"},
-        {title: "Work Records", href: "#"},
-        {title: "Attendance Activities", href: "#"},
-        {title: "Late Come Early Out", href: "#"},
-        {title: "My Attendances", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_ATTENDANCE_REPORTS
-    },
-    {
-      title: "Leave",
-      href: "#1",
-      icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/leave"},
-        {title: "My Leave Requests", href: "#"},
-        {title: "Leave Types", href: "/leave/leave-types"},
-        {title: "Assigned Leave", href: "#"},
-        {title: "Leave Allocation Request", href: "#"},
-        {title: "Compensatory Leave Requests", href: "#"},
-        {title: "Leave Policy", href: "/leave/leave-policy"},
-        {title: "Leave Balances", href: "/leave/leave-balances"},
-        {title: "Leave Application", href: "/leave/leave-application"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_LEAVE_REPORTS
-    },
-    {
-      title: "Payroll",
-      href: "#1",
-      icon: <Icon icon="hugeicons:payment-01" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/payroll"},
-        {title: "Contracts", href: "/employees/contracts"},
-        {title: "Allowance Types", href: "/payroll/allowance-types"},
-        {title: "Deduction Types", href: "/payroll/deduction-types"},
-        {title: "Employee Allowance", href: "/payroll/employee-allowance"},
-        {title: "Employee Deductions", href: "/payroll/employee-deductions"},
-        {title: "Employee Tax", href: "/payroll/employee-tax"},
-        {title: "Payroll Period", href: "/payroll/payroll-period"},
-        {title: "Payslips", href: "#"},
-        {title: "Loan / Advanced Salary", href: "#"},
-        {title: "Encashments & Reimbursements", href: "#"},
-        {title: "Federal Tax", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_PAYROLL_REPORTS
-    },
-    {
-      title: "Performance",
-      href: "#",
-      icon: <Icon icon="hugeicons:chart-histogram" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/performance"},
-        {title: "Objectives", href: "#"},
-        {title: "360 Feedback", href: "#"},
-        {title: "Meetings", href: "#"},
-        {title: "Key Results", href: "#"},
-        {title: "Employee Bonus Point", href: "#"},
-        {title: "Period", href: "#"},
-        {title: "Question Template", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_PERFORMANCE_REPORTS,
-
-    },
-
-    {
-      title: "Offboarding",
-      href: "/off-boarding",
-      icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/offboarding"},
-        {title: "Exit Process", href: "#"},
-        {title: "Resignation Letters", href: "#"},
-        {title: "Offboarding Stages", href: "/off-boarding/stages"},
-        {title: "Separation Types", href: "/off-boarding/separation-types"},
-        {title: "Separation Policy", href: "/off-boarding/separation-policy"},
-        {title: "Terminations", href: "/off-boarding/terminations"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_OFFBOARDING_STAGES,
-    },
-
-    {
-      title: "Assets",
-      href: "#1",
-      icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/assets"},
-        {title: "Asset Batches", href: "/assests/asset-categories"},
-        {title: "Asset View", href: "/assests/assets"},
-        {title: "Asset Requests", href: "/assests/asset-requests"},
-        {title: "Asset Allocations", href: "/assests/asset-allocations"},
-        {title: "Asset Returns", href: "/assests/asset-returns"},
-        {title: "Asset History", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
-    },
-    {
-      title: "Help Desk",
-      href: "#1",
-      icon: (
-        <Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />
-      ),
-      submenu: [
-        {title: "FAQs", href: "#"},
-        {title: "Tickets", href: "#"},
-      ],
-      // requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
-    },
-    {
-      title: "Project",
-      href: "#1",
-      icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Analytics", href: "/analytics/project"},
-        {title: "Projects", href: "#"},
-        {title: "Tasks", href: "#"},
-        {title: "Timesheet", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_VIEW_PROJECTS,
-    },
-    {
-      title: "Configuration",
-      href: "#1",
-      icon: <Icon icon="hugeicons:configuration-01" className="!w-6 !h-6" width="28" height="28" />,
-      submenu: [
-        {title: "Multiple Approvals", href: "#"},
-        {title: "Mail Templates", href: "#"},
-        {title: "Mail Automation", href: "#"},
-        {title: "Calendar", href: "/events-holidays"},
-        {title: "Company Leaves", href: "#"},
-        {title: "Restrict Leaves", href: "#"},
-      ],
-      requiredPermission: PERMISSION_CODES.CAN_MANAGE_APPROVAL_WORKFLOWS,
-    },
-    // {
-    //   title: "Events & Holidays",
-    //   href: "#1",
-    //   icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
-    //   submenu: [{title: "Calendar", href: "/events-holidays"}],
-    // },
-  ];
 
   const updateThemeColors = (hexColor: string) => {
     if (!hexColor) return;
@@ -495,25 +234,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       router.push("/login");
       return;
     }
-    if (selectedInstitution) {
-      setInstitutionLogo(selectedInstitution.institution_logo);
-      setInstitutionName(selectedInstitution.institution_name);
-    }
-    const filtered = navItems
-      .map((item) => {
-        if (item.submenu && item.submenu.length > 0) {
-          const filteredSubmenu = item.submenu.filter(
-            (subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
-          );
-          return {...item, submenu: filteredSubmenu};
-        }
-        return item;
-      })
-      .filter((item) => {
-        return !item.requiredPermission || hasPermission(item.requiredPermission);
-      });
-    setFilteredNavItems(filtered);
-  }, [router, currentUser, selectedInstitution, accessToken]);
+  }, [router, accessToken]);
 
   const handleLogoutClick = () => setShowLogoutDialog(true);
   const handleLogout = () => dispatch(logoutStart());
@@ -523,7 +244,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     if (isMobile) {
       // setMobileMenuOpen(!mobileMenuOpen);
       dispatch(!isSideBarOpen ? openSideBar() : closeSideBar());
-      console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
     } else {
       if (isSideBarOpen) {
         dispatch(closeSideBar());
@@ -553,106 +273,8 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
   };
 
-  const toggleExpand = (title: string) => {
-    setExpandedItems((prev) => ({[title]: !prev[title]}));
-  };
 
-  const NavItemComponent = ({
-    item,
-    isMobileView = false,
-    index,
-  }: {
-    item: NavItem;
-    isMobileView: boolean;
-    index: number;
-  }) => {
-    const isActive = item.submenu
-      ? item.submenu.some((sub) => pathname === sub.href)
-      : pathname === item.href;
-    const isExpanded = expandedItems[item.title];
-    const hoveredTooltipRef = useRef<HTMLSpanElement | null>(null);
-    const [isTooltipVisible, setIsTooltipVisible] = useState(false);
 
-    return (
-      <div key={`${item.title}-${index}`} className="w-full py-1">
-        <Button
-          disabled={!item.href || (item.href.startsWith("#") && !item.submenu?.length)}
-          variant="ghost"
-          className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
-            isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
-          }`}
-          onMouseEnter={() => {
-            if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true);
-          }}
-          onMouseLeave={() => setIsTooltipVisible(false)}
-          onClick={() => {
-            if (item.submenu) {
-              toggleExpand(item.title);
-              !isSideBarOpen && onToggle();
-            } else {
-              router.push(item.href);
-              if (isMobileView) {
-                onToggle();
-              }
-            }
-          }}
-        >
-          <div className="flex items-center space-x-2 relative">
-            {item.icon}
-            {isSideBarOpen ? <span className="truncate">{item.title}</span> : <></>}
-
-            {/* Tooltip shown only on hover when sidebar is closed and not mobile */}
-            {/* {!isSideBarOpen && !isMobile && isTooltipVisible && (
-              <span
-                ref={hoveredTooltipRef}
-                role="tooltip"
-                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[9999] pointer-events-none bg-gray-800 text-white text-xs font-medium rounded-sm px-3 py-1 whitespace-nowrap shadow-lg"
-              >
-                {item.title}
-              </span>
-            )} */}
-          </div>
-          {isSideBarOpen ? (
-            item.submenu &&
-            (isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            ))
-          ) : (
-            <></>
-          )}
-        </Button>
-        {item.submenu && isExpanded && (
-          <div className="ml-6 flex flex-col mt-2 border-l-2 border-primary/20 bg-gray-200/20">
-            {isSideBarOpen &&
-              item.submenu.map((sub, index) => (
-                <Button
-                  key={`${sub.href}-${index}`}
-                  variant="ghost"
-                  // disabled={!sub.href || sub.href.startsWith("#")}
-                  className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
-                    !sub.href || sub.href.startsWith("#")
-                      ? " text-gray-500/80"
-                      : pathname === sub.href
-                        ? "bg-primary/80  text-gray-100"
-                        : "bg-gray-200/20  hover:bg-primary/60"
-                  }`}
-                  onClick={() => {
-                    router.push(sub.href);
-                    if (isMobileView) {
-                      onToggle();
-                    }
-                  }}
-                >
-                  <span className="!w-full !text-left !bg-transparent truncate">{sub.title}</span>
-                </Button>
-              ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <>
@@ -661,110 +283,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         ref={appLayoutRef}
         className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout"
       >
-        {/* Desktop Sidebar */}
-        {!isMobile && (
-          <div
-            className={`${
-              isSideBarOpen ? "w-64" : "w-20"
-            } bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
-          >
-            <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
-              <div className="flex items-center gap-3">
-                <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
-                  {InstitutionLogo ? (
-                    <Image
-                      alt="Institution Logo"
-                      className="object-cover object-center !w-full !h-full"
-                      fill
-                      src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
-                    />
-                  ) : (
-                    <Icon icon="hugeicons:building-05" width="24" height="24" />
-                  )}
-                </div>
-                {isSideBarOpen && (
-                  <span className="font-bold text-[var(--sidebar-foreground)] line-clamp-1">
-                    {InstitutionName}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="p-2 overflow-y-auto h-[90svh] pt-4 pb-16">
-              {filteredNavItems.map((item, index) => (
-                <NavItemComponent
-                  key={`${item.title}-${index}`}
-                  item={item}
-                  isMobileView={false}
-                  index={index}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mobile Navigation Drawer */}
-        {isMobile && (
-          <>
-            {/* Overlay */}
-            {mobileMenuOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-                // onClick={onCloseSidebar}
-              />
-            )}
-
-            {/* Drawer */}
-            <div
-              className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
-                mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-              }`}
-            >
-              {/* Drawer Header */}
-              <div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
-                    {InstitutionLogo ? (
-                      <Image
-                        alt="Institution Logo"
-                        className="object-cover rounded-xl"
-                        fill
-                        src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}${InstitutionLogo}`}
-                      />
-                    ) : (
-                      <Icon icon="hugeicons:building-05" width="24" height="24" />
-                    )}
-                  </div>
-                  <span className="font-bold text-gray-900">{InstitutionName}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onToggle}
-                  className="p-2 hover:bg-gray-100"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-
-              {/* Branch Selector */}
-              <div className="p-4 border-b border-gray-100">
-                <InstitutionBranchSelector />
-              </div>
-
-              {/* Navigation Items */}
-              <div className="flex-1 overflow-y-auto p-2 pb-20">
-                {filteredNavItems.map((item, idx) => (
-                  <NavItemComponent
-                    key={`${item.title}-${idx}`}
-                    item={item}
-                    isMobileView={true}
-                    index={idx}
-                  />
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        <DashboardSideBar/>
 
         {/* Main Content Area */}
         <div

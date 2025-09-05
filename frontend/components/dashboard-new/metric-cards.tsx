@@ -20,7 +20,7 @@ export function MetricCards({ data, onRefresh, loading }: MetricCardsProps) {
       icon: "hugeicons:user-group-03",
       bgColor: "bg-blue-100",
       iconColor: "text-blue-600",
-      link: "/employees/employee-list/"
+      link: "/employees/add-employee/"
     },
     {
       title: "Departments",

@@ -57,15 +57,21 @@ export const fetchApprovalTaskById = async (id: number) => {
 };
 
 export const approveApprovalTask = async (id: number, comment?: string) => {
-  const url = comment ? `${BASE}/approval-tasks/${id}/approve/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
-  const res = await apiRequest.patch(url, {});
-  return res.data as ApprovalTask;
+const url = comment ? `${BASE}/approval-tasks/${id}/approve/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
+const res = await apiRequest.patch(url, {});
+return res.data as ApprovalTask;
 };
 
 export const rejectApprovalTask = async (id: number, comment?: string) => {
   const url = comment ? `${BASE}/approval-tasks/${id}/reject/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/reject/`;
   const res = await apiRequest.patch(url, {});
   return res.data as ApprovalTask;
+};
+
+export const overrideApprovalTask = async (id: number, comment?: string) => {
+const url = comment ? `${BASE}/over-ride/${id}/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
+const res = await apiRequest.patch(url, {});
+return res.data as ApprovalTask;
 };
 
 export type DashboardCategory<T = ApprovalTask> = { count: number; tasks: T[] };

@@ -452,7 +452,7 @@ export default function EmployeeProfile() {
           </div>
 
 
-          <div className={`pt-4 w-full ${employee?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+          <div className={`pt-4 w-full ${(employee?.approval_status !== "active" && employee.approvals?.length) ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
             {employee?.approvals && employee.approvals.length > 0 && (
               <ApprovalWorkflow
                 className="order-1 md:order-2"

@@ -548,12 +548,14 @@ export default function PayrollPeriodDetails() {
         </div>
 
         {/* Results Table */}
-        <div className={`pt-4  ${payrollPeriod?.approval_status !== "active" ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3":""} `}>
+        <div className={`pt-4 ${(payrollPeriod?.approval_status !== "active" && payrollPeriod?.approvals?.length) ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3":""} `}>
           
           {payrollPeriod?.approvals && 
-          <ApprovalWorkflow className="order-1 md:order-2" approvals={payrollPeriod.approvals} instance_approval_status={payrollPeriod.approval_status} />
+          <ApprovalWorkflow className="order-1 md:order-2" approvals={payrollPeriod.approvals} instance_approval_status={payrollPeriod.approval_status} 
+          onRefresh={fetchData}
+          />
           }
-          <div className="xl:col-span-2 order-2 md:order-1 mx-0 md:mx-2">
+          <div className="lg:col-span-2 xl:col-span-3 order-2 md:order-1 mx-0 md:mx-2">
 
           <>{ selectedInstitution &&
 
