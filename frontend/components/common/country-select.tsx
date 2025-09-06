@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ICountry } from "@/types/types.utils"
 import { countryAPI } from "@/lib/helpers"
+import { ChevronDown } from "lucide-react"
 
 export default function CountrySelect({
     countries: propCountries,
@@ -67,13 +68,13 @@ export default function CountrySelect({
                 disabled={disabled}
                 type="button"
                 variant="outline"
-                className="w-full h-[48px] rounded-[14px] border justify-between"
+                className="w-fit md:w-full h-[48px] rounded-[14px] border justify-between"
                 onClick={() => setIsOpen((v) => !v)}
             >
                 <span className="flex items-center gap-2 truncate">
                     {selectedCountry ? (
                         <>
-                            <span className="text-lg">{getFlag(selectedCountry.cca2)}</span>
+                            <span className="text-lg hidden md:!inline">{getFlag(selectedCountry.cca2)}</span>
                             {compact
                                 ? getCountryCode(selectedCountry)
                                 : selectedCountry.name.common}
@@ -87,9 +88,7 @@ export default function CountrySelect({
                     )}
                 </span>
                 <span className="ml-auto">
-                    <svg width="16" height="16" fill="none">
-                        <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" />
-                    </svg>
+                    <ChevronDown className="h-4 w-4" />
                 </span>
             </Button>
             {isOpen && (

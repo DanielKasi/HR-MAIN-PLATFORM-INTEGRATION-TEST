@@ -1,8 +1,11 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select"
+import dynamic from 'next/dynamic'
+
+const ApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 interface DepartmentTreemapProps {
   data?: Array<{ dept_name: string; count: number; year: number }>
@@ -11,8 +14,65 @@ interface DepartmentTreemapProps {
 }
 
 export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreemapProps) {
-  const maxCount = Math.max(...(data?.map((d) => d.count) || [1]));
   const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [primaryColor, setPrimaryColor] = useState<string>('#ff7530'); // Fallback to orange
+  const colorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (colorRef.current) {
+      const computedStyle = getComputedStyle(colorRef.current);
+      const bgColor = computedStyle.backgroundColor;
+      if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)') {
+        setPrimaryColor(bgColor);
+      }
+    }
+  }, []);
+
+  // Sort by count descending and take top 10
+  const sortedData = [...(data || [])].sort((a, b) => b.count - a.count).slice(0, 10);
+
+  const chartOptions = {
+    chart: {
+      height: 250,
+      type: 'treemap' as "area" | "line" | "treemap" | "bar" | "pie" | "donut" | "radialBar" | "scatter" | "bubble" | "heatmap" | "candlestick" | "boxPlot" | "radar" | "polarArea" | "rangeBar" | "rangeArea" | undefined,
+      toolbar: {
+        show: false
+      },
+    },
+    colors: [primaryColor],
+    plotOptions: {
+      treemap: {
+        distributed: false,
+        enableShades: true,
+        shadeIntensity: 0.6,
+        reverse: false,
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: '14px',
+      },
+      formatter: function (text: string, op: any) {
+        return op.value;
+      },
+      offsetY: -4,
+    },
+    tooltip: {
+      y: {
+        formatter: (val: number) => `${val}`,
+      },
+    },
+  };
+
+  const chartSeries = [
+    {
+      data: sortedData.map((dept) => ({
+        x: dept.dept_name,
+        y: dept.count,
+      })),
+    },
+  ];
 
   return (
     <Card className="shadow-sm border-none">
@@ -37,25 +97,23 @@ export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreema
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-4 gap-2 h-48">
-          {data?.slice(0, 10).map((dept, index) => {
-            const intensity = dept.count / maxCount
-            const opacity = 0.3 + intensity * 0.7
-            return (
-              <div
-                key={dept.dept_name}
-                className="bg-orange-500 rounded flex items-center justify-center text-white text-xs font-medium p-2 text-center"
-                style={{
-                  opacity,
-                  gridColumn: index < 2 ? "span 2" : "span 1",
-                  gridRow: index === 0 ? "span 2" : "span 1",
-                }}
-              >
-                {dept.dept_name}
-              </div>
-            )
-          })}
-        </div>
+        <div ref={colorRef} className="bg-primary hidden" />
+        {loading ? (
+          <div className="h-48 flex items-center justify-center text-muted-foreground">
+            Loading...
+          </div>
+        ) : sortedData.length === 0 ? (
+          <div className="h-48 flex items-center justify-center text-muted-foreground">
+            No data available
+          </div>
+        ) : (
+          <ApexChart
+            options={chartOptions}
+            series={chartSeries}
+            type="treemap"
+            height={250}
+          />
+        )}
       </CardContent>
     </Card>
   )

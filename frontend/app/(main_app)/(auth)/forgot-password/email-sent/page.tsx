@@ -21,7 +21,7 @@ export default function EmailSent() {
          <Icon icon="hugeicons:checkmark-circle-03" className="!w-16 !h-16 text-primary"  />
           <h1 className="text-2xl font-bold uppercase">Email Sent</h1>
           <p className="text-muted-foreground">
-            We&apos;ve sent a password reset link to {decodedEmail ? <b>{maskEmail(decodedEmail)}</b> : "your email address"} . Please check your inbox and
+            We&apos;ve sent a password reset link to {decodedEmail ? <b className="inline-block">{decodedEmail}</b> : "your email address"} . Please check your inbox and
             follow the instructions to reset your password.
           </p>
           <p className="text-sm text-muted-foreground">

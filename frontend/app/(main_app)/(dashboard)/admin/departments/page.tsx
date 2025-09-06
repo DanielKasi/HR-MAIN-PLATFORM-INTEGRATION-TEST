@@ -48,6 +48,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import {useDocumentTitle} from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {Icon} from "@iconify/react";
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -64,6 +65,7 @@ export default function DepartmentsPage() {
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
+  const [ordering, setOrdering] = useState("");
 
   const handleCreateDepartment = () => {
     router.push("/admin/departments/create");
@@ -183,12 +185,13 @@ export default function DepartmentsPage() {
             return await getPaginatedDepartments({
               institutionId: selectedInstitution.id,
               search: searchTerm,
+              ordering,
             });
           }}
           fetchFromUrl={async (args: {url: string}) =>
             getPaginatedDepartmentsFromUrl({url: args.url})
           }
-          deps={[selectedInstitution?.id, searchTerm]}
+          deps={[selectedInstitution?.id, searchTerm, ordering]}
           query={searchTerm}
           onError={(err) =>
             showErrorToast({error: err, defaultMessage: "Failed to fetch departments"})
@@ -229,111 +232,120 @@ export default function DepartmentsPage() {
               );
             }
 
-            if (loading) {
-              return (
-                <Table className="min-w-[800px]">
-                  <TableHeader>
-                    <TableRow className="border-b">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...Array(5)].map((_, i) => (
-                      <TableRow key={i} className="border-b">
-                        <TableCell>
-                          <Skeleton className="h-6 w-3/4" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-full" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-1/2" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              );
-            }
-
             return (
               <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="border-b bg-muted/30">
-                    <TableHead className="font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">
+                      <div className="flex items-center justify-start gap-4">
+                        <span>Name</span>
+                        <Button
+                          onClick={() => {
+                            if (ordering === "name") {
+                              setOrdering("");
+                            } else {
+                              setOrdering("name");
+                            }
+                          }}
+                          size={"sm"}
+                          variant={ordering === "name" ? "default" : "outline"}
+                          type="button"
+                        >
+                          <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                        </Button>
+                      </div>{" "}
+                    </TableHead>
                     <TableHead className="font-semibold">Description</TableHead>
                     <TableHead className="w-[100px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data?.results.map((department, index) => (
-                    <TableRow
-                      key={department.id}
-                      className="hover:bg-muted/50 transition-colors border-b"
-                    >
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{department.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <RichTextDisplay
-                          className={`text-sm ${!department.description ? "text-muted-foreground italic" : ""}`}
-                          htmlContent={department.description || "No description"}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 hover:bg-muted/50"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <ProtectedComponent
-                              permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => handleViewDepartment(department.id)}
-                                className="hover:bg-muted/50"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                            </ProtectedComponent>
-                            <ProtectedComponent
-                              permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => handleEditDepartment(department.id)}
-                                className="hover:bg-muted/50"
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Department
-                              </DropdownMenuItem>
-                            </ProtectedComponent>
-                            <ProtectedComponent
-                              permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}
-                            >
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteDepartment(department)}
-                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Department
-                              </DropdownMenuItem>
-                            </ProtectedComponent>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {loading ? (
+                    <>
+                      {[...Array(5)].map((_, i) => (
+                        <TableRow key={i} className="border-b">
+                          <TableCell>
+                            <Skeleton className="h-6 w-3/4" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-full" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-1/2" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {data?.results.map((department, index) => (
+                        <TableRow
+                          key={department.id}
+                          className="hover:bg-muted/50 transition-colors border-b"
+                        >
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">{department.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <RichTextDisplay
+                              className={`text-sm ${!department.description ? "text-muted-foreground italic" : ""}`}
+                              htmlContent={department.description || "No description"}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-muted/50"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_VIEW_DEPARTMENTS}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewDepartment(department.id)}
+                                    className="hover:bg-muted/50"
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_EDIT_DEPARTMENTS}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditDepartment(department.id)}
+                                    className="hover:bg-muted/50"
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Department
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_DELETE_DEPARTMENTS}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteDepartment(department)}
+                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Department
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  )}
                 </TableBody>
               </Table>
             );
