@@ -50,9 +50,8 @@ export default function DepartmentEditorDialog({open, initial, onClose, onSave}:
           <Input placeholder="Short description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
 
-        <DialogFooter className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>{initial ? "Save" : "Add"}</Button>
+        <DialogFooter className="mt-8 flex justify-end gap-2">
+          <Button size={"lg"} className="w-full rounded-full" onClick={handleSave}>{initial ? "Save" : "Add"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
