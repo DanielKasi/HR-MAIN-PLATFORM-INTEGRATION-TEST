@@ -79,6 +79,7 @@ import type {
   JobPositionAdvert,
   IPaginatedResponse,
   IInterviewType,
+  ICountry,
 } from "@/types/types.utils";
 import {selectUser, selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 import {selectApplicationForm} from "@/store/miscellaneous/selectors";
@@ -94,6 +95,7 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {LocationAutocomplete} from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import {PERMISSION_CODES} from "@/constants";
+import CountrySelect from "@/components/common/country-select";
 import {
   createInterviewStage,
   getInterviewStages,
@@ -488,6 +490,9 @@ export default function ApplicationsPage() {
     created_by: userData?.id || 0,
   });
 
+  // Separate state for the country selector
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
 
@@ -527,13 +532,18 @@ export default function ApplicationsPage() {
         address: savedApplicationForm.address,
         address_latitude: savedApplicationForm.address_latitude || "",
         address_longitude: savedApplicationForm.address_longitude || "",
-        country: savedApplicationForm.country,
+        country: savedApplicationForm.country || "",
         source: savedApplicationForm.source || "website",
         recommended_by: savedApplicationForm.recommended_by,
         application_date:
           savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
         created_by: savedApplicationForm.created_by || userData?.id || 0,
       });
+      
+      // Set the selected country for the CountrySelect component
+      if (savedApplicationForm.country) {
+        setSelectedCountry({ name: { common: savedApplicationForm.country }, cca2: '' });
+      }
     }
   }, [savedApplicationForm, userData]);
 
@@ -850,6 +860,7 @@ export default function ApplicationsPage() {
     };
 
     setFormData(defaultFormData);
+    setSelectedCountry(null);
     setError(null);
 
     // Clear from Redux
@@ -910,8 +921,8 @@ export default function ApplicationsPage() {
       return;
     }
 
-    if (!formData.country.trim()) {
-      setError("Please enter the country");
+    if (!selectedCountry) {
+      setError("Please select a country");
       return;
     }
 
@@ -951,7 +962,7 @@ export default function ApplicationsPage() {
         state: formData.state || undefined,
         application_date: formData.application_date,
         address: formData.address,
-        country: formData.country,
+        country: selectedCountry?.name.common || "",
         created_by: userData.id,
         recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined, // Add this line
       };
@@ -992,6 +1003,7 @@ export default function ApplicationsPage() {
           created_by: userData.id,
           recommended_by: undefined,
         });
+        setSelectedCountry(null);
         clearAllFilters();
         toast.success("Application created successfully!");
         refreshTableRef.current?.();
@@ -2530,13 +2542,15 @@ export default function ApplicationsPage() {
                   <label htmlFor="country" className="block text-sm font-medium text-gray-800">
                     Country *
                   </label>
-                  <Input
-                    id="country"
-                    placeholder="Country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    className="bg-white border-gray-300"
-                    required
+                  <CountrySelect
+                    countries={undefined}
+                    selectedCountry={selectedCountry}
+                    onCountryChange={(country) => {
+                      setSelectedCountry(country);
+                      handleInputChange("country", country?.name.common || "");
+                    }}
+                    disabled={false}
+                    compact={false}
                   />
                 </div>
               </div>

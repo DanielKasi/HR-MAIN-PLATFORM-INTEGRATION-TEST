@@ -99,8 +99,24 @@ export function CreateTaxRuleDialog({
 
     setIsSubmitting(true);
     try {
+      // Prepare data based on calculation type
+      const createData = {
+        ...formData,
+        // Only include the relevant field based on calculation type
+        ...(calculationType === "percentage" 
+          ? { 
+              tax_rule_percentage: formData.tax_rule_percentage,
+              tax_rule_fixed_amount: undefined 
+            }
+          : { 
+              tax_rule_fixed_amount: formData.tax_rule_fixed_amount,
+              tax_rule_percentage: undefined 
+            }
+        )
+      };
+      
       // Use actual API call
-      const newTaxRule = await taxRulesAPI.create(formData);
+      const newTaxRule = await taxRulesAPI.create(createData);
       onSuccess(newTaxRule);
       toast.success("Tax rule created successfully");
       resetFormData();

@@ -124,7 +124,7 @@ const AssetAllocationDetailPage = () => {
 
   const handleDeleteSuccess = (deletedId: number) => {
     toast.success("Allocation deleted successfully");
-    router.push("/assests/asset-allocations");
+    router.push("/assets/asset-allocations");
   };
 
  
@@ -177,7 +177,7 @@ const AssetAllocationDetailPage = () => {
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Allocation Not Found</h2>
           <p className="text-gray-600 mb-4">The allocation you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => router.push("/assests/asset-allocations")}>
+          <Button onClick={() => router.push("/assets/asset-allocations")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Allocations
           </Button>
@@ -196,7 +196,7 @@ const AssetAllocationDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/assests/asset-allocations")}
+              onClick={() => router.push("/assets/asset-allocations")}
               className="p-2 hover:bg-gray-100 rounded-full border"
             >
               <ArrowLeft className="h-4 w-4" />
