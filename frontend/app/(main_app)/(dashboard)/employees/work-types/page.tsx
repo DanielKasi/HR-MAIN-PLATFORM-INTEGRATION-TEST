@@ -23,14 +23,14 @@ import {
 import { toast } from "sonner"
 
 
-import { getWorkTypes, getPaginatedWorkTypesFromUrl, updateWorkType, deleteWorkType, createWorkType } from "@/lib/utils"
+import { getWorkTypes, getPaginatedWorkTypesFromUrl, deleteWorkType, createWorkType } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IWorkType, IWorkTypeFormData } from "@/types/types.utils"
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import type { IWorkType } from "@/types/types.utils"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import WorkTypeModal from "@/components/dialogs/work-type-dialog"
+import { Icon } from "@iconify/react"
 
 
 
@@ -89,6 +89,7 @@ function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetails
 
 // Main Component
 export default function WorkTypesPage() {
+  const [ordering, setOrdering] = useState("");
   const selectedInstitution = useSelector(selectSelectedInstitution)
   const [searchTerm, setSearchTerm] = useState("")
   const [workTypeToDelete, setWorkTypeToDelete] = useState<IWorkType | null>(null)
@@ -155,11 +156,11 @@ export default function WorkTypesPage() {
                 <Plus className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">Add Work Type</span>
               </Button>
-           
+
             </div>
-              <p className="text-sm text-muted-foreground">
-                Manage different work types of employees in your organization
-              </p>
+            <p className="text-sm text-muted-foreground">
+              Manage different work types of employees in your organization
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-12">
@@ -178,17 +179,17 @@ export default function WorkTypesPage() {
           <PaginatedTableWrapper<IWorkType>
             fetchFirstPage={async () => {
               if (!selectedInstitution?.id) throw new Error("No institution selected");
-              return await getWorkTypes({ institutionId: selectedInstitution.id, page: 1, search: searchTerm || undefined });
+              return await getWorkTypes({ institutionId: selectedInstitution.id, page: 1, search: searchTerm || undefined, ordering });
             }}
-            fetchFromUrl={async ({url}) => await getPaginatedWorkTypesFromUrl({ url })}
-            deps={[selectedInstitution?.id, searchTerm]}
+            fetchFromUrl={async ({ url }) => await getPaginatedWorkTypesFromUrl({ url })}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="mt-6"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               const list = (data?.results || [])
 
               const handleSave = async (saved: IWorkType) => {
-                  await refresh()
+                await refresh()
               }
 
               const handleDelete = async (workType: IWorkType) => {
@@ -219,7 +220,17 @@ export default function WorkTypesPage() {
                         <TableHeader className="bg-gray-50/50">
                           <TableRow>
                             <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
-                              Name
+                              <div className="flex items-center gap-2">
+                                <span>Name</span>
+                                <Button
+                                  onClick={() => setOrdering(ordering === "name" ? "" : "name")}
+                                  size="sm"
+                                  variant={ordering === "name" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
+                              </div>
                             </TableHead>
                             <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm lg:text-base">
                               Description

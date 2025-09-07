@@ -24,7 +24,7 @@ import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-d
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { ALLOWANCE_FREQUENCIES, PERMISSION_CODES } from "@/constants"
 import { useMobile } from "@/hooks/use-mobile"
-
+import { Icon } from "@iconify/react"
 
 
 const getStatusColor = (status: boolean) => {
@@ -56,6 +56,7 @@ const DeductionTypesComponent = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const refreshTableRef = useRef<(() => void) | null>(null);;
   const isMobile = useMobile()
+  const [ordering, setOrdering] = useState("");
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
@@ -67,7 +68,7 @@ const DeductionTypesComponent = () => {
   const handleUpdateSuccess = (updatedDeductionType: IDeductionType) => {
     setEditingDeductionType(null)
     refreshTableRef.current?.();
-     
+
   }
 
   const handleDeleteSuccess = (deletedId: number) => {
@@ -87,7 +88,7 @@ const DeductionTypesComponent = () => {
 
 
 
- 
+
 
 
 
@@ -103,7 +104,7 @@ const DeductionTypesComponent = () => {
           </div>
         </div>
 
-     
+
 
 
         <div className="p-6 border-gray-200">
@@ -118,18 +119,18 @@ const DeductionTypesComponent = () => {
                   className="pl-10"
                 />
               </div>
-            <div className="flex items-center gap-4">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="flex items-center gap-4">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_DEDUCTION_TYPES}>
@@ -141,159 +142,196 @@ const DeductionTypesComponent = () => {
             </div>
           </div>
         </div>
-        
-        
+
+
 
         <div className="p-6">
           <PaginatedTableWrapper<IDeductionType>
-          fetchFirstPage={async () => {
-            if (!selectedInstitution) throw new Error("No institution selected");
-            return await getPaginatedDeductionTypes({
-              institutionId: selectedInstitution.id,
-              page: 1,
-              search: searchTerm || undefined,
-            });
-          }}
-          fetchFromUrl={getPaginatedDeductionTypesFromUrl}
-          deps={[selectedInstitution?.id, searchTerm]}
-          className="space-y-4"
-          footerClassName="pt-4"
-        >
-          {({data, loading, refresh}) => {
+            fetchFirstPage={async () => {
+              if (!selectedInstitution) throw new Error("No institution selected");
+              return await getPaginatedDeductionTypes({
+                institutionId: selectedInstitution.id,
+                page: 1,
+                search: searchTerm || undefined,
+                ordering,
+              });
+            }}
+            fetchFromUrl={getPaginatedDeductionTypesFromUrl}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
+            className="space-y-4"
+            footerClassName="pt-4"
+          >
+            {({ data, loading, refresh }) => {
 
-            useEffect(() => {
-              refreshTableRef.current = refresh;
-            }, [refresh]);
-        
-            if (loading) {
-              return (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
-                  ))}
-                </div>
-              );
-            }
+              useEffect(() => {
+                refreshTableRef.current = refresh;
+              }, [refresh]);
 
-            if (!data || data.results.length === 0) {
-              return (
-                <div className="p-12 text-center">
-                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No deduction types found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchTerm
-                      ? "No deduction types match your search criteria."
-                      : "Get started by creating your first deduction type."}
-                  </p>
-                </div>
-              );
-            }
-
-            // Apply client-side filters (status filter)
-            const filteredResults = data.results.filter((deductionType) => {
-              const matchesStatus = statusFilter === "all" || 
-                (statusFilter === "active" && deductionType.is_active) ||
-                (statusFilter === "inactive" && !deductionType.is_active);
-              return matchesStatus;
-            });
-
-            if (filteredResults.length === 0) {
-              return (
-                <div className="p-12 text-center">
-                  <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No deduction types found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    No deduction types match the selected status filter.
-                  </p>
-                </div>
-              );
-            }
-
-            return (
-              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEDUCTION_TYPES}>
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                  <TableHeader className="bg-gray-50/50">
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Mandatory</TableHead>
-                      <TableHead>Recurrence</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Created Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredResults.map((deductionType) => (
-                      <TableRow key={deductionType.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <span>{deductionType.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(deductionType.is_active)}>
-                            {deductionType.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getMandatoryColor(deductionType.is_mandatory)}>
-                            {deductionType.is_mandatory ? "Mandatory" : "Optional"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={
-                              deductionType.is_recurring
-                                ? "bg-purple-100 text-purple-800 border-purple-200"
-                                : "bg-gray-100 text-gray-800 border-gray-200"
-                            }
-                          >
-                            {deductionType.is_recurring
-                              ? `Recurring${deductionType.frequency ? ` (${ALLOWANCE_FREQUENCIES[deductionType.frequency as keyof typeof ALLOWANCE_FREQUENCIES]})` : ""}`
-                              : "One-time"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-xs truncate text-sm text-muted-foreground">
-                            {deductionType.description}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatDate(deductionType.created_at)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEDUCTION_TYPES}>
-                                <DropdownMenuItem onClick={() => handleEditDeductionType(deductionType)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                              </ProtectedComponent>
-                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEDUCTION_TYPES}>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteDeductionType(deductionType)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </ProtectedComponent>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+              if (loading) {
+                return (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="w-full h-12 bg-muted/10 rounded-md animate-pulse" />
                     ))}
-                  </TableBody>
-                </Table>
-                </div>
-              </ProtectedComponent>
-            );
+                  </div>
+                );
+              }
+
+              if (!data || data.results.length === 0) {
+                return (
+                  <div className="p-12 text-center">
+                    <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No deduction types found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {searchTerm
+                        ? "No deduction types match your search criteria."
+                        : "Get started by creating your first deduction type."}
+                    </p>
+                  </div>
+                );
+              }
+
+              // Apply client-side filters (status filter)
+              const filteredResults = data.results.filter((deductionType) => {
+                const matchesStatus = statusFilter === "all" ||
+                  (statusFilter === "active" && deductionType.is_active) ||
+                  (statusFilter === "inactive" && !deductionType.is_active);
+                return matchesStatus;
+              });
+
+              if (filteredResults.length === 0) {
+                return (
+                  <div className="p-12 text-center">
+                    <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No deduction types found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      No deduction types match the selected status filter.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DEDUCTION_TYPES}>
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                      <TableHeader className="bg-gray-50/50">
+                        <TableRow>
+                          <TableHead>
+                            <div className="flex items-center justify-start gap-4">
+                              <span>Name</span>
+                              <Button
+                                onClick={() => {
+                                  if (ordering === "name") {
+                                    setOrdering("");
+                                  } else {
+                                    setOrdering("name");
+                                  }
+                                }}
+                                size={"sm"}
+                                variant={ordering === "name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Mandatory</TableHead>
+                          <TableHead>
+                            <div className="flex items-center justify-start gap-4">
+                              <span>Recurrence</span>
+                              <Button
+                                onClick={() => {
+                                  if (ordering === "frequency") {
+                                    setOrdering("");
+                                  } else {
+                                    setOrdering("frequency");
+                                  }
+                                }}
+                                size={"sm"}
+                                variant={ordering === "frequency" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Created Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults.map((deductionType) => (
+                          <TableRow key={deductionType.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-3">
+                                <span>{deductionType.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(deductionType.is_active)}>
+                                {deductionType.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getMandatoryColor(deductionType.is_mandatory)}>
+                                {deductionType.is_mandatory ? "Mandatory" : "Optional"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                className={
+                                  deductionType.is_recurring
+                                    ? "bg-purple-100 text-purple-800 border-purple-200"
+                                    : "bg-gray-100 text-gray-800 border-gray-200"
+                                }
+                              >
+                                {deductionType.is_recurring
+                                  ? `Recurring${deductionType.frequency ? ` (${ALLOWANCE_FREQUENCIES[deductionType.frequency as keyof typeof ALLOWANCE_FREQUENCIES]})` : ""}`
+                                  : "One-time"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-xs truncate text-sm text-muted-foreground">
+                                {deductionType.description}
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatDate(deductionType.created_at)}</TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_DEDUCTION_TYPES}>
+                                    <DropdownMenuItem onClick={() => handleEditDeductionType(deductionType)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DEDUCTION_TYPES}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteDeductionType(deductionType)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </ProtectedComponent>
+              );
             }}
           </PaginatedTableWrapper>
         </div>

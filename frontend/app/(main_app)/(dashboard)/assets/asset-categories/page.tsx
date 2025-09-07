@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Search, 
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Search,
   Plus,
   Eye,
   X
 } from 'lucide-react';
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,8 @@ import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import ProtectedPage from "@/components/ProtectedPage";
- 
+import { Icon } from "@iconify/react"
+
 
 const getStatusColor = (status: boolean) => {
   return status
@@ -61,9 +62,10 @@ const AssetCategoriesComponent = () => {
   const [deletingAssetCategory, setDeletingAssetCategory] = useState<IAssetCategory | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
-   const refreshTableRef = useRef<(() => void) | null>(null);
+  const refreshTableRef = useRef<(() => void) | null>(null);
 
   // Fetch assets from API for counting
   const fetchAssets = useCallback(async () => {
@@ -106,7 +108,7 @@ const AssetCategoriesComponent = () => {
     refreshTableRef.current?.();
   };
 
- 
+
 
   const handleEditAssetCategory = (assetCategory: IAssetCategory) => {
     setEditingAssetCategory(assetCategory);
@@ -149,27 +151,27 @@ const AssetCategoriesComponent = () => {
                   className="pl-10"
                 />
               </div>
-              
-           
+
+
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] border-none shadow-none">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+              <SelectTrigger className="w-full sm:w-[180px] border-none shadow-none">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="flex items-center gap-2">
-              
+
               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_CREATE_ASSET_CATEGORIES]}>
-                    <CreateAssetCategoryDialog
+                <CreateAssetCategoryDialog
                   onSuccess={handleCreateSuccess}
                   disabled={!selectedInstitution?.id}
                 />
-                </ProtectedPage>
+              </ProtectedPage>
             </div>
           </div>
         </div>
@@ -181,14 +183,15 @@ const AssetCategoriesComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={assetCategoriesAPI.getPaginatedFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -197,7 +200,7 @@ const AssetCategoriesComponent = () => {
               if (loading) {
                 return <TableSkeleton rows={10} columns={5} />;
               }
-              
+
 
               if (!data || data.results.length === 0) {
                 return (
@@ -209,10 +212,10 @@ const AssetCategoriesComponent = () => {
 
               // Apply client-side filters (status filter)
               const filteredResults = data.results.filter((category) => {
-                const matchesStatus = statusFilter === "all" || 
+                const matchesStatus = statusFilter === "all" ||
                   (statusFilter === "active" && category.is_active) ||
                   (statusFilter === "inactive" && !category.is_active);
-                
+
                 return matchesStatus;
               });
 
@@ -231,10 +234,46 @@ const AssetCategoriesComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Category Name</TableHead>
-                          <TableHead className="text-center">Asset Count</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Category Name</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "category_name" ? "" : "category_name")}
+                                size="sm"
+                                variant={ordering === "category_name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <div className="flex items-center gap-2 justify-center">
+                              <span>Asset Count</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "asset_count" ? "" : "asset_count")}
+                                size="sm"
+                                variant={ordering === "asset_count" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Created</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "created_at" ? "" : "created_at")}
+                                size="sm"
+                                variant={ordering === "created_at" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead className="w-12">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -265,16 +304,16 @@ const AssetCategoriesComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                 
+
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_CATEGORIES]}>
-                                     <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                    <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
                                   </ProtectedPage>
-                                 
+
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_CATEGORIES]}>
-                                     <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={() => handleDeleteAssetCategory(category)}
                                       className="text-red-600"
                                     >
@@ -282,7 +321,7 @@ const AssetCategoriesComponent = () => {
                                       Delete
                                     </DropdownMenuItem>
                                   </ProtectedPage>
-                                  
+
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -323,21 +362,21 @@ const AssetCategoriesComponent = () => {
                                 View Details
                               </DropdownMenuItem>
                               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_CATEGORIES]}>
-                                    <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                </ProtectedPage>
-                                 
-                                <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_CATEGORIES]}>
-                                    <DropdownMenuItem 
-                                    onClick={() => handleDeleteAssetCategory(category)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </ProtectedPage>
+                                <DropdownMenuItem onClick={() => handleEditAssetCategory(category)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedPage>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_CATEGORIES]}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteAssetCategory(category)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

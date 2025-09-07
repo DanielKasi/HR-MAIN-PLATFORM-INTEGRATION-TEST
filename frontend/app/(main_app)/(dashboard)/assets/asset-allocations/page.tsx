@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Search, 
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Search,
   Plus,
   Eye,
   Package,
@@ -110,6 +110,7 @@ const AssetAllocationsComponent = () => {
   const [deletingAllocation, setDeletingAllocation] = useState<IAssetAllocation | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [ordering, setOrdering] = useState("");
   const refreshTableRef = useRef<(() => void) | null>(null);
 
 
@@ -167,9 +168,9 @@ const AssetAllocationsComponent = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Asset Allocations</h1>
-            
+
             </div>
-            
+
           </div>
         </div>
 
@@ -198,9 +199,9 @@ const AssetAllocationsComponent = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-             
+
               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_ALLOCATE_ASSETS]}>
-                 <Button
+                <Button
                   onClick={() => setIsCreateDialogOpen(true)}
                   className="bg-primary text-white rounded-[11px]"
                 >
@@ -208,9 +209,9 @@ const AssetAllocationsComponent = () => {
                   New Allocation
                 </Button>
               </ProtectedPage>
-              
+
             </div>
-            
+
           </div>
         </div>
 
@@ -223,14 +224,15 @@ const AssetAllocationsComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={assetsAPI.getPaginatedAssetAllocationsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               useEffect(() => {
                 refreshTableRef.current = refresh;
               }, [refresh]);
@@ -267,10 +269,58 @@ const AssetAllocationsComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Allocation Code</TableHead>
-                          <TableHead>Asset</TableHead>
-                          <TableHead>Allocated To</TableHead>
-                          <TableHead>Allocated By</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Allocation Code</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "alloc_code" ? "" : "alloc_code")}
+                                size="sm"
+                                variant={ordering === "alloc_code" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Asset</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "asset__asset_name" ? "" : "asset__asset_name")}
+                                size="sm"
+                                variant={ordering === "asset__asset_name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Allocated To</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "allocated_to__user__fullname" ? "" : "allocated_to__user__fullname")}
+                                size="sm"
+                                variant={ordering === "allocated_to__user__fullname" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Allocated By</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "allocated_by__user__fullname" ? "" : "allocated_by__user__fullname")}
+                                size="sm"
+                                variant={ordering === "allocated_by__user__fullname" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="w-12">Actions</TableHead>
                         </TableRow>
@@ -310,16 +360,16 @@ const AssetAllocationsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                               
+
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_ALLOCATIONS]}>
                                     <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
                                   </ProtectedPage>
-                              
+
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_ALLOCATIONS]}>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={() => handleDeleteAllocation(allocation)}
                                       className="text-red-600"
                                     >
@@ -383,21 +433,21 @@ const AssetAllocationsComponent = () => {
                                 View Details
                               </DropdownMenuItem>
                               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_ALLOCATIONS]}>
-                                    <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedPage>
-                              
-                                <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_ALLOCATIONS]}>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteAllocation(allocation)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </ProtectedPage>
+                                <DropdownMenuItem onClick={() => handleEditAllocation(allocation)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedPage>
+
+                              <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_ALLOCATIONS]}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteAllocation(allocation)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

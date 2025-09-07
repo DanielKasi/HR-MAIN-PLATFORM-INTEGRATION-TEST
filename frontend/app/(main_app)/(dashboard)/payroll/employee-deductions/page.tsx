@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ref } from "process"
 import { formatCurrency } from "@/lib/helpers"
-
+import { Icon } from "@iconify/react";
 
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
@@ -33,7 +33,7 @@ interface ILocalEmployeeDeduction extends IEmployeeDeduction {
   context_ids?: number[]
 }
 
-export default function EmployeeDeductionsRefactored() {
+export default function EmployeeDeductionsPage() {
   const [deductionTypes, setDeductionTypes] = useState<IDeductionType[]>([])
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [editingDeduction, setEditingDeduction] = useState<IEmployeeDeduction | null>(null)
@@ -41,6 +41,7 @@ export default function EmployeeDeductionsRefactored() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -160,15 +161,13 @@ export default function EmployeeDeductionsRefactored() {
             </div>
             <div className="flex items-center gap-2">
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_DEDUCTIONS}>
-                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
+                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution.id}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Deduction
+                  Create Employee Deduction
                 </Button>
               </ProtectedComponent>
             </div>
           </div>
-
-
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IEmployeeDeduction>
@@ -178,35 +177,41 @@ export default function EmployeeDeductionsRefactored() {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedEmployeeDeductionsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
             {({ data, loading, refresh }) => {
-              useEffect(() => {
-                refreshTableRef.current = refresh;
-              }, [refresh]);
+
+              refreshTableRef.current = refresh;
+
               if (loading) {
-                return <TableSkeleton rows={10} columns={8} />;
+                return <TableSkeleton rows={10} columns={7} />;
               }
+
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No deductions found matching your search criteria" : "No employee deductions found"}
+                    {searchTerm
+                      ? "No deductions found matching your search criteria"
+                      : "No employee deductions found"}
                   </div>
                 );
               }
 
               // Apply client-side filters (status and method filters)
               const filteredResults = data.results.filter((deduction) => {
-                const matchesStatus = statusFilter === "all" ||
+                const matchesStatus =
+                  statusFilter === "all" ||
                   (statusFilter === "active" && deduction.is_active) ||
                   (statusFilter === "inactive" && !deduction.is_active);
 
-                const matchesMethod = methodFilter === "all" ||
+                const matchesMethod =
+                  methodFilter === "all" ||
                   deduction.calculation_method === methodFilter;
 
                 return matchesStatus && matchesMethod;
@@ -219,17 +224,55 @@ export default function EmployeeDeductionsRefactored() {
                   </div>
                 );
               }
+
               return (
                 <>
                   <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_DEDUCTIONS}>
+                    {/* Desktop Table */}
                     <div className="hidden sm:block rounded-md">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Employee</TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Employee</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "employee__user__fullname") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("employee__user__fullname");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "employee__user__fullname" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
+                              </div>
+                            </TableHead>
                             <TableHead>Deduction Type</TableHead>
                             <TableHead>Method</TableHead>
-                            <TableHead>Amount</TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Amount</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "amount") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("amount");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "amount" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
+                              </div>
+                            </TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Created Date</TableHead>
                             <TableHead className="w-12">Actions</TableHead>
@@ -239,7 +282,7 @@ export default function EmployeeDeductionsRefactored() {
                           {filteredResults.map((deduction) => (
                             <TableRow key={deduction.id}>
                               <TableCell className="font-medium">
-                                {deduction.employee.user?.fullname || 'Unknown Employee'}
+                                {deduction.employee.user?.fullname || "Unknown Employee"}
                               </TableCell>
                               <TableCell>{deduction.deduction_type.name}</TableCell>
                               <TableCell>

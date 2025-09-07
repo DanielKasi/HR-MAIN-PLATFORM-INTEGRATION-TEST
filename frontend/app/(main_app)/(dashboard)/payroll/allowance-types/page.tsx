@@ -29,6 +29,7 @@ import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-a
 import { EditAllowanceTypeDialog } from "@/components/allowance-types/edit-allowance-type-dialog";
 import { DeleteAllowanceTypeDialog } from "@/components/allowance-types/delete-allowance-type-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 
 const getStatusColor = (status: boolean) => {
   return status
@@ -59,6 +60,7 @@ const AllowanceTypesComponent = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const refreshFunctionRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -101,12 +103,12 @@ const AllowanceTypesComponent = () => {
 
           <div className="flex items-center gap-4 justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Allowance Types</h1>
-            
+
             <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_ALLOWANCE_TYPES}>
               <Button
                 onClick={() => setIsCreateDialogOpen(true)}
                 disabled={!selectedInstitution?.id}
-                >
+              >
                 <Plus className="h-4 w-4 md:mr-2" />
                 <span className="hidden md:inline">
                   Create Allowance Type
@@ -151,10 +153,11 @@ const AllowanceTypesComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedAllowanceTypesFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
@@ -212,86 +215,122 @@ const AllowanceTypesComponent = () => {
                   <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ALLOWANCE_TYPES}>
                     <div className="overflow-x-auto">
                       <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                      <TableHeader className="bg-gray-50/50">
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Taxable</TableHead>
-                          <TableHead>Recurrence</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Created Date</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredResults.map((allowanceType) => (
-                          <TableRow key={allowanceType.id}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-3">
-                                <span>{allowanceType.name}</span>
+                        <TableHeader className="bg-gray-50/50">
+                          <TableRow>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Name</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "name") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("name");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "name" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(allowanceType.is_active)}>
-                                {allowanceType.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getTaxableColor(allowanceType.is_taxable)}>
-                                {allowanceType.is_taxable ? "Taxable" : "Non-taxable"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={
-                                  allowanceType.is_recurring
-                                    ? "bg-purple-100 text-purple-800 border-purple-200"
-                                    : "bg-gray-100 text-gray-800 border-gray-200"
-                                }
-                              >
-                                {allowanceType.is_recurring
-                                  ? `Recurring${allowanceType.frequency ? ` (${allowanceType.frequency})` : ""}`
-                                  : "One-time"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="max-w-xs truncate text-sm text-muted-foreground">
-                                {allowanceType.description}
+                            </TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Taxable</TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Recurrence</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "frequency") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("frequency");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "frequency" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
                               </div>
-                            </TableCell>
-                            <TableCell>{formatDate(allowanceType.created_at)}</TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ALLOWANCE_TYPES}>
-                                    <DropdownMenuItem
-                                      onClick={() => handleEditAllowanceType(allowanceType)}
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ALLOWANCE_TYPES}>
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteAllowanceType(allowanceType)}
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                            </TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Created Date</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ))}
-                                            </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredResults.map((allowanceType) => (
+                            <TableRow key={allowanceType.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-3">
+                                  <span>{allowanceType.name}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(allowanceType.is_active)}>
+                                  {allowanceType.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getTaxableColor(allowanceType.is_taxable)}>
+                                  {allowanceType.is_taxable ? "Taxable" : "Non-taxable"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={
+                                    allowanceType.is_recurring
+                                      ? "bg-purple-100 text-purple-800 border-purple-200"
+                                      : "bg-gray-100 text-gray-800 border-gray-200"
+                                  }
+                                >
+                                  {allowanceType.is_recurring
+                                    ? `Recurring${allowanceType.frequency ? ` (${allowanceType.frequency})` : ""}`
+                                    : "One-time"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="max-w-xs truncate text-sm text-muted-foreground">
+                                  {allowanceType.description}
+                                </div>
+                              </TableCell>
+                              <TableCell>{formatDate(allowanceType.created_at)}</TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ALLOWANCE_TYPES}>
+                                      <DropdownMenuItem
+                                        onClick={() => handleEditAllowanceType(allowanceType)}
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_ALLOWANCE_TYPES}>
+                                      <DropdownMenuItem
+                                        onClick={() => handleDeleteAllowanceType(allowanceType)}
+                                        className="text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   </ProtectedComponent>
 
