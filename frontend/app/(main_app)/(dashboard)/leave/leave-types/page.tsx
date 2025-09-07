@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect, useMemo, useCallback, useRef} from "react";
-import {useSelector} from "react-redux";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSelector } from "react-redux";
 import {
   Plus,
   MoreVertical,
@@ -12,17 +12,17 @@ import {
   Settings,
   Loader2,
 } from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -32,8 +32,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -41,32 +41,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {toast} from "sonner";
-import type {ILeaveType, ILeaveTypeFormData} from "@/types/types.utils";
-import {LeaveTypesAPI} from "@/lib/utils";
-import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
-import {PERMISSION_CODES} from "@/constants";
+import { toast } from "sonner";
+import type { ILeaveType, ILeaveTypeFormData } from "@/types/types.utils";
+import { LeaveTypesAPI } from "@/lib/utils";
+import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import type {IUserInstitution} from "@/types";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-
+import type { IUserInstitution } from "@/types";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 
 
 const LEAVE_CATEGORIES = [
-  {value: "annual", label: "Annual Leave"},
-  {value: "sick", label: "Sick Leave"},
-  {value: "maternity", label: "Maternity Leave"},
-  {value: "paternity", label: "Paternity Leave"},
-  {value: "compassionate", label: "Compassionate Leave"},
-  {value: "study", label: "Study Leave"},
-  {value: "unpaid", label: "Unpaid Leave"},
+  { value: "annual", label: "Annual Leave" },
+  { value: "sick", label: "Sick Leave" },
+  { value: "maternity", label: "Maternity Leave" },
+  { value: "paternity", label: "Paternity Leave" },
+  { value: "compassionate", label: "Compassionate Leave" },
+  { value: "study", label: "Study Leave" },
+  { value: "unpaid", label: "Unpaid Leave" },
 ];
 
 const GENDER_CHOICES = [
-  {value: "all", label: "All"},
-  {value: "male", label: "Male"},
-  {value: "female", label: "Female"},
+  { value: "all", label: "All" },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
 ];
 
 const getStatusColor = (status: boolean) => {
@@ -98,21 +98,20 @@ const formatDate = (dateString: string) => {
 
 
 const LeaveTypesPage = () => {
-  const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingLeaveType, setEditingLeaveType] = useState<ILeaveType | null>(null);
   const [deletingLeaveType, setDeletingLeaveType] = useState<ILeaveType | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -303,10 +302,10 @@ const LeaveTypesPage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Leave Types</h1>
-          
+
         </div>
-        
-        
+
+
       </div>
 
       {/* Search and Filters */}
@@ -326,48 +325,48 @@ const LeaveTypesPage = () => {
               </div>
 
               {/* Filters */}
-              
+
             </div>
             <div className="flex gap-2 flex-shrink-0">
-                <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as "all" | "active" | "inactive")}>
-                  <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                    <SelectValue placeholder="All Statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-sm sm:text-base">
-                      All Statuses
-                    </SelectItem>
-                    <SelectItem value="active" className="text-sm sm:text-base">
-                      Active
-                    </SelectItem>
-                    <SelectItem value="inactive" className="text-sm sm:text-base">
-                      Inactive
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+              <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as "all" | "active" | "inactive")}>
+                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-sm sm:text-base">
+                    All Statuses
+                  </SelectItem>
+                  <SelectItem value="active" className="text-sm sm:text-base">
+                    Active
+                  </SelectItem>
+                  <SelectItem value="inactive" className="text-sm sm:text-base">
+                    Inactive
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Select value={categoryFilter} onValueChange={(value: string) => setCategoryFilter(value as "all" | "annual" | "sick" | "maternity" | "paternity" | "study" | "unpaid")}>
-                  <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all" className="text-sm sm:text-base">
-                      All Categories
+              <Select value={categoryFilter} onValueChange={(value: string) => setCategoryFilter(value as "all" | "annual" | "sick" | "maternity" | "paternity" | "study" | "unpaid")}>
+                <SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-sm sm:text-base">
+                    All Categories
+                  </SelectItem>
+                  {LEAVE_CATEGORIES.map((category) => (
+                    <SelectItem
+                      key={category.value}
+                      value={category.value}
+                      className="text-sm sm:text-base"
+                    >
+                      {category.label}
                     </SelectItem>
-                    {LEAVE_CATEGORIES.map((category) => (
-                      <SelectItem
-                        key={category.value}
-                        value={category.value}
-                        className="text-sm sm:text-base"
-                      >
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-2">
-              
+
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                   <DialogTrigger asChild>
@@ -397,7 +396,7 @@ const LeaveTypesPage = () => {
                         <Input
                           id="name"
                           value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           placeholder="e.g., Annual Leave, Sick Leave"
                           disabled={isSubmitting}
                           className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
@@ -412,7 +411,7 @@ const LeaveTypesPage = () => {
                         </Label>
                         <Select
                           value={formData.category}
-                          onValueChange={(value) => setFormData({...formData, category: value})}
+                          onValueChange={(value) => setFormData({ ...formData, category: value })}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
@@ -441,7 +440,7 @@ const LeaveTypesPage = () => {
                         <Textarea
                           id="description"
                           value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           rows={4}
                           placeholder="Provide a detailed description of this leave type..."
                           disabled={isSubmitting}
@@ -460,7 +459,7 @@ const LeaveTypesPage = () => {
                           type="number"
                           value={formData.max_days_per_year}
                           onChange={(e) =>
-                            setFormData({...formData, max_days_per_year: e.target.value})
+                            setFormData({ ...formData, max_days_per_year: e.target.value })
                           }
                           placeholder="e.g., 20"
                           disabled={isSubmitting}
@@ -479,7 +478,7 @@ const LeaveTypesPage = () => {
                           type="number"
                           value={formData.max_carry_forward_days}
                           onChange={(e) =>
-                            setFormData({...formData, max_carry_forward_days: e.target.value})
+                            setFormData({ ...formData, max_carry_forward_days: e.target.value })
                           }
                           placeholder="e.g., 5"
                           disabled={isSubmitting}
@@ -495,7 +494,7 @@ const LeaveTypesPage = () => {
                         </Label>
                         <Select
                           value={formData.gender_specific}
-                          onValueChange={(value) => setFormData({...formData, gender_specific: value})}
+                          onValueChange={(value) => setFormData({ ...formData, gender_specific: value })}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
@@ -579,7 +578,7 @@ const LeaveTypesPage = () => {
                             <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                             Creating...
                           </>
-                          ) : (
+                        ) : (
                           "Create Leave Type"
                         )}
                       </Button>
@@ -593,7 +592,7 @@ const LeaveTypesPage = () => {
       </div>
 
       {/* Leave Types Table */}
-      
+
       <div>
         <CardContent className="p-0 -ml-3">
           <PaginatedTableWrapper<ILeaveType>
@@ -603,14 +602,15 @@ const LeaveTypesPage = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering: ordering || undefined,
               })
             }}
             fetchFromUrl={LeaveTypesAPI.getPaginatedFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh
@@ -632,7 +632,7 @@ const LeaveTypesPage = () => {
               const filteredResults = data.results.filter((leaveType) => {
                 const matchesStatus = statusFilter === "all" || leaveType.is_active === (statusFilter === "active");
                 const matchesCategory = categoryFilter === "all" || leaveType.category === categoryFilter;
-                
+
                 return matchesStatus && matchesCategory;
               });
 
@@ -649,14 +649,51 @@ const LeaveTypesPage = () => {
                   <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                     <TableHeader className="bg-gray-50/50">
                       <TableRow>
-                        <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Category</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Status</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Max Days</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Carry Forward</TableHead>
+                        <TableHead className="text-xs sm:text-sm">
+                          Name
+                          <Button size="sm" variant={ordering === "name" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "name" ? "" : "name")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
+                        <TableHead className="text-xs sm:text-sm">
+                          Category
+                          <Button size="sm" variant={ordering === "category" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
+                        <TableHead className="text-xs sm:text-sm">
+                          Status
+                          <Button size="sm" variant={ordering === "is_active" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "is_active" ? "" : "is_active")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
+                        <TableHead className="text-xs sm:text-sm">
+                          Max Days
+                          <Button size="sm" variant={ordering === "max_days_per_year" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "max_days_per_year" ? "" : "max_days_per_year")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
+                        <TableHead className="text-xs sm:text-sm">
+                          Carry Forward
+                          <Button size="sm" variant={ordering === "carry_forward_allowed" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "carry_forward_allowed" ? "" : "carry_forward_allowed")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
                         <TableHead className="text-xs sm:text-sm">Requires Doc</TableHead>
                         <TableHead className="text-xs sm:text-sm">Gender</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Created Date</TableHead>
+
+                        <TableHead className="text-xs sm:text-sm">
+                          Created Date
+                          <Button size="sm" variant={ordering === "created_at" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "created_at" ? "" : "created_at")}>
+                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          </Button>
+                        </TableHead>
+
                         <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -775,7 +812,7 @@ const LeaveTypesPage = () => {
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., Annual Leave, Sick Leave"
                   disabled={isSubmitting}
                   className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
@@ -790,7 +827,7 @@ const LeaveTypesPage = () => {
                 </Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({...formData, category: value})}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">
@@ -819,7 +856,7 @@ const LeaveTypesPage = () => {
                 <Textarea
                   id="edit-description"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
                   placeholder="Provide a detailed description of this leave type..."
                   disabled={isSubmitting}
@@ -837,7 +874,7 @@ const LeaveTypesPage = () => {
                   id="edit-max_days_per_year"
                   type="number"
                   value={formData.max_days_per_year}
-                  onChange={(e) => setFormData({...formData, max_days_per_year: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, max_days_per_year: e.target.value })}
                   placeholder="e.g., 20"
                   disabled={isSubmitting}
                   className="h-10 sm:h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-sm sm:text-base"
@@ -855,7 +892,7 @@ const LeaveTypesPage = () => {
                   type="number"
                   value={formData.max_carry_forward_days}
                   onChange={(e) =>
-                    setFormData({...formData, max_carry_forward_days: e.target.value})
+                    setFormData({ ...formData, max_carry_forward_days: e.target.value })
                   }
                   placeholder="e.g., 5"
                   disabled={isSubmitting}
@@ -871,7 +908,7 @@ const LeaveTypesPage = () => {
                 </Label>
                 <Select
                   value={formData.gender_specific}
-                  onValueChange={(value) => setFormData({...formData, gender_specific: value})}
+                  onValueChange={(value) => setFormData({ ...formData, gender_specific: value })}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="h-10 sm:h-12 rounded-xl text-sm sm:text-base">

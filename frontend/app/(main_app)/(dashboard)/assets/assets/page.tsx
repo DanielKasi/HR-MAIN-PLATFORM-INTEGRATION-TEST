@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
   Eye,
   Package
 } from 'lucide-react';
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,9 +85,9 @@ const AssetsComponent = () => {
   const [assetsCategories, setAssetsCategories] = useState<Array<IAssetCategory>>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
-
   const handleCreateSuccess = (newAsset: IAsset) => {
     toast.success("Asset created successfully");
     refreshTableRef.current?.();
@@ -165,18 +165,18 @@ const AssetsComponent = () => {
             </div>
             <div className="flex items-center gap-2">
               <ProtectedPage permissionCode={[
-                      PERMISSION_CODES.CAN_CREATE_ASSETS
-                    ]}><CreateAssetDialog
+                PERMISSION_CODES.CAN_CREATE_ASSETS
+              ]}><CreateAssetDialog
                   onSuccess={handleCreateSuccess}
                   disabled={!selectedInstitution?.id}
                 /></ProtectedPage>
 
-                
-             
+
+
             </div>
           </div>
-          
-         
+
+
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IAsset>
@@ -186,14 +186,15 @@ const AssetsComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering
               });
             }}
             fetchFromUrl={assetsAPI.getPaginatedFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -214,7 +215,7 @@ const AssetsComponent = () => {
               // Apply client-side filters (status and category filters)
               const filteredResults = data.results.filter((asset) => {
                 const matchesCategory = categoryFilter === "all" || asset.category?.id === parseInt(categoryFilter);
-                
+
                 return matchesCategory;
               });
 
@@ -234,7 +235,19 @@ const AssetsComponent = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Batch No</TableHead>
-                          <TableHead>Asset Name</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Asset Name</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "name" ? "" : "name")}
+                                size="sm"
+                                variant={ordering === "name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Serial Number</TableHead>
                           <TableHead>Category</TableHead>
                           <TableHead>Status</TableHead>
@@ -267,27 +280,27 @@ const AssetsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                  
+
                                   <ProtectedPage permissionCode={[
                                     PERMISSION_CODES.CAN_EDIT_ASSETS
                                   ]}><DropdownMenuItem onClick={() => handleEditAsset(asset)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
-                                    </ProtectedPage>
-                              
-                              
-                                    <ProtectedPage permissionCode={[
-                                      PERMISSION_CODES.CAN_DELETE_ASSETS
-                                    ]}><DropdownMenuItem 
-                                        onClick={() => handleDeleteAsset(asset)}
-                                        className="text-red-600"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                      </ProtectedPage>
-                              
+                                  </ProtectedPage>
+
+
+                                  <ProtectedPage permissionCode={[
+                                    PERMISSION_CODES.CAN_DELETE_ASSETS
+                                  ]}><DropdownMenuItem
+                                    onClick={() => handleDeleteAsset(asset)}
+                                    className="text-red-600"
+                                  >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedPage>
+
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -346,20 +359,20 @@ const AssetsComponent = () => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
-                                </ProtectedPage>
-                              
-                              
+                              </ProtectedPage>
+
+
                               <ProtectedPage permissionCode={[
                                 PERMISSION_CODES.CAN_CREATE_ASSETS
-                              ]}><DropdownMenuItem 
-                                  onClick={() => handleDeleteAsset(asset)}
-                                  className="text-red-600"
-                                >
+                              ]}><DropdownMenuItem
+                                onClick={() => handleDeleteAsset(asset)}
+                                className="text-red-600"
+                              >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
                                 </DropdownMenuItem>
-                                </ProtectedPage>
-                              
+                              </ProtectedPage>
+
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

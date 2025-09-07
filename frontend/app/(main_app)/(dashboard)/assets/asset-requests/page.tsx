@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Search, 
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Search,
   Plus,
   Eye,
   Package,
@@ -17,18 +17,18 @@ import {
   AlertCircle,
   FileText,
 } from "lucide-react";
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 import { hasPermission } from "@/lib/helpers";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -36,18 +36,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {toast} from "sonner";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {CreateAssetRequestDialog} from "@/components/asset-requests/create-asset-request-dialog";
-import {EditAssetRequestDialog} from "@/components/asset-requests/edit-asset-request-dialog";
-import {DeleteAssetRequestDialog} from "@/components/asset-requests/delete-asset-request-dialog";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {useRouter} from "next/navigation";
-import {assetsAPI} from "@/lib/utils";
-import type {IAssetRequest} from "@/types/types.utils";
-import {useMobile} from "@/hooks/use-mobile";
+import { toast } from "sonner";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { CreateAssetRequestDialog } from "@/components/asset-requests/create-asset-request-dialog";
+import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
+import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { useRouter } from "next/navigation";
+import { assetsAPI } from "@/lib/utils";
+import type { IAssetRequest } from "@/types/types.utils";
+import { useMobile } from "@/hooks/use-mobile";
 import ProtectedPage from "@/components/ProtectedPage";
+import { Icon } from "@iconify/react"
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -112,6 +113,7 @@ const AssetRequestsComponent = () => {
   const [deletingRequest, setDeletingRequest] = useState<IAssetRequest | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const refreshTableRef = useRef<(() => void) | null>(null);
@@ -171,16 +173,16 @@ const AssetRequestsComponent = () => {
             </div>
 
             <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_REQUEST_ASSETS]}>
-                <Button
+              <Button
                 onClick={() => setIsCreateDialogOpen(true)}
                 className=""
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Request
               </Button>
-              </ProtectedPage>
-            
-                                                
+            </ProtectedPage>
+
+
           </div>
         </div>
 
@@ -222,14 +224,15 @@ const AssetRequestsComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={assetsAPI.getPaginatedAssetRequestsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -271,12 +274,59 @@ const AssetRequestsComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-
-                          <TableHead>Reference</TableHead>
-                          <TableHead>Asset</TableHead>
-                          <TableHead>Requester</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Reference</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "request_reference_code" ? "" : "request_reference_code")}
+                                size="sm"
+                                variant={ordering === "request_reference_code" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Asset</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "asset__asset_name" ? "" : "asset__asset_name")}
+                                size="sm"
+                                variant={ordering === "asset__asset_name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Requester</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "requester__user__fullname" ? "" : "requester__user__fullname")}
+                                size="sm"
+                                variant={ordering === "requester__user__fullname" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Created</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "created_at" ? "" : "created_at")}
+                                size="sm"
+                                variant={ordering === "created_at" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead className="w-12">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -316,14 +366,14 @@ const AssetRequestsComponent = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
-                                
+
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
                                     <DropdownMenuItem onClick={() => handleEditRequest(request)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
                                   </ProtectedPage>
-                                 
+
 
                                   <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
                                     <DropdownMenuItem
@@ -334,7 +384,7 @@ const AssetRequestsComponent = () => {
                                       Delete
                                     </DropdownMenuItem>
                                   </ProtectedPage>
-                                  
+
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -392,21 +442,21 @@ const AssetRequestsComponent = () => {
                               </DropdownMenuItem>
 
                               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_EDIT_ASSET_REQUESTS]}>
-                                    <DropdownMenuItem onClick={() => handleEditRequest(request)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedPage>
+                                <DropdownMenuItem onClick={() => handleEditRequest(request)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedPage>
 
                               <ProtectedPage permissionCode={[PERMISSION_CODES.CAN_DELETE_ASSET_REQUESTS]}>
-                                    <DropdownMenuItem
-                                      onClick={() => handleDeleteRequest(request)}
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </ProtectedPage>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteRequest(request)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

@@ -1,13 +1,13 @@
 "use client";
 
-import {useEffect, useState, useRef} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
-import {Badge} from "@/components/ui/badge";
-import {toast} from "sonner";
-import {Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal, MoreVertical, Search} from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreHorizontal, MoreVertical, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -39,28 +39,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Switch} from "@/components/ui/switch";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {cn, OffboardingStagesAPI, SeparationPolicyTypesAPI} from "@/lib/utils";
-import {ISeparationType, IOffboardingStage, SeparationCategory} from "@/types/types.utils";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { cn, OffboardingStagesAPI, SeparationPolicyTypesAPI } from "@/lib/utils";
+import { ISeparationType, IOffboardingStage, SeparationCategory } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { TableSkeleton } from "@/components/common/table-skeleton"
-
+import { Icon } from "@iconify/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const SEPARATION_CATEGORIES = [
-  {value: "resignation", label: "Resignation"},
-  {value: "termination", label: "Termination"},
-  {value: "retirement", label: "Retirement"},
-  {value: "contract_end", label: "Contract End"},
-  {value: "other", label: "Other"},
+  { value: "resignation", label: "Resignation" },
+  { value: "termination", label: "Termination" },
+  { value: "retirement", label: "Retirement" },
+  { value: "contract_end", label: "Contract End" },
+  { value: "other", label: "Other" },
 ] as const;
 
 const formSchema = z.object({
@@ -80,7 +80,7 @@ export default function SeparationPolicyTypesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const refreshTableRef = useRef<(() => void) | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
-
+  const [ordering, setOrdering] = useState("");
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
 
@@ -98,12 +98,12 @@ export default function SeparationPolicyTypesPage() {
     },
   });
 
- 
+
 
   const fetchStages = async () => {
     if (!selectedInstitution?.id) return;
     try {
-      const data = await OffboardingStagesAPI.getAll({institutionId: selectedInstitution.id});
+      const data = await OffboardingStagesAPI.getAll({ institutionId: selectedInstitution.id });
       setStages(data.results);
     } catch (error) {
       toast.error("Failed to fetch offboarding stages");
@@ -150,7 +150,7 @@ export default function SeparationPolicyTypesPage() {
         handleUpdateSuccess(editingPolicyType);
       } else {
         await SeparationPolicyTypesAPI.create({
-          policyTypeData: {...values},
+          policyTypeData: { ...values },
         });
         handleCreateSuccess({} as ISeparationType); // We don't have the created policy type here, but the refresh will show it
       }
@@ -198,7 +198,7 @@ export default function SeparationPolicyTypesPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Separation Policy Types</h1>
-         
+
         </div>
       </div>
 
@@ -220,7 +220,7 @@ export default function SeparationPolicyTypesPage() {
             <div className="flex items-center gap-2">
               {hasFilters && (
                 <Button variant="outline" onClick={clearFilters}>
-                  Clear Filters 
+                  Clear Filters
                 </Button>
               )}
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_SEPARATION_TYPES}>
@@ -231,106 +231,106 @@ export default function SeparationPolicyTypesPage() {
                       Add Policy Type
                     </Button>
                   </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Policy Type</DialogTitle>
-                    <DialogDescription>Create a new separation policy type</DialogDescription>
-                  </DialogHeader>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="separation_type"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormLabel>Type Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter policy type name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Enter description" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="category"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormLabel>Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Policy Type</DialogTitle>
+                      <DialogDescription>Create a new separation policy type</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="separation_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type Name</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
+                                <Input placeholder="Enter policy type name" {...field} />
                               </FormControl>
-                              <SelectContent>
-                                {SEPARATION_CATEGORIES.map((category) => (
-                                  <SelectItem key={category.value} value={category.value}>
-                                    {category.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="supported_stages"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormLabel>Supported Stages</FormLabel>
-                            <Select
-                              onValueChange={(value: string) => {
-                                const currentValues = field.value || [];
-                                const numValue = parseInt(value);
-                                const index = currentValues.indexOf(numValue);
-                                if (index === -1) {
-                                  field.onChange([...currentValues, numValue]);
-                                } else {
-                                  field.onChange(currentValues.filter((v) => v !== numValue));
-                                }
-                              }}
-                            >
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select stages" />
-                                </SelectTrigger>
+                                <Textarea placeholder="Enter description" {...field} />
                               </FormControl>
-                              <SelectContent>
-                                {stages.map((stage) => (
-                                  <SelectItem key={stage.id} value={stage.id.toString()}>
-                                    {stage.stage_name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <DialogFooter>
-                        <Button type="submit">Create Policy Type</Button>
-                      </DialogFooter>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="category"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Category</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a category" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {SEPARATION_CATEGORIES.map((category) => (
+                                    <SelectItem key={category.value} value={category.value}>
+                                      {category.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="supported_stages"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Supported Stages</FormLabel>
+                              <Select
+                                onValueChange={(value: string) => {
+                                  const currentValues = field.value || [];
+                                  const numValue = parseInt(value);
+                                  const index = currentValues.indexOf(numValue);
+                                  if (index === -1) {
+                                    field.onChange([...currentValues, numValue]);
+                                  } else {
+                                    field.onChange(currentValues.filter((v) => v !== numValue));
+                                  }
+                                }}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select stages" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {stages.map((stage) => (
+                                    <SelectItem key={stage.id} value={stage.id.toString()}>
+                                      {stage.stage_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>Selected stages: {field.value?.length || 0}</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                          <Button type="submit">Create Policy Type</Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
               </ProtectedComponent>
             </div>
           </div>
@@ -358,7 +358,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="separation_type"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type Name</FormLabel>
                     <FormControl>
@@ -371,7 +371,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="description"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
@@ -384,7 +384,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="category"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -408,7 +408,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="supported_stages"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Supported Stages</FormLabel>
                     <Select
@@ -444,7 +444,7 @@ export default function SeparationPolicyTypesPage() {
               <FormField
                 control={form.control}
                 name="is_active"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Active Status</FormLabel>
@@ -471,118 +471,134 @@ export default function SeparationPolicyTypesPage() {
         <div>
           <CardContent className="p-0">
             <PaginatedTableWrapper<ISeparationType>
-            fetchFirstPage={async () => {
-              if (!selectedInstitution) throw new Error("No institution selected")
-              return await SeparationPolicyTypesAPI.getPaginated({
-                institutionId: selectedInstitution.id,
-                page: 1,
-                search: searchTerm || undefined,
-              })
-            }}
-            fetchFromUrl={SeparationPolicyTypesAPI.getPaginatedFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
-            className="space-y-4"
-            footerClassName="pt-4"
-          >
-            {({data, loading, refresh}) => {
-              // Store refresh function in ref when component mounts/updates
-              useEffect(() => {
-                refreshTableRef.current = refresh
-              }, [refresh])
+              fetchFirstPage={async () => {
+                if (!selectedInstitution) throw new Error("No institution selected")
+                return await SeparationPolicyTypesAPI.getPaginated({
+                  institutionId: selectedInstitution.id,
+                  page: 1,
+                  search: searchTerm || undefined,
+                  ordering: ordering || undefined,
+                })
+              }}
+              fetchFromUrl={SeparationPolicyTypesAPI.getPaginatedFromUrl}
+              deps={[selectedInstitution?.id, searchTerm, ordering]}
+              className="space-y-4"
+              footerClassName="pt-4"
+            >
+              {({ data, loading, refresh }) => {
+                // Store refresh function in ref when component mounts/updates
+                useEffect(() => {
+                  refreshTableRef.current = refresh
+                }, [refresh])
 
-              if (loading) {
-                return <TableSkeleton rows={10} columns={6} />
-              }
+                if (loading) {
+                  return <TableSkeleton rows={10} columns={6} />
+                }
 
-              if (!data || data.results.length === 0) {
+                if (!data || data.results.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      {searchTerm ? "No policy types found matching your search criteria" : "No separation policy types found. Create one to get started."}
+                    </div>
+                  )
+                }
+
                 return (
-                  <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No policy types found matching your search criteria" : "No separation policy types found. Create one to get started."}
+                  <div className="overflow-x-auto mt-10">
+                    <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                      <TableHeader className="bg-gray-50/50">
+                        <TableRow>
+                          <TableHead>
+                            Type Name
+                            <Button size="sm" variant={ordering === "separation_type" ? "default" : "outline"} onClick={() => setOrdering(ordering === "separation_type" ? "" : "separation_type")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            </Button>
+                          </TableHead>
+
+                          <TableHead>
+                            Description
+                          </TableHead>
+
+                          <TableHead>
+                            Category
+                            <Button size="sm" variant={ordering === "category" ? "default" : "outline"} onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            </Button>
+                          </TableHead>
+
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created At</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.results.map((policyType) => (
+                          <TableRow key={policyType.id}>
+                            <TableCell className="font-medium">{policyType.separation_type}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {policyType.description}
+                            </TableCell>
+                            <TableCell>
+                              {
+                                SEPARATION_CATEGORIES.find((cat) => cat.value === policyType.category)
+                                  ?.label
+                              }
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={policyType.is_active ? "default" : "secondary"}
+                                className={cn(
+                                  "flex w-fit items-center gap-1",
+                                  policyType.is_active
+                                    ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                    : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
+                                )}
+                              >
+                                {policyType.is_active ? (
+                                  <CheckCircle2 className="h-3 w-3" />
+                                ) : (
+                                  <XCircle className="h-3 w-3" />
+                                )}
+                                {policyType.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(policyType.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_TYPES}>
+                                    <DropdownMenuItem onClick={() => handleEdit(policyType)}>
+                                      <Pencil className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_TYPES}>
+                                    <DropdownMenuItem
+                                      onClick={() => setPolicyTypeToDelete(policyType)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 )
-              }
-
-              return (
-                <div className="overflow-x-auto mt-10">
-                  <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                    <TableHeader className="bg-gray-50/50">
-                      <TableRow>
-                        <TableHead>Type Name</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created At</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.results.map((policyType) => (
-                        <TableRow key={policyType.id}>
-                          <TableCell className="font-medium">{policyType.separation_type}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {policyType.description}
-                          </TableCell>
-                          <TableCell>
-                            {
-                              SEPARATION_CATEGORIES.find((cat) => cat.value === policyType.category)
-                                ?.label
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={policyType.is_active ? "default" : "secondary"}
-                              className={cn(
-                                "flex w-fit items-center gap-1",
-                                policyType.is_active
-                                  ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
-                              )}
-                            >
-                              {policyType.is_active ? (
-                                <CheckCircle2 className="h-3 w-3" />
-                              ) : (
-                                <XCircle className="h-3 w-3" />
-                              )}
-                              {policyType.is_active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(policyType.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_TYPES}>
-                                  <DropdownMenuItem onClick={() => handleEdit(policyType)}>
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                </ProtectedComponent>
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_TYPES}>
-                                  <DropdownMenuItem
-                                    onClick={() => setPolicyTypeToDelete(policyType)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </ProtectedComponent>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )
-            }}
-          </PaginatedTableWrapper>
+              }}
+            </PaginatedTableWrapper>
           </CardContent>
         </div>
       </ProtectedComponent>

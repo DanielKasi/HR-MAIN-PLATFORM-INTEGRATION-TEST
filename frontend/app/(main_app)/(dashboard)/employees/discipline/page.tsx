@@ -1,11 +1,11 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -53,18 +53,19 @@ import {
 import {
   IDisciplinaryAction,
 } from "@/types/types.utils";
-import {toast} from "sonner";
-import {PERMISSION_CODES} from "@/constants";
+import { toast } from "sonner";
+import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 
 export default function DisciplinaryActionsPage() {
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
-
+  const [ordering, setOrdering] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -189,19 +190,20 @@ export default function DisciplinaryActionsPage() {
         </div>
       </div>
 
-      <PaginatedTableWrapper<IDisciplinaryAction, {institutionId?: number; search?: string}>
+      <PaginatedTableWrapper<IDisciplinaryAction, { institutionId?: number; search?: string }>
         fetchFirstPage={async (query) => {
           const res = await getDisciplinaryActions({
             institutionId: selectedInstitution?.id,
             page: 1,
             search: searchTerm || undefined,
+            ordering
           });
           return res;
         }}
-        fetchFromUrl={async ({url}) => await getPaginatedDisciplinaryActionsFromUrl({url})}
-        deps={[selectedInstitution?.id, searchTerm]}
+        fetchFromUrl={async ({ url }) => await getPaginatedDisciplinaryActionsFromUrl({ url })}
+        deps={[selectedInstitution?.id, searchTerm, ordering]}
       >
-        {({data, loading, refresh}) => {
+        {({ data, loading, refresh }) => {
           const apiResults = data?.results || [];
           const filteredActions = apiResults.filter((action) => {
             const matchesSearch =
@@ -265,13 +267,60 @@ export default function DisciplinaryActionsPage() {
                     <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                       <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                          <TableHead className="font-semibold w-48">Employee</TableHead>
-                          <TableHead className="font-semibold w-56">Type & Severity</TableHead>
-                          <TableHead className="font-semibold w-36">Incident Date</TableHead>
-                          <TableHead className="font-semibold w-40">Status</TableHead>
-                          <TableHead className="font-semibold w-44">Assigned To</TableHead>
-                          <TableHead className="font-semibold w-36">Follow-up</TableHead>
-                          <TableHead className="font-semibold text-right w-32">Actions</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Employee</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "employee__user__fullname" ? "" : "employee__user__fullname")}
+                                size="sm"
+                                variant={ordering === "employee__user__fullname" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Severity</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "discipline_type__severity" ? "" : "discipline_type__severity")}
+                                size="sm"
+                                variant={ordering === "discipline_type__severity" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Incident Date</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "incident_date" ? "" : "incident_date")}
+                                size="sm"
+                                variant={ordering === "incident_date" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Assigned To</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "assigned_to__user__fullname" ? "" : "assigned_to__user__fullname")}
+                                size="sm"
+                                variant={ordering === "assigned_to__user__fullname" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

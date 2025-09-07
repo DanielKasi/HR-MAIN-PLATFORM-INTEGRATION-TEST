@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/helpers";
+import { Icon } from "@iconify/react";
 
 export default function EmployeeAllowancesPage() {
   const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([]);
@@ -47,6 +48,7 @@ export default function EmployeeAllowancesPage() {
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all");
   const [isLoading, setIsLoading] = useState(false);
   const refreshFunctionRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -175,11 +177,10 @@ export default function EmployeeAllowancesPage() {
                 <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_ALLOWANCES}>
                   <Button onClick={openNewAllowanceDialog} disabled={!selectedInstitution.id}>
                     <Plus className="md:mr-2 h-4 w-4" />
-                    <span className="">Add Allowance</span>
+                    <span className="hidden md:inline">Create Employee Allowance</span>
                   </Button>
                 </ProtectedComponent>
               </div>
-
             </div>
           </div>
         </div>
@@ -191,10 +192,11 @@ export default function EmployeeAllowancesPage() {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedEmployeeAllowancesFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
@@ -246,88 +248,124 @@ export default function EmployeeAllowancesPage() {
                     {/* Desktop Table */}
                     <div className="block rounded-md">
                       <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Allowance Type</TableHead>
-                          <TableHead>Method</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created Date</TableHead>
-                          <TableHead className="w-12">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredResults.map((allowance) => (
-                          <TableRow key={allowance.id}>
-                            <TableCell className="font-medium">
-                              {allowance.employee.user?.fullname || "Unknown Employee"}
-                            </TableCell>
-                            <TableCell>{allowance.allowance_type.name}</TableCell>
-                            <TableCell>
-                              <Badge
-                                className={
-                                  allowance.calculation_method === "percentage"
-                                    ? "bg-blue-100 text-blue-800 border-blue-200"
-                                    : "bg-green-100 text-green-800 border-green-200"
-                                }
-                              >
-                                {allowance.calculation_method === "percentage"
-                                  ? "Percentage"
-                                  : "Fixed Amount"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {`${formatCurrency(allowance.amount)}`}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={
-                                  allowance.is_active
-                                    ? "bg-green-100 text-green-800 border-green-200"
-                                    : "bg-gray-100 text-gray-800 border-gray-200"
-                                }
-                              >
-                                {allowance.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(allowance.created_at).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_ALLOWANCES}>
-                                    <DropdownMenuItem onClick={() => handleEdit(allowance)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_ALLOWANCES}>
-                                    <DropdownMenuItem
-                                      onClick={() => handleDelete(allowance.id)}
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Employee</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "employee__user__fullname") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("employee__user__fullname");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "employee__user__fullname" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>Allowance Type</TableHead>
+                            <TableHead>Method</TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Amount</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "amount") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("amount");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "amount" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created Date</TableHead>
+                            <TableHead className="w-12">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredResults.map((allowance) => (
+                            <TableRow key={allowance.id}>
+                              <TableCell className="font-medium">
+                                {allowance.employee.user?.fullname || "Unknown Employee"}
+                              </TableCell>
+                              <TableCell>{allowance.allowance_type.name}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={
+                                    allowance.calculation_method === "percentage"
+                                      ? "bg-blue-100 text-blue-800 border-blue-200"
+                                      : "bg-green-100 text-green-800 border-green-200"
+                                  }
+                                >
+                                  {allowance.calculation_method === "percentage"
+                                    ? "Percentage"
+                                    : "Fixed Amount"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {`${formatCurrency(allowance.amount)}`}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={
+                                    allowance.is_active
+                                      ? "bg-green-100 text-green-800 border-green-200"
+                                      : "bg-gray-100 text-gray-800 border-gray-200"
+                                  }
+                                >
+                                  {allowance.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(allowance.created_at).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_ALLOWANCES}>
+                                      <DropdownMenuItem onClick={() => handleEdit(allowance)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_ALLOWANCES}>
+                                      <DropdownMenuItem
+                                        onClick={() => handleDelete(allowance.id)}
+                                        className="text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   </ProtectedComponent>
                 </>

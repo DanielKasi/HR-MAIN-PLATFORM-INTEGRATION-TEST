@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Search, 
+import {
+  MoreVertical,
+  Edit,
+  Trash2,
+  Search,
   Plus,
   Eye,
   CheckCircle,
@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Users
 } from 'lucide-react';
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,7 @@ const AssetReturnsComponent = () => {
   const [deletingAssetReturn, setDeletingAssetReturn] = useState<IAssetReturn | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [conditionFilter, setConditionFilter] = useState<string>("all");
+  const [ordering, setOrdering] = useState("");
   const refreshTableRef = useRef<(() => void) | null>(null);
 
 
@@ -181,7 +182,7 @@ const AssetReturnsComponent = () => {
                   <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
-          
+
               <ProtectedPage permissionCode={[
                 PERMISSION_CODES.CAN_RETURN_ASSETS]}><Button
                   onClick={() => setIsCreateDialogOpen(true)}
@@ -190,10 +191,10 @@ const AssetReturnsComponent = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   Return Asset
                 </Button>
-                </ProtectedPage>
-                                            
-                                            
-                                          
+              </ProtectedPage>
+
+
+
             </div>
           </div>
         </div>
@@ -207,14 +208,15 @@ const AssetReturnsComponent = () => {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={assetsAPI.getPaginatedAssetReturnsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -253,10 +255,46 @@ const AssetReturnsComponent = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Asset</TableHead>
-                          <TableHead>Serial Number</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Asset</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "asset__asset_name" ? "" : "asset__asset_name")}
+                                size="sm"
+                                variant={ordering === "asset__asset_name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Serial Number</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "asset__serial_number" ? "" : "asset__serial_number")}
+                                size="sm"
+                                variant={ordering === "asset__serial_number" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Condition</TableHead>
-                          <TableHead>Return Date</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Return Date</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "created_at" ? "" : "created_at")}
+                                size="sm"
+                                variant={ordering === "created_at" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead className="w-12">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -292,23 +330,23 @@ const AssetReturnsComponent = () => {
                                   </DropdownMenuItem>
                                   <ProtectedPage permissionCode={[
                                     PERMISSION_CODES.CAN_EDIT_ASSET_RETURNS]}>
-                                      <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                    <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
-                                    </ProtectedPage>
+                                  </ProtectedPage>
 
-                                    <ProtectedPage permissionCode={[
+                                  <ProtectedPage permissionCode={[
                                     PERMISSION_CODES.CAN_DELETE_ASSET_RETURNS]}>
-                                      <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={() => handleDelete(assetReturn)}
                                       className="text-red-600"
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Delete
                                     </DropdownMenuItem>
-                                    </ProtectedPage>
-                                 
+                                  </ProtectedPage>
+
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -362,23 +400,23 @@ const AssetReturnsComponent = () => {
                                 View Details
                               </DropdownMenuItem>
                               <ProtectedPage permissionCode={[
-                                    PERMISSION_CODES.CAN_EDIT_ASSET_RETURNS]}>
-                                      <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    </ProtectedPage>
+                                PERMISSION_CODES.CAN_EDIT_ASSET_RETURNS]}>
+                                <DropdownMenuItem onClick={() => handleEdit(assetReturn)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </ProtectedPage>
 
-                                  <ProtectedPage permissionCode={[
-                                  PERMISSION_CODES.CAN_DELETE_ASSET_RETURNS]}>
-                                    <DropdownMenuItem 
-                                    onClick={() => handleDelete(assetReturn)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                  </ProtectedPage>
+                              <ProtectedPage permissionCode={[
+                                PERMISSION_CODES.CAN_DELETE_ASSET_RETURNS]}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(assetReturn)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </ProtectedPage>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

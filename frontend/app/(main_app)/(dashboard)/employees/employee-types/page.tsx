@@ -15,11 +15,11 @@ import { toast } from "sonner"
 
 import { getEmployeeTypes, createEmployeeType, updateEmployeeType, deleteEmployeeType, getPaginatedEmployeeTypesFromUrl } from "@/lib/utils"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IEmployeeType, IEmployeeTypeFormData, IPaginatedResponse } from "@/types/types.utils"
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import type { IEmployeeType, IEmployeeTypeFormData } from "@/types/types.utils"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { Icon } from "@iconify/react"
 
 interface EmployeeTypeModalProps {
   isOpen: boolean
@@ -47,9 +47,9 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
           name: editingType.name,
           description: editingType.description || "",
           code: editingType.code || "",
-          institution : editingType.institution || selectedInstitution?.id || 0,
+          institution: editingType.institution || selectedInstitution?.id || 0,
         })
-      } 
+      }
       setErrors({})
     }
   }, [isOpen, editingType])
@@ -84,7 +84,7 @@ function EmployeeTypeModal({ isOpen, onClose, editingType, onSave, isSubmitting,
     try {
       await onSave(formData)
       onClose()
-    } catch (error) {}
+    } catch (error) { }
   }
 
   const handleInputChange = (field: keyof IEmployeeTypeFormData, value: string) => {
@@ -212,7 +212,8 @@ export default function EmployeeTypeManagement() {
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [editingType, setEditingType] = useState<IEmployeeType | null>(null)
   const [viewingType, setViewingType] = useState<IEmployeeType | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ordering, setOrdering] = useState("");
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
@@ -261,27 +262,27 @@ export default function EmployeeTypeManagement() {
           <CardTitle className="flex flex-row items-start md:items-center justify-between gap-4">
             <h1 className="text-xl md:text-2xl font-bold">Employee Types</h1>
             <Button onClick={handleCreate} className="">
-                <Plus className="h-4 w-4 md:mr-2" />
-                <span className="hidden md:inline">Add Employee Type</span>
-              </Button>
+              <Plus className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Add Employee Type</span>
+            </Button>
           </CardTitle>
-            <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search employee types..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10 text-sm"
-              />
-            </div>
+          <div className="relative w-full max-w-md md:max-w-lg lg:max-w-xl">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search employee types..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-10 text-sm"
+            />
+          </div>
         </CardHeader>
 
         <PaginatedTableWrapper<IEmployeeType>
           fetchFirstPage={async () => {
-            return await getEmployeeTypes({ institutionId: selectedInstitution.id, page: 1, search: searchTerm || undefined });
+            return await getEmployeeTypes({ institutionId: selectedInstitution.id, page: 1, search: searchTerm || undefined, ordering });
           }}
           fetchFromUrl={async ({ url }) => await getPaginatedEmployeeTypesFromUrl({ url })}
-          deps={[selectedInstitution.id, searchTerm]}
+          deps={[selectedInstitution.id, searchTerm, ordering]}
         >
           {({ data, loading, refresh }) => {
             const list = data?.results || []
@@ -340,7 +341,17 @@ export default function EmployeeTypeManagement() {
                     <TableHeader className="bg-gray-50/50">
                       <TableRow>
                         <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
-                          Name
+                          <div className="flex items-center gap-2">
+                            <span>Name</span>
+                            <Button
+                              onClick={() => setOrdering(ordering === "name" ? "" : "name")}
+                              size="sm"
+                              variant={ordering === "name" ? "default" : "outline"}
+                              type="button"
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            </Button>
+                          </div>
                         </TableHead>
                         <TableHead className="font-semibold text-gray-900 py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm">
                           Description

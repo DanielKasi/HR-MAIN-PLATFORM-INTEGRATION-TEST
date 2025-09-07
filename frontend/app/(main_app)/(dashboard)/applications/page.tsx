@@ -1,14 +1,14 @@
 "use client";
 
-import {DialogTrigger} from "@/components/ui/dialog";
+import { DialogTrigger } from "@/components/ui/dialog";
 
 import type React from "react";
-import {useState, useEffect, useCallback, useRef} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector, useDispatch} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Plus,
   Mail,
@@ -52,7 +52,7 @@ import {
   CalendarDays,
   Loader2,
 } from "lucide-react";
-import {Alert, AlertDescription} from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,20 +81,20 @@ import type {
   IInterviewType,
   ICountry,
 } from "@/types/types.utils";
-import {selectUser, selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {selectApplicationForm} from "@/store/miscellaneous/selectors";
-import {saveApplicationForm, clearApplicationForm} from "@/store/miscellaneous/actions";
+import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { selectApplicationForm } from "@/store/miscellaneous/selectors";
+import { saveApplicationForm, clearApplicationForm } from "@/store/miscellaneous/actions";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {toast} from "sonner";
-import {Checkbox} from "@/components/ui/checkbox";
-import {LocationAutocomplete} from "@/components/location-autocomplete";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { LocationAutocomplete } from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
 import CountrySelect from "@/components/common/country-select";
 import {
   createInterviewStage,
@@ -108,11 +108,11 @@ import type {
   IInterviewFormData,
   IInterviewStageFormData,
 } from "@/types/types.utils";
-import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {getFileUrl} from "@/lib/helpers";
-import {Icon} from "@iconify/react";
+import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { getFileUrl } from "@/lib/helpers";
+import { Icon } from "@iconify/react";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -131,9 +131,9 @@ const sourceLabels = {
   other: "Other",
 };
 
-const interviewTypes: Array<{value: IInterviewType; label: string}> = [
-  {value: "online", label: "Virtual"},
-  {value: "in_person", label: "In person"},
+const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
+  { value: "online", label: "Virtual" },
+  { value: "in_person", label: "In person" },
 ];
 
 export default function ApplicationsPage() {
@@ -164,7 +164,7 @@ export default function ApplicationsPage() {
   const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{
     type: "bulk" | "single";
     isOpen: boolean;
-  }>({type: "single", isOpen: false});
+  }>({ type: "single", isOpen: false });
   const [bulkInterviewFormData, setBulkInterviewFormData] = useState<IInterviewFormData>({
     interview_stage: 0,
     interview_date: "",
@@ -201,22 +201,22 @@ export default function ApplicationsPage() {
 
   // Add these helper functions
   const updateStageFormData = (field: keyof typeof stageFormData, value: any) => {
-    setStageFormData((prev) => ({...prev, [field]: value}));
+    setStageFormData((prev) => ({ ...prev, [field]: value }));
     if (stageErrors[field]) {
-      setStageErrors((prev: any) => ({...prev, [field]: undefined}));
+      setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
     }
   };
 
   const updateInterviewFormData = (field: string, value: any) => {
-    setInterviewFormData((prev) => ({...prev, [field]: value}));
-    setInterviewErrors((prev: any) => ({...prev, [field]: undefined}));
+    setInterviewFormData((prev) => ({ ...prev, [field]: value }));
+    setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }));
   };
 
   const fetchInterviewData = async () => {
     if (!selectedInstitution) return;
 
     try {
-      const stagesResponse = await getInterviewStages({institutionId: selectedInstitution.id});
+      const stagesResponse = await getInterviewStages({ institutionId: selectedInstitution.id });
 
       let stagesArray: IInterviewStage[] = [];
       if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
@@ -375,7 +375,7 @@ export default function ApplicationsPage() {
       if (result) {
         clearAllFilters();
         toast.success("Interview scheduled successfully!");
-        setShowScheduleInterviewDialog({type: "single", isOpen: false});
+        setShowScheduleInterviewDialog({ type: "single", isOpen: false });
         setSelectedApplicationForInterview(null);
         // Reset form
         setInterviewFormData({
@@ -404,7 +404,7 @@ export default function ApplicationsPage() {
   const handleOpenScheduleInterview = async (application: JobApplication) => {
     setSelectedApplicationForInterview(application);
     await fetchInterviewData();
-    setShowScheduleInterviewDialog({type: "single", isOpen: true});
+    setShowScheduleInterviewDialog({ type: "single", isOpen: true });
   };
 
   // Enhanced date filtering state
@@ -539,7 +539,7 @@ export default function ApplicationsPage() {
           savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
         created_by: savedApplicationForm.created_by || userData?.id || 0,
       });
-      
+
       // Set the selected country for the CountrySelect component
       if (savedApplicationForm.country) {
         setSelectedCountry({ name: { common: savedApplicationForm.country }, cca2: '' });
@@ -560,7 +560,7 @@ export default function ApplicationsPage() {
         address_latitude: applicationLocation.latitude,
         address_longitude: applicationLocation.latitude,
       };
-      dispatch(saveApplicationForm({...updatedFormData, cover_letter: null, resume: null})); // Cannot serialize File object in Redux
+      dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
     }
   }, [applicationLocation]);
 
@@ -721,7 +721,7 @@ export default function ApplicationsPage() {
   // Scroll handler to load more
   const handleJobPositionDropdownScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      const {scrollTop, scrollHeight, clientHeight} = e.currentTarget;
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
       if (
         scrollHeight - scrollTop <= clientHeight + 50 &&
         hasMoreJobPositions &&
@@ -756,7 +756,7 @@ export default function ApplicationsPage() {
     setError(null);
 
     try {
-      const response = await getJobApplications({institutionId: selectedInstitution.id});
+      const response = await getJobApplications({ institutionId: selectedInstitution.id });
 
       let applicationsArray: JobApplication[] = [];
 
@@ -791,7 +791,7 @@ export default function ApplicationsPage() {
 
     setIsLoadingAdverts(true);
     try {
-      const response = await getJobPositionAdverts({institutionId: selectedInstitution.id});
+      const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id });
       console.log("Job Position Adverts Response:", response);
 
       let advertsArray: JobPositionAdvert[] = [];
@@ -823,7 +823,7 @@ export default function ApplicationsPage() {
     };
     setFormData(updatedFormData);
 
-    dispatch(saveApplicationForm({...updatedFormData, cover_letter: null, resume: null})); // Cannot serialize File object in Redux
+    dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
   };
 
   const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
@@ -835,7 +835,7 @@ export default function ApplicationsPage() {
   };
 
   const handleAddressCoordinatesChange = (lat: string, lon: string) => {
-    setApplicationLocation({latitude: lat, longitude: lon});
+    setApplicationLocation({ latitude: lat, longitude: lon });
   };
 
   const handleClearForm = () => {
@@ -1111,8 +1111,7 @@ export default function ApplicationsPage() {
 
       if (successCount > 0) {
         toast.success(
-          `${successCount} interview(s) scheduled successfully!${
-            failureCount > 0 ? ` ${failureCount} failed.` : ""
+          `${successCount} interview(s) scheduled successfully!${failureCount > 0 ? ` ${failureCount} failed.` : ""
           }`,
         );
         if (showScheduleInterviewDialog.type === "bulk") {
@@ -1140,7 +1139,7 @@ export default function ApplicationsPage() {
         }
         setInterviewErrors({});
 
-        setShowScheduleInterviewDialog((prev) => ({...prev, isOpen: false}));
+        setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: false }));
         setSelectedApplications([]);
         // Reset form
 
@@ -1238,7 +1237,7 @@ export default function ApplicationsPage() {
       await Promise.all(promises);
       setApplications((prev) =>
         prev.map((app) =>
-          applicationsToProcess.find((appl) => appl.id === app.id) ? {...app, status: action} : app,
+          applicationsToProcess.find((appl) => appl.id === app.id) ? { ...app, status: action } : app,
         ),
       );
       setSelectedApplications([]);
@@ -1289,7 +1288,7 @@ export default function ApplicationsPage() {
       // });
 
       await fetchInterviewData();
-      setShowScheduleInterviewDialog({type: "bulk", isOpen: true});
+      setShowScheduleInterviewDialog({ type: "bulk", isOpen: true });
       return;
     }
 
@@ -1415,7 +1414,7 @@ export default function ApplicationsPage() {
     action: "new" | "reviewed" | "shortlisted" | "rejected" | "passed",
   ) => {
     if (action === "shortlisted") {
-      setIndividualLoadingStates((prev) => ({...prev, [applicationId]: true}));
+      setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: true }));
     }
 
     try {
@@ -1441,7 +1440,7 @@ export default function ApplicationsPage() {
       await updateJobApplicationStatus(updateData);
 
       setApplications((prev) =>
-        prev.map((app) => (app.id === applicationId ? {...app, status: action} : app)),
+        prev.map((app) => (app.id === applicationId ? { ...app, status: action } : app)),
       );
       clearAllFilters();
       toast.success(`Application ${action} successfully`);
@@ -1450,7 +1449,7 @@ export default function ApplicationsPage() {
       toast.error(`Failed to ${action} application`);
     } finally {
       if (action === "shortlisted") {
-        setIndividualLoadingStates((prev) => ({...prev, [applicationId]: false}));
+        setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: false }));
       }
     }
   };
@@ -1578,7 +1577,7 @@ export default function ApplicationsPage() {
             <Select
               value={dateFilter.type}
               onValueChange={(value: "application_date" | "posted_date") =>
-                setDateFilter((prev) => ({...prev, type: value}))
+                setDateFilter((prev) => ({ ...prev, type: value }))
               }
             >
               <SelectTrigger className="w-full sm:w-40">
@@ -1598,7 +1597,7 @@ export default function ApplicationsPage() {
                 id="start-date"
                 type="date"
                 value={dateFilter.startDate}
-                onChange={(e) => setDateFilter((prev) => ({...prev, startDate: e.target.value}))}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, startDate: e.target.value }))}
                 className="w-full sm:w-auto"
               />
             </div>
@@ -1611,7 +1610,7 @@ export default function ApplicationsPage() {
                 id="end-date"
                 type="date"
                 value={dateFilter.endDate}
-                onChange={(e) => setDateFilter((prev) => ({...prev, endDate: e.target.value}))}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, endDate: e.target.value }))}
                 className="w-full sm:w-auto"
               />
             </div>
@@ -1636,25 +1635,25 @@ export default function ApplicationsPage() {
           jobFilter !== "all" ||
           dateFilter.startDate ||
           dateFilter.endDate) && (
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center gap-2 text-sm text-blue-800">
-              <Filter className="h-4 w-4" />
-              <span>
-                Filters active - showing {safeFilteredApplications.length} of {applications.length}{" "}
-                applications
-              </span>
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 text-sm text-blue-800">
+                <Filter className="h-4 w-4" />
+                <span>
+                  Filters active - showing {safeFilteredApplications.length} of {applications.length}{" "}
+                  applications
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-blue-600 border-blue-300 hover:bg-blue-100"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear All Filters
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllFilters}
-              className="text-blue-600 border-blue-300 hover:bg-blue-100"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear All Filters
-            </Button>
-          </div>
-        )}
+          )}
       </div>
       {selectedApplications.length > 0 && (
         <Card className="border-blue-200 bg-blue-50">
@@ -1672,80 +1671,80 @@ export default function ApplicationsPage() {
                   const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "new";
                 }) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("reviewed")}
-                    className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Mark as Reviewed
-                  </Button>
-                )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleBulkAction("reviewed")}
+                      className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Mark as Reviewed
+                    </Button>
+                  )}
 
                 {/* Your existing shortlist button */}
                 {selectedApplications.some((appl) => {
                   const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "reviewed";
                 }) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("shortlisted")}
-                    disabled={isBulkShortlisting}
-                    className="text-green-600 border-green-200 hover:bg-green-50"
-                  >
-                    {isBulkShortlisting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
-                        Shortlisting...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" />
-                        Shortlist
-                      </>
-                    )}
-                  </Button>
-                )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleBulkAction("shortlisted")}
+                      disabled={isBulkShortlisting}
+                      className="text-green-600 border-green-200 hover:bg-green-50"
+                    >
+                      {isBulkShortlisting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2" />
+                          Shortlisting...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Shortlist
+                        </>
+                      )}
+                    </Button>
+                  )}
 
                 {/* UPDATED: Schedule Interview button - now works for multiple selections */}
                 {selectedApplications.some((appl) => {
                   const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "shortlisted";
                 }) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("schedule_interview")}
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Interview
-                    {selectedApplications.filter((appl) => {
-                      const app = applications.find((a) => a.id === appl.id);
-                      return app?.status === "shortlisted";
-                    }).length > 1
-                      ? "s"
-                      : ""}
-                  </Button>
-                )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleBulkAction("schedule_interview")}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Interview
+                      {selectedApplications.filter((appl) => {
+                        const app = applications.find((a) => a.id === appl.id);
+                        return app?.status === "shortlisted";
+                      }).length > 1
+                        ? "s"
+                        : ""}
+                    </Button>
+                  )}
 
                 {/* Your existing reject button */}
                 {selectedApplications.some((appl) => {
                   const app = applications.find((a) => a.id === appl.id);
                   return app?.status === "new" || app?.status === "reviewed";
                 }) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("rejected")}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
-                )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleBulkAction("rejected")}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  )}
 
                 <Button
                   size="sm"
@@ -1793,14 +1792,14 @@ export default function ApplicationsPage() {
                 jobPositionAdvert: jobFilter !== "all" ? jobFilter : undefined,
               });
             }}
-            fetchFromUrl={async (args: {url: string}) =>
+            fetchFromUrl={async (args: { url: string }) =>
               getPaginatedJobApplicationsFromUrl(args.url)
             }
             deps={[selectedInstitution?.id, searchTerm, statusFilter, jobFilter, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -1814,10 +1813,10 @@ export default function ApplicationsPage() {
                 return (
                   <div className="text-center py-8 text-gray-500">
                     {searchTerm ||
-                    statusFilter !== "all" ||
-                    jobFilter !== "all" ||
-                    dateFilter.startDate ||
-                    dateFilter.endDate
+                      statusFilter !== "all" ||
+                      jobFilter !== "all" ||
+                      dateFilter.startDate ||
+                      dateFilter.endDate
                       ? "No applications match your current filters."
                       : "No applications have been submitted yet."}
                   </div>
@@ -1981,8 +1980,8 @@ export default function ApplicationsPage() {
                             </div>
                           </TableHead>
                           <TableHead>
-                            
-                                                          <div className="flex items-center justify-start gap-4">
+
+                            <div className="flex items-center justify-start gap-4">
                               <span>Contact</span>
                               <Button
                                 onClick={() => {
@@ -2002,7 +2001,7 @@ export default function ApplicationsPage() {
                           </TableHead>
                           <TableHead>Location</TableHead>
                           <TableHead>
-                                                                                       <div className="flex items-center justify-start gap-4">
+                            <div className="flex items-center justify-start gap-4">
                               <span>Status</span>
                               <Button
                                 onClick={() => {
@@ -2263,10 +2262,10 @@ export default function ApplicationsPage() {
                           jpFilterText ||
                           (formData.job_position_advert
                             ? getPositionLabel(
-                                jobPositionAdverts.find(
-                                  (p) => p.id === formData.job_position_advert,
-                                ) || ({} as JobPositionAdvert),
-                              )
+                              jobPositionAdverts.find(
+                                (p) => p.id === formData.job_position_advert,
+                              ) || ({} as JobPositionAdvert),
+                            )
                             : "")
                         }
                         onChange={(e) => {
@@ -2736,7 +2735,7 @@ export default function ApplicationsPage() {
       </AlertDialog>
       <Dialog
         open={showScheduleInterviewDialog.isOpen}
-        onOpenChange={(open) => setShowScheduleInterviewDialog((prev) => ({...prev, isOpen: open}))}
+        onOpenChange={(open) => setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: open }))}
       >
         <DialogContent className="w-full max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-4xl">
           <DialogHeader>
@@ -2797,7 +2796,7 @@ export default function ApplicationsPage() {
                       interview_stage: parseInt(value),
                     }));
                     if (interviewErrors.interview_stage) {
-                      setInterviewErrors((prev: any) => ({...prev, interview_stage: undefined}));
+                      setInterviewErrors((prev: any) => ({ ...prev, interview_stage: undefined }));
                     }
                   }}
                 >
@@ -2851,7 +2850,7 @@ export default function ApplicationsPage() {
                       interview_date: e.target.value,
                     }));
                     if (interviewErrors.interview_date) {
-                      setInterviewErrors((prev: any) => ({...prev, interview_date: undefined}));
+                      setInterviewErrors((prev: any) => ({ ...prev, interview_date: undefined }));
                     }
                   }}
                   className={interviewErrors.interview_date ? "border-destructive" : ""}
@@ -2884,7 +2883,7 @@ export default function ApplicationsPage() {
                       location: e.target.value,
                     }));
                     if (interviewErrors.location) {
-                      setInterviewErrors((prev: any) => ({...prev, location: undefined}));
+                      setInterviewErrors((prev: any) => ({ ...prev, location: undefined }));
                     }
                   }}
                   placeholder="e.g., Conference Room A, Zoom Link, etc."
@@ -2931,7 +2930,7 @@ export default function ApplicationsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowScheduleInterviewDialog((prev) => ({...prev, isOpen: false}))}
+                onClick={() => setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: false }))}
                 disabled={isSchedulingInterview}
                 className="w-full sm:w-auto"
               >
