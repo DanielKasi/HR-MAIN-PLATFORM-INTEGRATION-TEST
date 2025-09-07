@@ -46,8 +46,13 @@ export function EditTaxRuleDialog({
 
   useEffect(() => {
     if (taxRule) {
+      // Determine calculation type based on which field has a value
+      const calculationType = taxRule.tax_rule_percentage !== null && taxRule.tax_rule_percentage !== undefined 
+        ? "percentage" 
+        : "fixed";
+      
       setFormData({
-        calculation_type: taxRule.calculation_type as "percentage" | "fixed",
+        calculation_type: calculationType,
         tax_rule_name: taxRule.tax_rule_name || "",
         tax_rule_description: taxRule.tax_rule_description || "",
         tax_rule_percentage: taxRule.tax_rule_percentage,
@@ -86,7 +91,26 @@ export function EditTaxRuleDialog({
 
     setIsSubmitting(true);
     try {
-      const updatedTaxRule = await taxRulesAPI.update(taxRule.id, formData)
+      // Prepare data based on calculation type
+      const updateData = {
+        tax_rule_name: formData.tax_rule_name,
+        tax_rule_description: formData.tax_rule_description,
+        salary_from: formData.salary_from,
+        salary_to: formData.salary_to,
+        // Only include the relevant field based on calculation type
+        ...(formData.calculation_type === "percentage" 
+          ? { 
+              tax_rule_percentage: formData.tax_rule_percentage,
+              tax_rule_fixed_amount: undefined 
+            }
+          : { 
+              tax_rule_fixed_amount: formData.tax_rule_fixed_amount,
+              tax_rule_percentage: undefined 
+            }
+        )
+      };
+      
+      const updatedTaxRule = await taxRulesAPI.update(taxRule.id, updateData)
       onSuccess(updatedTaxRule);
       toast.success("Tax rule updated successfully");
       onClose();
@@ -185,7 +209,7 @@ export function EditTaxRuleDialog({
                 Fixed Amount *
               </Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                
                 <Input
                   id="fixed_amount"
                   type="number"

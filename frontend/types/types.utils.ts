@@ -1575,9 +1575,6 @@ export interface ITaxFormData {
 export interface ITaxRule {
   id: number
   institution_tax: ITax
-  calculation_type: string
-  percentage: string
-  fixed_amount: number
   tax_rule_name: string
   tax_rule_description?: string
   tax_rule_percentage?: number

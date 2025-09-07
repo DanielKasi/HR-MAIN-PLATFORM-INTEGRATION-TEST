@@ -119,7 +119,7 @@ const AssetRequestDetailPage = () => {
 
   const handleDeleteSuccess = () => {
     toast.success("Request deleted successfully");
-    router.push("/assests/asset-requests");
+    router.push("/assets/asset-requests");
   };
 
   const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
@@ -165,7 +165,7 @@ const AssetRequestDetailPage = () => {
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Request Not Found</h2>
           <p className="text-gray-600 mb-4">The request you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => router.push("/assests/asset-requests")}>
+          <Button onClick={() => router.push("/assets/asset-requests")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Requests
           </Button>
@@ -183,7 +183,7 @@ const AssetRequestDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/assests/asset-requests")}
+              onClick={() => router.push("/assets/asset-requests")}
               className="p-2 hover:bg-gray-100 rounded-full border"
             >
               <ArrowLeft className="h-4 w-4" />

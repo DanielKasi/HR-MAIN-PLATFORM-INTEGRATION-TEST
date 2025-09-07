@@ -172,7 +172,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
   }, []);
 
   const handleViewRequestDetails = useCallback((request: IAssetRequest) => {
-    router.push(`/assests/asset-requests/${request.id}`);
+    router.push(`/assets/asset-requests/${request.id}`);
   }, [router]);
 
   // Memoized fetch function for the API call

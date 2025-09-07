@@ -80,14 +80,18 @@ export function DeleteTaxRuleDialog({
             <div className="space-y-2 text-sm text-gray-600">
               <div>
                 <span className="font-medium">Calculation Type:</span> 
-                <span className="ml-2 capitalize">{taxRule.calculation_type}</span>
+                <span className="ml-2 capitalize">
+                  {taxRule.tax_rule_percentage !== null && taxRule.tax_rule_percentage !== undefined 
+                    ? "percentage" 
+                    : "fixed amount"}
+                </span>
               </div>
               <div>
                 <span className="font-medium">Rate/Amount:</span> 
                 <span className="ml-2">
-                  {taxRule.calculation_type === "percentage" 
-                    ? `${taxRule.percentage}%`
-                    : formatCurrency(taxRule.fixed_amount || 0)
+                  {taxRule.tax_rule_percentage !== null && taxRule.tax_rule_percentage !== undefined
+                    ? `${taxRule.tax_rule_percentage}%`
+                    : formatCurrency(taxRule.tax_rule_fixed_amount || 0)
                   }
                 </span>
               </div>

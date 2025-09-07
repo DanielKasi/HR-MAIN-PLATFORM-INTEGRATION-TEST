@@ -115,7 +115,7 @@ const AssetDetailPage = () => {
 
   const handleDeleteSuccess = () => {
     toast.success("Asset deleted successfully")
-    router.push("/assests/assets")
+    router.push("/assets/assets")
   }
 
   const handleAssetReturn = () => {
@@ -242,7 +242,7 @@ const AssetDetailPage = () => {
           <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Asset Not Found</h2>
           <p className="text-gray-600 mb-4">The asset you're looking for doesn't exist or has been removed.</p>
-          <Button onClick={() => router.push("/assests/assets")}>
+          <Button onClick={() => router.push("/assets/assets")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Assets
           </Button>
@@ -260,7 +260,7 @@ const AssetDetailPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/assests/assets")}
+              onClick={() => router.push("/assets/assets")}
               className="p-2 hover:bg-gray-100 rounded-full"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />
