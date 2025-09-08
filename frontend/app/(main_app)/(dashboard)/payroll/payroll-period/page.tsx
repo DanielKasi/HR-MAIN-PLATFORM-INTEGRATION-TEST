@@ -583,7 +583,6 @@ export default function PayrollPeriods() {
                               </div>
                             </TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Payslips</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>

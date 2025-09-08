@@ -28,7 +28,7 @@ from .models import (
     RequiredDocument,
 )
 
-
+from utilities.sortable_api import SortableAPIMixin
 from django.db.models import Count, Avg, F
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
@@ -45,7 +45,9 @@ from django.db import transaction
 
 
 
-class JobPositionListAPI(APIView):
+class JobPositionListAPI(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'department', 'salary_min', 'salary_max', 'job_position_status', 'reports_to']
+    default_ordering = ['name']
 
     @extend_schema(
         request=JobPositionSerializer,
@@ -80,6 +82,11 @@ class JobPositionListAPI(APIView):
             job_positions = job_positions.filter(
                 Q(name__icontains=search_query)
             )
+
+        try:
+            job_positions = self.apply_sorting(job_positions, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(job_positions, request)
         serializer = JobPositionWorkflowSerializer(paginated_qs, many=True)
@@ -152,8 +159,10 @@ class JobPositionDetailAPI(APIView):
 
 
 
-class JobPositionAdvertListAPI(APIView):
+class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['job_position', 'created_at', 'advert_type', 'work_type', 'employee_type', 'job_position_advert_status']
+    default_ordering = ['job_position']
 
     @extend_schema(
         request=JobPositionAdvertSerializer,
@@ -200,6 +209,11 @@ class JobPositionAdvertListAPI(APIView):
 
         if status:
             adverts = adverts.filter(status=status)    
+
+        try:
+            adverts = self.apply_sorting(adverts, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
@@ -267,8 +281,10 @@ class JobPositionAdvertDetailAPI(APIView):
 
 
 
-class JobAdvertApplicationListAPI(APIView):
+class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['job_position_advert', 'created_at', 'applicant_name', 'applicant_email', 'applicant_phone', 'status']
+    default_ordering = ['job_position_advert']
 
     permission_classes = [AllowAny]
     @extend_schema(
@@ -303,6 +319,11 @@ class JobAdvertApplicationListAPI(APIView):
                 Q(applicant_email__icontains=search_query) |
                 Q(applicant_phone__icontains=search_query)
             )
+
+        try:
+            applications = self.apply_sorting(applications, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)      
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(applications, request)
         serializer = JobAdvertApplicationSerializer(paginated_qs, many=True)
@@ -347,8 +368,10 @@ class JobAdvertApplicationDetailAPI(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class InterviewStageListAPI(APIView):
+class InterviewStageListAPI(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['job_position_advert', 'created_at', 'name', 'level', 'interviewers']
+    default_ordering = ['job_position_advert']
 
     @extend_schema(
         request=InterviewStageSerializer,
@@ -374,6 +397,11 @@ class InterviewStageListAPI(APIView):
         stages = InterviewStage.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id
         ).order_by("level")
+
+        try:
+            stages = self.apply_sorting(stages, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)  
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(stages, request)
         serializer = InterviewStageSerializer(paginated_qs, many=True)
@@ -422,8 +450,10 @@ class InterviewStageDetailAPI(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class JobInterviewListAPI(APIView):
+class JobInterviewListAPI(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['job_position_application', 'created_at', 'interview_stage', 'interview_type', 'interview_date', 'satus']
+    default_ordering = ['job_position_application']
 
     @extend_schema(
         request=JobInterviewSerializer,
@@ -447,7 +477,7 @@ class JobInterviewListAPI(APIView):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
-        status_filter = request.query_params.get('status', None)  # <-- renamed
+        status_filter = request.query_params.get('status', None)  
         date = request.query_params.get('date', None)
 
         interviews = (
@@ -485,6 +515,11 @@ class JobInterviewListAPI(APIView):
             interview_dict = serializer.data
             interview_dict["cumulative_rating"] = interview.cumulative_rating
             interview_data.append(interview_dict)
+
+        try:
+            interviews = self.apply_sorting(interviews, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)      
 
         return Response(interview_data, status=status.HTTP_200_OK)
 
@@ -529,298 +564,6 @@ class JobInterviewDetailAPI(APIView):
         except JobInterview.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
 
-
-class RecruitmentFunnelAnalyticsAPI(APIView):
-    """
-    A dedicated API view for recruitment funnel and pipeline analytics.
-    """
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Recruitment funnel and pipeline summary.",
-                response=inline_serializer(
-                    name='RecruitmentFunnelResponse',
-                    fields={
-                        'total_applications': serializers.IntegerField(
-                            help_text="Total number of applications for the institution."
-                        ),
-                        'application_status_breakdown': serializers.DictField(
-                            help_text="Count of applications by status.",
-                            child=serializers.IntegerField(),
-                        ),
-                        'applications_per_advert': serializers.DictField(
-                            help_text="Number of applications received for each active job advert.",
-                            child=serializers.IntegerField(),
-                        ),
-                        'active_adverts_count': serializers.IntegerField(
-                            help_text="Total number of currently active job advertisements."
-                        ),
-                    }
-                ),
-            ),
-            404: OpenApiResponse(description="No applications or adverts found."),
-        },
-        summary="Get Recruitment Funnel Analytics",
-        description=(
-            "Provides a high-level overview of the recruitment pipeline, including total applications, "
-            "status breakdown, and advert performance."
-        ),
-        tags=["Recruitment Analytics"],
-    )
-    def get(self, request, institution_id):
-        """
-        Calculates and returns key recruitment funnel metrics for an institution.
-        """
-        # Ensure we are only looking at applications for the specified institution
-        applications = JobAdvertApplication.objects.filter(
-            job_position_advert__job_position__department__institution_id=institution_id,
-            deleted_at__isnull=True
-        )
-        
-        if not applications.exists():
-            return Response({"detail": "No applications found for this institution."}, status=status.HTTP_404_NOT_FOUND)
-
-        # 1. Total Applications Received
-        total_applications = applications.count()
-        
-        # 2. Application Status Breakdown
-        status_breakdown = applications.values('status').annotate(
-            count=Count('id')
-        ).order_by('status')
-        status_breakdown_dict = {
-            item['status']: item['count'] for item in status_breakdown
-        }
-
-        # 3. Applications per Active Advert
-        applications_per_advert = applications.values(
-            'job_position_advert__job_position__name'
-        ).annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        applications_per_advert_dict = {
-            item['job_position_advert__job_position__name']: item['count']
-            for item in applications_per_advert if item['job_position_advert__job_position__name']
-        }
-        
-        # 4. Count of Active Adverts
-        active_adverts_count = JobPositionAdvert.objects.filter(
-            job_position_advert_status='active',
-            job_position__department__institution_id=institution_id
-        ).count()
-        
-        response_data = {
-            "total_applications": total_applications,
-            "application_status_breakdown": status_breakdown_dict,
-            "applications_per_advert": applications_per_advert_dict,
-            "active_adverts_count": active_adverts_count,
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
-
-
-
-class JobAdvertSourcingAnalyticsAPI(APIView):
-    """
-    A dedicated API view for job advert and sourcing analytics.
-    """
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Job advert and sourcing summary.",
-                response=inline_serializer(
-                    name='JobAdvertSourcingResponse',
-                    fields={
-                        'applications_by_source': serializers.DictField(
-                            help_text="Count of applications by recruitment source.",
-                            child=serializers.IntegerField(),
-                        ),
-                        'applications_per_advert': serializers.FloatField(
-                            help_text="Average number of applications per active job advert."
-                        ),
-                        'average_time_to_fill_days': serializers.FloatField(
-                            help_text="Average time (in days) from advert publication to a candidate's status being 'passed'."
-                        ),
-                        'advert_performance_list': serializers.ListField(
-                            help_text="Detailed performance for each active advert.",
-                            child=serializers.DictField(),
-                        ),
-                    }
-                ),
-            ),
-            404: OpenApiResponse(description="No applications or adverts found."),
-        },
-        summary="Get Job Advert & Sourcing Analytics",
-        description=(
-            "Analyzes the effectiveness of recruitment channels and provides metrics on "
-            "advert performance and time-to-fill."
-        ),
-        tags=["Recruitment Analytics"],
-    )
-    def get(self, request, institution_id):
-        """
-        Calculates and returns key job advert and sourcing metrics for an institution.
-        """
-        adverts = JobPositionAdvert.objects.filter(
-            job_position__department__institution_id=institution_id,
-            deleted_at__isnull=True
-        )
-
-        if not adverts.exists():
-            return Response({"detail": "No job adverts found for this institution."}, status=status.HTTP_404_NOT_FOUND)
-
-        applications = JobAdvertApplication.objects.filter(
-            job_position_advert__in=adverts,
-            deleted_at__isnull=True
-        )
-        
-        if not applications.exists():
-            return Response({"detail": "No applications found for this institution."}, status=status.HTTP_404_NOT_FOUND)
-
-        # 1. Applications by Source
-        applications_by_source_data = applications.values('source').annotate(count=Count('id')).order_by('-count')
-        applications_by_source = {
-            item['source']: item['count'] for item in applications_by_source_data
-        }
-
-        # 2. Average Applications per Advert
-        applications_per_advert_data = applications.values('job_position_advert').annotate(
-            count=Count('id')
-        )
-        total_adverts_with_applications = applications_per_advert_data.count()
-        total_applications = applications.count()
-        
-        avg_applications_per_advert = (
-            total_applications / total_adverts_with_applications
-        ) if total_adverts_with_applications > 0 else 0
-
-        # 3. Average Time-to-Fill (using 'passed' as a proxy for successful application)
-        # Note: 'updated_at' is used as a proxy for status change time.
-        # A more robust solution would track status change dates explicitly.
-        successful_applications = applications.filter(status='passed').annotate(
-            time_to_fill=F('updated_at') - F('job_position_advert__published_date')
-        )
-        
-        avg_time_to_fill_days = None
-        if successful_applications.exists():
-            total_time_to_fill = sum(
-                [app.time_to_fill for app in successful_applications],
-                timedelta()
-            )
-            avg_time_to_fill = total_time_to_fill / successful_applications.count()
-            avg_time_to_fill_days = avg_time_to_fill.total_seconds() / (60 * 60 * 24)
-
-        # 4. Detailed Advert Performance List
-        advert_performance_list = []
-        for advert in adverts.annotate(num_applications=Count('applications')):
-            advert_performance_list.append({
-                "advert_id": advert.id,
-                "job_title": advert.job_position.name,
-                "published_date": advert.published_date,
-                "status": advert.job_position_advert_status,
-                "number_of_applications": advert.num_applications,
-            })
-
-        response_data = {
-            "applications_by_source": applications_by_source,
-            "applications_per_advert": round(avg_applications_per_advert, 2),
-            "average_time_to_fill_days": round(avg_time_to_fill_days, 2) if avg_time_to_fill_days is not None else None,
-            "advert_performance_list": advert_performance_list,
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
-    
-
-
-class InterviewCandidateAnalyticsAPI(APIView):
-    """
-    A dedicated API view for interview and candidate quality analytics.
-    """
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Interview and candidate quality summary.",
-                response=inline_serializer(
-                    name='InterviewCandidateResponse',
-                    fields={
-                        'overall_avg_interview_rating': serializers.FloatField(
-                            help_text="Overall average rating from all completed interviews."
-                        ),
-                        'avg_rating_by_stage': serializers.DictField(
-                            help_text="Average interview rating for each interview stage.",
-                            child=serializers.FloatField(),
-                        ),
-                        'interview_to_passed_ratio': serializers.FloatField(
-                            help_text="Ratio of completed interviews to applications with 'passed' status."
-                        ),
-                        'interview_completion_rate': serializers.FloatField(
-                            help_text="Percentage of scheduled interviews that were completed."
-                        ),
-                    }
-                ),
-            ),
-            404: OpenApiResponse(description="No interview data found."),
-        },
-        summary="Get Interview & Candidate Quality Analytics",
-        description=(
-            "Provides insights into the efficiency of the interview process and the quality of candidates, "
-            "including average ratings and completion rates."
-        ),
-        tags=["Recruitment Analytics"],
-    )
-    def get(self, request, institution_id):
-        """
-        Calculates and returns key interview and candidate quality metrics.
-        """
-        # Filter all interviews for the specified institution
-        interviews = JobInterview.objects.filter(
-            job_position_application__job_position_advert__job_position__department__institution_id=institution_id,
-            deleted_at__isnull=True
-        )
-
-        if not interviews.exists():
-            return Response({"detail": "No interview data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
-
-        # 1. Overall Average Interview Rating
-        completed_interviews = interviews.filter(status='completed', rating__isnull=False)
-        overall_avg_rating = completed_interviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
-
-        # 2. Average Rating by Stage
-        avg_rating_by_stage_data = completed_interviews.values('interview_stage__name').annotate(
-            avg_rating=Avg('rating')
-        ).order_by('interview_stage__name')
-        
-        avg_rating_by_stage = {
-            item['interview_stage__name']: round(item['avg_rating'], 2)
-            for item in avg_rating_by_stage_data
-        }
-
-        # 3. Interview-to-Passed Ratio
-        total_completed_interviews = completed_interviews.count()
-        total_passed_applications = JobAdvertApplication.objects.filter(
-            job_position_advert__job_position__department__institution_id=institution_id,
-            status='passed'
-        ).count()
-        
-        interview_to_passed_ratio = (
-            total_completed_interviews / total_passed_applications
-        ) if total_passed_applications > 0 else 0
-        
-        # 4. Interview Completion Rate
-        total_interviews = interviews.count()
-        interview_completion_rate = (
-            total_completed_interviews / total_interviews
-        ) if total_interviews > 0 else 0
-
-        response_data = {
-            "overall_avg_interview_rating": round(overall_avg_rating, 2) if overall_avg_rating is not None else None,
-            "avg_rating_by_stage": avg_rating_by_stage,
-            "interview_to_passed_ratio": round(interview_to_passed_ratio, 2),
-            "interview_completion_rate": round(interview_completion_rate * 100, 2),
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
     
 class RecruitmentDashboardAPIView(APIView):
     """
