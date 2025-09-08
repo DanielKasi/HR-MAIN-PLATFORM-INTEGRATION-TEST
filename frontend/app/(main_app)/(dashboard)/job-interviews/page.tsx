@@ -750,7 +750,7 @@ export default function InterviewsPage() {
                                 <div className="flex items-center gap-2">
                                   <span>Applicant</span>
                                   <Button size="sm" variant={ordering === "applicant" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "applicant" ? "" : "applicant")}>
-                                    <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                    <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                   </Button>
                                 </div>
                               </TableHead>
@@ -759,7 +759,7 @@ export default function InterviewsPage() {
                                 <div className="flex items-center gap-2">
                                   <span>Date</span>
                                   <Button size="sm" variant={ordering === "interview_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "interview_date" ? "" : "interview_date")}>
-                                    <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                    <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                   </Button>
                                 </div>
                               </TableHead>

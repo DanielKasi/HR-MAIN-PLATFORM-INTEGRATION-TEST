@@ -349,7 +349,7 @@ export default function EmployeeTypeManagement() {
                               variant={ordering === "name" ? "default" : "outline"}
                               type="button"
                             >
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>

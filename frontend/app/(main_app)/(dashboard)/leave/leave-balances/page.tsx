@@ -708,7 +708,7 @@ export default function LeaveBalanceComponent() {
                           <div className="flex items-center gap-2">
                             <span>Employee</span>
                             <Button size="sm" variant={ordering === "employee" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -716,7 +716,7 @@ export default function LeaveBalanceComponent() {
                           <div className="flex items-center justify-center gap-2">
                             <span>Leave Types</span>
                             <Button size="sm" variant={ordering === "leave_types" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_types" ? "" : "leave_types")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -725,7 +725,7 @@ export default function LeaveBalanceComponent() {
                           <div className="flex items-center justify-center gap-2">
                             <span>Status</span>
                             <Button size="sm" variant={ordering === "status" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "status" ? "" : "status")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>

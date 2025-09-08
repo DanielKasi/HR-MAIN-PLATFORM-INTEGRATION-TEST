@@ -1959,7 +1959,7 @@ export default function ApplicationsPage() {
                                 variant={ordering === "applicant" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>{" "}
                           </TableHead>
@@ -1995,7 +1995,7 @@ export default function ApplicationsPage() {
                                 variant={ordering === "applicant_email" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>{" "}
                           </TableHead>
@@ -2003,6 +2003,7 @@ export default function ApplicationsPage() {
                           <TableHead>
                             <div className="flex items-center justify-start gap-4">
                               <span>Status</span>
+
                               <Button
                                 onClick={() => {
                                   if (ordering === "status") {
@@ -2015,7 +2016,7 @@ export default function ApplicationsPage() {
                                 variant={ordering === "status" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>{" "}
                           </TableHead>

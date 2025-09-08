@@ -511,7 +511,7 @@ export default function SeparationPolicyTypesPage() {
                           <TableHead>
                             Type Name
                             <Button size="sm" variant={ordering === "separation_type" ? "default" : "outline"} onClick={() => setOrdering(ordering === "separation_type" ? "" : "separation_type")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </TableHead>
 
@@ -522,7 +522,7 @@ export default function SeparationPolicyTypesPage() {
                           <TableHead>
                             Category
                             <Button size="sm" variant={ordering === "category" ? "default" : "outline"} onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </TableHead>
 
