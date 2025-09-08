@@ -14,11 +14,14 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.db.models import Q
 from django.db import transaction
+from utilities.sortable_api import SortableAPIMixin
 
 
 
-class ProjectListCreateView(APIView):
+class ProjectListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['project_name', 'created_at', 'leaders', 'is_active', 'members', 'description', 'start_date', 'end_date', 'project_status']
+    default_ordering = ['project_name']
 
     @extend_schema(
         operation_id="List Projects",
@@ -38,7 +41,10 @@ class ProjectListCreateView(APIView):
             projects = projects.filter(
                 Q(project_name__icontains=search_query)
             )
-
+        try:
+            projects = self.apply_sorting(projects, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         paginator = CustomPageNumberPagination()
         paginated_projects = paginator.paginate_queryset(projects, request)
         serializer = ProjectSerializer(paginated_projects, many=True)
@@ -142,8 +148,10 @@ class ProjectDetailView(APIView):
         )
 
 
-class TaskListCreateView(APIView):
+class TaskListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['task_name', 'created_at', 'leaders', 'is_active', 'assigned_to', 'description', 'start_date', 'end_date', 'project', 'task_status', 'priority']
+    default_ordering = ['task_name']
 
     @extend_schema(
         operation_id="List Tasks",
@@ -170,6 +178,11 @@ class TaskListCreateView(APIView):
                 Q(task_name__icontains=search_query)
             )
 
+        try:
+            tasks = self.apply_sorting(tasks, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        
         paginator = CustomPageNumberPagination()
         paginated_tasks = paginator.paginate_queryset(tasks, request)
         serializer = TaskSerializer(paginated_tasks, many=True)

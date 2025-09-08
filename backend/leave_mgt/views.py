@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Avg, Sum, F, ExpressionWrapper, FloatField
+from django.db.models import Count, Avg, Sum, F, ExpressionWrapper, FloatField, Q
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
@@ -23,12 +23,14 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExampl
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
-
+from utilities.sortable_api import SortableAPIMixin
 from utilities.leave_mgt_analytics import get_leave_trends_analytics
 
 
 @extend_schema(tags=["Leave Types"])
-class LeaveTypeListCreateAPIView(APIView):
+class LeaveTypeListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'category', 'is_active', 'description', 'max_days_per_year', 'carry_forward_allowed', 'requires_document', 'gender_specific']
+    default_ordering = ['name']
     @extend_schema(
         summary="List all leave types", responses={200: LeaveTypeSerializer(many=True)}
     )
@@ -44,6 +46,11 @@ class LeaveTypeListCreateAPIView(APIView):
                 Q(category__icontains=search_query)
             )
 
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = LeaveTypeSerializer(paginated_qs, many=True)
@@ -98,7 +105,9 @@ class LeaveTypeDetailAPIView(APIView):
 
 
 @extend_schema(tags=["Leave Balances"])
-class LeaveBalanceListCreateAPIView(APIView):
+class LeaveBalanceListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'leave_type', 'is_active', 'allocated_days', 'used_days', 'pending_days', 'carried_forward_days']
+    default_ordering = ['employee']
     @extend_schema(
         summary="List all leave balances",
         parameters=[
@@ -129,7 +138,12 @@ class LeaveBalanceListCreateAPIView(APIView):
             queryset = queryset.filter(
                 Q(employee__user__fullname__icontains=search_query) |
                 Q(leave_type__name__icontains=search_query)
-            )    
+            ) 
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -186,9 +200,10 @@ class LeaveBalanceDetailAPIView(APIView):
 
 
 @extend_schema(tags=["Leave Applications"])
-class LeaveApplicationListCreateAPIView(APIView):
-    # Support both JSON and FormData for file uploads
+class LeaveApplicationListCreateAPIView(APIView, SortableAPIMixin):
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+    allowed_ordering_fields = ['employee', 'created_at', 'leave_type', 'is_active', 'start_date', 'end_date', 'duration_type', 'total_days', 'reason', 'status', 'approved_by', 'approved_at', 'rejection_reason', 'supporting_document']
+    default_ordering = ['employee']
 
     @extend_schema(
         summary="List all leave applications",
@@ -231,6 +246,11 @@ class LeaveApplicationListCreateAPIView(APIView):
                 Q(employee__user__fullname__icontains=search_query) |
                 Q(leave_type__name__icontains=search_query)
             )
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
 
         pagination = CustomPageNumberPagination()
         paginated_qs = pagination.paginate_queryset(queryset, request)
@@ -485,7 +505,9 @@ class LeaveApplicationApprovalAPIView(APIView):
 
 
 @extend_schema(tags=["Leave Policies"])
-class LeavePolicyListCreateAPIView(APIView):
+class LeavePolicyListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'description', 'is_active', 'leave_type', 'min_notice_days', 'max_consecutive_days', 'requires_manager_approval', 'requires_he_approval']
+    default_ordering = ['name']
     @extend_schema(
         summary="List all leave policies",
         responses={200: LeavePolicySerializer(many=True)},
@@ -504,6 +526,11 @@ class LeavePolicyListCreateAPIView(APIView):
                 Q(leave_type__name__icontains=search_query)
             )
 
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = LeavePolicySerializer(paginated_qs, many=True)
@@ -751,38 +778,6 @@ def institution_leave_summary(request, institution_id):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-
-class LeaveAnalyticsAPI(APIView):
-    """
-    API view for leave management trends.
-    The core logic is now in a separate service file.
-    """
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Leave application trends and efficiency analytics.",
-                response=inline_serializer(
-                    name='LeaveTrendsResponse',
-                    fields={
-                        'total_applications': serializers.IntegerField(help_text="Total number of leave applications."),
-                        'applications_by_month': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Volume of applications over time, grouped by month."),
-                        'applications_by_leave_type': serializers.ListField(child=serializers.DictField(child=serializers.CharField()), help_text="Count of applications broken down by leave type."),
-                        'application_status_breakdown': serializers.DictField(help_text="Breakdown of application statuses and rates."),
-                        'average_approval_time_in_days': serializers.FloatField(help_text="Average time taken to approve an application, in days."),
-                    }
-                ),
-            ),
-            404: OpenApiResponse(description="No leave application data found."),
-        },
-        summary="Get Leave Application Analytics",
-        description="Provides insights into leave application trends, efficiency, and outcomes.",
-        tags=["Leave Analytics"],
-    )
-    def get(self, request, institution_id: int):
-        analytics_data = get_leave_trends_analytics(institution_id)
-        if analytics_data is None:
-            return Response({"detail": "No leave application data found for this institution."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(analytics_data, status=status.HTTP_200_OK)
 
 
 class LeaveDashboardAPIView(APIView):

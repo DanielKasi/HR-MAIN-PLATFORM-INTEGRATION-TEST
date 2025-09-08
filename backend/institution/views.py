@@ -1329,7 +1329,9 @@ class InstitutionTaxRuleDetailView(APIView):
             return Response({"detail": "Tax rule not found."}, status=404)
 
 
-class BranchListAPIView(APIView):
+class BranchListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['branch_name', 'created_at', 'branch_location', 'is_active', 'branch_phone_number', 'branch_email', 'branch_opening_time', 'branch_closing_time']
+    default_ordering = ['branch_name']
     @extend_schema(
         request=BranchSerializer,
         responses={201: BranchSerializer},
@@ -1372,6 +1374,11 @@ class BranchListAPIView(APIView):
                 Q(branch_name__icontains=search_query)
                 | Q(branch_location__icontains=search_query)
             )
+
+        try:
+            branches = self.apply_sorting(branches, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(branches, request)
@@ -1455,7 +1462,9 @@ class BranchDetailAPIView(APIView):
             return Response({"detail": "Branch not found."}, status=404)
 
 
-class InstitutionBranchAPIView(APIView):
+class InstitutionBranchAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['branch_name', 'created_at', 'branch_location', 'is_active', 'branch_phone_number', 'branch_email', 'branch_opening_time', 'branch_closing_time']
+    default_ordering = ['branch_name']
     @extend_schema(
         responses={200: BranchSerializer(many=True)},
         description="Retrieve all branches associated to a institution whose ID is given",
@@ -1481,6 +1490,11 @@ class InstitutionBranchAPIView(APIView):
             )
 
         branches = branches.order_by("-created_at")
+
+        try:
+            branches = self.apply_sorting(branches, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(branches, request)
@@ -1666,7 +1680,9 @@ class UserBranchDetailAPIView(APIView):
         )
 
 
-class DepartmentListAPIView(APIView):
+class DepartmentListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'description', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         request=DepartmentSerializer,
         responses={201: DepartmentSerializer},
@@ -1707,6 +1723,12 @@ class DepartmentListAPIView(APIView):
 
         if search_query:
             departments = departments.filter(Q(name__icontains=search_query))
+
+        try:
+            departments = self.apply_sorting(departments, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(departments, request)
         serializer = DepartmentSerializer(paginator_qs, many=True)
@@ -2192,7 +2214,9 @@ class DashboardView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class InstitutionPenaltyConfigListAPIView(APIView):
+class InstitutionPenaltyConfigListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['penalty_type', 'created_at', 'penalty_vale', 'is_active', 'penalty_value_type', 'percentage']
+    default_ordering = ['penalty_type']
     @extend_schema(
         tags=["Penalty Configurations"],
         parameters=[
@@ -2252,6 +2276,11 @@ class InstitutionPenaltyConfigListAPIView(APIView):
                 | Q(penalty_value_type__icontains=search_query)
             )
 
+        try:
+            configs = self.apply_sorting(configs, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = InstitutionPenaltyConfigSerializer(paginated_qs, many=True)
@@ -2305,7 +2334,9 @@ class InstitutionPenaltyConfigDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BranchPenaltyConfigListAPIView(APIView):
+class BranchPenaltyConfigListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['penalty_type', 'created_at', 'penalty_vale', 'is_active', 'penalty_value_type', 'percentage']
+    default_ordering = ['penalty_type']
     @extend_schema(
         tags=["Penalty Configurations"],
         parameters=[
@@ -2376,6 +2407,11 @@ class BranchPenaltyConfigListAPIView(APIView):
                 | Q(penalty_value_type__icontains=search_query)
             )
 
+        try:
+            configs = self.apply_sorting(configs, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = BranchPenaltyConfigSerializer(paginated_qs, many=True)
@@ -2428,7 +2464,10 @@ class BranchPenaltyConfigDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BranchLocationComparisonConfigListAPIView(APIView):
+class BranchLocationComparisonConfigListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'is_active', 'branch', 'radius_in_meters']
+    default_ordering = ['branch']
+
     def get(self, request):
         search_query = request.query_params.get("search", None)
         user = request.user.profile
@@ -2449,6 +2488,11 @@ class BranchLocationComparisonConfigListAPIView(APIView):
         if search_query:
             configs = configs.filter(branch__branch_name__icontains=search_query)
 
+        try:
+            configs = self.apply_sorting(configs, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(configs, request)
         serializer = BranchLocationComparisonConfigSerializer(paginated_qs, many=True)
@@ -2497,7 +2541,10 @@ class BranchLocationComparisonConfigDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BranchShiftListCreateView(APIView):
+class BranchShiftListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ["name", "branch", "start_time", "end_time", "shift_day", "created_at", "is_active"]
+    default_ordering = ["name"]
+
     @extend_schema(
         tags=["Branch Shifts"], responses={200, BranchShiftSerializer(many=True)}
     )
@@ -2516,6 +2563,11 @@ class BranchShiftListCreateView(APIView):
         if search:
             branch_shifts = branch_shifts.filter(Q(name__icontains=search))
 
+        try:
+            branch_shifts = self.apply_sorting(branch_shifts, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        
         branch_shifts = branch_shifts.order_by("name")
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(branch_shifts, request)
