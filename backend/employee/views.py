@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.shortcuts import render
 
+from utilities.sortable_api import SortableAPIMixin
 from spotcheck.models import EmployeeSpotCheck
 from institution.serializers import UserBranchSerializer
 from institution.models import Branch, UserBranch, Department
@@ -174,7 +175,9 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EmployeeListAPIView(APIView):
+class EmployeeListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['user', 'email', 'department', 'is_active', 'position']
+    default_ordering = ['user']
     @extend_schema(
         request=None,
         responses={200: EmployeeSerializer(many=True)},
@@ -203,6 +206,11 @@ class EmployeeListAPIView(APIView):
                     | Q(user__email__icontains=search_query)
                     | Q(department__name__icontains=search_query)
                 )
+
+            try:
+                employees = self.apply_sorting(employees, request)
+            except ValueError as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
             serializer = EmployeeSerializer(paginated_qs, many=True)
@@ -1370,8 +1378,10 @@ class EmployeeBranchDetailAPIView(APIView):
 
 
 @extend_schema(tags=["Employee Attendance"])
-class EmployeeAttendanceListCreateAPIView(APIView):
+class EmployeeAttendanceListCreateAPIView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['employee', 'created_at', 'date', 'is_active', 'check_in_time', 'check_out_time']
+    default_ordering = ['employee']
 
     @extend_schema(
         responses=EmployeeAttendanceSerializer(many=True),
@@ -1413,6 +1423,11 @@ class EmployeeAttendanceListCreateAPIView(APIView):
                 | Q(employee__user__email__icontains=search_query)
                 | Q(date__icontains=search_query)
             )
+
+        try:
+            records = self.apply_sorting(records, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(records, request)
@@ -1511,7 +1526,9 @@ class EmployeeAttendanceDetailAPIView(APIView):
 
 
 @extend_schema(tags=["Employee Type"])
-class EmployeeTypeListCreateAPIView(APIView):
+class EmployeeTypeListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'description', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         responses=EmployeeTypeSerializer(many=True),
         description="Get list of all employee types",
@@ -1535,6 +1552,11 @@ class EmployeeTypeListCreateAPIView(APIView):
             data = data.filter(
                 Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
+
+        try:
+            data = self.apply_sorting(data, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1595,7 +1617,9 @@ class EmployeeTypeDetailAPIView(APIView):
 
 
 @extend_schema(tags=["Work Type"])
-class WorkTypeListCreateAPIView(APIView):
+class WorkTypeListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'description', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         responses=WorkTypeSerializer(many=True),
         description="Get list of all work types",
@@ -1619,6 +1643,11 @@ class WorkTypeListCreateAPIView(APIView):
             data = data.filter(
                 Q(name__icontains=search_query) | Q(description__icontains=search_query)
             )
+
+        try:
+            data = self.apply_sorting(data, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(data, request)
@@ -1748,8 +1777,10 @@ class WorkTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EmployeeContractListAPIView(APIView):
+class EmployeeContractListAPIView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['employee', 'created_at', 'status', 'is_active']
+    default_ordering = ['employee']
 
     @extend_schema(
         responses=EmployeeContractSerializer(many=True),
@@ -1786,6 +1817,11 @@ class EmployeeContractListAPIView(APIView):
                 | Q(employee__user__fullname__icontains=search_query)
                 | Q(contract_reference__icontains=search_query)
             )
+
+        try:
+            contracts = self.apply_sorting(contracts, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(contracts, request)
         serializer = EmployeeContractSerializer(paginated_qs, many=True)
@@ -2066,7 +2102,9 @@ class AttendanceReportGetView(APIView):
             )
 
 
-class EmployeeShiftListCreateView(APIView):
+class EmployeeShiftListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'shift', 'context', 'shift_status', 'date' 'is_active']
+    default_ordering = ['employee']
     @extend_schema(
         summary="List all employee shifts or create a new shift",
         request=EmployeeShiftSerializer,
@@ -2103,6 +2141,11 @@ class EmployeeShiftListCreateView(APIView):
                 Q(employee__user__fullname__icontains=search)
                 | Q(employee__user__email__icontains=search)
             )
+
+        try:
+            shifts = self.apply_sorting(shifts, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_shifts = paginator.paginate_queryset(shifts, request)
@@ -2185,161 +2228,6 @@ class EmployeeShiftDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EmployeeAnalyticsAPI(APIView):
-    """
-    API view for employee analytics and workforce composition.
-    The core logic is now in a separate service file.
-    """
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Employee demographics and workforce composition analytics",
-                response=inline_serializer(
-                    name="EmployeeAnalyticsResponse",
-                    fields={
-                        "headcount": serializers.IntegerField(
-                            help_text="Total number of active employees."
-                        ),
-                        "headcount_by_department": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Employee count by department.",
-                        ),
-                        "headcount_by_position": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Employee count by job position.",
-                        ),
-                        "headcount_by_gender": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Employee count by gender.",
-                        ),
-                        "headcount_by_employee_type": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Employee count by employee type.",
-                        ),
-                        "headcount_by_work_type": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Employee count by work type.",
-                        ),
-                        "age_distribution": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Distribution of employees by age bracket.",
-                        ),
-                    },
-                ),
-            ),
-            404: OpenApiResponse(
-                description="No employee data found for this institution."
-            ),
-        },
-        summary="Get Employee Analytics",
-        description="Provides key analytics on the workforce composition and demographics.",
-        tags=["Employee Analytics"],
-    )
-    def get(self, request, institution_id):
-        analytics_data = get_employee_demographics_analytics(institution_id)
-        if analytics_data is None:
-            return Response(
-                {"detail": "No employee data found for this institution."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        return Response(analytics_data, status=status.HTTP_200_OK)
-
-
-class EmployeeAttendanceAnalyticsAPI(APIView):
-    """
-    API view for employee attendance and productivity analytics.
-    The core logic is now in a separate service file.
-    """
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Employee attendance and productivity analytics",
-                response=inline_serializer(
-                    name="AttendanceAnalyticsResponse",
-                    fields={
-                        "total_hours_worked": serializers.FloatField(
-                            help_text="Total hours worked."
-                        ),
-                        "total_late_minutes": serializers.IntegerField(
-                            help_text="Total minutes late."
-                        ),
-                        "total_overtime_hours": serializers.FloatField(
-                            help_text="Total overtime hours."
-                        ),
-                        "attendance_metrics": serializers.DictField(
-                            help_text="Counts and rates for attendance statuses."
-                        ),
-                    },
-                ),
-            ),
-            404: OpenApiResponse(
-                description="No attendance data found for this institution."
-            ),
-        },
-        summary="Get Employee Attendance Analytics",
-        description="Provides key analytics on employee attendance.",
-        tags=["Employee Analytics"],
-    )
-    def get(self, request, institution_id):
-        analytics_data = get_employee_attendance_analytics(institution_id)
-        if analytics_data is None:
-            return Response(
-                {"detail": "No attendance data found for this institution."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        return Response(analytics_data, status=status.HTTP_200_OK)
-
-
-class EmployeeSalaryAnalyticsAPI(APIView):
-    """
-    API view for employee salary and compensation analytics.
-    The core logic is now in a separate service file.
-    """
-
-    @extend_schema(
-        responses={
-            200: OpenApiResponse(
-                description="Employee salary and compensation analytics",
-                response=inline_serializer(
-                    name="SalaryAnalyticsResponse",
-                    fields={
-                        "average_salary_by_department": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Average salary by department.",
-                        ),
-                        "average_salary_by_position": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Average salary by position.",
-                        ),
-                        "salary_distribution": serializers.ListField(
-                            child=serializers.DictField(child=serializers.CharField()),
-                            help_text="Distribution of employees by salary bracket.",
-                        ),
-                        "gender_pay_gap": serializers.DictField(
-                            child=serializers.FloatField(),
-                            help_text="Average salary breakdown by gender.",
-                        ),
-                    },
-                ),
-            ),
-            404: OpenApiResponse(
-                description="No salary data found for this institution."
-            ),
-        },
-        summary="Get Employee Salary Analytics",
-        description="Provides key analytics on employee salaries and a gender pay gap analysis.",
-        tags=["Employee Analytics"],
-    )
-    def get(self, request, institution_id):
-        analytics_data = get_employee_salary_analytics(institution_id)
-        if analytics_data is None:
-            return Response(
-                {"detail": "No salary data found for this institution."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        return Response(analytics_data, status=status.HTTP_200_OK)
 
 
 class EmployeeDashboardAPIView(APIView):

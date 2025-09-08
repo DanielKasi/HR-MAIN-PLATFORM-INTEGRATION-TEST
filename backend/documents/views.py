@@ -3,6 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+from utilities.sortable_api import SortableAPIMixin
 from .models import DocumentType, DocumentTemplate, Document
 from .serializers import (
     DocumentTypeSerializer,
@@ -37,7 +39,9 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-class DocumentTypeListCreateAPIView(APIView):
+class DocumentTypeListCreateAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'code', 'is_active']
+    default_ordering = ['name']
 
     @extend_schema(
         description="Retrieve a paginated list of document types for a given institution.",
@@ -55,6 +59,11 @@ class DocumentTypeListCreateAPIView(APIView):
                 Q(name__icontains=search_query) | Q(code__icontains=search_query) | 
                 Q(description__icontains=search_query)
             )
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -131,8 +140,10 @@ class DocumentTypeRetrieveUpdateDeleteAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class DocumentTemplateListCreateAPIView(APIView):
+class DocumentTemplateListCreateAPIView(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['name', 'created_at', 'document_type', 'is_active', 'template_type']
+    default_ordering = ['name']
 
     @extend_schema(
         request=DocumentTemplateSerializer,
@@ -205,6 +216,11 @@ class DocumentTemplateListCreateAPIView(APIView):
                 Q(name__icontains=search_query) |
                 Q(template_type__icontains=search_query)
             )
+
+        try:
+            templates = self.apply_sorting(templates, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
         paginator = CustomPageNumberPagination()
         paginated_templates = paginator.paginate_queryset(templates, request)
         serializer = DocumentTemplateSerializer(
