@@ -276,7 +276,7 @@ export default function DisciplinaryActionsPage() {
                                 variant={ordering === "employee__user__fullname" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
@@ -289,7 +289,7 @@ export default function DisciplinaryActionsPage() {
                                 variant={ordering === "discipline_type__severity" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
@@ -302,7 +302,7 @@ export default function DisciplinaryActionsPage() {
                                 variant={ordering === "incident_date" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
@@ -315,7 +315,7 @@ export default function DisciplinaryActionsPage() {
                                 variant={ordering === "assigned_to__user__fullname" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>

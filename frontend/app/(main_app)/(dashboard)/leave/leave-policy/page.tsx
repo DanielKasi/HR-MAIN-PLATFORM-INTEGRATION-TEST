@@ -861,7 +861,7 @@ const LeavePolicyComponent = () => {
                               <div className="flex items-center gap-2">
                                 <span>Policy Name</span>
                                 <Button size="sm" variant={ordering === "name" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "name" ? "" : "name")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -869,7 +869,7 @@ const LeavePolicyComponent = () => {
                               <div className="flex items-center gap-2">
                                 <span>Leave Type</span>
                                 <Button size="sm" variant={ordering === "leave_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_type" ? "" : "leave_type")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -877,7 +877,7 @@ const LeavePolicyComponent = () => {
                               <div className="flex items-center gap-2">
                                 <span>Category</span>
                                 <Button size="sm" variant={ordering === "category" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -886,7 +886,7 @@ const LeavePolicyComponent = () => {
                               <div className="flex items-center gap-2">
                                 <span>Notice Days</span>
                                 <Button size="sm" variant={ordering === "min_notice_days" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "min_notice_days" ? "" : "min_notice_days")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>

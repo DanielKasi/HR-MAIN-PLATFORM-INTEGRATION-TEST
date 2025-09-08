@@ -343,7 +343,7 @@ const BranchShiftsPage = () => {
                               variant={ordering === "name" ? "default" : "outline"}
                               type="button"
                             >
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -356,7 +356,7 @@ const BranchShiftsPage = () => {
                               variant={ordering === "start_time" ? "default" : "outline"}
                               type="button"
                             >
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -369,7 +369,7 @@ const BranchShiftsPage = () => {
                               variant={ordering === "end_time" ? "default" : "outline"}
                               type="button"
                             >
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>

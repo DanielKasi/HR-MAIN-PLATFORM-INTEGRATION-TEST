@@ -163,21 +163,21 @@ export default function SeparationPoliciesPage() {
                               <TableHead>
                                 Policy Name
                                 <Button size="sm" variant={ordering === "policy_name" ? "default" : "outline"} onClick={() => setOrdering(ordering === "policy_name" ? "" : "policy_name")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </TableHead>
 
                               <TableHead>
                                 Separation Type
                                 <Button size="sm" variant={ordering === "separation_type__separation_type" ? "default" : "outline"} onClick={() => setOrdering(ordering === "separation_type__separation_type" ? "" : "separation_type__separation_type")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </TableHead>
 
                               <TableHead>
                                 Notice Period
                                 <Button size="sm" variant={ordering === "min_notice_days" ? "default" : "outline"} onClick={() => setOrdering(ordering === "min_notice_days" ? "" : "min_notice_days")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </TableHead>
 

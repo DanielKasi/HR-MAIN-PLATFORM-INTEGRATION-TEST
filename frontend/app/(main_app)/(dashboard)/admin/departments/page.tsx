@@ -1,8 +1,8 @@
 "use client";
 
-import {useState, useEffect, useRef} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   Building2,
   Eye,
@@ -15,16 +15,16 @@ import {
   AlertTriangle,
   ArrowLeft,
 } from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Skeleton} from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -33,22 +33,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
   deleteDepartment,
   getPaginatedDepartments,
   getPaginatedDepartmentsFromUrl,
   showErrorToast,
 } from "@/lib/utils";
-import {type IDepartment} from "@/types/types.utils";
-import {PERMISSION_CODES} from "@/constants";
-import {toast} from "sonner";
+import { type IDepartment } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
+import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {useDocumentTitle} from "@/hooks/use-document-title";
+import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {Icon} from "@iconify/react";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 
 export default function DepartmentsPage() {
   const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -89,13 +89,13 @@ export default function DepartmentsPage() {
 
     setIsDeleting(true);
     try {
-      await deleteDepartment({departmentId: departmentToDelete.id});
+      await deleteDepartment({ departmentId: departmentToDelete.id });
       toast.success("Department deleted successfully");
       setDeleteModalOpen(false);
       setDepartmentToDelete(null);
       refreshFunctionRef.current?.();
     } catch (error) {
-      showErrorToast({error, defaultMessage: "Failed to delete department"});
+      showErrorToast({ error, defaultMessage: "Failed to delete department" });
     } finally {
       setIsDeleting(false);
     }
@@ -188,18 +188,18 @@ export default function DepartmentsPage() {
               ordering,
             });
           }}
-          fetchFromUrl={async (args: {url: string}) =>
-            getPaginatedDepartmentsFromUrl({url: args.url})
+          fetchFromUrl={async (args: { url: string }) =>
+            getPaginatedDepartmentsFromUrl({ url: args.url })
           }
           deps={[selectedInstitution?.id, searchTerm, ordering]}
           query={searchTerm}
           onError={(err) =>
-            showErrorToast({error: err, defaultMessage: "Failed to fetch departments"})
+            showErrorToast({ error: err, defaultMessage: "Failed to fetch departments" })
           }
           className="space-y-4"
           footerClassName="pt-4"
         >
-          {({data, loading, refresh}) => {
+          {({ data, loading, refresh }) => {
             refreshFunctionRef.current = refresh;
 
             useEffect(() => {
@@ -251,7 +251,7 @@ export default function DepartmentsPage() {
                           variant={ordering === "name" ? "default" : "outline"}
                           type="button"
                         >
-                          <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                          <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                         </Button>
                       </div>{" "}
                     </TableHead>

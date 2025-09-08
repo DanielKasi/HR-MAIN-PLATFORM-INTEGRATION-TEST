@@ -652,35 +652,35 @@ const LeaveTypesPage = () => {
                         <TableHead className="text-xs sm:text-sm">
                           Name
                           <Button size="sm" variant={ordering === "name" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "name" ? "" : "name")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 
                         <TableHead className="text-xs sm:text-sm">
                           Category
                           <Button size="sm" variant={ordering === "category" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 
                         <TableHead className="text-xs sm:text-sm">
                           Status
                           <Button size="sm" variant={ordering === "is_active" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "is_active" ? "" : "is_active")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 
                         <TableHead className="text-xs sm:text-sm">
                           Max Days
                           <Button size="sm" variant={ordering === "max_days_per_year" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "max_days_per_year" ? "" : "max_days_per_year")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 
                         <TableHead className="text-xs sm:text-sm">
                           Carry Forward
                           <Button size="sm" variant={ordering === "carry_forward_allowed" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "carry_forward_allowed" ? "" : "carry_forward_allowed")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 
@@ -690,7 +690,7 @@ const LeaveTypesPage = () => {
                         <TableHead className="text-xs sm:text-sm">
                           Created Date
                           <Button size="sm" variant={ordering === "created_at" ? "default" : "outline"} className="ml-2" onClick={() => setOrdering(ordering === "created_at" ? "" : "created_at")}>
-                            <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                            <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                           </Button>
                         </TableHead>
 

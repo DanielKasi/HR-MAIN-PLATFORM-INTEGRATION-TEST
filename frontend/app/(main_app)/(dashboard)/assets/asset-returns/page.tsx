@@ -264,7 +264,7 @@ const AssetReturnsComponent = () => {
                                 variant={ordering === "asset__asset_name" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
@@ -277,7 +277,7 @@ const AssetReturnsComponent = () => {
                                 variant={ordering === "asset__serial_number" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
@@ -291,7 +291,7 @@ const AssetReturnsComponent = () => {
                                 variant={ordering === "created_at" ? "default" : "outline"}
                                 type="button"
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>

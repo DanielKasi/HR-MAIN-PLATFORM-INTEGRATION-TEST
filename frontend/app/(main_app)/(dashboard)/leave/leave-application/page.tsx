@@ -1025,7 +1025,7 @@ const LeaveApplicationComponent = () => {
                           <div className="flex items-center gap-2">
                             <span>Employee</span>
                             <Button size="sm" variant={ordering === "employee" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -1033,7 +1033,7 @@ const LeaveApplicationComponent = () => {
                           <div className="flex items-center gap-2">
                             <span>Leave Type</span>
                             <Button size="sm" variant={ordering === "leave_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_type" ? "" : "leave_type")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -1041,7 +1041,7 @@ const LeaveApplicationComponent = () => {
                           <div className="flex items-center gap-2">
                             <span>Start Date</span>
                             <Button size="sm" variant={ordering === "start_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "start_date" ? "" : "start_date")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -1049,7 +1049,7 @@ const LeaveApplicationComponent = () => {
                           <div className="flex items-center gap-2">
                             <span>End Date</span>
                             <Button size="sm" variant={ordering === "end_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "end_date" ? "" : "end_date")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>
@@ -1057,7 +1057,7 @@ const LeaveApplicationComponent = () => {
                           <div className="flex items-center gap-2">
                             <span>Duration</span>
                             <Button size="sm" variant={ordering === "duration_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "duration_type" ? "" : "duration_type")}>
-                              <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                             </Button>
                           </div>
                         </TableHead>

@@ -521,7 +521,7 @@ export default function PayrollPeriods() {
                                   variant={ordering === "name" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -540,7 +540,7 @@ export default function PayrollPeriods() {
                                   variant={ordering === "start_date" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -559,7 +559,7 @@ export default function PayrollPeriods() {
                                   variant={ordering === "pay_date" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -578,7 +578,7 @@ export default function PayrollPeriods() {
                                   variant={ordering === "days_to_pay" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>

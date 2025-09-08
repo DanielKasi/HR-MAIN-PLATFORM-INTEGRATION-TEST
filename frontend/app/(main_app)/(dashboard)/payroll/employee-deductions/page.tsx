@@ -248,7 +248,7 @@ export default function EmployeeDeductionsPage() {
                                   variant={ordering === "employee__user__fullname" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>
@@ -269,7 +269,7 @@ export default function EmployeeDeductionsPage() {
                                   variant={ordering === "amount" ? "default" : "outline"}
                                   type="button"
                                 >
-                                  <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
                             </TableHead>

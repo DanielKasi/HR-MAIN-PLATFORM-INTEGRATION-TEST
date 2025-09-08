@@ -280,7 +280,7 @@ export default function OffboardingStagesPage() {
                                 variant={ordering === "stage_name" ? "default" : "outline"}
                                 onClick={() => setOrdering(ordering === "stage_name" ? "" : "stage_name")}
                               >
-                                <Icon icon="hugeicons:sorting-02" className="!h-5 !w-5" />
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                               </Button>
                             </div>
                           </TableHead>
