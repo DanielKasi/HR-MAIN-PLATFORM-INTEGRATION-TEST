@@ -22,9 +22,6 @@ from .views import (
     AttendanceReportGetView,
     EmployeeShiftDetailView,
     EmployeeShiftListCreateView,
-    EmployeeSalaryAnalyticsAPI,
-    EmployeeAnalyticsAPI,
-    EmployeeAttendanceAnalyticsAPI,
     EmployeeDashboardAPIView,
     AttendanceDashboardAPIView
 )
@@ -131,21 +128,7 @@ urlpatterns = [
         EmployeeShiftDetailView.as_view(),
         name="employee-shifts-detail",
     ),
-    path(
-        'institutions/<int:institution_id>/employee-analytics/',
-        EmployeeAnalyticsAPI.as_view(),
-        name='employee-analytics'
-    ),
-    path(
-        'institutions/<int:institution_id>/attendance-analytics/',
-        EmployeeAttendanceAnalyticsAPI.as_view(),
-        name='attendance-analytics'
-    ),
-    path(
-        'institutions/<int:institution_id>/salary-analytics/',
-        EmployeeSalaryAnalyticsAPI.as_view(),
-        name='salary-analytics'
-    ),
+
     path('analytics/', EmployeeDashboardAPIView.as_view(), name='employee-analytics'),
     path('attendance-analytics/', AttendanceDashboardAPIView.as_view(), name='attendance-analytics')
 ]

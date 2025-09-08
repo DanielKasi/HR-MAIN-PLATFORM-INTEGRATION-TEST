@@ -210,7 +210,8 @@ class ChangeEmailAndResendOTPAPIView(APIView):
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
-            print(f"Resend {otp}")
+            print(f"[DEBUG] OTP for user {user.id} ({new_email}): {otp}")
+
             send_otp_to_user(user, otp)
 
             cleanup_expired_otps()

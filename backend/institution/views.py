@@ -75,7 +75,7 @@ from payroll.models import Payslip
 from django.db.models.functions import ExtractMonth
 from django.db.models import Value, IntegerField
 from rest_framework import parsers
-
+from utilities.sortable_api import SortableAPIMixin
 from ai_assistant.schema_export import get_database_schema_for_ai
 from ai_assistant.query_runner import run_sql_with_retry
 from ai_assistant.query_generator import generate_sql_from_question
@@ -267,10 +267,18 @@ class DefaultDataAPIView(APIView):
 
 
 class BranchWorkingDaysListAPIView(APIView):
+
     @extend_schema(
-        responses={200: BranchWorkingDaysSerializer},
-        description="Retrieve all working days for a branch.",
-        summary="Get all working days for a branch",
+        responses={
+            200: OpenApiResponse(
+                response=BranchWorkingDaysSerializer,
+                description="Working days for the specified branch.",
+            ),
+            400: OpenApiResponse(description="Branch ID required or working days not found."),
+            404: OpenApiResponse(description="Branch not found."),
+        },
+        description="Retrieve working days for a branch.",
+        summary="Get working days for a branch",
         tags=["Branch Working Days Management"],
     )
     def get(self, request):
@@ -278,29 +286,27 @@ class BranchWorkingDaysListAPIView(APIView):
 
         if not branch_id:
             return Response(
-                {"Detail": "Branch ID is Required"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Branch ID is required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             branch = Branch.objects.get(id=int(branch_id))
+        except Branch.DoesNotExist:
+            return Response(
+                {"detail": "Branch with ID not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-            if branch:
-                working_days = BranchWorkingDays.objects.get(branch=branch)
-                serializer = BranchWorkingDaysSerializer(working_days)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(
-                    {"Detail": "Branch with ID not found."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
+        try:
+            working_days = BranchWorkingDays.objects.get(branch=branch)
+            serializer = BranchWorkingDaysSerializer(working_days)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except BranchWorkingDays.DoesNotExist:
             return Response(
-                {
-                    "Detail": "Working days for the given branch not found. Try creating them."
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                {"detail": "Working days for the given branch not found. Try creating them."},
+                status=status.HTTP_400_BAD_REQUEST
+            ) 
 
     @extend_schema(
         request=BranchWorkingDaysSerializer,
@@ -357,8 +363,11 @@ class BranchWorkingDaysDetailView(APIView):
         )
 
 
-class InstitutionKYCDocumentListCreateView(APIView):
+class InstitutionKYCDocumentListCreateView(APIView, SortableAPIMixin):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    allowed_ordering_fields = ['document_title', 'created_at', 'is_active']
+    default_ordering = ['document_title']
+
 
     @extend_schema(
         request=InstitutionKYCDocumentBulkCreateSerializer,
@@ -391,6 +400,11 @@ class InstitutionKYCDocumentListCreateView(APIView):
         institution = user.institution
 
         kyc_documents = InstitutionKYCDocument.objects.filter(institution=institution)
+
+        try:
+            kyc_documents = self.apply_sorting(kyc_documents, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(kyc_documents, request)
@@ -725,6 +739,9 @@ class InstitutionDetailAPIView(APIView):
 
 
 class InstitutionBankTypeListAPIView(APIView):
+    allowed_ordering_fields = ['bank_fullname', 'created_at', 'bank_code', 'is_active']
+    default_ordering = ['bank_fullname']
+
     @extend_schema(
         responses={200: InstitutionBankTypeSerializer(many=True)},
         description="Retrieve all attached banks .",
@@ -750,6 +767,11 @@ class InstitutionBankTypeListAPIView(APIView):
                 | Q(bank_code__icontains=search_query)
                 | Q(br_code__icontains=search_query)
             )
+
+        try:
+            bank_types = self.apply_sorting(bank_types, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_types, request)
@@ -841,7 +863,10 @@ class InstitutionBankTypeDetailView(APIView):
             return Response({"detail": "Bank type not found."}, status=404)
 
 
-class InstitutionBankAccountListAPIView(APIView):
+class InstitutionBankAccountListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['account_name', 'created_at', 'institution_bank', 'is_active']
+    default_ordering = ['account_name']
+
     @extend_schema(
         responses={200: InstitutionBankAccountSerializer(many=True)},
         description="Retrieve all bank accounts.",
@@ -867,6 +892,11 @@ class InstitutionBankAccountListAPIView(APIView):
                 | Q(account_number__icontains=search_query)
                 | Q(institution_bank__bank_fullname__icontains=search_query)
             )
+
+        try:
+            bank_accounts = self.apply_sorting(bank_accounts, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(bank_accounts, request)
@@ -1034,7 +1064,10 @@ class InstitutionWorkingDaysDetailView(APIView):
         )
 
 
-class InstitutionTaxListAPIView(APIView):
+class InstitutionTaxListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['tax_name', 'created_at', 'tax_status', 'is_active']
+    default_ordering = ['tax_name']
+
     @extend_schema(
         responses={200: InstitutionTaxSerializer(many=True)},
         description="Retrieve all tax configurations for an institution.",
@@ -1067,6 +1100,11 @@ class InstitutionTaxListAPIView(APIView):
                 taxes = taxes.filter(is_active=False)
             elif status == "all":
                 pass
+
+        try:
+            taxes = self.apply_sorting(taxes, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(taxes, request)
@@ -1157,7 +1195,10 @@ class InstitutionTaxDetailView(APIView):
             return Response({"detail": "Tax configuration not found."}, status=404)
 
 
-class InstitutionTaxRuleListAPIView(APIView):
+class InstitutionTaxRuleListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['tax_rule_name', 'created_at', 'tax_rule_fixed_amount', 'is_active', 'salary_from', 'salary_to']
+    default_ordering = ['tax_rule_name']
+
     @extend_schema(
         responses={200: InstitutionTaxRuleSerializer(many=True)},
         description="Retrieve all tax rules for an institution.",
@@ -1193,6 +1234,11 @@ class InstitutionTaxRuleListAPIView(APIView):
                 tax_rules = tax_rules.filter(is_active=False)
             elif status == "all":
                 pass
+
+        try:
+            tax_rules = self.apply_sorting(tax_rules, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(tax_rules, request)
