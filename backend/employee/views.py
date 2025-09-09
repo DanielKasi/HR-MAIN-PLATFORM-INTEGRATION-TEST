@@ -330,7 +330,6 @@ class EmployeeCreateAPIView(APIView):
     def post(self, request):
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
-
         # Handle JSON payload
         if request.content_type == 'application/json':
             data = request.data
@@ -452,7 +451,9 @@ class EmployeeCreateAPIView(APIView):
             "tin",
             "address",
             "skills",
-            "salary"
+            "salary",
+            "date_of_joining",
+            "email"
         ]
         for field in scalar_fields:
             if field in final_data:
