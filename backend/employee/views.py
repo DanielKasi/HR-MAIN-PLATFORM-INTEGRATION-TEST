@@ -281,6 +281,52 @@ class EmployeeCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
+    @extend_schema(
+        operation_id="create_employee",
+        tags=["Employee Management"],
+        summary="Create employee",
+        description="Create a new employee with personal details, bank accounts, next of kin, etc. Supports JSON or form-data with file upload for bulk creation.",
+        request=EmployeeSerializer,
+        responses={
+            201: EmployeeSerializer,
+            400: {
+                'description': 'Validation errors',
+                'examples': {
+                    'missing_fields': {
+                        'summary': 'Missing required fields',
+                        'value': {'detail': 'Missing required user fields'}
+                    },
+                    'validation_errors': {
+                        'summary': 'Field validation errors', 
+                        'value': {'detail': {'date_of_birth': ['Employee must be at least 18 years old.']}}
+                    }
+                }
+            },
+            500: {'description': 'Server error'}
+        },
+        examples=[
+            OpenApiExample(
+                name='Complete Employee',
+                value={
+                    "user": {"fullname": "John Doe", "email": "john@company.com"},
+                    "position": 1, "department": 1, "work_type": 1, "employee_type": 1,
+                    "gender": "male", "marital_status": "married", "date_of_birth": "1990-01-01",
+                    "selected_branches": [1], "is_active": True,
+                    "bank_accounts": [{"bank": 1, "account_number": "1234567890"}],
+                    "next_of_kin": [{"name": "Jane Doe", "phone_number": "+1234567890", "relationship": "spouse"}]
+                }
+            ),
+            OpenApiExample(
+                name='Minimal Employee',
+                value={
+                    "user": {"fullname": "Jane Smith", "email": "jane@company.com"},
+                    "position": 1, "department": 1, "work_type": 1, "employee_type": 1,
+                    "gender": "female", "date_of_birth": "1992-03-15", "selected_branches": [1]
+                }
+            )
+        ]
+    )
+
     def post(self, request):
 
         if "file" in request.FILES:

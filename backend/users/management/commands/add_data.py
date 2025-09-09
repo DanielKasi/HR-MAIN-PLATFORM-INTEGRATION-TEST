@@ -2,7 +2,8 @@ import json
 import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
-
+from daphne.server import Server
+import asyncio
 from users.models import Permission, PermissionCategory, SystemType, System
 from workflows.models import WorkflowAction, WorkflowCategory
 from approval.models import Action
@@ -15,30 +16,95 @@ from institution.models import (
     Branch,
     InstitutionWorkingDays,
 )
-from employee.models import Employee
+from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
 
-
 class Command(BaseCommand):
-    help = "Add/sync permissions, workflows, systems, discipline types, and approval actions from JSON files"
+    help = "Add/sync permissions, workflows, systems, discipline types, approval actions, and start Daphne"
+
+    # def add_arguments(self, parser):
+    #     parser.add_argument(
+    #         '--host',
+    #         default='0.0.0.0',
+    #         help='Host to bind Daphne (default: 0.0.0.0)',
+    #     )
+    #     parser.add_argument(
+    #         '--port',
+    #         default=8000,
+    #         type=int,
+    #         help='Port to bind Daphne (default: 8000)',
+    #     )
 
     def handle(self, *args, **kwargs):
+        # Run sync logic
         self.sync_permissions()
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_workflows()
-        self.sync_approval_actions()  # Add this line
+        self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
+        self.create_default_awards() 
 
-    def sync_permissions(self):
-        filepath = os.path.join(
-            settings.BASE_DIR, "users", "fixtures", "permissions.json"
-        )
-        if not os.path.exists(filepath):
-            self.stdout.write(
-                self.style.ERROR(f"Permissions file not found at {filepath}")
+        # Start Daphne automatically
+        # self.stdout.write(self.style.MIGRATE_HEADING(f"\n⏳ Starting Daphne server on {kwargs['host']}:{kwargs['port']}..."))
+        # try:
+        #     from core.asgi import application
+        #     server = Server(
+        #         application=application,
+        #         endpoints=[f"tcp:port={kwargs['port']}:interface={kwargs['host']}"],
+        #         verbosity=2,
+        #     )
+        #     asyncio.run(server.run())
+        #     self.stdout.write(self.style.SUCCESS(f"Daphne is now running on http://{kwargs['host']}:{kwargs['port']}"))
+        # except KeyboardInterrupt:
+        #     self.stdout.write(self.style.SUCCESS("Daphne server stopped."))
+        # except Exception as e:
+        #     self.stdout.write(self.style.ERROR(f"Failed to start Daphne: {e}"))
+
+    def create_default_awards(self):
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Creating default qualification awards...\n"))
+
+        default_awards = [
+            {"name": "PLE", "description": "Primary Leaving Examination"},
+            {"name": "UCE", "description": "Uganda Certificate of Education (O’Level)"},
+            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A’Level)"},
+            {"name": "Diploma", "description": "Diploma level qualification"},
+            {"name": "Bachelor’s Degree", "description": "Undergraduate degree"},
+            {"name": "Master’s Degree", "description": "Postgraduate degree"},
+            {"name": "PhD", "description": "Doctor of Philosophy"},
+        ]
+
+        valid_award_names = set()
+        created_count = 0
+        updated_count = 0
+
+        for award_data in default_awards:
+            award, created = QualificationAward.objects.update_or_create(
+                name=award_data["name"],
+                defaults={"description": award_data["description"]},
             )
+            valid_award_names.add(award_data["name"])
+            if created:
+                created_count += 1
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created award: {award.name}"))
+            else:
+                updated_count += 1
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated award: {award.name}"))
+
+        deleted_awards, _ = QualificationAward.objects.exclude(name__in=valid_award_names).delete()
+
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Qualification Awards Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_awards}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Qualification awards synced successfully!"))        
+
+    # Your existing methods (unchanged)
+    def sync_permissions(self):
+        filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "permissions.json")
+        if not os.path.exists(filepath):
+            self.stdout.write(self.style.ERROR(f"Permissions file not found at {filepath}"))
             return
 
         with open(filepath, "r") as file:
@@ -52,9 +118,7 @@ class Command(BaseCommand):
         for category_name, perms in permissions_data.items():
             category, _ = PermissionCategory.objects.get_or_create(
                 permission_category_name=category_name,
-                defaults={
-                    "permission_category_description": f"{category_name} related permissions"
-                },
+                defaults={"permission_category_description": f"{category_name} related permissions"},
             )
             valid_category_names.add(category.permission_category_name)
 
@@ -69,27 +133,16 @@ class Command(BaseCommand):
                 )
                 valid_permission_codes.add(perm["code"])
 
-        deleted_permissions, _ = Permission.objects.exclude(
-            permission_code__in=valid_permission_codes
-        ).delete()
-
-        deleted_categories, _ = PermissionCategory.objects.exclude(
-            permission_category_name__in=valid_category_names
-        ).delete()
+        deleted_permissions, _ = Permission.objects.exclude(permission_code__in=valid_permission_codes).delete()
+        deleted_categories, _ = PermissionCategory.objects.exclude(permission_category_name__in=valid_category_names).delete()
 
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Permissions Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Permissions: {deleted_permissions}")
-        )
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Categories: {deleted_categories}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Permissions: {deleted_permissions}"))
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Categories: {deleted_categories}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Permissions synced successfully!"))
 
     def sync_systems(self):
-        filepath = os.path.join(
-            settings.BASE_DIR, "users", "fixtures", "default_systems.json"
-        )
+        filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "default_systems.json")
         if not os.path.exists(filepath):
             self.stdout.write(self.style.ERROR(f"Systems file not found at {filepath}"))
             return
@@ -102,7 +155,6 @@ class Command(BaseCommand):
         valid_system_type_names = set()
         valid_system_codes = set()
 
-        # Sync system types
         for st_data in systems_data.get("system_types", []):
             SystemType.objects.update_or_create(
                 name=st_data["name"],
@@ -110,83 +162,38 @@ class Command(BaseCommand):
             )
             valid_system_type_names.add(st_data["name"])
 
-        # Sync systems
         for sys_data in systems_data.get("systems", []):
             try:
                 system_type = SystemType.objects.get(name=sys_data["system_type"])
             except SystemType.DoesNotExist:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Skipping System {sys_data['code']} (unknown type: {sys_data['system_type']})"
-                    )
-                )
+                self.stdout.write(self.style.WARNING(f"Skipping System {sys_data['code']} (unknown type: {sys_data['system_type']})"))
                 continue
 
             System.objects.update_or_create(
                 code=sys_data["code"],
-                defaults={
-                    "description": sys_data.get("description", ""),
-                    "system_type": system_type,
-                },
+                defaults={"description": sys_data.get("description", ""), "system_type": system_type},
             )
             valid_system_codes.add(sys_data["code"])
 
-        deleted_systems, _ = System.objects.exclude(
-            code__in=valid_system_codes
-        ).delete()
-
-        deleted_system_types, _ = SystemType.objects.exclude(
-            name__in=valid_system_type_names
-        ).delete()
+        deleted_systems, _ = System.objects.exclude(code__in=valid_system_codes).delete()
+        deleted_system_types, _ = SystemType.objects.exclude(name__in=valid_system_type_names).delete()
 
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Systems Summary"))
         self.stdout.write(self.style.NOTICE(f"  🧹 Removed Systems: {deleted_systems}"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Systems synced successfully!"))
 
     def sync_discipline_types(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Syncing discipline types...\n")
-        )
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing discipline types...\n"))
 
         default_types = [
-            {
-                "name": "Verbal Warning",
-                "description": "Informal verbal warning for minor infractions",
-                "severity": "low",
-            },
-            {
-                "name": "Written Warning",
-                "description": "Formal written warning documented in employee file",
-                "severity": "medium",
-            },
-            {
-                "name": "Final Warning",
-                "description": "Final written warning before suspension or termination",
-                "severity": "high",
-            },
-            {
-                "name": "Suspension",
-                "description": "Temporary suspension from work duties",
-                "severity": "high",
-            },
-            {
-                "name": "Termination",
-                "description": "Employment termination for serious violations",
-                "severity": "critical",
-            },
-            {
-                "name": "Performance Improvement Plan",
-                "description": "Structured plan to address performance issues",
-                "severity": "medium",
-            },
-            {
-                "name": "Counseling",
-                "description": "Professional counseling or coaching session",
-                "severity": "low",
-            },
+            {"name": "Verbal Warning", "description": "Informal verbal warning for minor infractions", "severity": "low"},
+            {"name": "Written Warning", "description": "Formal written warning documented in employee file", "severity": "medium"},
+            {"name": "Final Warning", "description": "Final written warning before suspension or termination", "severity": "high"},
+            {"name": "Suspension", "description": "Temporary suspension from work duties", "severity": "high"},
+            {"name": "Termination", "description": "Employment termination for serious violations", "severity": "critical"},
+            {"name": "Performance Improvement Plan", "description": "Structured plan to address performance issues", "severity": "medium"},
+            {"name": "Counseling", "description": "Professional counseling or coaching session", "severity": "low"},
         ]
 
         valid_discipline_names = set()
@@ -196,53 +203,28 @@ class Command(BaseCommand):
         for type_data in default_types:
             discipline_type, created = DisciplineType.objects.update_or_create(
                 name=type_data["name"],
-                defaults={
-                    "description": type_data["description"],
-                    "severity": type_data["severity"],
-                },
+                defaults={"description": type_data["description"], "severity": type_data["severity"]},
             )
             valid_discipline_names.add(type_data["name"])
-
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created discipline type: {discipline_type.name}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created discipline type: {discipline_type.name}"))
             else:
                 updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️  Updated discipline type: {discipline_type.name}"
-                    )
-                )
+                self.stdout.write(self.style.NOTICE(f"  ♻️  Updated discipline type: {discipline_type.name}"))
 
-        # Remove discipline types that are no longer in the default list
-        deleted_discipline_types, _ = DisciplineType.objects.exclude(
-            name__in=valid_discipline_names
-        ).delete()
+        deleted_discipline_types, _ = DisciplineType.objects.exclude(name__in=valid_discipline_names).delete()
 
-        self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Discipline Types Summary")
-        )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Discipline Types Summary"))
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️  Updated: {updated_count}"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}")
-        )
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Discipline types synced successfully!")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Discipline types synced successfully!"))
 
     def sync_workflows(self):
-        filepath = os.path.join(
-            settings.BASE_DIR, "users", "fixtures", "workflows.json"
-        )
+        filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "workflows.json")
         if not os.path.exists(filepath):
-            self.stdout.write(
-                self.style.ERROR(f"Workflows file not found at {filepath}")
-            )
+            self.stdout.write(self.style.ERROR(f"Workflows file not found at {filepath}"))
             return
 
         with open(filepath, "r") as file:
@@ -267,60 +249,21 @@ class Command(BaseCommand):
                 )
                 valid_action_codes.add(action["code"])
 
-        deleted_actions, _ = WorkflowAction.objects.exclude(
-            code__in=valid_action_codes
-        ).delete()
-
-        deleted_categories, _ = WorkflowCategory.objects.exclude(
-            code__in=valid_workflow_codes
-        ).delete()
+        deleted_actions, _ = WorkflowAction.objects.exclude(code__in=valid_action_codes).delete()
+        deleted_categories, _ = WorkflowCategory.objects.exclude(code__in=valid_workflow_codes).delete()
 
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Workflows Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Workflow Actions: {deleted_actions}")
-        )
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Workflow Categories: {deleted_categories}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Workflow Actions: {deleted_actions}"))
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Workflow Categories: {deleted_categories}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Workflows synced successfully!"))
 
     def sync_approval_actions(self):
-        """
-        Create default approval actions (create, update, delete)
-        """
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n")
-        )
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n"))
 
         default_actions = [
-            {
-                "name": "create",
-                "description": "Action for creating new records that require approval",
-            },
-            {
-                "name": "update",
-                "description": "Action for updating existing records that require approval",
-            },
-            {
-                "name": "delete",
-                "description": "Action for deleting records that require approval",
-            },
-            # {
-            #     "name": "activate",
-            #     "description": "Action for activating records that require approval",
-            # },
-            # {
-            #     "name": "deactivate",
-            #     "description": "Action for deactivating records that require approval",
-            # },
-            # {
-            #     "name": "publish",
-            #     "description": "Action for publishing records that require approval",
-            # },
-            # {
-            #     "name": "archive",
-            #     "description": "Action for archiving records that require approval",
-            # },
+            {"name": "create", "description": "Action for creating new records that require approval"},
+            {"name": "update", "description": "Action for updating existing records that require approval"},
+            {"name": "delete", "description": "Action for deleting records that require approval"},
         ]
 
         valid_action_names = set()
@@ -330,51 +273,23 @@ class Command(BaseCommand):
         for action_data in default_actions:
             action, created = Action.objects.update_or_create(
                 name=action_data["name"],
-                defaults={
-                    "description": action_data["description"],
-                },
+                defaults={"description": action_data["description"]},
             )
             valid_action_names.add(action_data["name"])
-
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created approval action: {action.name} (Code: {action.code})"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created approval action: {action.name} (Code: {action.code})"))
             else:
                 updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️  Updated approval action: {action.name} (Code: {action.code})"
-                    )
-                )
+                self.stdout.write(self.style.NOTICE(f"  ♻️  Updated approval action: {action.name} (Code: {action.code})"))
 
-        # Optional: Remove actions that are no longer in the default list
-        # Uncomment the following lines if you want to remove actions not in the default list
-        # deleted_actions, _ = Action.objects.exclude(
-        #     name__in=valid_action_names
-        # ).delete()
-
-        self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Approval Actions Summary")
-        )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Approval Actions Summary"))
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️  Updated: {updated_count}"))
-        # self.stdout.write(
-        #     self.style.NOTICE(f"  🧹 Removed: {deleted_actions}")
-        # )
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Approval actions synced successfully!")
-        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Approval actions synced successfully!"))
 
-    # Create default system days
-    # This method creates default system days if they do not already exist.
     def create_default_system_days(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating default system days...\n")
-        )
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Creating default system days...\n"))
 
         default_days = [
             {"day_code": "MON", "day_name": "Monday", "level": 1},
@@ -388,26 +303,12 @@ class Command(BaseCommand):
 
         for day_data in default_days:
             day_code = day_data["day_code"]
-
             if SystemDay.objects.filter(day_code=day_code).exists():
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️  System day '{day_data['day_name']}' already exists, skipping."
-                    )
-                )
+                self.stdout.write(self.style.NOTICE(f"  ♻️  System day '{day_data['day_name']}' already exists, skipping."))
             else:
-                SystemDay.objects.create(
-                    day_code=day_code,
-                    day_name=day_data["day_name"],
-                    level=day_data["level"],
-                )
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created system day: {day_data['day_name']}"
-                    )
-                )
+                SystemDay.objects.create(day_code=day_code, day_name=day_data["day_name"], level=day_data["level"])
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created system day: {day_data['day_name']}"))
 
-    # To be deleted
     def create_default_bank_info(self):
         default_bank_data = {
             "bank_fullname": "Centenary Bank",
@@ -419,7 +320,6 @@ class Command(BaseCommand):
 
         institutions = Institution.objects.all()
         for institution in institutions:
-            # Check if this institution already has a default bank type
             bank_type, created = InstitutionBankType.objects.get_or_create(
                 institution=institution,
                 bank_fullname=default_bank_data["bank_fullname"],
@@ -428,83 +328,47 @@ class Command(BaseCommand):
                 defaults={"created_by": None, "updated_by": None},
             )
             if created:
-                self.stdout.write(
-                    f"Created default bank type for {institution.institution_name}"
-                )
+                self.stdout.write(f"Created default bank type for {institution.institution_name}")
             else:
-                self.stdout.write(
-                    f"Default bank type already exists for {institution.institution_name}"
-                )
+                self.stdout.write(f"Default bank type already exists for {institution.institution_name}")
 
             account, acc_created = InstitutionBankAccount.objects.get_or_create(
                 institution_bank=bank_type,
                 account_number=default_bank_data["account_number"],
-                defaults={
-                    "account_name": default_bank_data["account_name"],
-                    "created_by": None,
-                    "updated_by": None,
-                },
+                defaults={"account_name": default_bank_data["account_name"], "created_by": None, "updated_by": None},
             )
 
             branches = Branch.objects.filter(institution=institution)
-
             for branch in branches:
-
                 if branch.paying_bank_account is None:
-
                     branch.paying_bank_account = account
                     branch.save()
+                    self.stdout.write(f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account")
 
-                    self.stdout.write(
-                        f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
-                    )
-
-                branch_working_days, created = BranchWorkingDays.objects.get_or_create(
-                    branch=branch
-                )
+                branch_working_days, created = BranchWorkingDays.objects.get_or_create(branch=branch)
                 if created:
-                    self.stdout.write(
-                        f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"
-                    )
+                    self.stdout.write(f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'")
                 else:
-                    self.stdout.write(
-                        f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"
-                    )
+                    self.stdout.write(f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days")
 
             employees = Employee.objects.filter(department__institution=institution)
-
             for employee in employees:
                 if employee.payroll_branch is None:
                     default_branch = institution.branches.first()
                     if default_branch:
                         employee.payroll_branch = default_branch
                         employee.save()
-                        self.stdout.write(
-                            f"    └─ Updated employee '{employee.user.fullname}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
-                        )
+                        self.stdout.write(f"    └─ Updated employee '{employee.user.fullname}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'")
 
             if acc_created:
-                self.stdout.write(
-                    f"  └─ Created default bank account for {institution.institution_name}"
-                )
+                self.stdout.write(f"  └─ Created default bank account for {institution.institution_name}")
             else:
-                self.stdout.write(
-                    f"  └─ Default bank account already exists for {institution.institution_name}"
-                )
+                self.stdout.write(f"  └─ Default bank account already exists for {institution.institution_name}")
 
-            self.stdout.write(
-                f"\n\nProcessing Working Days for {institution.institution_name}"
-            )
-
-            working_days, created = InstitutionWorkingDays.objects.get_or_create(
-                institution=institution
-            )
+            self.stdout.write(f"\n\nProcessing Working Days for {institution.institution_name}")
+            working_days, created = InstitutionWorkingDays.objects.get_or_create(institution=institution)
             if created:
                 working_days.days.set(SystemDay.objects.all())
-                self.stdout.write(
-                    f"   └─  Created default working days for {institution.institution_name}"
-                )
+                self.stdout.write(f"   └─  Created default working days for {institution.institution_name}")
             else:
-                self.stdout.write(
-                    f"   └─  Default working days already exist for {institution.institution_name}"
-                )
+                self.stdout.write(f"   └─  Default working days already exist for {institution.institution_name}")

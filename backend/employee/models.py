@@ -119,7 +119,7 @@ class Education(SoftDeletableTimeStampedModel):
     year = models.PositiveIntegerField()
     qualification = models.ForeignKey(
         QualificationAward,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='educations'
     )
 
