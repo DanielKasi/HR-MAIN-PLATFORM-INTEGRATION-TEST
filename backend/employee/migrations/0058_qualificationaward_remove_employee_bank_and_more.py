@@ -27,6 +27,8 @@ def populate_new_models(apps, schema_editor):
     bank_cache = {(bank.bank_fullname, bank.institution_id): bank for bank in InstitutionBankType.objects.all()}
 
     for employee in Employee.objects.select_related('department__institution', 'user').all():
+        print(employee.children_count)
+        print(f"Emergency {employee.emergency_contact_name}")
         # Transfer bank details
         if employee.bank and employee.bank.strip() and employee.bank_account_number and employee.bank_account_number.strip():
             try:
