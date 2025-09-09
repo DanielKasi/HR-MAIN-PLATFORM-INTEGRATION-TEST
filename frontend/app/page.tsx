@@ -439,7 +439,7 @@ export default function HomePage() {
           }}
         />
 
-        <section className=" py-20 relative z-10">
+        <section className="py-20 relative z-10">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <div className="space-y-8">
               <div className="space-y-4">

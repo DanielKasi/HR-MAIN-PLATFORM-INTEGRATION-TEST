@@ -547,67 +547,158 @@ export interface User {
   permissions?: string
 }
 
-export interface IEmployeeFormData {
-  user: Partial<User>
-  id: number
-  email: string
-  phone_number: string
-  position: number
-  department: number
-  work_type: number // Added
-  employee_type: number // Added
+export type IGender = "male" | "female" | "other"
+
+// Base interfaces for nested objects
+export interface IChild {
+  id: string
+  name: string
+  gender: IGender
   date_of_birth: string
-  date_of_joining: string
-  address: string
-  country: string // Added
-  nin: string
-  tin: string
-  nssf_no: string // Added
-  bank: string // Added
-  bank_account_number: string // Added
-  is_active: boolean
-  experience: number
-  qualifications: string
-  skills: string
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  emergency_contact_relationship: string
-  marital_status: string
-  children_count: number
-  employee_profile_picture: File | null
-  selected_branches: number[]
 }
 
-export interface ICreateEmployeeForm {
-  tin: string
-  nssf_no: string
-  fullname: string
+export interface INextOfKin {
+  id: string
+  name: string
+  phone_number: string
+  phone_number_country_code?: string
+  relationship: string
+  address: string
+}
+
+export interface IEducation {
+  id: string
+  qualification: string
+  institute: string
+  year: string
+  award: string
+}
+
+export interface IWorkExperience {
+  id: string
+  company: string
+  position: string
+  duration: string
+  reason_of_leave: string
+}
+
+export interface IEmployeeBankAccount {
+  id?: string
+  bank_name: string
+  account_number: string
+  account_name: string
+}
+
+export interface ISpouse {
+  id?: string
+  name: string
+  phone_number: string
+  phone_number_country_code?: string
+  date_of_birth: string
+}
+
+// Main employee form interface for backend API
+export interface IEmployeeFormData {
+  user: Partial<IUser>
+  id?: number
   email: string
+  gender: "male" | "female" | "other"
   phone_number: string
   phone_number_country_code?: string
   position: number
   department: number
-  work_type: number // Added
-  employee_type: number // Added
+  work_type: number
+  employee_type: number
   date_of_birth: string
   date_of_joining: string
   address: string
-  country: string // Added
+  country: string
   nin: string
-  bank: string
-  bank_account_number: string
+  tin: string
+  nssf_no: string
   is_active: boolean
   experience: number
   qualifications: string
   skills: string
-  selected_branches: number[]
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  emergency_contact_phone_country_code?: string
-  emergency_contact_relationship: string
   marital_status: string
-  children_count: number
+  employee_profile_picture?: File | null
+  selected_branches: number[]
+
+  // Nested arrays and objects
+  children: IChild[]
+  next_of_kin: INextOfKin[]
+  educations: IEducation[]
+  work_experiences: IWorkExperience[]
+  bank_accounts: IEmployeeBankAccount[]
+  spouse?: ISpouse
+
+  // Legacy fields for backward compatibility
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relationship?: string
+  bank?: string
+  bank_account_number?: string
 }
+
+// Interface for local form state management
+export interface ICreateEmployeeForm {
+  // Basic Information
+  fullname: string
+  email: string
+  phone_number: string
+  phone_number_country_code?: string
+  gender: "male" | "female" | "other"
+  date_of_birth: string
+  address: string
+  country: string
+  nin: string
+  marital_status: string
+
+  // Work Information
+  position: number
+  department: number
+  work_type: number
+  employee_type: number
+  date_of_joining: string
+  experience: number
+  qualifications: string
+  skills: string
+  selected_branches: number[]
+  is_active: boolean
+
+  // Financial Information
+  tin: string
+  nssf_no: string
+
+  // Nested structures
+  children: IChild[]
+  next_of_kin: INextOfKin[]
+  educations: IEducation[]
+  work_experiences: IWorkExperience[]
+  bank_accounts: IEmployeeBankAccount[]
+  spouse?: ISpouse
+
+  // Profile picture
+  employee_profile_picture?: File | null
+
+  // Legacy fields for backward compatibility
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_phone_country_code?: string
+  emergency_contact_relationship?: string
+  bank?: string
+  bank_account_number?: string
+}
+
+// Form step types
+export type EmployeeFormStep = "personal" | "work" | "financial"
+
+export type RequiredEmployeeFields = Pick<
+  IEmployeeFormData,
+  "user" | "email" | "phone_number" | "position" | "work_type" | "employee_type" | "date_of_birth" | "selected_branches"
+>
+
+
 export interface IRoleResponse {
   id: number
   name: string
