@@ -328,11 +328,42 @@ class EmployeeCreateAPIView(APIView):
     )
 
     def post(self, request):
-
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
 
-        # Check for required user fields
+        # Handle JSON payload
+        if request.content_type == 'application/json':
+            data = request.data
+            print(f"JSON request data: {data}")
+            serializer = EmployeeSerializer(data=data, context={"request": request})
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(
+                    {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                employee = serializer.save()
+                if not employee.user.password:
+                    random_password = generate_compliant_password()
+                    employee.user.set_password(random_password)
+                    employee.user.is_password_verified = True
+                    employee.user.is_email_verified = True
+                    employee.user.save()
+                    send_employee_welcome_email.delay_on_commit(
+                        employee.user.email, employee.user.fullname, random_password
+                    )
+                employee.confirm_create()
+                return Response(
+                    EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                return Response(
+                    {"detail": f"Error creating employee: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        # Handle multipart/form-data
         if not all(k in request.data for k in ["user.fullname", "user.email"]):
             return Response(
                 {"detail": "Missing required user fields"},
@@ -383,7 +414,7 @@ class EmployeeCreateAPIView(APIView):
             elif not field.endswith("[]") and parsed_values:
                 final_data[clean_field] = parsed_values[0]
 
-        # Fix next_of_kin field mismatch (contact -> phone_number)
+        # Fix next_of_kin field mismatch
         for kin in final_data.get("next_of_kin", []):
             if "contact" in kin:
                 kin["phone_number"] = kin.pop("contact")
@@ -404,7 +435,25 @@ class EmployeeCreateAPIView(APIView):
         final_data["spouse"] = final_data.get("spouse", None)
 
         # Unwrap list-wrapped scalar fields
-        scalar_fields = ["position", "department", "work_type", "employee_type", "gender", "marital_status", "is_active"]
+        scalar_fields = [
+            "position",
+            "department",
+            "work_type",
+            "employee_type",
+            "gender",
+            "marital_status",
+            "is_active",
+            "date_of_birth",  # Add date_of_birth
+            "employee_id",
+            "phone_number",
+            "country",
+            "nin",
+            "nssf_no",
+            "tin",
+            "address",
+            "skills",
+            "salary"
+        ]
         for field in scalar_fields:
             if field in final_data:
                 if isinstance(final_data[field], list):
@@ -414,36 +463,37 @@ class EmployeeCreateAPIView(APIView):
                         final_data[field] = int(final_data[field]) if final_data[field] else None
                     elif field == "is_active":
                         final_data[field] = str(final_data[field]).lower() == "true" if final_data[field] else False
+                    elif field == "salary":
+                        final_data[field] = float(final_data[field]) if final_data[field] else None
                 except (ValueError, TypeError):
                     final_data[field] = None
 
-
+        print(f"Multipart request data: {request.data}")
+        print(f"Parsed final data: {final_data}")
         serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
+            print(f"Serializer errors: {serializer.errors}")
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             employee = serializer.save()
+            employee.user.is_password_verified = True
+            employee.user.is_email_verified = True
+            employee.user.save()
+            employee.confirm_create()
+            send_employee_welcome_email.delay_on_commit(
+                employee.user.email, employee.user.fullname, random_password
+            )
+            return Response(
+                EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
+            )
         except Exception as e:
             return Response(
                 {"detail": f"Error creating employee: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-        employee.user.is_password_verified = True
-        employee.user.is_email_verified = True
-        employee.user.save()
-        employee.confirm_create()
-
-        send_employee_welcome_email.delay_on_commit(
-            employee.user.email, employee.user.fullname, random_password
-        )
-
-        return Response(
-            EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
-        )
 
 
     def handle_bulk_upload(self, request):
