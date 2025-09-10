@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useWebSocket } from "@/lib/WebSocketProvider";
+// import { useWebSocket } from "@/lib/WebSocketProvider";
 import { selectUser } from "@/store/auth/selectors";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
@@ -55,7 +55,7 @@ export default function TasksPage() {
   const router = useRouter();
   const taskId = useSearchParams().get("taskId");
   const currentUser = useSelector(selectUser);
-  const { tasks: apiTasks, connected, sendMessage } = useWebSocket();
+  // const { tasks: apiTasks, connected, sendMessage } = useWebSocket();
 
   useDocumentTitle("TASKS")
 

@@ -10,7 +10,7 @@ import { Toaster } from "sonner";
 import { Providers } from "./providers";
 
 import { ThemeProvider } from "@/components/theme-provider";
-import { WebSocketProvider } from "@/lib/WebSocketProvider";
+// import { WebSocketProvider } from "@/lib/WebSocketProvider";
 import { cn } from "@/lib/utils";
 import LogoutWarningPopup from "@/components/inactivity/logout-warning-popup";
 
@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <Providers>
             <LogoutWarningPopup />
-            <WebSocketProvider>{children}</WebSocketProvider>
+            <>{children}</>
             <Toaster duration={10000} position={"top-right"} />
           </Providers>
         </ThemeProvider>

@@ -73,6 +73,8 @@ class NextOfKin(SoftDeletableTimeStampedModel):
         ("mother", "Mother"),
         ("spouse", "Spouse"),
         ("child", "Child"),
+        ("friend", "Friend"),
+        ("sibling", "Sibling"),
         ("other", "Other"),
     ]
     employee = models.ForeignKey(

@@ -1,7 +1,7 @@
-from workflows.serializers import (
-    AssetRequestWorkflowSerializer,
-    AssetAllocationWorkflowSerializer,
-)
+# from workflows.serializers import (
+#     AssetRequestSerializer,
+#     AssetAllocationSerializer,
+# )
 from .serializers import (
     AssetRequestSerializer,
     AssetCategorySerializer,
@@ -392,7 +392,7 @@ class AssetRequestListCreateView(APIView, SortableAPIMixin):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=AssetRequestWorkflowSerializer(many=True),
+                response=AssetRequestSerializer(many=True),
                 description="List of asset requests.",
             ),
             400: OpenApiResponse(
@@ -471,7 +471,7 @@ class AssetRequestListCreateView(APIView, SortableAPIMixin):
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_requests, request)
-        serializer = AssetRequestWorkflowSerializer(paginated_qs, many=True)
+        serializer = AssetRequestSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -481,7 +481,7 @@ class AssetRequestDetailView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=AssetRequestWorkflowSerializer,
+                response=AssetRequestSerializer,
                 description="Asset request details.",
             ),
             404: OpenApiResponse(
@@ -493,7 +493,7 @@ class AssetRequestDetailView(APIView):
     )
     def get(self, request, pk):
         asset_request = get_object_or_404(AssetRequest, pk=pk)
-        serializer = AssetRequestWorkflowSerializer(asset_request)
+        serializer = AssetRequestSerializer(asset_request)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -578,7 +578,7 @@ class AssetAllocationListCreateView(APIView, SortableAPIMixin):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=AssetAllocationWorkflowSerializer(many=True),
+                response=AssetAllocationSerializer(many=True),
                 description="List of asset allocations.",
             ),
             400: OpenApiResponse(
@@ -652,7 +652,7 @@ class AssetAllocationListCreateView(APIView, SortableAPIMixin):
             
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(asset_allocations, request)
-        serializer = AssetAllocationWorkflowSerializer(paginated_qs, many=True)
+        serializer = AssetAllocationSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -662,7 +662,7 @@ class AssetAllocationDetailView(APIView):
     @extend_schema(
         responses={
             200: OpenApiResponse(
-                response=AssetAllocationWorkflowSerializer,
+                response=AssetAllocationSerializer,
                 description="Asset allocation details.",
             ),
             404: OpenApiResponse(
@@ -674,7 +674,7 @@ class AssetAllocationDetailView(APIView):
     )
     def get(self, request, pk):
         asset_allocation = get_object_or_404(AssetAllocation, pk=pk)
-        serializer = AssetAllocationWorkflowSerializer(asset_allocation)
+        serializer = AssetAllocationSerializer(asset_allocation)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(

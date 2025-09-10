@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import {useMobile} from "@/hooks/use-mobile";
 import {InstitutionBranchSelector} from "@/components/institution-branch-selector";
-import {TaskNotification} from "@/components/task-notification";
+// import {TaskNotification} from "@/components/task-notification";
 import Modules from "@/components/modules";
 import {
   selectAccessToken,
@@ -322,7 +322,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   <Icon icon="hugeicons:shield-01" width="24" height="24" />
                 </Link>
               </ProtectedComponent>
-              <TaskNotification />
+              {/* <TaskNotification /> */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 rounded-full px-2 py-2 cursor-pointer hover:bg-gray-200 hover:bg-opacity-30 active:bg-gray-400 active:bg-opacity-40 transition-all duration-200">

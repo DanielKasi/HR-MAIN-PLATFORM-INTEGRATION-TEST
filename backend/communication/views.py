@@ -1,44 +1,139 @@
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 import json
 import asyncio
-from queue import Queue
-from threading import Lock
-from django.http import HttpResponse
+import redis
+import time
+import logging
+from asgiref.sync import sync_to_async
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.conf import settings
+from typing import Optional
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
-notification_queues = {}
-queue_lock = Lock()
+# Initialize Redis client
+try:
+    redis_client: redis.Redis = redis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=settings.REDIS_DB,
+        decode_responses=True
+    )
+    # Test Redis connection
+    redis_client.ping()
+    logger.info("✅ Successfully connected to Redis")
+except redis.ConnectionError as e:
+    logger.error(f"❌ Failed to connect to Redis: {str(e)}")
+    raise
 
-def add_notification(user_id, message):
-    with queue_lock:
-        if user_id not in notification_queues:
-            notification_queues[user_id] = Queue()
-        notification_queues[user_id].put({
-            'id': int(asyncio.get_event_loop().time()),
-            'message': message
-        })
+def add_notification(user_id: int, message: str) -> None:
+    """Add a notification to the user's Redis queue with expiry."""
+    print(f"🔔 Adding notification for user {user_id}: {message}")
+    notification = {
+        'id': int(time.time() * 1000),
+        'message': message
+    }
+    try:
+        redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
+        # Set a TTL of 24 hours on the notification queue
+        redis_client.expire(f"notifications:{user_id}", 86400)
+        queue_length = redis_client.llen(f"notifications:{user_id}")
+        print(f"✅ Notification queued for user {user_id}, queue length: {queue_length}")
+    except redis.RedisError as e:
+        print(f"❌ Redis error in add_notification: {str(e)}")
+        raise
 
+def get_notification(user_id: int) -> Optional[dict]:
+    """Retrieve the oldest unread notification for the user."""
+    try:
+        # Get all notifications for the user
+        notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+        queue_length = len(notifications)
+        print(f"🔎 Checking queue for user {user_id}, queue length: {queue_length}")
+        
+        # Check for unread notifications
+        read_notifications_key = f"read_notifications:{user_id}"
+        for notification in notifications:
+            notification_data = json.loads(notification)
+            notification_id = notification_data['id']
+            # Check if notification was already read
+            if not redis_client.sismember(read_notifications_key, notification_id):
+                print(f"📥 Retrieved notification for user {user_id}: {notification}")
+                # Mark as read
+                redis_client.sadd(read_notifications_key, notification_id)
+                # Set TTL of 24 hours for read notifications set
+                redis_client.expire(read_notifications_key, 86400)
+                return notification_data
+        print(f"❌ No unread notifications for user {user_id}")
+        return None
+    except redis.RedisError as e:
+        print(f"❌ Redis error in get_notification: {str(e)}")
+        return None
+
+def cleanup_queue(user_id: int) -> None:
+    """Delete the user's notification queue and read notifications in Redis."""
+    try:
+        redis_client.delete(f"notifications:{user_id}")
+        redis_client.delete(f"read_notifications:{user_id}")
+        print(f"🧹 Cleaning up queue for user {user_id}")
+    except redis.RedisError as e:
+        print(f"❌ Redis error in cleanup_queue: {str(e)}")
+
+@csrf_exempt
 async def sse_notifications(request):
-    async def event_stream(user_id):
-        with queue_lock:
-            if user_id not in notification_queues:
-                notification_queues[user_id] = Queue()
-        last_id = 0
-        while True:
-            with queue_lock:
-                queue = notification_queues[user_id]
-                if not queue.empty():
-                    notif = queue.get()
-                    if notif['id'] > last_id:
-                        yield f"data: {json.dumps(notif)}\n\n"
-                        last_id = notif['id']
-            await asyncio.sleep(1)
+    """Handle SSE connections for real-time notifications."""
+    user_id: Optional[int] = None
+    try:
+        print("🔍 Starting SSE request processing")
+        authenticator = JWTAuthentication()
+        start_time = time.time()
+        user_auth_tuple = await sync_to_async(authenticator.authenticate)(request)
+        auth_time = time.time() - start_time
+        print(f"🔐 Authentication took {auth_time:.2f} seconds")
 
-    if not request.user.is_authenticated:
-        return HttpResponse("Unauthorized", status=401)
-    user_id = request.user.id
+        if user_auth_tuple is None:
+            print("❌ User not authenticated")
+            return HttpResponse("Unauthorized", status=401)
 
-    response = StreamingHttpResponse(event_stream(user_id), content_type='text/event-stream')
-    response['Cache-Control'] = 'no-cache'
-    response['X-Accel-Buffering'] = 'no'
-    return response
+        user, _ = user_auth_tuple
+        user_id = await sync_to_async(lambda: user.id)()
+        print(f"🌐 SSE connection started for user {user_id}")
+
+        async def event_stream():
+            print(f"🚀 Initializing event stream for user {user_id}")
+            yield "data: {\"message\": \"SSE connection established\"}\n\n"
+            last_heartbeat = time.time()
+
+            while True:
+                notif = await sync_to_async(lambda: get_notification(user_id))()
+                if notif:
+                    print(f"📤 Sending notification to SSE client {user_id}: {notif}")
+                    yield f"data: {json.dumps(notif)}\n\n"
+
+                current_time = time.time()
+                if current_time - last_heartbeat > 10:
+                    print(f"💓 Sending heartbeat for user {user_id}")
+                    yield "data: {}\n\n"
+                    last_heartbeat = current_time
+
+                await asyncio.sleep(0.5)
+
+        response = StreamingHttpResponse(
+            event_stream(),
+            content_type='text/event-stream'
+        )
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'
+        response['Connection'] = 'keep-alive'
+        return response
+
+    except Exception as e:
+        print(f"❌ Error in SSE view: {str(e)}")
+        if user_id is not None:
+            await sync_to_async(lambda: cleanup_queue(user_id))()
+        return HttpResponse(f"Error: {str(e)}", status=500)
