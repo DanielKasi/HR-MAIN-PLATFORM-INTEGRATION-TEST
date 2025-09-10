@@ -98,6 +98,8 @@ class CustomUserSerializer(serializers.ModelSerializer):
     )
     branches = serializers.SerializerMethodField()
 
+    email = serializers.EmailField(required=True, validators=[])
+
     class Meta:
         model = CustomUser
         fields = "__all__"
@@ -133,21 +135,6 @@ class CustomUserSerializer(serializers.ModelSerializer):
         Apply password validation rules
         """
         return validate_password_strength(value)
-
-    def validate_email(self, value):
-        user = self.instance
-        if user and CustomUser.objects.exclude(pk=user.pk).filter(email=value).exists():
-            raise serializers.ValidationError("This email is already in use.")
-        return value
-
-    def validate_username(self, value):
-        user = self.instance
-        if (
-            user
-            and CustomUser.objects.exclude(pk=user.pk).filter(username=value).exists()
-        ):
-            raise serializers.ValidationError("This username is already in use.")
-        return value
 
     def create(self, validated_data):
         roles_ids = validated_data.pop("roles_ids", [])
