@@ -5,13 +5,13 @@ import { InputHTMLAttributes, useEffect, useRef, useState } from "react";
 interface FormattedNumberInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
   value: string | number;
-  onValuChange: (val: number) => void;
+  onValueChange: (val: number) => void;
   className?: string;
 }
 
 export function FormattedNumberInput({
   value,
-  onValuChange,
+  onValueChange,
   className = "",
   type,
   inputMode,
@@ -25,9 +25,8 @@ export function FormattedNumberInput({
 
   useEffect(() => {
     const formatted = value !== undefined && value !== null && String(value) !== "0" ? formatCurrency(value) : "";
-    if (document.activeElement !== inputRef.current) {
       setInputValue(formatted);
-    }
+
   }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,20 +38,20 @@ export function FormattedNumberInput({
 
     // If the user cleared the input, allow that and send 0 to parent so the model can reset
     if (raw === "") {
-      onValuChange(0);
+      onValueChange(0);
       return;
     }
 
     // Remove non-digit characters to ensure whole numbers only
     const digits = raw.replace(/\D+/g, "");
     if (digits === "") {
-      onValuChange(0);
+      onValueChange(0);
       return;
     }
 
     const parsed = parseInt(digits, 10);
     if (!isNaN(parsed)) {
-      onValuChange(parsed);
+      onValueChange(parsed);
     }
   };
 

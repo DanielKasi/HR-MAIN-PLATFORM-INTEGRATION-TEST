@@ -95,7 +95,6 @@ export function hexToHSL(hex: string) {
   return `${h} ${s}% ${l}%`;
 }
 
-
 export default function DashboardLayout({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
   const isMobile = useMobile();
@@ -121,7 +120,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
   const router = useRouter();
   const appLayoutRef = useRef<HTMLDivElement | null>(null);
 
-
   useEffect(() => {
     const handleActivity = () => {
       if (currentUser && appLayoutRef.current) {
@@ -139,7 +137,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     dispatch(fetchRemoteUserStart());
     dispatch(fetchUpToDateInstitution());
   }, [dispatch]);
-
 
   useEffect(() => {
     if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
@@ -181,8 +178,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       onCloseSidebar();
     }
   }, [pathname]);
-
-
 
   const updateThemeColors = (hexColor: string) => {
     if (!hexColor) return;
@@ -273,9 +268,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
     }
   };
 
-
-
-
   return (
     <>
       <RedirectsWatcher />
@@ -283,7 +275,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         ref={appLayoutRef}
         className="flex h-screen bg-gray-100 overflow-hidden dashboard-layout"
       >
-        <DashboardSideBar/>
+        <DashboardSideBar />
 
         {/* Main Content Area */}
         <div
@@ -399,9 +391,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
           </div>
 
-          {/* <div className="mb-4 sm:mb-0">
+          <div className="mb-4 sm:mb-0">
             <AIAssistantWidget />
-          </div> */}
+          </div>
         </div>
 
         {/* Logout Dialog */}

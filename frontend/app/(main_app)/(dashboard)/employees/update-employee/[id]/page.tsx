@@ -1,11 +1,13 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useRef} from "react";
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Card, CardContent} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
+import PhoneNumberInput from "@/components/phone-number-input";
+import CountrySelect from "@/components/common/country-select";
 import {
   Select,
   SelectContent,
@@ -13,8 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Separator} from "@/components/ui/separator";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
   Dialog,
@@ -23,129 +23,229 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {Textarea} from "@/components/ui/textarea";
-import {Upload, User, X, Loader2, ArrowLeft, Plus} from "lucide-react";
-import Link from "next/link";
-import {useRouter, useParams} from "next/navigation";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution, selectAttachedInstitutions} from "@/store/auth/selectors";
 import {
-  getEmployeeById,
-  updateEmployee,
-  getJobPositions,
+  Upload,
+  User,
+  X,
+  Loader2,
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import {useParams, useRouter} from "next/navigation";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {
   getDepartments,
-  createWorkType,
   createEmployeeType,
   getWorkTypes,
   getEmployeeTypes,
   showErrorToast,
+  getEmployeeById,
+  updateEmployee,
 } from "@/lib/utils";
-
+import {useBranches} from "@/hooks/use-branches";
+import {MultiSelectBranches} from "@/components/multi-select-branches";
 import type {
-  IDepartment,
-  IJobPosition,
+  ICreateEmployeeForm,
+  IEmployeeFormData,
   IWorkType,
   IEmployeeType,
   IWorkTypeFormData,
   IEmployeeTypeFormData,
   ICountry,
+  IChild,
+  INextOfKin,
+  IEducation,
+  IWorkExperience,
+  IGender,
+  IJobPosition,
+  IBankAccount,
+  IEmployeeBankAccount,
+  IMaritalStatus,
   IEmployee,
 } from "@/types/types.utils";
-import type {IUserInstitution, Role, Branch} from "@/types";
 import {toast} from "sonner";
-import {getFileUrl, formatCurrency} from "@/lib/helpers";
-import {MultiSelectBranches} from "@/components/multi-select-branches";
-import {useBranches} from "@/hooks/use-branches";
+import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
+import {useDispatch} from "react-redux";
+import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
+import {PERMISSION_CODES} from "@/constants";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import WorkTypeModal from "@/components/dialogs/work-type-dialog";
+import {Steps} from "@/components/generic/steps";
+import {createEmployee} from "@/lib/utils";
+import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
+import {Icon} from "@iconify/react";
+import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
+import { formatCurrency } from "@/lib/helpers";
+import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 
-interface EmployeeUpdateFormState {
-  fullname: string;
-  email: string;
-  phone_number: string;
-  position: number;
-  department: number;
-  work_type: number;
-  employee_type: number;
-  date_of_birth: string;
-  date_of_joining: string;
-  address: string;
-  country: string;
-  nin: string;
-  bank: string;
-  bank_account_number: string;
-  tin: string;
-  nssf_no: string;
-  is_active: boolean;
-  experience: number;
-  qualifications: string;
-  skills: string;
-  emergency_contact_name: string;
-  emergency_contact_phone: string;
-  emergency_contact_relationship: string;
-  marital_status: string;
-  children_count: number;
-  employee_profile_picture: File | null;
-  salary: number;
-  selected_branches?: number[];
-}
+interface Child extends IChild {}
+interface NextOfKin extends INextOfKin {}
+interface Education extends IEducation {}
+interface WorkExperience extends IWorkExperience {}
 
-const maritalStatusOptions = [
+const maritalStatusOptions: Array<{value: IMaritalStatus; label: string}> = [
   {value: "single", label: "Single"},
   {value: "married", label: "Married"},
   {value: "divorced", label: "Divorced"},
   {value: "widowed", label: "Widowed"},
 ];
 
-const steps = [
-  {id: 1, title: "Personal Information"},
-  {id: 2, title: "Work Information"},
-  {id: 3, title: "Financial Information"},
+const genderOptions: Array<{value: IGender; label: string}> = [
+  {value: "male", label: "Male"},
+  {value: "female", label: "Female"},
 ];
 
-export default function UpdateEmployeePage() {
-  const [currentStep, setCurrentStep] = useState(1);
+const relationshipOptions = [
+  {value: "parent", label: "Parent"},
+  {value: "spouse", label: "Spouse"},
+  {value: "sibling", label: "Sibling"},
+  {value: "child", label: "Child"},
+  {value: "friend", label: "Friend"},
+  {value: "other", label: "Other"},
+];
+
+const steps = [
+  {id: 1, title: "Personal Information", description: "Basic details and profile"},
+  {id: 2, title: "Work Information", description: "Job details and experience"},
+  {id: 3, title: "Financial Information", description: "Banking and tax details"},
+];
+
+export default function UpdateEmployeeForm() {
+
   const router = useRouter();
   const params = useParams();
-  const employeeId = params?.id as string;
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  const institutionsAttached = useSelector(selectAttachedInstitutions) as IUserInstitution[];
+  const employeeId = params.id as string;
+  const maxDateToDay = new Date().toISOString().split("T")[0];
+  const Date18YearsOld = new Date();
+  Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
+  const maxDate18 = Date18YearsOld.toISOString().split("T")[0];
 
-  const [institutionId, setInstitutionId] = useState<number | null>(null);
+  const [thisEmployee, setThisEmployee] = useState<IEmployee|null>(null);
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
+
+  const [children, setChildren] = useState<Child[]>([]);
+  const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
+  const [educations, setEducations] = useState<Education[]>([]);
+  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
+
+  const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
+  const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
+  const [isEducationDialogOpen, setIsEducationDialogOpen] = useState(false);
+  const [isWorkExperienceDialogOpen, setIsWorkExperienceDialogOpen] = useState(false);
+  const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
+
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
+  const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
+  const [editingEducation, setEditingEducation] = useState<Education | null>(null);
+  const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
+
+  const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
+    name: "",
+    gender: "" as IGender,
+    date_of_birth: "",
+  });
+
+  const [nextOfKinFormData, setNextOfKinFormData] = useState<Omit<NextOfKin, "id">>({
+    name: "",
+    relationship: "",
+    phone_number: "",
+    address: "",
+  });
+
+  const [educationFormData, setEducationFormData] = useState<Omit<Education, "id">>({
+    qualification: "",
+    institute: "",
+    year: "",
+    award: "",
+  });
+
+  const [workExperienceFormData, setWorkExperienceFormData] = useState<Omit<WorkExperience, "id">>({
+    company: "",
+    position: "",
+    duration: "",
+    reason_of_leave: "",
+  });
+
+  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccount>({
+    id: "",
+    bank_id: 0,
+    account_number: "",
+    account_name: "",
+  });
+
+  // const [institutionId, setInstitutionId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [employee, setEmployee] = useState<IEmployee | null>(null);
-
+  const [hasChildren, setHasChildren] = useState(false);
   const {branches, loading: branchesLoading, error: branchesError} = useBranches();
 
   const [positions, setPositions] = useState<IJobPosition[]>([]);
-  const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [selectedJobPositon, setSelectedJobPosition] = useState<IJobPosition | null>(null);
   const [workTypes, setWorkTypes] = useState<IWorkType[]>([]);
   const [employeeTypes, setEmployeeTypes] = useState<IEmployeeType[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(false);
+  const [employeeProfilePicture, setEmployeeProfilePicture] = useState<File | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [spousePhoneError, setSpousePhoneError] = useState<string | null>(null);
 
   const [isWorkTypeModalOpen, setIsWorkTypeModalOpen] = useState(false);
   const [isEmployeeTypeModalOpen, setIsEmployeeTypeModalOpen] = useState(false);
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
-
+  const profilePicInputRef = useRef<HTMLInputElement | null>(null);
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
     code: "",
-    institution: selectedInstitution?.id || 0,
+    institution: selectedInstitution ? selectedInstitution.id : 0,
   });
 
   const [employeeTypeFormData, setEmployeeTypeFormData] = useState<IEmployeeTypeFormData>({
     name: "",
     description: "",
     code: "",
-    institution: selectedInstitution?.id || 0,
+    institution: selectedInstitution ? selectedInstitution.id : 0,
   });
 
-  const [formData, setFormData] = useState<EmployeeUpdateFormState>({
+  // useEffect(()=>{
+  //   console.log("\n\n Positions updated to : ", positions)
+  // }, [positions])
+
+  useEffect(() => {
+    setWorkTypeFormData((prev) => ({
+      ...prev,
+      institution: selectedInstitution ? selectedInstitution.id : 0,
+    }));
+    setEmployeeTypeFormData((prev) => ({
+      ...prev,
+      institution: selectedInstitution ? selectedInstitution.id : 0,
+    }));
+  }, [selectedInstitution]);
+
+  const [formData, setFormData] = useState<
+    Omit<ICreateEmployeeForm, "phone_number_country_code" | "emergency_contact_phone_country_code">
+  >({
     fullname: "",
     email: "",
     phone_number: "",
@@ -154,31 +254,28 @@ export default function UpdateEmployeePage() {
     work_type: 0,
     employee_type: 0,
     date_of_birth: "",
-    date_of_joining: "",
+    date_of_joining: new Date().toISOString().split("T")[0],
     address: "",
     country: "",
     nin: "",
-    bank: "",
-    bank_account_number: "",
     tin: "",
+    salary:0,
     nssf_no: "",
     is_active: true,
-    experience: 0,
-    qualifications: "",
     skills: "",
-    emergency_contact_name: "",
-    emergency_contact_phone: "",
-    emergency_contact_relationship: "",
-    marital_status: "single",
-    children_count: 0,
-    employee_profile_picture: null,
-    salary: 0,
     selected_branches: [],
+    marital_status: "single",
+    gender: "male",
+    children: [],
+    next_of_kin: [],
+    educations: [],
+    bank_accounts: [],
+    work_experiences: [],
   });
 
+
   const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  // const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
   const [phoneInput, setPhoneInput] = useState<{
@@ -188,358 +285,516 @@ export default function UpdateEmployeePage() {
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
-  const [emergencyPhoneInput, setEmergencyPhoneInput] = useState<{
+  // Add state for emergency contact phone input
+  const [emergencyContactPhoneInput, setEmergencyContactPhoneInput] = useState<{
     country: ICountry | null;
     countryCode: string;
     phoneNumber: string;
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
 
+  // Add state for spouse phone input if any
+  const [spousePhoneInput, setSpousePhoneInput] = useState<{
+    country: ICountry | null;
+    countryCode: string;
+    phoneNumber: string;
+    isValid: boolean;
+  }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
+
+  const dispatch = useDispatch();
+
   const showSuccessToast = (message: string) => {
     toast.success(message);
   };
 
-  const handleBack = async () => {
-    router.back();
+  const generateId = () => Math.random().toString(36).slice(2, 9);
+
+  const handleAddChild = () => {
+    if (!childFormData.name || !childFormData.gender || !childFormData.date_of_birth) return;
+
+    if (editingChild) {
+      setChildren((prev) =>
+        prev.map((child) =>
+          child.id === editingChild.id ? {...childFormData, id: editingChild.id} : child,
+        ),
+      );
+      setEditingChild(null);
+    } else {
+      const newChild: Child = {
+        ...childFormData,
+        id: generateId(),
+      };
+      setChildren((prev) => [...prev, newChild]);
+    }
+
+    setChildFormData({name: "", gender: "" as IGender, date_of_birth: ""});
+    setIsChildDialogOpen(false);
   };
 
-  useEffect(() => {
-    if (selectedInstitution) {
-      setInstitutionId(selectedInstitution.id);
-    } else if (institutionsAttached && institutionsAttached.length > 0) {
-      setInstitutionId(institutionsAttached[0].id);
+  const handleEditChild = (child: Child) => {
+    setEditingChild(child);
+    setChildFormData({
+      name: child.name,
+      gender: child.gender,
+      date_of_birth: child.date_of_birth,
+    });
+    setIsChildDialogOpen(true);
+  };
+
+  const handleDeleteChild = (id: string) => {
+    setChildren((prev) => prev.filter((child) => child.id !== id));
+  };
+
+  const handleAddNextOfKin = () => {
+    if (!nextOfKinFormData.name || !nextOfKinFormData.relationship) return;
+
+    if (editingNextOfKin) {
+      setNextOfKins((prev) =>
+        prev.map((nok) =>
+          nok.id === editingNextOfKin.id ? {...nextOfKinFormData, id: editingNextOfKin.id} : nok,
+        ),
+      );
+      setEditingNextOfKin(null);
+    } else {
+      const newNextOfKin: NextOfKin = {
+        ...nextOfKinFormData,
+        id: generateId(),
+      };
+      setNextOfKins((prev) => [...prev, newNextOfKin]);
     }
-  }, [institutionsAttached, selectedInstitution]);
 
-  useEffect(() => {
-    loadEmployee();
-  }, [employeeId]);
+    setNextOfKinFormData({name: "", relationship: "", phone_number: "", address: ""});
+    setIsNextOfKinDialogOpen(false);
+  };
 
-  useEffect(() => {
+  const handleEditNextOfKin = (nok: NextOfKin) => {
+    setEditingNextOfKin(nok);
+    setNextOfKinFormData({
+      name: nok.name,
+      relationship: nok.relationship,
+      phone_number: nok.phone_number,
+      address: nok.address,
+    });
+    setIsNextOfKinDialogOpen(true);
+  };
+
+  const handleDeleteNextOfKin = (id: string) => {
+    setNextOfKins((prev) => prev.filter((nok) => nok.id !== id));
+  };
+
+  const handleAddEducation = () => {
+    if (!educationFormData.qualification || !educationFormData.institute) return;
+
+    if (editingEducation) {
+      setEducations((prev) =>
+        prev.map((edu) =>
+          edu.id === editingEducation.id ? {...educationFormData, id: editingEducation.id} : edu,
+        ),
+      );
+      setEditingEducation(null);
+    } else {
+      const newEducation: Education = {
+        ...educationFormData,
+        id: generateId(),
+      };
+      setEducations((prev) => [...prev, newEducation]);
+    }
+
+    setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+    setIsEducationDialogOpen(false);
+  };
+
+  const handleEditEducation = (edu: Education) => {
+    setEditingEducation(edu);
+    setEducationFormData({
+      qualification: edu.qualification,
+      institute: edu.institute,
+      year: edu.year,
+      award: edu.award,
+    });
+    setIsEducationDialogOpen(true);
+  };
+
+  const handleDeleteEducation = (id: string) => {
+    setEducations((prev) => prev.filter((edu) => edu.id !== id));
+  };
+
+  const handleAddWorkExperience = () => {
+    if (!workExperienceFormData.company || !workExperienceFormData.position) return;
+
+    if (editingWorkExperience) {
+      setWorkExperiences((prev) =>
+        prev.map((exp) =>
+          exp.id === editingWorkExperience.id
+            ? {...workExperienceFormData, id: editingWorkExperience.id}
+            : exp,
+        ),
+      );
+      setEditingWorkExperience(null);
+    } else {
+      const newWorkExperience: WorkExperience = {
+        ...workExperienceFormData,
+        id: generateId(),
+      };
+      setWorkExperiences((prev) => [...prev, newWorkExperience]);
+    }
+
+    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
+    setIsWorkExperienceDialogOpen(false);
+  };
+
+  const handleEditWorkExperience = (exp: WorkExperience) => {
+    setEditingWorkExperience(exp);
+    setWorkExperienceFormData({
+      company: exp.company,
+      position: exp.position,
+      duration: exp.duration,
+      reason_of_leave: exp.reason_of_leave,
+    });
+    setIsWorkExperienceDialogOpen(true);
+  };
+
+  const handleDeleteWorkExperience = (id: string) => {
+    setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
+  };
+
+  const handleAddBankAccount = () => {
+    if (
+      !bankAccountFormData.bank_id ||
+      !bankAccountFormData.account_number ||
+      !bankAccountFormData.account_name
+    )
+      return;
+
+    if (editingBankAccount) {
+      setBankAccounts((prev) =>
+        prev.map((acc) =>
+          acc.id === editingBankAccount.id
+            ? {...bankAccountFormData, id: bankAccountFormData.id}
+            : acc,
+        ),
+      );
+      setEditingBankAccount(null);
+    } else {
+      const newBankAccount: IEmployeeBankAccount = {
+        ...bankAccountFormData,
+        id: generateId(),
+      };
+      setBankAccounts((prev) => [...prev, newBankAccount]);
+    }
+
+    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
+    setIsWorkExperienceDialogOpen(false);
+  };
+
+  const handleEditBankAccount = (acc: IEmployeeBankAccount) => {
+    setEditingBankAccount(acc);
+    setBankAccountFormData({
+      bank_id: acc.bank_id,
+      account_number: acc.account_number,
+      account_name: acc.account_name,
+    });
+    setIsBankAccountDialogOpen(true);
+  };
+
+  const handleDeleteBankAccount = (id: string) => {
+    setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
+  };
+
+useEffect(() => {
+    if (employeeId && selectedInstitution) {
+      loadEmployee();
+    }
     loadDropdownData();
-  }, [institutionId]);
+  }, [employeeId, selectedInstitution]);
+
+
+  useEffect(() => {
+    setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
+  }, [branches]);
+
+
 
   const loadEmployee = async () => {
-    if (!employeeId) return;
-
+    setLoadingData(true);
     try {
-      setIsLoading(true);
-      let employeeData: IEmployee | null = null;
+      const employee: IEmployee = await getEmployeeById({employeeId: parseInt(employeeId)});
+      setThisEmployee(employee);
+      setFormData({
+        fullname: employee.user?.fullname || "",
+        email: employee.email,
+        phone_number: employee.phone_number,
+        position: employee.position.id,
+        department: employee.department.id,
+        work_type: employee.work_type.id,
+        employee_type: employee.employee_type.id,
+        date_of_birth: employee.date_of_birth,
+        date_of_joining: employee.date_of_joining,
+        address: employee.address,
+        country: employee.country,
+        nin: employee.nin,
+        tin: employee.tin,
+        nssf_no: employee.nssf_no,
+        salary: parseFloat(employee.salary),
+        is_active: employee.is_active,
+        skills: employee.skills,
+        selected_branches:
+          employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
+            ? [employee?.payroll_branch?.id as unknown as number]
+            : [],
+        marital_status: employee.marital_status,
+        gender: employee.gender,
+        children: [],
+        next_of_kin: [],
+        educations: [],
+        bank_accounts: [],
+        work_experiences: [],
+      });
 
-      employeeData = await getEmployeeById({employeeId: parseInt(employeeId)});
-
-      if (employeeData) {
-        setEmployee(employeeData);
-        setFormData({
-          fullname: employeeData.user?.fullname || "",
-          email: employeeData.email,
-          phone_number: employeeData.phone_number || "",
-          position: employeeData.position?.id || 0,
-          department: employeeData.department?.id || 0,
-          work_type: employeeData.work_type.id || 0,
-          employee_type: employeeData.employee_type.id || 0,
-          date_of_birth: employeeData.date_of_birth || "",
-          date_of_joining: employeeData.date_of_joining || "",
-          address: employeeData.address || "",
-          country: employeeData.country || "",
-          nin: employeeData.nin || "",
-          bank: employeeData.bank || "",
-          bank_account_number: employeeData.bank_account_number || "",
-          tin: employeeData.tin || "",
-          nssf_no: employeeData.nssf_no || "",
-          is_active: employeeData.is_active,
-          experience: employeeData.experience || 0,
-          qualifications: employeeData.qualifications || "",
-          skills: employeeData.skills || "",
-          emergency_contact_name: employeeData.emergency_contact_name || "",
-          emergency_contact_phone: employeeData.emergency_contact_phone || "",
-          emergency_contact_relationship: employeeData.emergency_contact_relationship || "",
-          marital_status: employeeData.marital_status || "single",
-          children_count: employeeData.children_count || 0,
-          employee_profile_picture: null,
-          salary: Number(employeeData.salary) || 0,
-          selected_branches: employeeData.user?.branches.map((b) => b.id) || [],
-        });
-
-        if (employeeData.employee_profile_picture) {
-          setPreviewUrl(getFileUrl(employeeData.employee_profile_picture));
-        }
-      } else {
-        setSubmitError("Employee not found");
+      setChildren(employee.children);
+      setHasChildren(!!employee.children.length)
+      // Assuming next_of_kin is available or empty
+      setNextOfKins([]); // Adjust if backend provides next_of_kin
+      setEducations(employee.educations);
+      setWorkExperiences(employee.work_experiences);
+      setBankAccounts(employee.bank_accounts);
+      // For single bank assumption, set first if exists
+      if (employee.bank_accounts.length > 0) {
+        setBankAccountFormData(employee.bank_accounts[0]);
       }
-    } catch (error) {
-      console.error(error);
-      setSubmitError("Failed to load employee data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  const loadDropdownData = async () => {
-    if (!institutionId) return;
 
-    try {
-      setLoadingData(true);
-      const [positionsData, departmentsData, workTypesData, employeeTypesData] = await Promise.all([
-        getJobPositions({institutionId}),
-        getDepartments({institutionId}),
-        getWorkTypes({institutionId}),
-        getEmployeeTypes({institutionId}),
-      ]);
+      setHasChildren(employee.has_children);
 
-      setPositions(Array.isArray(positionsData) ? positionsData : []);
-      setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
-      setWorkTypes(workTypesData.results || []);
-      setEmployeeTypes(Array.isArray(employeeTypesData) ? employeeTypesData : []);
-    } catch (error) {
-      setSubmitError("Failed to load form data. Please refresh the page.");
+      if (employee.spouse) {
+        setSpouseFormData({
+          name: employee.spouse.name,
+          phoneNumber: employee.spouse.phone_number,
+          dateOfBirth: employee.spouse.date_of_birth,
+        });
+        // Set spousePhoneInput if needed
+        setSpousePhoneInput({
+          ...spousePhoneInput,
+          phoneNumber: employee.spouse.phone_number,
+          // Assume default countryCode
+        });
+      }
+
+      if (employee.employee_profile_picture) {
+        setPreviewUrl(employee.employee_profile_picture);
+      }
+
+      setSelectedJobPosition({
+        id: employee.position.id,
+        name: employee.position.name,
+        // Add other fields as needed, e.g., salary_min, salary_max if available
+        department: employee.position.department_id,
+      } as IJobPosition);
+
+      setSelectedCountry({name: {common: employee.country}} as ICountry);
+
+      setPhoneInput({
+        ...phoneInput,
+        phoneNumber: employee.phone_number,
+        // Assume default country and countryCode, e.g., Uganda +256
+        countryCode: "", // Adjust if backend provides phone_number_country_code
+      });
+
+      // Set emergencyContactPhoneInput for nextOfKins if needed
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to load employee data";
+      toast.error(errorMessage);
     } finally {
       setLoadingData(false);
     }
   };
 
+  const loadDropdownData = async () => {
+    if (!selectedInstitution) return;
+
+    setLoadingData(true);
+    try {
+      const [workTypesData, employeeTypesData] = await Promise.all([
+        getWorkTypes({institutionId: selectedInstitution.id}),
+        getEmployeeTypes({institutionId: selectedInstitution.id}),
+      ]);
+
+      setWorkTypes(workTypesData.results || []);
+      setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while loading form data.";
+      setSubmitError(errorMessage);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+
+
+
   const handleInputChange = (
-    field: keyof EmployeeUpdateFormState,
+    field: keyof ICreateEmployeeForm,
     value: string | boolean | File | null | number | number[],
   ) => {
-    setFormData((prev) => ({...prev, [field]: value}));
+    if (field == "position" && typeof value === "number") {
+      const positionMatch = positions.find((pos) => pos.id === value);
+      const updatedFormData: typeof formData = {
+        ...formData,
+        position: value as number,
+        department: positionMatch ? positionMatch.department : formData.department,
+      };
+      if (positionMatch) {
+        setSelectedJobPosition(positionMatch);
+      }
+      setFormData(updatedFormData);
+    } else if (field === "department") {
+      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
+      // Clear position when department changes
+      const departmentValue = typeof value === "number" ? value : Number(value);
+      const updatedFormData = {
+        ...formData,
+        department: departmentValue,
+        position: 0, // Reset position when department changes
+      };
+
+      setFormData(updatedFormData);
+    } else {
+      const updatedFormData = {
+        ...formData,
+        [field]: value,
+      };
+      setFormData(updatedFormData);
+    }
+  };
+
+  const handleProflePictureChange = (value: File | null) => {
+    setEmployeeProfilePicture(value);
+
+    // Also save the updated form data to Redux (without the profile picture)
+    const updatedFormData = {...formData};
+    setFormData(updatedFormData);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
-      setUploadError("No file selected");
-      setUploadSuccess(null);
+      toast.error("No file selected");
       return;
     }
 
     const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validImageTypes.includes(file.type)) {
-      setUploadError("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
-      setUploadSuccess(null);
+      toast.error("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024;
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploadError("Image size exceeds 5MB limit");
-      setUploadSuccess(null);
+      toast.error("Image size exceeds 10MB limit");
       return;
     }
 
-    if (previewUrl && !previewUrl.startsWith("http")) {
+    if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
 
     try {
-      handleInputChange("employee_profile_picture", file);
+      handleProflePictureChange(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      setUploadError(null);
-      setUploadSuccess("Image uploaded successfully");
-    } catch (error) {
-      setUploadError("Failed to process image");
-      setUploadSuccess(null);
+      ;
+    } catch (error: unknown) {
+      showErrorToast({error, defaultMessage:"An unknown error occurred while processing the image"});
     }
   };
 
   const handleRemoveImage = () => {
-    if (previewUrl && !previewUrl.startsWith("http")) {
+    if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl("");
-    handleInputChange("employee_profile_picture", null);
-    setUploadError(null);
-    setUploadSuccess(null);
+    handleProflePictureChange(null);
+    ;
 
-    const fileInput = document.getElementById("profilePicture") as HTMLInputElement;
+
+    const fileInput = profilePicInputRef.current;
     if (fileInput) {
       fileInput.value = "";
     }
+
+    // Save the updated form data to Redux after removing image
+    const updatedFormData = {...formData};
+    setFormData(updatedFormData);
   };
 
-  const handleAddWorkType = async () => {
-    if (!workTypeFormData.name.trim()) {
-      showErrorToast({error: null, defaultMessage: "Work type name is required"});
-      return;
-    }
-
-    setIsAddingWorkType(true);
-
-    try {
-      const newWorkType = await createWorkType({
-        institutionId: institutionId ?? 0,
-        workTypeData: workTypeFormData,
-      });
-
-      if (newWorkType) {
-        setWorkTypes((prev) => [...prev, newWorkType]);
-        setFormData((prev) => ({...prev, work_type: newWorkType.id}));
-        setWorkTypeFormData({
-          name: "",
-          description: "",
-          code: "",
-          institution: selectedInstitution?.id || 0,
-        });
-        setIsWorkTypeModalOpen(false);
-        showSuccessToast("Work type added successfully");
-      } else {
-        throw new Error("Failed to create work type");
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
-    } catch (error: unknown) {
-      showErrorToast({error, defaultMessage: "An error occurred while adding work type"});
-    } finally {
-      setIsAddingWorkType(false);
-    }
-  };
+    };
+  }, [previewUrl]);
 
-  const handleAddEmployeeType = async () => {
-    if (!employeeTypeFormData.name.trim()) {
-      showErrorToast({error: null, defaultMessage: "Employee type name is required"});
-      return;
-    }
-
-    setIsAddingEmployeeType(true);
-
-    try {
-      const newEmployeeType = await createEmployeeType({
-        institutionId: institutionId ?? 0,
-        employeeTypeData: employeeTypeFormData,
-      });
-
-      if (newEmployeeType) {
-        setEmployeeTypes((prev) => [...prev, newEmployeeType]);
-        setFormData((prev) => ({...prev, employee_type: newEmployeeType.id}));
-        setEmployeeTypeFormData({
-          name: "",
-          description: "",
-          code: "",
-          institution: selectedInstitution?.id || 0,
-        });
-        setIsEmployeeTypeModalOpen(false);
-        showSuccessToast("Employee type name added successfully");
-      } else {
-        throw new Error("Failed to create employee type name");
-      }
-    } catch (error: unknown) {
-      showErrorToast({
-        error: null,
-        defaultMessage: "An error occurred while adding employee type name.",
-      });
-    } finally {
-      setIsAddingEmployeeType(false);
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const requiredFields = ["fullname", "email", "position", "department", "date_of_joining"];
-
-    for (const field of requiredFields) {
-      if (
-        !formData[field as keyof EmployeeUpdateFormState] ||
-        formData[field as keyof EmployeeUpdateFormState] === 0
-      ) {
-        setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
-        return false;
-      }
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setSubmitError("Please enter a valid email address");
+  const validateForm = () => {
+    if (!formData.fullname || !formData.email) {
+      setSubmitError("Please fill in all required fields");
       return false;
     }
-
     return true;
   };
 
-  const validateCurrentStep = (): boolean => {
-    setSubmitError(null);
-
+  const isCurrentStepValid = () => {
     switch (currentStep) {
-      case 1: // Personal Information
-        const personalRequiredFields = ["fullname", "email"];
-        for (const field of personalRequiredFields) {
-          if (!formData[field as keyof EmployeeUpdateFormState]) {
-            setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
-            return false;
-          }
-        }
-
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-          setSubmitError("Please enter a valid email address");
-          return false;
-        }
-        break;
-
-      case 2: // Work Information
-        const workRequiredFields = ["position", "department", "date_of_joining"];
-        for (const field of workRequiredFields) {
-          const value = formData[field as keyof EmployeeUpdateFormState];
-          if (!value || value === 0) {
-            setSubmitError(`Please fill in the ${field.replace("_", " ")} field`);
-            return false;
-          }
-        }
-        break;
-
-      case 3: // Financial Information - no required fields currently
-        break;
-
+      case 1:
+        const currentDate = new Date();
+        const DOB = new Date(formData.date_of_birth);
+        return !!(
+          formData.fullname &&
+          formData.email &&
+          formData.country &&
+          formData.marital_status &&
+          formData.address &&
+          formData.date_of_birth &&
+          formData.nin &&
+          formData.phone_number &&
+          currentDate.getFullYear() - DOB.getFullYear() >= 18
+        );
+      case 2:
+        return !!(
+          formData.department &&
+          formData.position &&
+          formData.date_of_joining &&
+          formData.employee_type &&
+          formData.employee_type
+        );
+      case 3:
+        return !!(
+          bankAccountFormData.account_name.trim() &&
+          bankAccountFormData.account_number.trim() &&
+          bankAccountFormData.bank_id &&
+          formData.tin.trim() &&
+          formData.tin.length <= 12 &&
+          formData.nssf_no.trim()
+        );
       default:
-        return true;
+        return false;
     }
-
-    return true;
   };
 
-  const isCurrentStepValid = (): boolean => {
-    switch (currentStep) {
-      case 1: // Personal Information
-        const personalRequiredFields = ["fullname", "email"];
-        for (const field of personalRequiredFields) {
-          if (!formData[field as keyof EmployeeUpdateFormState]) {
-            return false;
-          }
-        }
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-          return false;
-        }
-        break;
-
-      case 2: // Work Information
-        const workRequiredFields = ["position", "department", "date_of_joining"];
-        for (const field of workRequiredFields) {
-          const value = formData[field as keyof EmployeeUpdateFormState];
-          if (!value || value === 0) {
-            return false;
-          }
-        }
-        break;
-
-      case 3: // Financial Information - no required fields currently
-        return true;
-
-      default:
-        return true;
+  const nextStep = () => {
+    console.log(
+      "\n\n Validating next step with current step : ",
+      currentStep,
+      "\n\n Valid : ",
+      isCurrentStepValid(),
+    );
+    if (isCurrentStepValid() && currentStep < steps.length) {
+      setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
+      setCurrentStep((prev) => prev + 1);
+      // return
     }
-    return true;
-  };
-
-  const nextStep = async () => {
-    setIsValidating(true);
-
-    // Small delay to show the validation is happening
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    if (validateCurrentStep() && currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-    }
-
-    setIsValidating(false);
   };
 
   const prevStep = () => {
@@ -548,15 +803,68 @@ export default function UpdateEmployeePage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddWorkType = async (workType: IWorkType) => {
+    setWorkTypes((prev) => [...prev, workType]);
+    handleInputChange("work_type", workType.id);
+  };
 
-    if (!employeeId) {
-      setSubmitError("Missing required information");
-      return;
+  const handleAddEmployeeType = async () => {
+    if (!selectedInstitution || !employeeTypeFormData.name.trim()) return;
+
+    setIsAddingEmployeeType(true);
+    try {
+      const newEmployeeType = await createEmployeeType({
+        institutionId: selectedInstitution.id,
+        employeeTypeData: employeeTypeFormData,
+      });
+
+      setEmployeeTypes((prev) => [...prev, newEmployeeType]);
+      handleInputChange("employee_type", newEmployeeType.id);
+
+      setEmployeeTypeFormData({
+        name: "",
+        description: "",
+        code: "",
+        institution: selectedInstitution.id,
+      });
+      setIsEmployeeTypeModalOpen(false);
+
+      toast.success("Employee type created successfully");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create employee type";
+      toast.error(errorMessage);
+    } finally {
+      setIsAddingEmployeeType(false);
     }
+  };
 
-    if (!validateForm()) {
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>("");
+  const [spouseFormData, setSpouseFormData] = useState<{
+    name: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+  }>({
+    name: "",
+    phoneNumber: "",
+    dateOfBirth: "",
+  });
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Only submit if we're on the last step
+    if (currentStep === steps.length) {
+      handleSubmit();
+    }
+  };
+
+  const handleSubmit = async () => {
+    console.log("\n\n Submitting with current step ", currentStep);
+    if (!selectedInstitution) {
+      showErrorToast({
+        error: new Error("No institution selected"),
+        defaultMessage: "Please select an institution",
+      });
       return;
     }
 
@@ -564,233 +872,585 @@ export default function UpdateEmployeePage() {
     setSubmitError(null);
 
     try {
-      const updateData = {
+      const dataToSubmit: IEmployeeFormData = {
         user: {
           fullname: formData.fullname,
           email: formData.email,
         },
         email: formData.email,
         phone_number: formData.phone_number,
-        position: formData.position,
-        department: formData.department,
-        // Only include work_type if it's a valid value (> 0)
-        ...(formData.work_type > 0 && {work_type: formData.work_type}),
-        // Only include employee_type if it's a valid value (> 0)
-        ...(formData.employee_type > 0 && {employee_type: formData.employee_type}),
+        phone_number_country_code: phoneCountryCode,
+        gender: formData.gender || "male",
         date_of_birth: formData.date_of_birth,
         date_of_joining: formData.date_of_joining,
         address: formData.address,
         country: formData.country,
         nin: formData.nin,
-        bank: formData.bank,
-        bank_account_number: formData.bank_account_number,
         tin: formData.tin,
         nssf_no: formData.nssf_no,
+        salary:formData.salary,
         is_active: formData.is_active,
-        experience: formData.experience,
-        qualifications: formData.qualifications,
         skills: formData.skills,
-        emergency_contact_name: formData.emergency_contact_name,
-        emergency_contact_phone: formData.emergency_contact_phone,
-        emergency_contact_relationship: formData.emergency_contact_relationship,
         marital_status: formData.marital_status,
-        children_count: formData.children_count,
-        employee_profile_picture: formData.employee_profile_picture,
-        salary: formData.salary,
-      };
+        employee_profile_picture: employeeProfilePicture,
+        selected_branches: formData.selected_branches,
+        work_type: formData.work_type,
+        employee_type: formData.employee_type,
+        position: formData.position,
+        department: formData.department,
 
-      const result = await updateEmployee({
+        children: children.map((child, idx) => ({
+          id: String(idx),
+          name: child.name,
+          gender: child.gender,
+          date_of_birth: child.date_of_birth,
+        })),
+        next_of_kin: nextOfKins.map((nok, idx) => ({
+          id: String(idx),
+          name: nok.name,
+          relationship: nok.relationship,
+          phone_number: nok.phone_number,
+          address: nok.address,
+        })),
+        educations: educations.map((edu, idx) => ({
+          id: String(idx),
+          qualification: edu.qualification,
+          institute: edu.institute,
+          year: edu.year,
+          award: edu.award,
+        })),
+        work_experiences: workExperiences.map((exp, idx) => ({
+          id: String(idx),
+          company: exp.company,
+          position: exp.position,
+          duration: exp.duration,
+          reason_of_leave: exp.reason_of_leave,
+        })),
+        bank_accounts: [bankAccountFormData]
+      };
+      if(formData.marital_status === "married"){
+        dataToSubmit["spouse"] = {
+                name: spouseFormData.name,
+                phone_number: spouseFormData.phoneNumber,
+                date_of_birth: spouseFormData.dateOfBirth,
+              }
+      }
+
+      await updateEmployee({
         employeeId: parseInt(employeeId),
-        employeeData: updateData,
+        employeeData: dataToSubmit,
       });
-      showSuccessToast("Employee has been updated successfully.");
       router.push("/employees/employee-list");
-    } catch (error: any) {
-      showErrorToast({error: null, defaultMessage: "Failed to update employee. Please try again."});
-      setSubmitError(error.message || "An unexpected error occurred");
+      showSuccessToast("Employee created successfully");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while creating the employee.";
+
+      showErrorToast({error, defaultMessage: "Failed to create employee"});
+      setSubmitError(
+        typeof error === "object" ? "An error occurred while creating the employee" : errorMessage,
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Sync main phone and country to formData
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      phone_number:
-        phoneInput.countryCode && phoneInput.phoneNumber
-          ? `${phoneInput.countryCode}${phoneInput.phoneNumber}`
-          : "",
-      country: selectedCountry?.name?.common || "",
-      emergency_contact_phone:
-        emergencyPhoneInput.countryCode && emergencyPhoneInput.phoneNumber
-          ? `${emergencyPhoneInput.countryCode}${emergencyPhoneInput.phoneNumber}`
-          : "",
-    }));
-  }, [phoneInput, selectedCountry, emergencyPhoneInput]);
+    const newPhoneNumber =
+      phoneInput.countryCode && phoneInput.phoneNumber
+        ? `${phoneInput.phoneNumber}`
+        : formData.phone_number;
 
-  useEffect(() => {
-    return () => {
-      if (previewUrl && !previewUrl.startsWith("http")) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+    const newCountry = selectedCountry?.name?.common || formData.country;
+
+
+    if (
+      newPhoneNumber !== formData.phone_number ||
+      newCountry !== formData.country 
+    ) {
+      const updatedFormData:typeof formData = {
+        ...formData,
+        phone_number: newPhoneNumber,
+        country: newCountry
+      };
+      setFormData(updatedFormData);
+    }
+  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput]);
 
   const renderStep = () => {
+    if (loadingData) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      );
+    }
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Personal Information</h3>
+          <div className="space-y-8">
+            {/* Personal Information */}
+            <div className="space-y-6">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg md:text-xl font-medium text-gray-800 mb-4 underline underline-offset-2">
+                    Basic Information
+                  </h4>
+                  <div className="flex flex-col md:flex-row items-center justify-start gap-8">
+                    {/* Profile Picture Upload */}
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="relative">
+                        <Avatar className="w-32 h-32">
+                          <AvatarImage
+                            src={previewUrl || "/placeholder.svg"}
+                            alt="Profile preview"
+                          />
+                          <AvatarFallback className="bg-gray-100">
+                            <User className="w-16 h-16 text-gray-400" />
+                          </AvatarFallback>
+                        </Avatar>
 
-            {/* Basic Personal Info */}
-            <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-700 border-b pb-2">Basic Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullname">Full Name *</Label>
-                  <Input
-                    id="fullname"
-                    value={formData.fullname}
-                    onChange={(e) => handleInputChange("fullname", e.target.value)}
-                    placeholder="Enter full name"
-                    required
-                  />
+                        <Label
+                          htmlFor="profilePicture"
+                          className="cursor-pointer absolute right-2 bottom-2"
+                        >
+                          <Button
+                            size={"sm"}
+                            type="button"
+                            onClick={() => {
+                              profilePicInputRef.current?.click();
+                            }}
+                            className="!bg-gray-900 text-white rounded-full !h-8 !w-8 !aspect-square "
+                          >
+                            <Icon icon="hugeicons:image-add-01" className="!h-4 !w-4" />
+                          </Button>
+                        </Label>
+                      </div>
+                      {previewUrl && (
+                        <Button
+                          type="button"
+                          size={"sm"}
+                          onClick={handleRemoveImage}
+                          className=" rounded-3xl !bg-primary/10 !text-primary"
+                          title="Remove image"
+                        >
+                          Remove image
+                        </Button>
+                      )}
+                      <div className="text-center">
+                        <Input
+                          id="profilePicture"
+                          name="profilePicture"
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          ref={profilePicInputRef}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullname" className="text-sm font-medium text-gray-700">
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="fullname"
+                          value={formData.fullname}
+                          onChange={(e) => handleInputChange("fullname", e.target.value)}
+                          placeholder="Enter full name"
+                          className="h-12 rounded-2xl"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                          Email *
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          placeholder="email@email.com"
+                          className="h-12 rounded-2xl"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <PhoneNumberInput
+                          label="Phone Number"
+                          required
+                          value={formData.phone_number || ""}
+                          country={phoneInput.country}
+                          onChange={setPhoneInput}
+                          setError={setPhoneError}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="dateOfBirth" className="text-sm font-medium text-gray-700">
+                          Date of Birth
+                        </Label>
+                        <Input
+                          id="dateOfBirth"
+                          type="date"
+                          max={maxDate18}
+                          value={formData.date_of_birth}
+                          onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+                          className="h-12 rounded-2xl"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="gender" className="text-sm font-medium text-gray-700">
+                        Gender
+                      </Label>
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value: string) => handleInputChange("gender", value)}
+                      >
+                        <SelectTrigger className="h-12 rounded-2xl">
+                          <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genderOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nin" className="text-sm font-medium text-gray-700">
+                        National ID/Passport
+                      </Label>
+                      <Input
+                        id="nin"
+                        value={formData.nin}
+                        onChange={(e) => handleInputChange("nin", e.target.value)}
+                        placeholder="Enter national ID number"
+                        className="h-12 rounded-2xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="country" className="text-sm font-medium text-gray-700">
+                        Nationality
+                      </Label>
+                      <CountrySelect
+                        selectedCountry={selectedCountry}
+                        onCountryChange={(country) => {
+                          setSelectedCountry(country);
+                          if (country) {
+                            handleInputChange("country", country.name.common);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                        Address
+                      </Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => handleInputChange("address", e.target.value)}
+                        placeholder="Enter full address"
+                        className="h-12 rounded-2xl"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="maritalStatus" className="text-sm font-medium text-gray-700">
+                        Marital Status
+                      </Label>
+                      <Select
+                        value={formData.marital_status}
+                        onValueChange={(value: string) =>
+                          handleInputChange("marital_status", value)
+                        }
+                      >
+                        <SelectTrigger className="h-12 rounded-2xl">
+                          <SelectValue placeholder="Single" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {maritalStatusOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.marital_status === "married" && (
+                      <>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="spouse_name"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Spouse Name
+                          </Label>
+                          <Input
+                            id="spouse_name"
+                            value={spouseFormData.name}
+                            onChange={(e) =>
+                              setSpouseFormData((prev) => ({...prev, name: e.target.value}))
+                            }
+                            placeholder="Enter spouse name"
+                            className="h-12 rounded-2xl"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
+                          <Input
+                            id="spouseDob"
+                            type="date"
+                            max={maxDate18}
+                            className="rounded-2xl h-12"
+                            value={spouseFormData.dateOfBirth}
+                            onChange={(e) =>
+                              setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <PhoneNumberInput
+                            label="Spouse Phone Number"
+                            required
+                            value={spouseFormData.phoneNumber || ""}
+                            country={spousePhoneInput.country}
+                            onChange={setSpousePhoneInput}
+                            setError={setSpousePhoneError}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="Enter email address"
-                    required
-                  />
+                  <Label htmlFor="dateOfBirth" className="text-lg font-medium text-gray-800">
+                    Children
+                  </Label>
+
+                  <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={"Yes"}
+                        id="has_children"
+                        onClick={() => setHasChildren(true)}
+                      />
+                      <Label htmlFor="has_children">Has Children</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value={"No"}
+                        id="has_no_children"
+                        onClick={() => setHasChildren(false)}
+                      />
+                      <Label htmlFor="has_no_children">No Children</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={formData.phone_number}
-                    onChange={(e) => handleInputChange("phone_number", e.target.value)}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={formData.date_of_birth}
-                    onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maritalStatus">Marital Status</Label>
-                  <Select
-                    value={formData.marital_status}
-                    onValueChange={(value) => handleInputChange("marital_status", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select marital status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {maritalStatusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
+
+                {/* Children Section */}
+                {hasChildren && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center">
+                      <Button
+                        type="button"
+                        onClick={() => setIsChildDialogOpen(true)}
+                        className="rounded-xl !bg-gray-900 !text-white"
+                        size="sm"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Child
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                      {children.map((child, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-4 bg-gray-100 rounded-lg"
+                        >
+                          <div className="">
+                            <div className="flex flex-col items-start justify-start gap-2 text-sm">
+                              <div className="flex items-center justify-start gap-2">
+                                <span className="font-medium">{child.name}</span>
+                                <span className="text-gray-600">{child.gender}</span>
+                              </div>
+                              <p className="text-gray-600 text-left w-full">
+                                D.OB - {child.date_of_birth}
+                              </p>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditChild(child)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteChild(String(child.id))}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="childrenCount">Number of Children</Label>
-                  <Input
-                    id="childrenCount"
-                    type="number"
-                    min="0"
-                    value={formData.children_count === 0 ? "" : formData.children_count}
-                    onChange={(e) =>
-                      handleInputChange("children_count", parseInt(e.target.value) || 0)
-                    }
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
+                    </div>
+                  </div>
+                )}
 
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-700 border-b pb-2">
-                Address Information
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
-                    placeholder="Enter full address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    placeholder="Enter country"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nin">National ID Number (NIN)</Label>
-                  <Input
-                    id="nin"
-                    value={formData.nin}
-                    onChange={(e) => handleInputChange("nin", e.target.value)}
-                    placeholder="Enter national ID number"
-                  />
-                </div>
-              </div>
-            </div>
+                {/* Emergency Contact Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-medium text-gray-800">
+                      Emergency Contact(s) / Next of kin
+                    </h4>
+                  </div>
 
-            {/* Emergency Contact Information */}
-            <div className="space-y-4">
-              <h4 className="text-md font-medium text-gray-700 border-b pb-2">
-                Emergency Contact Information
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyContactName">Contact Name</Label>
-                  <Input
-                    id="emergencyContactName"
-                    value={formData.emergency_contact_name}
-                    onChange={(e) => handleInputChange("emergency_contact_name", e.target.value)}
-                    placeholder="Emergency contact name"
-                  />
+                  <div className="space-y-3">
+                    {nextOfKins.map((nok) => (
+                      <div key={nok.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                            <div>
+                              <span className="text-gray-600 block">Name</span>
+                              <span className="font-medium">{nok.name}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Relationship</span>
+                              <span className="font-medium">{nok.relationship}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Phone Number</span>
+                              <span className="font-medium">{nok.phone_number}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Address</span>
+                              <span className="font-medium">{nok.address}</span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditNextOfKin(nok)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteNextOfKin(nok.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-center w-full">
+                    <Button
+                      type="button"
+                      onClick={() => setIsNextOfKinDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add emergency contact
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyContactPhone">Contact Phone</Label>
-                  <Input
-                    id="emergencyContactPhone"
-                    value={formData.emergency_contact_phone}
-                    onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
-                    placeholder="Emergency contact phone"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emergencyContactRelationship">Relationship</Label>
-                  <Input
-                    id="emergencyContactRelationship"
-                    value={formData.emergency_contact_relationship}
-                    onChange={(e) =>
-                      handleInputChange("emergency_contact_relationship", e.target.value)
-                    }
-                    placeholder="Relationship to employee"
-                  />
+
+                {/* Education Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-medium text-gray-800">
+                      Education Background / Training
+                    </h4>
+                    {/* <Button size={"icon"} variant={"ghost"} ></Button> */}
+                  </div>
+
+                  <div className="space-y-3">
+                    {educations.map((edu) => (
+                      <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                            <div>
+                              <span className="text-gray-600 block">Qualification</span>
+                              <span className="font-medium">{edu.qualification}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Institute</span>
+                              <span className="font-medium">{edu.institute}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Year</span>
+                              <span className="font-medium">{edu.year}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Award</span>
+                              <span className="font-medium">{edu.award}</span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteEducation(edu.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-center py-4">
+                    <Button
+                      type="button"
+                      onClick={() => setIsEducationDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Education Background
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -798,65 +1458,44 @@ export default function UpdateEmployeePage() {
         );
       case 2:
         return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Work Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div className="space-y-2">
-                <Label htmlFor="position">Position *</Label>
-                <Select
-                  value={formData.position > 0 ? formData.position.toString() : ""}
-                  onValueChange={(value) => handleInputChange("position", parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {positions.length > 0 ? (
-                      positions.map((position) => (
-                        <SelectItem key={position.id} value={position.id.toString()}>
-                          {position.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        No positions available
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label className="text-sm font-medium text-gray-700">Department *</Label>
+                <Input
+                  value={selectedJobPositon?.department_details?.name || thisEmployee?.department.name}
+                  disabled
+                  className="h-12 rounded-2xl"
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="department">Department *</Label>
-                <Select
-                  value={formData.department > 0 ? formData.department.toString() : ""}
-                  onValueChange={(value) => handleInputChange("department", parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.length > 0 ? (
-                      departments.map((department) => (
-                        <SelectItem key={department.id} value={department.id.toString()}>
-                          {department.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-gray-500">
-                        No departments available
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="position" className="text-sm font-medium text-gray-700">
+                  Position *
+                </Label>
+                <JobPositionSearchableSelect
+                  setPositions={setPositions}
+                  value={[formData.position.toString() || ""]}
+                  onValueChange={(values) => {
+                    if (values.length > 0) {
+                      handleInputChange("position", Number(values[0]));
+                    }
+                  }}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="workType">Work Type</Label>
+                <Label htmlFor="workType" className="text-sm font-medium text-gray-700">
+                  Work Type
+                </Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.work_type > 0 ? formData.work_type.toString() : ""}
-                    onValueChange={(value) => handleInputChange("work_type", parseInt(value))}
+                    onValueChange={(value: string) =>
+                      handleInputChange("work_type", Number.parseInt(value))
+                    }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 rounded-2xl">
                       <SelectValue placeholder="Select work type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -873,110 +1512,32 @@ export default function UpdateEmployeePage() {
                       )}
                     </SelectContent>
                   </Select>
-                  <Dialog open={isWorkTypeModalOpen} onOpenChange={setIsWorkTypeModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 bg-transparent"
-                        title="Add new work type"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Add New Work Type</DialogTitle>
-                        <DialogDescription>
-                          Create a new work type to add to your institution.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeName">Name *</Label>
-                          <Input
-                            id="workTypeName"
-                            value={workTypeFormData.name}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, name: e.target.value}))
-                            }
-                            placeholder="Enter work type name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeCode">Code</Label>
-                          <Input
-                            id="workTypeCode"
-                            value={workTypeFormData.code}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({...prev, code: e.target.value}))
-                            }
-                            placeholder="Enter work type code (optional)"
-                            maxLength={10}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workTypeDescription">Description</Label>
-                          <Textarea
-                            id="workTypeDescription"
-                            value={workTypeFormData.description}
-                            onChange={(e) =>
-                              setWorkTypeFormData((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter work type description (optional)"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setIsWorkTypeModalOpen(false);
-                            setWorkTypeFormData({
-                              name: "",
-                              description: "",
-                              code: "",
-                              institution: selectedInstitution?.id || 0,
-                            });
-                          }}
-                          disabled={isAddingWorkType}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleAddWorkType}
-                          disabled={isAddingWorkType || !workTypeFormData.name.trim()}
-                        >
-                          {isAddingWorkType ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Work Type"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    type="button"
+                    onClick={() => setIsWorkTypeModalOpen(true)}
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 h-12 w-12 rounded-2xl"
+                    title="Add new work type"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="employeeType">Employee Type Name</Label>
+                <Label htmlFor="employeeType" className="text-sm font-medium text-gray-700">
+                  Employee Type Name
+                </Label>
                 <div className="flex gap-2">
                   <Select
                     value={formData.employee_type > 0 ? formData.employee_type.toString() : ""}
-                    onValueChange={(value) => handleInputChange("employee_type", parseInt(value))}
+                    onValueChange={(value) =>
+                      handleInputChange("employee_type", Number.parseInt(value))
+                    }
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee type Name" />
+                    <SelectTrigger className="h-12 rounded-2xl">
+                      <SelectValue placeholder="Select employee type name" />
                     </SelectTrigger>
                     <SelectContent>
                       {employeeTypes.length > 0 ? (
@@ -992,221 +1553,229 @@ export default function UpdateEmployeePage() {
                       )}
                     </SelectContent>
                   </Select>
-                  <Dialog open={isEmployeeTypeModalOpen} onOpenChange={setIsEmployeeTypeModalOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 bg-transparent"
-                        title="Add new employee type name"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Add New Employee Type Name</DialogTitle>
-                        <DialogDescription>
-                          Create a new employee type name to add to your institution.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="employeeTypeName">Name *</Label>
-                          <Input
-                            id="employeeTypeName"
-                            value={employeeTypeFormData.name}
-                            onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
-                            }
-                            placeholder="Enter employee type name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="employeeTypeCode">Code</Label>
-                          <Input
-                            id="employeeTypeCode"
-                            value={employeeTypeFormData.code}
-                            onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({...prev, code: e.target.value}))
-                            }
-                            placeholder="Enter employee type code (optional)"
-                            maxLength={10}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="employeeTypeDescription">Description</Label>
-                          <Textarea
-                            id="employeeTypeDescription"
-                            value={employeeTypeFormData.description}
-                            onChange={(e) =>
-                              setEmployeeTypeFormData((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter employee type description (optional)"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setIsEmployeeTypeModalOpen(false);
-                            setEmployeeTypeFormData({
-                              name: "",
-                              description: "",
-                              code: "",
-                              institution: selectedInstitution?.id || 0,
-                            });
-                          }}
-                          disabled={isAddingEmployeeType}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleAddEmployeeType}
-                          disabled={isAddingEmployeeType || !employeeTypeFormData.name.trim()}
-                        >
-                          {isAddingEmployeeType ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Employee Type Name"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    type="button"
+                    onClick={() => setIsEmployeeTypeModalOpen(true)}
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 h-12 w-12 rounded-2xl"
+                    title="Add new employee type"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="dateOfJoining">Date of Joining *</Label>
+                <Label htmlFor="dateOfJoining" className="text-sm font-medium text-gray-700">
+                  Date of Joining *
+                </Label>
                 <Input
                   id="dateOfJoining"
                   type="date"
+                  max={maxDateToDay}
                   value={formData.date_of_joining}
                   onChange={(e) => handleInputChange("date_of_joining", e.target.value)}
+                  className="h-12 rounded-2xl"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="experience">Experience (Years)</Label>
-                <Input
-                  id="experience"
-                  type="number"
-                  min="0"
-                  value={formData.experience === 0 ? "" : formData.experience}
-                  onChange={(e) => handleInputChange("experience", parseInt(e.target.value) || 0)}
-                  placeholder="Years of experience"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="qualifications">Qualifications</Label>
+
+
+              {/* <div className="space-y-2">
+                <Label htmlFor="qualifications" className="text-sm font-medium text-gray-700">
+                  Qualifications
+                </Label>
                 <Input
                   id="qualifications"
                   value={formData.qualifications}
                   onChange={(e) => handleInputChange("qualifications", e.target.value)}
                   placeholder="Enter qualifications"
+                  className="h-12 rounded-2xl"
                 />
-              </div>
+              </div> */}
+
               <div className="space-y-2">
-                <Label htmlFor="skills">Skills</Label>
+                <Label htmlFor="skills" className="text-sm font-medium text-gray-700">
+                  Skills
+                </Label>
                 <Input
                   id="skills"
                   value={formData.skills}
                   onChange={(e) => handleInputChange("skills", e.target.value)}
                   placeholder="Enter skills"
+                  className="h-12 rounded-2xl"
                 />
               </div>
-              <div className="md:col-span-2">
-                <MultiSelectBranches
-                  branches={branches}
-                  selectedBranches={formData.selected_branches || []}
-                  onSelectionChange={(selectedIds) =>
-                    handleInputChange("selected_branches", selectedIds)
-                  }
-                  loading={branchesLoading}
-                  error={branchesError}
-                  placeholder="Select branches for this employee"
-                  label="Employee Branches"
-                />
+            </div>
+
+            {/* Employee Branches */}
+            <div className="space-y-4">
+              <MultiSelectBranches
+                className="!rounded-2xl !h-12"
+                branches={branches}
+                selectedBranches={formData.selected_branches}
+                onSelectionChange={(selectedIds) =>
+                  handleInputChange("selected_branches", selectedIds)
+                }
+                loading={branchesLoading}
+                error={branchesError}
+                placeholder="Select branches for this employee"
+                label="Employee Branches"
+              />
+            </div>
+
+            {/* Work Experience Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-medium text-gray-800">Work Experience</h4>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isActive"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => handleInputChange("is_active", checked)}
-                />
-                <Label htmlFor="isActive">Active Employee</Label>
+
+              <div className="space-y-3">
+                {workExperiences.map((exp) => (
+                  <div key={exp.id} className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                        <div>
+                          <span className="text-gray-600 block">Company</span>
+                          <span className="font-medium">{exp.company}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 block">Position</span>
+                          <span className="font-medium">{exp.position}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 block">Duration</span>
+                          <span className="font-medium">{exp.duration}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 block">Reason of leave</span>
+                          <span className="font-medium">{exp.reason_of_leave}</span>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditWorkExperience(exp)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteWorkExperience(exp.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center py-8">
+                <Button
+                  type="button"
+                  onClick={() => setIsWorkExperienceDialogOpen(true)}
+                  className="rounded-xl !bg-gray-900 !text-white"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add work experience
+                </Button>
               </div>
             </div>
           </div>
         );
       case 3:
         return (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Financial Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div className="space-y-2">
-                <Label htmlFor="bank">Bank</Label>
-                <Input
-                  id="bank"
-                  value={formData.bank}
-                  onChange={(e) => handleInputChange("bank", e.target.value)}
-                  placeholder="Enter bank name"
+                <Label htmlFor="bank" className="text-sm font-medium text-gray-700">
+                  Bank
+                </Label>
+                <BankAccountSearchableSelect
+                  setAccounts={setInstitutionBanks}
+                  selectedItems={[bankAccountFormData.bank_id || 0]}
+                  onValueChange={(values) => {
+                    console.log("\n\n Received account ids : ", values)
+                    if (values.length) {
+                      setBankAccountFormData((prev) => ({...prev, bank_id: Number(values[0])}));
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="bankAccountNumber">Bank Account Number</Label>
+                <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
+                  Bank Account Name
+                </Label>
+                <Input
+                  id="bankAccountName"
+                  value={bankAccountFormData.account_name}
+                  onChange={(e) =>
+                    setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
+                  }
+                  placeholder="Enter bank account name"
+                  className="h-12 rounded-2xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
+                  Bank Account Number
+                </Label>
                 <Input
                   id="bankAccountNumber"
-                  value={formData.bank_account_number}
-                  onChange={(e) => handleInputChange("bank_account_number", e.target.value)}
+                  value={bankAccountFormData.account_number}
+                  onChange={(e) =>
+                    setBankAccountFormData((prev) => ({...prev, account_number: e.target.value}))
+                  }
                   placeholder="Enter bank account number"
+                  className="h-12 rounded-2xl"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nssf_no">National Social Security Fund</Label>
+                <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
+                  National Social Security Fund
+                </Label>
                 <Input
                   id="nssf_no"
                   value={formData.nssf_no}
                   onChange={(e) => handleInputChange("nssf_no", e.target.value)}
                   placeholder="Enter NSSF"
+                  className="h-12 rounded-2xl"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tin">Tax Identification Number</Label>
+                <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
+                  Tax Identification Number (TIN)
+                </Label>
                 <Input
                   id="tin"
                   value={formData.tin}
                   onChange={(e) => handleInputChange("tin", e.target.value)}
                   placeholder="Enter TIN"
+                  className="h-12 rounded-2xl"
+                  max={12}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="salary">Salary</Label>
-                <Input
-                  id="salary"
-                  type="text"
-                  inputMode="decimal"
-                  value={formatCurrency(formData.salary)}
-                  placeholder="Enter salary"
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/,/g, "");
-                    const parsed = parseFloat(raw);
-                    if (!isNaN(parsed)) {
-                      setFormData({...formData, salary: parsed});
-                    }
-                  }}
+                <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
+                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} - {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                </Label>
+                <FormattedNumberInput
+                id="salary"
+                value={formData.salary}
+                onValueChange={(val) => handleInputChange("salary", val)}
+                placeholder="Salary"
+                className="h-12 rounded-2xl"
                 />
+
               </div>
             </div>
           </div>
@@ -1216,194 +1785,699 @@ export default function UpdateEmployeePage() {
     }
   };
 
-  if (isLoading || loadingData) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <p className="mt-2 text-gray-600">Loading employee data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!employee) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Employee not found</p>
-          <Link href="/employees/employee-list">
-            <Button>Back to Employee List</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col w-full min-h-screen p-3 sm:p-4 md:p-6 lg:p-8 bg-white">
-      <CardHeader>
-        <div className="flex items-center space-x-4">
-          <Link href="/employees/employee-list">
-            <Button variant="outline" size="sm" className="rounded-full aspect-square">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-            </Button>
-          </Link>
-          <div className="h-6 w-px bg-gray-300" />
-          <CardTitle className="text-2xl font-bold text-gray-900">Update Employee</CardTitle>
-        </div>
-        <CardDescription className="py-4">
-          Update {employee.user?.fullname || employee.email}'s information
-        </CardDescription>
-
-        {/* Progress indicator */}
-        <div className="flex items-center justify-between mt-5">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= step.id ? "bg-orange-600 text-white" : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {step.id}
+    <div className="min-h-screen bg-white p-4 rounded-xl">
+      <div className="xl:max-w-[90svw]">
+        <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEES}>
+          {/* Header */}
+          <div className="mb-4 flex flex-col gap-12">
+            <div className="flex items-center space-x-4">
+              <Link href="/employees/employee-list">
+                <Button variant="outline" size="sm" className="p-2 !aspect-square !rounded-full">
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Update Employee</h1>
               </div>
-              <span
-                className={`ml-2 text-sm ${
-                  currentStep >= step.id ? "text-myOrange font-medium" : "text-gray-500"
-                }`}
-              >
-                {step.title}
-              </span>
-              {index < steps.length - 1 && (
-                <div
-                  className={`w-12 h-0.5 mx-4 ${currentStep > step.id ? "bg-orange-600" : "bg-gray-200"}`}
-                />
-              )}
             </div>
-          ))}
-        </div>
-      </CardHeader>
 
-      <CardContent className="p-6">
-        {submitError && (
-          <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
-            {submitError}
+            {/* Steps Component */}
+            <Steps
+              steps={steps}
+              currentStep={currentStep}
+              completedSteps={completedSteps}
+              setCurrentStep={setCurrentStep}
+              className="!w-full"
+            />
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Profile Picture Upload */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={previewUrl || "/placeholder.svg"} alt="Profile preview" />
-                <AvatarFallback>
-                  <User className="w-12 h-12" />
-                </AvatarFallback>
-              </Avatar>
-              {previewUrl && (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
-                  title="Remove image"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+          <Card className="shadow-none border-none bg-transparent">
+            <CardContent className="p-2 ">
+              {submitError && (
+                <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                  {submitError}
+                </div>
               )}
-            </div>
-            <div className="text-center">
-              <Input
-                id="profilePicture"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Label htmlFor="profilePicture" className="cursor-pointer">
+              {phoneError && (
+                <div className="mb-6 p-4 border border-red-300 bg-red-50 text-red-700 rounded-md">
+                  {phoneError}
+                </div>
+              )}
+
+              <form onSubmit={handleFormSubmit} className="space-y-8">
+                {renderStep()}
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between pt-8">
+                  {/* <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleClearLocalEmployeeCreateForm}
+                      disabled={isSubmitting}
+                    >
+                      Clear Form
+                    </Button>
+                  </div> */}
+
+                  <div
+                    className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-8`}
+                  >
+                    {/* {currentStep > 1 && (
+                      <Button
+                        type="button"
+                        onClick={prevStep}
+                        variant="outline"
+                        disabled={isSubmitting}
+                        className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
+                      >
+                        Previous
+                      </Button>
+                    )} */}
+                    {currentStep < steps.length ? (
+                      <>
+                        <Button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            nextStep();
+                          }}
+                          className="w-full md:w-56 lg:!w-72 rounded-full !h-12"
+                          disabled={!isCurrentStepValid() || isValidating}
+                        >
+                          {isValidating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Validating...
+                            </>
+                          ) : (
+                            "Next"
+                          )}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="submit"
+                        className=" text-white w-full md:w-56 lg:!w-72 rounded-full !h-12"
+                        disabled={isSubmitting || !isCurrentStepValid()}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Employee...
+                          </>
+                        ) : (
+                          "Submit"
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Dialogs */}
+          {/* Child Dialog */}
+          <Dialog
+            open={isChildDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsChildDialogOpen(false);
+                setEditingChild(null);
+                setChildFormData({name: "", gender: "" as IGender, date_of_birth: ""});
+              } else {
+                setIsChildDialogOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{editingChild ? "Edit Child" : "Add Child"}</DialogTitle>
+                <DialogDescription>
+                  {editingChild
+                    ? "Update child information"
+                    : "Add a new child to the employee record"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="childName">Child's Name</Label>
+                  <Input
+                    id="childName"
+                    value={childFormData.name}
+                    onChange={(e) => setChildFormData((prev) => ({...prev, name: e.target.value}))}
+                    placeholder="Child's Name"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="childGender">Child's Gender</Label>
+                  <Select
+                    value={childFormData.gender}
+                    onValueChange={(value: IGender) =>
+                      setChildFormData((prev) => ({...prev, gender: value}))
+                    }
+                  >
+                    <SelectTrigger className="rounded-2xl h-12">
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {genderOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="childDob">Child's Date Of Birth</Label>
+                  <Input
+                    id="childDob"
+                    type="date"
+                    max={maxDateToDay}
+                    className="rounded-2xl h-12"
+                    value={childFormData.date_of_birth}
+                    onChange={(e) =>
+                      setChildFormData((prev) => ({...prev, date_of_birth: e.target.value}))
+                    }
+                  />
+                </div>
+              </div>
+              <DialogFooter>
                 <Button
+                  type="button"
+                  onClick={handleAddChild}
+                  className=" text-white w-full rounded-full"
+                  disabled={
+                    !childFormData.name || !childFormData.gender || !childFormData.date_of_birth
+                  }
+                >
+                  {editingChild ? "Update Child" : "Add Child"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Next of Kin Dialog */}
+          <Dialog
+            open={isNextOfKinDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsNextOfKinDialogOpen(false);
+                setEditingNextOfKin(null);
+                setNextOfKinFormData({
+                  name: "",
+                  relationship: "",
+                  phone_number: "",
+                  address: "",
+                });
+              } else {
+                setIsNextOfKinDialogOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingNextOfKin ? "Edit Emergency Contact" : "Add Emergency Contact"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingNextOfKin
+                    ? "Update emergency contact information"
+                    : "Add a new emergency contact"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nokName">Contact Name</Label>
+                  <Input
+                    id="nokName"
+                    value={nextOfKinFormData.name}
+                    onChange={(e) =>
+                      setNextOfKinFormData((prev) => ({...prev, name: e.target.value}))
+                    }
+                    placeholder="Full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nokRelationship">Relationship</Label>
+                  <Select
+                    value={nextOfKinFormData.relationship}
+                    onValueChange={(value) =>
+                      setNextOfKinFormData((prev) => ({...prev, relationship: value}))
+                    }
+                  >
+                    <SelectTrigger className="rounded-2xl h-12">
+                      <SelectValue placeholder="Select Relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {relationshipOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* <div className="space-y-2">
+                  <Label htmlFor="nokPhone">Phone Number</Label>
+                  <Input
+                    id="nokPhone"
+                    value={nextOfKinFormData.phone_number}
+                    onChange={(e) =>
+                      setNextOfKinFormData((prev) => ({...prev, phone_number: e.target.value}))
+                    }
+                    placeholder="123456789"
+                    className="rounded-2xl h-12"
+                  />
+                </div> */}
+                <div className="space-y-2">
+                  <PhoneNumberInput
+                    label="Phone Number"
+                    required
+                    value={nextOfKinFormData.phone_number || ""}
+                    country={emergencyContactPhoneInput.country}
+                    onChange={setEmergencyContactPhoneInput}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nokAddress">Address</Label>
+                  <Input
+                    id="nokAddress"
+                    value={nextOfKinFormData.address}
+                    onChange={(e) =>
+                      setNextOfKinFormData((prev) => ({...prev, address: e.target.value}))
+                    }
+                    placeholder="Search Location"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                {/* <Button
                   type="button"
                   variant="outline"
-                  className="flex items-center space-x-2 bg-transparent"
-                  asChild
+                  onClick={() => {
+
+                  }}
                 >
-                  <span>
-                    <Upload className="w-4 h-4" />
-                    <span>{previewUrl ? "Change Photo" : "Upload Photo"}</span>
-                  </span>
-                </Button>
-              </Label>
-              <p className="text-xs text-gray-500 mt-2">
-                Max size: 5MB. Formats: JPEG, PNG, GIF, WebP
-              </p>
-            </div>
-            {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-            {uploadSuccess && <p className="text-green-500 text-sm text-center">{uploadSuccess}</p>}
-          </div>
-
-          <Separator />
-
-          {/* Form Steps */}
-          {renderStep()}
-
-          <Separator />
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between">
-            <Link href="/employees/employee-list">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto bg-transparent"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </Link>
-
-            <div className="flex gap-2">
-              {currentStep > 1 && (
-                <Button type="button" onClick={prevStep} variant="outline">
-                  Previous
-                </Button>
-              )}
-              {currentStep < steps.length ? (
+                  Cancel
+                </Button> */}
                 <Button
                   type="button"
-                  onClick={nextStep}
-                  className="bg-orange-600 hover:bg-orange-700 px-6"
-                  disabled={!isCurrentStepValid() || isValidating}
+                  onClick={handleAddNextOfKin}
+                  className=" text-white w-full rounded-full"
+                  disabled={!nextOfKinFormData.name || !nextOfKinFormData.relationship}
                 >
-                  {isValidating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Validating...
-                    </>
-                  ) : (
-                    "Next"
-                  )}
+                  {editingNextOfKin ? "Update Contact" : "Add emergency contact"}
                 </Button>
-              ) : (
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Education Dialog */}
+          <Dialog
+            open={isEducationDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsEducationDialogOpen(false);
+                setEditingEducation(null);
+                setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+              } else {
+                setIsEducationDialogOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingEducation ? "Edit Education" : "Add Education Background"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingEducation
+                    ? "Update education information"
+                    : "Add education or training record"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="eduQualification">Qualification</Label>
+                  <Input
+                    id="eduQualification"
+                    value={educationFormData.qualification}
+                    onChange={(e) =>
+                      setEducationFormData((prev) => ({...prev, qualification: e.target.value}))
+                    }
+                    placeholder="Qualification"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eduInstitute">Institute</Label>
+                  <Input
+                    id="eduInstitute"
+                    value={educationFormData.institute}
+                    onChange={(e) =>
+                      setEducationFormData((prev) => ({...prev, institute: e.target.value}))
+                    }
+                    placeholder="Institute Name"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eduYear">Year</Label>
+                  <Input
+                    id="eduYear"
+                    value={educationFormData.year}
+                    onChange={(e) =>
+                      setEducationFormData((prev) => ({...prev, year: e.target.value}))
+                    }
+                    placeholder="eg., 2001"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eduAward">Award</Label>
+                  <Input
+                    id="eduAward"
+                    value={educationFormData.award}
+                    onChange={(e) =>
+                      setEducationFormData((prev) => ({...prev, award: e.target.value}))
+                    }
+                    placeholder="Award Acquired"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                {/* <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+
+                  }}
+                >
+                  Cancel
+                </Button> */}
                 <Button
                   type="button"
-                  onClick={handleSubmit}
-                  className="bg-orange-600 hover:bg-orange-700"
-                  disabled={isSubmitting}
+                  onClick={handleAddEducation}
+                  className=" text-white rounded-full w-full"
+                  disabled={!educationFormData.qualification || !educationFormData.institute}
                 >
-                  {isSubmitting ? (
+                  {editingEducation ? "Update Education" : "Add Education Background"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Work Experience Dialog */}
+          <Dialog
+            open={isWorkExperienceDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsWorkExperienceDialogOpen(false);
+                setEditingWorkExperience(null);
+                setWorkExperienceFormData({
+                  company: "",
+                  position: "",
+                  duration: "",
+                  reason_of_leave: "",
+                });
+              } else {
+                setIsWorkExperienceDialogOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingWorkExperience ? "Edit Work Experience" : "Add Work Experience"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingWorkExperience
+                    ? "Update work experience information"
+                    : "Add previous work experience"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expCompany">Company</Label>
+                  <Input
+                    id="expCompany"
+                    value={workExperienceFormData.company}
+                    onChange={(e) =>
+                      setWorkExperienceFormData((prev) => ({...prev, company: e.target.value}))
+                    }
+                    placeholder="Company name"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expPosition">Position</Label>
+                  <Input
+                    id="expPosition"
+                    value={workExperienceFormData.position}
+                    onChange={(e) =>
+                      setWorkExperienceFormData((prev) => ({...prev, position: e.target.value}))
+                    }
+                    placeholder="Your position at that company"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expDuration">Duration</Label>
+                  <Input
+                    id="expDuration"
+                    value={workExperienceFormData.duration}
+                    onChange={(e) =>
+                      setWorkExperienceFormData((prev) => ({...prev, duration: e.target.value}))
+                    }
+                    placeholder="eg., 5 Years"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expReason">Reason of leave</Label>
+                  <Input
+                    id="expReason"
+                    value={workExperienceFormData.reason_of_leave}
+                    onChange={(e) =>
+                      setWorkExperienceFormData((prev) => ({
+                        ...prev,
+                        reason_of_leave: e.target.value,
+                      }))
+                    }
+                    placeholder="Reason of leaving"
+                    className="rounded-2xl h-12"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                {/* <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+
+                  }}
+                >
+                  Cancel
+                </Button> */}
+                <Button
+                  type="button"
+                  onClick={handleAddWorkExperience}
+                  className=" text-white rounded-full w-full"
+                  disabled={!workExperienceFormData.company || !workExperienceFormData.position}
+                >
+                  {editingWorkExperience ? "Update Experience" : "Add work experience"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Bank Account Dialog */}
+          {/* <Dialog
+            open={isBankAccountDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsBankAccountDialogOpen(false);
+                setEditingBankAccount(null);
+                setBankAccountFormData({
+                  bank: 0,
+                  account_name: "",
+                  account_number: "",
+                });
+              } else {
+                setIsBankAccountDialogOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingBankAccount ? "Edit Bank Account" : "Add Bank Account"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingBankAccount ? "Update bank account information" : "Add bank account"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank" className="text-sm font-medium text-gray-700">
+                    Bank
+                  </Label>
+                  <BankAccountSearchableSelect
+                    setAccounts={setInstitutionBanks}
+                    value={[bankAccountFormData.bank || ""]}
+                    onValueChange={(values) => {
+                      if (values.length) {
+                        setBankAccountFormData((prev) => ({...prev, bank: Number(values[0])}));
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
+                    Bank Account Name
+                  </Label>
+                  <Input
+                    id="bankAccountName"
+                    value={bankAccountFormData.account_name}
+                    onChange={(e) =>
+                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
+                    }
+                    placeholder="Enter bank account name"
+                    className="h-12 rounded-2xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
+                    Bank Account Number
+                  </Label>
+                  <Input
+                    id="bankAccountNumber"
+                    value={bankAccountFormData.account_name}
+                    onChange={(e) =>
+                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
+                    }
+                    placeholder="Enter bank account number"
+                    className="h-12 rounded-2xl"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  onClick={handleAddBankAccount}
+                  className=" text-white rounded-full w-full"
+                  disabled={
+                    !bankAccountFormData.account_name ||
+                    !bankAccountFormData.bank ||
+                    !bankAccountFormData.account_number
+                  }
+                >
+                  {editingBankAccount ? "Update Bank Account" : "Add Bank Account"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog> */}
+
+          {/* Work Type Modal */}
+          <WorkTypeModal
+            isOpen={isWorkTypeModalOpen}
+            onClose={() => setIsWorkTypeModalOpen(false)}
+            editingType={null}
+            onSaveSuccess={handleAddWorkType}
+            isSubmitting={isSubmitting}
+          />
+
+          {/* Employee Type Modal */}
+          <Dialog
+            open={isEmployeeTypeModalOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsEmployeeTypeModalOpen(false);
+                setEmployeeTypeFormData((prev) => ({
+                  ...prev,
+                  name: "",
+                  description: "",
+                  code: "",
+                }));
+              } else {
+                setIsEmployeeTypeModalOpen(open);
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Employee Type Name</DialogTitle>
+                <DialogDescription>
+                  Create a new employee type name to add to your institution.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="employeeTypeName">Name *</Label>
+                  <Input
+                    id="employeeTypeName"
+                    value={employeeTypeFormData.name}
+                    onChange={(e) =>
+                      setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
+                    }
+                    placeholder="Enter employee type name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeTypeDescription">Description</Label>
+                  <Textarea
+                    id="employeeTypeDescription"
+                    value={employeeTypeFormData.description}
+                    onChange={(e) =>
+                      setEmployeeTypeFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    className="resize-none rounded-2xl"
+                    placeholder="Enter employee type description (optional)"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                {/* <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+
+                  }}
+                  disabled={isAddingEmployeeType}
+                >
+                  Cancel
+                </Button> */}
+                <Button
+                  type="button"
+                  onClick={handleAddEmployeeType}
+                  disabled={isAddingEmployeeType || !employeeTypeFormData.name.trim()}
+                  className=" text-white w-full rounded-full"
+                >
+                  {isAddingEmployeeType ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating Employee...
+                      Adding...
                     </>
                   ) : (
-                    "Update Employee"
+                    "Add Employee Type"
                   )}
                 </Button>
-              )}
-            </div>
-          </div>
-        </form>
-      </CardContent>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </ProtectedComponent>
+      </div>
     </div>
   );
 }

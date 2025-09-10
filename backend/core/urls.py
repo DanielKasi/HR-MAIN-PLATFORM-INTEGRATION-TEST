@@ -27,10 +27,11 @@ urlpatterns = [
     path("api/documents/", include("documents.urls")),
     path("api/settings/", include("settings.urls")),
     path("markdownx/", include("markdownx.urls")),
-    path('ckeditor/', include('ckeditor_uploader.urls')),
+    path("ckeditor/", include("ckeditor_uploader.urls")),
     path("api/approval/", include("approval.urls")),
     path("api/spotcheck/", include("spotcheck.urls")),
     path("api/communication/", include("communication.urls"))
+    path("api/assistant/", include("assistant.urls")),
 ]
 
 if settings.DEBUG:

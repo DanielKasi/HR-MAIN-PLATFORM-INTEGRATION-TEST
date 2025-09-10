@@ -69,7 +69,7 @@ export const rejectApprovalTask = async (id: number, comment?: string) => {
 };
 
 export const overrideApprovalTask = async (id: number, comment?: string) => {
-const url = comment ? `${BASE}/over-ride/${id}/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
+const url = comment ? `${BASE}/override/${id}/?comment=${encodeURIComponent(comment)}` : `${BASE}/approval-tasks/${id}/approve/`;
 const res = await apiRequest.patch(url, {});
 return res.data as ApprovalTask;
 };
