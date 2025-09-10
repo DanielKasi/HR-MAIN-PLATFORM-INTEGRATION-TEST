@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "easyaudit",
     "communication",
+    "assistant",
 ]
 
 MIDDLEWARE = [

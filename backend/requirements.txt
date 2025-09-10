@@ -117,7 +117,7 @@ pytz==2025.2
 PyYAML==6.0.2
 redis==5.0.1
 referencing==0.36.2
-requests==2.32.4
+requests==2.32.5
 requests-oauthlib==2.0.0
 rpds-py==0.24.0
 rsa==4.9.1
@@ -148,3 +148,11 @@ webencodings==0.5.1
 whitenoise==6.9.0
 zope.interface==7.2
 zopfli==0.2.3.post1
+agno==1.8.1
+psycopg2-binary
+pgvector
+
+langchain 
+openai 
+psycopg2
+langchain-openai
