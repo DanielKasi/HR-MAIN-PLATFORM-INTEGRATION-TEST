@@ -12,4 +12,4 @@ celerybeat-schedule-wal
 /.idea
 db_schema_and_rules.txt
 assistant_memory.db
-AI_ASSISTANT_PERRACOSOFT_CHATS
+AI_ASSISTANT_PERRACOSOFT_CHATS/
