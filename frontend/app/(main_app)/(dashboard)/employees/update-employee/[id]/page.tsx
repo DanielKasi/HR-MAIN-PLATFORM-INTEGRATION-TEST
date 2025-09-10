@@ -40,6 +40,7 @@ import {
   createEmployeeType,
   getWorkTypes,
   getEmployeeTypes,
+  showErrorToast,
 } from "@/lib/utils";
 
 import type {
@@ -193,10 +194,6 @@ export default function UpdateEmployeePage() {
     phoneNumber: string;
     isValid: boolean;
   }>({country: null, countryCode: "", phoneNumber: "", isValid: false});
-
-  const showErrorToast = (message: string) => {
-    toast.error(message);
-  };
 
   const showSuccessToast = (message: string) => {
     toast.success(message);
@@ -362,7 +359,7 @@ export default function UpdateEmployeePage() {
 
   const handleAddWorkType = async () => {
     if (!workTypeFormData.name.trim()) {
-      showErrorToast("Work type name is required");
+      showErrorToast({error: null, defaultMessage: "Work type name is required"});
       return;
     }
 
@@ -389,11 +386,7 @@ export default function UpdateEmployeePage() {
         throw new Error("Failed to create work type");
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unknown error occurred while adding work type.";
-      showErrorToast(errorMessage);
+      showErrorToast({error, defaultMessage: "An error occurred while adding work type"});
     } finally {
       setIsAddingWorkType(false);
     }
@@ -401,7 +394,7 @@ export default function UpdateEmployeePage() {
 
   const handleAddEmployeeType = async () => {
     if (!employeeTypeFormData.name.trim()) {
-      showErrorToast("Employee type name is required");
+      showErrorToast({error: null, defaultMessage: "Employee type name is required"});
       return;
     }
 
@@ -428,11 +421,10 @@ export default function UpdateEmployeePage() {
         throw new Error("Failed to create employee type name");
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "An unknown error occurred while adding employee type name.";
-      showErrorToast(errorMessage);
+      showErrorToast({
+        error: null,
+        defaultMessage: "An error occurred while adding employee type name.",
+      });
     } finally {
       setIsAddingEmployeeType(false);
     }
@@ -611,19 +603,10 @@ export default function UpdateEmployeePage() {
         employeeId: parseInt(employeeId),
         employeeData: updateData,
       });
-
-      if (result) {
-        showSuccessToast("Employee has been updated successfully.");
-
-        localStorage.removeItem(`employee_${employeeId}`);
-
-        router.push("/employees/employee-list");
-      } else {
-        setSubmitError("Failed to update employee. Please try again.");
-      }
+      showSuccessToast("Employee has been updated successfully.");
+      router.push("/employees/employee-list");
     } catch (error: any) {
-      showErrorToast("Failed to update employee. Please try again.");
-
+      showErrorToast({error: null, defaultMessage: "Failed to update employee. Please try again."});
       setSubmitError(error.message || "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);

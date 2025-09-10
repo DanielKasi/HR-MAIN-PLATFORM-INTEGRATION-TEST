@@ -1,3 +1,4 @@
+import { Approval } from "@/types/approvals.types";
 import { IPenaltyType } from "@/types/types.utils";
 
 export const MAIN_DOMAIN_URL="https://peracosoft.com"
@@ -348,3 +349,114 @@ export enum PERMISSION_CODES {
   CAN_EDIT_PENALTIES = "can_edit_penalties",
   CAN_DELETE_PENALTIES = "can_delete_penalties",
 }
+
+export const mockApprovals: Approval[] = [
+  {
+    id: 1,
+    public_id: "APR-001",
+    status: "ongoing",
+    content_type: 1,
+    object_id: 123,
+    action: {
+      id: 1,
+      name: "create",
+      code: "ACTION-4B6D832F",
+      description: "Action for creating new records that require approval",
+      public_uuid: "945b43aa-2760-4322-bcfe-b517683c593f",
+    },
+    document: {
+      id: 1,
+      institution: 1,
+      institution_name: "Test Institution",
+      public_uuid: "doc-uuid-1",
+      description: "Standard approval workflow",
+      content_type: 1,
+      content_type_name: "User",
+      actions: [],
+      levels: [],
+    },
+    tasks: [
+      {
+        id: 1,
+        status: "approved",
+        comment: "Looks good to proceed",
+        approved_by: 1,
+        approved_by_fullname: "John Doe",
+        updated_at: "2024-01-15T10:30:00Z",
+        level: {
+          id: 1,
+          level: 1,
+          name: "Initial Review",
+          description: "First level approval",
+          public_uuid: "level-1",
+          approvers_detail: [],
+          overriders_detail: [],
+          approval_document: 1,
+        },
+      },
+      {
+        id: 2,
+        status: "pending",
+        comment: null,
+        approved_by: null,
+        approved_by_fullname: null,
+        updated_at: "2024-01-15T10:30:00Z",
+        level: {
+          id: 2,
+          level: 2,
+          name: "Manager Approval",
+          description: "Manager level approval required",
+          public_uuid: "level-2",
+          approvers_detail: [],
+          overriders_detail: [],
+          approval_document: 1,
+        },
+      },
+    ],
+  },
+  {
+    id: 2,
+    public_id: "APR-002",
+    status: "ongoing",
+    content_type: 1,
+    object_id: 124,
+    action: {
+      id: 2,
+      name: "update",
+      code: "ACTION-AD9E498E",
+      description: "Action for updating existing records that require approval",
+      public_uuid: "322668c7-9347-46fd-be1d-45384d6a569b",
+    },
+    document: {
+      id: 1,
+      institution: 1,
+      institution_name: "Test Institution",
+      public_uuid: "doc-uuid-1",
+      description: "Standard approval workflow",
+      content_type: 1,
+      content_type_name: "User",
+      actions: [],
+      levels: [],
+    },
+    tasks: [
+      {
+        id: 3,
+        status: "pending",
+        comment: null,
+        approved_by: null,
+        approved_by_fullname: null,
+        updated_at: "2024-01-15T11:00:00Z",
+        level: {
+          id: 1,
+          level: 1,
+          name: "Data Validation",
+          description: "Validate updated data",
+          public_uuid: "level-1",
+          approvers_detail: [],
+          overriders_detail: [],
+          approval_document: 1,
+        },
+      },
+    ],
+  },
+]

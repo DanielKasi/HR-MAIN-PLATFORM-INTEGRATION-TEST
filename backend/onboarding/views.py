@@ -36,11 +36,14 @@ from .serializers import (
 from institution.models import Institution
 from django.db.models import Q, Count
 from django.db import transaction
+from utilities.sortable_api import SortableAPIMixin
 
 
 
-class OnBoardingListAPI(APIView):
+class OnBoardingListAPI(APIView, SortableAPIMixin):
     parser_classes = [MultiPartParser, FormParser]
+    allowed_ordering_fields = ['application', 'created_at', 'attended', 'is_active', 'remarks', 'status']
+    default_ordering = ['application']
 
     @extend_schema(
         request=OnBoardingSerializer,
@@ -79,6 +82,11 @@ class OnBoardingListAPI(APIView):
             
         if status:
             onboardings = onboardings.filter(status=status)    
+
+        try:
+            onboardings = self.apply_sorting(onboardings, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(onboardings, request)
@@ -140,26 +148,11 @@ class BulkOnBoardingCreateAPI(APIView):
             },
             "required": ["application_ids"],
         },
-        responses={
-            201: serializers.Serializer(
-                "BulkOnBoardingResponse",
-                {
-                    "created": OnBoardingSerializer(many=True),
-                    "skipped": serializers.ListSerializer(
-                        child=serializers.DictField()
-                    ),
-                    "summary": serializers.DictField(),
-                },
-            ),
-            400: serializers.Serializer(
-                "ErrorResponse", {"error": serializers.CharField()}
-            ),
-        },
         summary="Bulk Create Onboarding Records",
         description="Create onboarding records for multiple applications with initial status",
         tags=["Onboarding"],
     )
-    
+    @transaction.atomic()
     def post(self, request):
         application_ids = request.data.get("application_ids", [])
 
@@ -172,6 +165,13 @@ class BulkOnBoardingCreateAPI(APIView):
         if not isinstance(application_ids, list):
             return Response(
                 {"error": "application_ids must be a list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate that all application_ids are integers
+        if not all(isinstance(app_id, int) for app_id in application_ids):
+            return Response(
+                {"error": "All application_ids must be integers"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -200,7 +200,7 @@ class BulkOnBoardingCreateAPI(APIView):
                 # Process valid applications
                 for application in valid_applications:
                     # Check if onboarding record already exists
-                    if hasattr(application, "onboarding"):
+                    if hasattr(application, "onboarding") and application.onboarding:
                         skipped_applications.append(
                             {
                                 "application_id": application.id,
@@ -213,6 +213,8 @@ class BulkOnBoardingCreateAPI(APIView):
                     onboarding = OnBoarding.objects.create(
                         application=application, status="initial"
                     )
+                    # Trigger approval workflow for the created onboarding
+                    onboarding.confirm_create()
                     created_onboardings.append(onboarding)
 
         except Exception as e:
@@ -223,7 +225,6 @@ class BulkOnBoardingCreateAPI(APIView):
 
         # Serialize created onboarding records
         serializer = OnBoardingSerializer(created_onboardings, many=True)
-        serializer.confirm_create()
 
         response_data = {
             "created": serializer.data,
@@ -238,7 +239,9 @@ class BulkOnBoardingCreateAPI(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-class OffboardingStageListCreateView(APIView):
+class OffboardingStageListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['stage_name', 'created_at', 'description', 'is_active']
+    default_ordering = ['stage_name']
 
     @extend_schema(
         request=OffboardingStageSerializer,
@@ -282,6 +285,11 @@ class OffboardingStageListCreateView(APIView):
                 Q(stage_name__icontains=search_query)
             )
 
+        try:
+            stages = self.apply_sorting(stages, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)  
+        
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(stages, request)
         serializer = OffboardingStageSerializer(paginated_qs, many=True)
@@ -341,7 +349,9 @@ class OffboardingStageDetailView(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class InstitutionEmployeeSeparationTypesListCreateView(APIView):
+class InstitutionEmployeeSeparationTypesListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['separation_type', 'created_at', 'description', 'category']
+    default_ordering = ['separation_type']
 
     @extend_schema(
         request=InstitutionEmployeeSeparationTypesSerializer,
@@ -383,6 +393,12 @@ class InstitutionEmployeeSeparationTypesListCreateView(APIView):
             separation_types = separation_types.filter(
                 Q(separation_type__icontains=search_query)
             )
+
+        try:
+            separation_types = self.apply_sorting(separation_types, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)  
+            
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(separation_types, request)
         serializer = InstitutionEmployeeSeparationTypesSerializer(
@@ -451,7 +467,9 @@ class InstitutionEmployeeSeparationTypesDetailView(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class InstitutionSeparationPolicyListCreateView(APIView):
+class InstitutionSeparationPolicyListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['policy_name', 'created_at', 'description', 'min_notice_days', 'max_notice_days', 'require_separation_letter', 'require_all_stages', 'enforce_policy', 'is_active']
+    default_ordering = ['policy_name']
 
     @extend_schema(
         request=InstitutionSeparationPolicySerializer,
@@ -496,6 +514,11 @@ class InstitutionSeparationPolicyListCreateView(APIView):
                 Q(separation_type__separation_type__icontains=search_query) |
                 Q(policy_name__icontains=search_query)
             )
+
+        try:
+            policies = self.apply_sorting(policies, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(policies, request)
         serializer = InstitutionSeparationPolicySerializer(paginated_qs, many=True)
@@ -556,7 +579,9 @@ class InstitutionSeparationPolicyDetailView(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class ResignationRequestListCreateView(APIView):
+class ResignationRequestListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'last_working_day', 'request_status', 'separation', 'is_active']
+    default_ordering = ['created_at']
     @extend_schema(
         request=ResignationRequestSerializer,
         responses={201: ResignationRequestSerializer},
@@ -608,6 +633,10 @@ class ResignationRequestListCreateView(APIView):
                 Q(separation__employee__user__fullname__icontains=search_query)
             )
 
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = ResignationRequestSerializer(paginated_qs, many=True)
@@ -673,7 +702,10 @@ class ResignationRequestDetailView(APIView):
             return Response({"detail": "Not found."}, status=404)
 
 
-class ResignationRequestByLoggedInUser(APIView):
+class ResignationRequestByLoggedInUser(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'last_working_day', 'request_status', 'separation', 'is_active']
+    default_ordering = ['created_at']
+
     @extend_schema(
         responses={200: ResignationRequestSerializer(many=True)},
         summary="List Resignation Requests by Logged In User",
@@ -690,6 +722,11 @@ class ResignationRequestByLoggedInUser(APIView):
         queryset = ResignationRequest.objects.filter(
             separation__employee=employee
         ).order_by("-created_at")
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = ResignationRequestSerializer(paginated_qs, many=True)
@@ -697,7 +734,10 @@ class ResignationRequestByLoggedInUser(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
-class TerminationInitiationListCreateView(APIView):
+class TerminationInitiationListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'last_working_day', 'request_status', 'separation', 'is_active', 'initiation_status']
+    default_ordering = ['created_at']
+
     @extend_schema(
         request=TerminationInitiationSerializer,
         responses={201: TerminationInitiationSerializer},
@@ -742,6 +782,12 @@ class TerminationInitiationListCreateView(APIView):
             queryset = queryset.filter(
                 Q(separation__employee__user__fullname__icontains=search_query)
             )
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+              
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = TerminationInitiationSerializer(paginated_qs, many=True)

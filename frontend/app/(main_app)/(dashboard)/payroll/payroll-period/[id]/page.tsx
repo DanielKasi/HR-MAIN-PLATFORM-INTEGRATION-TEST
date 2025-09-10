@@ -61,6 +61,7 @@ import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selec
 import { formatDate } from "@/lib/helpers";
 import {  bankAccountsAPI } from "@/lib/utils";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function PayrollPeriodDetails() {
   const router = useRouter();
@@ -466,6 +467,7 @@ export default function PayrollPeriodDetails() {
             )}
 
             {payrollPeriod && (
+              <>
               <Dialog open={downloadModalOpen} onOpenChange={setDownloadModalOpen}>
                 <DialogTrigger asChild>
                   <Button
@@ -539,12 +541,21 @@ export default function PayrollPeriodDetails() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              </>
             )}
+
           </div>
         </div>
 
         {/* Results Table */}
-        <div className="bg-white mx-0 sm:mx-2">
+        <div className={`pt-4 ${(payrollPeriod?.approval_status !== "active" && payrollPeriod?.approvals?.length) ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3":""} `}>
+          
+          {payrollPeriod?.approvals && 
+          <ApprovalWorkflow className="order-1 md:order-2" approvals={payrollPeriod.approvals} instance_approval_status={payrollPeriod.approval_status} 
+          onRefresh={fetchData}
+          />
+          }
+          <div className="lg:col-span-2 xl:col-span-3 order-2 md:order-1 mx-0 md:mx-2">
 
           <>{ selectedInstitution &&
 
@@ -559,6 +570,7 @@ export default function PayrollPeriodDetails() {
           }
 
           </>
+          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import React, {useState, useEffect, useRef, useCallback, useMemo} from "react";
-import {useSelector} from "react-redux";
-import {useRouter} from "next/navigation";
-import {Plus, Search, Trash2, Eye, User, Settings, Loader2, MoreVertical} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { Plus, Search, Trash2, Eye, User, Settings, Loader2, MoreVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -24,22 +24,22 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {toast} from "sonner";
-import {LeaveBalancesAPI, getPaginatedEmployees, getLeaveTypes} from "@/lib/utils";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import {ILeaveBalance, IEmployee, ILeaveType} from "@/types/types.utils";
+import { toast } from "sonner";
+import { LeaveBalancesAPI, getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/constants";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {Icon} from "@iconify/react";
+import { PERMISSION_CODES } from "@/constants";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { Icon } from "@iconify/react";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 // Define grouped employee interface
@@ -80,6 +80,7 @@ export default function LeaveBalanceComponent() {
   const [employees, setEmployees] = useState<IEmployee[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [ordering, setOrdering] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -136,8 +137,8 @@ export default function LeaveBalanceComponent() {
 
       try {
         const [employeesData, leaveTypesData] = await Promise.all([
-          getPaginatedEmployees({institutionId: selectedInstitution.id}),
-          getLeaveTypes({institutionId: selectedInstitution.id}),
+          getPaginatedEmployees({ institutionId: selectedInstitution.id }),
+          getLeaveTypes({ institutionId: selectedInstitution.id }),
         ]);
 
         setEmployees(employeesData.results);
@@ -208,18 +209,19 @@ export default function LeaveBalanceComponent() {
   // Fetch functions for PaginatedTableWrapper
   const fetchFirstPage = async (search?: string) => {
     if (!selectedInstitution?.id) {
-      return {results: [], count: 0, next: null, previous: null};
+      return { results: [], count: 0, next: null, previous: null };
     }
 
     return LeaveBalancesAPI.getPaginated({
       institutionId: selectedInstitution.id,
       page: 1,
       search,
+      ordering: ordering || undefined,
     });
   };
 
-  const fetchFromUrl = async ({url}: {url: string}) => {
-    return LeaveBalancesAPI.getPaginatedFromUrl({url});
+  const fetchFromUrl = async ({ url }: { url: string }) => {
+    return LeaveBalancesAPI.getPaginatedFromUrl({ url });
   };
 
   // Form submission
@@ -239,8 +241,8 @@ export default function LeaveBalanceComponent() {
     setIsSubmitting(true);
     try {
       const leaveBalanceData: Partial<ILeaveBalance> = {
-        employee: {id: parseInt(formData.employee)} as IEmployee,
-        leave_type: {id: parseInt(formData.leave_type)} as ILeaveType,
+        employee: { id: parseInt(formData.employee) } as IEmployee,
+        leave_type: { id: parseInt(formData.leave_type) } as ILeaveType,
         year: parseInt(formData.year),
         institution: selectedInstitution.id,
         allocated_days: (parseFloat(formData.allocated_days) || 0).toString(),
@@ -293,7 +295,7 @@ export default function LeaveBalanceComponent() {
 
   // Handle view
   const handleView = (employeeId: number) => {
-    toast.loading("Loading employee details...", {id: `loading-${employeeId}`});
+    toast.loading("Loading employee details...", { id: `loading-${employeeId}` });
     router.push(`/leave/leave-balances/${employeeId}`);
   };
 
@@ -463,7 +465,7 @@ export default function LeaveBalanceComponent() {
                         </Label>
                         <Select
                           value={formData.leave_type}
-                          onValueChange={(value) => setFormData({...formData, leave_type: value})}
+                          onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-12 rounded-xl">
@@ -484,7 +486,7 @@ export default function LeaveBalanceComponent() {
                         </Label>
                         <Select
                           value={formData.year}
-                          onValueChange={(value) => setFormData({...formData, year: value})}
+                          onValueChange={(value) => setFormData({ ...formData, year: value })}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-12 rounded-xl">
@@ -512,7 +514,7 @@ export default function LeaveBalanceComponent() {
                           step="0.01"
                           value={formData.allocated_days}
                           onChange={(e) =>
-                            setFormData({...formData, allocated_days: e.target.value})
+                            setFormData({ ...formData, allocated_days: e.target.value })
                           }
                           placeholder="e.g., 21"
                           disabled={isSubmitting}
@@ -528,7 +530,7 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.used_days}
-                          onChange={(e) => setFormData({...formData, used_days: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
                           placeholder="e.g., 5"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -546,7 +548,7 @@ export default function LeaveBalanceComponent() {
                           type="number"
                           step="0.01"
                           value={formData.pending_days}
-                          onChange={(e) => setFormData({...formData, pending_days: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
                           placeholder="e.g., 2"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -565,7 +567,7 @@ export default function LeaveBalanceComponent() {
                           step="0.01"
                           value={formData.carried_forward_days}
                           onChange={(e) =>
-                            setFormData({...formData, carried_forward_days: e.target.value})
+                            setFormData({ ...formData, carried_forward_days: e.target.value })
                           }
                           placeholder="e.g., 3"
                           disabled={isSubmitting}
@@ -611,12 +613,12 @@ export default function LeaveBalanceComponent() {
 
         {/* Table Content */}
         <div className="flex-1 px-6 pb-6 min-h-0">
-          <PaginatedTableWrapper
+          <PaginatedTableWrapper<ILeaveBalance>
             fetchFirstPage={() => fetchFirstPage(searchTerm)}
             fetchFromUrl={fetchFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -702,10 +704,31 @@ export default function LeaveBalanceComponent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead className="text-center">Leave Types</TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Employee</span>
+                            <Button size="sm" variant={ordering === "employee" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>Leave Types</span>
+                            <Button size="sm" variant={ordering === "leave_types" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_types" ? "" : "leave_types")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
                         <TableHead className="text-center">Total Available</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>Status</span>
+                            <Button size="sm" variant={ordering === "status" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "status" ? "" : "status")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
                         <TableHead className="text-center">Last Updated</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -716,22 +739,20 @@ export default function LeaveBalanceComponent() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div
-                                className={`h-8 w-8 rounded-full ${
-                                  group.status === "good"
-                                    ? "bg-green-50"
-                                    : group.status === "low"
-                                      ? "bg-yellow-50"
-                                      : "bg-red-50"
-                                } flex items-center justify-center`}
+                                className={`h-8 w-8 rounded-full ${group.status === "good"
+                                  ? "bg-green-50"
+                                  : group.status === "low"
+                                    ? "bg-yellow-50"
+                                    : "bg-red-50"
+                                  } flex items-center justify-center`}
                               >
                                 <User
-                                  className={`h-4 w-4 ${
-                                    group.status === "good"
-                                      ? "text-green-600"
-                                      : group.status === "low"
-                                        ? "text-yellow-600"
-                                        : "text-red-600"
-                                  }`}
+                                  className={`h-4 w-4 ${group.status === "good"
+                                    ? "text-green-600"
+                                    : group.status === "low"
+                                      ? "text-yellow-600"
+                                      : "text-red-600"
+                                    }`}
                                 />
                               </div>
                               <div>
@@ -749,13 +770,12 @@ export default function LeaveBalanceComponent() {
                             </Badge>
                           </TableCell>
                           <TableCell
-                            className={`text-center font-bold text-lg ${
-                              group.status === "overused"
-                                ? "text-red-600"
-                                : group.status === "low"
-                                  ? "text-yellow-600"
-                                  : "text-green-600"
-                            }`}
+                            className={`text-center font-bold text-lg ${group.status === "overused"
+                              ? "text-red-600"
+                              : group.status === "low"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                              }`}
                           >
                             {group.totalAvailable}
                           </TableCell>
@@ -848,7 +868,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.employee}
-                    onValueChange={(value) => setFormData({...formData, employee: value})}
+                    onValueChange={(value) => setFormData({ ...formData, employee: value })}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -869,7 +889,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.leave_type}
-                    onValueChange={(value) => setFormData({...formData, leave_type: value})}
+                    onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -890,7 +910,7 @@ export default function LeaveBalanceComponent() {
                   </Label>
                   <Select
                     value={formData.year}
-                    onValueChange={(value) => setFormData({...formData, year: value})}
+                    onValueChange={(value) => setFormData({ ...formData, year: value })}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger className="h-12 rounded-xl">
@@ -917,7 +937,7 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.allocated_days}
-                    onChange={(e) => setFormData({...formData, allocated_days: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, allocated_days: e.target.value })}
                     placeholder="e.g., 21"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -932,7 +952,7 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.used_days}
-                    onChange={(e) => setFormData({...formData, used_days: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, used_days: e.target.value })}
                     placeholder="e.g., 5"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -950,7 +970,7 @@ export default function LeaveBalanceComponent() {
                     type="number"
                     step="0.01"
                     value={formData.pending_days}
-                    onChange={(e) => setFormData({...formData, pending_days: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, pending_days: e.target.value })}
                     placeholder="e.g., 2"
                     disabled={isSubmitting}
                     className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -969,7 +989,7 @@ export default function LeaveBalanceComponent() {
                     step="0.01"
                     value={formData.carried_forward_days}
                     onChange={(e) =>
-                      setFormData({...formData, carried_forward_days: e.target.value})
+                      setFormData({ ...formData, carried_forward_days: e.target.value })
                     }
                     placeholder="e.g., 3"
                     disabled={isSubmitting}

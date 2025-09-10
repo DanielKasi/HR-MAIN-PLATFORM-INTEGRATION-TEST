@@ -177,8 +177,8 @@ export default function PhoneNumberInput({
           {required && " *"}
         </Label>
       )}
-      <div className="flex gap-2 items-center">
-        <div className="min-w-[7.5rem]">
+      <div className="flex gap-2 items-center justify-start">
+        <div className="min-w-fit">
           <CountrySelect
             countries={countries}
             selectedCountry={selectedCountry}
@@ -187,13 +187,13 @@ export default function PhoneNumberInput({
             compact={true}
           />
         </div>
-        <Input
+        {/* <Input
           id="country_code"
           value={getCountryCode()}
           disabled
           style={{width: "80px"}}
           className="hidden" // Hide this, as code is now in CountrySelect
-        />
+        /> */}
         <div className="flex-1 flex items-center gap-0">
           <Input
             id="phone-number-input"

@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "spotcheck",
     "django_celery_beat",
     "easyaudit",
+    "communication",
 ]
 
 MIDDLEWARE = [

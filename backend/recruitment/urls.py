@@ -4,8 +4,7 @@ from .views import (
     JobPositionAdvertListAPI, JobPositionAdvertDetailAPI,
     JobAdvertApplicationListAPI, JobAdvertApplicationDetailAPI,
     InterviewStageListAPI, InterviewStageDetailAPI,
-    JobInterviewListAPI, JobInterviewDetailAPI, RecruitmentFunnelAnalyticsAPI, 
-    JobAdvertSourcingAnalyticsAPI, InterviewCandidateAnalyticsAPI,
+    JobInterviewListAPI, JobInterviewDetailAPI,
     RecruitmentDashboardAPIView
 )
 
@@ -26,21 +25,6 @@ urlpatterns = [
 
     path("institution/<int:institution_id>/job-interview/", JobInterviewListAPI.as_view()),
     path("job-interview/<int:interview_id>/", JobInterviewDetailAPI.as_view()),
-    path(
-        'institutions/<int:institution_id>/job-advert-sourcing-analytics/',
-        JobAdvertSourcingAnalyticsAPI.as_view(),
-        name='job-advert-sourcing-analytics'
-    ),
-        path(
-        'institutions/<int:institution_id>/recruitment-funnel-analytics/',
-        RecruitmentFunnelAnalyticsAPI.as_view(),
-        name='recruitment-funnel-analytics'
-    ),
-        path(
-        'institutions/<int:institution_id>/interview-analytics/',
-        InterviewCandidateAnalyticsAPI.as_view(),
-        name='interview-analytics'
-    ),
     path('analytics/', RecruitmentDashboardAPIView.as_view(), name='recruitment-analytics')   
 
 ]

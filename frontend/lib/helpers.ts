@@ -4,7 +4,7 @@ import { format } from "date-fns";
 
 import apiRequest from "./apiRequest";
 
-import { IMarketPlaceOrder, IPaginatedResponse, IPermission, Permission, Role } from "@/types";
+import { IPermission, Permission, Role } from "@/types";
 import { store } from "@/store";
 import { toast } from "sonner";
 import { ICountry } from "@/types/types.utils";
@@ -218,21 +218,7 @@ export function hasAnyRequiredPermissions(
   );
 }
 
-export const fetchMarketPlaceOrders = async () => {
-  try {
-    const selectedBranch = store.getState().auth.selectedBranch.value;
 
-    if (!selectedBranch) {
-      return null;
-    }
-    const response = await apiRequest.get(`marketplace/orders/by-branch/${selectedBranch.id}`);
-
-    return (response.data as IPaginatedResponse<IMarketPlaceOrder>).results;
-  } catch {
-    // console.log("\nError fetching orders as : ", error)
-    return null;
-  }
-};
 
 export const getInstitutionById = async (InstitutionId: number) =>
   await apiRequest.get(`institution/${InstitutionId}/`);

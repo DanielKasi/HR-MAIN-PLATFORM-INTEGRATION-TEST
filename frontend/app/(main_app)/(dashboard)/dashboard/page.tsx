@@ -100,7 +100,7 @@ const capitalizeFirstLetter = (str: string) => {
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link href={"/employees/employee-list"} className="flex items-center justify-start gap-3">
+              <Link href={"/employees/add-employee"} className="flex items-center justify-start gap-3">
                 <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
                 <span className="hidden lg:inline">Add Employee</span>
                 

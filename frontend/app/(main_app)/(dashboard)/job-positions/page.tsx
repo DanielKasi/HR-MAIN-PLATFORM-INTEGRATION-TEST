@@ -17,7 +17,8 @@ import {
 
 import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
 
-import {PERMISSION_CODES, type IJobPosition} from "@/types/types.utils";
+import {type IJobPosition} from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
 import {formatCurrency} from "@/lib/helpers";
 import {useDocumentTitle} from "@/hooks/use-document-title";
 import {JobPositionsTable} from "@/components/common/tables/job-positions/job-positions-table";

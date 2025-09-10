@@ -37,14 +37,14 @@ export default function HomePage() {
               </div>
             </div>
 
-                         <div className="hidden md:flex items-center gap-4">
-               <Button variant="ghost" className="text-myblack hover:bg-gray-50" asChild>
-                 <Link href="/login">Login</Link>
-               </Button>
-               <Button className="bg-primary hover:bg-primary text-white rounded-full" asChild>
-                 <Link href="/signup">Sign Up</Link>
-               </Button>
-             </div>
+            <div className="hidden md:flex items-center gap-4">
+              <Button variant="ghost" className="text-myblack hover:bg-gray-50" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+              <Button className="bg-primary hover:bg-primary text-white rounded-full" asChild>
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </div>
 
             <div className="md:hidden">
               <Button
@@ -58,18 +58,18 @@ export default function HomePage() {
             </div>
           </div>
 
-                     {isMobileMenuOpen && (
-             <div className="md:hidden mt-2 rounded-2xl bg-white px-6 py-4 shadow-sm">
-               <div className="flex flex-col gap-3">
-                 <Button variant="ghost" className="text-myblack hover:bg-gray-50 justify-start" asChild>
-                   <Link href="/login">Login</Link>
-                 </Button>
-                 <Button className="bg-primary hover:bg-primary text-white rounded-full" asChild>
-                   <Link href="/signup">Sign Up</Link>
-                 </Button>
-               </div>
-             </div>
-           )}
+          {isMobileMenuOpen && (
+            <div className="md:hidden mt-2 rounded-2xl bg-white px-6 py-4 shadow-sm">
+              <div className="flex flex-col gap-3">
+                <Button variant="ghost" className="text-myblack hover:bg-gray-50 justify-start" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button className="bg-primary hover:bg-primary text-white rounded-full" asChild>
+                  <Link href="/signup">Sign Up</Link>
+                </Button>
+              </div>
+            </div>
+          )}
         </header>
 
         {/* Hero Content */}
@@ -77,7 +77,7 @@ export default function HomePage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1
-                className={`text-3xl md:text-5xl font-extrabold leading-tight md:whitespace-nowrap text-center ${bricolage.className}`}
+                className={`text-3xl lg:text-4xl xl:text-5xl font-extrabold leading-tight md:whitespace-nowrap text-center ${bricolage.className}`}
               >
                 <span className="text-myblack">Transform the Way You </span>
                 <span className="text-primary">Manage Your Workforce</span>
@@ -439,7 +439,7 @@ export default function HomePage() {
           }}
         />
 
-        <section className=" py-20 relative z-10">
+        <section className="py-20 relative z-10">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <div className="space-y-8">
               <div className="space-y-4">

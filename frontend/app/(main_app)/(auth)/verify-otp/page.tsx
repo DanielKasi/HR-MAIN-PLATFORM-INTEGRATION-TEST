@@ -176,7 +176,7 @@ export default function VerifyOTPPage() {
               </form>
           ) : (
               <>
-                <p className="w-full text-center">Enter the 6-digit code sent to {emailValue ? <b>{maskEmail(emailValue)}</b>: "your email" } </p>
+                <p className="w-full text-center">Enter the 6-digit code sent to {emailValue ? <b className="inline-block">{emailValue}</b>: "your email" } </p>
                 <div className="flex items-center justify-center w-full">
 
                   <Button

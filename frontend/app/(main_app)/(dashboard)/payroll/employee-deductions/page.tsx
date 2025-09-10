@@ -13,7 +13,8 @@ import {
   deleteEmployeeDeduction,
   getDeductionTypes,
 } from "@/lib/utils"
-import { IDeductionType, IEmployeeDeduction, PERMISSION_CODES } from "@/types/types.utils"
+import { IDeductionType, IEmployeeDeduction } from "@/types/types.utils"
+import { PERMISSION_CODES } from "@/constants"
 import ProtectedComponent from "@/components/ProtectedComponent"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import { TableSkeleton } from "@/components/common/table-skeleton"
@@ -24,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ref } from "process"
 import { formatCurrency } from "@/lib/helpers"
-
+import { Icon } from "@iconify/react";
 
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
@@ -32,7 +33,7 @@ interface ILocalEmployeeDeduction extends IEmployeeDeduction {
   context_ids?: number[]
 }
 
-export default function EmployeeDeductionsRefactored() {
+export default function EmployeeDeductionsPage() {
   const [deductionTypes, setDeductionTypes] = useState<IDeductionType[]>([])
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [editingDeduction, setEditingDeduction] = useState<IEmployeeDeduction | null>(null)
@@ -40,6 +41,7 @@ export default function EmployeeDeductionsRefactored() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all")
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const selectedInstitution = useSelector(selectSelectedInstitution)
 
@@ -159,15 +161,13 @@ export default function EmployeeDeductionsRefactored() {
             </div>
             <div className="flex items-center gap-2">
               <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEE_DEDUCTIONS}>
-                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution?.id}>
+                <Button onClick={openNewDeductionDialog} disabled={!selectedInstitution.id}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Deduction
+                  Create Employee Deduction
                 </Button>
               </ProtectedComponent>
             </div>
           </div>
-
-
         </div>
         <div className="p-6">
           <PaginatedTableWrapper<IEmployeeDeduction>
@@ -177,35 +177,41 @@ export default function EmployeeDeductionsRefactored() {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedEmployeeDeductionsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
             {({ data, loading, refresh }) => {
-              useEffect(() => {
-                refreshTableRef.current = refresh;
-              }, [refresh]);
+
+              refreshTableRef.current = refresh;
+
               if (loading) {
-                return <TableSkeleton rows={10} columns={8} />;
+                return <TableSkeleton rows={10} columns={7} />;
               }
+
               if (!data || data.results.length === 0) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "No deductions found matching your search criteria" : "No employee deductions found"}
+                    {searchTerm
+                      ? "No deductions found matching your search criteria"
+                      : "No employee deductions found"}
                   </div>
                 );
               }
 
               // Apply client-side filters (status and method filters)
               const filteredResults = data.results.filter((deduction) => {
-                const matchesStatus = statusFilter === "all" ||
+                const matchesStatus =
+                  statusFilter === "all" ||
                   (statusFilter === "active" && deduction.is_active) ||
                   (statusFilter === "inactive" && !deduction.is_active);
 
-                const matchesMethod = methodFilter === "all" ||
+                const matchesMethod =
+                  methodFilter === "all" ||
                   deduction.calculation_method === methodFilter;
 
                 return matchesStatus && matchesMethod;
@@ -218,128 +224,166 @@ export default function EmployeeDeductionsRefactored() {
                   </div>
                 );
               }
+
               return (
                 <>
                   <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_DEDUCTIONS}>
+                    {/* Desktop Table */}
                     <div className="hidden sm:block rounded-md">
                       <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Deduction Type</TableHead>
-                          <TableHead>Method</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created Date</TableHead>
-                          <TableHead className="w-12">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredResults.map((deduction) => (
-                          <TableRow key={deduction.id}>
-                            <TableCell className="font-medium">
-                              {deduction.employee.user?.fullname || 'Unknown Employee'}
-                            </TableCell>
-                            <TableCell>{deduction.deduction_type.name}</TableCell>
-                            <TableCell>
-                              <Badge className={
-                                deduction.calculation_method === "percentage"
-                                  ? "bg-blue-100 text-blue-800 border-blue-200"
-                                  : "bg-purple-100 text-purple-800 border-purple-200"
-                              }>
-                                {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {`${formatCurrency(deduction.amount)}`}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={
-                                deduction.is_active
-                                  ? "bg-green-100 text-green-800 border-green-200"
-                                  : "bg-gray-100 text-gray-800 border-gray-200"
-                              }>
-                                {deduction.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
-                                    <DropdownMenuItem onClick={() => handleEdit(deduction)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
-                                    <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Employee</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "employee__user__fullname") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("employee__user__fullname");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "employee__user__fullname" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>Deduction Type</TableHead>
+                            <TableHead>Method</TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Amount</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "amount") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("amount");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "amount" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created Date</TableHead>
+                            <TableHead className="w-12">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredResults.map((deduction) => (
+                            <TableRow key={deduction.id}>
+                              <TableCell className="font-medium">
+                                {deduction.employee.user?.fullname || "Unknown Employee"}
+                              </TableCell>
+                              <TableCell>{deduction.deduction_type.name}</TableCell>
+                              <TableCell>
+                                <Badge className={
+                                  deduction.calculation_method === "percentage"
+                                    ? "bg-blue-100 text-blue-800 border-blue-200"
+                                    : "bg-purple-100 text-purple-800 border-purple-200"
+                                }>
+                                  {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {`${formatCurrency(deduction.amount)}`}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={
+                                  deduction.is_active
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-gray-100 text-gray-800 border-gray-200"
+                                }>
+                                  {deduction.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
+                                      <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
+                                      <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   </ProtectedComponent>
                   <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEE_DEDUCTIONS}>
                     <div className="sm:hidden space-y-3">
-                    {filteredResults.map((deduction) => (
-                      <div key={deduction.id} className="bg-gray-50 rounded-lg p-4 border">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-1">
-                              {deduction.employee.user?.fullname || 'Unknown Employee'}
-                            </h3>
-                            <p className="text-sm text-gray-600">Type: {deduction.deduction_type.name}</p>
-                            <p className="text-sm text-gray-600">Method: {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge className={
-                                deduction.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"
-                              }>
-                                {deduction.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                              <span className="text-sm text-gray-500">
-                                Created: {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                              </span>
+                      {filteredResults.map((deduction) => (
+                        <div key={deduction.id} className="bg-gray-50 rounded-lg p-4 border">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 mb-1">
+                                {deduction.employee.user?.fullname || 'Unknown Employee'}
+                              </h3>
+                              <p className="text-sm text-gray-600">Type: {deduction.deduction_type.name}</p>
+                              <p className="text-sm text-gray-600">Method: {deduction.calculation_method === "percentage" ? "Percentage" : "Fixed Amount"}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge className={
+                                  deduction.is_active ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"
+                                }>
+                                  {deduction.is_active ? "Active" : "Inactive"}
+                                </Badge>
+                                <span className="text-sm text-gray-500">
+                                  Created: {new Date(deduction.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                </span>
+                              </div>
                             </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
+                                  <DropdownMenuItem onClick={() => handleEdit(deduction)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
+                                  <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </ProtectedComponent>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}>
-                                <DropdownMenuItem onClick={() => handleEdit(deduction)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                              </ProtectedComponent>
-                              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_EMPLOYEE_DEDUCTIONS}>
-                                <DropdownMenuItem onClick={() => handleDelete(deduction.id)} className="text-red-600">
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </ProtectedComponent>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                     </div>
                   </ProtectedComponent>
                 </>

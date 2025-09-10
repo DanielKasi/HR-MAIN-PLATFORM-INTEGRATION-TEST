@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from approval.serializers import BaseApprovableSerializer
-from employee.serializers import EmployeeActivationSerializer, EmployeeSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from .models import (
@@ -690,6 +689,27 @@ class BranchActivationSerializer(serializers.Serializer):
 class DepartmentActivationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     description = serializers.CharField(max_length=500, required=False)
+
+
+class EmployeeActivationSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(
+        max_length=20, required=False, allow_blank=True
+    )
+    full_name = serializers.CharField(max_length=100, required=True)
+    date_of_birth = serializers.DateField(required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    gender = serializers.ChoiceField(
+        choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
+        required=False,
+        allow_blank=True,
+    )
+    # Optional fields for branch and department assignment
+    branch_location = serializers.CharField(
+        max_length=200, required=False, allow_blank=True
+    )
+    department = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    date_of_joining = serializers.DateField(required=False, allow_null=True)
 
 
 class InstitutionActivationSerializer(serializers.Serializer):

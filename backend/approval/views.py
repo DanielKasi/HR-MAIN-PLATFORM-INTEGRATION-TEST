@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import Http404
 import re
+from utilities.sortable_api import SortableAPIMixin
 from institution.models import Institution
 from .models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
@@ -26,9 +27,12 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import ValidationError
 
 
-class ActionListAPIView(APIView):
+class ActionListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'code', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         tags=['Actions'],
         parameters=[
@@ -40,6 +44,7 @@ class ActionListAPIView(APIView):
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
+
         
         actions = Action.objects.filter(
             deleted_at__isnull=True
@@ -50,6 +55,11 @@ class ActionListAPIView(APIView):
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query)
             )
+
+        try:
+            actions = self.apply_sorting(actions, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
         
         serializer = ActionSerializer(actions, many=True)
         return Response(serializer.data)
@@ -92,7 +102,9 @@ class ActionDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ApproverGroupListAPIView(APIView):
+class ApproverGroupListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'roles', 'users', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         tags=['Approver Groups'],
         parameters=[
@@ -123,6 +135,11 @@ class ApproverGroupListAPIView(APIView):
                 Q(name__icontains=search_query) |
                 Q(description__icontains=search_query)
             )
+
+        try:
+            groups = self.apply_sorting(groups, request)
+        except ValueError as e:
+            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST)        
         
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(groups, request)
@@ -167,7 +184,9 @@ class ApproverGroupDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ApprovalDocumentListAPIView(APIView):
+class ApprovalDocumentListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['content_type', 'actions', 'is_active']
+    default_ordering = ['content_type']
     @extend_schema(
         tags=['Approval Documents'],
         parameters=[
@@ -232,6 +251,11 @@ class ApprovalDocumentListAPIView(APIView):
                 Q(content_type__model__icontains=search_query) |
                 Q(content_type__app_label__icontains=search_query)
             )
+
+        try:
+            documents = self.apply_sorting(documents, request)
+        except ValueError as e:
+            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         # Paginate and serialize the results
         paginator = CustomPageNumberPagination()
@@ -330,7 +354,9 @@ class ApprovalDocumentDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ApprovalDocumentLevelListAPIView(APIView):
+class ApprovalDocumentLevelListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['level', 'created_at', 'approval_document', 'is_active', 'name', 'approvers', 'overriders']
+    default_ordering = ['name']
     @extend_schema(
         tags=['Approval Document Levels'],
         parameters=[
@@ -353,7 +379,7 @@ class ApprovalDocumentLevelListAPIView(APIView):
         
         levels = ApprovalDocumentLevel.objects.filter(
             approval_document__institution=institution,
-            # deleted_at__isnull=True
+            deleted_at__isnull=True
         )
         
         if search_query:
@@ -361,6 +387,11 @@ class ApprovalDocumentLevelListAPIView(APIView):
                 Q(level_name__icontains=search_query) |
                 Q(level_description__icontains=search_query)
             )
+
+        try:
+            levels = self.apply_sorting(levels, request)
+        except ValueError as e:
+            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST)       
         
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(levels, request)
@@ -406,7 +437,9 @@ class ApprovalDocumentLevelDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ApprovalListAPIView(APIView):
+class ApprovalListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['status', 'document', 'status', 'action', 'is_active', 'created_at', 'content_type']
+    default_ordering = ['status']
     @extend_schema(
         tags=['Approvals'],
         parameters=[
@@ -443,6 +476,11 @@ class ApprovalListAPIView(APIView):
         
         if status_filter:
             approvals = approvals.filter(status=status_filter)
+
+        try:
+            approvals = self.apply_sorting(approvals, request)
+        except ValueError as e:
+            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST)        
         
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(approvals, request)
@@ -487,7 +525,9 @@ class ApprovalDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ApprovalTaskListAPIView(APIView):
+class ApprovalTaskListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['approval', 'level', 'status', 'is_active', 'comment']
+    default_ordering = ['approval']
     @extend_schema(
         tags=['Approval Tasks'],
         parameters=[
@@ -530,6 +570,11 @@ class ApprovalTaskListAPIView(APIView):
         if assigned_to:
             tasks = tasks.filter(assigned_to_id=assigned_to)
         
+        try:
+            tasks = self.apply_sorting(tasks, request)
+        except ValueError as e:
+            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+           
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(tasks, request)
         serializer = ApprovalTaskSerializer(paginated_qs, many=True)
@@ -809,3 +854,29 @@ class ApprovableContentTypeDetailAPIView(APIView):
             'humanized_name': model._meta.verbose_name.title(),
             # Add any other metadata you want to return
         }, status=status.HTTP_200_OK)
+
+
+class ApprovalTaskOverrideAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return ApprovalTask.objects.get(pk=pk)
+        except ApprovalTask.DoesNotExist:
+            raise Http404
+
+    @extend_schema(
+        tags=['Approval Tasks'],
+        parameters=[
+            OpenApiParameter(name='comment', type=str, location=OpenApiParameter.QUERY, required=False, description='Optional comment for the override action')
+        ],
+        description='Allows an authorized overrider to override the approval task, marking the entire approval process as completed and terminating all remaining tasks.'
+    )
+    def patch(self, request, pk):
+        task = self.get_object(pk)
+        comment = request.query_params.get('comment')
+        try:
+            task.mark_overridden(request.user, comment)
+            return Response({'status': 'overridden'}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)        

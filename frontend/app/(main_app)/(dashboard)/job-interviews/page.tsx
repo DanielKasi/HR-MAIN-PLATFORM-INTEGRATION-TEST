@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import {useState, useEffect, useMemo, useRef} from "react";
-import {useRouter} from "next/navigation";
-import {useSelector} from "react-redux";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import {
   Users,
   Plus,
@@ -27,21 +27,22 @@ import {
   ChevronsRight,
   Briefcase,
 } from "lucide-react";
+import { Icon } from "@iconify/react";
 
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Badge} from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
-import {Checkbox} from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -50,26 +51,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getInterviews, bulkCreateOnBoarding, getPaginatedInterviews, getPaginatedInterviewsFromUrl} from "@/lib/utils";
-import type {IInterview} from "@/types/types.utils";
-import {PERMISSION_CODES} from "@/constants";
-import {toast} from "sonner";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { getInterviews, bulkCreateOnBoarding, getPaginatedInterviews, getPaginatedInterviewsFromUrl } from "@/lib/utils";
+import type { IInterview } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
+import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {formatCurrency} from "@/lib/helpers";
-import {useDocumentTitle} from "@/hooks/use-document-title";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import { formatCurrency } from "@/lib/helpers";
+import { useDocumentTitle } from "@/hooks/use-document-title";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 
 // Status options for filtering
 const STATUS_OPTIONS = [
-  {value: "all", label: "All Statuses"},
-  {value: "scheduled", label: "Scheduled"},
-  {value: "completed", label: "Completed"},
-  {value: "cancelled", label: "Cancelled"},
+  { value: "all", label: "All Statuses" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 export default function InterviewsPage() {
+  const [ordering, setOrdering] = useState("");
   const [interviews, setInterviews] = useState<IInterview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -81,7 +83,7 @@ export default function InterviewsPage() {
   // Filter and pagination states
   const [statusFilter, setStatusFilter] = useState("all");
   const [interviewerFilter, setInterviewerFilter] = useState("all");
-  const [dateRange, setDateRange] = useState<{from: string | null; to: string | null}>({
+  const [dateRange, setDateRange] = useState<{ from: string | null; to: string | null }>({
     from: null,
     to: null,
   });
@@ -103,8 +105,8 @@ export default function InterviewsPage() {
       });
     });
     return [
-      {value: "all", label: "All Interviewers"},
-      ...Array.from(uniqueInterviewers).map((name) => ({value: name, label: name})),
+      { value: "all", label: "All Interviewers" },
+      ...Array.from(uniqueInterviewers).map((name) => ({ value: name, label: name })),
     ];
   }, [interviews]);
 
@@ -119,8 +121,8 @@ export default function InterviewsPage() {
       }
     });
     return [
-      {value: "all", label: "All Positions"},
-      ...Array.from(uniquePositions).map((name) => ({value: name, label: name})),
+      { value: "all", label: "All Positions" },
+      ...Array.from(uniquePositions).map((name) => ({ value: name, label: name })),
     ];
   }, [interviews]);
 
@@ -144,7 +146,7 @@ export default function InterviewsPage() {
       }
       setError("");
 
-      const fetchedInterviews = await getInterviews({institutionId: selectedInstitution.id});
+      const fetchedInterviews = await getInterviews({ institutionId: selectedInstitution.id });
 
       if (fetchedInterviews) {
         setInterviews(fetchedInterviews);
@@ -278,7 +280,7 @@ export default function InterviewsPage() {
   };
 
   const getRatingStars = (rating: number) => {
-    return Array.from({length: 5}, (_, i) => (
+    return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
         className={`h-3 w-3 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
@@ -335,7 +337,7 @@ export default function InterviewsPage() {
 
     setIsOnboarding(true);
     try {
-      const result = await bulkCreateOnBoarding({applicationIds});
+      const result = await bulkCreateOnBoarding({ applicationIds });
       if (result) {
         toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
         setSelectedInterviews([]);
@@ -356,7 +358,7 @@ export default function InterviewsPage() {
     setStatusFilter("all");
     setInterviewerFilter("all");
     setJobPositionFilter("all");
-    setDateRange({from: null, to: null});
+    setDateRange({ from: null, to: null });
   };
 
   if (!selectedInstitution || !selectedBranch) {
@@ -400,15 +402,15 @@ export default function InterviewsPage() {
             </span>
           </Button>
           <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_RECRUITMENT_PIPELINE}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("job-interviews/interview-pipeline")}
-            className="md:flex items-center md:gap-2 bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600"
-          >
-            <Briefcase className="h-4 w-4" />
-            <span className="hidden md:inline">Interview Pipeline</span>
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("job-interviews/interview-pipeline")}
+              className="md:flex items-center md:gap-2 bg-green-600 hover:bg-green-700 text-white hover:text-white border-green-600"
+            >
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden md:inline">Interview Pipeline</span>
+            </Button>
           </ProtectedComponent>
           <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_SCHEDULE_INTERVIEWS}>
             <Button
@@ -454,7 +456,7 @@ export default function InterviewsPage() {
                 const ratedInterviews = interviews.filter((i) => i.rating);
                 const averageRating =
                   ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
-                    ratedInterviews.length || 0;
+                  ratedInterviews.length || 0;
                 const roundedAverage = Math.round(averageRating);
                 return (
                   <>
@@ -521,14 +523,14 @@ export default function InterviewsPage() {
               type="date"
               placeholder="From date"
               value={dateRange.from || ""}
-              onChange={(e) => setDateRange((prev) => ({...prev, from: e.target.value}))}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
               className="w-[140px]"
             />
             <Input
               type="date"
               placeholder="To date"
               value={dateRange.to || ""}
-              onChange={(e) => setDateRange((prev) => ({...prev, to: e.target.value}))}
+              onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
               className="w-[140px]"
             />
           </div>
@@ -537,10 +539,10 @@ export default function InterviewsPage() {
             interviewerFilter !== "all" ||
             dateRange.from ||
             dateRange.to) && (
-            <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-              Clear Filters
-            </Button>
-          )}
+              <Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+                Clear Filters
+              </Button>
+            )}
         </div>
       </div>
 
@@ -586,14 +588,15 @@ export default function InterviewsPage() {
                     page: 1,
                     search: searchTerm || undefined,
                     status: statusFilter !== "all" ? statusFilter : undefined,
+                    ordering: ordering || undefined,
                   });
                 }}
                 fetchFromUrl={getPaginatedInterviewsFromUrl}
-                deps={[selectedInstitution?.id, searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange.from, dateRange.to]}
+                deps={[selectedInstitution?.id, searchTerm, statusFilter, interviewerFilter, jobPositionFilter, dateRange.from, dateRange.to, ordering]}
                 className="space-y-4"
                 footerClassName="pt-4"
               >
-                {({data, loading, refresh}: {data: any, loading: boolean, refresh: () => void}) => {
+                {({ data, loading, refresh }: { data: any, loading: boolean, refresh: () => void }) => {
                   useEffect(() => {
                     refreshTableRef.current = refresh;
                   }, [refresh]);
@@ -680,28 +683,28 @@ export default function InterviewsPage() {
                   }
 
                   // Fallback: If grouping fails, show raw data
-                  let groupedInterviews: [string, {interviews: IInterview[]; contact: any}][];
+                  let groupedInterviews: [string, { interviews: IInterview[]; contact: any }][];
                   try {
                     groupedInterviews = Object.entries(
                       filteredResults.reduce(
-                      (groups, interview) => {
-                        const applicantName =
+                        (groups, interview) => {
+                          const applicantName =
                             interview.job_position_application_details?.applicant_name || "Unknown Applicant";
-                        if (!groups[applicantName]) {
-                          groups[applicantName] = {
-                            interviews: [],
-                            contact: {
-                              email: interview.job_position_application_details?.applicant_email,
-                              phone: interview.job_position_application_details?.applicant_phone,
-                              address: interview.job_position_application_details?.address,
-                              state: interview.job_position_application_details?.state,
-                            },
-                          };
-                        }
-                        groups[applicantName].interviews.push(interview);
-                        return groups;
-                      },
-                        {} as Record<string, {interviews: IInterview[]; contact: any}>
+                          if (!groups[applicantName]) {
+                            groups[applicantName] = {
+                              interviews: [],
+                              contact: {
+                                email: interview.job_position_application_details?.applicant_email,
+                                phone: interview.job_position_application_details?.applicant_phone,
+                                address: interview.job_position_application_details?.address,
+                                state: interview.job_position_application_details?.state,
+                              },
+                            };
+                          }
+                          groups[applicantName].interviews.push(interview);
+                          return groups;
+                        },
+                        {} as Record<string, { interviews: IInterview[]; contact: any }>
                       )
                     );
                   } catch (error) {
@@ -715,7 +718,6 @@ export default function InterviewsPage() {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>ID</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Date</TableHead>
                               <TableHead>Applicant</TableHead>
@@ -724,7 +726,6 @@ export default function InterviewsPage() {
                           <TableBody>
                             {filteredResults.map((interview) => (
                               <TableRow key={interview.id}>
-                                <TableCell>{interview.id}</TableCell>
                                 <TableCell>{interview.status}</TableCell>
                                 <TableCell>{interview.interview_date}</TableCell>
                                 <TableCell>
@@ -745,151 +746,165 @@ export default function InterviewsPage() {
                           <TableHeader className="bg-gray-50/50">
                             <TableRow>
                               <TableHead className="w-[50px]"></TableHead>
-                              <TableHead>Applicant</TableHead>
+                              <TableHead>
+                                <div className="flex items-center gap-2">
+                                  <span>Applicant</span>
+                                  <Button size="sm" variant={ordering === "applicant" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "applicant" ? "" : "applicant")}>
+                                    <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                  </Button>
+                                </div>
+                              </TableHead>
                               <TableHead>Contact</TableHead>
-                              <TableHead>Total</TableHead>
+                              <TableHead>
+                                <div className="flex items-center gap-2">
+                                  <span>Date</span>
+                                  <Button size="sm" variant={ordering === "interview_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "interview_date" ? "" : "interview_date")}>
+                                    <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                  </Button>
+                                </div>
+                              </TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {groupedInterviews.map(([applicantName, data]) => (
-                    <React.Fragment key={applicantName}>
-                      <TableRow className="hover:bg-muted/50">
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => {
-                              setExpandedApplicants((prev) =>
-                                prev.includes(applicantName)
-                                  ? prev.filter((a) => a !== applicantName)
-                                  : [...prev, applicantName],
-                              );
-                            }}
+                              <React.Fragment key={applicantName}>
+                                <TableRow className="hover:bg-muted/50">
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      onClick={() => {
+                                        setExpandedApplicants((prev) =>
+                                          prev.includes(applicantName)
+                                            ? prev.filter((a) => a !== applicantName)
+                                            : [...prev, applicantName],
+                                        );
+                                      }}
                                     >
                                       <ChevronDown className="h-4 w-4" />
                                     </Button>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {getInitials(applicantName)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="font-medium">{applicantName}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm text-muted-foreground">
-                            <div>{data.contact.email}</div>
-                            <div>{data.contact.phone}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{data.interviews.length} interviews</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
-                            <Badge
-                              variant={getStatusBadgeVariant(
-                                data.interviews[data.interviews.length - 1].status,
-                              )}
-                            >
-                              {data.interviews[data.interviews.length - 1].status}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() =>
-                              handleViewInterview(data.interviews[data.interviews.length - 1].id)
-                            }
-                          >
-                            View Latest
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                      {expandedApplicants.includes(applicantName) &&
-                        data.interviews.map((interview) => (
-                          <TableRow key={interview.id} className="bg-muted/30">
-                            <TableCell />
-                            <TableCell className="pl-11">
-                              <div className="font-medium">
-                                {
-                                  interview.job_position_application_details
-                                    ?.job_position_advert_job_details?.name
-                                }
-                              </div>
-                              <Badge variant="outline" className="mt-1">
-                                {interview.interview_stage_details?.name}
-                              </Badge>
-                            </TableCell>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarFallback className="text-xs">
+                                          {getInitials(applicantName)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="font-medium">{applicantName}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm text-muted-foreground">
+                                      <div>{data.contact.email}</div>
+                                      <div>{data.contact.phone}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">{data.interviews.length} interviews</Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getStatusIcon(data.interviews[data.interviews.length - 1].status)}
+                                      <Badge
+                                        variant={getStatusBadgeVariant(
+                                          data.interviews[data.interviews.length - 1].status,
+                                        )}
+                                      >
+                                        {data.interviews[data.interviews.length - 1].status}
+                                      </Badge>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() =>
+                                        handleViewInterview(data.interviews[data.interviews.length - 1].id)
+                                      }
+                                    >
+                                      View Latest
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                                {expandedApplicants.includes(applicantName) &&
+                                  data.interviews.map((interview) => (
+                                    <TableRow key={interview.id} className="bg-muted/30">
+                                      <TableCell />
+                                      <TableCell className="pl-11">
+                                        <div className="font-medium">
+                                          {
+                                            interview.job_position_application_details
+                                              ?.job_position_advert_job_details?.name
+                                          }
+                                        </div>
+                                        <Badge variant="outline" className="mt-1">
+                                          {interview.interview_stage_details?.name}
+                                        </Badge>
+                                      </TableCell>
                                       <TableCell className="pl-11">
                                         <div className="text-sm text-muted-foreground">
-                                {formatDate(interview.interview_date)}
-                              </div>
+                                          {formatDate(interview.interview_date)}
+                                        </div>
                                         <div className="text-xs text-muted-foreground">
                                           {interview.location}
-                              </div>
-                            </TableCell>
+                                        </div>
+                                      </TableCell>
                                       <TableCell className="pl-11">
                                         <div className="flex items-center gap-2">
                                           {interview.rating && getRatingStars(interview.rating)}
                                         </div>
                                       </TableCell>
                                       <TableCell className="pl-11">
-                                <div className="flex items-center gap-2">
-                                  {getStatusIcon(interview.status)}
-                                  <Badge variant={getStatusBadgeVariant(interview.status)}>
-                                    {interview.status}
-                                  </Badge>
-                              </div>
-                            </TableCell>
+                                        <div className="flex items-center gap-2">
+                                          {getStatusIcon(interview.status)}
+                                          <Badge variant={getStatusBadgeVariant(interview.status)}>
+                                            {interview.status}
+                                          </Badge>
+                                        </div>
+                                      </TableCell>
                                       <TableCell className="pl-11">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                              <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
                                             <DropdownMenuItem onClick={() => handleViewInterview(interview.id)}>
-                                    <Eye className="h-4 w-4 mr-2" />
+                                              <Eye className="h-4 w-4 mr-2" />
                                               View
-                                  </DropdownMenuItem>
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleEditInterview(interview.id)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteInterview(interview.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                                              <Edit className="h-4 w-4 mr-2" />
+                                              Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() => handleDeleteInterview(interview.id)}
+                                              className="text-destructive"
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Delete
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                              </React.Fragment>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </>
                   );
                 }}
               </PaginatedTableWrapper>
-                </div>
+            </div>
           </>
         )}
       </div>

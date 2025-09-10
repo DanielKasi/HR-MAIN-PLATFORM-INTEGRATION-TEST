@@ -12,7 +12,7 @@ import {
   fetchApprovalDocumentLevels,
   fetchApproverGroups,
   createApproverGroup,
-  fetchApprovalDocuments, // Added fetchApprovalDocuments import
+  fetchApprovalDocumentById,
 } from "@/lib/api/approvals/utils"
 import type {
   Action,
@@ -54,7 +54,6 @@ export default function ApprovalCreatePage() {
   const [models, setModels] = useState<ContentTypeLite[]>([])
   const [actions, setActions] = useState<Action[]>([])
   const [selectedActionIds, setSelectedActionIds] = useState<number[]>([])
-  const [createdLevels, setCreatedLevels] = useState<ApprovalDocumentLevel[]>([])
   const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([])
 
   // Form states
@@ -94,27 +93,18 @@ export default function ApprovalCreatePage() {
     loadData()
   }, [contentTypeId, currentInstitution])
 
-  useEffect(() => {
-    const checkExistingApprovalDocument = async () => {
-      if (!contentTypeId || !currentInstitution) return
+
+      const fetchExistingApprovalDocument = async () => {
+      if (!createdApprovalDocument || !currentInstitution) return
 
       try {
-        const response = await fetchApprovalDocuments({
-          content_type_id: Number(contentTypeId),
-        })
-
-        if (response.results && response.results.length > 0) {
-          const existingApprovalDoc = response.results[0]
-          router.push(`/admin/settings/approvals/${existingApprovalDoc.id}/edit`)
-        }
+        const response = await fetchApprovalDocumentById(createdApprovalDocument.id)
+        setCreatedApprovalDocument(response);
       } catch (error) {
         // If there's an error or no existing document, continue with creation flow
         console.log("No existing approval document found, continuing with creation")
       }
     }
-
-    checkExistingApprovalDocument()
-  }, [contentTypeId, currentInstitution, router])
 
   const loadData = async () => {
     if (!currentInstitution) {
@@ -153,7 +143,7 @@ export default function ApprovalCreatePage() {
     }
   }
 
-  const model = useMemo(() => models.find((m) => m.id === contentTypeId), [models, contentTypeId])
+  const model = useMemo(() => models.find((m) => m.id === Number(contentTypeId)), [models, contentTypeId])
 
   const toggleAction = (id: number) => {
     setSelectedActionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -268,9 +258,8 @@ export default function ApprovalCreatePage() {
         approval_document: createdApprovalDocument?.id,
       }
 
-      const created = await createApprovalDocumentLevel(levelData)
-
-      setCreatedLevels((prev) => [...prev, created])
+      await createApprovalDocumentLevel(levelData)
+      await fetchExistingApprovalDocument()
       resetLevelDialog()
       showSuccessToast("Approval level created successfully!")
     } catch (e: any) {
@@ -296,10 +285,7 @@ export default function ApprovalCreatePage() {
 
       // Refetch levels to ensure data consistency
       if (createdApprovalDocument) {
-        const levelsResponse = await fetchApprovalDocumentLevels({
-          approval_document: createdApprovalDocument.id,
-        })
-        setCreatedLevels(levelsResponse.results)
+        await fetchExistingApprovalDocument();
       }
 
       showSuccessToast("Approval level deleted successfully!")
@@ -375,32 +361,10 @@ export default function ApprovalCreatePage() {
         </div>
       )}
 
-      {/* Target Model Info */}
-      {model && (
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Target Model
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="font-medium">{model.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {model.app_label}.{model.model}
-                </p>
-              </div>
-              <Badge variant="secondary">{model.plural_name}</Badge>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${createdApprovalDocument ? "lg:grid-cols-2":''} gap-6`}>
         {/* Actions Configuration */}
-        <Card className="border-none shadow-none">
+        <Card className={`border-none shadow-none ${!createdApprovalDocument ? "max-w-7xl": ''}`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
@@ -451,8 +415,7 @@ export default function ApprovalCreatePage() {
                 rows={3}
               />
             </div>
-          </CardContent>
-          <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
+          <div className="flex justify-end gap-4 pt-6">
             <Button
               onClick={createApprovalDocumentWithLevels}
               disabled={savingDocument || selectedActionIds.length === 0 || !!createdApprovalDocument}
@@ -460,6 +423,7 @@ export default function ApprovalCreatePage() {
               {savingDocument ? "Creating..." : "Create Approval"}
             </Button>
           </div>
+          </CardContent>
         </Card>
 
         {/* Approval Levels - Only show after approval document is created */}
@@ -612,7 +576,7 @@ export default function ApprovalCreatePage() {
                             items={approverGroups.map((group) => ({
                               id: group.id,
                               name: group.name,
-                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                              label: `${group.name} (${group.users_display.length} users, ${group.roles_display.length} roles)`,
                             }))}
                             selectedIds={selectedApproverGroupIds}
                             onSelectionChange={setSelectedApproverGroupIds}
@@ -643,7 +607,7 @@ export default function ApprovalCreatePage() {
                             items={approverGroups.map((group) => ({
                               id: group.id,
                               name: group.name,
-                              label: `${group.name} (${group.users.length} users, ${group.roles.length} roles)`,
+                              label: `${group.name} (${group.users_display.length} users, ${group.roles_display.length} roles)`,
                             }))}
                             selectedIds={selectedOverriderGroupIds}
                             onSelectionChange={setSelectedOverriderGroupIds}
@@ -668,7 +632,7 @@ export default function ApprovalCreatePage() {
             </CardHeader>
 
             <CardContent>
-              {createdLevels.length === 0 ? (
+              {createdApprovalDocument.levels.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="mb-2">No approval levels created yet</p>
@@ -676,7 +640,7 @@ export default function ApprovalCreatePage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {createdLevels.map((level, index) => (
+                  {createdApprovalDocument.levels.map((level, index) => (
                     <div key={level.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -707,7 +671,7 @@ export default function ApprovalCreatePage() {
                             <CheckCircle2 className="h-3 w-3 text-green-600" />
                             <span className="font-medium">Approver Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} groups assigned</div>
+                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} {`group${level.approvers_detail?.length > 1  ? 's':''} assigned`}</div>
                           {level.approvers_detail && level.approvers_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.approvers_detail.map((approver) => (
@@ -724,7 +688,7 @@ export default function ApprovalCreatePage() {
                             <Shield className="h-3 w-3 text-orange-600" />
                             <span className="font-medium">Overrider Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} groups assigned</div>
+                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} {`group${level.overriders_detail?.length > 1  ? 's':''} assigned`}</div>
                           {level.overriders_detail && level.overriders_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.overriders_detail.map((overrider) => (
@@ -747,7 +711,7 @@ export default function ApprovalCreatePage() {
 
       <div className="flex justify-end gap-4 mt-8 pt-6 border-t">
         <Button disabled={!createdApprovalDocument} onClick={() => router.push("/admin/settings/approvals")}>
-          Finish
+          Back to Approvals
         </Button>
       </div>
 

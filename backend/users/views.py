@@ -34,6 +34,7 @@ from .serializers import (
     LogoutRequestSerializer,
     ChangePasswordSerializer,
 )
+from utilities.sortable_api import SortableAPIMixin
 from .models import (
     CustomUser,
     Role,
@@ -47,9 +48,8 @@ from institution.serializers import InstitutionWithBranchesSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.core.exceptions import ObjectDoesNotExist
-
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, UntypedToken
 from utilities.pagination import CustomPageNumberPagination
 import logging
 from utilities.password_validator import validate_password_strength
@@ -82,8 +82,10 @@ class CountryListAPIView(APIView):
         return Response({"countries": country_list}, status=status.HTTP_200_OK)
 
 
-class UserListAPIView(APIView):
+class UserListAPIView(APIView, SortableAPIMixin):
     permission_classes = [permissions.AllowAny]
+    allowed_ordering_fields = ['fullname', 'created_at', 'email', 'is_active', 'gender']
+    default_ordering = ['fullname']
 
     @extend_schema(
         request=CustomUserSerializer,
@@ -93,24 +95,32 @@ class UserListAPIView(APIView):
         tags=["User Management"],
     )
     def post(self, request):
+
         serializer = CustomUserSerializer(data=request.data)
         if serializer.is_valid():
+
             user = serializer.save()
+
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
-            print(f"otp {otp}")
+
             send_otp_to_user(user, otp)
+            print("📨 OTP sent to user")
 
             cleanup_expired_otps()
+            print("🧹 Expired OTPs cleaned up")
 
             return Response(
                 CustomUserSerializer(user).data,
                 status=status.HTTP_201_CREATED,
             )
+
+        print("❌ Serializer validation errors:", serializer.errors)
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+
 
     @extend_schema(
         responses={200: CustomUserSerializer(many=True)},
@@ -132,6 +142,11 @@ class UserListAPIView(APIView):
                 to_attr="prefetched_user_branches",
             ),
         )
+
+        try:
+            queryset = self.apply_sorting(queryset, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
 
         serializer = CustomUserSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -202,7 +217,8 @@ class ChangeEmailAndResendOTPAPIView(APIView):
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
-            print(f"Resend {otp}")
+            print(f"[DEBUG] OTP for user {user.id} ({new_email}): {otp}")
+
             send_otp_to_user(user, otp)
 
             cleanup_expired_otps()
@@ -627,7 +643,9 @@ class CustomTokenRefreshView(TokenRefreshView):
             )
 
 
-class RoleListAPIView(APIView):
+class RoleListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'is_active']
+    default_ordering = ['name']
     @extend_schema(
         request=RoleSerializer,
         responses={201: RoleSerializer},
@@ -661,6 +679,10 @@ class RoleListAPIView(APIView):
         roles = Role.objects.filter(institution__id=Institution_id).order_by(
             "-created_at"
         )
+        try:
+            roles = self.apply_sorting(roles, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(roles, request)
         serializer = RoleSerializer(

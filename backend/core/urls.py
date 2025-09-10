@@ -30,6 +30,7 @@ urlpatterns = [
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path("api/approval/", include("approval.urls")),
     path("api/spotcheck/", include("spotcheck.urls")),
+    path("/", include("communication.urls"))
 ]
 
 if settings.DEBUG:

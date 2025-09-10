@@ -1,10 +1,10 @@
 "use client";
 
-import React, {useState, useEffect, useRef} from "react";
-import {useSelector} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
+import React, { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,8 +21,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Badge} from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +45,7 @@ import {
   X,
   Download,
 } from "lucide-react";
-import {toast} from "sonner";
+import { toast } from "sonner";
 import Link from "next/link";
 import {
   createPayrollPeriod,
@@ -58,13 +58,14 @@ import {
   downloadPayrollPasslipsReport,
   showErrorToast,
 } from "@/lib/utils";
-import {IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip} from "@/types/types.utils";
-import {selectSelectedInstitution, selectAccessToken} from "@/store/auth/selectors";
+import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip } from "@/types/types.utils";
+import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/constants";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
-import {Card, CardHeader} from "@/components/ui/card";
+import { PERMISSION_CODES } from "@/constants";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Icon } from "@iconify/react"
 
 interface ValidationResult {
   name?: string;
@@ -95,7 +96,7 @@ export default function PayrollPeriods() {
   const [isLoading, setIsLoading] = useState(false);
   const [isExcelPayslipsReportDownloading, setIsExcelPayslipsReportDownloading] = useState(false);
   const [periodToDelete, setPeriodToDelete] = useState<IPayrollPeriod | null>(null);
-
+  const [ordering, setOrdering] = useState("");
   // const fetchPayrollPeriods = useCallback(async () => {
   //   if (!selectedInstitution?.id) {
   //     setPayrollPeriods([]);
@@ -134,7 +135,7 @@ export default function PayrollPeriods() {
         formData.name === "" ||
         formData.name === generatePeriodName(formData.start_date, formData.end_date)
       ) {
-        setFormData((prev) => ({...prev, name: generatedName}));
+        setFormData((prev) => ({ ...prev, name: generatedName }));
       }
     }
   }, [formData.start_date, formData.end_date, editingPeriod]);
@@ -159,7 +160,7 @@ export default function PayrollPeriods() {
       if (formData.start_date && formData.end_date) {
         const duration = Math.ceil(
           (new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         );
         if (duration > 365) {
           errors.warning =
@@ -291,7 +292,7 @@ export default function PayrollPeriods() {
       toast.success("Payroll period deleted successfully");
       refreshTableRef.current?.();
     } catch (error: any) {
-      showErrorToast({error, defaultMessage: "Failed to delete payroll period"});
+      showErrorToast({ error, defaultMessage: "Failed to delete payroll period" });
     }
     setPeriodToDelete(null);
   };
@@ -322,9 +323,9 @@ export default function PayrollPeriods() {
 
     try {
       toast.info("Downloading payroll payslips report...");
-      await downloadPayrollPasslipsReport({accessToken, period_id});
+      await downloadPayrollPasslipsReport({ accessToken, period_id });
     } catch (error) {
-      showErrorToast({error, defaultMessage: "Failed to download payroll passlips report."});
+      showErrorToast({ error, defaultMessage: "Failed to download payroll passlips report." });
     } finally {
       setIsExcelPayslipsReportDownloading(false);
     }
@@ -420,14 +421,16 @@ export default function PayrollPeriods() {
                 institutionId: selectedInstitution.id,
                 page: 1,
                 search: searchTerm || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedPayrollPeriodsFromUrl}
-            deps={[selectedInstitution?.id, searchTerm]}
+            deps={[selectedInstitution?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -500,135 +503,208 @@ export default function PayrollPeriods() {
                   <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_PERIODS}>
                     <div className="overflow-x-auto">
                       <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                      <TableHeader className="bg-gray-50/50">
-                        <TableRow>
-                          <TableHead>Period Name</TableHead>
-                          <TableHead>Period Dates</TableHead>
-                          <TableHead>Pay Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Days to Pay</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredResults.map((period) => (
-                          <TableRow key={period.id}>
-                            <TableCell className="font-medium">
-                              <div className="font-medium text-gray-900">{period.name}</div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {formatDate(period.start_date)} - {formatDate(period.end_date)}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {Math.ceil(
-                                    (new Date(period.end_date).getTime() -
-                                      new Date(period.start_date).getTime()) /
+                        <TableHeader className="bg-gray-50/50">
+
+                          <TableRow>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Name</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "name") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("name");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "name" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Period</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "start_date") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("start_date");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "start_date" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Pay Date</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "pay_date") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("pay_date");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "pay_date" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>
+                              <div className="flex items-center justify-start gap-4">
+                                <span>Days to Pay</span>
+                                <Button
+                                  onClick={() => {
+                                    if (ordering === "days_to_pay") {
+                                      setOrdering("");
+                                    } else {
+                                      setOrdering("days_to_pay");
+                                    }
+                                  }}
+                                  size={"sm"}
+                                  variant={ordering === "days_to_pay" ? "default" : "outline"}
+                                  type="button"
+                                >
+                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                                </Button>
+                              </div>
+                            </TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+
+                        <TableBody>
+                          {filteredResults.map((period) => (
+                            <TableRow key={period.id}>
+                              <TableCell className="font-medium">
+                                <div className="font-medium text-gray-900">{period.name}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {formatDate(period.start_date)} - {formatDate(period.end_date)}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {Math.ceil(
+                                      (new Date(period.end_date).getTime() -
+                                        new Date(period.start_date).getTime()) /
                                       (1000 * 60 * 60 * 24),
-                                  )}{" "}
-                                  days
+                                    )}{" "}
+                                    days
+                                  </div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-semibold text-gray-900">
-                                {formatDate(period.pay_date)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`font-medium px-3 py-1 ${
-                                  period.is_processed
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-semibold text-gray-900">
+                                  {formatDate(period.pay_date)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={`font-medium px-3 py-1 ${period.is_processed
                                     ? "bg-green-100 text-green-800 border-green-200"
                                     : "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                }`}
-                              >
-                                <div className="flex items-center gap-1">
-                                  {period.is_processed ? (
-                                    <CheckCircle className="w-3 h-3" />
-                                  ) : (
-                                    <Clock className="w-3 h-3" />
-                                  )}
-                                  {period.is_processed ? "Processed" : "Pending"}
+                                    }`}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    {period.is_processed ? (
+                                      <CheckCircle className="w-3 h-3" />
+                                    ) : (
+                                      <Clock className="w-3 h-3" />
+                                    )}
+                                    {period.is_processed ? "Processed" : "Pending"}
+                                  </div>
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-semibold text-gray-700">
+                                  {(() => {
+                                    const daysRemaining = getDaysRemaining(period.pay_date);
+                                    return daysRemaining < 0
+                                      ? `${Math.abs(daysRemaining)} days ago`
+                                      : daysRemaining === 0
+                                        ? "Today"
+                                        : `${daysRemaining} days`;
+                                  })()}
                                 </div>
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-semibold text-gray-700">
-                                {(() => {
-                                  const daysRemaining = getDaysRemaining(period.pay_date);
-                                  return daysRemaining < 0
-                                    ? `${Math.abs(daysRemaining)} days ago`
-                                    : daysRemaining === 0
-                                      ? "Today"
-                                      : `${daysRemaining} days`;
-                                })()}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
-                                  >
-                                    <MoreVertical className="h-5 w-5 text-gray-600" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_PERIODS}>
-                                    <DropdownMenuItem>
-                                      <Link
-                                        href={`/payroll/payroll-period/${period.id}`}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+                                    >
+                                      <MoreVertical className="h-5 w-5 text-gray-600" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_PERIODS}>
+                                      <DropdownMenuItem>
+                                        <Link
+                                          href={`/payroll/payroll-period/${period.id}`}
+                                          className="flex items-center w-full"
+                                        >
+                                          <Eye className="h-4 w-4 mr-2" />
+                                          View Details
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent
+                                      permissionCode={PERMISSION_CODES.CAN_EDIT_PAYROLL_PERIODS}
+                                    >
+                                      <DropdownMenuItem
+                                        onClick={() => handleEdit(period)}
+                                        className="flex items-center"
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent
+                                      permissionCode={PERMISSION_CODES.CAN_DELETE_PAYROLL_PERIODS}
+                                    >
+                                      <DropdownMenuItem
+                                        onClick={() => setPeriodToDelete(period)}
+                                        className="flex items-center text-red-600 focus:text-red-700"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                    <ProtectedComponent
+                                      permissionCode={PERMISSION_CODES.CAN_DOWNLOAD_PAYSLIPS}
+                                    >
+                                      <DropdownMenuItem
+                                        onClick={() => exportPayslipsReport(period.id)}
                                         className="flex items-center w-full"
                                       >
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Details
-                                      </Link>
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent
-                                    permissionCode={PERMISSION_CODES.CAN_EDIT_PAYROLL_PERIODS}
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => handleEdit(period)}
-                                      className="flex items-center"
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent
-                                    permissionCode={PERMISSION_CODES.CAN_DELETE_PAYROLL_PERIODS}
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => setPeriodToDelete(period)}
-                                      className="flex items-center text-red-600 focus:text-red-700"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                  <ProtectedComponent
-                                    permissionCode={PERMISSION_CODES.CAN_DOWNLOAD_PAYSLIPS}
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => exportPayslipsReport(period.id)}
-                                      className="flex items-center w-full"
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Download Payslips' Report
-                                    </DropdownMenuItem>
-                                  </ProtectedComponent>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download Payslips' Report
+                                      </DropdownMenuItem>
+                                    </ProtectedComponent>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   </ProtectedComponent>
                 </>
@@ -661,11 +737,10 @@ export default function PayrollPeriods() {
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
                   disabled={saving}
-                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                    validationErrors.name
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
+                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.name
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                    }`}
                 />
                 <p className="text-xs text-gray-500 mt-1 flex items-center">
                   <Info className="h-3 w-3 mr-1" />
@@ -688,11 +763,10 @@ export default function PayrollPeriods() {
                   value={formData.start_date}
                   onChange={(e) => handleInputChange("start_date", e.target.value)}
                   disabled={saving}
-                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                    validationErrors.start_date
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
+                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.start_date
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                    }`}
                 />
                 {validationErrors.start_date && (
                   <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -712,11 +786,10 @@ export default function PayrollPeriods() {
                   onChange={(e) => handleInputChange("end_date", e.target.value)}
                   disabled={saving}
                   min={formData.start_date}
-                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                    validationErrors.end_date
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
+                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.end_date
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                    }`}
                 />
                 {validationErrors.end_date && (
                   <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -735,11 +808,10 @@ export default function PayrollPeriods() {
                   value={formData.pay_date}
                   onChange={(e) => handleInputChange("pay_date", e.target.value)}
                   disabled={saving}
-                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
-                    validationErrors.pay_date
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }`}
+                  className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${validationErrors.pay_date
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                    }`}
                 />
                 {validationErrors.pay_date && (
                   <p className="text-xs text-red-500 mt-1 flex items-center">

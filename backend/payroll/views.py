@@ -49,6 +49,7 @@ from rest_framework import serializers
 from datetime import timedelta
 from .models import Payslip, PayrollPeriod
 from employee.models import Employee
+from utilities.sortable_api import SortableAPIMixin
 
 
 
@@ -141,7 +142,9 @@ class ExportEFTExcelView(APIView):
             )
 
 
-class EmployeeAllowanceAPIView(APIView):
+class EmployeeAllowanceAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'amount', 'is_active', 'allowance_type', 'calculation_method', 'percentage', 'effective_from', 'effective_to']
+    default_ordering = ['employee']
 
     @extend_schema(
         summary="List employee allowances for a specific institution",
@@ -163,6 +166,11 @@ class EmployeeAllowanceAPIView(APIView):
                 Q(employee__user__fullname__icontains=search_query) |
                 Q(allowance_type__name__icontains=search_query)
             )
+
+        try:
+            allowances = self.apply_sorting(allowances, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(allowances, request)
         serializer = EmployeeAllowanceSerializer(paginated_qs, many=True)
@@ -221,7 +229,9 @@ class EmployeeAllowanceDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PayrollPeriodAPIView(APIView):
+class PayrollPeriodAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['name', 'created_at', 'start_date', 'end_date', 'pay_date', 'is_processed']
+    default_ordering = ['name']
 
     @extend_schema(
         summary="List payroll periods for a given institution",
@@ -237,7 +247,10 @@ class PayrollPeriodAPIView(APIView):
             periods = periods.filter(
                 Q(name__icontains=search_query)
             )
-
+        try:
+            periods = self.apply_sorting(periods, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)   
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(periods, request)
         serializer = PayrollPeriodSerializer(paginated_qs, many=True)
@@ -291,7 +304,9 @@ class PayrollPeriodDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EmployeeDeductionAPIView(APIView):
+class EmployeeDeductionAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'deduction_type', 'is_active', 'calculation_method', 'amount', 'effective_to', 'effective_from']
+    default_ordering = ['employee']
 
     @extend_schema(
         summary="List employee deductions for a specific institution",
@@ -311,7 +326,12 @@ class EmployeeDeductionAPIView(APIView):
         if search_query:
             deductions = deductions.filter(
                 Q(employee__user__fullname__icontains=search_query)
-            )    
+            )  
+
+        try:
+            deductions = self.apply_sorting(deductions, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)      
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(deductions, request)
@@ -376,7 +396,9 @@ class EmployeeDeductionDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AllowanceTypeAPIView(APIView):
+class AllowanceTypeAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'is_active', 'name', 'is_recurring', 'frequency']
+    default_ordering = ['name']
 
     @extend_schema(
         summary="List allowance types for an institution",
@@ -393,6 +415,11 @@ class AllowanceTypeAPIView(APIView):
             allowance_types = allowance_types.filter(
                 Q(name__icontains=search_query)
             )
+
+        try:
+            allowance_types = self.apply_sorting(allowance_types, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)   
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(allowance_types, request)
@@ -458,7 +485,9 @@ class AllowanceTypeDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class DeductionTypeAPIView(APIView):
+class DeductionTypeAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['created_at', 'is_active', 'name', 'is_recurring', 'frequency']
+    default_ordering = ['name']
 
     @extend_schema(
         summary="List deduction types for an institution",
@@ -475,6 +504,11 @@ class DeductionTypeAPIView(APIView):
             deduction_types = deduction_types.filter(
                 Q(name__icontains=search_query)
             )
+
+        try:
+            deduction_types = self.apply_sorting(deduction_types, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(deduction_types, request)
         serializer = DeductionTypeSerializer(paginated_qs, many=True)
@@ -528,7 +562,9 @@ class DeductionTypeDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EmployeeTaxListAPIView(APIView):
+class EmployeeTaxListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'institution_tax', 'is_active', 'effective_from', 'effective_to']
+    default_ordering = ['employee']
 
     @extend_schema(
         summary="List employee taxes for a specific institution",
@@ -566,6 +602,12 @@ class EmployeeTaxListAPIView(APIView):
             employee_taxes = employee_taxes.filter(
                 Q(employee__user__fullname__icontains=search_query)
             )    
+
+        try:
+            employee_taxes = self.apply_sorting(employee_taxes, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(employee_taxes, request)
         serializer = EmployeeTaxSerializer(paginated_qs, many=True)
@@ -625,7 +667,9 @@ class EmployeeTaxDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PayslipAPIView(APIView):
+class PayslipAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'payroll_period', 'basic_salary', 'total_allowances', 'total_deductions', 'total_penalties', 'non_taxable_allowances', 'gross_salary', 'net_salary']
+    default_ordering = ['employee']
 
     @extend_schema(
         summary="List payslips for a specific institution",
@@ -647,7 +691,12 @@ class PayslipAPIView(APIView):
                 Q(employee__user__fullname_icontains=search_query) |
                                 Q(employee__user__email_icontains=search_query)
 
-            )    
+            )   
+
+        try:
+            payslips = self.apply_sorting(payslips, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)       
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(payslips, request)
@@ -871,7 +920,9 @@ class DownloadPayslipPDFView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 @extend_schema(tags=['Penalty WaiveRequest'])
-class PenaltyWaiveRequestListCreateView(APIView):
+class PenaltyWaiveRequestListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['penalty', 'created_at', 'reason', 'is_active', 'request_date', 'notes']
+    default_ordering = ['branch']
     def get(self, request):
         user = request.user.profile
         search_query = request.query_params.get('search', None)
@@ -899,6 +950,11 @@ class PenaltyWaiveRequestListCreateView(APIView):
                 Q(penalty__penalty_type__icontains=search_query)
             )   
 
+        try:
+            waive_requests = self.apply_sorting(waive_requests, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(waive_requests, request)
         serializer = PenaltyWaiveRequestSerializer(paginated_qs, many=True)
@@ -911,7 +967,10 @@ class PenaltyWaiveRequestListCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
 
-class EmployeePenaltyListAPIView(APIView):
+class EmployeePenaltyListAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'attendance', 'is_active', 'spot_check', 'date', 'penalty_type', 'amount']
+    default_ordering = ['employee']
+    
     @extend_schema(
         tags=['Employee Penalties'],
     )
@@ -954,6 +1013,11 @@ class EmployeePenaltyListAPIView(APIView):
                 Q(penalty_type__icontains=search_query) |
                 Q(notes__icontains=search_query)
             )
+        
+        try:
+            penalties = self.apply_sorting(penalties, request)
+        except ValueError as e:
+            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(penalties, request)

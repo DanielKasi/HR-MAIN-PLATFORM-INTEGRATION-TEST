@@ -79,6 +79,7 @@ import type {
   JobPositionAdvert,
   IPaginatedResponse,
   IInterviewType,
+  ICountry,
 } from "@/types/types.utils";
 import { selectUser, selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { selectApplicationForm } from "@/store/miscellaneous/selectors";
@@ -93,7 +94,8 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/constants";
+import { PERMISSION_CODES } from "@/constants";
+import CountrySelect from "@/components/common/country-select";
 import {
   createInterviewStage,
   getInterviewStages,
@@ -110,7 +112,7 @@ import { EmployeeSearchableSelect } from "@/components/selects/employee-searchab
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { getFileUrl } from "@/lib/helpers";
-
+import { Icon } from "@iconify/react";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800",
@@ -129,9 +131,10 @@ const sourceLabels = {
   other: "Other",
 };
 
-const interviewTypes: Array<{ value: IInterviewType, label: string }> = [
-  { value: "online", label: "Virtual" }, { value: "in_person", label: "In person" }
-]
+const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
+  { value: "online", label: "Virtual" },
+  { value: "in_person", label: "In person" },
+];
 
 export default function ApplicationsPage() {
   const refreshTableRef = useRef<(() => void) | null>(null);
@@ -158,7 +161,10 @@ export default function ApplicationsPage() {
   const [selectedApplicationForInterview, setSelectedApplicationForInterview] =
     useState<JobApplication | null>(null);
   // const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false);
-  const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{ type: "bulk" | "single", isOpen: boolean }>({ type: "single", isOpen: false });
+  const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{
+    type: "bulk" | "single";
+    isOpen: boolean;
+  }>({ type: "single", isOpen: false });
   const [bulkInterviewFormData, setBulkInterviewFormData] = useState<IInterviewFormData>({
     interview_stage: 0,
     interview_date: "",
@@ -166,7 +172,7 @@ export default function ApplicationsPage() {
     interview_type: "in_person",
     status: "scheduled",
     job_position_application: 0,
-    interview_time: ''
+    interview_time: "",
   });
   // const [isSchedulingInterview, setisSchedulingInterview] = useState(false);
   const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
@@ -181,7 +187,7 @@ export default function ApplicationsPage() {
   const [interviewFormData, setInterviewFormData] = useState<IInterviewFormData>({
     interview_stage: 0,
     interview_date: "",
-    interview_time: '',
+    interview_time: "",
     location: "",
     interview_type: "in_person",
     status: "scheduled",
@@ -191,6 +197,7 @@ export default function ApplicationsPage() {
   });
 
   const [interviewErrors, setInterviewErrors] = useState<any>({});
+  const [ordering, setOrdering] = useState("");
 
   // Add these helper functions
   const updateStageFormData = (field: keyof typeof stageFormData, value: any) => {
@@ -206,8 +213,6 @@ export default function ApplicationsPage() {
   };
 
   const fetchInterviewData = async () => {
-
-
     if (!selectedInstitution) return;
 
     try {
@@ -220,7 +225,7 @@ export default function ApplicationsPage() {
         stagesArray = stagesResponse;
       }
 
-      let filteredStages: IInterviewStage[] = stagesArray
+      let filteredStages: IInterviewStage[] = stagesArray;
       // Filter stages for this job position
       if (selectedApplicationForInterview) {
         filteredStages = stagesArray.filter(
@@ -228,8 +233,10 @@ export default function ApplicationsPage() {
             stage.job_position_advert === selectedApplicationForInterview.job_position_advert,
         );
       } else if (selectedApplications.length) {
-        filteredStages = stagesArray.filter(
-          (stage) => selectedApplications.some(selectedApp => stage.job_position_advert === selectedApp.job_position_advert)
+        filteredStages = stagesArray.filter((stage) =>
+          selectedApplications.some(
+            (selectedApp) => stage.job_position_advert === selectedApp.job_position_advert,
+          ),
         );
       }
       setInterviewStages(filteredStages);
@@ -368,18 +375,18 @@ export default function ApplicationsPage() {
       if (result) {
         clearAllFilters();
         toast.success("Interview scheduled successfully!");
-        setShowScheduleInterviewDialog({ type: "single", isOpen: false })
+        setShowScheduleInterviewDialog({ type: "single", isOpen: false });
         setSelectedApplicationForInterview(null);
         // Reset form
         setInterviewFormData({
           interview_stage: 0,
           interview_date: "",
-          interview_time: '',
+          interview_time: "",
           location: "",
           interview_type: "in_person",
           status: "scheduled",
           feedback: "",
-          job_position_application: 0
+          job_position_application: 0,
         });
         setInterviewErrors({});
         await loadApplications();
@@ -397,7 +404,7 @@ export default function ApplicationsPage() {
   const handleOpenScheduleInterview = async (application: JobApplication) => {
     setSelectedApplicationForInterview(application);
     await fetchInterviewData();
-    setShowScheduleInterviewDialog({ type: "single", isOpen: true })
+    setShowScheduleInterviewDialog({ type: "single", isOpen: true });
   };
 
   // Enhanced date filtering state
@@ -483,6 +490,9 @@ export default function ApplicationsPage() {
     created_by: userData?.id || 0,
   });
 
+  // Separate state for the country selector
+  const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
+
   const [jobPositionAdverts, setJobPositionAdverts] = useState<JobPositionAdvert[]>([]);
   const [isLoadingAdverts, setIsLoadingAdverts] = useState(false);
 
@@ -522,13 +532,18 @@ export default function ApplicationsPage() {
         address: savedApplicationForm.address,
         address_latitude: savedApplicationForm.address_latitude || "",
         address_longitude: savedApplicationForm.address_longitude || "",
-        country: savedApplicationForm.country,
+        country: savedApplicationForm.country || "",
         source: savedApplicationForm.source || "website",
         recommended_by: savedApplicationForm.recommended_by,
         application_date:
           savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
         created_by: savedApplicationForm.created_by || userData?.id || 0,
       });
+
+      // Set the selected country for the CountrySelect component
+      if (savedApplicationForm.country) {
+        setSelectedCountry({ name: { common: savedApplicationForm.country }, cca2: '' });
+      }
     }
   }, [savedApplicationForm, userData]);
 
@@ -545,7 +560,7 @@ export default function ApplicationsPage() {
         address_latitude: applicationLocation.latitude,
         address_longitude: applicationLocation.latitude,
       };
-      dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null }));// Cannot serialize File object in Redux    
+      dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
     }
   }, [applicationLocation]);
 
@@ -558,7 +573,6 @@ export default function ApplicationsPage() {
     loadApplications();
     loadJobPositionAdverts();
   }, [selectedInstitution, selectedBranch, router]);
-
 
   useEffect(() => {
     let filtered = applications;
@@ -800,11 +814,8 @@ export default function ApplicationsPage() {
     }
   };
 
-  const handleInputChange = (
-    field: keyof typeof formData,
-    value: string | number | null,
-  ) => {
-    console.log("\n\n Updating field : ", field, "\n\n With value : ", value)
+  const handleInputChange = (field: keyof typeof formData, value: string | number | null) => {
+    console.log("\n\n Updating field : ", field, "\n\n With value : ", value);
 
     const updatedFormData = {
       ...formData,
@@ -812,7 +823,7 @@ export default function ApplicationsPage() {
     };
     setFormData(updatedFormData);
 
-    dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null }));// Cannot serialize File object in Redux    
+    dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
   };
 
   const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
@@ -849,6 +860,7 @@ export default function ApplicationsPage() {
     };
 
     setFormData(defaultFormData);
+    setSelectedCountry(null);
     setError(null);
 
     // Clear from Redux
@@ -909,8 +921,8 @@ export default function ApplicationsPage() {
       return;
     }
 
-    if (!formData.country.trim()) {
-      setError("Please enter the country");
+    if (!selectedCountry) {
+      setError("Please select a country");
       return;
     }
 
@@ -950,7 +962,7 @@ export default function ApplicationsPage() {
         state: formData.state || undefined,
         application_date: formData.application_date,
         address: formData.address,
-        country: formData.country,
+        country: selectedCountry?.name.common || "",
         created_by: userData.id,
         recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined, // Add this line
       };
@@ -991,6 +1003,7 @@ export default function ApplicationsPage() {
           created_by: userData.id,
           recommended_by: undefined,
         });
+        setSelectedCountry(null);
         clearAllFilters();
         toast.success("Application created successfully!");
         refreshTableRef.current?.();
@@ -1013,15 +1026,25 @@ export default function ApplicationsPage() {
     }
   };
 
-
   const handleSubmitInterviews = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedInstitution || !userData) { return };
+    if (!selectedInstitution || !userData) {
+      return;
+    }
 
+    const shortlistedApps = (
+      showScheduleInterviewDialog.type === "single"
+        ? [selectedApplicationForInterview]
+        : applications
+    ).filter(
+      (app) =>
+        selectedApplications.find((s_app) => s_app.id === app?.id) && app?.status === "shortlisted",
+    );
 
-    const shortlistedApps = (showScheduleInterviewDialog.type === "single" ? [selectedApplicationForInterview] : applications).filter((app) => selectedApplications.find((s_app) => s_app.id === app?.id) && app?.status === "shortlisted",);
-
-    if (!shortlistedApps.length) { toast.error("No shortlisted applications selected"); return; }
+    if (!shortlistedApps.length) {
+      toast.error("No shortlisted applications selected");
+      return;
+    }
 
     // Validate form
     const errors: any = {};
@@ -1046,44 +1069,41 @@ export default function ApplicationsPage() {
       return;
     }
 
-
     setIsSchedulingInterview(true);
 
     try {
-      const interviewPromises = shortlistedApps.map(async (application, index) => {
-        // Calculate interview time (30 minutes apart)
-        const baseDateTime = new Date(bulkInterviewFormData.interview_date);
-        const interviewDateTime = new Date(
-          baseDateTime.getTime() + index * 30 * 60 * 1000,
-        );
+      const interviewPromises = shortlistedApps
+        .map(async (application, index) => {
+          // Calculate interview time (30 minutes apart)
+          const baseDateTime = new Date(bulkInterviewFormData.interview_date);
+          const interviewDateTime = new Date(baseDateTime.getTime() + index * 30 * 60 * 1000);
 
-        let interviewTime = "";
-        if (bulkInterviewFormData.interview_date) {
-          const hours = interviewDateTime.getHours().toString().padStart(2, "0");
-          const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
-          interviewTime = `${hours}:${minutes}`;
-        }
-        if (application) {
-
-          const createData: IInterviewFormData = {
-            job_position_application: application.id,
-            interview_stage: bulkInterviewFormData.interview_stage,
-            interview_date: interviewDateTime.toISOString().slice(0, 16),
-            location: bulkInterviewFormData.location,
-            interview_time: interviewTime,
-            interview_type: bulkInterviewFormData.interview_type,
-            status: bulkInterviewFormData.status || "scheduled",
-            feedback: undefined,
-            rating: undefined,
-            created_by: userData.id,
-          };
-          return await createInterview({
-            institutionId: selectedInstitution.id,
-            interviewData: createData,
-          });
-        }
-
-      }).filter(Boolean);
+          let interviewTime = "";
+          if (bulkInterviewFormData.interview_date) {
+            const hours = interviewDateTime.getHours().toString().padStart(2, "0");
+            const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
+            interviewTime = `${hours}:${minutes}`;
+          }
+          if (application) {
+            const createData: IInterviewFormData = {
+              job_position_application: application.id,
+              interview_stage: bulkInterviewFormData.interview_stage,
+              interview_date: interviewDateTime.toISOString().slice(0, 16),
+              location: bulkInterviewFormData.location,
+              interview_time: interviewTime,
+              interview_type: bulkInterviewFormData.interview_type,
+              status: bulkInterviewFormData.status || "scheduled",
+              feedback: undefined,
+              rating: undefined,
+              created_by: userData.id,
+            };
+            return await createInterview({
+              institutionId: selectedInstitution.id,
+              interviewData: createData,
+            });
+          }
+        })
+        .filter(Boolean);
 
       const results = await Promise.all(interviewPromises);
       const successCount = results.filter((result) => result !== null).length;
@@ -1102,7 +1122,7 @@ export default function ApplicationsPage() {
             interview_type: "in_person",
             status: "scheduled",
             job_position_application: 0,
-            interview_time: ''
+            interview_time: "",
           });
         } else {
           setInterviewFormData({
@@ -1111,15 +1131,15 @@ export default function ApplicationsPage() {
             location: "",
             interview_type: "in_person",
             job_position_application: 0,
-            interview_time: '',
+            interview_time: "",
             status: "scheduled",
             feedback: "",
             rating: undefined,
-          })
+          });
         }
         setInterviewErrors({});
 
-        setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: false }))
+        setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: false }));
         setSelectedApplications([]);
         // Reset form
 
@@ -1132,18 +1152,19 @@ export default function ApplicationsPage() {
     } finally {
       setIsSchedulingInterview(false);
     }
-  }
+  };
 
   const handleSelectApplication = (applicationId: number, checked: boolean) => {
-    const match = applications.find(appl => appl.id === applicationId);
-    if (!match) { return }
+    const match = applications.find((appl) => appl.id === applicationId);
+    if (!match) {
+      return;
+    }
     if (checked) {
       setSelectedApplications((prev) => [...prev, match]);
     } else {
       setSelectedApplications((prev) => prev.filter((appl) => appl.id !== applicationId));
     }
   };
-
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -1215,7 +1236,9 @@ export default function ApplicationsPage() {
 
       await Promise.all(promises);
       setApplications((prev) =>
-        prev.map((app) => (applicationsToProcess.find(appl => appl.id === app.id) ? { ...app, status: action } : app)),
+        prev.map((app) =>
+          applicationsToProcess.find((appl) => appl.id === app.id) ? { ...app, status: action } : app,
+        ),
       );
       setSelectedApplications([]);
 
@@ -1243,16 +1266,16 @@ export default function ApplicationsPage() {
     // For schedule interview, only allow shortlisted applications
     if (action === "schedule_interview") {
       const shortlistedApps = applications.filter(
-        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
+        (app) =>
+          selectedApplications.find((appl) => appl.id === app.id) && app.status === "shortlisted",
       );
 
-      console.log("\n\n Scheduling interviews with shortlisted applicants : ", shortlistedApps)
+      console.log("\n\n Scheduling interviews with shortlisted applicants : ", shortlistedApps);
 
       if (shortlistedApps.length === 0) {
         toast.error("Please select shortlisted applications to schedule interviews");
         return;
       }
-
 
       // setBulkInterviewFormData({
       //   interview_stage: 0,
@@ -1265,7 +1288,7 @@ export default function ApplicationsPage() {
       // });
 
       await fetchInterviewData();
-      setShowScheduleInterviewDialog({ type: "bulk", isOpen: true })
+      setShowScheduleInterviewDialog({ type: "bulk", isOpen: true });
       return;
     }
 
@@ -1275,20 +1298,21 @@ export default function ApplicationsPage() {
     if (action === "reviewed") {
       // Only "new" applications can be marked as reviewed
       eligibleApps = applications.filter(
-        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "new",
+        (app) => selectedApplications.find((appl) => appl.id === app.id) && app.status === "new",
       );
       actionText = "mark as reviewed";
     } else if (action === "shortlisted") {
       // Only "reviewed" applications can be shortlisted
       eligibleApps = applications.filter(
-        (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "reviewed",
+        (app) =>
+          selectedApplications.find((appl) => appl.id === app.id) && app.status === "reviewed",
       );
       actionText = "shortlist";
     } else if (action === "rejected") {
       // Only "new" or "reviewed" applications can be rejected
       eligibleApps = applications.filter(
         (app) =>
-          selectedApplications.find(appl => appl.id === app.id) &&
+          selectedApplications.find((appl) => appl.id === app.id) &&
           (app.status === "new" || app.status === "reviewed"),
       );
       actionText = "reject";
@@ -1326,10 +1350,7 @@ export default function ApplicationsPage() {
     }
 
     // Execute directly for "reviewed" action
-    await executeBulkAction(
-      action,
-      eligibleApps,
-    );
+    await executeBulkAction(action, eligibleApps);
   };
 
   const handleConfirmBulkAction = async () => {
@@ -1339,22 +1360,20 @@ export default function ApplicationsPage() {
 
       if (confirmBulkAction.action === "shortlisted") {
         eligibleApps = applications.filter(
-          (app) => selectedApplications.find(appl => appl.id === app.id) && app.status === "reviewed",
+          (app) =>
+            selectedApplications.find((appl) => appl.id === app.id) && app.status === "reviewed",
         );
       } else if (confirmBulkAction.action === "rejected") {
         eligibleApps = applications.filter(
           (app) =>
-            selectedApplications.find(appl => appl.id === app.id) &&
+            selectedApplications.find((appl) => appl.id === app.id) &&
             (app.status === "new" || app.status === "reviewed"),
         );
       }
 
       // FIXED: Use the executeBulkAction function instead of individual executeAction calls
       // This ensures only eligible applications are processed
-      await executeBulkAction(
-        confirmBulkAction.action,
-        eligibleApps,
-      );
+      await executeBulkAction(confirmBulkAction.action, eligibleApps);
 
       setConfirmBulkAction({
         isOpen: false,
@@ -1509,7 +1528,6 @@ export default function ApplicationsPage() {
 
       {/* Enhanced Filter Section */}
       <div className="space-y-4">
-
         <div className="flex flex-col flex-wrap lg:flex-row gap-4 items-start lg:items-center mt-6">
           <div className="relative w-full max-w-md md:max-w-lg lg:max-w-sm">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -1768,6 +1786,7 @@ export default function ApplicationsPage() {
               return await getPaginatedJobApplications({
                 institutionId: selectedInstitution.id,
                 page: 1,
+                ordering,
                 search: searchTerm || undefined,
                 status: statusFilter !== "all" ? statusFilter : undefined,
                 jobPositionAdvert: jobFilter !== "all" ? jobFilter : undefined,
@@ -1776,7 +1795,7 @@ export default function ApplicationsPage() {
             fetchFromUrl={async (args: { url: string }) =>
               getPaginatedJobApplicationsFromUrl(args.url)
             }
-            deps={[selectedInstitution?.id, searchTerm, statusFilter, jobFilter]}
+            deps={[selectedInstitution?.id, searchTerm, statusFilter, jobFilter, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
@@ -1847,7 +1866,6 @@ export default function ApplicationsPage() {
 
               return (
                 <>
-                  {/* Desktop Table */}
                   <div className="">
                     <Table className="min-w-full">
                       <TableHeader>
@@ -1895,7 +1913,7 @@ export default function ApplicationsPage() {
                                     return (
                                       selectableApps.length > 0 &&
                                       selectableApps.every((app) =>
-                                        selectedApplications.find(appl => appl.id === app.id),
+                                        selectedApplications.find((appl) => appl.id === app.id),
                                       )
                                     );
                                   })()
@@ -1926,8 +1944,27 @@ export default function ApplicationsPage() {
                               />
                             </div>
                           </TableHead>
-                          <TableHead>Applicant</TableHead>
-                          <TableHead>Job Position/ Title </TableHead>
+                          <TableHead>
+                            <div className="flex items-center justify-start gap-4">
+                              <span>Applicant</span>
+                              <Button
+                                onClick={() => {
+                                  if (ordering === "applicant") {
+                                    setOrdering("");
+                                  } else {
+                                    setOrdering("applicant");
+                                  }
+                                }}
+                                size={"sm"}
+                                variant={ordering === "applicant" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
+                            </div>{" "}
+                          </TableHead>
+                          <TableHead>
+                            Job Position/ Title </TableHead>
                           <TableHead
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() => handleSort("posted_date")}
@@ -1942,9 +1979,47 @@ export default function ApplicationsPage() {
                                 ))}
                             </div>
                           </TableHead>
-                          <TableHead>Contact</TableHead>
+                          <TableHead>
+
+                            <div className="flex items-center justify-start gap-4">
+                              <span>Contact</span>
+                              <Button
+                                onClick={() => {
+                                  if (ordering === "applicant_email") {
+                                    setOrdering("");
+                                  } else {
+                                    setOrdering("applicant_email");
+                                  }
+                                }}
+                                size={"sm"}
+                                variant={ordering === "applicant_email" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
+                            </div>{" "}
+                          </TableHead>
                           <TableHead>Location</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead>
+                            <div className="flex items-center justify-start gap-4">
+                              <span>Status</span>
+
+                              <Button
+                                onClick={() => {
+                                  if (ordering === "status") {
+                                    setOrdering("");
+                                  } else {
+                                    setOrdering("status");
+                                  }
+                                }}
+                                size={"sm"}
+                                variant={ordering === "status" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
+                            </div>{" "}
+                          </TableHead>
                           <TableHead>Source</TableHead>
                           <TableHead
                             className="cursor-pointer hover:bg-muted/50"
@@ -1970,7 +2045,11 @@ export default function ApplicationsPage() {
                             <TableCell>
                               <div className="flex items-center">
                                 <Checkbox
-                                  checked={!!selectedApplications.find(appl => appl.id === application.id)}
+                                  checked={
+                                    !!selectedApplications.find(
+                                      (appl) => appl.id === application.id,
+                                    )
+                                  }
                                   onCheckedChange={(checked: any) =>
                                     handleSelectApplication(application.id, checked as boolean)
                                   }
@@ -1990,7 +2069,7 @@ export default function ApplicationsPage() {
                               <div className="space-y-1">
                                 <div className="font-medium">
                                   {application.job_position_advert_job_details?.name ||
-                                    `Advert #${application.job_position_advert}`}
+                                    `Advert `}
                                 </div>
                               </div>
                             </TableCell>
@@ -2060,9 +2139,7 @@ export default function ApplicationsPage() {
                                 {application.cover_letter && (
                                   <Button variant="link" size="sm" className="h-auto p-0" asChild>
                                     <a
-                                      href={
-                                        getFileUrl(application.cover_letter)
-                                      }
+                                      href={getFileUrl(application.cover_letter)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
@@ -2139,7 +2216,6 @@ export default function ApplicationsPage() {
                       </TableBody>
                     </Table>
                   </div>
-
                 </>
               );
             }}
@@ -2219,8 +2295,7 @@ export default function ApplicationsPage() {
                                 >
                                   <div className="flex flex-col">
                                     <span className="font-medium">
-                                      {advert.job_position_details?.name ||
-                                        `Job Opening `}
+                                      {advert.job_position_details?.name || `Job Opening `}
                                     </span>
                                   </div>
                                 </div>
@@ -2427,7 +2502,7 @@ export default function ApplicationsPage() {
                     <EmployeeSearchableSelect
                       value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
                       onValueChange={(values) => {
-                        console.log("\n\n Values changed with values : ", values)
+                        console.log("\n\n Values changed with values : ", values);
                         const selectedValue = Array.isArray(values) ? values[0] : values;
                         handleInputChange(
                           "recommended_by",
@@ -2467,13 +2542,15 @@ export default function ApplicationsPage() {
                   <label htmlFor="country" className="block text-sm font-medium text-gray-800">
                     Country *
                   </label>
-                  <Input
-                    id="country"
-                    placeholder="Country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange("country", e.target.value)}
-                    className="bg-white border-gray-300"
-                    required
+                  <CountrySelect
+                    countries={undefined}
+                    selectedCountry={selectedCountry}
+                    onCountryChange={(country) => {
+                      setSelectedCountry(country);
+                      handleInputChange("country", country?.name.common || "");
+                    }}
+                    disabled={false}
+                    compact={false}
                   />
                 </div>
               </div>
@@ -2657,17 +2734,24 @@ export default function ApplicationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={showScheduleInterviewDialog.isOpen} onOpenChange={(open) => setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: open }))}>
+      <Dialog
+        open={showScheduleInterviewDialog.isOpen}
+        onOpenChange={(open) => setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: open }))}
+      >
         <DialogContent className="w-full max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Schedule {showScheduleInterviewDialog.type === "bulk" ? "Bulk" : ""} Interview{showScheduleInterviewDialog.type === "bulk" ? 's' : ''}</DialogTitle>
+            <DialogTitle>
+              Schedule {showScheduleInterviewDialog.type === "bulk" ? "Bulk" : ""} Interview
+              {showScheduleInterviewDialog.type === "bulk" ? "s" : ""}
+            </DialogTitle>
             <DialogDescription>
-
               <>
-                {showScheduleInterviewDialog.type === "single" ?
+                {showScheduleInterviewDialog.type === "single" ? (
                   <>
-                    Schedule interview for {selectedApplicationForInterview?.applicant_name || "this applicant"}.
-                  </> :
+                    Schedule interview for{" "}
+                    {selectedApplicationForInterview?.applicant_name || "this applicant"}.
+                  </>
+                ) : (
                   <>
                     Schedule interviews for{" "}
                     {
@@ -2676,22 +2760,17 @@ export default function ApplicationsPage() {
                         return app?.status === "shortlisted";
                       }).length
                     }{" "}
-                    shortlisted applicants. Each interview will be scheduled 30 minutes apart starting
-                    from your selected time.
+                    shortlisted applicants. Each interview will be scheduled 30 minutes apart
+                    starting from your selected time.
                   </>
-                }
+                )}
               </>
-
             </DialogDescription>
           </DialogHeader>
 
           {/* Create Interview Stage Button */}
 
-
-          <form
-            onSubmit={handleSubmitInterviews}
-            className="py-8 space-y-6"
-          >
+          <form onSubmit={handleSubmitInterviews} className="py-8 space-y-6">
             {/* Form Fields - Responsive Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[60svh] overflow-y-auto">
               {/* Interview Stage */}
@@ -2783,12 +2862,11 @@ export default function ApplicationsPage() {
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  {showScheduleInterviewDialog.type === "bulk" ?
-                    <>{`First interview starts at this time. Subsequent interviews will be scheduled 30  minutes apart.`}</> :
+                  {showScheduleInterviewDialog.type === "bulk" ? (
+                    <>{`First interview starts at this time. Subsequent interviews will be scheduled 30  minutes apart.`}</>
+                  ) : (
                     <>{"Interview starts at this time"}</>
-
-                  }
-
+                  )}
                 </p>
               </div>
 
@@ -2839,9 +2917,10 @@ export default function ApplicationsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {interviewTypes.map((i_type, idx) => (
-                      <SelectItem key={idx} value={i_type.value as string}>{i_type.label}</SelectItem>
-                    ))
-                    }
+                      <SelectItem key={idx} value={i_type.value as string}>
+                        {i_type.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -2852,9 +2931,7 @@ export default function ApplicationsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={
-                  () => setShowScheduleInterviewDialog(prev => ({ ...prev, isOpen: false }))
-                }
+                onClick={() => setShowScheduleInterviewDialog((prev) => ({ ...prev, isOpen: false }))}
                 disabled={isSchedulingInterview}
                 className="w-full sm:w-auto"
               >
@@ -2862,9 +2939,7 @@ export default function ApplicationsPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={
-                  isSchedulingInterview
-                }
+                disabled={isSchedulingInterview}
                 className="flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 {isSchedulingInterview ? (
@@ -2879,13 +2954,15 @@ export default function ApplicationsPage() {
                     {
                       applications.filter(
                         (app) =>
-                          selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
+                          selectedApplications.find((appl) => appl.id === app.id) &&
+                          app.status === "shortlisted",
                       ).length
                     }{" "}
                     Interview
                     {applications.filter(
                       (app) =>
-                        selectedApplications.find(appl => appl.id === app.id) && app.status === "shortlisted",
+                        selectedApplications.find((appl) => appl.id === app.id) &&
+                        app.status === "shortlisted",
                     ).length !== 1
                       ? "s"
                       : ""}
@@ -2926,11 +3003,10 @@ export default function ApplicationsPage() {
                 <EmployeeSearchableSelect
                   value={stageFormData.interviewers.map((id) => id.toString())}
                   onValueChange={(values) => {
-                    const numberValues = values.map((v) => Number(v))
+                    const numberValues = values.map((v) => Number(v));
                     const uniqueValues = [...new Set(numberValues)];
                     updateStageFormData("interviewers", uniqueValues);
                   }}
-
                   disabled={isCreatingStage}
                   placeholder="Search and select interviewers"
                   showEmployeeId={false}

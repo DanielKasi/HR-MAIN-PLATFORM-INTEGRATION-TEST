@@ -22,6 +22,8 @@ import apiRequest from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
 import { USER_GENDER } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { useDispatch } from "react-redux";
+import { logoutStart } from "@/store/auth/actions";
 
 const GENDER_LABELS: Record<USER_GENDER, string> = {
   [USER_GENDER.MALE]: "Male",
@@ -49,6 +51,12 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordsMatch, setPasswordsMatch] = useState(false);
   const router = useRouter();
+  const dispatch = useDispatch();
+
+
+  useEffect(()=>{
+    dispatch(logoutStart())
+  }, [])
 
   // Check password strength in real-time
   useEffect(() => {

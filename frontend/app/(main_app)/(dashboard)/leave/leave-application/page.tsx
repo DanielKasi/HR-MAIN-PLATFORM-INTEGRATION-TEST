@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Icon } from "@iconify/react";
 import {
   Dialog,
   DialogContent,
@@ -103,6 +104,7 @@ const LeaveApplicationComponent = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<ILeaveType[]>([]);
+  const [ordering, setOrdering] = useState("");
   const refreshTableRef = useRef<(() => void) | null>(null);
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -134,6 +136,7 @@ const LeaveApplicationComponent = () => {
       search,
       status: statusFilter !== "all" ? statusFilter : undefined,
       leaveType: leaveTypeFilter !== "all" ? leaveTypeFilter : undefined,
+      ordering: ordering || undefined,
     });
   };
 
@@ -978,10 +981,10 @@ const LeaveApplicationComponent = () => {
 
         {/* Table Content */}
         <div className="flex-1 pb-6 min-h-0">
-          <PaginatedTableWrapper
+          <PaginatedTableWrapper<ILeaveRequest>
             fetchFirstPage={() => fetchFirstPage(searchTerm)}
             fetchFromUrl={fetchFromUrl}
-            deps={[selectedInstitution?.id, searchTerm, statusFilter, leaveTypeFilter]}
+            deps={[selectedInstitution?.id, searchTerm, statusFilter, leaveTypeFilter, ordering]}
           >
             {({ data, loading, refresh }) => {
               useEffect(() => {
@@ -1018,11 +1021,46 @@ const LeaveApplicationComponent = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Leave Type</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Duration</TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Employee</span>
+                            <Button size="sm" variant={ordering === "employee" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Leave Type</span>
+                            <Button size="sm" variant={ordering === "leave_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_type" ? "" : "leave_type")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Start Date</span>
+                            <Button size="sm" variant={ordering === "start_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "start_date" ? "" : "start_date")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>End Date</span>
+                            <Button size="sm" variant={ordering === "end_date" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "end_date" ? "" : "end_date")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Duration</span>
+                            <Button size="sm" variant={ordering === "duration_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "duration_type" ? "" : "duration_type")}>
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Reason</TableHead>
                         <TableHead className="w-[70px]">Actions</TableHead>
@@ -1087,70 +1125,70 @@ const LeaveApplicationComponent = () => {
                                 {application.status === "pending" && (
                                   <>
                                     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_APPROVE_LEAVE_APPLICATIONS}>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        openConfirmDialog(
-                                          "approve",
-                                          application.id?.toString() || "",
-                                          getEmployeeName(application.employee),
-                                        )
-                                      }
-                                      className="text-green-600"
-                                    >
-                                      <Check className="h-4 w-4 mr-2" />
-                                      Approve
-                                    </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          openConfirmDialog(
+                                            "approve",
+                                            application.id?.toString() || "",
+                                            getEmployeeName(application.employee),
+                                          )
+                                        }
+                                        className="text-green-600"
+                                      >
+                                        <Check className="h-4 w-4 mr-2" />
+                                        Approve
+                                      </DropdownMenuItem>
                                     </ProtectedComponent>
 
                                     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_REJECT_LEAVE_APPLICATIONS}>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        openConfirmDialog(
-                                          "reject",
-                                          application.id?.toString() || "",
-                                          getEmployeeName(application.employee),
-                                        )
-                                      }
-                                      className="text-red-600"
-                                    >
-                                      <X className="h-4 w-4 mr-2" />
-                                      Reject
-                                    </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          openConfirmDialog(
+                                            "reject",
+                                            application.id?.toString() || "",
+                                            getEmployeeName(application.employee),
+                                          )
+                                        }
+                                        className="text-red-600"
+                                      >
+                                        <X className="h-4 w-4 mr-2" />
+                                        Reject
+                                      </DropdownMenuItem>
                                     </ProtectedComponent>
 
                                     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_APPLICATIONS}>
-                                    <DropdownMenuItem
-                                      onClick={() => handleEditApplication(application)}
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleEditApplication(application)}
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
                                     </ProtectedComponent>
 
                                     <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_APPLICATIONS}>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        openConfirmDialog(
-                                          "delete",
-                                          application.id?.toString() || "",
-                                          getEmployeeName(application.employee),
-                                        )
-                                      }
-                                      className="text-red-600"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          openConfirmDialog(
+                                            "delete",
+                                            application.id?.toString() || "",
+                                            getEmployeeName(application.employee),
+                                          )
+                                        }
+                                        className="text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
                                     </ProtectedComponent>
                                   </>
                                 )}
                                 <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_APPLICATIONS}>
-                                <DropdownMenuItem
-                                  onClick={() => handleViewApplication(application)}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleViewApplication(application)}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </DropdownMenuItem>
                                 </ProtectedComponent>
                               </DropdownMenuContent>
                             </DropdownMenu>

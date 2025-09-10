@@ -1,19 +1,19 @@
 "use client";
 
-import {useRef, useState} from "react";
-import {Plus} from "lucide-react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Input} from "@/components/ui/input";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { useRef, useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,11 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Label} from "@/components/ui/label";
-import {MoreHorizontal, Edit, Trash2} from "lucide-react";
-import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
+import { Label } from "@/components/ui/label";
+import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 import apiRequest from "@/lib/apiRequest";
 import type {
   IEmployeeShift,
@@ -43,10 +43,11 @@ import type {
   IEmployee,
   IPaginatedResponse,
 } from "@/types/types.utils";
-import {useSelector} from "react-redux";
-import {selectSelectedBranch, selectSelectedInstitution} from "@/store/auth/selectors";
-import {EmployeeSearchableSelect} from "@/components/selects/employee-searchable-select";
-import {showErrorToast} from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { selectSelectedBranch, selectSelectedInstitution } from "@/store/auth/selectors";
+import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
+import { showErrorToast } from "@/lib/utils";
+import { Icon } from "@iconify/react";
 
 interface IAllocationFormData {
   employee_id: string;
@@ -55,6 +56,7 @@ interface IAllocationFormData {
 }
 
 const EmployeeShiftsPage = () => {
+  const [ordering, setOrdering] = useState("")
   const [searchTerm, setSearchTerm] = useState("");
   const [contextFilter, setContextFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -105,13 +107,13 @@ const EmployeeShiftsPage = () => {
 
       console.log("Allocation created successfully");
       setIsAddDialogOpen(false);
-      setFormData({employee_id: "", shift_id: "", date: ""});
+      setFormData({ employee_id: "", shift_id: "", date: "" });
       if (refreshRef.current) {
         refreshRef.current();
       }
     } catch (error) {
       console.error("Failed to create allocation:", error);
-      showErrorToast({error: error, defaultMessage: "Failed to create allocation."});
+      showErrorToast({ error: error, defaultMessage: "Failed to create allocation." });
     } finally {
       setIsSubmitting(false);
     }
@@ -173,7 +175,7 @@ const EmployeeShiftsPage = () => {
   };
 
   const openAddDialog = () => {
-    setFormData({employee_id: "", shift_id: "", date: ""});
+    setFormData({ employee_id: "", shift_id: "", date: "" });
     fetchEmployeesAndShifts();
     setIsAddDialogOpen(true);
   };
@@ -226,11 +228,12 @@ const EmployeeShiftsPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <PaginatedTableWrapper
+          <PaginatedTableWrapper<IEmployeeShift>
             fetchFirstPage={async () => {
               const params = [
                 searchTerm.trim() ? `search=${encodeURIComponent(searchTerm.trim())}` : "",
                 contextFilter === "all" ? "" : `context=${contextFilter.toUpperCase()}`,
+                ordering ? `ordering=${ordering}` : ''
               ]
                 .filter(Boolean)
                 .join("&");
@@ -240,13 +243,14 @@ const EmployeeShiftsPage = () => {
               const response = await apiRequest.get(`employee/employee-shifts/${queryString}`);
               return response.data;
             }}
-            fetchFromUrl={async ({url}: {url: string}) => {
+            fetchFromUrl={async ({ url }: { url: string }) => {
               const response = await apiRequest.get(url);
               return response.data;
             }}
+            deps={[searchTerm, ordering]}
             key={`${contextFilter}-${searchTerm}`}
           >
-            {({data, loading, goNext, goPrev, refresh}) => (
+            {({ data, loading, goNext, goPrev, refresh }) => (
               (refreshRef.current = refresh),
               (
                 <>
@@ -256,10 +260,35 @@ const EmployeeShiftsPage = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Employee</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Employee</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "employee" ? "" : "employee")}
+                                size="sm"
+                                variant={ordering === "employee" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Shift</TableHead>
                           <TableHead>Date</TableHead>
-                          <TableHead>Time</TableHead>
+                          <TableHead>Start Time</TableHead>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>End Time</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "end_time" ? "" : "end_time")}
+                                size="sm"
+                                variant={ordering === "end_time" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
+                            </div>
+                          </TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Created By</TableHead>
@@ -267,9 +296,9 @@ const EmployeeShiftsPage = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {(data as IPaginatedResponse<IEmployeeShift>)?.results?.map(
-                          (shift: IEmployeeShift) => {
-                            console.log("Shift data:", shift);
+                        {(data)?.results?.map(
+                          (shift) => {
+
 
                             return (
                               <TableRow key={shift.id}>
@@ -281,7 +310,7 @@ const EmployeeShiftsPage = () => {
                                     <div className="font-medium">
                                       {typeof shift.shift === "object"
                                         ? shift.shift?.name
-                                        : `Shift ID: ${shift.shift}`}
+                                        : `Shift #`}
                                     </div>
                                     <div className="text-sm text-muted-foreground">
                                       {typeof shift.shift === "object"
@@ -292,11 +321,11 @@ const EmployeeShiftsPage = () => {
                                 </TableCell>
                                 <TableCell>{shift.date}</TableCell>
                                 <TableCell>
-                                  {typeof shift.shift === "object" &&
-                                  shift.shift?.start_time &&
-                                  shift.shift?.end_time
-                                    ? `${shift.shift.start_time} - ${shift.shift.end_time}`
-                                    : "Time details not loaded"}
+                                  {shift.shift.start_time || "Unkown"}
+                                </TableCell>
+                                <TableCell>
+                                  {shift.shift.end_time || "Unknown"}`
+
                                 </TableCell>
                                 <TableCell>
                                   <Badge
@@ -393,7 +422,7 @@ const EmployeeShiftsPage = () => {
               <Label htmlFor="shift">Shift</Label>
               <Select
                 value={formData.shift_id}
-                onValueChange={(value) => setFormData({...formData, shift_id: value})}
+                onValueChange={(value) => setFormData({ ...formData, shift_id: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select shift" />
@@ -414,7 +443,7 @@ const EmployeeShiftsPage = () => {
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
           </div>
@@ -439,7 +468,7 @@ const EmployeeShiftsPage = () => {
               <Label htmlFor="employee">Employee</Label>
               <Select
                 value={formData.employee_id}
-                onValueChange={(value) => setFormData({...formData, employee_id: value})}
+                onValueChange={(value) => setFormData({ ...formData, employee_id: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select employee" />
@@ -457,7 +486,7 @@ const EmployeeShiftsPage = () => {
               <Label htmlFor="shift">Shift</Label>
               <Select
                 value={formData.shift_id}
-                onValueChange={(value) => setFormData({...formData, shift_id: value})}
+                onValueChange={(value) => setFormData({ ...formData, shift_id: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select shift" />
@@ -477,7 +506,7 @@ const EmployeeShiftsPage = () => {
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({...formData, date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
           </div>

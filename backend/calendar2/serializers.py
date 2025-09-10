@@ -41,7 +41,7 @@ class EventOccurrenceSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-class CalendarSerializer(BaseApprovableSerializer):
+class CalendarSerializer(serializers.ModelSerializer):
 
     public_holidays = PublicHolidaySerializer(many=True, read_only=True)
     event_occurrences = EventOccurrenceSerializer(many=True, read_only=True)

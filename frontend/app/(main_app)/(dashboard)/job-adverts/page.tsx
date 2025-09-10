@@ -46,7 +46,7 @@ import RichTextDisplay from "@/components/common/rich-text-display";
 import { formatCurrency } from "@/lib/helpers";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-
+import { Icon } from "@iconify/react"
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
@@ -112,6 +112,7 @@ export default function JobAdvertsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const refreshTableRef = useRef<(() => void) | null>(null);
+  const [ordering, setOrdering] = useState("");
 
   const router = useRouter();
   const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -178,8 +179,8 @@ export default function JobAdvertsPage() {
   }
 
 
- 
-  
+
+
 
   function handleRefresh(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void {
     event.preventDefault();
@@ -228,15 +229,15 @@ export default function JobAdvertsPage() {
               </Select>
             </div>
             <div className="flex items-center gap-2">
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_ADVERTS}>
-              <Button
-                onClick={() => router.push("/job-adverts/create")}
-                disabled={!selectedInstitution?.id}
-                className=""
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Job Opening
-              </Button>
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_JOB_ADVERTS}>
+                <Button
+                  onClick={() => router.push("/job-adverts/create")}
+                  disabled={!selectedInstitution?.id}
+                  className=""
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Job Opening
+                </Button>
               </ProtectedComponent>
             </div>
           </div>
@@ -250,14 +251,15 @@ export default function JobAdvertsPage() {
                 page: 1,
                 search: searchTerm || undefined,
                 branch: selectedBranch?.id?.toString() || undefined,
+                ordering,
               });
             }}
             fetchFromUrl={getPaginatedJobAdvertsFromUrl}
-            deps={[selectedInstitution?.id, selectedBranch?.id, searchTerm]}
+            deps={[selectedInstitution?.id, selectedBranch?.id, searchTerm, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               // Store refresh function in ref when component mounts/updates
               useEffect(() => {
                 refreshTableRef.current = refresh;
@@ -266,8 +268,8 @@ export default function JobAdvertsPage() {
               if (((!data || data.results.length === 0) && !loading)) {
                 return (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm 
-                      ? "No job openings found matching your search" 
+                    {searchTerm
+                      ? "No job openings found matching your search"
                       : "No job openings found"}
                   </div>
                 );
@@ -288,138 +290,150 @@ export default function JobAdvertsPage() {
               }
 
               return (
-               
+
                 <div className="overflow-x-auto">
-                  { !loading ?
-                  (<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-                    <TableHeader className="bg-gray-50/50">
-                      <TableRow>
-                        <TableHead>Job Position</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Published Date</TableHead>
-                        <TableHead>Expiry Date</TableHead>
-                        <TableHead>Employees Required</TableHead>
-                        <TableHead>Interview Stages</TableHead>
-                        <TableHead>Additional Info</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                      <TableBody>
-                      {filteredResults?.map((advert) => (
-                        <TableRow key={advert.id}>
-                          <TableCell className="font-medium">
-                            <div className="font-medium text-gray-900">
-                              {advert.job_position_details?.name || "N/A"}
+                  {!loading ?
+                    (<Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
+                      <TableHeader className="bg-gray-50/50">
+                        <TableRow>
+                          <TableHead>
+                            <div className="flex items-center gap-2">
+                              <span>Job Position</span>
+                              <Button
+                                onClick={() => setOrdering(ordering === "job_position__name" ? "" : "job_position__name")}
+                                size="sm"
+                                variant={ordering === "job_position__name" ? "default" : "outline"}
+                                type="button"
+                              >
+                                <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                              </Button>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusVariant(advert.job_position_advert_status)} className="whitespace-nowrap">
-                              {advert.job_position_advert_status.toUpperCase()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{formatDate(advert.published_date)}</TableCell>
-                          <TableCell>
-                            <span className={`whitespace-nowrap ${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
-                              {formatDate(advert.expiry_date)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {formatCurrency(advert.number_of_employees_expected ?? 0) || "-"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                              {advert.interview_stages?.length || 0} stages
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="max-w-[200px] truncate text-sm text-muted-foreground">
-                              <RichTextDisplay htmlContent={advert.extra_information || "-"} />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full">
-                                  <MoreVertical className="h-5 w-5 text-gray-600" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
-                                  <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                </ProtectedComponent>
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
-                                  <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                </ProtectedComponent>
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
-                                  <Dialog
-                                    open={closingAdvertId === advert.id}
-                                    onOpenChange={(open: boolean) => setClosingAdvertId(open ? advert.id : null)}
-                                  >
-                                    {
-                                      advert.job_position_advert_status !== "closed" &&
-                                    <DialogTrigger asChild>
-                                      <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()}
-                                        className="text-destructive"
-                                        disabled={isClosing}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Close
-                                      </DropdownMenuItem>
-                                    </DialogTrigger>
-                                    }
-                                    <DialogContent className="sm:max-w-[425px]">
-                                      <DialogHeader>
-                                        <DialogTitle>Are you sure you want to close <span className="ml-2">"{advert.job_position_details.name}"?</span> </DialogTitle>
-                                        <DialogDescription>
-                                          Closing this job opening will change its status to "closed" and prevent further applications. This action cannot be undone.
-                                        </DialogDescription>
-                                      </DialogHeader>
-                                      <DialogFooter className="flex-col sm:flex-row gap-2">
-                                        <Button
-                                          variant="outline"
-                                          onClick={() => setClosingAdvertId(null)}
-                                          className="w-full sm:w-auto"
-                                        >
-                                          Cancel
-                                        </Button>
-                                        <Button
-                                          variant="destructive"
-                                          onClick={() => handleCloseJobAdvert(advert.id)}
-                                          disabled={isClosing}
-                                          className="w-full sm:w-auto"
-                                        >
-                                          {isClosing ? "Closing..." : "Close Job Opening"}
-                                        </Button>
-                                      </DialogFooter>
-                                    </DialogContent>
-                                  </Dialog>
-                                </ProtectedComponent>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Published Date</TableHead>
+                          <TableHead>Expiry Date</TableHead>
+                          <TableHead>Employees Required</TableHead>
+                          <TableHead>Interview Stages</TableHead>
+                          <TableHead>Additional Info</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>):
-                   <TableSkeleton columns={8} rows={5} />
+                      </TableHeader>
+                      <TableBody>
+                        {filteredResults?.map((advert) => (
+                          <TableRow key={advert.id}>
+                            <TableCell className="font-medium">
+                              <div className="font-medium text-gray-900">
+                                {advert.job_position_details?.name || "N/A"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusVariant(advert.job_position_advert_status)} className="whitespace-nowrap">
+                                {advert.job_position_advert_status.toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{formatDate(advert.published_date)}</TableCell>
+                            <TableCell>
+                              <span className={`whitespace-nowrap ${isExpired(advert.expiry_date) ? "text-red-600 font-medium" : ""}`}>
+                                {formatDate(advert.expiry_date)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {formatCurrency(advert.number_of_employees_expected ?? 0) || "-"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 whitespace-nowrap">
+                                {advert.interview_stages?.length || 0} stages
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="max-w-[200px] truncate text-sm text-muted-foreground">
+                                <RichTextDisplay htmlContent={advert.extra_information || "-"} />
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full">
+                                    <MoreVertical className="h-5 w-5 text-gray-600" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_JOB_ADVERTS}>
+                                    <DropdownMenuItem onClick={() => handleViewJobAdvert(advert.id)}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_JOB_ADVERTS}>
+                                    <DropdownMenuItem onClick={() => handleEditJobAdvert(advert.id)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                  </ProtectedComponent>
+                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_JOB_ADVERTS}>
+                                    <Dialog
+                                      open={closingAdvertId === advert.id}
+                                      onOpenChange={(open: boolean) => setClosingAdvertId(open ? advert.id : null)}
+                                    >
+                                      {
+                                        advert.job_position_advert_status !== "closed" &&
+                                        <DialogTrigger asChild>
+                                          <DropdownMenuItem
+                                            onSelect={(e) => e.preventDefault()}
+                                            className="text-destructive"
+                                            disabled={isClosing}
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Close
+                                          </DropdownMenuItem>
+                                        </DialogTrigger>
+                                      }
+                                      <DialogContent className="sm:max-w-[425px]">
+                                        <DialogHeader>
+                                          <DialogTitle>Are you sure you want to close <span className="ml-2">"{advert.job_position_details.name}"?</span> </DialogTitle>
+                                          <DialogDescription>
+                                            Closing this job opening will change its status to "closed" and prevent further applications. This action cannot be undone.
+                                          </DialogDescription>
+                                        </DialogHeader>
+                                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                                          <Button
+                                            variant="outline"
+                                            onClick={() => setClosingAdvertId(null)}
+                                            className="w-full sm:w-auto"
+                                          >
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            onClick={() => handleCloseJobAdvert(advert.id)}
+                                            disabled={isClosing}
+                                            className="w-full sm:w-auto"
+                                          >
+                                            {isClosing ? "Closing..." : "Close Job Opening"}
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </ProtectedComponent>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>) :
+                    <TableSkeleton columns={8} rows={5} />
                   }
                 </div>
-                
+
               );
             }}
           </PaginatedTableWrapper>
         </div>
       </div>
 
-     
-  
+
+
       {/* Error Message */}
       {error && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-4 rounded-md border border-destructive/20">
@@ -440,7 +454,7 @@ export default function JobAdvertsPage() {
 
 
 
-   
+
 
     </div>
   );

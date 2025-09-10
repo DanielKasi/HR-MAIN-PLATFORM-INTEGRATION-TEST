@@ -1,14 +1,14 @@
 "use client";
 
-import {useEffect} from "react";
+import { useEffect } from "react";
 
 import apiRequest from "@/lib/apiRequest";
-import {selectSelectedBranch} from "@/store/auth/selectors";
-import {Icon} from "@iconify/react";
-import {useRef, useState} from "react";
-import {useSelector} from "react-redux";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
+import { selectSelectedBranch } from "@/store/auth/selectors";
+import { Icon } from "@iconify/react";
+import { useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -25,10 +25,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {TableSkeleton} from "@/components/common/table-skeleton";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,14 +45,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {Badge} from "@/components/ui/badge";
-import {ArrowLeft, Edit, MoreVertical, Trash2} from "lucide-react";
-import type {IBranchShift, IBranchWorkingDays, IShiftFormData} from "@/types/types.utils";
-import {shiftsAPI} from "@/lib/utils";
-import {showErrorToast} from "@/lib/utils";
-import {useRouter} from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Edit, MoreVertical, Trash2 } from "lucide-react";
+import type { IBranchShift, IBranchWorkingDays, IShiftFormData } from "@/types/types.utils";
+import { shiftsAPI } from "@/lib/utils";
+import { showErrorToast } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+
 
 const BranchShiftsPage = () => {
+  const [ordering, setOrdering] = useState("")
   const selectedBranch = useSelector(selectSelectedBranch);
   const [branchWorkingDays, setBranchWorkingDays] = useState<IBranchWorkingDays | null>(null);
   const [editingShift, setEditingShift] = useState<IBranchShift | null>(null);
@@ -84,7 +86,7 @@ const BranchShiftsPage = () => {
   };
 
   const handleAddShift = async () => {
-    console.log("Adding shift with data:", {...formData, branch: selectedBranch?.id});
+    console.log("Adding shift with data:", { ...formData, branch: selectedBranch?.id });
     try {
       setLoading(true);
       const response = await apiRequest.post(`/institution/branch-shifts/${selectedBranch?.id}/`, {
@@ -99,7 +101,7 @@ const BranchShiftsPage = () => {
       }
     } catch (error) {
       console.error("Error adding shift:", error);
-      showErrorToast({error: error, defaultMessage: "Failed to add shift."});
+      showErrorToast({ error: error, defaultMessage: "Failed to add shift." });
     } finally {
       setLoading(false);
     }
@@ -230,7 +232,7 @@ const BranchShiftsPage = () => {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter shift name"
                 />
               </div>
@@ -240,7 +242,7 @@ const BranchShiftsPage = () => {
                 <Select
                   value={formData.shift_day.toString()}
                   onValueChange={(value) =>
-                    setFormData({...formData, shift_day: Number.parseInt(value)})
+                    setFormData({ ...formData, shift_day: Number.parseInt(value) })
                   }
                 >
                   <SelectTrigger>
@@ -263,7 +265,7 @@ const BranchShiftsPage = () => {
                     id="start_time"
                     type="time"
                     value={formData.start_time}
-                    onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                   />
                 </div>
                 <div>
@@ -272,7 +274,7 @@ const BranchShiftsPage = () => {
                     id="end_time"
                     type="time"
                     value={formData.end_time}
-                    onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
                   />
                 </div>
               </div>
@@ -282,7 +284,7 @@ const BranchShiftsPage = () => {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter shift description"
                   rows={3}
                 />
@@ -311,16 +313,16 @@ const BranchShiftsPage = () => {
               if (!selectedBranch) {
                 throw new Error("No branch selected");
               }
-              return await shiftsAPI.BRANCH.getAll({branch_id: selectedBranch.id});
+              return await shiftsAPI.BRANCH.getAll({ branch_id: selectedBranch.id, ordering });
             }}
-            fetchFromUrl={async (args: {url: string}) =>
-              shiftsAPI.BRANCH.getPaginatedFromUrl({url: args.url})
+            fetchFromUrl={async (args: { url: string }) =>
+              shiftsAPI.BRANCH.getPaginatedFromUrl({ url: args.url })
             }
-            deps={[selectedBranch?.id]}
+            deps={[selectedBranch?.id, ordering]}
             className="space-y-4"
             footerClassName="pt-4"
           >
-            {({data, loading, refresh}) => {
+            {({ data, loading, refresh }) => {
               tableRefreshRef.current = refresh;
 
               if (loading) {
@@ -332,11 +334,45 @@ const BranchShiftsPage = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Shift Name</TableHead>
-                        {/* <TableHead>Day</TableHead>
-                        <TableHead>Type</TableHead> */}
-                        <TableHead>Start Time</TableHead>
-                        <TableHead>End Time</TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Name</span>
+                            <Button
+                              onClick={() => setOrdering(ordering === "name" ? "" : "name")}
+                              size="sm"
+                              variant={ordering === "name" ? "default" : "outline"}
+                              type="button"
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>Start Time</span>
+                            <Button
+                              onClick={() => setOrdering(ordering === "start_time" ? "" : "start_time")}
+                              size="sm"
+                              variant={ordering === "start_time" ? "default" : "outline"}
+                              type="button"
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center gap-2">
+                            <span>End Time</span>
+                            <Button
+                              onClick={() => setOrdering(ordering === "end_time" ? "" : "end_time")}
+                              size="sm"
+                              variant={ordering === "end_time" ? "default" : "outline"}
+                              type="button"
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -411,7 +447,7 @@ const BranchShiftsPage = () => {
               <Input
                 id="edit_name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter shift name"
               />
             </div>
@@ -421,7 +457,7 @@ const BranchShiftsPage = () => {
               <Select
                 value={formData.shift_day.toString()}
                 onValueChange={(value) =>
-                  setFormData({...formData, shift_day: Number.parseInt(value)})
+                  setFormData({ ...formData, shift_day: Number.parseInt(value) })
                 }
               >
                 <SelectTrigger>
@@ -444,7 +480,7 @@ const BranchShiftsPage = () => {
                   id="edit_start_time"
                   type="time"
                   value={formData.start_time}
-                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
                 />
               </div>
               <div>
@@ -453,7 +489,7 @@ const BranchShiftsPage = () => {
                   id="edit_end_time"
                   type="time"
                   value={formData.end_time}
-                  onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
                 />
               </div>
             </div>
@@ -463,7 +499,7 @@ const BranchShiftsPage = () => {
               <Textarea
                 id="edit_description"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter shift description"
                 rows={3}
               />

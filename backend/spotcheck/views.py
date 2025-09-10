@@ -8,7 +8,7 @@ from spotcheck.utilities import send_spotcheck_email
 from utilities.pagination import CustomPageNumberPagination
 from django.utils import timezone
 from django.db import transaction
-
+from utilities.sortable_api import SortableAPIMixin
 
 class InstitutionSpotCheckSettingCreateView(APIView):
     @extend_schema(
@@ -288,7 +288,9 @@ class EmployeeSpotCheckSettingUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmployeeStopCheckListView(APIView):
+class EmployeeStopCheckListView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'spotcheck_time', 'is_active', 'responded_at', 'status', 'notes']
+    default_ordering = ['employee']
     @extend_schema(
         request=SpotCheckModels.EmployeeSpotCheck,
         responses={
@@ -308,6 +310,11 @@ class EmployeeStopCheckListView(APIView):
             ).order_by("-id")
             if employee_id:
                 spotchecks = spotchecks.filter(employee_id=employee_id)
+
+            try:
+                spotchecks = self.apply_sorting(spotchecks, request)
+            except ValueError as e:
+                return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(spotchecks, request)
             serializer = SpotCheckSerializers.EmployeeSpotCheckSerializer(

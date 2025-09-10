@@ -8,6 +8,7 @@ from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 from django.db.models import Q
+from utilities.sortable_api import SortableAPIMixin
 from .models import DisciplineType, DisciplinaryAction
 from .serializers import DisciplinaryActionSerializer, DisciplineTypeSerializer
 from utilities.pagination import CustomPageNumberPagination
@@ -16,7 +17,9 @@ from django.db import transaction
 
 
 
-class DisciplinaryActionAPIView(APIView):
+class DisciplinaryActionAPIView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['employee', 'created_at', 'discipline_type', 'is_active', 'incident_date', 'status', 'assigned_to']
+    default_ordering = ['employee']
 
     @extend_schema(
         responses=DisciplinaryActionSerializer(many=True),
@@ -51,14 +54,19 @@ class DisciplinaryActionAPIView(APIView):
             actions = actions.filter(status=status) 
 
         if severity:
-            actions = actions.filter(severity=discipline_type.id)    
+            actions = actions.filter(discipline_type__id=severity)    
 
         if search_query:
             actions = actions.filter(
                 Q(employee__user__fullname__icontains=search_query) |
                 Q(discipline_type__name__icontains=search_query) |
                 Q(incident_date__icontains=search_query)
-            )    
+            )  
+
+        try:
+            actions = self.apply_sorting(actions, request)  
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(actions, request)

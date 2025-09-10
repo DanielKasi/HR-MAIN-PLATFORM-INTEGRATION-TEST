@@ -3,17 +3,17 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { 
+import {
   ArrowLeft,
   Plus,
-  Edit, 
-  Trash2, 
-  RefreshCw, 
+  Edit,
+  Trash2,
+  RefreshCw,
   Search,
   MoreVertical,
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
   AlertTriangle,
   Info
@@ -40,6 +40,7 @@ import type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/helpers";
 import { CardHeader } from "@/components/ui/card";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -72,7 +73,7 @@ const TaxDetailComponent = () => {
   const router = useRouter();
   const isMobile = useMobile();
   const taxId = params.id as string;
-  
+
   const [tax, setTax] = useState<ITax | null>(null);
   const [taxRules, setTaxRules] = useState<ITaxRule[]>([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -99,13 +100,13 @@ const TaxDetailComponent = () => {
         } else {
           setIsLoading(true);
         }
-        
+
         // Use actual API calls
         const [taxData, taxRulesData] = await Promise.all([
           taxesAPI.getById(parseInt(taxId)),
           taxRulesAPI.getByTaxId(parseInt(taxId))
         ]);
-        
+
         setTax(taxData);
         setTaxRules(taxRulesData);
       } catch (error) {
@@ -220,328 +221,212 @@ const TaxDetailComponent = () => {
         </Button>
       </div>
 
-      { tax && (
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{tax.tax_name}</h1>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-                  {tax.tax_status ? "Active" : "Inactive"}
-                </Badge>
-                <span className="text-sm text-gray-500">
-                  Created: {formatDate(tax.created_at)}
-                </span>
-              </div>
-            </div>
+
+      <div className={` gap-6 ${(tax?.approval_status !== "active" && tax?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+        {tax?.approvals && tax.approvals.length > 0 &&
+          <div className="order-1 lg:order-2">
+            <ApprovalWorkflow
+              approvals={tax.approvals}
+              instance_approval_status={tax.approval_status}
+              onRefresh={fetchTaxData}
+            />
           </div>
-        </div>
-      </div>
-      )
-      }
+        }
 
-            {/* Tax Rules Section */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Tax Rules</h2>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 justify-center">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search tax rules..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              {hasFilters && (
-                <Button variant="outline" onClick={clearFilters} size="sm">
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <CreateTaxRuleDialog
-                taxId={parseInt(taxId)}
-                onSuccess={handleCreateSuccess}
-                disabled={!selectedInstitution?.id}
-              />
-            </div>
-          </div>
-        </div>
+        <div className={`${(tax?.approval_status !== "active" && tax?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
 
-        {/* Table */}
-        <div className="p-6">
-          {isLoading ? (
-                        <div className="p-2 space-y-6 ">
-              <div className="h-[calc(100vh-2rem)]">
-                <CardHeader className="border-b">
-                  <div className="flex justify-between gap-8 items-center">
-                    <div className="flex items-center justify-start gap-4">
-                      <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-                      <div className="space-y-2">
-                        <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3">
-                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <TableSkeleton rows={10} columns={8} />
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden sm:block rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Calculation Type</TableHead>
-                      <TableHead>Rate/Amount</TableHead>
-                      <TableHead>Salary Range</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="w-12">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedTaxRules.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                          {hasFilters ? "No tax rules found matching your filters" : "No tax rules found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      paginatedTaxRules.map((rule) => (
-                        <TableRow key={rule.id}>
-                          <TableCell className="font-medium">
-                            {rule.tax_rule_name}
-                          </TableCell>
-                          <TableCell>
-                            {rule.tax_rule_percentage 
-                              ? `${rule.tax_rule_percentage}%`
-                              : formatCurrency(rule.tax_rule_fixed_amount || 0)
-                            }
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(rule.salary_from || 0)} - {formatCurrency(rule.salary_to || 0)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              Active
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(rule.created_at)}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteTaxRule(rule)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
 
-              {/* Mobile Cards */}
-              <div className="sm:hidden space-y-3">
-                {paginatedTaxRules.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {hasFilters ? "No tax rules found matching your filters" : "No tax rules found"}
-                  </div>
-                ) : (
-                  paginatedTaxRules.map((rule) => (
-                    <div key={rule.id} className="bg-gray-50 rounded-lg p-4 border">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{rule.tax_rule_name}</h3>
-                          <div className="space-y-1 mb-2">
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium">Rate/Amount:</span>{" "}
-                              {rule.tax_rule_percentage 
-                                ? `${rule.tax_rule_percentage}%`
-                                : formatCurrency(rule.tax_rule_fixed_amount || 0)
-                              }
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium">Salary Range:</span>{" "}
-                              {formatCurrency(rule.salary_from || 0)} - {formatCurrency(rule.salary_to || 0)}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-medium">Created:</span> {formatDate(rule.created_at)}
-                            </div>
-                          </div>
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            Active
-                          </Badge>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteTaxRule(rule)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Pagination */}
-              {filteredTaxRules.length > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pageSize) + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filteredTaxRules.length)} of{" "}
-                    {filteredTaxRules.length} tax rules
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-700">Show:</span>
-                      <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PAGE_SIZES.map((size) => (
-                            <SelectItem key={size} value={size.toString()}>
-                              {size}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronsLeft className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={currentPage === page ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className="w-8 h-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronsRight className="h-4 w-4" />
-                      </Button>
+          {tax && (
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">{tax.tax_name}</h1>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
+                        {tax.tax_status ? "Active" : "Inactive"}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        Created: {formatDate(tax.created_at)}
+                      </span>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )
+          }
+
+          {/* Tax Rules Section */}
+          <div className="bg-white rounded-lg border shadow-sm">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Tax Rules</h2>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 justify-center">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search tax rules..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {hasFilters && (
+                    <Button variant="outline" onClick={clearFilters} size="sm">
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <CreateTaxRuleDialog
+                    taxId={parseInt(taxId)}
+                    onSuccess={handleCreateSuccess}
+                    disabled={!selectedInstitution?.id}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="p-6">
+              {isLoading ? (
+                <div className="p-2 space-y-6 ">
+                  <div className="h-[calc(100vh-2rem)]">
+                    <CardHeader className="border-b">
+                      <div className="flex justify-between gap-8 items-center">
+                        <div className="flex items-center justify-start gap-4">
+                          <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+                          <div className="space-y-2">
+                            <div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3">
+                          <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                          <div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <TableSkeleton rows={10} columns={8} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table */}
+                  <div className="rounded-md">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Calculation Type</TableHead>
+                          <TableHead>Rate/Amount</TableHead>
+                          <TableHead>Salary Range</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead className="w-12">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedTaxRules.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                              {hasFilters ? "No tax rules found matching your filters" : "No tax rules found"}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          paginatedTaxRules.map((rule) => (
+                            <TableRow key={rule.id}>
+                              <TableCell className="font-medium">
+                                {rule.tax_rule_name}
+                              </TableCell>
+                              <TableCell>
+                                {rule.tax_rule_percentage
+                                  ? `${rule.tax_rule_percentage}%`
+                                  : formatCurrency(rule.tax_rule_fixed_amount || 0)
+                                }
+                              </TableCell>
+                              <TableCell>
+                                {formatCurrency(rule.salary_from || 0)} - {formatCurrency(rule.salary_to || 0)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className="bg-green-100 text-green-800 border-green-200">
+                                  Active
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{formatDate(rule.created_at)}</TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleDeleteTaxRule(rule)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                </>
               )}
-            </>
-          )}
+            </div>
+          </div>
         </div>
+
+        {/* Dialogs */}
+        {editingTaxRule && (
+          <EditTaxRuleDialog
+            taxRule={editingTaxRule}
+            isOpen={isEditDialogOpen}
+            onClose={() => {
+              setIsEditDialogOpen(false);
+              setEditingTaxRule(null);
+            }}
+            onSuccess={handleUpdateSuccess}
+          />
+        )}
+
+        {deletingTaxRule && (
+          <DeleteTaxRuleDialog
+            taxRule={deletingTaxRule}
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setDeletingTaxRule(null);
+            }}
+            onSuccess={handleDeleteSuccess}
+          />
+        )}
       </div>
-
-      {/* Dialogs */}
-      {editingTaxRule && (
-        <EditTaxRuleDialog
-          taxRule={editingTaxRule}
-          isOpen={isEditDialogOpen}
-          onClose={() => {
-            setIsEditDialogOpen(false);
-            setEditingTaxRule(null);
-          }}
-          onSuccess={handleUpdateSuccess}
-        />
-      )}
-
-      {deletingTaxRule && (
-        <DeleteTaxRuleDialog
-          taxRule={deletingTaxRule}
-          isOpen={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setDeletingTaxRule(null);
-          }}
-          onSuccess={handleDeleteSuccess}
-        />
-      )}
     </div>
   );
 };
