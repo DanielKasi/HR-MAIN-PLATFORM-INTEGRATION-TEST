@@ -16,6 +16,7 @@ interface MultiSelectBranchesProps {
   placeholder?: string;
   label?: string;
   required?: boolean;
+  className?:string
 }
 
 export function MultiSelectBranches({
@@ -27,6 +28,7 @@ export function MultiSelectBranches({
   placeholder = "Select branches",
   label = "Branches",
   required = false,
+  className=""
 }: MultiSelectBranchesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,16 +66,16 @@ export function MultiSelectBranches({
     .map((branch) => branch.branch_name);
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2`}>
       <Label htmlFor="branch-select">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
 
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative rounded-2xl" ref={dropdownRef}>
         <Button
           type="button"
           variant="outline"
-          className="w-full justify-between h-auto min-h-[40px] px-3 py-2 bg-transparent"
+          className={`w-full justify-between h-auto min-h-[40px] px-3 py-2 bg-transparent ${className}`}
           onClick={() => setIsOpen(!isOpen)}
           disabled={loading}
         >

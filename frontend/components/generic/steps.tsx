@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import {Check} from "lucide-react";
 
 export interface StepItem {
@@ -47,14 +47,15 @@ export const Steps: React.FC<StepsProps> = ({
       {/* Desktop view - Horizontal step indicator */}
       <div className="hidden md:flex items-center justify-between mb-8">
         {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-1 ">
+          <Fragment key={index}>
+          <div className="flex items-center">
             <div className="flex items-center">
               <div
                 className={`
                   flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-200 cursor-pointer
                   ${
                     completedSteps.find((c_step) => c_step === step.id) || currentStep === step.id
-                      ? "bg-primary border-primary text-primary-foreground"
+                      ? "bg-primary/10 border-primary text-primary"
                       : "bg-background border-muted-foreground/30 text-muted-foreground"
                   }
                 `}
@@ -84,7 +85,7 @@ export const Steps: React.FC<StepsProps> = ({
                 )}
               </div>
             </div>
-
+          </div>
             {/* Connector line */}
             {index < steps.length - 1 && (
               <div
@@ -94,7 +95,7 @@ export const Steps: React.FC<StepsProps> = ({
                 `}
               />
             )}
-          </div>
+          </Fragment>
         ))}
       </div>
     </div>

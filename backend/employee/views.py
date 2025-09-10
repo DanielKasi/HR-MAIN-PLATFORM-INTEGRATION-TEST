@@ -921,9 +921,9 @@ class EmployeeUpdateAPIView(APIView):
         summary="Update Employee",
         tags=["Employee Management"],
     )
-    def patch(self, request, pk):
+    def patch(self, request, employee_id):
         try:
-            employee = Employee.objects.get(pk=pk)
+            employee = Employee.objects.get(pk=employee_id)
         except Employee.DoesNotExist:
             return Response(
                 {"detail": "Employee not found"},
