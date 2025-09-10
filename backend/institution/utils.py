@@ -63,6 +63,8 @@ def _save_user_file(user_id, data):
 def add_message(user_id, role, message_text, chat_id=None, chat_title="New Chat"):
     data = _load_user_file(user_id)
 
+    print("chat_id add_message", chat_id)
+
     if chat_id is None:
         chat_id = str(uuid.uuid4())
         new_chat = {"chat_id": chat_id, "title": chat_title, "messages": []}
@@ -78,7 +80,9 @@ def add_message(user_id, role, message_text, chat_id=None, chat_title="New Chat"
     else:
         chat_found = False
         for chat in data["chats"]:
-            if chat["chat_id"] == chat_id:
+
+            if str(chat["chat_id"]).strip() == str(chat_id).strip():
+
                 chat["messages"].append(
                     {
                         "role": role,
@@ -110,7 +114,7 @@ def add_message(user_id, role, message_text, chat_id=None, chat_title="New Chat"
 def get_messages(user_id, chat_id, limit=None):
     data = _load_user_file(user_id)
     for chat in data["chats"]:
-        if chat["chat_id"] == chat_id:
+        if str(chat["chat_id"]) == str(chat_id):
             msgs = chat["messages"]
             if limit:
                 return msgs[-limit:]

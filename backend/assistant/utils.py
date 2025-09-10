@@ -34,22 +34,6 @@ def get_system_permissions():
     return permission_text
 
 
-def user_has_permission(user, permission_code: str, institution_id: int) -> bool:
-
-    if Institution.objects.filter(
-        id=institution_id,
-        institution_owner=user,
-    ):
-        return True
-
-    return RolePermission.objects.filter(
-        permissions__institution__id=institution_id,
-        role__user_roles__user=user,
-        permission__code=permission_code,
-        deleted_at__isnull=True,
-    ).exists
-
-
 def get_db_knowledge_and_rules_base():
     # return TextKnowledgeBase(
     #     path="db_schema_and_rules.txt",
@@ -159,3 +143,19 @@ def load_db_rules(file_path: str) -> str:
     """Function to read the DB rules from a file and return as a string."""
     with open(file_path, "r") as file:
         return file.read()
+
+
+def user_has_permission(user, permission_code: str, institution_id: int) -> bool:
+
+    if Institution.objects.filter(
+        id=institution_id,
+        institution_owner=user,
+    ):
+        return True
+
+    return RolePermission.objects.filter(
+        permissions__institution__id=institution_id,
+        role__user_roles__user=user,
+        permission__code=permission_code,
+        deleted_at__isnull=True,
+    ).exists

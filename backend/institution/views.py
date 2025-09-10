@@ -58,7 +58,7 @@ from .serializers import (
     AIQuerySerializer,
 )
 from django.shortcuts import get_object_or_404
-from .utils import add_message, generate_compliant_password
+from .utils import add_message, generate_compliant_password, get_messages
 from utilities.pagination import CustomPageNumberPagination
 from django.db.models import Count, Sum, Q, F
 from django.contrib.auth import get_user_model
@@ -81,7 +81,11 @@ from ai_assistant.schema_export import get_database_schema_for_ai
 from ai_assistant.query_runner import run_sql_with_retry
 from ai_assistant.query_generator import generate_sql_from_question
 from ai_assistant.result_interpreter import interpret_sql_results_with_groq
-from ai_assistant.utils import classify_intent_groq
+from ai_assistant.utils import (
+    classify_intent_groq,
+    map_permission_based_on_question,
+    user_has_permission,
+)
 
 
 User = get_user_model()
@@ -117,6 +121,17 @@ class AIAssistantView(APIView):
         chat_id = serializer.validated_data.get("chat_id")
         user = request.user
 
+        try:
+            profile = Profile.objects.select_related("institution").get(user=user)
+            institution = profile.institution
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "User profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        print("chat_id", chat_id)
+
         if not chat_id:
             chat_id = str(uuid.uuid4())
 
@@ -131,8 +146,9 @@ class AIAssistantView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Add user message to the chat - this returns the same chat_id we passed in
         record = add_message(user.id, "user", question, chat_id)
+
+        recent_chats = get_messages(user.id, chat_id, limit=10)
 
         if intent == "GREETING":
             greeting_response = (
@@ -145,7 +161,6 @@ class AIAssistantView(APIView):
                 "- What's the salary distribution by department?"
             )
 
-            # Add assistant response to the SAME chat_id
             add_message(user.id, "assistant", greeting_response, record)
 
             return Response(
@@ -156,87 +171,110 @@ class AIAssistantView(APIView):
                 status=status.HTTP_200_OK,
             )
 
+        elif intent == "FEATURE_INQUIRY":
+            feature_response = "This feature is currently under development. Please stay tuned for upcoming updates!"
+
+            add_message(user.id, "assistant", feature_response, record)
+
+            return Response(
+                {
+                    "answer": feature_response,
+                    "chat_id": chat_id,
+                },
+                status=status.HTTP_200_OK,
+            )
+
         elif intent == "HR_QUERY":
-            try:
-                profile = Profile.objects.select_related("institution").get(user=user)
-                institution = profile.institution
-            except Profile.DoesNotExist:
-                return Response(
-                    {"detail": "User profile not found."},
-                    status=status.HTTP_404_NOT_FOUND,
+            mapped_permission = map_permission_based_on_question(question)
+
+            if mapped_permission and mapped_permission != "none":
+                user_has_access = user_has_permission(
+                    user, mapped_permission, institution.id
                 )
 
-            if not institution:
-                return Response(
-                    {"detail": "You are not assigned to any institution."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+                if user_has_access:
 
-            institution_id = institution.id
+                    if not institution:
+                        return Response(
+                            {"detail": "You are not assigned to any institution."},
+                            status=status.HTTP_403_FORBIDDEN,
+                        )
 
-            try:
-                schema = load_db_rules("db_schema.txt")
+                    institution_id = institution.id
 
-                # Generate initial SQL
-                initial_sql = generate_sql_from_question(
-                    schema, question, institution_id
-                )
+                    try:
+                        schema = load_db_rules("db_schema.txt")
 
-                # Run SQL (with retry/fallback)
-                sql_result = run_sql_with_retry(
-                    schema=schema,
-                    question=question,
-                    institution_id=institution_id,
-                    initial_sql=initial_sql,
-                )
+                        initial_sql = generate_sql_from_question(
+                            schema, question, institution_id, recent_chats
+                        )
 
-                # Interpret result using AI
-                interpretation = interpret_sql_results_with_groq(
-                    question=question,
-                    columns=sql_result["columns"],
-                    rows=sql_result["results"],
-                    sql=sql_result["sql"],
-                )
+                        sql_result = run_sql_with_retry(
+                            schema=schema,
+                            question=question,
+                            institution_id=institution_id,
+                            initial_sql=initial_sql,
+                            recent_chats=recent_chats,
+                        )
 
-                # Add assistant response to the SAME chat_id
-                add_message(user.id, "assistant", interpretation, record)
+                        interpretation = interpret_sql_results_with_groq(
+                            question=question,
+                            columns=sql_result["columns"],
+                            rows=sql_result["results"],
+                            recent_chats=recent_chats,
+                            sql=sql_result["sql"],
+                        )
 
-                return Response(
-                    {
-                        "answer": interpretation,
-                        "chat_id": chat_id,  # Always return the original chat_id
-                    },
-                    status=status.HTTP_200_OK,
-                )
+                        add_message(user.id, "assistant", interpretation, record)
 
-            except Exception as e:
-                error_message = f"Something went wrong: {str(e)}"
+                        return Response(
+                            {
+                                "answer": interpretation,
+                                "chat_id": chat_id,
+                            },
+                            status=status.HTTP_200_OK,
+                        )
 
-                # Add error message to the SAME chat_id
-                add_message(user.id, "assistant", error_message, chat_id)
+                    except Exception as e:
+                        error_message = f"Something went wrong: {str(e)}"
 
-                return Response(
-                    {
-                        "detail": "Something went wrong.",
-                        "error": str(e),
-                        "answer": error_message,  # Include answer for frontend
-                        "chat_id": chat_id,  # Always return the original chat_id
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
+                        add_message(user.id, "assistant", error_message, chat_id)
+
+                        return Response(
+                            {
+                                "detail": "Something went wrong.",
+                                "error": str(e),
+                                "answer": error_message,
+                                "chat_id": chat_id,
+                            },
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+
+                else:
+                    error_message = "You don't have access to this resource."
+
+                    add_message(user.id, "assistant", error_message, chat_id)
+
+                    return Response(
+                        {
+                            "answer": error_message,
+                            "chat_id": chat_id,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
         else:
             fallback_msg = (
                 "Sorry, I can only help with Human Resource based questions. "
                 "Please ask about employee management, attendance, payroll, or benefits."
             )
 
-            # Add assistant response to the SAME chat_id
             add_message(user.id, "assistant", fallback_msg, record)
 
             return Response(
                 {
                     "answer": fallback_msg,
-                    "chat_id": chat_id,  # Always return the original chat_id
+                    "chat_id": chat_id,
                 },
                 status=status.HTTP_200_OK,
             )

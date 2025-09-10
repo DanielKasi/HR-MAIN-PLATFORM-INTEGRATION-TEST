@@ -1,7 +1,10 @@
 import requests
 import os
-import re
 from django.conf import settings
+from institution.models import Institution
+from users.models import Permission, RolePermission
+from agno.agent import Agent
+from agno.models.groq import Groq
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", settings.GROK_API_KEY)
 
@@ -32,8 +35,9 @@ You are an assistant that categorizes user input into one of three categories:
 GREETING, HR_QUERY, or OTHER.
 
 - GREETING: Friendly salutations or simple hellos.
-- HR_QUERY: Questions related to human resources such as employee benefits, payroll, recruitment and everything related to the institution.
+- HR_QUERY: Questions related to human resources such as employee benefits, payroll, recruitment and everything related to the institution. Under this still, all questions that look like follow up questions should be here, even those that look unclear and cant be classified ie Are you sure?, mention its name meaning its something up most recent, state it, describe it.
 - OTHER: Any other input, including unrelated questions, nonsensical input, or potentially harmful or malicious commands (e.g., requests to delete data, hack, or any dangerous actions).
+- FEATURE_INQUIRY: Questions related to how to do something on the system, how to logout, how to, how do I add or do this.... and more
 
 Input: "{user_input}"
 
@@ -41,3 +45,74 @@ Reply ONLY with one of these three words exactly.
 """
     response = prompt_groq(prompt).strip()
     return response.upper() if response else "OTHER"
+
+
+def get_system_permissions():
+    perms = Permission.objects.all().values(
+        "permission_code", "permission_name", "permission_description"
+    )
+
+    permission_text = "All Supported & Available System Permissions: \n"
+
+    for perm in perms:
+        permission_text += f"- {perm['permission_code']}\n"
+
+    return permission_text
+
+
+def user_has_permission(user, permission_code: str, institution_id: int) -> bool:
+
+    if Institution.objects.filter(
+        id=institution_id,
+        institution_owner=user,
+    ):
+        return True
+
+    return RolePermission.objects.filter(
+        permissions__institution__id=institution_id,
+        role__user_roles__user=user,
+        permission__code=permission_code,
+        deleted_at__isnull=True,
+    ).exists
+
+
+def permissionMapperAgent() -> Agent:
+    permissions = get_system_permissions()
+
+    instructions = f"""
+        You are a permission mapping agent for the Perracosoft(HR) Management System.
+        
+        Based on the user's question, analyze the available permissions and return 
+        the most relevant permission_code that would be required to handle this request.
+        
+        Available permissions: {permissions}
+        
+        Rules:
+        - Return only the permission_code (e.g., "can_view_employees")
+        - Choose the most specific permission that matches the user's intent
+    """
+
+    agent = Agent(
+        model=Groq(id="llama-3.3-70b-versatile"),
+        markdown=False,
+        memory=False,
+        instructions=instructions,
+    )
+    return agent
+
+
+def map_permission_based_on_question(question: str) -> str:
+    agent = permissionMapperAgent()
+    response = agent.run(question)
+
+    text = getattr(response, "content", "")
+    if not text:
+        return "none"
+
+    permission_code = text.strip().replace("*", "").lower()
+
+    permissions = get_system_permissions()
+    if permission_code not in permissions:
+        return "none"
+
+    return permission_code

@@ -104,3 +104,17 @@ JOIN users_customuser u ON e.user_id = u.id
 JOIN institution_department d ON e.department_id = d.id
 JOIN institution_branch b ON e.payroll_branch_id = b.id
 WHERE d.institution_id = ? AND e.is_active = true AND e.deleted_at IS NULL;
+
+
+### These are some of the fields on different tables but not all
+- recruitment_jobposition (name, description, department, salary_min, salary_max, reports_to, and more)
+- recruitment_jobpositionadvert (job_position, work_type, advert_type, employee_type, published_date, number_of_employees_expected, and more)
+- leave_types (name, max_days_per_year, carry_forward_allowed,and more)
+- payroll_allowancetype (name, is_recurring, frequency, description, and more)
+- payroll_deductiontype (name, is_recurring, frequency, description, and more)
+- payroll_employeededuction (employee, amount,and more)
+- assets_assetcategory(category_name, and more,and more)
+- assets_asset (asset_name, and more,and more)
+- settings_systemday (day_name, and more,and more)
+- institution_institutionbanktype (bank_fullname, bank_code, br_code)
+- employee_employeeattendance (employee, check_in_time (time-field), check_out_time(time-field), date, and more)
