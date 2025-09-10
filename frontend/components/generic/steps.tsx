@@ -47,7 +47,7 @@ export const Steps: React.FC<StepsProps> = ({
       {/* Desktop view - Horizontal step indicator */}
       <div className="hidden md:flex items-center justify-between mb-8">
         {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center flex-1">
+          <div key={step.id} className="flex items-center flex-1 ">
             <div className="flex items-center">
               <div
                 className={`

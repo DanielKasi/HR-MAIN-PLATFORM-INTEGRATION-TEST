@@ -166,6 +166,7 @@ class BankAccountSerializer(serializers.ModelSerializer):
         return data
     
 class EmployeeSerializer(BaseApprovableSerializer):
+    date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     user = CustomUserSerializer()
     department_details = serializers.SerializerMethodField()
     position_details = serializers.SerializerMethodField()
@@ -194,6 +195,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
         """
         Ensure the employee is at least 18 years old based on their date of birth.
         """
+        print(f"Validating date_of_birth: {value}, type: {type(value)}")
         if value:
             today = date.today()
             msgs = []
@@ -219,6 +221,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        print(f"Raw request data: {self.context['request'].data}")
         print(f"Validated data: {validated_data}")
 
         user_data = validated_data.pop("user", None)

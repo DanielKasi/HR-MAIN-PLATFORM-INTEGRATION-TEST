@@ -119,9 +119,12 @@ class Education(SoftDeletableTimeStampedModel):
     year = models.PositiveIntegerField()
     qualification = models.ForeignKey(
         QualificationAward,
-        on_delete=models.CASCADE,
-        related_name='educations'
+        on_delete=models.SET_NULL,
+        related_name='educations',
+        null=True,
+        blank=True
     )
+
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.qualification}"

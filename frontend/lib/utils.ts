@@ -1371,43 +1371,77 @@ export const createEmployee = async ({
   institutionId,
   employeeData,
 }: {
-  institutionId: number;
-  employeeData: IEmployeeFormData;
-}): Promise<any | null> => {
+  institutionId: number
+  employeeData: IEmployeeFormData
+}) => {
   try {
-    const formData = new FormData();
-    formData.append("institutionId", institutionId.toString());
+    const formData = new FormData()
+    formData.append("institutionId", institutionId.toString())
 
     if (employeeData.user) {
-      formData.append("user.fullname", employeeData.user.fullname || "");
-      formData.append("user.email", employeeData.user.email || "");
+      formData.append("user.fullname", employeeData.user.fullname || "")
+      formData.append("user.email", employeeData.user.email || "")
     }
 
     Object.entries(employeeData).forEach(([key, value]) => {
-      if (key === "user") return;
+      if (key === "user") return
 
       if (key === "employee_profile_picture" && value instanceof File) {
-        formData.append(key, value);
+        formData.append(key, value)
       } else if (key === "selected_branches" && Array.isArray(value)) {
         value.forEach((branchId) => {
-          formData.append("selected_branches", branchId.toString());
-        });
+          formData.append("selected_branches", branchId.toString())
+        })
+      } else if (key === "children" && Array.isArray(value)) {
+        value.forEach((child, index) => {
+          formData.append(`children[${index}].name`, child.name || "")
+          formData.append(`children[${index}].gender`, child.gender || "")
+          formData.append(`children[${index}].date_of_birth`, child.date_of_birth || "")
+        })
+      } else if (key === "next_of_kin" && Array.isArray(value)) {
+        value.forEach((nok, index) => {
+          formData.append(`next_of_kin[${index}].name`, nok.name || "")
+          formData.append(`next_of_kin[${index}].relationship`, nok.relationship || "")
+          formData.append(`next_of_kin[${index}].phone_number`, nok.phone_number || "")
+          formData.append(`next_of_kin[${index}].address`, nok.address || "")
+        })
+      } else if (key === "educations" && Array.isArray(value)) {
+        value.forEach((edu, index) => {
+          formData.append(`educations[${index}].qualification`, edu.qualification || "")
+          formData.append(`educations[${index}].institute`, edu.institute || "")
+          formData.append(`educations[${index}].year`, edu.year || "")
+          formData.append(`educations[${index}].award`, edu.award || "")
+        })
+      } else if (key === "work_experiences" && Array.isArray(value)) {
+        value.forEach((exp, index) => {
+          formData.append(`work_experiences[${index}].company`, exp.company || "")
+          formData.append(`work_experiences[${index}].position`, exp.position || "")
+          formData.append(`work_experiences[${index}].duration`, exp.duration || "")
+          formData.append(`work_experiences[${index}].reason_of_leave`, exp.reason_of_leave || "")
+        })
+      } else if (key === "bank_accounts" && Array.isArray(value)) {
+        value.forEach((bank, index) => {
+          formData.append(`bank_accounts[${index}].bank_name`, bank.bank_name || "")
+          formData.append(`bank_accounts[${index}].account_number`, bank.account_number || "")
+          formData.append(`bank_accounts[${index}].account_name`, bank.account_name || "")
+        })
+      } else if (key === "spouse" && value && typeof value === "object") {
+        formData.append("spouse.name", value.name || "")
+        formData.append("spouse.phone_number", value.phone_number || "")
+        formData.append("spouse.date_of_birth", value.date_of_birth || "")
       } else if (value !== undefined && value !== null && value !== "") {
-        formData.append(key, value.toString());
+        formData.append(key, value.toString())
       }
-    });
+    })
 
-    const response = await apiRequest.post(`/employee/create/`, formData);
-    return response.data;
+    const response = await apiRequest.post(`/employee/create/`, formData)
+    return response.data as IEmployee
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.detail ||
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to create employee",
-    );
+      error.response?.data?.detail || error.response?.data?.message || error.message || "Failed to create employee",
+    )
   }
-};
+}
 
 export const updateEmployee = async ({
   employeeId,
@@ -1703,7 +1737,7 @@ export const createEmployeeType = async ({
 }: {
   institutionId: number;
   employeeTypeData: IEmployeeTypeFormData;
-}): Promise<IEmployeeType | null> => {
+}) => {
   try {
     const formData = new FormData();
     Object.entries(employeeTypeData).forEach(([key, value]) => {
