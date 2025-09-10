@@ -97,7 +97,7 @@ class EmployeeExportView(APIView):
     def get(self, request, institution_id):
 
         employees = Employee.objects.filter(
-            department__institution_id=institution_id
+            department__institution_id=institution_id, deleted_at__isnull=True
         ).select_related("user", "department", "employee_type")
 
         if not employees.exists():
@@ -805,7 +805,7 @@ class EmployeeCreateAPIView(APIView):
                                 else ""
                             ),
                             "password": generate_compliant_password(),
-                            "welcome_email_sent": True
+                            "welcome_email_sent": True,
                         },
                         "selected_branches": [],
                     }
@@ -1125,23 +1125,33 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Add JSONParser for consistency
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+        JSONParser,
+    ]  # Add JSONParser for consistency
 
     @extend_schema(
         request=EmployeeSerializer,
         responses={
             200: EmployeeSerializer,
             400: {
-                'description': 'Validation errors',
-                'examples': {
-                    'validation_errors': {
-                        'summary': 'Field validation errors',
-                        'value': {'detail': {'date_of_birth': ['Employee must be at least 18 years old.']}}
+                "description": "Validation errors",
+                "examples": {
+                    "validation_errors": {
+                        "summary": "Field validation errors",
+                        "value": {
+                            "detail": {
+                                "date_of_birth": [
+                                    "Employee must be at least 18 years old."
+                                ]
+                            }
+                        },
                     }
-                }
+                },
             },
-            404: {'description': 'Employee not found'},
-            500: {'description': 'Server error'}
+            404: {"description": "Employee not found"},
+            500: {"description": "Server error"},
         },
         description="Update an existing employee's details, including personal information, bank accounts, next of kin, etc. Supports JSON or form-data.",
         summary="Update Employee",
@@ -1156,10 +1166,12 @@ class EmployeeUpdateAPIView(APIView):
             )
 
         # Handle JSON payload
-        if request.content_type == 'application/json':
+        if request.content_type == "application/json":
             data = request.data
             print(f"JSON request data: {data}")
-            serializer = EmployeeSerializer(employee, data=data, context={"request": request}, partial=True)
+            serializer = EmployeeSerializer(
+                employee, data=data, context={"request": request}, partial=True
+            )
             if not serializer.is_valid():
                 print(f"Serializer errors: {serializer.errors}")
                 return Response(
@@ -1173,7 +1185,7 @@ class EmployeeUpdateAPIView(APIView):
             except Exception as e:
                 return Response(
                     {"detail": f"Error updating employee: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
         # Handle multipart/form-data
@@ -1281,7 +1293,7 @@ class EmployeeUpdateAPIView(APIView):
             "skills",
             "salary",
             "date_of_joining",
-            "email"
+            "email",
         ]
         for field in scalar_fields:
             if field in final_data:
@@ -1300,19 +1312,29 @@ class EmployeeUpdateAPIView(APIView):
                             int(final_data[field]) if final_data[field] else None
                         )
                     elif field == "is_active":
-                        final_data[field] = str(final_data[field]).lower() == "true" if final_data[field] else False
+                        final_data[field] = (
+                            str(final_data[field]).lower() == "true"
+                            if final_data[field]
+                            else False
+                        )
                     elif field == "salary":
-                        final_data[field] = float(final_data[field]) if final_data[field] else None
+                        final_data[field] = (
+                            float(final_data[field]) if final_data[field] else None
+                        )
                 except (ValueError, TypeError):
                     final_data[field] = None
 
         # Handle selected_branches
-        final_data["selected_branches"] = request.data.getlist("selected_branches[]", [])
+        final_data["selected_branches"] = request.data.getlist(
+            "selected_branches[]", []
+        )
 
         print(f"Multipart request data: {request.data}")
         print(f"Parsed final data: {final_data}")
 
-        serializer = EmployeeSerializer(employee, data=final_data, context={"request": request}, partial=True)
+        serializer = EmployeeSerializer(
+            employee, data=final_data, context={"request": request}, partial=True
+        )
         if not serializer.is_valid():
             print(f"Serializer errors: {serializer.errors}")
             return Response(
@@ -1327,8 +1349,9 @@ class EmployeeUpdateAPIView(APIView):
         except Exception as e:
             return Response(
                 {"detail": f"Error updating employee: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
 
 class EmployeeDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
