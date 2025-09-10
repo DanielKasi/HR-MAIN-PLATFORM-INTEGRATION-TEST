@@ -217,7 +217,7 @@ class AIAssistantView(APIView):
                             recent_chats=recent_chats,
                         )
 
-                        interpretation = interpret_sql_results_with_groq(
+                        interpretation, links = interpret_sql_results_with_groq(
                             question=question,
                             columns=sql_result["columns"],
                             rows=sql_result["results"],
@@ -231,6 +231,7 @@ class AIAssistantView(APIView):
                             {
                                 "answer": interpretation,
                                 "chat_id": chat_id,
+                                "link": links,
                             },
                             status=status.HTTP_200_OK,
                         )
