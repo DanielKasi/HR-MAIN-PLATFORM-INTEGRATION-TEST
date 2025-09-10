@@ -106,7 +106,7 @@ export default function EmployeePenaltyDialog({
               <FormattedNumberInput
                 className="rounded-xl"
                 value={amount}
-                onValuChange={(val) => setAmount(Number(val))}
+                onValueChange={(val) => setAmount(Number(val))}
               />
             </div>
             <div className="space-y-2">

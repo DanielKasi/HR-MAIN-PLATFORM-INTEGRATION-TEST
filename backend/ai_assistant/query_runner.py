@@ -7,7 +7,8 @@ def run_sql_with_retry(
     question: str,
     institution_id: int,
     initial_sql: str,
-    max_retries: int = 9,
+    recent_chats: list,
+    max_retries: int = 3,
 ) -> dict:
     """
     Executes SQL with retry if initial SQL fails.
@@ -46,6 +47,7 @@ def run_sql_with_retry(
                         schema=schema,
                         question=question,
                         institution_id=institution_id,
+                        recent_chats=recent_chats,
                         error_context=error_context,
                     )
                 except Exception as gen_error:

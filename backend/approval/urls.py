@@ -42,5 +42,5 @@ urlpatterns = [
     path('tasks-analytics/', ApprovalTasksDashboardAPIView.as_view(), name='tasks-analytics'),
     path('approvable-models/', ApprovableContentTypesListAPIView.as_view(), name='approvable-content-types-list'),
     path('approvable-models/<int:pk>/', ApprovableContentTypeDetailAPIView.as_view(), name='approvable-model-details'),
-    path('over-ride/', ApprovalTaskOverrideAPIView.as_view(), name='approval-task-override'),
+    path('override/<int:pk>/', ApprovalTaskOverrideAPIView.as_view(), name='approval-task-override'),
 ]

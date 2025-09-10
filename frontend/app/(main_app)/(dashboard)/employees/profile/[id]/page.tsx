@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { useParams } from "next/navigation"
-import { useSelector } from "react-redux"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import {useState, useEffect, useCallback, useMemo} from "react";
+import {useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Card, CardContent, CardHeader} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +16,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import type { IAttendance } from "@/types/types.utils"
-import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances"
-import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications"
-import EmployeeDiscipline from "@/components/employee/employee-discipline"
-import AssetRequests from "@/components/employee/asset-request"
-import EmployeeAssetAllocations from "@/components/employee/asset-allocation"
-import { DocumentGenerationDialog } from "@/components/document-generation-dialog"
+} from "@/components/ui/dialog";
+import type {IAttendance, IMaritalStatus} from "@/types/types.utils";
+import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
+import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
+import EmployeeDiscipline from "@/components/employee/employee-discipline";
+import AssetRequests from "@/components/employee/asset-request";
+import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
+import {DocumentGenerationDialog} from "@/components/document-generation-dialog";
 import {
   Mail,
   Phone,
@@ -38,21 +38,25 @@ import {
   Plus,
   Clock,
   Settings,
-} from "lucide-react"
-import Link from "next/link"
-import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
-import type { IEmployee, IEmployeeSpotCheckSetting, IEmployeeSpotCheckSettingFormData } from "@/types/types.utils"
-import { toast } from "sonner"
-import { EmployeePayrollTable } from "@/components/employee/employee-payroll"
-import ContractsTable from "@/components/contracts/contracts-table"
-import EmployeeAttendance from "@/components/attendance/employee-attendance"
-import { formatCurrency, getFileUrl } from "@/lib/helpers"
-import { useMobile } from "@/hooks/use-mobile"
-import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks"
-import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts"
-import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties"
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow"
+} from "lucide-react";
+import Link from "next/link";
+import {AttendanceAPI, getEmployeeById, spotcheckAPI} from "@/lib/utils";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import type {
+  IEmployee,
+  IEmployeeSpotCheckSetting,
+  IEmployeeSpotCheckSettingFormData,
+} from "@/types/types.utils";
+import {toast} from "sonner";
+import {EmployeePayrollTable} from "@/components/employee/employee-payroll";
+import ContractsTable from "@/components/contracts/contracts-table";
+import EmployeeAttendance from "@/components/attendance/employee-attendance";
+import {formatCurrency, getFileUrl} from "@/lib/helpers";
+import {useMobile} from "@/hooks/use-mobile";
+import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
+import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
+import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
+import {ApprovalWorkflow} from "@/components/approvals/approval-workflow";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -72,8 +76,8 @@ export default function EmployeeProfile() {
     | "spotchecks"
     | "shifts"
     | "penalties"
-    | "bio_data"
-  >("bio_data");
+    | "general_info"
+  >("general_info");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
   const [totalAttendanceRecords, setTotalAttendanceRecords] = useState(0);
@@ -105,7 +109,7 @@ export default function EmployeeProfile() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  console.log("Spot check setting", spotcheckSetting)
+  console.log("Spot check setting", spotcheckSetting);
 
   // Memoized utility functions
   const formatDate = useCallback((dateString: string | null) => {
@@ -117,9 +121,9 @@ export default function EmployeeProfile() {
     });
   }, []);
 
-  const getMaritalStatusLabel = useCallback((status: string | null) => {
+  const getMaritalStatusLabel = useCallback((status: IMaritalStatus) => {
     if (!status) return null;
-    const statusMap: { [key: string]: string } = {
+    const statusMap: {[key: string]: string} = {
       single: "Single",
       married: "Married",
       divorced: "Divorced",
@@ -200,7 +204,7 @@ export default function EmployeeProfile() {
     setLoading(true);
     setError(null);
     try {
-      const fetchedEmployee = await getEmployeeById({ employeeId });
+      const fetchedEmployee = await getEmployeeById({employeeId});
       setEmployee(fetchedEmployee);
     } catch (error: any) {
       let errorMessage = "Failed to fetch employee";
@@ -215,8 +219,11 @@ export default function EmployeeProfile() {
   }, [selectedInstitution, employeeId]);
 
   // Spotcheck Configuration helper functions
-  const handleSpotcheckInputChange = (field: keyof IEmployeeSpotCheckSettingFormData, value: number) => {
-    setSpotcheckFormData((prev) => ({ ...prev, [field]: value }));
+  const handleSpotcheckInputChange = (
+    field: keyof IEmployeeSpotCheckSettingFormData,
+    value: number,
+  ) => {
+    setSpotcheckFormData((prev) => ({...prev, [field]: value}));
   };
 
   const resetSpotcheckForm = () => {
@@ -278,7 +285,7 @@ export default function EmployeeProfile() {
   const fetchSpotcheckSetting = async () => {
     if (!employee?.id) return;
     try {
-      const setting = await spotcheckAPI.CONFIGS.EMPLOYEE.getByEmployee({ employeeId: employee.id });
+      const setting = await spotcheckAPI.CONFIGS.EMPLOYEE.getByEmployee({employeeId: employee.id});
       setSpotcheckSetting(setting);
       // Initialize form data with the fetched setting
       setSpotcheckFormData({
@@ -312,7 +319,6 @@ export default function EmployeeProfile() {
 
     setLoadingSpotcheckConfig(true);
     try {
-
       // await spotcheckAPI.CONFIGS.EMPLOYEE.delete(employee.id);
       setSpotcheckSetting(null);
       resetSpotcheckForm();
@@ -342,18 +348,18 @@ export default function EmployeeProfile() {
   }, [activeTab, fetchAttendanceRecords, tabDataCache.attendance]);
 
   // Tab configuration with lazy loading indicators
-  const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
+  const tabConfig: Array<{id: typeof activeTab; label: string; hasData: boolean}> = useMemo(
     () => [
-      { id: "bio_data", label: "Bio Data", hasData: true }, // Component handles own loading
-      { id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
-      { id: "discipline", label: "Discipline", hasData: true }, // Component handles own loading
-      { id: "leave", label: "Leave", hasData: true }, // Component handles own loading
-      { id: "assets", label: "Assets", hasData: true }, // Component handles own loading
-      { id: "payroll", label: "Payroll", hasData: true }, // Component handles own loading
-      { id: "documents", label: "Documents", hasData: true }, // Component handles own loading
-      { id: "spotchecks", label: "Spotchecks", hasData: true }, // Component handles own loading
-      { id: "penalties", label: "Penalties", hasData: true }, // Component handles own loading
-      { id: "shifts", label: "Shifts", hasData: true }, // Component handles own loading
+      {id: "general_info", label: "Genarl Information", hasData: true}, // Component handles own loading
+      {id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance},
+      {id: "discipline", label: "Discipline", hasData: true}, // Component handles own loading
+      {id: "leave", label: "Leave", hasData: true}, // Component handles own loading
+      {id: "assets", label: "Assets", hasData: true}, // Component handles own loading
+      {id: "payroll", label: "Payroll", hasData: true}, // Component handles own loading
+      {id: "documents", label: "Documents", hasData: true}, // Component handles own loading
+      {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
+      {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
+      {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
     ],
     [tabDataCache],
   );
@@ -447,12 +453,12 @@ export default function EmployeeProfile() {
                 <FileText className="h-4 w-4" />
                 <span className="hidden md:inline">Generate Document</span>
               </Button>
-
             </div>
           </div>
 
-
-          <div className={`pt-4 w-full ${(employee?.approval_status !== "active" && employee.approvals?.length) ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
+          <div
+            className={`pt-4 w-full ${employee?.approval_status !== "active" && employee.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+          >
             {employee?.approvals && employee.approvals.length > 0 && (
               <ApprovalWorkflow
                 className="order-1 md:order-2"
@@ -462,13 +468,13 @@ export default function EmployeeProfile() {
               />
             )}
 
-            <div className={`flex flex-col order-2 md:order-1 ${employee?.approval_status !== "active" && employee?.approvals && employee.approvals.length > 0 ? "md:col-span-1 lg:col-span-2 xl:col-span-3" : ""}`}>
+            <div
+              className={`flex flex-col order-2 md:order-1 ${employee?.approval_status !== "active" && employee?.approvals && employee.approvals.length > 0 ? "md:col-span-1 lg:col-span-2 xl:col-span-3" : ""}`}
+            >
               {/* Profile card */}
               <div className="bg-white md:rounded-lg md:shadow-sm md:border border-[#e8e8f2] mb-6 -mt-5">
-
                 <div className="p-4 md:p-6">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-
                     <div className="flex flex-col">
                       <div className="flex flex-col md:flex-row md:items-start gap-4 mb-4">
                         <Avatar className="w-16 h-16 md:w-20 md:h-20 border-4 border-white shadow-lg flex-shrink-0 self-center md:self-start">
@@ -584,10 +590,11 @@ export default function EmployeeProfile() {
                             <button
                               key={tab.id}
                               onClick={() => handleTabChange(tab.id as any)}
-                              className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
-                                ? "text-gray-800 font-semibold"
-                                : "text-[#848496] hover:text-gray-800"
-                                }`}
+                              className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+                                activeTab === tab.id
+                                  ? "text-gray-800 font-semibold"
+                                  : "text-[#848496] hover:text-gray-800"
+                              }`}
                             >
                               {tab.label}
                               {activeTab === tab.id && (
@@ -601,40 +608,49 @@ export default function EmployeeProfile() {
 
                     <CardContent className="p-4 md:p-6">
                       {activeTab === "attendance" && (
-                        <EmployeeAttendance scope={{ type: "employee", employee }} />
+                        <EmployeeAttendance scope={{type: "employee", employee}} />
                       )}
 
-                      {activeTab === "bio_data" && (
+                      {activeTab === "general_info" && (
                         <Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
-                          <CardContent className="p-4 md:p-6 space-y-6">
+                          <CardContent className="p-4 md:p-6 space-y-6">                            
                             <div>
-                              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                Additional Info
-                              </h3>
-                              <div className="space-y-4">
+                              <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {employee.salary && (
                                   <div>
-                                    <label className="text-sm font-medium text-[#848496]">Salary</label>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      Salary
+                                    </label>
                                     <p className="text-gray-800 font-medium">
                                       {formatCurrency(employee.salary)}
                                     </p>
                                   </div>
                                 )}
                                 {employee.payroll_branch && (
-                                  <p className="text-[#848496] text-sm break-all">
-                                    {employee.payroll_branch.branch_name}
-                                  </p>
+                                  <div>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      Payroll Branch
+                                    </label>
+                                    <p className="text-gray-800 font-medium">
+                                      {employee.payroll_branch.branch_name}
+                                    </p>
+                                  </div>
                                 )}
 
-                                {employee.user?.branches && (
+                                {employee.user?.branches.length ? (
                                   <div className="px-2 py-4">
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      Attached Branches
+                                    </label>
                                     {employee.user.branches.map((branch, idx) => (
                                       <p key={idx} className="text-[#848496] text-sm break-all">
                                         {branch.branch_name}
                                       </p>
                                     ))}
                                   </div>
-                                )}
+                                ):
+                                <></>
+                              }
                                 {employee.date_of_joining && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
@@ -657,7 +673,9 @@ export default function EmployeeProfile() {
                                 )}
                                 {employee.nin && (
                                   <div>
-                                    <label className="text-sm font-medium text-[#848496]">NIN</label>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      NIN
+                                    </label>
                                     <p className="text-gray-800 font-medium break-all">
                                       {employee.nin}
                                     </p>
@@ -665,7 +683,9 @@ export default function EmployeeProfile() {
                                 )}
                                 {employee.tin && (
                                   <div>
-                                    <label className="text-sm font-medium text-[#848496]">TIN</label>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      TIN
+                                    </label>
                                     <p className="text-gray-800 font-medium break-all">
                                       {employee.tin}
                                     </p>
@@ -681,58 +701,73 @@ export default function EmployeeProfile() {
                                     </p>
                                   </div>
                                 )}
-                                {(employee.marital_status || employee.children_count > 0) && (
+                                {employee.marital_status && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
                                       Marital Status
                                     </label>
                                     <p className="text-gray-800 font-medium">
                                       {getMaritalStatusLabel(employee.marital_status)}
-                                      {employee.children_count &&
-                                        employee.children_count > 0 &&
-                                        ` (${employee.children_count} ${employee.children_count === 1 ? "Child" : "Children"})`}
                                     </p>
                                   </div>
                                 )}
-                                {(employee.emergency_contact_name ||
-                                  employee.emergency_contact_phone) && (
-                                    <div>
-                                      <label className="text-sm font-medium text-[#848496]">
-                                        Emergency Contact
-                                      </label>
-                                      {employee.emergency_contact_name && (
-                                        <p className="text-gray-800 font-medium break-words">
-                                          {employee.emergency_contact_name}{" "}
-                                          {employee.emergency_contact_relationship && (
-                                            <span className="text-[#848496]">
-                                              ({employee.emergency_contact_relationship})
-                                            </span>
-                                          )}
-                                        </p>
-                                      )}
-                                      {employee.emergency_contact_phone && (
-                                        <p className="text-[#848496] text-sm break-all">
-                                          {employee.emergency_contact_phone}
-                                        </p>
-                                      )}
-                                    </div>
-                                  )}
-                                {(employee.bank || employee.bank_account_number) && (
+
+                                {employee.spouse && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
-                                      Bank Details
+                                      Spouse
                                     </label>
-                                    {employee.bank && (
-                                      <p className="text-gray-800 font-medium break-words">
-                                        {employee.bank}
+                                    <div className="py-4">
+                                      <p className="text-gray-800 font-medium">
+                                        Name : {employee.spouse.name}
                                       </p>
-                                    )}
-                                    {employee.bank_account_number && (
-                                      <p className="text-[#848496] text-sm break-all">
-                                        A/C: {employee.bank_account_number}
+                                      <p className="text-gray-800 font-medium">
+                                        Phone number : {employee.spouse.phone_number}
                                       </p>
-                                    )}
+                                    </div>
                                   </div>
+                                )}
+                                {employee.children.length ? (
+                                  <div>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      Children
+                                    </label>
+                                    <div className="text-gray-800 font-medium grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                      {employee.children.map((child, idx) => (
+                                        <span>
+                                          {child.name} ({child.gender})
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <></>
+                                )}
+
+                                {employee.bank_accounts.length ? (
+                                  <div>
+                                    <label className="text-sm font-medium text-[#848496]">
+                                      Bank Accounts
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                      {employee.bank_accounts.map((account, idx) => (
+                                        <div key={idx}>
+                                          {account.bank_id && (
+                                            <p className="text-gray-800 font-medium break-words">
+                                              {account.account_name}
+                                            </p>
+                                          )}
+                                          {account.account_number && (
+                                            <p className="text-[#848496] text-sm break-all">
+                                              A/C: {account.account_number}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <></>
                                 )}
                                 {employee.country && (
                                   <div>
@@ -745,45 +780,85 @@ export default function EmployeeProfile() {
                               </div>
                             </div>
 
-                            {(employee.qualifications ||
-                              employee.experience > 0 ||
-                              employee.skills) && (
-                                <div className="border-t border-[#e8e8f2] pt-6">
-                                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                                    <GraduationCap className="w-5 h-5" />
-                                    Qualifications & Experience
-                                  </h3>
-                                  <div className="space-y-3">
-                                    {employee.qualifications && (
-                                      <div>
-                                        <label className="text-xs text-[#848496]">Education</label>
-                                        <p className="text-gray-800 font-medium">
-                                          {employee.qualifications}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {employee.experience > 0 && (
-                                      <div>
+                            {employee.educations.length ? (
+                              <div className="border-t border-[#e8e8f2] pt-6">
+                                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                                  <GraduationCap className="w-5 h-5" />
+                                  Education
+                                </h3>
+                                <div className="space-y-3">
+                                  {employee.educations.map((education, idx) => (
+                                    <div key={idx}>
+                                      <div className="flex items-center justiify-start gap-8">
                                         <label className="text-xs text-[#848496]">
-                                          Years of Experience
+                                          Institution
                                         </label>
-                                        <p className="text-gray-800 font-medium">
-                                          {employee.experience} years
+                                        <p className="text-gray-800 font-medium capitalize">
+                                          {education.institute}
                                         </p>
                                       </div>
-                                    )}
-                                    {employee.skills && (
-                                      <div>
-                                        <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
-                                          <Award className="w-5 h-5" />
-                                          Skills
-                                        </h4>
-                                        <p className="text-gray-800">{employee.skills}</p>
+                                      <div className="flex items-center justiify-start gap-8">
+                                        <label className="text-xs text-[#848496]">
+                                          InstiYeartution
+                                        </label>
+                                        <p className="text-gray-800 font-medium capitalize">
+                                          {education.year}
+                                        </p>
                                       </div>
-                                    )}
-                                  </div>
+                                      <div className="flex items-center justiify-start gap-8">
+                                        <label className="text-xs text-[#848496]">Year</label>
+                                        <p className="text-gray-800 font-medium capitalize">
+                                          {education.year}
+                                        </p>
+                                      </div>
+                                      <div className="flex items-center justiify-start gap-8">
+                                        <label className="text-xs text-[#848496]">Award</label>
+                                        <p className="text-gray-800 font-medium capitalize">
+                                          {education.award}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              )}
+                              </div>
+                            ) : (
+                              <></>
+                            )}
+
+                            {employee.work_experiences.length ? (
+                              <div>
+                                <label className="text-xs text-[#848496]">Work Experience</label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                  {employee.work_experiences.map((exp, idx) => (
+                                    <div className="flex flex-col items-start gap-4">
+                                      <label className="text-xs text-[#848496]">
+                                        Company : {exp.company}
+                                      </label>
+                                      <label className="text-xs text-[#848496]">
+                                        Duration : {exp.duration}
+                                      </label>
+                                      <label className="text-xs text-[#848496]">
+                                        Position : {exp.position}
+                                      </label>
+                                      <label className="text-xs text-[#848496]">
+                                        Reason of Leave : {exp.reason_of_leave}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <></>
+                            )}
+                            {employee.skills && (
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
+                                  <Award className="w-5 h-5" />
+                                  Skills
+                                </h4>
+                                <p className="text-gray-800">{employee.skills}</p>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       )}
@@ -802,10 +877,11 @@ export default function EmployeeProfile() {
                             <div className="flex gap-8">
                               <button
                                 onClick={() => setLeaveSubTab("balances")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "balances"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  leaveSubTab === "balances"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 Leave Balances
                                 {leaveSubTab === "balances" && (
@@ -814,10 +890,11 @@ export default function EmployeeProfile() {
                               </button>
                               <button
                                 onClick={() => setLeaveSubTab("applications")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "applications"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  leaveSubTab === "applications"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 Leave Applications
                                 {leaveSubTab === "applications" && (
@@ -851,10 +928,11 @@ export default function EmployeeProfile() {
                             <div className="flex gap-8">
                               <button
                                 onClick={() => setAssetSubTab("requests")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "requests"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  assetSubTab === "requests"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 Asset Requests
                                 {assetSubTab === "requests" && (
@@ -863,10 +941,11 @@ export default function EmployeeProfile() {
                               </button>
                               <button
                                 onClick={() => setAssetSubTab("allocations")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "allocations"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  assetSubTab === "allocations"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 Asset Allocations
                                 {assetSubTab === "allocations" && (
@@ -903,7 +982,7 @@ export default function EmployeeProfile() {
                       {activeTab === "payroll" && selectedInstitution && (
                         <EmployeePayrollTable
                           institutionId={selectedInstitution.id}
-                          scope={{ type: "employee", employeeId: employeeId }}
+                          scope={{type: "employee", employeeId: employeeId}}
                           showEmployeeName={false}
                         />
                       )}
@@ -915,10 +994,11 @@ export default function EmployeeProfile() {
                             <div className="flex gap-8">
                               <button
                                 onClick={() => setDocumentsSubTab("contracts")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${documentsSubTab === "contracts"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  documentsSubTab === "contracts"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 Contracts
                                 {documentsSubTab === "contracts" && (
@@ -932,7 +1012,7 @@ export default function EmployeeProfile() {
                           {documentsSubTab === "contracts" && (
                             <ContractsTable
                               searchTerm={searchTerm}
-                              scope={{ type: "employee", employeeId }}
+                              scope={{type: "employee", employeeId}}
                             />
                           )}
                         </div>
@@ -945,10 +1025,11 @@ export default function EmployeeProfile() {
                             <div className="flex gap-8">
                               <button
                                 onClick={() => setSpotcheckSubTab("spotchecks")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "spotchecks"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  spotcheckSubTab === "spotchecks"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 <div className="flex items-center gap-2">
                                   <Clock className="w-4 h-4" />
@@ -960,10 +1041,11 @@ export default function EmployeeProfile() {
                               </button>
                               <button
                                 onClick={() => setSpotcheckSubTab("configs")}
-                                className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "configs"
-                                  ? "text-gray-800 font-semibold"
-                                  : "text-[#848496] hover:text-gray-800"
-                                  }`}
+                                className={`pb-3 text-sm font-medium transition-colors relative ${
+                                  spotcheckSubTab === "configs"
+                                    ? "text-gray-800 font-semibold"
+                                    : "text-[#848496] hover:text-gray-800"
+                                }`}
                               >
                                 <div className="flex items-center gap-2">
                                   <Settings className="w-4 h-4" />
@@ -984,13 +1066,19 @@ export default function EmployeeProfile() {
                           {spotcheckSubTab === "configs" && (
                             <div className="space-y-6">
                               <div className="flex items-center justify-between border-b pb-4">
-                                <h2 className="text-2xl font-bold text-gray-900">Employee Spotcheck Configuration</h2>
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                  Employee Spotcheck Configuration
+                                </h2>
                                 <Button
                                   onClick={handleCreateSpotcheckConfig}
                                   className="bg-primary hover:bg-primary text-white rounded-lg px-4 py-2 flex items-center space-x-2"
                                 >
                                   <Plus className="w-4 h-4" />
-                                  <span>{spotcheckSetting ? "Update Configuration" : "Create Configuration"}</span>
+                                  <span>
+                                    {spotcheckSetting
+                                      ? "Update Configuration"
+                                      : "Create Configuration"}
+                                  </span>
                                 </Button>
                               </div>
 
@@ -1002,7 +1090,9 @@ export default function EmployeeProfile() {
                                       <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
                                         <Settings className="w-4 h-4 text-white" />
                                       </div>
-                                      <h3 className="text-lg font-semibold text-green-900">Current Configuration</h3>
+                                      <h3 className="text-lg font-semibold text-green-900">
+                                        Current Configuration
+                                      </h3>
                                     </div>
                                     <div className="flex gap-2">
                                       <Button
@@ -1028,20 +1118,36 @@ export default function EmployeeProfile() {
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="bg-white rounded-lg p-4 border border-green-200">
-                                      <div className="text-sm text-gray-600 mb-1">Lower Threshold</div>
-                                      <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.lower_threshold} minutes</div>
+                                      <div className="text-sm text-gray-600 mb-1">
+                                        Lower Threshold
+                                      </div>
+                                      <div className="text-lg font-semibold text-gray-900">
+                                        {spotcheckSetting.lower_threshold} minutes
+                                      </div>
                                     </div>
                                     <div className="bg-white rounded-lg p-4 border border-green-200">
-                                      <div className="text-sm text-gray-600 mb-1">Upper Threshold</div>
-                                      <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.upper_threshold} minutes</div>
+                                      <div className="text-sm text-gray-600 mb-1">
+                                        Upper Threshold
+                                      </div>
+                                      <div className="text-lg font-semibold text-gray-900">
+                                        {spotcheckSetting.upper_threshold} minutes
+                                      </div>
                                     </div>
                                     <div className="bg-white rounded-lg p-4 border border-green-200">
-                                      <div className="text-sm text-gray-600 mb-1">Expires After</div>
-                                      <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.expires_after_minutes} minutes</div>
+                                      <div className="text-sm text-gray-600 mb-1">
+                                        Expires After
+                                      </div>
+                                      <div className="text-lg font-semibold text-gray-900">
+                                        {spotcheckSetting.expires_after_minutes} minutes
+                                      </div>
                                     </div>
                                     <div className="bg-white rounded-lg p-4 border border-green-200">
-                                      <div className="text-sm text-gray-600 mb-1">Late Starts After</div>
-                                      <div className="text-lg font-semibold text-gray-900">{spotcheckSetting.late_starts_after_minutes} minutes</div>
+                                      <div className="text-sm text-gray-600 mb-1">
+                                        Late Starts After
+                                      </div>
+                                      <div className="text-lg font-semibold text-gray-900">
+                                        {spotcheckSetting.late_starts_after_minutes} minutes
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -1052,8 +1158,13 @@ export default function EmployeeProfile() {
                                       <Settings className="w-4 h-4 text-white" />
                                     </div>
                                     <div>
-                                      <h3 className="text-lg font-semibold text-yellow-900">No Configuration Found</h3>
-                                      <p className="text-sm text-yellow-700">Create a spotcheck configuration for this employee to manage spotcheck settings.</p>
+                                      <h3 className="text-lg font-semibold text-yellow-900">
+                                        No Configuration Found
+                                      </h3>
+                                      <p className="text-sm text-yellow-700">
+                                        Create a spotcheck configuration for this employee to manage
+                                        spotcheck settings.
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
@@ -1061,19 +1172,28 @@ export default function EmployeeProfile() {
 
                               {/* Spotcheck Configuration Form Modal */}
                               {isSpotcheckFormOpen && (
-                                <Dialog open={isSpotcheckFormOpen} onOpenChange={setIsSpotcheckFormOpen}>
+                                <Dialog
+                                  open={isSpotcheckFormOpen}
+                                  onOpenChange={setIsSpotcheckFormOpen}
+                                >
                                   <DialogContent className="sm:max-w-[600px] rounded-2xl border-0 shadow-2xl">
                                     <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
                                       <DialogTitle className="text-2xl font-bold text-gray-900">
-                                        {spotcheckSetting ? "Update Employee Spotcheck Configuration" : "Create Employee Spotcheck Configuration"}
+                                        {spotcheckSetting
+                                          ? "Update Employee Spotcheck Configuration"
+                                          : "Create Employee Spotcheck Configuration"}
                                       </DialogTitle>
                                       <DialogDescription className="text-gray-600 text-base">
-                                        Configure spotcheck settings for {employee.user?.fullname || "this employee"}.
+                                        Configure spotcheck settings for{" "}
+                                        {employee.user?.fullname || "this employee"}.
                                       </DialogDescription>
                                     </DialogHeader>
                                     <div className="grid grid-cols-1 gap-6 py-6">
                                       <div className="space-y-3">
-                                        <Label htmlFor="lower_threshold" className="text-sm text-gray-800">
+                                        <Label
+                                          htmlFor="lower_threshold"
+                                          className="text-sm text-gray-800"
+                                        >
                                           Lower Threshold (minutes) *
                                         </Label>
                                         <Input
@@ -1081,7 +1201,12 @@ export default function EmployeeProfile() {
                                           type="number"
                                           min="0"
                                           value={spotcheckFormData.lower_threshold}
-                                          onChange={(e) => handleSpotcheckInputChange("lower_threshold", Number.parseInt(e.target.value) || 0)}
+                                          onChange={(e) =>
+                                            handleSpotcheckInputChange(
+                                              "lower_threshold",
+                                              Number.parseInt(e.target.value) || 0,
+                                            )
+                                          }
                                           placeholder="Enter lower threshold"
                                           disabled={loadingSpotcheckConfig}
                                           className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -1089,7 +1214,10 @@ export default function EmployeeProfile() {
                                       </div>
 
                                       <div className="space-y-3">
-                                        <Label htmlFor="upper_threshold" className="text-sm text-gray-800">
+                                        <Label
+                                          htmlFor="upper_threshold"
+                                          className="text-sm text-gray-800"
+                                        >
                                           Upper Threshold (minutes) *
                                         </Label>
                                         <Input
@@ -1097,7 +1225,12 @@ export default function EmployeeProfile() {
                                           type="number"
                                           min="0"
                                           value={spotcheckFormData.upper_threshold}
-                                          onChange={(e) => handleSpotcheckInputChange("upper_threshold", Number.parseInt(e.target.value) || 0)}
+                                          onChange={(e) =>
+                                            handleSpotcheckInputChange(
+                                              "upper_threshold",
+                                              Number.parseInt(e.target.value) || 0,
+                                            )
+                                          }
                                           placeholder="Enter upper threshold"
                                           disabled={loadingSpotcheckConfig}
                                           className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -1105,7 +1238,10 @@ export default function EmployeeProfile() {
                                       </div>
 
                                       <div className="space-y-3">
-                                        <Label htmlFor="expires_after_minutes" className="text-sm text-gray-800">
+                                        <Label
+                                          htmlFor="expires_after_minutes"
+                                          className="text-sm text-gray-800"
+                                        >
                                           Expires After (minutes) *
                                         </Label>
                                         <Input
@@ -1113,7 +1249,12 @@ export default function EmployeeProfile() {
                                           type="number"
                                           min="0"
                                           value={spotcheckFormData.expires_after_minutes}
-                                          onChange={(e) => handleSpotcheckInputChange("expires_after_minutes", Number.parseInt(e.target.value) || 0)}
+                                          onChange={(e) =>
+                                            handleSpotcheckInputChange(
+                                              "expires_after_minutes",
+                                              Number.parseInt(e.target.value) || 0,
+                                            )
+                                          }
                                           placeholder="Enter expiration time"
                                           disabled={loadingSpotcheckConfig}
                                           className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -1121,7 +1262,10 @@ export default function EmployeeProfile() {
                                       </div>
 
                                       <div className="space-y-3">
-                                        <Label htmlFor="late_starts_after_minutes" className="text-sm text-gray-800">
+                                        <Label
+                                          htmlFor="late_starts_after_minutes"
+                                          className="text-sm text-gray-800"
+                                        >
                                           Late Starts After (minutes) *
                                         </Label>
                                         <Input
@@ -1129,7 +1273,12 @@ export default function EmployeeProfile() {
                                           type="number"
                                           min="0"
                                           value={spotcheckFormData.late_starts_after_minutes}
-                                          onChange={(e) => handleSpotcheckInputChange("late_starts_after_minutes", Number.parseInt(e.target.value) || 0)}
+                                          onChange={(e) =>
+                                            handleSpotcheckInputChange(
+                                              "late_starts_after_minutes",
+                                              Number.parseInt(e.target.value) || 0,
+                                            )
+                                          }
                                           placeholder="Enter late start threshold"
                                           disabled={loadingSpotcheckConfig}
                                           className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -1147,8 +1296,10 @@ export default function EmployeeProfile() {
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                             Saving...
                                           </>
+                                        ) : spotcheckSetting ? (
+                                          "Update Configuration"
                                         ) : (
-                                          spotcheckSetting ? "Update Configuration" : "Create Configuration"
+                                          "Create Configuration"
                                         )}
                                       </Button>
                                     </DialogFooter>
@@ -1167,7 +1318,9 @@ export default function EmployeeProfile() {
                                       Delete Configuration
                                     </DialogTitle>
                                     <DialogDescription className="text-gray-600 text-base">
-                                      Are you sure you want to delete the spotcheck configuration for {employee.user?.fullname || "this employee"}? This action cannot be undone.
+                                      Are you sure you want to delete the spotcheck configuration
+                                      for {employee.user?.fullname || "this employee"}? This action
+                                      cannot be undone.
                                     </DialogDescription>
                                   </DialogHeader>
                                   <DialogFooter className="flex gap-3 pt-6">
@@ -1222,11 +1375,9 @@ export default function EmployeeProfile() {
                 context="employee"
               />
             </div>
-
           </div>
         </div>
       )}
     </div>
-
-  )
+  );
 }

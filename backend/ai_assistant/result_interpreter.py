@@ -3,10 +3,10 @@ import re
 
 
 def interpret_sql_results_with_groq(
-    question: str, columns: list, rows: list, sql: str = None
+    question: str, columns: list, rows: list, recent_chats: list, sql: str = None
 ) -> str:
     if not rows:
-        return "No results found for your question."
+        return "No results were found for your query. If you believe this is an error, please contact your IT administrator for support."
 
     row_count = len(rows)
     data_summary = (
@@ -26,6 +26,7 @@ You are an AI assistant that interprets SQL query results for institution(HR) ma
 Your job is to convert database output into clear, insightful, and business-relevant summaries.
 
 Guidelines:
+Note: Look into the user memories and esnure it the user was asking a followup question previously, you can answer them according, `chat_recent_messages={recent_chats}`
 1. Provide only concise, direct business insights — no explanations or extra commentary.
 2. Do NOT expose or reveal any sensitive or confidential information especially ids in your responses.
 3. Use a professional but friendly tone.

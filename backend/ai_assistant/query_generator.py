@@ -3,7 +3,11 @@ import re
 
 
 def generate_sql_from_question(
-    schema: str, question: str, institution_id: int, error_context: str = None
+    schema,
+    question,
+    institution_id,
+    recent_chats,
+    error_context: str = None,
 ) -> str:
     """
     Converts a natural language business question into a PostgreSQL query
@@ -15,6 +19,7 @@ You are an expert SQL developer for a multi-tenant HR management system.
 Your job is to translate natural language questions into optimized PostgreSQL queries.
 
 ⚠️ CRITICAL RULES:
+    Note: Look into into Users Recent Chats and if there's any, consider it while generating the sql for the question\n\n `chat_recent_messages={recent_chats}`
     1. ALWAYS enforce tenant isolation: ensure queries filter by `institution_id = {institution_id}`.
     2. If the table does not have a direct `institution_id`, follow relationships until you reach a model that does.
     - Example: Employee → Department → Institution
@@ -44,7 +49,6 @@ Generate a PostgreSQL query to answer this question. Ensure `institution_id = {i
     full_prompt = system_prompt.strip() + "\n\n" + user_prompt.strip()
 
     raw_response = prompt_groq(full_prompt).strip()
-
 
     code_block_match = re.search(
         r"```sql\s*(.*?)\s*```", raw_response, re.DOTALL | re.IGNORECASE

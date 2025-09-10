@@ -136,6 +136,12 @@ import {
   IBranchSpotCheckSetting,
   IEmployeeSpotCheckSetting,
   IEmployeeSpotCheckSettingFormData,
+  IEmployeeBankAccount,
+  IWorkExperience,
+  IEducation,
+  INextOfKin,
+  IChild,
+  ISpouse,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -1393,35 +1399,35 @@ export const createEmployee = async ({
           formData.append("selected_branches", branchId.toString())
         })
       } else if (key === "children" && Array.isArray(value)) {
-        value.forEach((child, index) => {
+        value.forEach((child:IChild, index) => {
           formData.append(`children[${index}].name`, child.name || "")
           formData.append(`children[${index}].gender`, child.gender || "")
           formData.append(`children[${index}].date_of_birth`, child.date_of_birth || "")
         })
       } else if (key === "next_of_kin" && Array.isArray(value)) {
-        value.forEach((nok, index) => {
+        value.forEach((nok:INextOfKin, index) => {
           formData.append(`next_of_kin[${index}].name`, nok.name || "")
           formData.append(`next_of_kin[${index}].relationship`, nok.relationship || "")
           formData.append(`next_of_kin[${index}].phone_number`, nok.phone_number || "")
           formData.append(`next_of_kin[${index}].address`, nok.address || "")
         })
       } else if (key === "educations" && Array.isArray(value)) {
-        value.forEach((edu, index) => {
+        value.forEach((edu:IEducation, index) => {
           formData.append(`educations[${index}].qualification`, edu.qualification || "")
           formData.append(`educations[${index}].institute`, edu.institute || "")
           formData.append(`educations[${index}].year`, edu.year || "")
           formData.append(`educations[${index}].award`, edu.award || "")
         })
       } else if (key === "work_experiences" && Array.isArray(value)) {
-        value.forEach((exp, index) => {
+        value.forEach((exp:IWorkExperience, index) => {
           formData.append(`work_experiences[${index}].company`, exp.company || "")
           formData.append(`work_experiences[${index}].position`, exp.position || "")
           formData.append(`work_experiences[${index}].duration`, exp.duration || "")
           formData.append(`work_experiences[${index}].reason_of_leave`, exp.reason_of_leave || "")
         })
       } else if (key === "bank_accounts" && Array.isArray(value)) {
-        value.forEach((bank, index) => {
-          formData.append(`bank_accounts[${index}].bank_name`, bank.bank_name || "")
+        value.forEach((bank:IEmployeeBankAccount, index) => {
+          formData.append(`bank_accounts[${index}].bank_id`, bank.bank_id.toString())
           formData.append(`bank_accounts[${index}].account_number`, bank.account_number || "")
           formData.append(`bank_accounts[${index}].account_name`, bank.account_name || "")
         })
@@ -1449,8 +1455,7 @@ export const updateEmployee = async ({
 }: {
   employeeId: number;
   employeeData: any;
-}): Promise<any | null> => {
-  try {
+})=> {
     const formData = new FormData();
 
     if (employeeData.user) {
@@ -1459,19 +1464,59 @@ export const updateEmployee = async ({
     }
 
     Object.entries(employeeData).forEach(([key, value]) => {
-      if (key === "user") return;
+      if (key === "user") return
+
       if (key === "employee_profile_picture" && value instanceof File) {
-        formData.append(key, value);
+        formData.append(key, value)
+      } else if (key === "selected_branches" && Array.isArray(value)) {
+        value.forEach((branchId) => {
+          formData.append("selected_branches", branchId.toString())
+        })
+      } else if (key === "children" && Array.isArray(value)) {
+        value.forEach((child:IChild, index) => {
+          formData.append(`children[${index}].name`, child.name || "")
+          formData.append(`children[${index}].gender`, child.gender || "")
+          formData.append(`children[${index}].date_of_birth`, child.date_of_birth || "")
+        })
+      } else if (key === "next_of_kin" && Array.isArray(value)) {
+        value.forEach((nok:INextOfKin, index) => {
+          formData.append(`next_of_kin[${index}].name`, nok.name || "")
+          formData.append(`next_of_kin[${index}].relationship`, nok.relationship || "")
+          formData.append(`next_of_kin[${index}].phone_number`, nok.phone_number || "")
+          formData.append(`next_of_kin[${index}].address`, nok.address || "")
+        })
+      } else if (key === "educations" && Array.isArray(value)) {
+        value.forEach((edu:IEducation, index) => {
+          formData.append(`educations[${index}].qualification`, edu.qualification || "")
+          formData.append(`educations[${index}].institute`, edu.institute || "")
+          formData.append(`educations[${index}].year`, edu.year || "")
+          formData.append(`educations[${index}].award`, edu.award || "")
+        })
+      } else if (key === "work_experiences" && Array.isArray(value)) {
+        value.forEach((exp:IWorkExperience, index) => {
+          formData.append(`work_experiences[${index}].company`, exp.company || "")
+          formData.append(`work_experiences[${index}].position`, exp.position || "")
+          formData.append(`work_experiences[${index}].duration`, exp.duration || "")
+          formData.append(`work_experiences[${index}].reason_of_leave`, exp.reason_of_leave || "")
+        })
+      } else if (key === "bank_accounts" && Array.isArray(value)) {
+        value.forEach((bank:IEmployeeBankAccount, index) => {
+          formData.append(`bank_accounts[${index}].bank_id`, bank.bank_id.toString())
+          formData.append(`bank_accounts[${index}].account_number`, bank.account_number || "")
+          formData.append(`bank_accounts[${index}].account_name`, bank.account_name || "")
+        })
+      } else if (key === "spouse" && value && typeof value === "object") {
+        formData.append("spouse.name", (value as ISpouse).name || "")
+        formData.append("spouse.phone_number", (value as ISpouse).phone_number || "")
+        formData.append("spouse.date_of_birth", (value as ISpouse).date_of_birth || "")
       } else if (value !== undefined && value !== null && value !== "") {
-        formData.append(key, value.toString());
+        formData.append(key, value.toString())
       }
-    });
+    })
 
     const response = await apiRequest.patch(`/employee/${employeeId}/update/`, formData);
-    return response.data;
-  } catch (error: any) {
-    throw new Error("Failed to update employee. Please try again.");
-  }
+    return response.data as IEmployee;
+
 };
 
 export const deleteEmployee = async ({
@@ -5107,6 +5152,11 @@ export const bankAccountsAPI = {
       throw error;
     }
   },
+    getPaginatedFRomUrl: async ({url}:{url:string}) => {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<IBankAccount>;
+
+  },
   getById: async ({ bankAccountId }: { bankAccountId: string }) => {
     try {
       const response = await apiRequest.get(`/institution/bank-account/${bankAccountId}`);
@@ -6448,10 +6498,7 @@ export async function fetchAttendanceData(startDate?: string, endDate?: string) 
 }
 
 export const showErrorToast = ({ error, defaultMessage }: { error: any; defaultMessage?: string }) => {
-  const errorMessage =
-    error?.error && Array.isArray(error?.error)
-      ? error.error[0]
-      : error?.detail || error?.message || defaultMessage || "An unexpected error occurred.";
+  const errorMessage = typeof error?.detail === "string" ? error.detail : typeof error?.error === "string" ? error.error : typeof error?.message === "string" ? error.message :  defaultMessage
   toast.error(errorMessage);
 };
 

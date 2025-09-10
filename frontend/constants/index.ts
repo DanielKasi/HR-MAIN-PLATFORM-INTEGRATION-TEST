@@ -1,35 +1,31 @@
-import { Approval } from "@/types/approvals.types";
-import { IPenaltyType } from "@/types/types.utils";
+import {Approval} from "@/types/approvals.types";
+import {IPenaltyType} from "@/types/types.utils";
 
-export const MAIN_DOMAIN_URL="https://peracosoft.com"
+export const MAIN_DOMAIN_URL = "https://peracosoft.com";
 
-
-export const LEAVE_CATEGORIES: Array<{ value: string, label: string }> = [
-  { value: "annual", label: "Annual Leave" },
-  { value: "sick", label: "Sick Leave" },
-  { value: "maternity", label: "Maternity Leave" },
-  { value: "paternity", label: "Paternity Leave" },
-  { value: "compassionate", label: "Compassionate Leave" },
-  { value: "study", label: "Study Leave" },
-  { value: "unpaid", label: "Unpaid Leave" },
+export const LEAVE_CATEGORIES: Array<{value: string; label: string}> = [
+  {value: "annual", label: "Annual Leave"},
+  {value: "sick", label: "Sick Leave"},
+  {value: "maternity", label: "Maternity Leave"},
+  {value: "paternity", label: "Paternity Leave"},
+  {value: "compassionate", label: "Compassionate Leave"},
+  {value: "study", label: "Study Leave"},
+  {value: "unpaid", label: "Unpaid Leave"},
 ];
-
 
 export const GENDER_CHOICES = [
-  { value: "all", label: "All" },
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
+  {value: "all", label: "All"},
+  {value: "male", label: "Male"},
+  {value: "female", label: "Female"},
 ];
 
-export const PENALTY_TYPES: { value: IPenaltyType; label: string }[] = [
-  { value: "late_coming", label: "Late Coming" },
-  { value: "early_leaving", label: "Early Checkout" },
-  { value: "absent", label: "Absent" },
-  { value: "no_response_spotcheck", label: "Not responding to a spotcheck" },
-  { value: "late_spotcheck_response", label: "Late spotcheck response" },
+export const PENALTY_TYPES: {value: IPenaltyType; label: string}[] = [
+  {value: "late_coming", label: "Late Coming"},
+  {value: "early_leaving", label: "Early Checkout"},
+  {value: "absent", label: "Absent"},
+  {value: "no_response_spotcheck", label: "Not responding to a spotcheck"},
+  {value: "late_spotcheck_response", label: "Late spotcheck response"},
 ];
-
-
 
 export enum CUSTOM_CODES {
   BLOCKED_BY_ADMIN = "BLOCKED_BY_ADMIN",
@@ -44,7 +40,6 @@ export enum ALLOWANCE_FREQUENCIES {
   MONTHLY = "MONTHLY",
   QUARTERLY = "QUARTERLY",
 }
-
 
 export type CustomApiRequestError = {
   message: string;
@@ -79,6 +74,7 @@ export enum PERMISSION_CODES {
   CAN_EDIT_EMPLOYEE_PERSONAL_DATA = "can_edit_employee_personal_data",
   CAN_VIEW_EMPLOYEE_SALARY_INFO = "can_view_employee_salary_info",
   CAN_TERMINATE_EMPLOYEES = "can_terminate_employees",
+  CAN_EXPORT_EMPLOYEES = "can_export_employees_to_excel",
 
   // Recruitment & Selection
   CAN_CREATE_JOB_POSITIONS = "can_create_job_positions",
@@ -459,4 +455,4 @@ export const mockApprovals: Approval[] = [
       },
     ],
   },
-]
+];

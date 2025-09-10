@@ -1,0 +1,120 @@
+# AGNO Agent Database Schema Documentation
+# Optimized for AI SQL Query Generation with Institution-Based Filtering
+
+## CORE PRINCIPLE: INSTITUTION-BASED DATA ISOLATION
+Every query MUST filter by institution_id either directly or through relationships.
+All data belongs to an institution and must be properly scoped.
+
+## TABLE RELATIONSHIPS TO INSTITUTION
+
+### DIRECT INSTITUTION RELATIONSHIP (Filter: table.institution_id = ?)
+- institution_institution (id = institution_id)
+- users_role (institution_id)
+- institution_institutionbanktype (institution_id)
+- institution_institutionworkingdays (institution_id)
+- institution_institutiontax (institution_id)
+- institution_branch (institution_id)
+- institution_department (institution_id)
+- institution_institutionpenaltyconfig (institution_id)
+- employee_employeetype (institution_id)
+- employee_worktype (institution_id)
+- onboarding_offboardingstage (institution_id)
+- onboarding_institutionemployeeseparationtypes (institution_id)
+- leave_types (institution_id)
+- leave_balances (institution_id)
+- leave_applications (institution_id)
+- leave_policies (institution_id)
+- payroll_allowancetype (institution_id)
+- payroll_deductiontype (institution_id)
+- payroll_payrollperiod (institution_id)
+- performance_period (institution_id)
+- performance_objectives (Institution_id)
+- performance_keyresult (institution_id)
+- performance_questiontemplate (institution_id)
+- performance_meeting (institution_id)
+- projects_project (institution_id)
+- calendar2_publicholiday (institution_id)
+- calendar2_event (institution_id)
+- calendar2_calendar (institution_id)
+- assets_assetcategory (institution_id)
+- assets_asset (institution_id)
+- documents_documenttype (institution_id)
+- approval_approvergroup (institution_id)
+- approval_approvaldocument (institution_id)
+- spotcheck_institutionspotchecksetting (institution_id)
+
+### THROUGH USER PROFILE (Filter: JOIN users_profile p ON table.user_id = p.user_id WHERE p.institution_id = ?)
+- users_customuser (via users_profile.user_id)
+
+### THROUGH BRANCH (Filter: JOIN institution_branch b ON table.branch_id = b.id WHERE b.institution_id = ?)
+- institution_branchworkingdays (branch_id → institution_branch.institution_id)
+- institution_branchday (branch_working_days_id → institution_branchworkingdays.branch_id → institution_branch.institution_id)
+- institution_branchshift (branch_id → institution_branch.institution_id)
+- institution_userbranch (branch_id → institution_branch.institution_id)
+- institution_branchpenaltyconfig (branch_id → institution_branch.institution_id)
+- institution_branchlocationcomparisonconfig (branch_id → institution_branch.institution_id)
+- spotcheck_branchspotchecksetting (branch_id → institution_branch.institution_id)
+
+### THROUGH DEPARTMENT (Filter: JOIN institution_department d ON table.department_id = d.id WHERE d.institution_id = ?)
+- recruitment_jobposition (department_id → institution_department.institution_id)
+
+### THROUGH EMPLOYEE (Filter: JOIN employee_employee e ON table.employee_id = e.id JOIN institution_department d ON e.department_id = d.id WHERE d.institution_id = ?)
+- employee_employeebankaccount (employee_id → employee_employee → department → institution)
+- employee_nextofkin (employee_id → employee_employee → department → institution)
+- employee_child (employee_id → employee_employee → department → institution)
+- employee_spouse (employee_id → employee_employee → department → institution)
+- employee_education (employee_id → employee_employee → department → institution)
+- employee_workexperience (employee_id → employee_employee → department → institution)
+- employee_employeeworkingdays (employee_id → employee_employee → department → institution)
+- employee_employeeday (employee_working_days_id → employee_employeeworkingdays → employee → department → institution)
+- employee_employeeshift (employee_id → employee_employee → department → institution)
+- employee_employeemonthlyhouraccount (employee_id → employee_employee → department → institution)
+- employee_employeeattendance (employee_id → employee_employee → department → institution)
+- employee_employeecontract (employee_id → employee_employee → department → institution)
+- onboarding_employeeseparation (employee_id → employee_employee → department → institution)
+- onboarding_resignationrequest (separation_id → onboarding_employeeseparation → employee → department → institution)
+- onboarding_terminationinitiation (separation_id → onboarding_employeeseparation → employee → department → institution)
+- onboarding_retirementrequest (separation_id → onboarding_employeeseparation → employee → department → institution)
+- discipline_disciplinaryaction (employee_id → employee_employee → department → institution)
+- payroll_employeeallowance (employee_id → employee_employee → department → institution)
+- payroll_employeededuction (employee_id → employee_employee → department → institution)
+- payroll_employeetax (employee_id → employee_employee → department → institution)
+- payroll_employeepenalty (employee_id → employee_employee → department → institution)
+- payroll_payslip (employee_id → employee_employee → department → institution)
+- performance_emmployeeobjectives (employee_id → employee_employee → department → institution)
+- performance_feedback360 (reviewee_id → employee_employee → department → institution)
+- performance_employeebonuspoint (employee_id → employee_employee → department → institution)
+- spotcheck_employeespotchecksetting (employee_id → employee_employee → department → institution)
+- spotcheck_employeespotcheck (employee_id → employee_employee → department → institution)
+
+### THROUGH JOB POSITION ADVERT (Filter: JOIN recruitment_jobpositionadvert jpa ON table.job_position_advert_id = jpa.id JOIN recruitment_jobposition jp ON jpa.job_position_id = jp.id JOIN institution_department d ON jp.department_id = d.id WHERE d.institution_id = ?)
+- recruitment_jobpositionadvert (job_position_id → recruitment_jobposition → department → institution)
+- recruitment_jobadvertapplication (job_position_advert_id → recruitment_jobpositionadvert → job_position → department → institution)
+- recruitment_interviewstage (job_position_advert_id → recruitment_jobpositionadvert → job_position → department → institution)
+- recruitment_jobinterview (job_position_application_id → recruitment_jobadvertapplication → job_position_advert → job_position → department → institution)
+- onboarding_onboarding (application_id → recruitment_jobadvertapplication → job_position_advert → job_position → department → institution)
+
+## SAMPLE QUERIES BY COMMON USE CASES
+
+### 1. GET ALL EMPLOYEES FOR AN INSTITUTION
+```sql
+SELECT e.*, u.fullname, u.email, d.name as department_name, b.branch_name
+FROM employee_employee e
+JOIN users_customuser u ON e.user_id = u.id
+JOIN institution_department d ON e.department_id = d.id
+JOIN institution_branch b ON e.payroll_branch_id = b.id
+WHERE d.institution_id = ? AND e.is_active = true AND e.deleted_at IS NULL;
+
+
+### These are some of the fields on different tables but not all
+- recruitment_jobposition (name, description, department, salary_min, salary_max, reports_to, and more)
+- recruitment_jobpositionadvert (job_position, work_type, advert_type, employee_type, published_date, number_of_employees_expected, and more)
+- leave_types (name, max_days_per_year, carry_forward_allowed,and more)
+- payroll_allowancetype (name, is_recurring, frequency, description, and more)
+- payroll_deductiontype (name, is_recurring, frequency, description, and more)
+- payroll_employeededuction (employee, amount,and more)
+- assets_assetcategory(category_name, and more,and more)
+- assets_asset (asset_name, and more,and more)
+- settings_systemday (day_name, and more,and more)
+- institution_institutionbanktype (bank_fullname, bank_code, br_code)
+- employee_employeeattendance (employee, check_in_time (time-field), check_out_time(time-field), date, and more)

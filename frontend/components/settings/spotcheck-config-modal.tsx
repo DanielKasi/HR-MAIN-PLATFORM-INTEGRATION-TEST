@@ -99,7 +99,7 @@ export const SpotcheckConfigModal = ({
               min="0"
               step="1"
               value={formData.lower_threshold || ""}
-              onValuChange={(val) => handleInputChange("lower_threshold", val)}
+              onValueChange={(val) => handleInputChange("lower_threshold", val)}
               placeholder="Enter lower threshold"
               disabled={isLoading}
               className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -114,7 +114,7 @@ export const SpotcheckConfigModal = ({
               max="50"
               step="1"
               value={formData.upper_threshold || ""}
-              onValuChange={(val) => handleInputChange("upper_threshold", val)}
+              onValueChange={(val) => handleInputChange("upper_threshold", val)}
               placeholder="Enter upper threshold (max 50)"
               disabled={isLoading}
               className={`rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
@@ -133,7 +133,7 @@ export const SpotcheckConfigModal = ({
               min="0"
               max="360"
               value={formData.expires_after_minutes || ""}
-              onValuChange={(val) => handleInputChange("expires_after_minutes", val)}
+              onValueChange={(val) => handleInputChange("expires_after_minutes", val)}
               placeholder="Enter expiration time (max 360 minutes)"
               disabled={isLoading}
               className={`rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
@@ -152,7 +152,7 @@ export const SpotcheckConfigModal = ({
               min="0"
               max={formData.expires_after_minutes}
               value={formData.late_starts_after_minutes || ""}
-              onValuChange={(val) => handleInputChange("late_starts_after_minutes", val)}
+              onValueChange={(val) => handleInputChange("late_starts_after_minutes", val)}
               placeholder="Enter late start threshold"
               disabled={isLoading}
               className={`rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
