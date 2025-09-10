@@ -32,7 +32,7 @@ except redis.ConnectionError as e:
     raise
 
 def add_notification(user_id: int, message: str) -> None:
-    """Add a notification to the user's Redis queue."""
+    """Add a notification to the user's Redis queue with expiry."""
     print(f"🔔 Adding notification for user {user_id}: {message}")
     notification = {
         'id': int(time.time() * 1000),
@@ -40,6 +40,8 @@ def add_notification(user_id: int, message: str) -> None:
     }
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
+        # Set a TTL of 24 hours on the notification queue
+        redis_client.expire(f"notifications:{user_id}", 86400)
         queue_length = redis_client.llen(f"notifications:{user_id}")
         print(f"✅ Notification queued for user {user_id}, queue length: {queue_length}")
     except redis.RedisError as e:
@@ -47,24 +49,37 @@ def add_notification(user_id: int, message: str) -> None:
         raise
 
 def get_notification(user_id: int) -> Optional[dict]:
-    """Retrieve and remove the oldest notification from the user's Redis queue."""
+    """Retrieve the oldest unread notification for the user."""
     try:
-        queue_length = redis_client.llen(f"notifications:{user_id}")
+        # Get all notifications for the user
+        notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+        queue_length = len(notifications)
         print(f"🔎 Checking queue for user {user_id}, queue length: {queue_length}")
-        notification = redis_client.lpop(f"notifications:{user_id}")
-        if notification:
-            print(f"📥 Retrieved notification for user {user_id}: {notification}")
-            return json.loads(notification)
-        print(f"❌ No notifications for user {user_id}")
+        
+        # Check for unread notifications
+        read_notifications_key = f"read_notifications:{user_id}"
+        for notification in notifications:
+            notification_data = json.loads(notification)
+            notification_id = notification_data['id']
+            # Check if notification was already read
+            if not redis_client.sismember(read_notifications_key, notification_id):
+                print(f"📥 Retrieved notification for user {user_id}: {notification}")
+                # Mark as read
+                redis_client.sadd(read_notifications_key, notification_id)
+                # Set TTL of 24 hours for read notifications set
+                redis_client.expire(read_notifications_key, 86400)
+                return notification_data
+        print(f"❌ No unread notifications for user {user_id}")
         return None
     except redis.RedisError as e:
         print(f"❌ Redis error in get_notification: {str(e)}")
         return None
 
 def cleanup_queue(user_id: int) -> None:
-    """Delete the user's notification queue in Redis."""
+    """Delete the user's notification queue and read notifications in Redis."""
     try:
         redis_client.delete(f"notifications:{user_id}")
+        redis_client.delete(f"read_notifications:{user_id}")
         print(f"🧹 Cleaning up queue for user {user_id}")
     except redis.RedisError as e:
         print(f"❌ Redis error in cleanup_queue: {str(e)}")
@@ -72,7 +87,7 @@ def cleanup_queue(user_id: int) -> None:
 @csrf_exempt
 async def sse_notifications(request):
     """Handle SSE connections for real-time notifications."""
-    user_id: Optional[int] = None  # Initialize user_id to None
+    user_id: Optional[int] = None
     try:
         print("🔍 Starting SSE request processing")
         authenticator = JWTAuthentication()
