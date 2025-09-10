@@ -378,7 +378,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
         # Update UserBranch instances
         if selected_branches is not None:
-            instance.user.userbranch_set.all().delete()
+            instance.user.attached_branches.all().delete()
             for i, branch_id in enumerate(selected_branches):
                 try:
                     branch = Branch.objects.get(id=branch_id)
