@@ -87,7 +87,7 @@ def generate_employee_excel(employees):
                 emp.gender,
                 emp.department.name if emp.department else "",
                 emp.date_of_birth.strftime("%Y-%m-%d") if emp.date_of_birth else "",
-                emp.work_type.name,
+                emp.work_type.name if emp.work_type else "",
                 emp.employee_type.name if emp.employee_type else "",
                 emp.date_of_joining.strftime("%Y-%m-%d") if emp.date_of_joining else "",
                 emp.address,
