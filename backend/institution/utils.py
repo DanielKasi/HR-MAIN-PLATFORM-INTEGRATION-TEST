@@ -46,8 +46,18 @@ def _load_user_file(user_id):
 
 
 def _save_user_file(user_id, data):
+
+    def convert(obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        if isinstance(obj, dict):
+            return {k: convert(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [convert(i) for i in obj]
+        return obj
+
     with open(get_file_path(user_id), "w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(convert(data), f, indent=4)
 
 
 def add_message(user_id, role, message_text, chat_id=None, chat_title="New Chat"):

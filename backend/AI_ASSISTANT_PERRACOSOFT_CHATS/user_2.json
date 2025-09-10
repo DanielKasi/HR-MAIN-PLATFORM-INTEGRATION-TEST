@@ -2,18 +2,40 @@
     "user_id": 2,
     "chats": [
         {
-            "chat_id": "55343265-5cac-41ff-afbc-2c55fae3abef",
+            "chat_id": "998234cb-0c50-43ba-89ef-f4cab2ba65d5",
             "title": "New Chat",
             "messages": [
                 {
                     "role": "user",
-                    "message": "hey",
-                    "timestamp": "2025-09-10T12:48:52.799333"
+                    "message": "hi",
+                    "timestamp": "2025-09-10T12:55:51.092473"
                 },
                 {
                     "role": "assistant",
                     "message": "Hello! \ud83d\udc4b I'm here to help with HR questions. You can ask me things like:\n- What were the total employee headcount last month?\n- Which departments are low on staff?\n- Show top-performing employees this quarter.\n- How many leave applications did we get last week?\n- What's the salary distribution by department?",
-                    "timestamp": "2025-09-10T12:48:52.802271"
+                    "timestamp": "2025-09-10T12:55:51.093543"
+                }
+            ]
+        },
+        {
+            "chat_id": "998234cb-0c50-43ba-89ef-f4cab2ba65d5",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "how many employees?",
+                    "timestamp": "2025-09-10T12:56:05.631034"
+                }
+            ]
+        },
+        {
+            "chat_id": "998234cb-0c50-43ba-89ef-f4cab2ba65d5",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "message": "There is 1 active employee currently on record at your institution.",
+                    "timestamp": "2025-09-10T12:56:08.079827"
                 }
             ]
         }

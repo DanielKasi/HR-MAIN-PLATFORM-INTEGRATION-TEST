@@ -132,7 +132,7 @@ class AIAssistantView(APIView):
             )
 
         # Add user message to the chat - this returns the same chat_id we passed in
-        add_message(user.id, "user", question, chat_id)
+        record = add_message(user.id, "user", question, chat_id)
 
         if intent == "GREETING":
             greeting_response = (
@@ -146,12 +146,12 @@ class AIAssistantView(APIView):
             )
 
             # Add assistant response to the SAME chat_id
-            add_message(user.id, "assistant", greeting_response, chat_id)
+            add_message(user.id, "assistant", greeting_response, record)
 
             return Response(
                 {
                     "answer": greeting_response,
-                    "chat_id": chat_id,  # Always return the original chat_id
+                    "chat_id": chat_id,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -199,7 +199,7 @@ class AIAssistantView(APIView):
                 )
 
                 # Add assistant response to the SAME chat_id
-                add_message(user.id, "assistant", interpretation, chat_id)
+                add_message(user.id, "assistant", interpretation, record)
 
                 return Response(
                     {
@@ -231,7 +231,7 @@ class AIAssistantView(APIView):
             )
 
             # Add assistant response to the SAME chat_id
-            add_message(user.id, "assistant", fallback_msg, chat_id)
+            add_message(user.id, "assistant", fallback_msg, record)
 
             return Response(
                 {
