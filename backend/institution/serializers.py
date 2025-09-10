@@ -31,8 +31,16 @@ from settings.models import SystemDay
 
 logger = logging.getLogger(__name__)
 
+
 class AIQuerySerializer(serializers.Serializer):
-    question = serializers.CharField(max_length=1000, required=True)
+    question = serializers.CharField(required=True, allow_blank=False, write_only=True)
+    answer = serializers.CharField(read_only=True)
+    chat_id = serializers.UUIDField(required=False)
+
+    def validate(self, attrs):
+        if not self.instance and not attrs.get("question"):
+            raise serializers.ValidationError({"detail": "Question is required."})
+        return attrs
 
 
 class InstitutionKYCDocumentSerializer(serializers.ModelSerializer):

@@ -1,50 +1,50 @@
 "use client";
 import {useState, useRef, useEffect} from "react";
+import type React from "react";
+
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
-import {MessageCircle, Menu, X, ArrowUp, Bot, Sparkles, Loader2} from "lucide-react";
-import {apiPost} from "@/lib/apiRequest";
-
-interface HistoryItem {
-  id: string;
-  query: string;
-  timestamp: string;
-  answer?: string;
-}
+import {Menu, X, ArrowUp, Bot, Sparkles} from "lucide-react";
+import {apiPost, apiGet} from "@/lib/apiRequest";
 
 interface ChatMessage {
+  role: "user" | "assistant";
+  message: string;
+  timestamp: string;
+}
+
+interface ChatHistory {
+  chat_id: string;
+  title: string;
+  messages: ChatMessage[];
+}
+
+interface UserChats {
+  user_id: number;
+  chats: ChatHistory[];
+}
+
+interface DisplayMessage {
   id: string;
-  type: "user" | "assistant";
+  type: "user" | "assistant" | "status";
   content: string;
   timestamp: string;
-  sql?: string;
-  columns?: string[];
-  results?: any[][];
-  row_count?: number;
 }
 
-interface APIResponse {
-  answer: string;
-  sql: string;
-  columns: string[];
-  results: any[][];
-  row_count: number;
-}
-
-interface APIError {
-  detail: string;
-  error?: string;
+interface ApiResponse {
+  data: {
+    chat_id?: string;
+    answer: string;
+  };
 }
 
 const suggestedQuestions = [
-  "What’s the salary distribution by department?",
-  "Are attendance penalties enabled?",
-  "Tell me about the payroll for this month..!",
-  "How many employees do I have?",
+  "What's the salary distribution by department?",
+  "Are institution penalties enabled?",
+  "How many employees do we have?",
 ];
 
-// Three dots typing animation component
 const TypingIndicator = () => {
   return (
     <div className="flex justify-start">
@@ -52,24 +52,15 @@ const TypingIndicator = () => {
         <div className="flex space-x-1">
           <div
             className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
-            style={{
-              animationDelay: "0ms",
-              animationDuration: "1.4s",
-            }}
+            style={{animationDelay: "0ms", animationDuration: "1.4s"}}
           ></div>
           <div
             className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
-            style={{
-              animationDelay: "200ms",
-              animationDuration: "1.4s",
-            }}
+            style={{animationDelay: "200ms", animationDuration: "1.4s"}}
           ></div>
           <div
             className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
-            style={{
-              animationDelay: "400ms",
-              animationDuration: "1.4s",
-            }}
+            style={{animationDelay: "400ms", animationDuration: "1.4s"}}
           ></div>
         </div>
         <p className="text-xs sm:text-sm text-gray-600 ml-2">AI is thinking...</p>
@@ -81,11 +72,14 @@ const TypingIndicator = () => {
 export default function AIAssistantWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
   const cardRef = useRef<HTMLDivElement>(null);
   const historyRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -108,51 +102,43 @@ export default function AIAssistantWidget() {
     }
   }, [isOpen]);
 
-  // Load history from localStorage on mount
+  // Load chat history when component mounts or when widget opens
   useEffect(() => {
-    const savedHistory = localStorage.getItem("ai-assistant-history");
-    if (savedHistory) {
-      try {
-        setHistoryItems(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error("Error loading history:", error);
-      }
+    if (isOpen && chatHistory.length === 0) {
+      loadChatHistory();
     }
-  }, []);
+  }, [isOpen]);
 
-  // Save history to localStorage
-  const saveHistoryItem = (query: string, answer: string) => {
-    const newItem: HistoryItem = {
-      id: Date.now().toString(),
-      query,
-      answer,
-      timestamp: new Date().toLocaleString(),
-    };
-
-    const updatedHistory = [newItem, ...historyItems.slice(0, 19)];
-    setHistoryItems(updatedHistory);
-    localStorage.setItem("ai-assistant-history", JSON.stringify(updatedHistory));
+  const loadChatHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const response = await apiGet("/assistant/user-chats/");
+      const userChats: UserChats = response.data;
+      setChatHistory(userChats.chats || []);
+    } catch (error) {
+      console.error("Error loading chat history:", error);
+      setChatHistory([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
   };
 
-  const callAIAssistantAPI = async (question: string): Promise<APIResponse> => {
-    try {
-      const response = await apiPost(`/institution/ai-assistant/`, {question});
-
-      // Log the response to debug
-      console.log("API Response:", response);
-
-      // Extract data from Axios response object
-      return response.data;
-    } catch (error) {
-      console.error("API Call Error:", error);
-      throw error;
-    }
+  const convertChatMessagesToDisplay = (chatMessages: ChatMessage[]): DisplayMessage[] => {
+    return chatMessages.map((msg, index) => ({
+      id: `${msg.timestamp}-${index}`,
+      type: msg.role === "user" ? "user" : "assistant",
+      content: msg.message,
+      timestamp: new Date(msg.timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }));
   };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
+    const userMessage: DisplayMessage = {
       id: Date.now().toString(),
       type: "user",
       content: inputValue.trim(),
@@ -161,53 +147,48 @@ export default function AIAssistantWidget() {
 
     setMessages((prev) => [...prev, userMessage]);
     const currentQuestion = inputValue.trim();
-    setInputValue(""); // Clear input immediately
+    setInputValue("");
     setIsLoading(true);
 
     try {
-      const apiResponse = await callAIAssistantAPI(currentQuestion);
+      const payload: any = {
+        question: currentQuestion,
+      };
 
-      // Handle the answer more safely
-      let answerContent = "No answer provided";
-
-      if (apiResponse && apiResponse.answer) {
-        answerContent = String(apiResponse.answer).replace(/^"|"$/g, "").replace(/\\n/g, "\n");
+      if (currentChatId) {
+        payload.chat_id = currentChatId;
       }
 
-      // Create assistant response with API data
-      const assistantMessage: ChatMessage = {
+      const response: ApiResponse = await apiPost(`/institution/ai-assistant/`, payload);
+
+      if (response.data.chat_id && response.data.chat_id !== currentChatId) {
+        setCurrentChatId(response.data.chat_id);
+      }
+
+      // Add assistant response
+      const assistantMessage: DisplayMessage = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: answerContent,
+        content: response.data.answer,
         timestamp: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
-        sql: apiResponse?.sql || undefined,
-        columns: apiResponse?.columns || undefined,
-        results: apiResponse?.results || undefined,
-        row_count: apiResponse?.row_count || undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Save to history
-      saveHistoryItem(currentQuestion, assistantMessage.content);
+      loadChatHistory();
     } catch (error) {
-      console.error("API Error:", error);
-
-      // Create error message with more details
-      let errorMessage = "Unknown error occurred";
+      let errorMessage = "Failed to get response. Please try again.";
 
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
       } else if (error && typeof error === "object" && "detail" in error) {
-        errorMessage = (error as APIError).detail;
+        errorMessage = (error as any).detail;
       }
 
-      const errorChatMessage: ChatMessage = {
+      const errorChatMessage: DisplayMessage = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content: `Sorry, I encountered an error while processing your request: ${errorMessage}. Please try again.`,
+        content: errorMessage,
         timestamp: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
       };
 
@@ -219,29 +200,23 @@ export default function AIAssistantWidget() {
 
   const handleSuggestedQuestion = (question: string) => {
     setInputValue(question);
-    // Auto-focus input after setting the question
     setTimeout(() => {
       inputRef.current?.focus();
     }, 50);
   };
 
-  const handleHistoryClick = (item: HistoryItem) => {
-    // Load the historical question and answer
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: "user",
-      content: item.query,
-      timestamp: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
-    };
+  const handleHistoryClick = (chat: ChatHistory) => {
+    setCurrentChatId(chat.chat_id);
 
-    const assistantMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      type: "assistant",
-      content: item.answer || "No answer available",
-      timestamp: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
-    };
+    const displayMessages = convertChatMessagesToDisplay(chat.messages);
+    setMessages(displayMessages);
 
-    setMessages([userMessage, assistantMessage]);
+    setShowHistory(false);
+  };
+
+  const handleNewChat = () => {
+    setCurrentChatId(null);
+    setMessages([]);
     setShowHistory(false);
   };
 
@@ -252,7 +227,6 @@ export default function AIAssistantWidget() {
     }
   };
 
-  // Handle clicking outside to close history
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showHistory && historyRef.current && !historyRef.current.contains(event.target as Node)) {
@@ -265,9 +239,42 @@ export default function AIAssistantWidget() {
     };
   }, [showHistory]);
 
+  const formatChatTitle = (chat: ChatHistory) => {
+    if (chat.title && chat.title !== "New Chat" && chat.title.trim()) {
+      return chat.title;
+    }
+
+    const firstUserMessage = chat.messages.find((msg) => msg.role === "user");
+    if (firstUserMessage) {
+      return firstUserMessage.message.length > 40
+        ? firstUserMessage.message.substring(0, 40) + "..."
+        : firstUserMessage.message;
+    }
+
+    return "New Chat";
+  };
+
+  const formatChatDate = (chat: ChatHistory) => {
+    if (chat.messages.length === 0) return "";
+
+    const lastMessage = chat.messages[chat.messages.length - 1];
+    const date = new Date(lastMessage.timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      return "Just now";
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInHours < 48) {
+      return "Yesterday";
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
   return (
     <>
-      {/* Custom CSS for better dot animation */}
       <style jsx>{`
         @keyframes typing-dots {
           0%,
@@ -296,7 +303,6 @@ export default function AIAssistantWidget() {
       `}</style>
 
       <div className="fixed bottom-6 right-6 z-50">
-        {/* Tooltip for desktop */}
         {showTooltip && !isOpen && (
           <div className="absolute bottom-16 right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg animate-in fade-in duration-200 whitespace-nowrap">
             AI Assistant
@@ -306,13 +312,10 @@ export default function AIAssistantWidget() {
           </div>
         )}
 
-        {/* Modal with Connection Tail */}
         {isOpen && (
           <div className="absolute bottom-16 right-0 mb-1">
-            {/* Stronger connection tail with animation */}
             <div className="absolute bottom-0 right-6 transform translate-y-full z-20">
               <div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[18px] border-l-transparent border-r-transparent border-t-white drop-shadow-2xl animate-in fade-in duration-300"></div>
-              {/* Connection line */}
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-3 bg-gradient-to-b from-white to-transparent opacity-80"></div>
             </div>
 
@@ -320,7 +323,6 @@ export default function AIAssistantWidget() {
               ref={cardRef}
               className="shadow-2xl border-0 bg-white rounded-2xl overflow-hidden relative animate-in slide-in-from-bottom-4 zoom-in-95 duration-300"
             >
-              {/* Header */}
               <CardHeader className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-white relative z-20">
                 <div className="flex items-center justify-between">
                   {!showHistory && (
@@ -353,17 +355,13 @@ export default function AIAssistantWidget() {
                 </div>
               </CardHeader>
 
-              {/* Main Content Area - Better mobile width */}
               <div className="relative w-[85vw] max-w-[320px] sm:w-96 sm:max-w-[calc(100vw-3rem)] h-[50vh] sm:h-[450px] max-h-[600px] overflow-hidden">
-                {/* History Full-Height Overlay */}
                 {showHistory && (
                   <div ref={historyRef} className="absolute inset-0 z-40 flex">
-                    {/* History Panel */}
                     <div className="bg-white w-[75%] h-full flex flex-col shadow-xl">
-                      {/* History Header */}
                       <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <h4 className="text-base sm:text-lg font-semibold text-gray-900">
-                          History
+                          Chat History
                         </h4>
                         <Button
                           variant="ghost"
@@ -375,29 +373,52 @@ export default function AIAssistantWidget() {
                         </Button>
                       </div>
 
-                      {/* History Content */}
+                      <div className="px-3 sm:px-6 py-3 border-b border-gray-100">
+                        <Button
+                          onClick={handleNewChat}
+                          variant="outline"
+                          className="w-full text-sm border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors duration-200 bg-transparent"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          New Chat
+                        </Button>
+                      </div>
+
                       <div className="flex-1 overflow-y-auto p-3 sm:p-6">
                         <div className="space-y-3 sm:space-y-4">
-                          {historyItems.length === 0 ? (
+                          {isLoadingHistory ? (
                             <div className="text-center py-8">
-                              <p className="text-sm text-gray-500">No history yet</p>
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-3"></div>
+                              <p className="text-sm text-gray-500">Loading chats...</p>
+                            </div>
+                          ) : chatHistory.length === 0 ? (
+                            <div className="text-center py-8">
+                              <p className="text-sm text-gray-500">No chat history yet</p>
                               <p className="text-xs text-gray-400 mt-1">
-                                Your conversations will appear here
+                                Start a conversation to see your chats here
                               </p>
                             </div>
                           ) : (
-                            historyItems.map((item) => (
+                            chatHistory.map((chat) => (
                               <div
-                                key={item.id}
-                                className="cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded-lg transition-colors duration-150 -mx-1 sm:-mx-2"
-                                onClick={() => handleHistoryClick(item)}
+                                key={chat.chat_id}
+                                className={`cursor-pointer hover:bg-gray-50 p-3 sm:p-4 rounded-lg transition-colors duration-150 -mx-1 sm:-mx-2 border-l-2 ${
+                                  currentChatId === chat.chat_id
+                                    ? "border-red-500 bg-red-50"
+                                    : "border-transparent"
+                                }`}
+                                onClick={() => handleHistoryClick(chat)}
                               >
                                 <p className="text-xs sm:text-sm font-medium text-gray-900 mb-2 leading-relaxed break-words">
-                                  {item.query}
+                                  {formatChatTitle(chat)}
                                 </p>
-                                <p className="text-xs text-gray-500 break-words">
-                                  {item.timestamp}
-                                </p>
+                                <div className="flex justify-between items-center">
+                                  <p className="text-xs text-gray-500">
+                                    {chat.messages.length} message
+                                    {chat.messages.length !== 1 ? "s" : ""}
+                                  </p>
+                                  <p className="text-xs text-gray-400">{formatChatDate(chat)}</p>
+                                </div>
                               </div>
                             ))
                           )}
@@ -405,7 +426,6 @@ export default function AIAssistantWidget() {
                       </div>
                     </div>
 
-                    {/* Right side - Dimmed background showing original content */}
                     <div
                       className="bg-black bg-opacity-30 w-[25%] h-full cursor-pointer"
                       onClick={() => setShowHistory(false)}
@@ -413,13 +433,10 @@ export default function AIAssistantWidget() {
                   </div>
                 )}
 
-                {/* Main Chat Area */}
                 <div className="w-full h-full flex flex-col relative">
                   <CardContent className="flex-1 flex flex-col p-0 relative min-h-0">
                     {messages.length === 0 ? (
-                      // Welcome State
                       <div className="flex-1 flex flex-col min-h-0">
-                        {/* Welcome Section - Scrollable */}
                         <div className="flex-1 overflow-y-auto">
                           <div className="flex flex-col items-center justify-center p-4 sm:p-6 min-h-full">
                             <div className="w-12 sm:w-16 h-12 sm:h-16 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center mb-4 sm:mb-6 border border-red-200">
@@ -435,13 +452,12 @@ export default function AIAssistantWidget() {
                               payroll reports to orders, business assets, and analytics.
                             </p>
 
-                            {/* Suggested Questions */}
                             <div className="w-full space-y-2 mb-3 sm:mb-4 px-2">
                               {suggestedQuestions.slice(0, 2).map((question, index) => (
                                 <Button
                                   key={index}
                                   variant="outline"
-                                  className="w-full text-left justify-start h-auto py-2 sm:py-2.5 px-2 sm:px-3 text-xs sm:text-sm border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors duration-150 whitespace-normal break-words"
+                                  className="w-full text-left justify-start h-auto py-2 sm:py-2.5 px-2 sm:px-3 text-xs sm:text-sm border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors duration-150 whitespace-normal break-words bg-transparent"
                                   onClick={() => handleSuggestedQuestion(question)}
                                 >
                                   {question}
@@ -454,7 +470,7 @@ export default function AIAssistantWidget() {
                                 <Button
                                   key={index + 2}
                                   variant="outline"
-                                  className="text-left justify-start h-auto py-2 sm:py-2.5 px-2 sm:px-2.5 text-xs border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors duration-150 whitespace-normal break-words"
+                                  className="text-left justify-start h-auto py-2 sm:py-2.5 px-2 sm:px-2.5 text-xs border-gray-200 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-colors duration-150 whitespace-normal break-words bg-transparent"
                                   onClick={() => handleSuggestedQuestion(question)}
                                 >
                                   {question}
@@ -465,7 +481,6 @@ export default function AIAssistantWidget() {
                         </div>
                       </div>
                     ) : (
-                      // Chat Messages - Properly Scrollable
                       <div className="flex-1 flex flex-col min-h-0">
                         <div className="flex-1 overflow-y-auto">
                           <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
@@ -514,27 +529,14 @@ export default function AIAssistantWidget() {
                               </div>
                             ))}
 
-                            {/* Enhanced typing indicator */}
-                            {isLoading && (
-                              <div className="flex justify-start">
-                                <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-tl-md px-3 sm:px-4 py-3 sm:py-3.5 flex items-center justify-center">
-                                  <div className="flex space-x-1">
-                                    <div className="w-2 h-2 bg-gray-500 rounded-full typing-dot-1"></div>
-                                    <div className="w-2 h-2 bg-gray-500 rounded-full typing-dot-2"></div>
-                                    <div className="w-2 h-2 bg-gray-500 rounded-full typing-dot-3"></div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            {isLoading && <TypingIndicator />}
 
-                            {/* Scroll anchor */}
                             <div ref={messagesEndRef} />
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Input Area - Always visible and functional */}
                     <div className="shrink-0 p-3 sm:p-4 border-t border-gray-100 bg-white relative z-10">
                       <div className="flex items-center space-x-2 sm:space-x-3">
                         <Input
@@ -570,7 +572,6 @@ export default function AIAssistantWidget() {
           </div>
         )}
 
-        {/* Beautiful Floating Action Button */}
         <div className="flex flex-col items-end">
           {!isOpen ? (
             <Button
@@ -579,21 +580,17 @@ export default function AIAssistantWidget() {
               onMouseLeave={() => setShowTooltip(false)}
               className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-700 hover:from-red-700 hover:via-orange-800 hover:to-red-800 text-white rounded-full h-14 w-14 p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
             >
-              {/* Animated background gradient */}
               <div className="absolute inset-0 bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
 
-              {/* Main content */}
               <div className="relative z-10 flex items-center justify-center">
                 <div className="relative">
                   <Bot className="h-6 w-6 transform group-hover:scale-110 transition-transform duration-300" />
-                  {/* AI sparkle indicator */}
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
                     <Sparkles className="h-2 w-2 text-white" />
                   </div>
                 </div>
               </div>
 
-              {/* Subtle glow effect */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300"></div>
             </Button>
           ) : (

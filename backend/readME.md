@@ -50,6 +50,17 @@ Ensure you have the following installed:
 
    - To confirm, use command "\dx"
 
+6. **Enable PgVector In PostgresDB:**
+
+   - To run this command, it requires a superuser logged and connected to the DB
+
+   ```
+   chmod +x setup_pgvector.sh
+   ./setup_pgvector.sh
+
+   ```
+
+
 6. **Set up environment variables:**
    - Copy `.env-example` to `.env` and update the values accordingly.
    ```bash
@@ -59,6 +70,12 @@ Ensure you have the following installed:
 7. **Apply migrations:**
    ```bash
    python manage.py migrate
+   ```
+
+9. **Run Load the DB Schema Embedding:**
+
+   ```bash
+   python manage.py load_schema_embeddings
    ```
 
 10. **Run the development server:**

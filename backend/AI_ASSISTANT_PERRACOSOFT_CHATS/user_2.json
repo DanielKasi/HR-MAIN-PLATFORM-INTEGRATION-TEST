@@ -1,0 +1,438 @@
+{
+    "user_id": 2,
+    "chats": [
+        {
+            "chat_id": "9b8a939d-1eac-4718-b50f-488a57f120c1",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "How many staff members do we have?",
+                    "timestamp": "2025-09-10T13:21:55.175071"
+                },
+                {
+                    "role": "assistant",
+                    "message": "We currently have 1 active staff member.",
+                    "timestamp": "2025-09-10T13:21:56.945450"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:22:11.133996"
+                },
+                {
+                    "role": "assistant",
+                    "message": "We have 1 active employee member at this institution.",
+                    "timestamp": "2025-09-10T13:22:12.569072"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:27:50.216937"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: generate_sql_from_question() missing 1 required positional argument: 'recent_chats'",
+                    "timestamp": "2025-09-10T13:27:50.225395"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:28:43.241283"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: name 'recent_chats' is not defined",
+                    "timestamp": "2025-09-10T13:28:43.252253"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:29:16.955353"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: name 'recent_chats' is not defined",
+                    "timestamp": "2025-09-10T13:29:16.962017"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:30:51.964951"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: generate_sql_from_question() missing 1 required positional argument: 'recent_chats'",
+                    "timestamp": "2025-09-10T13:30:51.971510"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees members do we have?",
+                    "timestamp": "2025-09-10T13:32:24.937289"
+                },
+                {
+                    "role": "assistant",
+                    "message": "We have 1 active employee member.",
+                    "timestamp": "2025-09-10T13:32:27.284734"
+                },
+                {
+                    "role": "user",
+                    "message": "Are you sure?",
+                    "timestamp": "2025-09-10T13:32:35.588706"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is 1 active employee currently working at your institution.",
+                    "timestamp": "2025-09-10T13:32:36.607076"
+                },
+                {
+                    "role": "user",
+                    "message": "Are you sure?",
+                    "timestamp": "2025-09-10T13:54:24.903107"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is currently 1 active employee at this institution.",
+                    "timestamp": "2025-09-10T13:54:26.080409"
+                },
+                {
+                    "role": "user",
+                    "message": "How many branches do we have?",
+                    "timestamp": "2025-09-10T13:55:40.888092"
+                },
+                {
+                    "role": "assistant",
+                    "message": "We have 1 branch operating under this institution.",
+                    "timestamp": "2025-09-10T13:55:42.114370"
+                },
+                {
+                    "role": "user",
+                    "message": "mention its name?",
+                    "timestamp": "2025-09-10T13:55:54.670038"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL regeneration failed on retry: generate_sql_from_question() missing 1 required positional argument: 'recent_chats'",
+                    "timestamp": "2025-09-10T13:55:55.748116"
+                },
+                {
+                    "role": "user",
+                    "message": "mention its name?",
+                    "timestamp": "2025-09-10T13:56:05.575305"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL regeneration failed on retry: generate_sql_from_question() missing 1 required positional argument: 'recent_chats'",
+                    "timestamp": "2025-09-10T13:56:06.080686"
+                },
+                {
+                    "role": "user",
+                    "message": "mention its names please",
+                    "timestamp": "2025-09-10T14:00:08.152435"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Sorry, I can only help with Human Resource based questions. Please ask about employee management, attendance, payroll, or benefits.",
+                    "timestamp": "2025-09-10T14:00:08.153717"
+                },
+                {
+                    "role": "user",
+                    "message": "mention its name",
+                    "timestamp": "2025-09-10T14:01:33.457266"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 10 attempts. Last error: column \"name\" does not exist\nLINE 1: SELECT name \n               ^\n",
+                    "timestamp": "2025-09-10T14:01:40.123122"
+                },
+                {
+                    "role": "user",
+                    "message": "How many users do we have?",
+                    "timestamp": "2025-09-10T14:02:10.213585"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is 1 registered user at your institution.",
+                    "timestamp": "2025-09-10T14:02:11.568761"
+                },
+                {
+                    "role": "user",
+                    "message": "sure?",
+                    "timestamp": "2025-09-10T14:02:15.948168"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is 1 staff member currently registered at your institution.",
+                    "timestamp": "2025-09-10T14:02:17.688601"
+                },
+                {
+                    "role": "user",
+                    "message": "ok then do you his name?",
+                    "timestamp": "2025-09-10T14:02:38.380792"
+                },
+                {
+                    "role": "assistant",
+                    "message": "One active employee, Samuel Ssenyonga, is associated with the institution.",
+                    "timestamp": "2025-09-10T14:02:39.705524"
+                },
+                {
+                    "role": "user",
+                    "message": "Do we have some branch shifts yet?",
+                    "timestamp": "2025-09-10T14:04:21.594556"
+                },
+                {
+                    "role": "assistant",
+                    "message": "No results found for your question.",
+                    "timestamp": "2025-09-10T14:04:23.542215"
+                },
+                {
+                    "role": "user",
+                    "message": "how many job positions do we have?",
+                    "timestamp": "2025-09-10T14:04:58.257485"
+                },
+                {
+                    "role": "assistant",
+                    "message": "We currently have 31 job positions available across departments in our institution.",
+                    "timestamp": "2025-09-10T14:04:59.380811"
+                },
+                {
+                    "role": "user",
+                    "message": "which of them has the highest salary?",
+                    "timestamp": "2025-09-10T14:05:15.354807"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 10 attempts. Last error: column jp.position_name does not exist\nLINE 1: SELECT jp.position_name, jp.max_salary\n               ^\n",
+                    "timestamp": "2025-09-10T14:05:22.523947"
+                }
+            ]
+        },
+        {
+            "chat_id": "19c0c8be-406b-4b40-8bc8-22516cb1dab3",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "How many spotcheck do Samuel as an employee have",
+                    "timestamp": "2025-09-10T14:23:25.007863"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Hi again! \n\nSamuel has 0 spot checks as an employee. \n\nNo action required at this point.",
+                    "timestamp": "2025-09-10T14:23:26.638145"
+                },
+                {
+                    "role": "user",
+                    "message": "who is Samuel?",
+                    "timestamp": "2025-09-10T14:24:33.822065"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Here is a concise business insight:\n\nWe have one employee named Samuel Ssenyonga, who works in the Default Department. His email address is samuelranks2@gmail.com and his employee ID is EMP00001.",
+                    "timestamp": "2025-09-10T14:24:35.870512"
+                },
+                {
+                    "role": "user",
+                    "message": "has any employee checked in today?",
+                    "timestamp": "2025-09-10T14:28:28.638533"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: operator does not exist: interval = date\nLINE 7:   AND DATE_TRUNC('day', ea.check_in_time) = CURRENT_DATE\n                                                  ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n",
+                    "timestamp": "2025-09-10T14:28:31.506794"
+                },
+                {
+                    "role": "user",
+                    "message": "Has any employee checked in today, especially Samuel",
+                    "timestamp": "2025-09-10T14:28:51.384632"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column e.fullname does not exist\nLINE 3:     e.fullname, \n            ^\n",
+                    "timestamp": "2025-09-10T14:28:54.915364"
+                },
+                {
+                    "role": "user",
+                    "message": "Has any employee checked in today, especially Samuel",
+                    "timestamp": "2025-09-10T14:29:07.656672"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: cannot cast type time without time zone to date\nLINE 13:   AND (ea.check_in_time::date = CURRENT_DATE \n                                ^\n",
+                    "timestamp": "2025-09-10T14:29:11.445497"
+                },
+                {
+                    "role": "user",
+                    "message": "how many employees have checked in today before based on the staring time of the isntitution or branch",
+                    "timestamp": "2025-09-10T14:33:23.306680"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: operator does not exist: interval = date\nLINE 13:     AND DATE_TRUNC('day', ea.check_in_time) = CURRENT_DATE\n                                                     ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n",
+                    "timestamp": "2025-09-10T14:33:26.561369"
+                },
+                {
+                    "role": "user",
+                    "message": "how many employees have checked in today before based on the staring time of the isntitution or branch",
+                    "timestamp": "2025-09-10T14:35:13.344730"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: operator does not exist: interval = date\nLINE 7: AND DATE_TRUNC('day', ea.check_in_time) = CURRENT_DATE \n                                                ^\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\n",
+                    "timestamp": "2025-09-10T14:35:16.465345"
+                },
+                {
+                    "role": "user",
+                    "message": "how many employee do we have?",
+                    "timestamp": "2025-09-10T14:36:11.705075"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is 1 active employee currently on record at your institution.",
+                    "timestamp": "2025-09-10T14:36:13.754019"
+                },
+                {
+                    "role": "user",
+                    "message": "and how many branch shifts do we have?",
+                    "timestamp": "2025-09-10T14:36:42.017293"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There are currently no branch shifts recorded for your institution.",
+                    "timestamp": "2025-09-10T14:36:43.041270"
+                },
+                {
+                    "role": "user",
+                    "message": "could you please get me some leave types we have as an institution?",
+                    "timestamp": "2025-09-10T14:37:29.838683"
+                },
+                {
+                    "role": "assistant",
+                    "message": "No results found for your question.",
+                    "timestamp": "2025-09-10T14:37:30.569575"
+                },
+                {
+                    "role": "user",
+                    "message": "could you please get me some leave types we have as an institution?",
+                    "timestamp": "2025-09-10T14:39:16.949804"
+                },
+                {
+                    "role": "assistant",
+                    "message": "No results found for your question. This means nothing was found, so if you feel like this is a mistake, Kindly contact IT admin for Support",
+                    "timestamp": "2025-09-10T14:39:17.881174"
+                },
+                {
+                    "role": "user",
+                    "message": "How many job adverts do we have, mention them if any?",
+                    "timestamp": "2025-09-10T14:42:33.054496"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column jpa.employee_type does not exist\nLINE 5:        jpa.employee_type,\n               ^\nHINT:  Perhaps you meant to reference the column \"jpa.employee_type_id\".\n",
+                    "timestamp": "2025-09-10T14:42:36.334707"
+                },
+                {
+                    "role": "user",
+                    "message": "How many job position adverts do we have, mention them if any?",
+                    "timestamp": "2025-09-10T14:43:42.381468"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column jpa.name does not exist\nLINE 3:     jpa.name,\n            ^\nHINT:  Perhaps you meant to reference the column \"jp.name\".\n",
+                    "timestamp": "2025-09-10T14:43:45.966801"
+                },
+                {
+                    "role": "user",
+                    "message": "How many job position adverts do we have, mention them if any?",
+                    "timestamp": "2025-09-10T14:45:08.504961"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column jpa.salary_published_date_max does not exist\nLINE 7:        jpa.salary_published_date_max, \n               ^\n",
+                    "timestamp": "2025-09-10T14:45:12.602507"
+                },
+                {
+                    "role": "user",
+                    "message": "How many job position adverts do we have, mention them if any?",
+                    "timestamp": "2025-09-10T14:46:52.144165"
+                },
+                {
+                    "role": "assistant",
+                    "message": "No results found for your question. This means after an extensive search, nothing is found, so if you feel like this is a mistake, Kindly contact IT admin for Support",
+                    "timestamp": "2025-09-10T14:46:53.176887"
+                },
+                {
+                    "role": "user",
+                    "message": "how do i make an employee?",
+                    "timestamp": "2025-09-10T14:52:21.067283"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column \"job_title\" of relation \"employee_employee\" does not exist\nLINE 2:     job_title,\n            ^\n",
+                    "timestamp": "2025-09-10T14:52:25.983693"
+                },
+                {
+                    "role": "user",
+                    "message": "How do I add an employee?",
+                    "timestamp": "2025-09-10T14:52:41.344257"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column \"first_name\" of relation \"employee_employee\" does not exist\nLINE 2:     first_name, \n            ^\n",
+                    "timestamp": "2025-09-10T14:52:46.059924"
+                },
+                {
+                    "role": "user",
+                    "message": "how do I add a new employee to the system, I have failed to find where this button is",
+                    "timestamp": "2025-09-10T14:53:56.738020"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: syntax error at or near \"FROM\"\nLINE 10: FROM institution_department d \n         ^\n",
+                    "timestamp": "2025-09-10T14:54:00.809392"
+                },
+                {
+                    "role": "user",
+                    "message": "how do I add a new employee to the system, I have failed to find where this button is",
+                    "timestamp": "2025-09-10T14:54:27.846529"
+                },
+                {
+                    "role": "assistant",
+                    "message": "System usage feature are under development. Kindly watchout for the update soon..!",
+                    "timestamp": "2025-09-10T14:54:27.848159"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees do we have?",
+                    "timestamp": "2025-09-10T15:09:13.289206"
+                },
+                {
+                    "role": "user",
+                    "message": "How many employees do we have?",
+                    "timestamp": "2025-09-10T15:15:08.717186"
+                },
+                {
+                    "role": "assistant",
+                    "message": "There is 1 active employee currently on record.",
+                    "timestamp": "2025-09-10T15:15:11.682333"
+                }
+            ]
+        },
+        {
+            "chat_id": "a0b8c3cd-a62f-420c-a33b-c7f578642d5e",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "Tell me about the payroll for this month..!",
+                    "timestamp": "2025-09-10T15:44:44.600328"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column p.payroll_date does not exist\nLINE 3:     p.payroll_date,\n            ^\n",
+                    "timestamp": "2025-09-10T15:44:51.862899"
+                }
+            ]
+        }
+    ]
+}
