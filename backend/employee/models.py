@@ -283,12 +283,7 @@ class Employee(BaseApprovableModel):
                     < (self.date_of_birth.month, self.date_of_birth.day)
                 )
             )
-            if age < 18:
-                raise ValidationError(
-                    {
-                        "error": f"Employee must be at least 18 years old. Current age: {age} years."
-                    }
-                )
+
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
