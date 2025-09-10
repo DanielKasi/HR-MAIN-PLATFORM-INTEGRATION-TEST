@@ -217,7 +217,7 @@ export function CreateTaxRuleDialog({
                   max="100"
                   step="0.01"
                   value={formData.tax_rule_percentage || ""}
-                  onValuChange={(e) => setFormData({ ...formData, tax_rule_percentage: e })}
+                  onValueChange={(e) => setFormData({ ...formData, tax_rule_percentage: e })}
                   placeholder="e.g., 10.5"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
@@ -238,7 +238,7 @@ export function CreateTaxRuleDialog({
                   min="0"
                   step="0.01"
                   value={formData.tax_rule_fixed_amount || ""}
-                  onValuChange={(val) => setFormData({ ...formData, tax_rule_fixed_amount: val })}
+                  onValueChange={(val) => setFormData({ ...formData, tax_rule_fixed_amount: val })}
                   placeholder="e.g., 5000.00"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
@@ -259,7 +259,7 @@ export function CreateTaxRuleDialog({
                   min="0"
                   step="0.01"
                   value={formData.salary_from || ""}
-                  onValuChange={(value) => setFormData({ ...formData, salary_from: value})}
+                  onValueChange={(value) => setFormData({ ...formData, salary_from: value})}
                   placeholder="e.g., 0"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
@@ -278,7 +278,7 @@ export function CreateTaxRuleDialog({
                   min="0"
                   step="0.01"
                   value={formData.salary_to || ""}
-                  onValuChange={(val) => setFormData({ ...formData, salary_to: val })}
+                  onValueChange={(val) => setFormData({ ...formData, salary_to: val })}
                   placeholder="e.g., 50000"
                   disabled={isSubmitting}
                   className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"

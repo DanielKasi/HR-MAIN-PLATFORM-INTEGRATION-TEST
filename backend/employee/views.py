@@ -83,11 +83,6 @@ from datetime import datetime, date
 from institution.models import Institution, InstitutionBankType
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
-from utilities.employee_analytics import (
-    get_employee_demographics_analytics,
-    get_employee_attendance_analytics,
-    get_employee_salary_analytics,
-)
 from django.db.models import F, ExpressionWrapper, DurationField
 from .tasks import send_employee_welcome_email
 import string
@@ -388,6 +383,7 @@ class EmployeeCreateAPIView(APIView):
                     employee.user.set_password(random_password)
                     employee.user.is_password_verified = True
                     employee.user.is_email_verified = True
+                    employee.user.welcome_email_sent = True
                     employee.user.save()
                     send_employee_welcome_email.delay_on_commit(
                         employee.user.email, employee.user.fullname, random_password
@@ -559,6 +555,7 @@ class EmployeeCreateAPIView(APIView):
             employee = serializer.save()
             employee.user.is_password_verified = True
             employee.user.is_email_verified = True
+            employee.user.welcome_email_sent = True
             employee.user.save()
             employee.confirm_create()
             send_employee_welcome_email.delay_on_commit(
@@ -808,6 +805,7 @@ class EmployeeCreateAPIView(APIView):
                                 else ""
                             ),
                             "password": generate_compliant_password(),
+                            "welcome_email_sent": True
                         },
                         "selected_branches": [],
                     }
@@ -1127,23 +1125,58 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]  # Add JSONParser for consistency
 
     @extend_schema(
         request=EmployeeSerializer,
-        responses={200: EmployeeSerializer, 400: "Bad Request", 404: "Not Found"},
-        description="Update an existing employee.",
+        responses={
+            200: EmployeeSerializer,
+            400: {
+                'description': 'Validation errors',
+                'examples': {
+                    'validation_errors': {
+                        'summary': 'Field validation errors',
+                        'value': {'detail': {'date_of_birth': ['Employee must be at least 18 years old.']}}
+                    }
+                }
+            },
+            404: {'description': 'Employee not found'},
+            500: {'description': 'Server error'}
+        },
+        description="Update an existing employee's details, including personal information, bank accounts, next of kin, etc. Supports JSON or form-data.",
         summary="Update Employee",
         tags=["Employee Management"],
     )
-    def patch(self, request, pk):
+    def patch(self, request, employee_id):
         try:
-            employee = Employee.objects.get(pk=pk)
+            employee = Employee.objects.get(pk=employee_id)
         except Employee.DoesNotExist:
             return Response(
                 {"detail": "Employee not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        # Handle JSON payload
+        if request.content_type == 'application/json':
+            data = request.data
+            print(f"JSON request data: {data}")
+            serializer = EmployeeSerializer(employee, data=data, context={"request": request}, partial=True)
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(
+                    {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+                )
+            try:
+                employee = serializer.save()
+                return Response(
+                    EmployeeSerializer(employee).data, status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                return Response(
+                    {"detail": f"Error updating employee: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        # Handle multipart/form-data
         # Initialize final_data with request.data as a dict
         final_data = dict(request.data)
 
@@ -1186,7 +1219,7 @@ class EmployeeUpdateAPIView(APIView):
             elif not field.endswith("[]") and parsed_values:
                 final_data[clean_field] = parsed_values[0]
 
-        # Fix next_of_kin field mismatch (contact -> phone_number)
+        # Fix next_of_kin field mismatch
         for kin in final_data.get("next_of_kin", []):
             if "contact" in kin:
                 kin["phone_number"] = kin.pop("contact")
@@ -1237,6 +1270,18 @@ class EmployeeUpdateAPIView(APIView):
             "gender",
             "marital_status",
             "is_active",
+            "date_of_birth",  # Added missing fields
+            "employee_id",
+            "phone_number",
+            "country",
+            "nin",
+            "nssf_no",
+            "tin",
+            "address",
+            "skills",
+            "salary",
+            "date_of_joining",
+            "email"
         ]
         for field in scalar_fields:
             if field in final_data:
@@ -1255,33 +1300,35 @@ class EmployeeUpdateAPIView(APIView):
                             int(final_data[field]) if final_data[field] else None
                         )
                     elif field == "is_active":
-                        final_data[field] = (
-                            str(final_data[field]).lower() == "true"
-                            if final_data[field]
-                            else False
-                        )
+                        final_data[field] = str(final_data[field]).lower() == "true" if final_data[field] else False
+                    elif field == "salary":
+                        final_data[field] = float(final_data[field]) if final_data[field] else None
                 except (ValueError, TypeError):
                     final_data[field] = None
 
-        serializer = EmployeeSerializer(
-            employee, data=final_data, context={"request": request}, partial=True
-        )
+        # Handle selected_branches
+        final_data["selected_branches"] = request.data.getlist("selected_branches[]", [])
+
+        print(f"Multipart request data: {request.data}")
+        print(f"Parsed final data: {final_data}")
+
+        serializer = EmployeeSerializer(employee, data=final_data, context={"request": request}, partial=True)
         if not serializer.is_valid():
+            print(f"Serializer errors: {serializer.errors}")
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             employee = serializer.save()
+            return Response(
+                EmployeeSerializer(employee).data, status=status.HTTP_200_OK
+            )
         except Exception as e:
-
             return Response(
                 {"detail": f"Error updating employee: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-        return Response(EmployeeSerializer(employee).data, status=status.HTTP_200_OK)
-
 
 class EmployeeDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]

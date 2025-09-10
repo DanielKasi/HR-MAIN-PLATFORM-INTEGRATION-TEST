@@ -273,14 +273,14 @@ class Employee(BaseApprovableModel):
         super().clean()
 
         # 🚫 Enforce unique phone number only if provided
-        if self.phone_number:
-            existing = Employee.objects.filter(phone_number=self.phone_number)
-            if self.pk:
-                existing = existing.exclude(pk=self.pk)
-            if existing.exists():
-                raise ValidationError(
-                    {"error": f"An employee with this phone number already exists."}
-                )
+        # if self.phone_number:
+            # existing = Employee.objects.filter(phone_number=self.phone_number)
+        #     if self.pk:
+        #         existing = existing.exclude(pk=self.pk)
+        #     if existing.exists():
+        #         raise ValidationError(
+        #             {"error": f"An employee with this phone number already exists."}
+        #         )
 
         # ✅ Validate minimum age of 18 years
         if self.date_of_birth:
@@ -293,12 +293,7 @@ class Employee(BaseApprovableModel):
                     < (self.date_of_birth.month, self.date_of_birth.day)
                 )
             )
-            if age < 18:
-                raise ValidationError(
-                    {
-                        "error": f"Employee must be at least 18 years old. Current age: {age} years."
-                    }
-                )
+
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
