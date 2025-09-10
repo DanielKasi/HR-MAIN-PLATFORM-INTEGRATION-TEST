@@ -87,6 +87,11 @@
       "code": "can_terminate_employees",
       "name": "Can Terminate Employees",
       "description": "Allows terminating employee contracts"
+    },
+    {
+      "code": "can_export_employees_to_excel",
+      "name": "Can Export Employees List To Excel",
+      "description": "Allows exporting employees' list to excel"
     }
   ],
 

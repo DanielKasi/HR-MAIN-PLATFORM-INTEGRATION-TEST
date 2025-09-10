@@ -50,15 +50,22 @@ class WorkType(BaseApprovableModel):
     def get_institution(self):
         return self.institution
 
+
 class EmployeeBankAccount(SoftDeletableTimeStampedModel):
-    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="bank_accounts")
-    bank = models.ForeignKey(InstitutionBankType, on_delete=models.PROTECT, related_name="employee_bank_accounts")
+    employee = models.ForeignKey(
+        "Employee", on_delete=models.CASCADE, related_name="bank_accounts"
+    )
+    bank = models.ForeignKey(
+        InstitutionBankType,
+        on_delete=models.PROTECT,
+        related_name="employee_bank_accounts",
+    )
     account_name = models.CharField(max_length=50)
     account_number = models.CharField(max_length=50)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.bank.bank_fullname} - {self.account_number}"
-    
+
 
 class NextOfKin(SoftDeletableTimeStampedModel):
     RELATIONSHIP_CHOICES = [
@@ -68,72 +75,75 @@ class NextOfKin(SoftDeletableTimeStampedModel):
         ("child", "Child"),
         ("other", "Other"),
     ]
-    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="next_of_kins")    
+    employee = models.ForeignKey(
+        "Employee", on_delete=models.CASCADE, related_name="next_of_kins"
+    )
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=50)
     address = models.CharField(max_length=50)
-    relationship = models.CharField(
-        max_length=50,
-        choices=RELATIONSHIP_CHOICES
-    )
+    relationship = models.CharField(max_length=50, choices=RELATIONSHIP_CHOICES)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.relationship}"
 
+
 class Child(SoftDeletableTimeStampedModel):
-    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="children")   
+    employee = models.ForeignKey(
+        "Employee", on_delete=models.CASCADE, related_name="children"
+    )
     name = models.CharField(max_length=50)
     date_of_birth = models.DateField()
     gender = models.CharField(
         max_length=10,
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        default="other"
-    )     
+        default="other",
+    )
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.name}"
-    
+
+
 class Spouse(SoftDeletableTimeStampedModel):
-    employee = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='spouse')
+    employee = models.OneToOneField(
+        "Employee", on_delete=models.CASCADE, related_name="spouse"
+    )
     name = models.CharField(max_length=50)
     date_of_birth = models.DateField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.name}"
-    
-class QualificationAward(SoftDeletableTimeStampedModel):    
+
+
+class QualificationAward(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
-    
+
+
 class Education(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
-        'Employee',
-        on_delete=models.CASCADE,
-        related_name='educations'
+        "Employee", on_delete=models.CASCADE, related_name="educations"
     )
     institution = models.CharField(max_length=100)
     year = models.PositiveIntegerField()
     qualification = models.ForeignKey(
         QualificationAward,
         on_delete=models.SET_NULL,
-        related_name='educations',
+        related_name="educations",
         null=True,
-        blank=True
+        blank=True,
     )
-
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.qualification}"
-    
+
+
 class WorkExperience(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
-        'Employee',
-        on_delete=models.CASCADE,
-        related_name='work_experiences'
+        "Employee", on_delete=models.CASCADE, related_name="work_experiences"
     )
     company = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
@@ -185,7 +195,7 @@ class Employee(BaseApprovableModel):
     gender = models.CharField(
         max_length=10,
         choices=[("male", "Male"), ("female", "Female"), ("other", "Other")],
-        default="other"
+        default="other",
     )
     # TODO: Make department non-nullable in future
     department = models.ForeignKey(
@@ -613,11 +623,10 @@ class EmployeeShift(BaseApprovableModel):
     def get_institution(self):
         return self.employee.get_institution()
 
+
 class EmployeeMonthlyHourAccount(models.Model):
     employee = models.ForeignKey(
-        Employee, 
-        on_delete=models.CASCADE, 
-        related_name="monthly_hour_accounts"
+        Employee, on_delete=models.CASCADE, related_name="monthly_hour_accounts"
     )
     year = models.PositiveIntegerField()
     month = models.PositiveSmallIntegerField(
@@ -634,13 +643,14 @@ class EmployeeMonthlyHourAccount(models.Model):
     total_absent_days = models.PositiveIntegerField(default=0)
 
     class Meta:
-        unique_together = ['employee', 'year', 'month']
-        ordering = ['-year', '-month']
+        unique_together = ["employee", "year", "month"]
+        ordering = ["-year", "-month"]
         verbose_name = "Employee Monthly Hour Account"
         verbose_name_plural = "Employee Monthly Hour Accounts"
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.year}-{self.month:02d}"
+
 
 class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
@@ -706,7 +716,6 @@ class EmployeeAttendance(BaseApprovableModel):
             datetime_checkout = datetime.combine(self.date, self.check_out_time)
             datetime_end = datetime.combine(self.date, branch_end_time)
 
-
             if datetime_checkout > datetime_end:
                 overtime_duration = datetime_checkout - datetime_end
                 hours = round(overtime_duration.total_seconds() / 3600, 2)
@@ -756,18 +765,18 @@ class EmployeeAttendance(BaseApprovableModel):
                 duration = datetime_checkout - datetime_checkin
                 hours = duration.total_seconds() / 3600
                 return Decimal(round(hours, 2))
-        return Decimal('0.00')    
+        return Decimal("0.00")
 
     def update_attendance_status(self):
         """Calculate and set attendance status based on check-in/out times"""
-        
+
         # Check for absence first
         if not self.check_in_time and not self.check_out_time:
             self.attendance_status = "absent"
             self.overtime_hours = 0
             self.late_minutes = 0
             self.early_checkout_minutes = 0
-            self.worked_hours = Decimal('0.00')
+            self.worked_hours = Decimal("0.00")
             return
 
         # Calculate metrics
@@ -775,7 +784,6 @@ class EmployeeAttendance(BaseApprovableModel):
         self.late_minutes = self.calculate_late_minutes()
         self.early_checkout_minutes = self.calculate_early_checkout_minutes()
         self.worked_hours = self.calculate_worked_hours()
-
 
         # Determine status with priority order
         if self.late_minutes > 0 and self.early_checkout_minutes > 0:
@@ -788,7 +796,6 @@ class EmployeeAttendance(BaseApprovableModel):
             self.attendance_status = "overtime"
         else:
             self.attendance_status = "on_time"
-
 
     def _haversine_distance(self, lat1, lon1, lat2, lon2):
         if None in (lat1, lon1, lat2, lon2):
@@ -842,24 +849,22 @@ class EmployeeAttendance(BaseApprovableModel):
                 return True
 
         return False
-    
+
     def update_monthly_summary(self):
         """Update or create the monthly hour account summary for this attendance's employee, year, and month."""
         year = self.date.year
         month = self.date.month
 
         attendances = EmployeeAttendance.objects.filter(
-            employee=self.employee,
-            date__year=year,
-            date__month=month
+            employee=self.employee, date__year=year, date__month=month
         )
 
         agg = attendances.aggregate(
-            total_worked=Sum('worked_hours'),
-            total_overtime=Sum('overtime_hours'),
-            total_late=Sum('late_minutes'),
-            total_early=Sum('early_checkout_minutes'),
-            absent_count=Count('id', filter=Q(attendance_status='absent'))
+            total_worked=Sum("worked_hours"),
+            total_overtime=Sum("overtime_hours"),
+            total_late=Sum("late_minutes"),
+            total_early=Sum("early_checkout_minutes"),
+            absent_count=Count("id", filter=Q(attendance_status="absent")),
         )
 
         EmployeeMonthlyHourAccount.objects.update_or_create(
@@ -867,12 +872,12 @@ class EmployeeAttendance(BaseApprovableModel):
             year=year,
             month=month,
             defaults={
-                'total_worked_hours': agg['total_worked'] or Decimal('0.00'),
-                'total_overtime_hours': agg['total_overtime'] or Decimal('0.00'),
-                'total_late_minutes': agg['total_late'] or 0,
-                'total_early_checkout_minutes': agg['total_early'] or 0,
-                'total_absent_days': agg['absent_count'] or 0,
-            }
+                "total_worked_hours": agg["total_worked"] or Decimal("0.00"),
+                "total_overtime_hours": agg["total_overtime"] or Decimal("0.00"),
+                "total_late_minutes": agg["total_late"] or 0,
+                "total_early_checkout_minutes": agg["total_early"] or 0,
+                "total_absent_days": agg["absent_count"] or 0,
+            },
         )
 
     def save(self, *args, **kwargs):
@@ -888,9 +893,9 @@ class EmployeeAttendance(BaseApprovableModel):
         old_late_minutes = 0
         old_early_checkout_minutes = 0
         old_overtime_hours = 0
-        old_worked_hours = Decimal('0.00') 
+        old_worked_hours = Decimal("0.00")
         is_new_record = not self.pk
-        
+
         if self.pk:
             try:
                 old_instance = EmployeeAttendance.objects.get(pk=self.pk)
@@ -907,27 +912,26 @@ class EmployeeAttendance(BaseApprovableModel):
 
         # Calculate attendance status and metrics
         self.update_attendance_status()
-        
+
         # Save the record
         super().save(*args, **kwargs)
-        
-        
+
         # Check if we need to update penalties
         status_changed = old_attendance_status != self.attendance_status
         metrics_changed = (
-            old_late_minutes != self.late_minutes or
-            old_early_checkout_minutes != self.early_checkout_minutes or
-            old_overtime_hours != self.overtime_hours or 
-            old_worked_hours != self.worked_hours
+            old_late_minutes != self.late_minutes
+            or old_early_checkout_minutes != self.early_checkout_minutes
+            or old_overtime_hours != self.overtime_hours
+            or old_worked_hours != self.worked_hours
         )
-        
+
         should_update_penalties = is_new_record or status_changed or metrics_changed
-        
+
         if should_update_penalties:
-            from payroll.models import EmployeePenalty  
+            from payroll.models import EmployeePenalty
+
             EmployeePenalty.update_or_remove_penalty_for_attendance(self)
             self.update_monthly_summary()
-
 
     def recalculate_and_save(self):
         """
@@ -936,10 +940,9 @@ class EmployeeAttendance(BaseApprovableModel):
         """
         old_status = self.attendance_status
         self.update_attendance_status()
-        
+
         if old_status != self.attendance_status:
             self.save()  # This will trigger penalty updates
-
 
 
 class EmployeeContract(BaseApprovableModel):
