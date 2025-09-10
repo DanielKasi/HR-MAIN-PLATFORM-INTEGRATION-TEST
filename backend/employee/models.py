@@ -66,6 +66,8 @@ class NextOfKin(SoftDeletableTimeStampedModel):
         ("mother", "Mother"),
         ("spouse", "Spouse"),
         ("child", "Child"),
+        ("friend", "Friend"),
+        ("sibling", "Sibling"),
         ("other", "Other"),
     ]
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name="next_of_kins")    
