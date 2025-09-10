@@ -20,7 +20,12 @@ from django.core import exceptions
 class PermissionCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PermissionCategory
-        fields = ["id", "permission_category_name", "permission_category_description", "is_active"]
+        fields = [
+            "id",
+            "permission_category_name",
+            "permission_category_description",
+            "is_active",
+        ]
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -34,7 +39,7 @@ class PermissionSerializer(serializers.ModelSerializer):
             "permission_code",
             "permission_description",
             "category",
-            "is_active"
+            "is_active",
         ]
 
 
@@ -53,7 +58,7 @@ class RoleSerializer(BaseApprovableSerializer):
             "permissions",
             "institution",
             "permissions_details",
-            "is_active"
+            "is_active",
         ]
 
         extra_kwargs = {"institution": {"required": False}}
@@ -129,6 +134,21 @@ class CustomUserSerializer(serializers.ModelSerializer):
         """
         return validate_password_strength(value)
 
+    def validate_email(self, value):
+        user = self.instance
+        if user and CustomUser.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        return value
+
+    def validate_username(self, value):
+        user = self.instance
+        if (
+            user
+            and CustomUser.objects.exclude(pk=user.pk).filter(username=value).exists()
+        ):
+            raise serializers.ValidationError("This username is already in use.")
+        return value
+
     def create(self, validated_data):
         roles_ids = validated_data.pop("roles_ids", [])
         user = CustomUser.objects.create_user(**validated_data)
@@ -163,36 +183,41 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 )
 
         return instance
-    
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True, required=True)
     new_password = serializers.CharField(write_only=True, required=True)
     new_password_confirm = serializers.CharField(write_only=True, required=True)
 
     def validate(self, data):
-        if data['new_password'] != data['new_password_confirm']:
-            raise serializers.ValidationError({"new_password_confirm": "New passwords do not match."})
-        
-        user = self.context['request'].user
-        
+        if data["new_password"] != data["new_password_confirm"]:
+            raise serializers.ValidationError(
+                {"new_password_confirm": "New passwords do not match."}
+            )
+
+        user = self.context["request"].user
+
         # Check old password
-        if not user.check_password(data['old_password']):
-            raise serializers.ValidationError({"old_password": "Old password is incorrect."})
-        
+        if not user.check_password(data["old_password"]):
+            raise serializers.ValidationError(
+                {"old_password": "Old password is incorrect."}
+            )
+
         # Validate new password strength
         try:
-            validate_password(data['new_password'], user)
+            validate_password(data["new_password"], user)
         except exceptions.ValidationError as e:
             errors = dict(e.error_list)
             raise serializers.ValidationError({"new_password": errors})
-        
+
         return data
 
     def save(self):
-        user = self.context['request'].user
-        user.set_password(self.validated_data['new_password'])
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
         user.save()
-        return user    
+        return user
 
 
 class ProfileRequestSerializer(serializers.Serializer):
@@ -259,16 +284,18 @@ class LoginResponseSerializer(serializers.Serializer):
     tokens = TokenObtainPairSerializer()
     user = CustomUserSerializer()
 
+
 class LogoutRequestSerializer(serializers.Serializer):
-    refresh = serializers.CharField(required=True)    
+    refresh = serializers.CharField(required=True)
 
 
 class InstitutionUserLoginResponseSerializer(LoginResponseSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        from institution.serializers import InstitutionSerializer  
-        self.fields['institution_attached'] = InstitutionSerializer(many=True)
+        from institution.serializers import InstitutionSerializer
+
+        self.fields["institution_attached"] = InstitutionSerializer(many=True)
 
 
 class RolePermissionSerializer(BaseApprovableSerializer):
@@ -278,6 +305,7 @@ class RolePermissionSerializer(BaseApprovableSerializer):
     class Meta:
         model = RolePermission
         fields = ["id", "role", "permission"]
+
 
 class SignatureSerializer(serializers.ModelSerializer):
     signature_image_url = serializers.CharField(read_only=True, allow_null=True)
