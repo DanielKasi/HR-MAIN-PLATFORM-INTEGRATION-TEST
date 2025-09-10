@@ -156,3 +156,5 @@ langchain
 openai 
 psycopg2
 langchain-openai
+ollama
+openhermes

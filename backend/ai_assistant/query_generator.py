@@ -3,7 +3,11 @@ import re
 
 
 def generate_sql_from_question(
-    schema: str, question: str, institution_id: int, error_context: str = None
+    schema: str,
+    question: str,
+    institution_id: int,
+    error_context: str = None,
+    recent_chats: list = None,
 ) -> str:
     """
     Converts a natural language business question into a PostgreSQL query
@@ -44,7 +48,6 @@ Generate a PostgreSQL query to answer this question. Ensure `institution_id = {i
     full_prompt = system_prompt.strip() + "\n\n" + user_prompt.strip()
 
     raw_response = prompt_groq(full_prompt).strip()
-
 
     code_block_match = re.search(
         r"```sql\s*(.*?)\s*```", raw_response, re.DOTALL | re.IGNORECASE

@@ -1,0 +1,21 @@
+{
+    "user_id": 2,
+    "chats": [
+        {
+            "chat_id": "55343265-5cac-41ff-afbc-2c55fae3abef",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "hey",
+                    "timestamp": "2025-09-10T12:48:52.799333"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Hello! \ud83d\udc4b I'm here to help with HR questions. You can ask me things like:\n- What were the total employee headcount last month?\n- Which departments are low on staff?\n- Show top-performing employees this quarter.\n- How many leave applications did we get last week?\n- What's the salary distribution by department?",
+                    "timestamp": "2025-09-10T12:48:52.802271"
+                }
+            ]
+        }
+    ]
+}
