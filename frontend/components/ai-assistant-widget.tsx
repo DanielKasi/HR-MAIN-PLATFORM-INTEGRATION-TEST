@@ -41,8 +41,8 @@ interface ApiResponse {
 
 const suggestedQuestions = [
   "What's the salary distribution by department?",
-  "Are attendance penalties enabled?",
-  "Tell me about the payroll for this month..!",
+  "Are institution penalties enabled?",
+  "How many employees do we have?",
 ];
 
 const TypingIndicator = () => {
