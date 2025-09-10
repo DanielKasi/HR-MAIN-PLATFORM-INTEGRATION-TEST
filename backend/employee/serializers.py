@@ -312,7 +312,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        print(f"Update validated data: {validated_data}")
+        # print(f"Update validated data: {validated_data}")
 
         user_data = validated_data.pop("user", None)
         selected_branches = validated_data.pop("selected_branches", None)
@@ -322,10 +322,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
         work_experiences_data = validated_data.pop("work_experiences", [])
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
-
-        print(f"Update bank accounts data: {bank_accounts_data}")
-        print(f"Update next of kin data: {next_of_kin_data}")
-        print(f"Update educations data: {educations_data}")
 
         # Update Employee instance
         for attr, value in validated_data.items():
@@ -337,6 +333,10 @@ class EmployeeSerializer(BaseApprovableSerializer):
             user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
+            instance.email = user_serializer.data['email']
+
+        instance.save()    
+
 
         # Update or create BankAccount instances
         if bank_accounts_data:

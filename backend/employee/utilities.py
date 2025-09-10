@@ -51,8 +51,8 @@ def get_employee_day_working_end_time(employee: Employee, day: SystemDay) -> tim
 def generate_employee_excel(employees):
     columns = [
         "employee_id",
-        "fullname",
-        "email",
+        "user.fullname",
+        "user.email",
         "phone_number",
         "position",
         "gender",
