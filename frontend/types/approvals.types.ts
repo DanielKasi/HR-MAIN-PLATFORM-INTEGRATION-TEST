@@ -1,4 +1,3 @@
-// Approval domain types (aligned to backend serializers)
 
 import { Role, UserProfile } from ".";
 

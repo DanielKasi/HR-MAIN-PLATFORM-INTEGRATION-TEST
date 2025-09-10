@@ -1,16 +1,13 @@
 from users.models import Permission, RolePermission
 from asgiref.sync import sync_to_async
-from agno.embedder.openai import OpenAIEmbedder
-# from agno.embedder.ollama import OllamaEmbedder
-from agno.knowledge.text import TextKnowledgeBase
+# from agno.embedder.openai import OpenAIEmbedder
 import os
-from agno.vectordb.pgvector import PgVector
+# from agno.vectordb.pgvector import PgVector
 from redis import Redis
 import json
 from datetime import datetime
 from institution.models import Institution
 import uuid
-from agno.knowledge import AgentKnowledge
 
 
 DB_PATH = os.getenv("SQLITE_DB_PATH", "./assistant_memory.db")
@@ -44,15 +41,15 @@ def get_db_knowledge_and_rules_base():
     #     ),
     # )
 
-    return AgentKnowledge(
-        vector_db=PgVector(
-            db_url=os.getenv("DATABASE_URL"),
-            table_name="public.sql_knowledge1",
-            embedder=OpenAIEmbedder(),
-        ),
-        max_results=2,
-    )
-
+    # return AgentKnowledge(
+    #     vector_db=PgVector(
+    #         db_url=os.getenv("DATABASE_URL"),
+    #         table_name="public.sql_knowledge1",
+    #         embedder=OpenAIEmbedder(),
+    #     ),
+    #     max_results=2,
+    # )
+    pass
 
 # JSON-FILE-BASED-MEMORY-FUNCTIONS
 def get_file_path(user_id):

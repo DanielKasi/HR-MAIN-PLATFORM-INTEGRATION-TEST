@@ -8,16 +8,16 @@ from .utils import (
 from agno.team import Team
 from agno.tools.sql import SQLTools
 import os
-from agno.storage.postgres import PostgresStorage
+# from agno.storage.postgres import PostgresStorage
 from agno.models.groq import Groq
 from agno.models.openai import OpenAIChat
 
 DB_URL = os.getenv("DATABASE_URL")
-SHARED_STORAGE = PostgresStorage(
-    table_name="chat_messages",
-    db_url=DB_URL,
-    auto_upgrade_schema=True,
-)
+# SHARED_STORAGE = PostgresStorage(
+#     table_name="chat_messages",
+#     db_url=DB_URL,
+#     auto_upgrade_schema=True,
+# )
 DB_RULES = load_db_rules("db_schema.txt")
 
 

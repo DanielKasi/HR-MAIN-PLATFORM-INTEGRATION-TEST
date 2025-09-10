@@ -1170,12 +1170,12 @@ class EmployeeUpdateAPIView(APIView):
         # Handle JSON payload
         if request.content_type == "application/json":
             data = request.data
-            print(f"JSON request data: {data}")
+            # print(f"JSON request data: {data}")
             serializer = EmployeeSerializer(
                 employee, data=data, context={"request": request}, partial=True
             )
             if not serializer.is_valid():
-                print(f"Serializer errors: {serializer.errors}")
+                # print(f"Serializer errors: {serializer.errors}")
                 return Response(
                     {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -1331,14 +1331,14 @@ class EmployeeUpdateAPIView(APIView):
             "selected_branches[]", []
         )
 
-        print(f"Multipart request data: {request.data}")
-        print(f"Parsed final data: {final_data}")
+        # print(f"Multipart request data: {request.data}")
+        # print(f"Parsed final data: {final_data}")
 
         serializer = EmployeeSerializer(
             employee, data=final_data, context={"request": request}, partial=True
         )
         if not serializer.is_valid():
-            print(f"Serializer errors: {serializer.errors}")
+            # print(f"Serializer errors: {serializer.errors}")
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
