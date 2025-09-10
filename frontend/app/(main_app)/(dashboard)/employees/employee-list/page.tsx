@@ -19,6 +19,9 @@ import {useRouter} from "next/navigation";
 import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
+import {useSelector} from "react-redux";
+import {selectAccessToken, selectSelectedInstitution} from "@/store/auth/selectors";
+import {select} from "redux-saga/effects";
 
 export default function EmployeesPage() {
   const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -26,6 +29,8 @@ export default function EmployeesPage() {
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const router = useRouter();
+  const institutionId = useSelector(selectSelectedInstitution)?.id;
+  const accessToken = useSelector(selectAccessToken);
 
   const refreshFunctionRef = useRef<(() => void) | null>(null);
 
@@ -35,34 +40,74 @@ export default function EmployeesPage() {
     setStatusFilter("all");
   };
 
+  const handleExportEmployees = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/employee/export-employee-excel/${institutionId}/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to export employees.");
+      }
+
+      const blob = await response.blob();
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "employees.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Export failed. Please try again.");
+    }
+  };
+
   return (
     <ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEES}>
       <div className="flex flex-col w-full h-full p-4 bg-white rounded-lg min-h-screen">
         <CardHeader className="space-y-4">
-          <CardTitle className="flex flex-row items-center justify-between gap-4">
+          <CardTitle className="flex flex-row items-center justify-between">
             <h1 className="text-xl md:text-2xl font-bold">Employees</h1>
-            <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="">
-                    <Plus className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">Add Employee</span>
-                    <UserPlus className="md:hidden" />
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push("/employees/add-employee")}>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add Single Employee
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsBulkUploadDialogOpen(true)}>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Bulk Upload Employees
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </ProtectedComponent>
+
+            <div className="flex flex-row items-center gap-2">
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">Add Employee</span>
+                      <UserPlus className="md:hidden" />
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => router.push("/employees/add-employee")}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Single Employee
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsBulkUploadDialogOpen(true)}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Bulk Upload Employees
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </ProtectedComponent>
+
+              <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EXPORT_EMPLOYEES}>
+                <Button onClick={handleExportEmployees}>Export to Excel</Button>
+              </ProtectedComponent>
+            </div>
           </CardTitle>
 
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-12">
