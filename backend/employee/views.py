@@ -84,11 +84,6 @@ from datetime import datetime, date
 from institution.models import Institution, InstitutionBankType
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
 from rest_framework import serializers
-from utilities.employee_analytics import (
-    get_employee_demographics_analytics,
-    get_employee_attendance_analytics,
-    get_employee_salary_analytics,
-)
 from django.db.models import F, ExpressionWrapper, DurationField
 from .tasks import send_employee_welcome_email
 import string
@@ -348,6 +343,7 @@ class EmployeeCreateAPIView(APIView):
                     employee.user.set_password(random_password)
                     employee.user.is_password_verified = True
                     employee.user.is_email_verified = True
+                    employee.user.welcome_email_sent = True
                     employee.user.save()
                     send_employee_welcome_email.delay_on_commit(
                         employee.user.email, employee.user.fullname, random_password
@@ -482,6 +478,7 @@ class EmployeeCreateAPIView(APIView):
             employee = serializer.save()
             employee.user.is_password_verified = True
             employee.user.is_email_verified = True
+            employee.user.welcome_email_sent = True
             employee.user.save()
             employee.confirm_create()
             send_employee_welcome_email.delay_on_commit(
@@ -657,6 +654,7 @@ class EmployeeCreateAPIView(APIView):
                             "fullname": str(row["user.fullname"]).strip() if pd.notna(row["user.fullname"]) else "",
                             "email": str(row["user.email"]).strip() if pd.notna(row["user.email"]) else "",
                             "password": generate_compliant_password(),
+                            "welcome_email_sent": True
                         },
                         "selected_branches": [],
                     }
