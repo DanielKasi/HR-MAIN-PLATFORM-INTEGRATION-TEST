@@ -23,7 +23,8 @@ from .views import (
     EmployeeShiftDetailView,
     EmployeeShiftListCreateView,
     EmployeeDashboardAPIView,
-    AttendanceDashboardAPIView
+    AttendanceDashboardAPIView,
+    EmployeeExportView,
 )
 
 urlpatterns = [
@@ -128,7 +129,15 @@ urlpatterns = [
         EmployeeShiftDetailView.as_view(),
         name="employee-shifts-detail",
     ),
-
-    path('analytics/', EmployeeDashboardAPIView.as_view(), name='employee-analytics'),
-    path('attendance-analytics/', AttendanceDashboardAPIView.as_view(), name='attendance-analytics')
+    path("analytics/", EmployeeDashboardAPIView.as_view(), name="employee-analytics"),
+    path(
+        "attendance-analytics/",
+        AttendanceDashboardAPIView.as_view(),
+        name="attendance-analytics",
+    ),
+    path(
+        "export-employee-excel/<int:institution_id>/",
+        EmployeeExportView.as_view(),
+        name="export-excel",
+    ),
 ]

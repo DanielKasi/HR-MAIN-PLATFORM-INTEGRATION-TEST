@@ -1,7 +1,7 @@
 from users.models import Permission, RolePermission
 from asgiref.sync import sync_to_async
 from agno.embedder.openai import OpenAIEmbedder
-from agno.embedder.ollama import OllamaEmbedder
+# from agno.embedder.ollama import OllamaEmbedder
 from agno.knowledge.text import TextKnowledgeBase
 import os
 from agno.vectordb.pgvector import PgVector
