@@ -51,6 +51,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
         blank=True,
         null=True,
     )
+    welcome_email_sent = models.BooleanField(default=False)
     user_type = models.CharField(
         max_length=20,
         choices=UserType.choices,

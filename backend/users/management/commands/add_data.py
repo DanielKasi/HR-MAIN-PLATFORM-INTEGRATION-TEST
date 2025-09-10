@@ -2,10 +2,8 @@ import json
 import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
-from daphne.server import Server
-import asyncio
+from django.db.models import Q
 from users.models import Permission, PermissionCategory, SystemType, System
-# from workflows.models import WorkflowAction, WorkflowCategory
 from approval.models import Action
 from discipline.models import DisciplineType
 from institution.models import (
@@ -18,22 +16,22 @@ from institution.models import (
 )
 from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
-import subprocess
+from employee.tasks import send_employee_welcome_email
+from employee.views import generate_compliant_password
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, workflows, systems, discipline types, approval actions, and start Daphne"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, and resend welcome emails"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--host',
-            default='0.0.0.0',
-            help='Host to bind Daphne (default: 0.0.0.0)',
+            "--reset-password",
+            action="store_true",
+            help="Reset passwords for all resent welcome emails",
         )
         parser.add_argument(
-            '--port',
-            default=8000,
-            type=int,
-            help='Port to bind Daphne (default: 8000)',
+            "--employee-ids",
+            type=str,
+            help="Comma-separated list of employee IDs to resend welcome emails to",
         )
 
     def handle(self, *args, **kwargs):
@@ -41,43 +39,75 @@ class Command(BaseCommand):
         self.sync_permissions()
         self.sync_systems()
         self.sync_discipline_types()
-        # self.sync_workflows()
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
-        self.create_default_awards() 
+        self.create_default_awards()
+        self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
 
-        # Start Daphne automatically
-        self.stdout.write(self.style.MIGRATE_HEADING(f"\n⏳ Starting Daphne server on {kwargs['host']}:{kwargs['port']}..."))
-        try:
-            daphne_cmd = [
-                "daphne",
-                "-b", kwargs['host'],
-                "-p", str(kwargs['port']),
-                "-v", "2",  # Verbosity level 2 for detailed logs
-                "core.asgi:application"
-            ]
-            self.stdout.write(self.style.SUCCESS(f"Running: {' '.join(daphne_cmd)}"))
-            process = subprocess.Popen(daphne_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            # Stream Daphne logs in real-time
-            while True:
-                output = process.stdout.readline()
-                if output == '' and process.poll() is not None:
-                    break
-                if output:
-                    self.stdout.write(output.strip())
-            rc = process.poll()
-            if rc != 0:
-                raise subprocess.CalledProcessError(rc, daphne_cmd)
-            self.stdout.write(self.style.SUCCESS(f"Daphne is now running on http://{kwargs['host']}:{kwargs['port']}"))
-        except KeyboardInterrupt:
-            self.stdout.write(self.style.SUCCESS("Daphne server stopped."))
-            process.terminate()
-            process.wait()
-        except subprocess.CalledProcessError as e:
-            self.stdout.write(self.style.ERROR(f"Failed to start Daphne: {e}"))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Failed to start Daphne: {e}"))
+    def resend_welcome_emails(self, reset_password, employee_ids=None):
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n"))
+
+        # Determine which employees to process
+        if employee_ids:
+            try:
+                employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
+                employees = Employee.objects.filter(id__in=employee_ids)
+            except ValueError:
+                self.stdout.write(self.style.ERROR("Invalid employee IDs provided. Use comma-separated integers."))
+                return
+        else:
+            employees = Employee.objects.filter(
+                Q(user__welcome_email_sent=False) | Q(user__welcome_email_sent__isnull=True)
+            )
+
+        if not employees.exists():
+            self.stdout.write(self.style.NOTICE("No employees found to resend welcome emails."))
+            return
+
+        success_count = 0
+        error_count = 0
+        skip_count = 0
+
+        for employee in employees:
+            if not employee.user or not employee.user.email:
+                self.stdout.write(self.style.WARNING(
+                    f"Skipping employee {employee.id}: No user or email"
+                ))
+                skip_count += 1
+                continue
+
+            try:
+                password = None
+                if reset_password:
+                    password = generate_compliant_password()
+                    employee.user.set_password(password)
+                    employee.user.is_password_verified = True
+                    employee.user.welcome_email_sent = False
+                    employee.user.save()
+
+                send_employee_welcome_email.delay_on_commit(
+                    employee.user.email,
+                    employee.user.fullname,
+                    password,
+                )
+                employee.user.welcome_email_sent = True
+                employee.user.save()
+                self.stdout.write(self.style.SUCCESS(
+                    f"Welcome email resent to {employee.user.email}"
+                ))
+                success_count += 1
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(
+                    f"Failed to resend email to {employee.user.email}: {str(e)}"
+                ))
+                error_count += 1
+
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ➕ Successfully resent: {success_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Welcome emails processing completed!"))
 
     def create_default_awards(self):
         self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Creating default qualification awards...\n"))
@@ -115,9 +145,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
         self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_awards}"))
-        self.stdout.write(self.style.SUCCESS("\n🎉 Qualification awards synced successfully!"))        
+        self.stdout.write(self.style.SUCCESS("\n🎉 Qualification awards synced successfully!"))
 
-    # Your existing methods (unchanged)
     def sync_permissions(self):
         filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "permissions.json")
         if not os.path.exists(filepath):
@@ -238,41 +267,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Discipline types synced successfully!"))
 
-    # def sync_workflows(self):
-    #     filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "workflows.json")
-    #     if not os.path.exists(filepath):
-    #         self.stdout.write(self.style.ERROR(f"Workflows file not found at {filepath}"))
-    #         return
-
-    #     with open(filepath, "r") as file:
-    #         workflows_data = json.load(file)
-
-    #     self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing workflows...\n"))
-
-    #     valid_workflow_codes = set()
-    #     valid_action_codes = set()
-
-    #     for workflow in workflows_data:
-    #         category, _ = WorkflowCategory.objects.update_or_create(
-    #             code=workflow["code"],
-    #             defaults={"label": workflow["label"]},
-    #         )
-    #         valid_workflow_codes.add(workflow["code"])
-
-    #         for action in workflow.get("workflow_actions", []):
-    #             WorkflowAction.objects.update_or_create(
-    #                 code=action["code"],
-    #                 defaults={"label": action["label"], "category": category},
-    #             )
-    #             valid_action_codes.add(action["code"])
-
-    #     deleted_actions, _ = WorkflowAction.objects.exclude(code__in=valid_action_codes).delete()
-    #     deleted_categories, _ = WorkflowCategory.objects.exclude(code__in=valid_workflow_codes).delete()
-
-    #     self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Workflows Summary"))
-    #     self.stdout.write(self.style.NOTICE(f"  🧹 Removed Workflow Actions: {deleted_actions}"))
-    #     self.stdout.write(self.style.NOTICE(f"  🧹 Removed Workflow Categories: {deleted_categories}"))
-    #     self.stdout.write(self.style.SUCCESS("\n🎉 Workflows synced successfully!"))
 
     def sync_approval_actions(self):
         self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n"))
