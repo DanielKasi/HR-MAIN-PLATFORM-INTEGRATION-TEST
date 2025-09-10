@@ -276,47 +276,51 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
   newFeedbackFieldType: string
 }
 
+
+
 export interface IEmployee {
-  first_name: any
-  last_name: any
-  id: number
-  user: IUser | null
-  email: string
-  phone_number: string
-  employee_id: string
-  position: {
-    id: number
-    name: string
-    department_id: number
-  }
-  department: IDepartment
-  date_of_birth: string
-  date_of_joining: string
-  address: string
-  country: string
-  nin: string
-  nssf_no: string
-  tin: string
-  bank: string
-  bank_account_number: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  experience: number
-  qualifications: string
-  skills: string
-  emergency_contact_name: string
-  emergency_contact_phone: string
-  emergency_contact_relationship: string
-  marital_status: string
-  children_count: number
-  employee_profile_picture: string | null
-  employee_type: IEmployeeType
-  work_type: IWorkType
-  payroll_branch: Branch | null
-  gender: string
-  salary: string
+  id: number;
+  date_of_birth: string;
+  user: IUser|null;
   roles: Role[]
+  employee_working_days: any | null;
+  work_type: IWorkType;
+  employee_type: IEmployeeType;
+  bank_accounts: IEmployeeBankAccount[];
+  educations: IEducation[];
+  work_experiences: IWorkExperience[];
+  children: IChild[];
+  spouse: {
+    name: string;
+    phone_number: string;
+    date_of_birth: string;
+  } | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  is_active: boolean;
+  employee_id: string;
+  email: string;
+  phone_number: string;
+  gender: IGender;
+  date_of_joining: string;
+  address: string;
+  country: string;
+  nin: string;
+  nssf_no: string;
+  tin: string;
+  skills: string;
+  marital_status: IMaritalStatus;
+  has_children: boolean;
+  employee_profile_picture: string | null;
+  salary: string;
+  position: {
+    id: number;
+    name: string;
+    department_id: number;
+  };
+  department: IDepartment;
+  payroll_branch: Branch | null;
 }
 
 export interface IPayrollItems {
@@ -548,6 +552,7 @@ export interface User {
 }
 
 export type IGender = "male" | "female" | "other"
+export type IMaritalStatus = "single" | "married" | "divorced" | "widowed"
 
 // Base interfaces for nested objects
 export interface IChild {
@@ -584,7 +589,7 @@ export interface IWorkExperience {
 
 export interface IEmployeeBankAccount {
   id?: string
-  bank_name: string
+  bank_id: number
   account_number: string
   account_name: string
 }
@@ -616,11 +621,10 @@ export interface IEmployeeFormData {
   nin: string
   tin: string
   nssf_no: string
+  salary:number
   is_active: boolean
-  experience: number
-  qualifications: string
   skills: string
-  marital_status: string
+  marital_status: IMaritalStatus
   employee_profile_picture?: File | null
   selected_branches: number[]
 
@@ -652,7 +656,7 @@ export interface ICreateEmployeeForm {
   address: string
   country: string
   nin: string
-  marital_status: string
+  marital_status: IMaritalStatus
 
   // Work Information
   position: number
@@ -660,8 +664,6 @@ export interface ICreateEmployeeForm {
   work_type: number
   employee_type: number
   date_of_joining: string
-  experience: number
-  qualifications: string
   skills: string
   selected_branches: number[]
   is_active: boolean
@@ -669,6 +671,7 @@ export interface ICreateEmployeeForm {
   // Financial Information
   tin: string
   nssf_no: string
+  salary:number
 
   // Nested structures
   children: IChild[]
@@ -681,13 +684,6 @@ export interface ICreateEmployeeForm {
   // Profile picture
   employee_profile_picture?: File | null
 
-  // Legacy fields for backward compatibility
-  emergency_contact_name?: string
-  emergency_contact_phone?: string
-  emergency_contact_phone_country_code?: string
-  emergency_contact_relationship?: string
-  bank?: string
-  bank_account_number?: string
 }
 
 // Form step types

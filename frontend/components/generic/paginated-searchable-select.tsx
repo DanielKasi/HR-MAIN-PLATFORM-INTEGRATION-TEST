@@ -94,7 +94,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   }, []);
 
   React.useEffect(() => {
-    console.log("Values changed with selected items :", selectedItems, " \n and Data :  ", data )
     const itemMatch =
       !multiple && selectedItems.length > 0
         ? data?.results.find((item) => getItemId(item) === selectedItems[0])
@@ -104,13 +103,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     }
   }, [selectedItems, data]);
 
-  // React.useEffect(()=> {
-  // if (setParentItems) {
-  //     if (data && data.results) {
-  //       setParentItems(data.results);
-  //     }
-  //   }
-  // }, [data])
+  React.useEffect(()=> {
+  if (setParentItems) {
+      if (data?.results && data.next) {
+        setParentItems(data.results);
+      }
+    }
+  }, [data])
 
 
   // Fetch first page for paginated mode
@@ -121,14 +120,15 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       return;
     }
     setLoading(true);
-    fetchFirstPage(query)
+    console.log("\n\n Refetching first page with previous data : ", data, "Query :", query)
+    fetchFirstPage()
       .then((res) => {
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
           setHasMore(!!res.next);
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line
-  }, [paginated, fetchFirstPage, JSON.stringify(query), ...deps]);
+  }, [...deps]);
 
 
   // Infinite scroll with intersection observer (using callback ref)
@@ -234,7 +234,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
         <PopoverTrigger asChild>
           <Button
             aria-expanded={open}
-            className={cn("w-full justify-between h-12 rounded-xl", triggerClassName)}
+            className={cn("w-full justify-between h-12 rounded-2xl", triggerClassName)}
             disabled={disabled}
             role="combobox"
             variant="outline"

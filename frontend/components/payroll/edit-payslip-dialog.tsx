@@ -110,7 +110,7 @@ export function EditPayslipDialog({
                 <FormattedNumberInput
                   id="basic_salary"
                   value={editFormData.basic_salary}
-                  onValuChange={(value) =>
+                  onValueChange={(value) =>
                     setEditFormData((prev) => ({
                       ...prev,
                       basic_salary: value,
@@ -129,7 +129,7 @@ export function EditPayslipDialog({
                   id="days_worked"
                   type="text"
                   value={editFormData.days_worked}
-                  onValuChange={(val) =>
+                  onValueChange={(val) =>
                     setEditFormData((prev) => ({
                       ...prev,
                       days_worked: val,
@@ -147,7 +147,7 @@ export function EditPayslipDialog({
                 <FormattedNumberInput
                   id="total_allowances"
                   value={editFormData.total_allowances}
-                  onValuChange={(e) => {
+                  onValueChange={(e) => {
                     console.log("\n\n\n Got parsed value as : ", e)
                     setEditFormData((prev) => ({
                       ...prev,
@@ -167,7 +167,7 @@ export function EditPayslipDialog({
                 <FormattedNumberInput
                   id="total_deductions"
                   value={editFormData.total_deductions}
-                  onValuChange={(val) =>
+                  onValueChange={(val) =>
                     setEditFormData((prev) => ({
                       ...prev,
                       total_deductions: val,
