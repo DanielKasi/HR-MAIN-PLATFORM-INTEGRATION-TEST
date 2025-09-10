@@ -417,6 +417,22 @@
                     "timestamp": "2025-09-10T15:15:11.682333"
                 }
             ]
+        },
+        {
+            "chat_id": "a0b8c3cd-a62f-420c-a33b-c7f578642d5e",
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "user",
+                    "message": "Tell me about the payroll for this month..!",
+                    "timestamp": "2025-09-10T15:44:44.600328"
+                },
+                {
+                    "role": "assistant",
+                    "message": "Something went wrong: SQL execution failed after 4 attempts. Last error: column p.payroll_date does not exist\nLINE 3:     p.payroll_date,\n            ^\n",
+                    "timestamp": "2025-09-10T15:44:51.862899"
+                }
+            ]
         }
     ]
 }

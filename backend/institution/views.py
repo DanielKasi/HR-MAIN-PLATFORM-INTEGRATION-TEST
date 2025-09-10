@@ -262,6 +262,20 @@ class AIAssistantView(APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
+            else:
+                error_message = "No Permission Found or Mapped"
+
+                add_message(user.id, "assistant", error_message, chat_id)
+
+                return Response(
+                    {
+                        "detail": "Something went wrong.",
+                        "error": str(e),
+                        "answer": error_message,
+                        "chat_id": chat_id,
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         else:
             fallback_msg = (
