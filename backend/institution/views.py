@@ -1,5 +1,4 @@
 from django.http import Http404
-from assistant.utils import load_db_rules
 from employee.service import create_owner_employee
 from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -56,6 +55,7 @@ from .serializers import (
     BranchShiftSerializer,
     BranchLocationComparisonConfigSerializer,
     AIQuerySerializer,
+    UserChatsSerializer,
 )
 from django.shortcuts import get_object_or_404
 from .utils import add_message, generate_compliant_password, get_messages
@@ -86,10 +86,36 @@ from ai_assistant.utils import (
     map_permission_based_on_question,
     user_has_permission,
 )
-
+from .utils import _load_user_file
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+class UserChatsView(APIView):
+
+    @extend_schema(
+        responses={
+            200: UserChatsSerializer,
+            400: {"description": "Bad Request"},
+            403: {"description": "Forbidden"},
+            404: {"description": "Not Found"},
+            500: {"description": "Internal Server Error"},
+        },
+        summary="AI USER CHATS",
+        tags=["Complete AI Assistant"],
+    )
+    def get(self, request):
+        user_id = request.user.id
+
+        try:
+            user_data = _load_user_file(user_id)
+
+            serializer = UserChatsSerializer(user_data)
+            return Response(serializer.data, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
 
 
 class AIAssistantView(APIView):
@@ -271,7 +297,6 @@ class AIAssistantView(APIView):
                 return Response(
                     {
                         "detail": "Something went wrong.",
-                        "error": str(e),
                         "answer": error_message,
                         "chat_id": chat_id,
                     },
