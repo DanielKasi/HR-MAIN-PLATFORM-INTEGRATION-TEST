@@ -271,7 +271,6 @@ class AIAssistantView(APIView):
                 return Response(
                     {
                         "detail": "Something went wrong.",
-                        "error": str(e),
                         "answer": error_message,
                         "chat_id": chat_id,
                     },
