@@ -114,7 +114,13 @@ WHERE d.institution_id = ? AND e.is_active = true AND e.deleted_at IS NULL;
 - payroll_deductiontype (name, is_recurring, frequency, description, and more)
 - payroll_employeededuction (employee, amount,and more)
 - assets_assetcategory(category_name, and more,and more)
-- assets_asset (asset_name, and more,and more)
+- assets_asset (asset_name, and more,and more, category, status(available, allocated, under_maintenance, decommissioned), serial_number), current_holder
 - settings_systemday (day_name, and more,and more)
 - institution_institutionbanktype (bank_fullname, bank_code, br_code)
 - employee_employeeattendance (employee, check_in_time (time-field), check_out_time(time-field), date, and more)
+- onboarding_offboardingstage (institution, stage_name, stage_description, and more)
+- onboarding_institutionemployeeseparationtypes (separation_type, category, supported_stages, institution and more)
+- onboarding_employeeseparation (employee_separation_type, employee, separation_type, separation_status(planned, completed, or cancelled), and more)
+- onboarding_terminationinitiation (separation, termination_letter, comments, last_working_day, initiation_status(submitted, under_review, approved, rejected), and more)
+- onboarding_retirementrequest (separation, retirement_letter, comments, last_working_day, request_status, and more)    
+- 
