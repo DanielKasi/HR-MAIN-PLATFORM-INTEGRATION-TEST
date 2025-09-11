@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { MultiSelectPopover } from "@/components/common/multi-select-popover"
 import FixedLoader from "@/components/fixed-loader"
-import { getRoles, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
 import { ArrowLeft, Plus, CheckCircle2, Users, Shield, FileText, Trash2 } from "lucide-react"
 import type { Role, UserProfile } from "@/types"
 import { toast } from "sonner"
@@ -94,17 +94,17 @@ export default function ApprovalCreatePage() {
   }, [contentTypeId, currentInstitution])
 
 
-      const fetchExistingApprovalDocument = async () => {
-      if (!createdApprovalDocument || !currentInstitution) return
+  const fetchExistingApprovalDocument = async () => {
+    if (!createdApprovalDocument || !currentInstitution) return
 
-      try {
-        const response = await fetchApprovalDocumentById(createdApprovalDocument.id)
-        setCreatedApprovalDocument(response);
-      } catch (error) {
-        // If there's an error or no existing document, continue with creation flow
+    try {
+      const response = await fetchApprovalDocumentById(createdApprovalDocument.id)
+      setCreatedApprovalDocument(response);
+    } catch (error) {
+      // If there's an error or no existing document, continue with creation flow
       // console.log("No existing approval document found, continuing with creation")
-      }
     }
+  }
 
   const loadData = async () => {
     if (!currentInstitution) {
@@ -115,7 +115,8 @@ export default function ApprovalCreatePage() {
       const [modelsRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
         fetchApprovableModels(),
         fetchActions(),
-        usersAPI.getProfilesByInstitutionId({ institutionId: currentInstitution.id }),
+        PROFILES_API.getPaginatedUserProfiles({}),
+
         getRoles({ institutionId: currentInstitution.id }),
         fetchApproverGroups(),
       ])
@@ -362,9 +363,9 @@ export default function ApprovalCreatePage() {
       )}
 
 
-      <div className={`grid grid-cols-1 ${createdApprovalDocument ? "lg:grid-cols-2":''} gap-6`}>
+      <div className={`grid grid-cols-1 ${createdApprovalDocument ? "lg:grid-cols-2" : ''} gap-6`}>
         {/* Actions Configuration */}
-        <Card className={`border-none shadow-none ${!createdApprovalDocument ? "max-w-7xl": ''}`}>
+        <Card className={`border-none shadow-none ${!createdApprovalDocument ? "max-w-7xl" : ''}`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
@@ -415,14 +416,14 @@ export default function ApprovalCreatePage() {
                 rows={3}
               />
             </div>
-          <div className="flex justify-end gap-4 pt-6">
-            <Button
-              onClick={createApprovalDocumentWithLevels}
-              disabled={savingDocument || selectedActionIds.length === 0 || !!createdApprovalDocument}
-            >
-              {savingDocument ? "Creating..." : "Create Approval"}
-            </Button>
-          </div>
+            <div className="flex justify-end gap-4 pt-6">
+              <Button
+                onClick={createApprovalDocumentWithLevels}
+                disabled={savingDocument || selectedActionIds.length === 0 || !!createdApprovalDocument}
+              >
+                {savingDocument ? "Creating..." : "Create Approval"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -671,7 +672,7 @@ export default function ApprovalCreatePage() {
                             <CheckCircle2 className="h-3 w-3 text-green-600" />
                             <span className="font-medium">Approver Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} {`group${level.approvers_detail?.length > 1  ? 's':''} assigned`}</div>
+                          <div className="text-muted-foreground">{level.approvers_detail?.length || 0} {`group${level.approvers_detail?.length > 1 ? 's' : ''} assigned`}</div>
                           {level.approvers_detail && level.approvers_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.approvers_detail.map((approver) => (
@@ -688,7 +689,7 @@ export default function ApprovalCreatePage() {
                             <Shield className="h-3 w-3 text-orange-600" />
                             <span className="font-medium">Overrider Groups</span>
                           </div>
-                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} {`group${level.overriders_detail?.length > 1  ? 's':''} assigned`}</div>
+                          <div className="text-muted-foreground">{level.overriders_detail?.length || 0} {`group${level.overriders_detail?.length > 1 ? 's' : ''} assigned`}</div>
                           {level.overriders_detail && level.overriders_detail.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {level.overriders_detail.map((overrider) => (

@@ -111,7 +111,7 @@ urlpatterns = [
     ),
     path("profile/", UserProfileListAPIView.as_view(), name="user-profile"),
     path(
-        "profile/<int:institution_id>/",
+        "profile/<int:profile_id>",
         UserProfileDetailAPIView.as_view(),
         name="user-profile-detail",
     ),

@@ -281,7 +281,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 export interface IEmployee {
   id: number;
   date_of_birth: string;
-  user: IUser|null;
+  user: IUser | null;
   roles: Role[]
   employee_working_days: any | null;
   work_type: IWorkType;
@@ -289,7 +289,7 @@ export interface IEmployee {
   bank_accounts: IEmployeeBankAccount[];
   educations: IEducation[];
   work_experiences: IWorkExperience[];
-  next_of_kin:INextOfKin[],
+  next_of_kin: INextOfKin[],
   children: IChild[];
   spouse: {
     name: string;
@@ -590,9 +590,9 @@ export interface IEmployeeEducationFormData {
 
 
 export interface IQualificationAward {
-  id:number,
-  name:string,
-  description:string
+  id: number,
+  name: string,
+  description: string
 }
 
 export interface IWorkExperience {
@@ -644,13 +644,13 @@ export interface IEmployeeFormData {
   nin: string
   tin: string
   nssf_no: string
-  salary:number
+  salary: number
   is_active: boolean
   skills: string
   marital_status: IMaritalStatus
   employee_profile_picture?: File | null
   selected_branches: number[],
-  has_children:boolean,
+  has_children: boolean,
 
   // Nested arrays and objects
   children: IChild[]
@@ -691,12 +691,12 @@ export interface ICreateEmployeeForm {
   skills: string
   selected_branches: number[]
   is_active: boolean,
-    has_children:boolean,
+  has_children: boolean,
 
   // Financial Information
   tin: string
   nssf_no: string
-  salary:number
+  salary: number
 
   // Nested structures
   children: IChild[]
@@ -2402,6 +2402,14 @@ export interface IProjectTask {
   priority: "low" | "medium" | "high" | "urgent";
 }
 
+
+export type IProjectStatus = | "not_started"
+  | "in_progress"
+  | "planning"
+  | "on_hold"
+  | "cancelled"
+  | "completed";
+
 export interface IProject {
   id: number;
   institution: number;
@@ -2411,14 +2419,22 @@ export interface IProject {
   description: string;
   start_date: string;
   end_date: string;
-  project_status:
-  | "not_started"
-  | "in_progress"
-  | "planning"
-  | "on_hold"
-  | "cancelled"
-  | "completed";
+  project_status: IProjectStatus
   project_tasks: IProjectTask[];
+}
+
+
+
+export interface IProjectFormData {
+  institution: number;
+  project_name: string;
+  leaders: number[];
+  members: number[];
+  description: string;
+  start_date: string;
+  end_date: string;
+  project_status?: IProjectStatus
+
 }
 
 // Apply approvals to existing READ interfaces via declaration merging
