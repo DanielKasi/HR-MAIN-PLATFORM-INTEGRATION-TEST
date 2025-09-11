@@ -156,7 +156,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       selectedInstitution &&
       selectedInstitution.institution_owner_id
     ) {
-      let role = selectedInstitution.institution_owner_id === currentUser.id ? "SuperUser" : "";
+      let role = selectedInstitution.institution_owner_id === currentUser.id ? "Super User" : "";
       if (!role && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
         const matchingRole = currentUser.roles.find((r: {name: string}) => !!r.name);
         if (matchingRole)

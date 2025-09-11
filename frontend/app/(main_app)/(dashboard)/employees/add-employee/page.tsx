@@ -71,7 +71,7 @@ import type {
   IGender,
   IJobPosition,
   IBankAccount,
-  IEmployeeBankAccount,
+  IEmployeeBankAccountFormData,
   IMaritalStatus,
   IEmployeeDeductionFormData,
   IEmployeeEducationFormData,
@@ -142,7 +142,7 @@ export default function AddEmployeeForm() {
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
   const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccountFormData[]>([]);
 
   const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
   const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
@@ -154,7 +154,7 @@ export default function AddEmployeeForm() {
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
   const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
-  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData | null>(null);
 
   const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
     name: "",
@@ -183,7 +183,7 @@ export default function AddEmployeeForm() {
     reason_of_leave: "",
   });
 
-  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccount>({
+  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccountFormData>({
     id: "",
     bank_id: 0,
     account_number: "",
@@ -227,7 +227,7 @@ export default function AddEmployeeForm() {
   });
 
   // useEffect(()=>{
-  //   console.log("\n\n Positions updated to : ", positions)
+  // // console.log("\n\n Positions updated to : ", positions)
   // }, [positions])
 
   useEffect(() => {
@@ -474,7 +474,7 @@ export default function AddEmployeeForm() {
       );
       setEditingBankAccount(null);
     } else {
-      const newBankAccount: IEmployeeBankAccount = {
+      const newBankAccount: IEmployeeBankAccountFormData = {
         ...bankAccountFormData,
         id: generateId(),
       };
@@ -485,7 +485,7 @@ export default function AddEmployeeForm() {
     setIsWorkExperienceDialogOpen(false);
   };
 
-  const handleEditBankAccount = (acc: IEmployeeBankAccount) => {
+  const handleEditBankAccount = (acc: IEmployeeBankAccountFormData) => {
     setEditingBankAccount(acc);
     setBankAccountFormData({
       bank_id: acc.bank_id,
@@ -623,7 +623,7 @@ export default function AddEmployeeForm() {
       setFormData(updatedFormData);
       handleSaveLocalEmployeeCreateForm(updatedFormData);
     } else if (field === "department") {
-      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
+    // console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -761,12 +761,7 @@ export default function AddEmployeeForm() {
   };
 
   const nextStep = () => {
-    console.log(
-      "\n\n Validating next step with current step : ",
-      currentStep,
-      "\n\n Valid : ",
-      isCurrentStepValid(),
-    );
+
     if (isCurrentStepValid() && currentStep < steps.length) {
       setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
       setCurrentStep((prev) => prev + 1);

@@ -170,7 +170,7 @@ export function ThemeColorForm({isOpen, onOpenChange, onColorUpdateSuccess}: The
 
       return parsedData.colors;
     } catch (error) {
-      console.log("Error retrieving color data from local storage:", error);
+    // console.log("Error retrieving color data from local storage:", error);
 
       return [];
     }
@@ -188,7 +188,7 @@ export function ThemeColorForm({isOpen, onOpenChange, onColorUpdateSuccess}: The
         localStorage.setItem(STORAGE_KEY, JSON.stringify(colorData));
       }
     } catch (error) {
-      console.log("Error saving color data to local storage:", error);
+    // console.log("Error saving color data to local storage:", error);
     }
   };
 
@@ -218,7 +218,7 @@ export function ThemeColorForm({isOpen, onOpenChange, onColorUpdateSuccess}: The
       }
     } catch (error) {
       setErrorMessage("Failed to fetch Institution theme data");
-      console.log("Error fetching Institution theme data:", error);
+    // console.log("Error fetching Institution theme data:", error);
     }
   };
 
@@ -259,7 +259,7 @@ export function ThemeColorForm({isOpen, onOpenChange, onColorUpdateSuccess}: The
       }, 1500);
     } catch (error: any) {
       setErrorMessage(error.message || "An error occurred while resetting the theme color");
-      console.log("Error resetting theme color:", error);
+    // console.log("Error resetting theme color:", error);
     } finally {
       setIsResetting(false);
     }
@@ -308,7 +308,7 @@ export function ThemeColorForm({isOpen, onOpenChange, onColorUpdateSuccess}: The
       }, 1500);
     } catch (error: any) {
       setErrorMessage(error.message || "An error occurred while updating the theme color");
-      console.log("Error updating theme color:", error);
+    // console.log("Error updating theme color:", error);
     } finally {
       setIsSubmitting(false);
     }

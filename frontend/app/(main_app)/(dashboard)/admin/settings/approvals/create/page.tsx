@@ -102,7 +102,7 @@ export default function ApprovalCreatePage() {
         setCreatedApprovalDocument(response);
       } catch (error) {
         // If there's an error or no existing document, continue with creation flow
-        console.log("No existing approval document found, continuing with creation")
+      // console.log("No existing approval document found, continuing with creation")
       }
     }
 

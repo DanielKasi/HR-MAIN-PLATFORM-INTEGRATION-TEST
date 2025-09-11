@@ -32,7 +32,7 @@ export default function RedirectsWatcher() {
     if (!pending) return;
     if (!user) return;
       const path = buildPathFromRedirect(pending);
-      console.log("\n\n Redirecting to", path);
+    // console.log("\n\n Redirecting to", path);
       router.push(path)
       // window.location.replace(path);
       // router.replace(path);

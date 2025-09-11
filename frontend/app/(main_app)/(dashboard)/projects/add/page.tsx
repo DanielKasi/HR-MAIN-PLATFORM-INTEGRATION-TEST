@@ -98,7 +98,7 @@ export default function AddProjectPage() {
 
     setLoading(true);
     try {
-      console.log("Creating project:", formData);
+    // console.log("Creating project:", formData);
       const response = await apiPost(`/projects/projects/${institutionId}/`, formData);
       if (response.status === 201) {
         router.push("/projects");

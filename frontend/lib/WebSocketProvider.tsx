@@ -103,7 +103,7 @@
 //     socketRef.current = socket;
 
 //     socket.onopen = () => {
-//       console.log("WebSocket connected");
+//     // console.log("WebSocket connected");
 //       setConnected(true);
 //       setError(null);
 //       socket.send(JSON.stringify({type: "fetch_tasks"}));

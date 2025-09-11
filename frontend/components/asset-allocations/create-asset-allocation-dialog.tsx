@@ -49,7 +49,7 @@ export const CreateAssetAllocationDialog = ({
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
   const [isRequestDropdownOpen, setIsRequestDropdownOpen] = useState(false);
 
-  console.log("Employees", employees);
+// console.log("Employees", employees);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 

@@ -4,7 +4,7 @@ import {CUSTOM_CODES} from "@/constants";
 import {AuthError} from "@/store/auth/reducer";
 
 export const getAuthError = (error: any): AuthError => {
-  console.log("\n\nPassed in error on login : ", error);
+// console.log("\n\nPassed in error on login : ", error);
   if (error instanceof AxiosError) {
     const errorData = error.response?.data;
 

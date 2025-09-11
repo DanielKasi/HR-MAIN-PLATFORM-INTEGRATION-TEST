@@ -95,7 +95,7 @@ export const JobAdvertsAPI = {
   
       
       const response = await apiRequest.get(endpoint);
-      console.log(response)
+    // console.log(response)
 
       
       return response as IPaginatedResponse<JobPositionAdvert>;
@@ -145,7 +145,7 @@ export const JobApplicationApi = {
   create: async (applicationData: Partial<JobApplication> & { resume?: File | null; cover_letter?: File | null }, institutionId: number = 1): Promise<JobApplication> => {
     try {
       const endpoint = `/recruitment/institution/${institutionId}/job-application/`;
-      console.log('[Portal API] Creating job application:', {
+    // console.log('[Portal API] Creating job application:', {
         endpoint: `${API_BASE_URL}${endpoint}`,
         institutionId,
         applicationData
@@ -168,14 +168,14 @@ export const JobApplicationApi = {
         }
       });
       
-      console.log('[Portal API] FormData contents:');
+    // console.log('[Portal API] FormData contents:');
       for (const [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
+      // console.log(`${key}: ${value}`);
       }
       
       // Send as multipart/form-data (same as frontend)
       const response = await apiRequest.post(endpoint, formData, 'multipart/form-data');
-      console.log('[Portal API] Application created successfully:', response);
+    // console.log('[Portal API] Application created successfully:', response);
       return response as JobApplication;
     } catch (error) {
       console.warn("Error creating job application:", error);

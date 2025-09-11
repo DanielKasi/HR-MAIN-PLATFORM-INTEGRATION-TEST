@@ -33,7 +33,7 @@ export default function UserProfilePage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("branches");
 
-  console.log("Employee", employee)
+// console.log("Employee", employee)
 
   const fetchUserDetails = async () => {
     setLoading(true);
@@ -43,8 +43,8 @@ export default function UserProfilePage() {
         employeeAPI.getByUserId({ user_id: Number(userId) }).catch(() => null)
       ]);
 
-      console.log("user data", userResponse);
-      console.log("employee data", employeeResponse)
+    // console.log("user data", userResponse);
+    // console.log("employee data", employeeResponse)
       setUser(userResponse.data);
       setEmployee(employeeResponse);
       setError("");

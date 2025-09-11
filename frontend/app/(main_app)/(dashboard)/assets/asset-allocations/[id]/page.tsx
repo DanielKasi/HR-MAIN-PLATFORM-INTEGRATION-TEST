@@ -92,7 +92,7 @@ const AssetAllocationDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
-  console.log("Allocations", allocation);
+// console.log("Allocations", allocation);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const allocationId = params.id as string;

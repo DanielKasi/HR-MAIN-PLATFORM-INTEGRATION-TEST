@@ -359,7 +359,11 @@ export function ApprovalWorkflow({
                                 </Label>
                                 <Textarea
                                   id="comment"
-                                  placeholder={`Add a comment for ${showCommentFor.action}ing this step...`}
+                                  placeholder={`Add a comment for ${showCommentFor.action === "approve"
+                                        ? "approving..."
+                                        : showCommentFor.action === "override"
+                                          ? "overriding"
+                                          : "rejecting..."} this step...`}
                                   value={comment}
                                   onChange={(e) => setComment(e.target.value)}
                                   className="mt-1 text-sm resize-none"
@@ -373,7 +377,11 @@ export function ApprovalWorkflow({
                                   disabled={isProcessing}
                                   className={`text-xs h-8 !rounded-full ${
                                     showCommentFor.action === "approve"
-                                      ? "bg-green-600 hover:bg-green-700"
+                                      ? "bg-green-600 hover:bg-green-700":
+
+                                      showCommentFor.action === "override"
+                                      ?
+                                      "bg-blue-400 hover:bg-blue-500"
                                       : "bg-red-600 hover:bg-red-700"
                                   }`}
                                 >
@@ -383,11 +391,11 @@ export function ApprovalWorkflow({
                                       {showCommentFor.action === "approve"
                                         ? "Approving..."
                                         : showCommentFor.action === "override"
-                                          ? ""
+                                          ? "Overriding"
                                           : "Rejecting..."}
                                     </>
                                   ) : (
-                                    `Confirm ${showCommentFor.action === "approve" ? "Approval" : "Rejection"}`
+                                    `Confirm ${showCommentFor.action === "approve" ?  "Approval": showCommentFor.action === "override" ? "Overriding"  : "Rejection"}`
                                   )}
                                 </Button>
                                 <Button

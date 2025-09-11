@@ -121,7 +121,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       return;
     }
     setLoading(true);
-    console.log("\n\n Refetching first page with previous data : ", data, "Query :", query);
+  // console.log("\n\n Refetching first page with previous data : ", data, "Query :", query);
     fetchFirstPage()
       .then((res) => {
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);

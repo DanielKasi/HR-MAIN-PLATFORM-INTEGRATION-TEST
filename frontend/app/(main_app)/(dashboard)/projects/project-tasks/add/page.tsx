@@ -46,7 +46,7 @@ export default function AddTaskPage() {
     setLoading(true);
 
     try {
-      console.log("Creating task:", formData);
+    // console.log("Creating task:", formData);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       router.push(projectId ? `/projects/${projectId}` : "/projects");
     } catch (error) {

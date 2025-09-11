@@ -78,17 +78,15 @@ import type {
   IEmployee,
   IEmployeeEducationFormData,
   IQualificationAward,
+  IEmployeeBankAccountFormData,
 } from "@/types/types.utils";
 import {toast} from "sonner";
-import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
-import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
 import {PERMISSION_CODES} from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import {Steps} from "@/components/generic/steps";
-import {createEmployee} from "@/lib/utils";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Icon} from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
@@ -97,7 +95,7 @@ import FormattedNumberInput from "@/components/common/inputs/formatted-number-in
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
-interface Education extends IEducation {}
+
 interface WorkExperience extends IWorkExperience {}
 
 const maritalStatusOptions: Array<{value: IMaritalStatus; label: string}> = [
@@ -159,7 +157,7 @@ export default function UpdateEmployeeForm() {
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
   const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
-  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData| null>(null);
 
   const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
     name: "",
@@ -188,7 +186,7 @@ export default function UpdateEmployeeForm() {
     reason_of_leave: "",
   });
 
-  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccount>({
+  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccountFormData>({
     id: "",
     bank_id: 0,
     account_number: "",
@@ -232,7 +230,7 @@ export default function UpdateEmployeeForm() {
   });
 
   // useEffect(()=>{
-  //   console.log("\n\n Positions updated to : ", positions)
+  // // console.log("\n\n Positions updated to : ", positions)
   // }, [positions])
 
   useEffect(() => {
@@ -462,48 +460,6 @@ export default function UpdateEmployeeForm() {
     setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-  const handleAddBankAccount = () => {
-    if (
-      !bankAccountFormData.bank_id ||
-      !bankAccountFormData.account_number ||
-      !bankAccountFormData.account_name
-    )
-      return;
-
-    if (editingBankAccount) {
-      setBankAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === editingBankAccount.id
-            ? {...bankAccountFormData, id: bankAccountFormData.id}
-            : acc,
-        ),
-      );
-      setEditingBankAccount(null);
-    } else {
-      const newBankAccount: IEmployeeBankAccount = {
-        ...bankAccountFormData,
-        id: generateId(),
-      };
-      setBankAccounts((prev) => [...prev, newBankAccount]);
-    }
-
-    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
-    setIsWorkExperienceDialogOpen(false);
-  };
-
-  const handleEditBankAccount = (acc: IEmployeeBankAccount) => {
-    setEditingBankAccount(acc);
-    setBankAccountFormData({
-      bank_id: acc.bank_id,
-      account_number: acc.account_number,
-      account_name: acc.account_name,
-    });
-    setIsBankAccountDialogOpen(true);
-  };
-
-  const handleDeleteBankAccount = (id: string) => {
-    setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
-  };
 
   useEffect(() => {
     if (employeeId && selectedInstitution) {
@@ -547,10 +503,10 @@ export default function UpdateEmployeeForm() {
         marital_status: employee.marital_status,
         gender: employee.gender,
         children: [],
-        next_of_kin: [],
-        educations: [],
-        bank_accounts: [],
-        work_experiences: [],
+        next_of_kin: employee.next_of_kin,
+        educations: employee.educations,
+        bank_accounts: employee.bank_accounts,
+        work_experiences: employee.work_experiences,
       });
 
       setChildren(employee.children);
@@ -566,9 +522,13 @@ export default function UpdateEmployeeForm() {
       })));
       setWorkExperiences(employee.work_experiences);
       setBankAccounts(employee.bank_accounts);
-      // For single bank assumption, set first if exists
       if (employee.bank_accounts.length > 0) {
-        setBankAccountFormData(employee.bank_accounts[0]);
+        setBankAccountFormData(prev => ({...prev, 
+          bank_id:employee.bank_accounts[0].bank,
+          account_number:employee.bank_accounts[0].account_number,
+          account_name:employee.bank_accounts[0].account_name,
+          id:employee.bank_accounts[0].id
+        }));
       }
 
       setHasChildren(employee.has_children);
@@ -758,8 +718,7 @@ export default function UpdateEmployeeForm() {
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18 &&
-          phoneInput.isValid
+          currentDate.getFullYear() - DOB.getFullYear() >= 18 
         );
       case 2:
         return !!(
@@ -1757,6 +1716,7 @@ export default function UpdateEmployeeForm() {
                   Bank
                 </Label>
                 <BankAccountSearchableSelect
+                  // defaultLabel={}
                   setAccounts={setInstitutionBanks}
                   selectedItems={[bankAccountFormData.bank_id || 0]}
                   onValueChange={(values) => {

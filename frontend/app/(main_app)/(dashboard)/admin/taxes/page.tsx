@@ -93,7 +93,7 @@ const TaxesComponent = () => {
       try {
         // Use actual API call
         const data = await taxesAPI.getAll();
-        console.log("data", data);
+      // console.log("data", data);
         setTaxes(data);
       } catch (error) {
         console.warn("Error fetching taxes:", error);

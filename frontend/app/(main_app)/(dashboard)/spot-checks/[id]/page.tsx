@@ -48,7 +48,7 @@ export default function SpotCheckCheckinPage() {
   const fetchSpotCheck = async ()=> {
     try{
       const spotcheck = await spotcheckAPI.getById(Number(id))
-      console.log(spotcheck)
+    // console.log(spotcheck)
       SetSpotCheck(spotcheck)
       
       // Show modal if status is not SENT

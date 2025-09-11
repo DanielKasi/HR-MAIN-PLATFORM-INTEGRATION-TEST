@@ -124,7 +124,7 @@ export default function EventsCalendarPage() {
       setEditingEvent(null);
 
       // You can add a success toast here
-      console.log("Event updated successfully:", response);
+    // console.log("Event updated successfully:", response);
     } catch (error) {
       console.error("Error updating event:", error);
       // You can add an error toast here
@@ -150,7 +150,7 @@ export default function EventsCalendarPage() {
       setEditingHoliday(null);
 
       // You can add a success toast here
-      console.log("Holiday updated successfully:", response);
+    // console.log("Holiday updated successfully:", response);
     } catch (error) {
       console.error("Error updating holiday:", error);
       // You can add an error toast here

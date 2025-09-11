@@ -148,7 +148,7 @@ import {
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
-import { IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
+import { BulkEmployeeUploadResult, IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
 import { forceUrlToHttps } from "./helpers";
 import { create } from "domain";
 import { MAIN_DOMAIN_URL } from "@/constants";
@@ -1318,17 +1318,7 @@ export const bulkCreateEmployees = async ({
 }: {
   institutionId: number;
   file: File;
-}): Promise<{
-  created_count: number;
-  error_count: number;
-  created_employees: Array<{
-    id: number;
-    fullname: string;
-    email: string;
-  }>;
-  errors?: string[];
-}> => {
-  try {
+}): Promise<BulkEmployeeUploadResult> => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("institution", institutionId.toString());
@@ -1336,9 +1326,6 @@ export const bulkCreateEmployees = async ({
     const response = await apiRequest.post("employee/create/", formData);
 
     return response.data;
-  } catch (error) {
-    throw error;
-  }
 };
 
 export const getPaginatedEmployees = async ({
@@ -5197,7 +5184,7 @@ export const taxesAPI = {
   getAll: async (): Promise<ITax[]> => {
     try {
       const response = await apiRequest.get("/institution/tax/");
-      console.log("Tax response", response);
+    // console.log("Tax response", response);
       return response.data as ITax[];
     } catch (error) {
       throw error;
@@ -6078,7 +6065,7 @@ export const assetsAPI = {
   getAssetReturns: async (): Promise<IAssetReturn[]> => {
     try {
       const response = await apiRequest.get("/assets/asset-returns/");
-      console.log("Asset Returns response", response);
+    // console.log("Asset Returns response", response);
       return response.data.results || response.data;
     } catch (error) {
       console.error("Error fetching asset returns:", error);

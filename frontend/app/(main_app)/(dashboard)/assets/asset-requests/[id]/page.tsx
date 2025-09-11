@@ -87,7 +87,7 @@ const AssetRequestDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
-  console.log("requests", request);
+// console.log("requests", request);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const requestId = params.id as string;

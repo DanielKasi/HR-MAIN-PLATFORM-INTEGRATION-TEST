@@ -69,7 +69,7 @@ export default function EditRolePage() {
   //         const response = await apiGet(nextUrl);
   //         const data = response.data as IPaginatedResponse;
 
-  //         console.log(`Fetched page with ${data.results.length} permissions`);
+  //       // console.log(`Fetched page with ${data.results.length} permissions`);
   //         allPermissions = [...allPermissions, ...data.results];
 
   //         // Extract the path from the next URL if it exists
@@ -81,7 +81,7 @@ export default function EditRolePage() {
   //         }
   //       }
 
-  //       console.log(`\n\nTotal permissions fetched: ${allPermissions.length}`);
+  //     // console.log(`\n\nTotal permissions fetched: ${allPermissions.length}`);
   //       setPermissions(allPermissions);
 
   //       // Organize permissions by category
@@ -100,7 +100,7 @@ export default function EditRolePage() {
   //       });
 
   //       setPermissionsByCategory(byCategory);
-  //       console.log(`Organized into ${Object.keys(byCategory).length} categories`);
+  //     // console.log(`Organized into ${Object.keys(byCategory).length} categories`);
 
   //     } catch (error: any) {
   //       setError(error.message || "Failed to fetch permissions");

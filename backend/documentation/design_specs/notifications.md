@@ -230,14 +230,14 @@ export default function NotificationListener({ token, userId }) {
     const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL}/api/communication/notifications/sse/?token=${token}`);
 
     eventSource.onmessage = (event) => {
-      console.log('Received SSE event:', event.data);
+    // console.log('Received SSE event:', event.data);
       try {
         const data = JSON.parse(event.data);
         if (data.message) {
-          console.log('Notification:', data);
+        // console.log('Notification:', data);
           setNotifications((prev) => [...prev, data]);
         } else {
-          console.log('Heartbeat or empty event:', data);
+        // console.log('Heartbeat or empty event:', data);
         }
       } catch (e) {
         console.error('Error parsing SSE data:', e);
@@ -254,12 +254,12 @@ export default function NotificationListener({ token, userId }) {
     };
 
     eventSource.onopen = () => {
-      console.log('SSE connection established');
+    // console.log('SSE connection established');
     };
 
     return () => {
       eventSource.close();
-      console.log('SSE connection closed');
+    // console.log('SSE connection closed');
     };
   }, [token]);
 

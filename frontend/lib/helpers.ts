@@ -107,7 +107,7 @@ export async function fetchUserTasks() {
   try {
     return await apiRequest.get("workflow/task/");
   } catch (error) {
-    console.log("Error fetching  user tasks ");
+  // console.log("Error fetching  user tasks ");
     throw error;
   }
 }
@@ -190,7 +190,7 @@ export function extractRequiredPermissions(
   userRoles: Role[],
   requiredPermissionCodes: string[],
 ): Permission[] {
-  console.log("\n\nEXtracting permission codes : ", requiredPermissionCodes);
+// console.log("\n\nEXtracting permission codes : ", requiredPermissionCodes);
   const requiredPermissions: Permission[] = [];
 
   userRoles.forEach((role) => {

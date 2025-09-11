@@ -85,7 +85,7 @@ export default function SeparationPolicyTypesPage() {
   const from = searchParams.get("from");
 
 
-  console.log("From query param:", from);
+// console.log("From query param:", from);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
