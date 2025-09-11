@@ -852,7 +852,7 @@ class InstitutionDetailAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
 
-class InstitutionBankTypeListAPIView(APIView):
+class InstitutionBankTypeListAPIView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ["bank_fullname", "created_at", "bank_code", "is_active"]
     default_ordering = ["bank_fullname"]
 
@@ -874,6 +874,7 @@ class InstitutionBankTypeListAPIView(APIView):
         bank_types = InstitutionBankType.objects.filter(
             institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
+        
 
         if search_query:
             bank_types = bank_types.filter(

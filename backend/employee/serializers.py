@@ -235,15 +235,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError({"error": " ".join(msgs)})
         return value
 
-    def validate(self, data):
-        marital_status = data.get('marital_status', getattr(self.instance, 'marital_status', 'single'))
-        spouse_data = data.get('spouse')
-        if marital_status == 'married' and not spouse_data:
-            raise serializers.ValidationError({"error": "Spouse details are required for married employees."})
-        if marital_status != 'married' and spouse_data:
-            raise serializers.ValidationError({"error": "Spouse details should only be provided for married employees."})
-        return data
-
     @transaction.atomic
     def create(self, validated_data):
         print(f"Raw request data: {self.context['request'].data}")
@@ -299,29 +290,40 @@ class EmployeeSerializer(BaseApprovableSerializer):
             bank_type = bank_data.pop('bank', None)
             if bank_type:
                 EmployeeBankAccount.objects.create(employee=employee, bank=bank_type, **bank_data)
+                print(f"Created EmployeeBankAccount: {bank_data}")
+            else:
+                print(f"Skipped bank account due to missing bank: {bank_data}")
 
         # Create NextOfKin instances
         for kin_data in next_of_kin_data:
             if kin_data.get("name"):
                 NextOfKin.objects.create(employee=employee, **kin_data)
+                print(f"Created NextOfKin: {kin_data}")
+            else:
+                print(f"Skipped next of kin due to missing name: {kin_data}")
 
         # Create Education instances
         for edu_data in educations_data:
             qualification = edu_data.pop('qualification', None)
             if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
                 Education.objects.create(employee=employee, qualification=qualification, **edu_data)
+                print(f"Created Education: {edu_data}")
 
         # Create WorkExperience instances
         for exp_data in work_experiences_data:
             WorkExperience.objects.create(employee=employee, **exp_data)
+            print(f"Created WorkExperience: {exp_data}")
 
         # Create Child instances
         for child_data in children_data:
-            Child.objects.create(employee=employee, **child_data)
+            if child_data.get("name"):
+                Child.objects.create(employee=employee, **child_data)
+                print(f"Created Child: {child_data}")
 
         # Create Spouse instance if provided
         if spouse_data and spouse_data.get("name"):
             Spouse.objects.create(employee=employee, **spouse_data)
+            print(f"Created Spouse: {spouse_data}")
 
         for i, branch_id in enumerate(selected_branches or []):
             try:
@@ -371,27 +373,35 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 bank_type = bank_data.pop('bank', None)
                 if bank_type:
                     EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
+                    print(f"Created/Updated EmployeeBankAccount: {bank_data} with bank ID: {bank_type.id}")
+                else:
+                    print(f"Skipped bank account due to missing bank: {bank_data}")
 
         # Update next of kin
         if next_of_kin_data:
-            instance.next_of_kin.all().delete()
+            instance.next_of_kins.all().delete()
             for kin_data in next_of_kin_data:
                 if kin_data.get("name"):
                     NextOfKin.objects.create(employee=instance, **kin_data)
+                    print(f"Created/Updated NextOfKin: {kin_data}")
+            transaction.commit()
+            print(f"Next of kin committed for employee: {instance.employee_id}")
 
         # Update educations
         if educations_data:
             instance.educations.all().delete()
             for edu_data in educations_data:
                 qualification = edu_data.pop('qualification', None)
-                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year") and qualification:
+                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
                     Education.objects.create(employee=instance, qualification=qualification, **edu_data)
+                    print(f"Created/Updated Education: {edu_data}")
 
         # Update work experiences
         if work_experiences_data:
             instance.work_experiences.all().delete()
             for exp_data in work_experiences_data:
                 WorkExperience.objects.create(employee=instance, **exp_data)
+                print(f"Created/Updated WorkExperience: {exp_data}")
 
         # Update children
         if children_data:
@@ -399,18 +409,30 @@ class EmployeeSerializer(BaseApprovableSerializer):
             for child_data in children_data:
                 if child_data.get("name"):
                     Child.objects.create(employee=instance, **child_data)
+                    print(f"Created/Updated Child: {child_data}")
 
-        # Update spouse
+        # Update or create spouse
         if spouse_data is not None:
-            if spouse_data.get("name"):  # Update or create spouse
-                if instance.spouse:  # Update existing spouse
-                    for attr, value in spouse_data.items():
-                        setattr(instance.spouse, attr, value)
-                    instance.spouse.save()
-                else:  # Create new spouse
-                    Spouse.objects.create(employee=instance, **spouse_data)
-            elif instance.spouse:  # Remove spouse if empty data provided
+            print(f"Processing spouse data: {spouse_data}, has_spouse: {instance.spouse is not None}")
+            if spouse_data.get("name"):
+                try:
+                    if instance.spouse:
+                        for attr, value in spouse_data.items():
+                            setattr(instance.spouse, attr, value)
+                        instance.spouse.save()
+                        print(f"Updated Spouse: {spouse_data}")
+                    else:
+                        print(f"Creating new Spouse with data: {spouse_data}")
+                        Spouse.objects.create(employee=instance, **spouse_data)
+                        print(f"Created Spouse: {spouse_data}")
+                except Exception as e:
+                    print(f"Failed to update/create spouse: {str(e)}")
+                    raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
+            elif instance.spouse:
                 instance.spouse.delete()
+                print("Deleted existing Spouse")
+            transaction.commit()
+            print(f"Spouse committed for employee: {instance.employee_id}")
 
         # Update selected branches
         if selected_branches is not None:
@@ -428,6 +450,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                         {"error": f"Branch with ID {branch_id} does not exist."}
                     )
 
+        print(f"Employee updated: {instance.employee_id}")
         return instance
 
     def get_roles(self, obj):
