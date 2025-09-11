@@ -86,7 +86,7 @@ from ai_assistant.utils import (
     map_permission_based_on_question,
     user_has_permission,
 )
-from .utils import _load_user_file
+from .utils import _load_user_file, load_db_rules
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

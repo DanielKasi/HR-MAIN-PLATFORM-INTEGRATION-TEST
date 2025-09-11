@@ -391,9 +391,11 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
             {/* {isPathLoading ? <FixedLoader fixed={false} className="!bg-white/90 z-[100]" /> : <></>} */}
           </div>
 
-          <div className="mb-4 sm:mb-0">
-            <AIAssistantWidget />
-          </div>
+          <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_AI_ASSISTANT}>
+            <div className="mb-4 sm:mb-0">
+              <AIAssistantWidget />
+            </div>
+          </ProtectedComponent>
         </div>
 
         {/* Logout Dialog */}
