@@ -68,6 +68,26 @@ def generate_employee_excel(employees):
         "tin",
         "skills",
         "marital_status",
+        "bank",
+        "account_name",
+        "bank_account_number",
+        "emergency_contact_name",
+        "emergency_contact_phone",
+        "emergency_contact_relationship",
+        "spouse_name",
+        "spouse_date_of_birth",
+        "spouse_phone_number",
+        "child_name",
+        "child_date_of_birth",
+        "child_gender",
+        "education_institution",
+        "education_name",
+        "education_year",
+        "qualification",
+        "work_company",
+        "work_position",
+        "work_duration",
+        "work_reason_of_leaving",
     ]
 
     wb = openpyxl.Workbook()
@@ -77,28 +97,54 @@ def generate_employee_excel(employees):
     ws.append(columns)
 
     for emp in employees:
-        ws.append(
-            [
-                emp.employee_id,
-                emp.user.fullname if emp.user else "",
-                emp.user.email if emp.user else "",
-                emp.phone_number,
-                emp.position.name,
-                emp.gender,
-                emp.department.name if emp.department else "",
-                emp.date_of_birth.strftime("%Y-%m-%d") if emp.date_of_birth else "",
-                emp.work_type.name if emp.work_type else "",
-                emp.employee_type.name if emp.employee_type else "",
-                emp.date_of_joining.strftime("%Y-%m-%d") if emp.date_of_joining else "",
-                emp.address,
-                emp.country,
-                emp.nin,
-                emp.nssf_no,
-                emp.tin,
-                emp.skills,
-                emp.marital_status,
-            ]
-        )
+        bank = emp.bank_accounts.first()
+        kin = emp.next_of_kins.first()
+        spouse = getattr(emp, 'spouse', None)
+        child = emp.children.first()
+        edu = emp.educations.first()
+        exp = emp.work_experiences.first()
+
+        row = [
+            emp.employee_id,
+            emp.user.fullname if emp.user else "",
+            emp.user.email if emp.user else "",
+            emp.phone_number or "",
+            emp.position.name if emp.position else "",
+            emp.gender or "",
+            emp.department.name if emp.department else "",
+            emp.date_of_birth.strftime("%Y-%m-%d") if emp.date_of_birth else "",
+            emp.work_type.name if emp.work_type else "",
+            emp.employee_type.name if emp.employee_type else "",
+            emp.date_of_joining.strftime("%Y-%m-%d") if emp.date_of_joining else "",
+            emp.address or "",
+            emp.country or "",
+            emp.nin or "",
+            emp.nssf_no or "",
+            emp.tin or "",
+            emp.skills or "",
+            emp.marital_status or "",
+            bank.bank.bank_fullname if bank else "",
+            bank.account_name if bank else "",
+            bank.account_number if bank else "",
+            kin.name if kin else "",
+            kin.phone_number if kin else "",
+            kin.relationship if kin else "",
+            spouse.name if spouse else "",
+            spouse.date_of_birth.strftime("%Y-%m-%d") if spouse and spouse.date_of_birth else "",
+            spouse.phone_number if spouse else "",
+            child.name if child else "",
+            child.date_of_birth.strftime("%Y-%m-%d") if child and child.date_of_birth else "",
+            child.gender if child else "",
+            edu.institution if edu else "",
+            edu.name if edu else "",
+            str(edu.year) if edu else "",
+            edu.qualification.name if edu and edu.qualification else "",
+            exp.company if exp else "",
+            exp.position if exp else "",
+            exp.duration if exp else "",
+            exp.reason_of_leaving if exp else "",
+        ]
+        ws.append(row)
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

@@ -480,6 +480,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             data["payroll_branch"] = BranchSerializer(instance.payroll_branch).data
         data["work_type"] = WorkTypeSerializer(instance.work_type).data
         data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
+        data["next_of_kin"] = NextOfKinSerializer(instance.next_of_kins.all(), many=True).data
         data.pop("department_details", None)
         data.pop("position_details", None)
         return data
