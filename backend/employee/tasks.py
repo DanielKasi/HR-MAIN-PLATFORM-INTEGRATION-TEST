@@ -5,9 +5,6 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 
-
-
-
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_employee_welcome_email(
     self, 
@@ -31,9 +28,7 @@ def send_employee_welcome_email(
     Raises:
         Exception: Re-raises email sending exceptions after retries
     """
-    
     try:
-        
         # Validate inputs
         if not all([email, fullname, password]):
             raise ValueError("Email, fullname, and password are required")
@@ -43,9 +38,9 @@ def send_employee_welcome_email(
         
         subject = f"Welcome to {company} - Your Account Details"
         
-        # Use template if available, fallback to string formatting
+        # Render HTML template
         try:
-            message = render_to_string('emails/welcome_employee.txt', {
+            html_message = render_to_string('emails/welcome_email.html', {
                 'fullname': fullname,
                 'email': email,
                 'password': password,
@@ -54,7 +49,20 @@ def send_employee_welcome_email(
                 'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@company.com')
             })
         except Exception:
-            message = f"""
+            html_message = None
+        
+        # Render plain text fallback
+        try:
+            plain_message = render_to_string('emails/welcome_employee.txt', {
+                'fullname': fullname,
+                'email': email,
+                'password': password,
+                'company_name': company,
+                'login_url': getattr(settings, 'LOGIN_URL', '/login/'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@company.com')
+            })
+        except Exception:
+            plain_message = f"""
 Dear {fullname},
 
 Welcome to {company}! We're excited to have you join our team.
@@ -90,26 +98,24 @@ The {company} Team
 This is an automated message. Please do not reply to this email.
             """.strip()
         
-        # Send email
+        # Send email with both HTML and plain text versions
         send_mail(
             subject=subject,
-            message=message,
+            message=plain_message,
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@company.com'),
             recipient_list=[email],
+            html_message=html_message,
             fail_silently=False,
         )
         
         return True
         
     except Exception as exc:
-        
         # Retry logic for transient failures
         if self.request.retries < self.max_retries:
             raise self.retry(exc=exc)
         else:
-
             raise exc
-
 
 @shared_task
 def send_bulk_welcome_emails(employee_data: list) -> dict:
@@ -128,7 +134,6 @@ def send_bulk_welcome_emails(employee_data: list) -> dict:
         'failed': 0,
         'errors': []
     }
-    
     
     for employee in employee_data:
         try:

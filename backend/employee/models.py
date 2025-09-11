@@ -130,6 +130,7 @@ class Education(SoftDeletableTimeStampedModel):
         "Employee", on_delete=models.CASCADE, related_name="educations"
     )
     institution = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
     year = models.PositiveIntegerField()
     qualification = models.ForeignKey(
         QualificationAward,

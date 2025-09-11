@@ -39,6 +39,7 @@ from .views import (
     BranchShiftDetailView,
     BranchShiftListCreateView,
     AIAssistantView,
+    UserChatsView,
 )
 
 urlpatterns = [
@@ -207,4 +208,5 @@ urlpatterns = [
         AIAssistantView.as_view(),
         name="ai-assistant",
     ),
+    path("user-chats/", UserChatsView.as_view(), name="user-chats"),
 ]

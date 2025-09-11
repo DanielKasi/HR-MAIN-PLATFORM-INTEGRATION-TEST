@@ -115,7 +115,7 @@ export default function AIAssistantWidget() {
   const loadChatHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      const response = await apiGet("/assistant/user-chats/");
+      const response = await apiGet("/institution/user-chats/");
       const userChats: UserChats = response.data;
       setChatHistory(userChats.chats || []);
     } catch (error) {

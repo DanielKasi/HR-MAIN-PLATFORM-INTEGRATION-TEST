@@ -67,7 +67,7 @@ def user_has_permission(user, permission_code: str, institution_id: int) -> bool
         institution_owner=user,
     ):
         return True
-
+    
     return RolePermission.objects.filter(
         permissions__institution__id=institution_id,
         role__user_roles__user=user,
