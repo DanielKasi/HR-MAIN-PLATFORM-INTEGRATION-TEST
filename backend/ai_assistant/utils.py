@@ -6,7 +6,7 @@ from users.models import Permission, RolePermission
 from agno.agent import Agent
 from agno.models.groq import Groq
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", settings.GROK_API_KEY)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", settings.GROQ_API_KEY)
 
 
 def prompt_groq(full_prompt: str) -> str:
