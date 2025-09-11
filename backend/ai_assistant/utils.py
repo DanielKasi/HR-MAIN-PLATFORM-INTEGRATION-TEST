@@ -32,12 +32,14 @@ def prompt_groq(full_prompt: str) -> str:
 def classify_intent_groq(user_input: str) -> str:
     prompt = f"""
 You are an assistant that categorizes user input into one of three categories:
-GREETING, HR_QUERY, or OTHER.
+GREETING, HR_QUERY, FEATURE_INQUIRY or OTHER.
+
+Note: Before classifying, these are the apps we have and mostly questions will come from (assets same as institution assets, so this is HR_Based, discpline, payroll, employee, onbaording/offboarding(termination, leave requests), leave mgt, performance, recruitment, spotchecks, projects and much more )
 
 - GREETING: Friendly salutations or simple hellos.
 - HR_QUERY: Questions related to human resources such as employee benefits, payroll, recruitment and everything related to the institution. Under this still, all questions that look like follow up questions should be here, even those that look unclear and cant be classified ie Are you sure?, mention its name meaning its something up most recent, state it, describe it.
-- OTHER: Any other input, including unrelated questions, nonsensical input, or potentially harmful or malicious commands (e.g., requests to delete data, hack, or any dangerous actions).
 - FEATURE_INQUIRY: Questions related to how to do something on the system, how to logout, how to, how do I add or do this.... and more
+- OTHER: Any other input, including unrelated questions, nonsensical input, or potentially harmful or malicious commands (e.g., requests to delete data, hack, or any dangerous actions).
 
 Input: "{user_input}"
 

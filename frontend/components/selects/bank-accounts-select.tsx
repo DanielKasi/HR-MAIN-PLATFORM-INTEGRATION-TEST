@@ -79,7 +79,7 @@ export const BankAccountSearchableSelect = ({
         getItemId={(account) => account.id}
         getItemLabel={(account) => account.account_name || ""}
         getItemValue={(account) => account.id.toString()}
-        selectedItems={selectedItems}
+        selectedItems={selectedItems || [""]}
         onSelect={handleSelect}
         onRemove={handleRemove}
         showSelectedItems={showSelectedItems}

@@ -65,6 +65,9 @@ export enum PERMISSION_CODES {
   CAN_EDIT_STAFF_ROLES = "can_edit_staff_roles",
   CAN_ASSIGN_USER_ROLES = "can_assign_user_roles",
 
+  // AI Assistant
+  CAN_VIEW_AI_ASSISTANT = "can_view_ai_assistant",
+
   // Employee Management
   CAN_CREATE_EMPLOYEES = "can_create_employees",
   CAN_VIEW_EMPLOYEES = "can_view_employees",

@@ -7,6 +7,7 @@ import {Card, CardContent, CardHeader} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {Menu, X, ArrowUp, Bot, Sparkles} from "lucide-react";
 import {apiPost, apiGet} from "@/lib/apiRequest";
+import {ExternalLink} from "lucide-react";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -30,11 +31,13 @@ interface DisplayMessage {
   type: "user" | "assistant" | "status";
   content: string;
   timestamp: string;
+  links?: string[];
 }
 
 interface ApiResponse {
   data: {
     chat_id?: string;
+    link?: string[];
     answer: string;
   };
 }
@@ -112,7 +115,7 @@ export default function AIAssistantWidget() {
   const loadChatHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      const response = await apiGet("/assistant/user-chats/");
+      const response = await apiGet("/institution/user-chats/");
       const userChats: UserChats = response.data;
       setChatHistory(userChats.chats || []);
     } catch (error) {
@@ -165,12 +168,12 @@ export default function AIAssistantWidget() {
         setCurrentChatId(response.data.chat_id);
       }
 
-      // Add assistant response
       const assistantMessage: DisplayMessage = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
         content: response.data.answer,
         timestamp: new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}),
+        links: response.data.link || [],
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -509,7 +512,7 @@ export default function AIAssistantWidget() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="flex justify-start">
+                                  <div className="flex justify-start flex-col">
                                     <div
                                       className="bg-gray-100 text-gray-900 rounded-2xl rounded-tl-md px-3 sm:px-4 py-2 sm:py-2.5 transform transition-all duration-200 hover:shadow-sm break-words hyphens-auto"
                                       style={{maxWidth: "85%"}}
@@ -517,6 +520,20 @@ export default function AIAssistantWidget() {
                                       <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
                                         {message.content}
                                       </p>
+
+                                      {message.links && message.links.length > 0 && (
+                                        <div className="mt-2 flex items-center">
+                                          <a
+                                            href={message.links[0]}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-6 h-6 flex items-center justify-center rounded-full bg-red-200 text-red-700 hover:bg-red-300 transition-colors duration-200"
+                                            title="See more"
+                                          >
+                                            <ExternalLink className="h-3 w-3" />
+                                          </a>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}

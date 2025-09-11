@@ -6,10 +6,6 @@ from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 from onboarding.models import OnBoarding
-from workflows.serializers import (
-    JobPositionWorkflowSerializer,
-    JobPositionAdvertWorkflowSerializer,
-)
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from .serializers import (
@@ -66,7 +62,7 @@ class JobPositionListAPI(APIView, SortableAPIMixin):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
-        responses={200: JobPositionWorkflowSerializer(many=True)},
+        responses={200: JobPositionSerializer(many=True)},
         description="List all job positions",
         summary="List Job Positions",
         tags=["Recruitment"],
@@ -89,7 +85,7 @@ class JobPositionListAPI(APIView, SortableAPIMixin):
             return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(job_positions, request)
-        serializer = JobPositionWorkflowSerializer(paginated_qs, many=True)
+        serializer = JobPositionSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -97,7 +93,7 @@ class JobPositionDetailAPI(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     @extend_schema(
-        responses={200: JobPositionWorkflowSerializer},
+        responses={200: JobPositionSerializer},
         description="Retrieve a job position by ID",
         summary="Get Job Position",
         tags=["Recruitment"],
@@ -105,7 +101,7 @@ class JobPositionDetailAPI(APIView):
     def get(self, request, job_position_id):
         try:
             job_position = JobPosition.objects.get(id=job_position_id)
-            serializer = JobPositionWorkflowSerializer(job_position)
+            serializer = JobPositionSerializer(job_position)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobPosition.DoesNotExist:
             return Response(
@@ -181,7 +177,7 @@ class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
 
     permission_classes = [AllowAny]
     @extend_schema(
-        responses={200: JobPositionAdvertWorkflowSerializer(many=True)},
+        responses={200: JobPositionAdvertSerializer(many=True)},
         summary="List Job Position Adverts",
         tags=["Recruitment"],
     )
@@ -217,7 +213,7 @@ class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
 
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(adverts, request)
-        serializer = JobPositionAdvertWorkflowSerializer(paginated_qs, many=True)
+        serializer = JobPositionAdvertSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -226,14 +222,14 @@ class JobPositionAdvertDetailAPI(APIView):
 
     permission_classes = [AllowAny]
     @extend_schema(
-        responses={200: JobPositionAdvertWorkflowSerializer},
+        responses={200: JobPositionAdvertSerializer},
         summary="Get Job Position Advert",
         tags=["Recruitment"],
     )
     def get(self, request, advert_id):
         try:
             advert = JobPositionAdvert.objects.get(id=advert_id)
-            serializer = JobPositionAdvertWorkflowSerializer(advert)
+            serializer = JobPositionAdvertSerializer(advert)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except JobPositionAdvert.DoesNotExist:
             return Response(

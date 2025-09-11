@@ -14,7 +14,7 @@ urlpatterns = [
     ),
     path("api/user/", include("users.urls")),
     path("api/institution/", include("institution.urls")),
-    path("api/workflow/", include("workflows.urls")),
+    # path("api/workflow/", include("workflows.urls")),
     path("api/recruitment/", include("recruitment.urls")),
     path("api/on-boarding/", include("onboarding.urls")),
     path("api/employee/", include("employee.urls")),
@@ -30,8 +30,7 @@ urlpatterns = [
     path("ckeditor/", include("ckeditor_uploader.urls")),
     path("api/approval/", include("approval.urls")),
     path("api/spotcheck/", include("spotcheck.urls")),
-    path("/", include("communication.urls")),
-    path("api/assistant/", include("assistant.urls")),
+    path("api/communication/", include("communication.urls")),
 ]
 
 if settings.DEBUG:

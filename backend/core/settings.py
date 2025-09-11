@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "easyaudit",
     "communication",
-    "assistant",
 ]
 
 MIDDLEWARE = [
@@ -222,6 +221,10 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+REDIS_DB = 0
 
 # Celery Configuration Options
 CELERY_TIMEZONE = "Africa/Kampala"

@@ -1127,6 +1127,14 @@
     }
   ],
 
+  "AI Assistant":[
+    {
+      "code": "can_view_ai_assistant",
+      "name": "CAN VIEW AI ASSISTANT",
+      "description": "Allows users to see the AI Assistant"
+    }
+  ],
+
   "Onboarding & Offboarding": [
     {
       "code": "can_create_onboarding_records",

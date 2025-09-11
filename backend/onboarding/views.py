@@ -7,11 +7,11 @@ from rest_framework import status
 from drf_spectacular.utils import extend_schema
 from django.db import transaction
 from rest_framework import serializers
-from workflows.serializers import (
-    ResignationRequestWorkflowSerializer,
-    TerminationInitiationWorkflowSerializer,
-    RetirementRequestWorkflowSerializer,
-)
+# from workflows.serializers import (
+#     ResignationRequestWorkflowSerializer,
+#     TerminationInitiationWorkflowSerializer,
+#     RetirementRequestWorkflowSerializer,
+# )
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from .models import (
     EmployeeSeparation,

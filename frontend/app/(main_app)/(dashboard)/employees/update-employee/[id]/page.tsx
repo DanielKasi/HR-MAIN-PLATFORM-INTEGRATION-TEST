@@ -89,7 +89,7 @@ import {createEmployee} from "@/lib/utils";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Icon} from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
-import { formatCurrency } from "@/lib/helpers";
+import {formatCurrency} from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 
 interface Child extends IChild {}
@@ -125,7 +125,6 @@ const steps = [
 ];
 
 export default function UpdateEmployeeForm() {
-
   const router = useRouter();
   const params = useParams();
   const employeeId = params.id as string;
@@ -134,7 +133,7 @@ export default function UpdateEmployeeForm() {
   Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
   const maxDate18 = Date18YearsOld.toISOString().split("T")[0];
 
-  const [thisEmployee, setThisEmployee] = useState<IEmployee|null>(null);
+  const [thisEmployee, setThisEmployee] = useState<IEmployee | null>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -259,7 +258,7 @@ export default function UpdateEmployeeForm() {
     country: "",
     nin: "",
     tin: "",
-    salary:0,
+    salary: 0,
     nssf_no: "",
     is_active: true,
     skills: "",
@@ -272,7 +271,6 @@ export default function UpdateEmployeeForm() {
     bank_accounts: [],
     work_experiences: [],
   });
-
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
   // const [uploadError, setUploadError] = useState<string | null>(null);
@@ -501,19 +499,16 @@ export default function UpdateEmployeeForm() {
     setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-useEffect(() => {
+  useEffect(() => {
     if (employeeId && selectedInstitution) {
       loadEmployee();
     }
     loadDropdownData();
   }, [employeeId, selectedInstitution]);
 
-
   useEffect(() => {
     setFormData((prev) => ({...prev, selected_branches: branches.map((br) => br.id)}));
   }, [branches]);
-
-
 
   const loadEmployee = async () => {
     setLoadingData(true);
@@ -552,7 +547,7 @@ useEffect(() => {
       });
 
       setChildren(employee.children);
-      setHasChildren(!!employee.children.length)
+      setHasChildren(!!employee.children.length);
       // Assuming next_of_kin is available or empty
       setNextOfKins([]); // Adjust if backend provides next_of_kin
       setEducations(employee.educations);
@@ -631,9 +626,6 @@ useEffect(() => {
     }
   };
 
-
-
-
   const handleInputChange = (
     field: keyof ICreateEmployeeForm,
     value: string | boolean | File | null | number | number[],
@@ -704,9 +696,11 @@ useEffect(() => {
       handleProflePictureChange(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      ;
     } catch (error: unknown) {
-      showErrorToast({error, defaultMessage:"An unknown error occurred while processing the image"});
+      showErrorToast({
+        error,
+        defaultMessage: "An unknown error occurred while processing the image",
+      });
     }
   };
 
@@ -716,9 +710,6 @@ useEffect(() => {
     }
     setPreviewUrl("");
     handleProflePictureChange(null);
-    ;
-
-
     const fileInput = profilePicInputRef.current;
     if (fileInput) {
       fileInput.value = "";
@@ -772,11 +763,18 @@ useEffect(() => {
       case 3:
         return !!(
           bankAccountFormData.account_name.trim() &&
+          bankAccountFormData.account_number &&
           bankAccountFormData.account_number.trim() &&
+          bankAccountFormData.account_number.length <= 20 &&
           bankAccountFormData.bank_id &&
+          formData.tin &&
           formData.tin.trim() &&
           formData.tin.length <= 12 &&
-          formData.nssf_no.trim()
+          formData.nssf_no &&
+          formData.nssf_no.trim() &&
+          formData.nssf_no.length <= 12 &&
+          formData.salary &&
+          formData.salary > 0
         );
       default:
         return false;
@@ -792,7 +790,7 @@ useEffect(() => {
     );
     if (isCurrentStepValid() && currentStep < steps.length) {
       setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev) => prev + 1 || 1);
       // return
     }
   };
@@ -888,7 +886,7 @@ useEffect(() => {
         nin: formData.nin,
         tin: formData.tin,
         nssf_no: formData.nssf_no,
-        salary:formData.salary,
+        salary: formData.salary,
         is_active: formData.is_active,
         skills: formData.skills,
         marital_status: formData.marital_status,
@@ -926,14 +924,14 @@ useEffect(() => {
           duration: exp.duration,
           reason_of_leave: exp.reason_of_leave,
         })),
-        bank_accounts: [bankAccountFormData]
+        bank_accounts: [bankAccountFormData],
       };
-      if(formData.marital_status === "married"){
+      if (formData.marital_status === "married") {
         dataToSubmit["spouse"] = {
-                name: spouseFormData.name,
-                phone_number: spouseFormData.phoneNumber,
-                date_of_birth: spouseFormData.dateOfBirth,
-              }
+          name: spouseFormData.name,
+          phone_number: spouseFormData.phoneNumber,
+          date_of_birth: spouseFormData.dateOfBirth,
+        };
       }
 
       await updateEmployee({
@@ -965,15 +963,11 @@ useEffect(() => {
 
     const newCountry = selectedCountry?.name?.common || formData.country;
 
-
-    if (
-      newPhoneNumber !== formData.phone_number ||
-      newCountry !== formData.country 
-    ) {
-      const updatedFormData:typeof formData = {
+    if (newPhoneNumber !== formData.phone_number || newCountry !== formData.country) {
+      const updatedFormData: typeof formData = {
         ...formData,
         phone_number: newPhoneNumber,
-        country: newCountry
+        country: newCountry,
       };
       setFormData(updatedFormData);
     }
@@ -1058,7 +1052,7 @@ useEffect(() => {
                         </Label>
                         <Input
                           id="fullname"
-                          value={formData.fullname}
+                          value={formData.fullname || ""}
                           onChange={(e) => handleInputChange("fullname", e.target.value)}
                           placeholder="Enter full name"
                           className="h-12 rounded-2xl"
@@ -1096,7 +1090,7 @@ useEffect(() => {
                         <Input
                           id="dateOfBirth"
                           type="date"
-                          max={maxDate18}
+                          max={maxDate18 || ""}
                           value={formData.date_of_birth}
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
@@ -1131,7 +1125,7 @@ useEffect(() => {
                       </Label>
                       <Input
                         id="nin"
-                        value={formData.nin}
+                        value={formData.nin || ""}
                         onChange={(e) => handleInputChange("nin", e.target.value)}
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
@@ -1157,7 +1151,7 @@ useEffect(() => {
                       </Label>
                       <Input
                         id="address"
-                        value={formData.address}
+                        value={formData.address || ""}
                         onChange={(e) => handleInputChange("address", e.target.value)}
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
@@ -1198,7 +1192,7 @@ useEffect(() => {
                           </Label>
                           <Input
                             id="spouse_name"
-                            value={spouseFormData.name}
+                            value={spouseFormData.name || ""}
                             onChange={(e) =>
                               setSpouseFormData((prev) => ({...prev, name: e.target.value}))
                             }
@@ -1211,7 +1205,7 @@ useEffect(() => {
                           <Input
                             id="spouseDob"
                             type="date"
-                            max={maxDate18}
+                            max={maxDate18 || ""}
                             className="rounded-2xl h-12"
                             value={spouseFormData.dateOfBirth}
                             onChange={(e) =>
@@ -1463,7 +1457,11 @@ useEffect(() => {
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Department *</Label>
                 <Input
-                  value={selectedJobPositon?.department_details?.name || thisEmployee?.department.name}
+                  value={
+                    selectedJobPositon?.department_details?.name ||
+                    thisEmployee?.department.name ||
+                    ""
+                  }
                   disabled
                   className="h-12 rounded-2xl"
                 />
@@ -1574,13 +1572,12 @@ useEffect(() => {
                   id="dateOfJoining"
                   type="date"
                   max={maxDateToDay}
-                  value={formData.date_of_joining}
+                  value={formData.date_of_joining || ""}
                   onChange={(e) => handleInputChange("date_of_joining", e.target.value)}
                   className="h-12 rounded-2xl"
                   required
                 />
               </div>
-
 
               {/* <div className="space-y-2">
                 <Label htmlFor="qualifications" className="text-sm font-medium text-gray-700">
@@ -1601,7 +1598,7 @@ useEffect(() => {
                 </Label>
                 <Input
                   id="skills"
-                  value={formData.skills}
+                  value={formData.skills || ""}
                   onChange={(e) => handleInputChange("skills", e.target.value)}
                   placeholder="Enter skills"
                   className="h-12 rounded-2xl"
@@ -1704,7 +1701,7 @@ useEffect(() => {
                   setAccounts={setInstitutionBanks}
                   selectedItems={[bankAccountFormData.bank_id || 0]}
                   onValueChange={(values) => {
-                    console.log("\n\n Received account ids : ", values)
+                    console.log("\n\n Received account ids : ", values);
                     if (values.length) {
                       setBankAccountFormData((prev) => ({...prev, bank_id: Number(values[0])}));
                     }
@@ -1717,7 +1714,7 @@ useEffect(() => {
                 </Label>
                 <Input
                   id="bankAccountName"
-                  value={bankAccountFormData.account_name}
+                  value={bankAccountFormData.account_name || ""}
                   onChange={(e) =>
                     setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
                   }
@@ -1731,7 +1728,7 @@ useEffect(() => {
                 </Label>
                 <Input
                   id="bankAccountNumber"
-                  value={bankAccountFormData.account_number}
+                  value={bankAccountFormData.account_number || ""}
                   onChange={(e) =>
                     setBankAccountFormData((prev) => ({...prev, account_number: e.target.value}))
                   }
@@ -1745,7 +1742,7 @@ useEffect(() => {
                 </Label>
                 <Input
                   id="nssf_no"
-                  value={formData.nssf_no}
+                  value={formData.nssf_no || ""}
                   onChange={(e) => handleInputChange("nssf_no", e.target.value)}
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
@@ -1757,7 +1754,7 @@ useEffect(() => {
                 </Label>
                 <Input
                   id="tin"
-                  value={formData.tin}
+                  value={formData.tin || ""}
                   onChange={(e) => handleInputChange("tin", e.target.value)}
                   placeholder="Enter TIN"
                   className="h-12 rounded-2xl"
@@ -1766,16 +1763,16 @@ useEffect(() => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
-                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} - {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
+                  {formatCurrency(selectedJobPositon?.salary_max || "0")})
                 </Label>
                 <FormattedNumberInput
-                id="salary"
-                value={formData.salary}
-                onValueChange={(val) => handleInputChange("salary", val)}
-                placeholder="Salary"
-                className="h-12 rounded-2xl"
+                  id="salary"
+                  value={formData.salary}
+                  onValueChange={(val) => handleInputChange("salary", val)}
+                  placeholder="Salary"
+                  className="h-12 rounded-2xl"
                 />
-
               </div>
             </div>
           </div>
@@ -1927,7 +1924,7 @@ useEffect(() => {
                   <Label htmlFor="childName">Child's Name</Label>
                   <Input
                     id="childName"
-                    value={childFormData.name}
+                    value={childFormData.name || ""}
                     onChange={(e) => setChildFormData((prev) => ({...prev, name: e.target.value}))}
                     placeholder="Child's Name"
                     className="rounded-2xl h-12"
@@ -1960,7 +1957,7 @@ useEffect(() => {
                     type="date"
                     max={maxDateToDay}
                     className="rounded-2xl h-12"
-                    value={childFormData.date_of_birth}
+                    value={childFormData.date_of_birth || ""}
                     onChange={(e) =>
                       setChildFormData((prev) => ({...prev, date_of_birth: e.target.value}))
                     }
@@ -2016,7 +2013,7 @@ useEffect(() => {
                   <Label htmlFor="nokName">Contact Name</Label>
                   <Input
                     id="nokName"
-                    value={nextOfKinFormData.name}
+                    value={nextOfKinFormData.name || ""}
                     onChange={(e) =>
                       setNextOfKinFormData((prev) => ({...prev, name: e.target.value}))
                     }
@@ -2068,7 +2065,7 @@ useEffect(() => {
                   <Label htmlFor="nokAddress">Address</Label>
                   <Input
                     id="nokAddress"
-                    value={nextOfKinFormData.address}
+                    value={nextOfKinFormData.address || ""}
                     onChange={(e) =>
                       setNextOfKinFormData((prev) => ({...prev, address: e.target.value}))
                     }
@@ -2128,7 +2125,7 @@ useEffect(() => {
                   <Label htmlFor="eduQualification">Qualification</Label>
                   <Input
                     id="eduQualification"
-                    value={educationFormData.qualification}
+                    value={educationFormData.qualification || ""}
                     onChange={(e) =>
                       setEducationFormData((prev) => ({...prev, qualification: e.target.value}))
                     }
@@ -2139,7 +2136,7 @@ useEffect(() => {
                   <Label htmlFor="eduInstitute">Institute</Label>
                   <Input
                     id="eduInstitute"
-                    value={educationFormData.institute}
+                    value={educationFormData.institute || ""}
                     onChange={(e) =>
                       setEducationFormData((prev) => ({...prev, institute: e.target.value}))
                     }
@@ -2151,7 +2148,7 @@ useEffect(() => {
                   <Label htmlFor="eduYear">Year</Label>
                   <Input
                     id="eduYear"
-                    value={educationFormData.year}
+                    value={educationFormData.year || ""}
                     onChange={(e) =>
                       setEducationFormData((prev) => ({...prev, year: e.target.value}))
                     }
@@ -2163,7 +2160,7 @@ useEffect(() => {
                   <Label htmlFor="eduAward">Award</Label>
                   <Input
                     id="eduAward"
-                    value={educationFormData.award}
+                    value={educationFormData.award || ""}
                     onChange={(e) =>
                       setEducationFormData((prev) => ({...prev, award: e.target.value}))
                     }
@@ -2228,7 +2225,7 @@ useEffect(() => {
                   <Label htmlFor="expCompany">Company</Label>
                   <Input
                     id="expCompany"
-                    value={workExperienceFormData.company}
+                    value={workExperienceFormData.company || ""}
                     onChange={(e) =>
                       setWorkExperienceFormData((prev) => ({...prev, company: e.target.value}))
                     }
@@ -2240,7 +2237,7 @@ useEffect(() => {
                   <Label htmlFor="expPosition">Position</Label>
                   <Input
                     id="expPosition"
-                    value={workExperienceFormData.position}
+                    value={workExperienceFormData.position || ""}
                     onChange={(e) =>
                       setWorkExperienceFormData((prev) => ({...prev, position: e.target.value}))
                     }
@@ -2252,7 +2249,7 @@ useEffect(() => {
                   <Label htmlFor="expDuration">Duration</Label>
                   <Input
                     id="expDuration"
-                    value={workExperienceFormData.duration}
+                    value={workExperienceFormData.duration || ""}
                     onChange={(e) =>
                       setWorkExperienceFormData((prev) => ({...prev, duration: e.target.value}))
                     }
@@ -2264,7 +2261,7 @@ useEffect(() => {
                   <Label htmlFor="expReason">Reason of leave</Label>
                   <Input
                     id="expReason"
-                    value={workExperienceFormData.reason_of_leave}
+                    value={workExperienceFormData.reason_of_leave || ""}
                     onChange={(e) =>
                       setWorkExperienceFormData((prev) => ({
                         ...prev,
@@ -2423,7 +2420,7 @@ useEffect(() => {
                   <Label htmlFor="employeeTypeName">Name *</Label>
                   <Input
                     id="employeeTypeName"
-                    value={employeeTypeFormData.name}
+                    value={employeeTypeFormData.name || ""}
                     onChange={(e) =>
                       setEmployeeTypeFormData((prev) => ({...prev, name: e.target.value}))
                     }
