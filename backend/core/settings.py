@@ -249,4 +249,4 @@ SPOTCHECK_DEFAULT_LATE_STARTS_AFTER_MINUTES = int(
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://peracosoft.com/")
 
-GROK_API_KEY = os.getenv("GROK_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")

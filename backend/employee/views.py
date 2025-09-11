@@ -1172,11 +1172,160 @@ class EmployeeTemplateDownloadAPIView(APIView):
 
 class EmployeeUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [
-        MultiPartParser,
-        FormParser,
-        JSONParser,
-    ]  # Add JSONParser for consistency
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def parse_nested_multipart(self, query_dict, employee):
+        """Parse multipart/form-data into a nested structure."""
+        final_data = defaultdict(list)
+        nested_fields = [
+            "bank_accounts",
+            "next_of_kin",
+            "educations",
+            "work_experiences",
+            "children",
+            "spouse",
+        ]
+
+        # Initialize lists for array fields and dict for spouse
+        for field in nested_fields:
+            if field != "spouse":
+                final_data[field] = []
+            else:
+                final_data[field] = {}
+
+        # Process all keys in the QueryDict
+        for key, values in query_dict.lists():
+            # Handle scalar fields
+            if key in [
+                "user.fullname",
+                "user.email",
+                "email",
+                "phone_number",
+                "gender",
+                "date_of_birth",
+                "date_of_joining",
+                "address",
+                "country",
+                "nin",
+                "tin",
+                "nssf_no",
+                "salary",
+                "is_active",
+                "skills",
+                "marital_status",
+                "selected_branches",
+                "work_type",
+                "employee_type",
+                "position",
+                "department",
+            ]:
+                final_data[key.replace("[]", "")] = values[0] if len(values) == 1 else values
+                continue
+
+            # Handle nested fields
+            for field in nested_fields:
+                if field == "spouse" and key.startswith("spouse."):
+                    # Handle spouse fields (e.g., spouse.name, spouse.phone_number)
+                    subfield = key[len("spouse."):].replace("[]", "")
+                    final_data[field][subfield] = values[0] if values else None
+                elif key.startswith(field + "["):
+                    try:
+                        index_str, subfield = key[len(field + "["):].split("].", 1)
+                        index = int(index_str) if field != "spouse" else None
+                    except (ValueError, IndexError):
+                        continue
+
+                    # Ensure the list for this field has enough entries
+                    if field != "spouse":
+                        while len(final_data[field]) <= index:
+                            final_data[field].append({})
+                        final_data[field][index][subfield] = values[0] if values else None
+
+        # Transform the defaultdict to a regular dict
+        final_data = dict(final_data)
+
+        # Structure user data
+        if "user.fullname" in final_data or "user.email" in final_data:
+            final_data["user"] = {
+                "fullname": final_data.pop("user.fullname", employee.user.fullname),
+                "email": final_data.pop("user.email", employee.user.email),
+            }
+
+        # Fix field names and ensure proper types
+        if "bank_accounts" in final_data:
+            for bank in final_data["bank_accounts"]:
+                bank["account_name"] = bank.get("account_name", final_data["user"]["fullname"])
+                bank["account_number"] = bank.get("account_number", "")
+
+        if "next_of_kin" in final_data:
+            for kin in final_data["next_of_kin"]:
+                if "contact" in kin:
+                    kin["phone_number"] = kin.pop("contact")
+                kin["phone_number"] = kin.get("phone_number") or None
+                kin["address"] = kin.get("address", "Unknown")
+                kin["relationship"] = kin.get("relationship", "other")
+
+        if "educations" in final_data:
+            for edu in final_data["educations"]:
+                if "institute" in edu:
+                    edu["institution"] = edu.pop("institute")
+                if "award" in edu:
+                    edu["name"] = edu.pop("award")
+                if "year" in edu:
+                    try:
+                        edu["year"] = int(edu["year"])
+                    except (ValueError, TypeError):
+                        edu["year"] = None
+                if "qualification" in edu and edu["qualification"]:
+                    try:
+                        qual = QualificationAward.objects.get(name=edu["qualification"])
+                        edu["qualification_id"] = qual.id
+                    except QualificationAward.DoesNotExist:
+                        qual = QualificationAward.objects.create(name=edu["qualification"])
+                        edu["qualification_id"] = qual.id
+                else:
+                    edu["qualification_id"] = None
+
+        if "spouse" in final_data and final_data["spouse"]:
+            if not final_data["spouse"].get("name"):
+                final_data["spouse"]["name"] = final_data["user"]["fullname"] + " Spouse"
+            final_data["spouse"]["phone_number"] = final_data["spouse"].get("phone_number") or None
+        else:
+            final_data["spouse"] = None
+
+        # Convert selected_branches to a list of integers
+        if "selected_branches" in final_data:
+            if isinstance(final_data["selected_branches"], str):
+                final_data["selected_branches"] = [int(final_data["selected_branches"])]
+            elif isinstance(final_data["selected_branches"], list):
+                final_data["selected_branches"] = [int(x) for x in final_data["selected_branches"] if x]
+
+        # Convert scalar fields to appropriate types
+        scalar_fields = [
+            "position",
+            "department",
+            "work_type",
+            "employee_type",
+            "salary",
+        ]
+        for field in scalar_fields:
+            if field in final_data and final_data[field]:
+                try:
+                    final_data[field] = (
+                        float(final_data[field]) if field == "salary" else int(final_data[field])
+                    )
+                except (ValueError, TypeError):
+                    final_data[field] = None
+
+        if "is_active" in final_data:
+            final_data["is_active"] = str(final_data["is_active"]).lower() == "true"
+
+        # Ensure empty nested fields are included
+        for field in ["next_of_kin", "educations", "work_experiences", "children"]:
+            final_data[field] = final_data.get(field, [])
+
+        print(f"Parsed final_data: {final_data}")  # Debug log
+        return final_data
 
     @extend_schema(
         request=EmployeeSerializer,
@@ -1234,151 +1383,12 @@ class EmployeeUpdateAPIView(APIView):
                 )
 
         # Handle multipart/form-data
-        # Initialize final_data with request.data as a dict
-        final_data = dict(request.data)
-
-        # Parse nested fields that may be stringified JSON
-        nested_fields = [
-            "bank_accounts[]",
-            "next_of_kin[]",
-            "educations[]",
-            "work_experiences[]",
-            "children[]",
-            "spouse",
-        ]
-        for field in nested_fields:
-            values = (
-                request.data.getlist(field, [])
-                if field.endswith("[]")
-                else [request.data.get(field)]
-            )
-            parsed_values = []
-            for value in values:
-                if value and isinstance(value, str):
-                    try:
-                        parsed_value = json.loads(value)
-                        parsed_values.append(parsed_value)
-                    except json.JSONDecodeError:
-                        return Response(
-                            {"detail": f"Invalid JSON format for {field}"},
-                            status=status.HTTP_400_BAD_REQUEST,
-                        )
-                else:
-                    parsed_values.append(value)
-
-            clean_field = field.replace("[]", "")
-            if field.endswith("[]") and parsed_values:
-                final_data[clean_field] = (
-                    parsed_values[0]
-                    if isinstance(parsed_values[0], list)
-                    else parsed_values
-                )
-            elif not field.endswith("[]") and parsed_values:
-                final_data[clean_field] = parsed_values[0]
-
-        # Fix next_of_kin field mismatch
-        for kin in final_data.get("next_of_kin", []):
-            if "contact" in kin:
-                kin["phone_number"] = kin.pop("contact")
-            kin["address"] = kin.get("address", "Unknown")
-            kin["relationship"] = kin.get("relationship", "other")
-
-        # Fix bank_accounts missing account_name
-        user_fullname = (
-            final_data.get("user", {}).get("fullname", [employee.user.fullname])[0]
-            if isinstance(final_data.get("user", {}).get("fullname", []), list)
-            else final_data.get("user", {}).get("fullname", employee.user.fullname)
-        )
-        for bank in final_data.get("bank_accounts", []):
-            bank["account_name"] = bank.get("account_name", user_fullname)
-
-        # Ensure user data is included if provided
-        if "user.fullname" in request.data or "user.email" in request.data:
-            final_data["user"] = {
-                "fullname": (
-                    request.data.get("user.fullname", [employee.user.fullname])[0]
-                    if isinstance(request.data.get("user.fullname", []), list)
-                    else request.data.get("user.fullname", employee.user.fullname)
-                ),
-                "email": (
-                    request.data.get("user.email", [employee.user.email])[0]
-                    if isinstance(request.data.get("user.email", []), list)
-                    else request.data.get("user.email", employee.user.email)
-                ),
-            }
-
-        # Ensure nested fields are included even if empty
-        for field in [
-            "bank_accounts",
-            "next_of_kin",
-            "educations",
-            "work_experiences",
-            "children",
-        ]:
-            final_data[field] = final_data.get(field, [])
-        final_data["spouse"] = final_data.get("spouse", None)
-
-        # Unwrap list-wrapped scalar fields
-        scalar_fields = [
-            "position",
-            "department",
-            "work_type",
-            "employee_type",
-            "gender",
-            "marital_status",
-            "is_active",
-            "date_of_birth",  # Added missing fields
-            "employee_id",
-            "phone_number",
-            "country",
-            "nin",
-            "nssf_no",
-            "tin",
-            "address",
-            "skills",
-            "salary",
-            "date_of_joining",
-            "email",
-        ]
-        for field in scalar_fields:
-            if field in final_data:
-                if isinstance(final_data[field], list):
-                    final_data[field] = (
-                        final_data[field][0] if final_data[field] else None
-                    )
-                try:
-                    if field in [
-                        "position",
-                        "department",
-                        "work_type",
-                        "employee_type",
-                    ]:
-                        final_data[field] = (
-                            int(final_data[field]) if final_data[field] else None
-                        )
-                    elif field == "is_active":
-                        final_data[field] = (
-                            str(final_data[field]).lower() == "true"
-                            if final_data[field]
-                            else False
-                        )
-                    elif field == "salary":
-                        final_data[field] = (
-                            float(final_data[field]) if final_data[field] else None
-                        )
-                except (ValueError, TypeError):
-                    final_data[field] = None
-
-        # Handle selected_branches
-        final_data["selected_branches"] = request.data.getlist(
-            "selected_branches[]", []
-        )
-
-
+        final_data = self.parse_nested_multipart(request.data, employee)
         serializer = EmployeeSerializer(
             employee, data=final_data, context={"request": request}, partial=True
         )
         if not serializer.is_valid():
+            print(f"Serializer errors: {serializer.errors}")  # Debug log
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
