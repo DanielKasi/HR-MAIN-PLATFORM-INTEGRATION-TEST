@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { MultiSelectPopover } from "@/components/common/multi-select-popover"
 import FixedLoader from "@/components/fixed-loader"
-import { getRoles, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
 import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -64,7 +64,8 @@ export default function ApproverGroupsPage() {
       setLoading(true)
       const [groupsRes, userProfiles, roles] = await Promise.all([
         fetchApproverGroups(),
-        usersAPI.getProfilesByInstitutionId({ institutionId: currentInstitution.id }),
+        PROFILES_API.getPaginatedUserProfiles({}),
+
         getRoles({ institutionId: currentInstitution.id }),
       ])
 
@@ -117,17 +118,17 @@ export default function ApproverGroupsPage() {
 
   const handleSave = async () => {
     if (!currentInstitution) {
-      showErrorToast({error:null, defaultMessage: "Missing institution" })
+      showErrorToast({ error: null, defaultMessage: "Missing institution" })
       return
     }
 
     if (!groupName.trim()) {
-      showErrorToast({error:null,  defaultMessage: "Group name is required" })
+      showErrorToast({ error: null, defaultMessage: "Group name is required" })
       return
     }
 
     if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
-      showErrorToast({error:null,  defaultMessage: "Please select at least one user or role" })
+      showErrorToast({ error: null, defaultMessage: "Please select at least one user or role" })
       return
     }
 

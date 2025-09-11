@@ -1,7 +1,7 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   fetchApprovalDocumentById,
@@ -22,8 +22,8 @@ import type {
   ApproverGroup,
   ApproverGroupFormData,
 } from "@/types/approvals.types";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
   Dialog,
   DialogContent,
@@ -32,15 +32,15 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
-import {Textarea} from "@/components/ui/textarea";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Separator} from "@/components/ui/separator";
-import {MultiSelectPopover} from "@/components/common/multi-select-popover";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { MultiSelectPopover } from "@/components/common/multi-select-popover";
 import FixedLoader from "@/components/fixed-loader";
-import {getRoles, showErrorToast, showSuccessToast, usersAPI} from "@/lib/utils";
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils";
 import {
   ArrowLeft,
   Plus,
@@ -52,11 +52,11 @@ import {
   Save,
   Edit,
 } from "lucide-react";
-import type {Role, UserProfile} from "@/types";
-import {toast} from "sonner";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Label} from "@/components/ui/label";
-import {ConfirmationDialog} from "@/components/confirmation-dialog";
+import type { Role, UserProfile } from "@/types";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function ApprovalEditPage() {
   const params = useParams();
@@ -117,8 +117,8 @@ export default function ApprovalEditPage() {
       const [documentRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
         fetchApprovalDocumentById(Number.parseInt(approvalId)),
         fetchActions(),
-        usersAPI.getProfilesByInstitutionId({institutionId: currentInstitution.id}),
-        getRoles({institutionId: currentInstitution.id}),
+        PROFILES_API.getPaginatedUserProfiles({}),
+        getRoles({ institutionId: currentInstitution.id }),
         fetchApproverGroups(),
       ]);
 
@@ -141,7 +141,7 @@ export default function ApprovalEditPage() {
       }
       setApproverGroups(approverGroupsRes.results);
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to load approval data"});
+      showErrorToast({ error: e, defaultMessage: "Failed to load approval data" });
       setError(e?.message || "Failed to load approval data");
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ export default function ApprovalEditPage() {
       await updateApprovalDocument(approvalDocument.id, documentData);
       showSuccessToast("Approval document updated successfully!");
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to update approval document"});
+      showErrorToast({ error: e, defaultMessage: "Failed to update approval document" });
     } finally {
       setSaving(false);
     }
@@ -213,7 +213,7 @@ export default function ApprovalEditPage() {
       resetApproverGroupDialog();
       showSuccessToast("Approver group created successfully!");
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to create approver group"});
+      showErrorToast({ error: e, defaultMessage: "Failed to create approver group" });
     } finally {
       setSavingApproverGroup(false);
     }
@@ -281,7 +281,7 @@ export default function ApprovalEditPage() {
       loadData();
       resetLevelDialog();
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to save approval level"});
+      showErrorToast({ error: e, defaultMessage: "Failed to save approval level" });
     } finally {
       setSavingLevel(false);
     }
@@ -310,7 +310,7 @@ export default function ApprovalEditPage() {
       await loadData()
       showSuccessToast("Approval level deleted successfully!");
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to delete approval level"});
+      showErrorToast({ error: e, defaultMessage: "Failed to delete approval level" });
     } finally {
       setDeletingLevel(false);
       setDeleteConfirmOpen(false);

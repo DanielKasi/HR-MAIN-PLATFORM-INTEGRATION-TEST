@@ -1685,6 +1685,25 @@ class UserProfileListAPIView(APIView):
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+    
+    def get(self, request):
+        institution = request.user.profile.institution
+        if not institution:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        user = request.user
+        if not user.is_staff and institution.institution_owner != user:
+            profile = user.profile
+            if profile.institution.id != institution.id:
+                return Response({"detail": "Access denied."}, status=403)
+
+        profiles = Profile.objects.filter(institution=institution)
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(profiles, request)
+        serializer = ProfileSerializer(
+            paginator_qs, many=True, context={"request": request}
+        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UserProfileDetailAPIView(APIView):
@@ -1694,29 +1713,15 @@ class UserProfileDetailAPIView(APIView):
         summary="Get all user profiles",
         tags=["User Management"],
     )
-    def get(self, request, institution_id):
+    def get(self, request, profile_id):
         try:
-            institution = Institution.objects.get(id=institution_id)
-        except Institution.DoesNotExist:
-            return Response({"detail": "Institution not found."}, status=404)
-
-        user = request.user
-
-        if not user.is_staff and institution.institution_owner != user:
-            try:
-                profile = user.profile
-                if profile.institution_id != institution.id:
-                    return Response({"detail": "Access denied."}, status=403)
-            except Profile.DoesNotExist:
-                return Response({"detail": "Access denied."}, status=403)
-
-        profiles = Profile.objects.filter(institution=institution_id)
-        paginator = CustomPageNumberPagination()
-        paginator_qs = paginator.paginate_queryset(profiles, request)
-        serializer = ProfileSerializer(
-            paginator_qs, many=True, context={"request": request}
-        )
-        return paginator.get_paginated_response(serializer.data)
+            profile = Profile.objects.get(id=profile_id)
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class InstitutionUserProfileAPIView(APIView):

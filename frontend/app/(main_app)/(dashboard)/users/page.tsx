@@ -1,21 +1,21 @@
 "use client";
 
-import type {UserProfile} from "@/types";
-import type {IPaginatedResponse} from "@/types/types.utils";
+import type { UserProfile } from "@/types";
+import type { IPaginatedResponse } from "@/types/types.utils";
 
-import {useEffect, useState} from "react";
-import {Search, ChevronDown, Eye, Trash2, ArrowLeft, MoreVertical, Edit} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {Icon} from "@iconify/react";
+import { useEffect, useState } from "react";
+import { Search, ChevronDown, Eye, Trash2, ArrowLeft, MoreVertical, Edit } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
 
-import {AddUserForm} from "./addUser";
+import { AddUserForm } from "./addUser";
 
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Avatar, AvatarFallback} from "@/components/ui/avatar";
-import {capitalizeEachWord, getDefaultInstitutionId} from "@/lib/helpers";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,10 +23,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {PERMISSION_CODES} from "@/constants";
-import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
-import {getPaginatedUsers, getPaginatedUsersFromUrl} from "@/lib/utils";
-import {TableSkeleton} from "@/components/common/table-skeleton";
+import { PERMISSION_CODES } from "@/constants";
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { PROFILES_API } from "@/lib/utils";
+import { TableSkeleton } from "@/components/common/table-skeleton";
 
 export default function StaffPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,18 +163,17 @@ export default function StaffPage() {
               if (!institutionId) {
                 throw new Error("Institution ID is required");
               }
-              return await getPaginatedUsers({
-                institutionId,
+              return await PROFILES_API.getPaginatedUserProfiles({
                 page: 1,
                 search: searchQuery || undefined,
               });
             }}
-            fetchFromUrl={({url}) => getPaginatedUsersFromUrl({url})}
+            fetchFromUrl={({ url }) => PROFILES_API.getPaginatedUserProfilesFromUrl({ url })}
             deps={[searchQuery]}
             className=""
             footerClassName="pt-4"
           >
-            {({data: userData, loading: userLoading, refresh}) => {
+            {({ data: userData, loading: userLoading, refresh }) => {
               useEffect(() => {
                 if (userData?.results) {
                   setAllUserProfiles(userData.results);
@@ -270,17 +269,16 @@ export default function StaffPage() {
                             <TableCell className="text-gray-600">
                               {userProfile.user.branches?.length
                                 ? userProfile.user.branches
-                                    .map((branch) => branch.branch_name)
-                                    .join(", ")
+                                  .map((branch) => branch.branch_name)
+                                  .join(", ")
                                 : "No branches assigned"}
                             </TableCell>
                             <TableCell>
                               <span
-                                className={`px-2 py-1 text-xs rounded-full ${
-                                  userProfile.user.is_active
-                                    ? "bg-[#dcfce7] text-[#10b981]"
-                                    : "bg-[#fee2e2] text-[#ef4444]"
-                                }`}
+                                className={`px-2 py-1 text-xs rounded-full ${userProfile.user.is_active
+                                  ? "bg-[#dcfce7] text-[#10b981]"
+                                  : "bg-[#fee2e2] text-[#ef4444]"
+                                  }`}
                               >
                                 {userProfile.user.is_active ? "Active" : "Inactive"}
                               </span>
@@ -346,17 +344,16 @@ export default function StaffPage() {
                                 Branches:{" "}
                                 {userProfile.user.branches?.length
                                   ? userProfile.user.branches
-                                      .map((branch) => branch.branch_name)
-                                      .join(", ")
+                                    .map((branch) => branch.branch_name)
+                                    .join(", ")
                                   : "No branches assigned"}
                               </p>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`px-2 py-1 text-xs rounded-full ${
-                                    userProfile.user.is_active
-                                      ? "bg-[#dcfce7] text-[#10b981]"
-                                      : "bg-[#fee2e2] text-[#ef4444]"
-                                  }`}
+                                  className={`px-2 py-1 text-xs rounded-full ${userProfile.user.is_active
+                                    ? "bg-[#dcfce7] text-[#10b981]"
+                                    : "bg-[#fee2e2] text-[#ef4444]"
+                                    }`}
                                 >
                                   {userProfile.user.is_active ? "Active" : "Inactive"}
                                 </span>
