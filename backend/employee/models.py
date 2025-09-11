@@ -69,8 +69,7 @@ class EmployeeBankAccount(SoftDeletableTimeStampedModel):
 
 class NextOfKin(SoftDeletableTimeStampedModel):
     RELATIONSHIP_CHOICES = [
-        ("father", "Father"),
-        ("mother", "Mother"),
+        ("parent", "Parent"),
         ("spouse", "Spouse"),
         ("child", "Child"),
         ("friend", "Friend"),

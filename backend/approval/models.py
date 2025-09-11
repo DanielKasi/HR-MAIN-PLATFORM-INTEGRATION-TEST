@@ -318,7 +318,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         institution = self.approval.document.institution
         is_institution_owner = (
             hasattr(user, 'profile') and 
-            institution.institution_owners.filter(id=user.profile.id).exists()
+            institution.institution_owner.filter(id=user.profile.id).exists()
         )
         
         return {
