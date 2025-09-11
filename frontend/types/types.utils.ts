@@ -641,7 +641,8 @@ export interface IEmployeeFormData {
   skills: string
   marital_status: IMaritalStatus
   employee_profile_picture?: File | null
-  selected_branches: number[]
+  selected_branches: number[],
+  has_children:boolean,
 
   // Nested arrays and objects
   children: IChild[]
@@ -681,7 +682,8 @@ export interface ICreateEmployeeForm {
   date_of_joining: string
   skills: string
   selected_branches: number[]
-  is_active: boolean
+  is_active: boolean,
+    has_children:boolean,
 
   // Financial Information
   tin: string

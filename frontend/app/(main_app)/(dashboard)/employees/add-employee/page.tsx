@@ -255,6 +255,7 @@ export default function AddEmployeeForm() {
     date_of_joining: new Date().toISOString().split("T")[0],
     address: "",
     country: "",
+    has_children:false,
     nin: "",
     tin: "",
     salary: 0,
@@ -574,6 +575,7 @@ export default function AddEmployeeForm() {
       nssf_no: "",
       salary: 0,
       is_active: true,
+      has_children:false,
       skills: "",
       selected_branches: [],
       marital_status: "single",
@@ -871,7 +873,7 @@ export default function AddEmployeeForm() {
         employee_type: formData.employee_type,
         position: formData.position,
         department: formData.department,
-
+        has_children:hasChildren,
         children: children.map((child, idx) => ({
           id: String(idx),
           name: child.name,
@@ -976,7 +978,6 @@ export default function AddEmployeeForm() {
         phone_number_country_code: phoneInput.countryCode,
       });
     }
-    // if()
   }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
 
   const renderStep = () => {
