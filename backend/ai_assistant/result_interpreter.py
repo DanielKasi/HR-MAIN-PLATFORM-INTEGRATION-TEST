@@ -8,6 +8,7 @@ FRONTEND_LINKS = {
     "Institution Branches": "/branches",
     "Institution Departments": "/admin/departments",
     "Institution Job Positions": "/job-positions",
+    "Employee Terminations ": "/off-boarding/terminations",
 }
 
 

@@ -23,13 +23,13 @@ class AssetCategory(BaseApprovableModel):
 
     def __str__(self):
         return self.category_name
-    
+
     class Meta:
         constraints = [
             UniqueConstraint(
                 fields=["institution", "category_name"],
                 condition=Q(deleted_at__isnull=True),
-                name="unique_active_category_per_institution"
+                name="unique_active_category_per_institution",
             )
         ]
 
@@ -40,14 +40,14 @@ class AssetCategory(BaseApprovableModel):
         super().save(*args, **kwargs)
 
     def get_institution(self):
-        return self.institution    
+        return self.institution
 
     @staticmethod
     def generate_unique_code():
         """Generates a unique 5-character alphanumeric code."""
         chars = string.ascii_uppercase + string.digits
         while True:
-            code = ''.join(random.choices(chars, k=5))
+            code = "".join(random.choices(chars, k=5))
             if not AssetCategory.objects.filter(code=code).exists():
                 return code
 
@@ -59,20 +59,20 @@ class AssetCategory(BaseApprovableModel):
     @property
     def total_available_assets(self):
         """Returns the total number of available assets in this category"""
-        return self.assets.filter(status='available').count()
+        return self.assets.filter(status="available").count()
 
     @property
     def total_allocated_assets(self):
         """Returns the total number of allocated assets in this category"""
-        return self.assets.filter(status='allocated').count()
+        return self.assets.filter(status="allocated").count()
 
     @property
     def assets_by_status(self):
         """Returns a dictionary with asset counts by status"""
         from django.db.models import Count
-        status_counts = self.assets.values('status').annotate(count=Count('id'))
-        return {item['status']: item['count'] for item in status_counts}
 
+        status_counts = self.assets.values("status").annotate(count=Count("id"))
+        return {item["status"]: item["count"] for item in status_counts}
 
     def save(self, *args, **kwargs):
         # Auto-generate a 5-character code only if not already set
@@ -85,7 +85,7 @@ class AssetCategory(BaseApprovableModel):
         """Generates a unique 5-character alphanumeric code."""
         chars = string.ascii_uppercase + string.digits
         while True:
-            code = ''.join(random.choices(chars, k=5))
+            code = "".join(random.choices(chars, k=5))
             if not AssetCategory.objects.filter(code=code).exists():
                 return code
 
@@ -97,20 +97,20 @@ class AssetCategory(BaseApprovableModel):
     @property
     def total_available_assets(self):
         """Returns the total number of available assets in this category"""
-        return self.assets.filter(status='available').count()
+        return self.assets.filter(status="available").count()
 
     @property
     def total_allocated_assets(self):
         """Returns the total number of allocated assets in this category"""
-        return self.assets.filter(status='allocated').count()
+        return self.assets.filter(status="allocated").count()
 
     @property
     def assets_by_status(self):
         """Returns a dictionary with asset counts by status"""
         from django.db.models import Count
-        status_counts = self.assets.values('status').annotate(count=Count('id'))
-        return {item['status']: item['count'] for item in status_counts}
 
+        status_counts = self.assets.values("status").annotate(count=Count("id"))
+        return {item["status"]: item["count"] for item in status_counts}
 
 
 class Asset(BaseApprovableModel):
@@ -184,7 +184,7 @@ class Asset(BaseApprovableModel):
             )
 
     def get_institution(self):
-        return self.institution        
+        return self.institution
 
 
 class AssetRequest(BaseApprovableModel):
@@ -219,13 +219,13 @@ class AssetRequest(BaseApprovableModel):
 
     def __str__(self):
         return f"Request for {self.asset.asset_name} by {self.requester.user.fullname}"
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["request_reference_code"],
                 condition=models.Q(deleted_at__isnull=True),
-                name="unique_active_request_reference_code"
+                name="unique_active_request_reference_code",
             )
         ]
 
@@ -234,16 +234,18 @@ class AssetRequest(BaseApprovableModel):
         super().save(*args, **kwargs)
 
         if is_new and not self.request_reference_code:
-            self.request_reference_code = f"ASSET-REQ-{self.pk:05d}-{self.asset.id:05d}-{self.requester.id:05d}"
+            self.request_reference_code = (
+                f"ASSET-REQ-{self.pk:05d}-{self.asset.id:05d}-{self.requester.id:05d}"
+            )
             super().save(update_fields=["request_reference_code"])
 
     def get_institution(self):
         return self.asset.institution
 
     def finish_workflow(self, approval: Approval):
-        with transaction.atomic():  
-            if approval.status == 'completed':
-                if approval.action.name == 'create':
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
                     self.asset_request_status = "approved"
                     allocation = AssetAllocation(
                         asset=self.asset,
@@ -251,40 +253,45 @@ class AssetRequest(BaseApprovableModel):
                         responding_to_request=self,
                         allocated_by=None,
                         allocation_status="allocated",
-                        approval_status='active'  
+                        approval_status="active",
                     )
                     allocation.save()
-                    self.approval_status = 'active'  
+                    self.approval_status = "active"
                     self.is_active = True
                     self.deleted_at = None
-                elif approval.action.name == 'update':
-                    self.approval_status = 'active'  
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
                     self.is_active = True
                     self.deleted_at = None
-                elif approval.action.name == 'delete':
-                    self.asset_request_status = "cancelled"  
-                    self.approval_status = 'under_deletion'  
+                elif approval.action.name == "delete":
+                    self.asset_request_status = "cancelled"
+                    self.approval_status = "under_deletion"
                     self.is_active = False
                     self.deleted_at = timezone.now()
-                    self.delete()  
+                    self.delete()
                     return
-            elif approval.status == 'rejected':
-                if approval.action.name == 'create':
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
                     self.asset_request_status = "rejected"
-                    self.approval_status = 'active' 
+                    self.approval_status = "active"
                     self.is_active = True  #
                     self.deleted_at = None
-                elif approval.action.name == 'update':
-                    self.approval_status = 'active'  
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
                     self.is_active = True
                     self.deleted_at = None
-                elif approval.action.name == 'delete':
-                    self.approval_status = 'active'  
+                elif approval.action.name == "delete":
+                    self.approval_status = "active"
                     self.is_active = True
                     self.deleted_at = None
-            self.save(update_fields=['approval_status', 'asset_request_status', 'is_active', 'deleted_at'])
-
-
+            self.save(
+                update_fields=[
+                    "approval_status",
+                    "asset_request_status",
+                    "is_active",
+                    "deleted_at",
+                ]
+            )
 
 
 class AssetAllocation(BaseApprovableModel):
@@ -333,13 +340,13 @@ class AssetAllocation(BaseApprovableModel):
 
     def __str__(self):
         return f"Allocation of {self.asset.asset_name} to {self.allocated_to.user.fullname}"
-    
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["alloc_code"],
                 condition=models.Q(deleted_at__isnull=True),
-                name="unique_active_alloc_code"
+                name="unique_active_alloc_code",
             )
         ]
 
@@ -348,15 +355,17 @@ class AssetAllocation(BaseApprovableModel):
         super().save(*args, **kwargs)
 
         if is_new:
-            self.alloc_code = f"ALLOC-{self.pk:05d}-{self.asset.id:05d}-{self.allocated_to.id:05d}"
+            self.alloc_code = (
+                f"ALLOC-{self.pk:05d}-{self.asset.id:05d}-{self.allocated_to.id:05d}"
+            )
             super().save(update_fields=["alloc_code"])
 
     def get_institution(self):
         return self.asset.institution
 
     def finish_workflow(self, approval: Approval):
-        if approval.status == 'completed':
-            if approval.action.name == 'create':
+        if approval.status == "completed":
+            if approval.action.name == "create":
                 self.allocation_status = "allocated"
                 create_asset_history(
                     asset=self.asset,
@@ -368,23 +377,21 @@ class AssetAllocation(BaseApprovableModel):
                 self.asset.status = "allocated"
                 self.asset.current_holder = self.allocated_to
                 self.asset.save(update_fields=["status", "current_holder"])
-                self.approval_status = 'active'
-            elif approval.action.name == 'update':
-                self.approval_status = 'active'
-            elif approval.action.name == 'delete':
+                self.approval_status = "active"
+            elif approval.action.name == "update":
+                self.approval_status = "active"
+            elif approval.action.name == "delete":
                 self.delete()  # Soft delete
                 return
-        elif approval.status == 'rejected':
-            if approval.action.name == 'create':
+        elif approval.status == "rejected":
+            if approval.action.name == "create":
                 self.allocation_status = "rejected"
-                self.approval_status = 'active'  # Keep record
-            elif approval.action.name == 'update':
-                self.approval_status = 'active'
-            elif approval.action.name == 'delete':
-                self.approval_status = 'active'
+                self.approval_status = "active"  # Keep record
+            elif approval.action.name == "update":
+                self.approval_status = "active"
+            elif approval.action.name == "delete":
+                self.approval_status = "active"
         self.save()
-
-    
 
 
 class AssetReturn(BaseApprovableModel):
@@ -418,8 +425,8 @@ class AssetReturn(BaseApprovableModel):
         return self.asset.institution
 
     def finish_workflow(self, approval: Approval):
-        if approval.status == 'completed':
-            if approval.action.name == 'create':
+        if approval.status == "completed":
+            if approval.action.name == "create":
                 create_asset_history(
                     asset=self.asset,
                     event_type="returned",
@@ -435,21 +442,22 @@ class AssetReturn(BaseApprovableModel):
                     self.asset.status = "decommissioned"
                 self.asset.current_holder = None
                 self.asset.save(update_fields=["status", "current_holder"])
-                self.approval_status = 'active'
-            elif approval.action.name == 'update':
-                self.approval_status = 'active'
-            elif approval.action.name == 'delete':
+                self.approval_status = "active"
+            elif approval.action.name == "update":
+                self.approval_status = "active"
+            elif approval.action.name == "delete":
                 self.delete()  # Soft delete
                 return
-        elif approval.status == 'rejected':
-            if approval.action.name == 'create':
+        elif approval.status == "rejected":
+            if approval.action.name == "create":
                 self.delete()  # Soft delete on reject
                 return
-            elif approval.action.name == 'update':
-                self.approval_status = 'active'
-            elif approval.action.name == 'delete':
-                self.approval_status = 'active'
+            elif approval.action.name == "update":
+                self.approval_status = "active"
+            elif approval.action.name == "delete":
+                self.approval_status = "active"
         self.save()
+
 
 class AssetHistory(SoftDeletableTimeStampedModel):
     EVENT_TYPE_CHOICES = [
