@@ -61,7 +61,7 @@ export function FormattedNumberInput({
     setInputValue(formatted);
   };
 
-  return (
+  return ( 
     <Input
       {...props}
       ref={inputRef}

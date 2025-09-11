@@ -22,7 +22,7 @@ export const useApprovalsForObject = (
 };
 
 export const useApprovalTaskActions = () => {
-  // Wire to Redux thunks later
+
   return {
     approve: async (id: number, comment?: string) => {},
     reject: async (id: number, comment?: string) => {},

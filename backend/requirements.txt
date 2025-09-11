@@ -153,5 +153,4 @@ psycopg2-binary
 pgvector
 groq
 openai 
-psycopg2
 sqlalchemy

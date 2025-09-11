@@ -209,7 +209,15 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Employee
-        fields = "__all__"
+        fields = [
+            'id', 'approvals', 'date_of_birth', 'user', 'department_details', 'position_details',
+            'roles', 'selected_branches', 'employee_working_days', 'work_type', 'employee_type',
+            'bank_accounts', 'next_of_kin', 'educations', 'work_experiences', 'children', 'spouse',
+            'created_at', 'updated_at', 'deleted_at', 'is_active', 'approval_status', 'employee_id',
+            'email', 'phone_number', 'gender', 'date_of_joining', 'address', 'country', 'nin',
+            'nssf_no', 'tin', 'skills', 'marital_status', 'has_children', 'employee_profile_picture',
+            'salary', 'position', 'department', 'payroll_branch'
+        ]
 
     def validate_date_of_birth(self, value):
         print(f"Validating date_of_birth: {value}, type: {type(value)}")
@@ -343,10 +351,12 @@ class EmployeeSerializer(BaseApprovableSerializer):
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
 
+        # Update scalar fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
+        # Update user data
         if user_data:
             user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
@@ -354,6 +364,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             instance.email = user_serializer.data['email']
         instance.save()
 
+        # Update bank accounts
         if bank_accounts_data:
             instance.bank_accounts.all().delete()
             for bank_data in bank_accounts_data:
@@ -361,33 +372,47 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if bank_type:
                     EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
 
+        # Update next of kin
         if next_of_kin_data:
             instance.next_of_kin.all().delete()
             for kin_data in next_of_kin_data:
                 if kin_data.get("name"):
                     NextOfKin.objects.create(employee=instance, **kin_data)
 
+        # Update educations
         if educations_data:
             instance.educations.all().delete()
             for edu_data in educations_data:
                 qualification = edu_data.pop('qualification', None)
-                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
+                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year") and qualification:
                     Education.objects.create(employee=instance, qualification=qualification, **edu_data)
 
+        # Update work experiences
         if work_experiences_data:
             instance.work_experiences.all().delete()
             for exp_data in work_experiences_data:
                 WorkExperience.objects.create(employee=instance, **exp_data)
 
+        # Update children
         if children_data:
             instance.children.all().delete()
             for child_data in children_data:
-                Child.objects.create(employee=instance, **child_data)
+                if child_data.get("name"):
+                    Child.objects.create(employee=instance, **child_data)
 
-        if spouse_data and spouse_data.get("name"):
-            instance.spouse.delete() if instance.spouse else None
-            Spouse.objects.create(employee=instance, **spouse_data)
+        # Update spouse
+        if spouse_data is not None:
+            if spouse_data.get("name"):  # Update or create spouse
+                if instance.spouse:  # Update existing spouse
+                    for attr, value in spouse_data.items():
+                        setattr(instance.spouse, attr, value)
+                    instance.spouse.save()
+                else:  # Create new spouse
+                    Spouse.objects.create(employee=instance, **spouse_data)
+            elif instance.spouse:  # Remove spouse if empty data provided
+                instance.spouse.delete()
 
+        # Update selected branches
         if selected_branches is not None:
             instance.user.attached_branches.all().delete()
             for i, branch_id in enumerate(selected_branches):

@@ -405,7 +405,6 @@ class EmployeeCreateAPIView(APIView):
             # Handle nested fields
             for field in nested_fields:
                 if field == "spouse" and key.startswith("spouse."):
-                    # Handle spouse fields (e.g., spouse.name, spouse.phone_number)
                     subfield = key[len("spouse."):].replace("[]", "")
                     final_data[field][subfield] = values[0] if values else None
                 elif key.startswith(field + "["):
@@ -415,7 +414,6 @@ class EmployeeCreateAPIView(APIView):
                     except (ValueError, IndexError):
                         continue
 
-                    # Ensure the list for this field has enough entries
                     if field != "spouse":
                         while len(final_data[field]) <= index:
                             final_data[field].append({})
@@ -458,15 +456,36 @@ class EmployeeCreateAPIView(APIView):
                         edu["year"] = int(edu["year"])
                     except (ValueError, TypeError):
                         edu["year"] = None
-                if "qualification" in edu and edu["qualification"]:
+                if "qualification_id" in edu and edu["qualification_id"]:
+                    try:
+                        qual_id = int(edu["qualification_id"])
+                        if not QualificationAward.objects.filter(id=qual_id).exists():
+                            raise serializers.ValidationError(
+                                {"educations": f"QualificationAward with ID {qual_id} does not exist."}
+                            )
+                        edu["qualification_id"] = qual_id
+                    except (ValueError, TypeError):
+                        raise serializers.ValidationError(
+                            {"educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."}
+                        )
+                elif "qualification" in edu and edu["qualification"]:
                     try:
                         qual = QualificationAward.objects.get(name=edu["qualification"])
                         edu["qualification_id"] = qual.id
                     except QualificationAward.DoesNotExist:
-                        qual = QualificationAward.objects.create(name=edu["qualification"])
-                        edu["qualification_id"] = qual.id
+                        try:
+                            qual = QualificationAward.objects.create(name=edu["qualification"])
+                            edu["qualification_id"] = qual.id
+                        except Exception as e:
+                            raise serializers.ValidationError(
+                                {"educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"}
+                            )
+                    finally:
+                        edu.pop("qualification", None)  # Remove qualification to avoid serializer confusion
                 else:
-                    edu["qualification_id"] = None
+                    raise serializers.ValidationError(
+                        {"educations": "Either qualification_id or qualification must be provided."}
+                    )
 
         if "spouse" in final_data and final_data["spouse"]:
             if not final_data["spouse"].get("name"):
@@ -508,7 +527,8 @@ class EmployeeCreateAPIView(APIView):
 
         print(f"Parsed final_data: {final_data}")  # Debug log
         return final_data
-    
+
+    # Rest of the EmployeeCreateAPIView (post method, etc.) remains unchanged
     @extend_schema(
         operation_id="create_employee",
         tags=["Employee Management"],
@@ -560,6 +580,14 @@ class EmployeeCreateAPIView(APIView):
                             "relationship": "spouse",
                         }
                     ],
+                    "educations": [
+                        {
+                            "institution": "Example University",
+                            "name": "Bachelor of Science",
+                            "year": 2015,
+                            "qualification_id": 1
+                        }
+                    ],
                 },
             ),
             OpenApiExample(
@@ -586,6 +614,7 @@ class EmployeeCreateAPIView(APIView):
             data = request.data
             serializer = EmployeeSerializer(data=data, context={"request": request})
             if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")  # Debug log
                 return Response(
                     {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -620,8 +649,6 @@ class EmployeeCreateAPIView(APIView):
 
         # Parse multipart data
         final_data = self.parse_nested_multipart(request.data)
-        print(f"Parsed final_data: {final_data}")  # Debug log
-
         serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
             print(f"Serializer errors: {serializer.errors}")  # Debug log
@@ -1225,7 +1252,6 @@ class EmployeeUpdateAPIView(APIView):
             # Handle nested fields
             for field in nested_fields:
                 if field == "spouse" and key.startswith("spouse."):
-                    # Handle spouse fields (e.g., spouse.name, spouse.phone_number)
                     subfield = key[len("spouse."):].replace("[]", "")
                     final_data[field][subfield] = values[0] if values else None
                 elif key.startswith(field + "["):
@@ -1235,7 +1261,6 @@ class EmployeeUpdateAPIView(APIView):
                     except (ValueError, IndexError):
                         continue
 
-                    # Ensure the list for this field has enough entries
                     if field != "spouse":
                         while len(final_data[field]) <= index:
                             final_data[field].append({})
@@ -1276,15 +1301,39 @@ class EmployeeUpdateAPIView(APIView):
                         edu["year"] = int(edu["year"])
                     except (ValueError, TypeError):
                         edu["year"] = None
-                if "qualification" in edu and edu["qualification"]:
+                if "qualification_id" in edu and edu["qualification_id"]:
+                    try:
+                        qual_id = int(edu["qualification_id"])
+                        if not QualificationAward.objects.filter(id=qual_id).exists():
+                            raise serializers.ValidationError(
+                                {"educations": f"QualificationAward with ID {qual_id} does not exist."}
+                            )
+                        edu["qualification_id"] = qual_id
+                    except (ValueError, TypeError):
+                        raise serializers.ValidationError(
+                            {"educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."}
+                        )
+                elif "qualification" in edu and edu["qualification"]:
                     try:
                         qual = QualificationAward.objects.get(name=edu["qualification"])
                         edu["qualification_id"] = qual.id
                     except QualificationAward.DoesNotExist:
-                        qual = QualificationAward.objects.create(name=edu["qualification"])
-                        edu["qualification_id"] = qual.id
+                        try:
+                            qual = QualificationAward.objects.create(name=edu["qualification"])
+                            edu["qualification_id"] = qual.id
+                        except Exception as e:
+                            raise serializers.ValidationError(
+                                {"educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"}
+                            )
+                    finally:
+                        edu.pop("qualification", None)  # Remove qualification to avoid serializer confusion
                 else:
-                    edu["qualification_id"] = None
+                    raise serializers.ValidationError(
+                        {"educations": "Either qualification_id or qualification must be provided."}
+                    )
+                # Ensure institution is not blank
+                if not edu.get("institution"):
+                    edu["institution"] = "Unknown Institution"
 
         if "spouse" in final_data and final_data["spouse"]:
             if not final_data["spouse"].get("name"):
