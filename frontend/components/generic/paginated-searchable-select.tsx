@@ -36,6 +36,7 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
   // For non-paginated mode
   items?: PaginatedSelectItem<T>[];
   // Common props
+  defaultLabel?: string;
   selectedItems?: (string | number)[];
   onSelect: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
   onRemove: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
@@ -63,6 +64,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   query,
   deps = [],
   items: staticItems = [],
+  defaultLabel,
   selectedItems = [],
   onSelect,
   onRemove,
@@ -103,14 +105,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     }
   }, [selectedItems, data]);
 
-  React.useEffect(()=> {
-  if (setParentItems) {
+  React.useEffect(() => {
+    if (setParentItems) {
       if (data?.results && data.next) {
         setParentItems(data.results);
       }
     }
-  }, [data])
-
+  }, [data]);
 
   // Fetch first page for paginated mode
   React.useEffect(() => {
@@ -120,16 +121,15 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       return;
     }
     setLoading(true);
-    console.log("\n\n Refetching first page with previous data : ", data, "Query :", query)
+    console.log("\n\n Refetching first page with previous data : ", data, "Query :", query);
     fetchFirstPage()
       .then((res) => {
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
-          setHasMore(!!res.next);
+        setHasMore(!!res.next);
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line
   }, [...deps]);
-
 
   // Infinite scroll with intersection observer (using callback ref)
   React.useEffect(() => {
@@ -139,7 +139,9 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if(!hasMore){return}
+        if (!hasMore) {
+          return;
+        }
         // console.log("\n\n Trying to fetch with loading : ", loading, "And has more : ", hasMore, "Next url : ", data.next)
         if (entry.isIntersecting && !loading && hasMore) {
           setLoading(true);
@@ -147,7 +149,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
           fetchFromUrl({url: data.next!})
             .then((res) => {
               if (res && (!data.next || data.next !== res.next)) {
-                  setHasMore(!!res.next);
+                setHasMore(!!res.next);
                 setData((prev) => ({
                   ...res,
                   results: [...(prev?.results || []), ...res.results],
@@ -170,17 +172,17 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   }, [paginated, data?.next, fetchFromUrl, loading, sentinelNode]);
 
   // Filtered items
-//   const allItems = paginated ? data?.results || [] : staticItems;
-//   const filteredItems = data?.results.filter((item) => {
-//     if (hideSelectedFromList && selectedItems.includes(getItemId(item))) return false;
-//     if (!search) return true;
-//     const itemLabel = getItemLabel(item);
-//     const itemValue = getItemValue(item);
-//     return (
-//       itemLabel.toLowerCase().includes(search.toLowerCase()) ||
-//       (itemValue && itemValue.toLowerCase().includes(search.toLowerCase()))
-//     );
-//   });
+  //   const allItems = paginated ? data?.results || [] : staticItems;
+  //   const filteredItems = data?.results.filter((item) => {
+  //     if (hideSelectedFromList && selectedItems.includes(getItemId(item))) return false;
+  //     if (!search) return true;
+  //     const itemLabel = getItemLabel(item);
+  //     const itemValue = getItemValue(item);
+  //     return (
+  //       itemLabel.toLowerCase().includes(search.toLowerCase()) ||
+  //       (itemValue && itemValue.toLowerCase().includes(search.toLowerCase()))
+  //     );
+  //   });
 
   const handleSelect = (itemId: string | number) => {
     const item = data?.results.find((i) => getItemId(i) === itemId);
@@ -199,34 +201,42 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       <div className="py-1">
         {showSelectedItems && (
           <div className="flex items-center justify-start gap-2 flex-wrap ">
-            {data?.results
-              .filter((resItem) =>
-                selectedItems.find((item) => String(item) === String(getItemId(resItem))),
-              )
-              .map((itemData, idx) => {
-                const isSelected =
-                  selectedItems.includes(getItemId(itemData)) ||
-                  selectedItems.includes(String(getItemId(itemData)));
-                return (
-                  <span
-                    key={idx}
-                    className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
-                  >
-                    {getItemLabel(itemData)}
-                    {multiple && isSelected && onRemove && (
-                      <button
-                        className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(getItemId(itemData), itemData);
-                        }}
+            {!defaultLabel ? (
+              <>
+                {data?.results
+                  .filter((resItem) =>
+                    selectedItems.find((item) => String(item) === String(getItemId(resItem))),
+                  )
+                  .map((itemData, idx) => {
+                    const isSelected =
+                      selectedItems.includes(getItemId(itemData)) ||
+                      selectedItems.includes(String(getItemId(itemData)));
+                    return (
+                      <span
+                        key={idx}
+                        className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
                       >
-                        <X className="!h-3 !w-3 text-red-500" />
-                      </button>
-                    )}
-                  </span>
-                );
-              })}
+                        {getItemLabel(itemData)}
+                        {multiple && isSelected && onRemove && (
+                          <button
+                            className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemove(getItemId(itemData), itemData);
+                            }}
+                          >
+                            <X className="!h-3 !w-3 text-red-500" />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })}
+              </>
+            ) : (
+              <span className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs">
+                {defaultLabel}
+              </span>
+            )}
           </div>
         )}
       </div>
