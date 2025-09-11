@@ -521,7 +521,6 @@ export default function UpdateEmployeeForm() {
     try {
       const employee: IEmployee = await getEmployeeById({employeeId: parseInt(employeeId)});
       setThisEmployee(employee);
-      console.log("\n\n Setting job position id on fetch to : ", employee.position.id)
       setFormData({
         fullname: employee.user?.fullname || "",
         email: employee.email,
@@ -652,7 +651,6 @@ export default function UpdateEmployeeForm() {
       }
       setFormData(updatedFormData);
     } else if (field === "department") {
-      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -760,7 +758,8 @@ export default function UpdateEmployeeForm() {
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18
+          currentDate.getFullYear() - DOB.getFullYear() >= 18 &&
+          phoneInput.isValid
         );
       case 2:
         return !!(
@@ -792,12 +791,6 @@ export default function UpdateEmployeeForm() {
   };
 
   const nextStep = () => {
-    console.log(
-      "\n\n Validating next step with current step : ",
-      currentStep,
-      "\n\n Valid : ",
-      isCurrentStepValid(),
-    );
     if (isCurrentStepValid() && currentStep < steps.length) {
       setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
       setCurrentStep((prev) => prev + 1 || 1);
@@ -867,7 +860,6 @@ export default function UpdateEmployeeForm() {
   };
 
   const handleSubmit = async () => {
-    console.log("\n\n Submitting with current step ", currentStep);
     if (!selectedInstitution) {
       showErrorToast({
         error: new Error("No institution selected"),
@@ -943,7 +935,6 @@ export default function UpdateEmployeeForm() {
                 date_of_birth: spouseFormData.dateOfBirth,
         };
       }
-      console.log("\n\n Data sent on update with spouse phone number : ", spouseFormData.phone_number)
       await updateEmployee({
         employeeId: parseInt(employeeId),
         employeeData: dataToSubmit,
@@ -1004,7 +995,6 @@ export default function UpdateEmployeeForm() {
       if (updatedFormData) {
         setFormData(updatedFormData);
       }
-      console.log("\n\n Spouse phone number changed wiht value ", spouseFormData.phone_number)
     }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
   
 
@@ -1111,6 +1101,7 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.fullname && <p className="text-red-400 text-xs">Employee full name is required</p>}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -1125,6 +1116,8 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.email && <p className="text-red-400 text-xs">Employee email is required</p>}
+
                       </div>
                       <div className="space-y-2">
                         <PhoneNumberInput
@@ -1148,6 +1141,8 @@ export default function UpdateEmployeeForm() {
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
                         />
+                         {!formData.date_of_birth && <p className="text-red-400 text-xs">Employee date of birth is required</p>}
+
                       </div>
                     </div>
                   </div>
@@ -1183,6 +1178,8 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.nin && <p className="text-red-400 text-xs">National ID / Passport is required</p>}
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-sm font-medium text-gray-700">
@@ -1197,6 +1194,7 @@ export default function UpdateEmployeeForm() {
                           }
                         }}
                       />
+                      {!formData.country && <p className="text-red-400 text-xs">Please select a country</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="address" className="text-sm font-medium text-gray-700">
@@ -1209,6 +1207,7 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.address && <p className="text-red-400 text-xs">Please set an address</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -1252,6 +1251,7 @@ export default function UpdateEmployeeForm() {
                             placeholder="Enter spouse name"
                             className="h-12 rounded-2xl"
                           />
+                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse name is required</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
@@ -1265,6 +1265,7 @@ export default function UpdateEmployeeForm() {
                               setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
                             }
                           />
+                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse date of birth is required</p>}
                         </div>
                         <div className="space-y-2">
                           <PhoneNumberInput
@@ -1288,46 +1289,47 @@ export default function UpdateEmployeeForm() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth" className="text-lg font-medium text-gray-800">
-                    Children
-                  </Label>
-
-                  <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"Yes"}
-                        id="has_children"
-                        onClick={() => setHasChildren(true)}
-                      />
-                      <Label htmlFor="has_children">Has Children</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"No"}
-                        id="has_no_children"
-                        onClick={() => setHasChildren(false)}
-                      />
-                      <Label htmlFor="has_no_children">No Children</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"Yes"}
+                      id="has_children"
+                      onClick={() => setHasChildren(true)}
+                    />
+                    <Label htmlFor="has_children" className="text-lg">
+                      Has Children
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"No"}
+                      id="has_no_children"
+                      onClick={() => setHasChildren(false)}
+                    />
+                    <Label htmlFor="has_no_children" className="text-lg">
+                      No Children
+                    </Label>
+                  </div>
+                </RadioGroup>
 
                 {/* Children Section */}
                 {hasChildren && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-center">
-                      <Button
-                        type="button"
-                        onClick={() => setIsChildDialogOpen(true)}
-                        className="rounded-xl !bg-gray-900 !text-white"
-                        size="sm"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Child
-                      </Button>
+                    <div className="flex items-center justify-start gap-8 mb-4">
+                      <h4 className="text-lg font-medium text-gray-800">Children</h4>
+                      {hasChildren ? (
+                        <Button
+                          type="button"
+                          onClick={() => setIsChildDialogOpen(true)}
+                          className="rounded-xl !bg-gray-900 !text-white"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <></>
+                      )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                       {children.map((child, idx) => (
                         <div
@@ -1373,10 +1375,18 @@ export default function UpdateEmployeeForm() {
 
                 {/* Emergency Contact Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Emergency Contact(s) / Next of kin
                     </h4>
+                                        <Button
+                      type="button"
+                      onClick={() => setIsNextOfKinDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   <div className="space-y-3">
@@ -1426,26 +1436,22 @@ export default function UpdateEmployeeForm() {
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-center w-full">
-                    <Button
-                      type="button"
-                      onClick={() => setIsNextOfKinDialogOpen(true)}
-                      className="rounded-xl !bg-gray-900 !text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add emergency contact
-                    </Button>
-                  </div>
                 </div>
 
                 {/* Education Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Education Background / Training
                     </h4>
-                    {/* <Button size={"icon"} variant={"ghost"} ></Button> */}
+                                        <Button
+                      type="button"
+                      onClick={() => setIsEducationDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   <div className="space-y-3">
@@ -1495,17 +1501,7 @@ export default function UpdateEmployeeForm() {
                        </div>
                      ))}
                   </div>
-                  <div className="flex items-center justify-center py-4">
-                    <Button
-                      type="button"
-                      onClick={() => setIsEducationDialogOpen(true)}
-                      className="rounded-xl !bg-gray-900 !text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Education Background
-                    </Button>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -1542,6 +1538,7 @@ export default function UpdateEmployeeForm() {
                     }
                   }}
                 />
+                {!formData.position && <p className="text-red-400 text-xs">Job position is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1583,6 +1580,7 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                                {!formData.work_type && <p className="text-red-400 text-xs">Work type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1624,6 +1622,7 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.employee_type && <p className="text-red-400 text-xs">Employee type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1686,8 +1685,16 @@ export default function UpdateEmployeeForm() {
 
             {/* Work Experience Section */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start gap-8">
                 <h4 className="text-lg font-medium text-gray-800">Work Experience</h4>
+                                <Button
+                  type="button"
+                  onClick={() => setIsWorkExperienceDialogOpen(true)}
+                  className="rounded-xl !bg-gray-900 !text-white"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -1737,17 +1744,7 @@ export default function UpdateEmployeeForm() {
                 ))}
               </div>
 
-              <div className="flex items-center justify-center py-8">
-                <Button
-                  type="button"
-                  onClick={() => setIsWorkExperienceDialogOpen(true)}
-                  className="rounded-xl !bg-gray-900 !text-white"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add work experience
-                </Button>
-              </div>
+
             </div>
           </div>
         );
@@ -1763,12 +1760,13 @@ export default function UpdateEmployeeForm() {
                   setAccounts={setInstitutionBanks}
                   selectedItems={[bankAccountFormData.bank_id || 0]}
                   onValueChange={(values) => {
-                    console.log("\n\n Received account ids : ", values);
                     if (values.length) {
                       setBankAccountFormData((prev) => ({...prev, bank_id: Number(values[0])}));
                     }
                   }}
                 />
+                {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1783,6 +1781,8 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
+                {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1797,6 +1797,8 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
+                 {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -1809,6 +1811,8 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.nssf_no && <p className="text-red-400 text-xs">A National Social Security Fund number is required</p>}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1822,6 +1826,9 @@ export default function UpdateEmployeeForm() {
                   className="h-12 rounded-2xl"
                   max={12}
                 />
+                                {!formData.tin && <p className="text-red-400 text-xs">A Tax Identification Number number is required</p>}
+                {formData.tin.length > 12 && <p className="text-red-400 text-xs">Tax Identification Number number cannot exceed 12 characters</p>}
+              
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1835,6 +1842,8 @@ export default function UpdateEmployeeForm() {
                   placeholder="Salary"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.salary && <p className="text-red-400 text-xs">Employee Salary is required</p>}
+
               </div>
             </div>
           </div>

@@ -735,7 +735,8 @@ export default function AddEmployeeForm() {
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18
+          currentDate.getFullYear() - DOB.getFullYear() >= 18 &&
+          phoneInput.isValid
         );
       case 2:
         return !!(
@@ -1058,6 +1059,8 @@ export default function AddEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.fullname && <p className="text-red-400 text-xs">Employee full name is required</p>}
+
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -1072,6 +1075,8 @@ export default function AddEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.email && <p className="text-red-400 text-xs">Employee email is required</p>}
+
                       </div>
                       <div className="space-y-2">
                         <PhoneNumberInput
@@ -1092,12 +1097,15 @@ export default function AddEmployeeForm() {
                         </Label>
                         <Input
                           id="dateOfBirth"
+                          required
                           type="date"
                           max={maxDate18}
                           value={formData.date_of_birth}
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
                         />
+                         {!formData.date_of_birth && <p className="text-red-400 text-xs">Employee date of birth is required</p>}
+
                       </div>
                     </div>
                   </div>
@@ -1129,16 +1137,20 @@ export default function AddEmployeeForm() {
                       <Input
                         id="nin"
                         value={formData.nin}
+                        required
                         onChange={(e) => handleInputChange("nin", e.target.value)}
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.nin && <p className="text-red-400 text-xs">National ID / Passport is required</p>}
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-sm font-medium text-gray-700">
                         Nationality
                       </Label>
                       <CountrySelect
+                      
                         selectedCountry={selectedCountry}
                         onCountryChange={(country) => {
                           setSelectedCountry(country);
@@ -1147,6 +1159,7 @@ export default function AddEmployeeForm() {
                           }
                         }}
                       />
+                      {!formData.country && <p className="text-red-400 text-xs">Please select a country</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="address" className="text-sm font-medium text-gray-700">
@@ -1154,11 +1167,13 @@ export default function AddEmployeeForm() {
                       </Label>
                       <Input
                         id="address"
+                        required
                         value={formData.address}
                         onChange={(e) => handleInputChange("address", e.target.value)}
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.address && <p className="text-red-400 text-xs">Please set an address</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -1195,6 +1210,7 @@ export default function AddEmployeeForm() {
                           </Label>
                           <Input
                             id="spouse_name"
+                            required
                             value={spouseFormData.name}
                             onChange={(e) =>
                               setSpouseFormData((prev) => ({...prev, name: e.target.value}))
@@ -1202,11 +1218,13 @@ export default function AddEmployeeForm() {
                             placeholder="Enter spouse name"
                             className="h-12 rounded-2xl"
                           />
+                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse name is required</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
                           <Input
                             id="spouseDob"
+                            required
                             type="date"
                             max={maxDate18}
                             className="rounded-2xl h-12"
@@ -1214,7 +1232,11 @@ export default function AddEmployeeForm() {
                             onChange={(e) =>
                               setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
                             }
+                            
+                          
                           />
+                {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse date of birth is required</p>}
+
                         </div>
                         <div className="space-y-2">
                           <PhoneNumberInput
@@ -1478,6 +1500,7 @@ export default function AddEmployeeForm() {
                     }
                   }}
                 />
+                {!formData.position && <p className="text-red-400 text-xs">Job position is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1519,6 +1542,7 @@ export default function AddEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.work_type && <p className="text-red-400 text-xs">Work type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1560,6 +1584,7 @@ export default function AddEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.employee_type && <p className="text-red-400 text-xs">Employee type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1700,6 +1725,8 @@ export default function AddEmployeeForm() {
                     }
                   }}
                 />
+                {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1714,6 +1741,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
+                {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1728,6 +1756,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
+                 {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -1740,6 +1769,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.nssf_no && <p className="text-red-400 text-xs">A National Social Security Fund number is required</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1753,11 +1783,13 @@ export default function AddEmployeeForm() {
                   className="h-12 rounded-2xl"
                   max={12}
                 />
+                {!formData.tin && <p className="text-red-400 text-xs">A Tax Identification Number number is required</p>}
+                {formData.tin.length > 12 && <p className="text-red-400 text-xs">Tax Identification Number number cannot exceed 12 characters</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
                   Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
-                  {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                  {formatCurrency(selectedJobPositon?.salary_max || "0")}) <span className="text-xs">This is the suggested salary range based on the job position </span>
                 </Label>
                 <FormattedNumberInput
                   id="salary"
@@ -1766,6 +1798,7 @@ export default function AddEmployeeForm() {
                   placeholder="Salary"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.salary && <p className="text-red-400 text-xs">Employee Salary is required</p>}
               </div>
             </div>
           </div>
