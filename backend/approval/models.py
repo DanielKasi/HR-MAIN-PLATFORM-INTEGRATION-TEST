@@ -158,7 +158,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         ('rejected', 'Rejected'),
         ('approved', 'Approved'),
         ('terminated', 'Terminated'),
-        ('overridden', 'Overridden'),  # Added new status
+        ('overridden', 'Overridden'),
     ]
 
     approval = models.ForeignKey(Approval, on_delete=models.CASCADE, related_name='tasks')
@@ -175,10 +175,46 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         unique_together = ('approval', 'level')
         ordering = ['level__level']
 
+    def _check_user_is_approver(self, user):
+        """Check if user is authorized as an approver for this level"""
+        profile = user.profile
+        user_roles = user.roles.all()
+        approver_groups = self.level.approvers.filter(
+            Q(users=profile) | Q(roles__in=user_roles)
+        ).distinct()
+        
+        if not approver_groups.exists():
+            raise ValidationError({
+                "error": "User is not authorized to approve/reject tasks at this level"
+            })
+        
+        return True
+
+    def _check_user_is_overrider(self, user):
+        """Check if user is authorized as an overrider for this level"""
+        profile = user.profile
+        user_roles = user.roles.all()
+        overrider_groups = self.level.overriders.filter(
+            Q(users=profile) | Q(roles__in=user_roles)
+        ).distinct()
+        
+        if not overrider_groups.exists():
+            raise ValidationError({
+                "error": "User is not authorized to override tasks at this level"
+            })
+        
+        return True
+
     def mark_completed(self, user, comment: str = None):
+        """Mark task as approved - only approvers can do this"""
         with transaction.atomic():
             if self.status != 'pending':
-                raise ValidationError({"error": "Task must be in pending state to be completed"})
+                raise ValidationError({
+                    "error": "Task must be in pending state to be completed"
+                })
+
+            # Check if user is authorized to approve at this level
+            self._check_user_is_approver(user)
 
             self.status = 'approved'
             self.approved_by = user
@@ -201,9 +237,15 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 # Notify approval completion
 
     def mark_rejected(self, user, comment: str = None):
+        """Mark task as rejected - only approvers can do this"""
         with transaction.atomic():
             if self.status != 'pending':
-                raise ValidationError({"error": "Task must be in pending state to be rejected"})
+                raise ValidationError({
+                    "error": "Task must be in pending state to be rejected"
+                })
+
+            # Check if user is authorized to reject at this level
+            self._check_user_is_approver(user)
 
             self.status = 'rejected'
             self.approved_by = user
@@ -214,7 +256,9 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             self.approval.status = 'rejected'
             self.approval.save()
 
-            terminated_tasks = self.approval.tasks.exclude(id=self.id).filter(status__in=['not_started', 'pending'])
+            terminated_tasks = self.approval.tasks.exclude(id=self.id).filter(
+                status__in=['not_started', 'pending']
+            )
             terminated_tasks.update(status='terminated')
 
             if self.approval.content_object:
@@ -222,18 +266,15 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             # Notify task rejection and terminated tasks
 
     def mark_overridden(self, user, comment: str = None):
+        """Mark task as overridden - only overriders can do this"""
         with transaction.atomic():
             if self.status != 'pending':
-                raise ValidationError({"error": "Task must be in pending state to be overridden"})
+                raise ValidationError({
+                    "error": "Task must be in pending state to be overridden"
+                })
 
-            # Check if user belongs to an overrider group for this level
-            profile = user.profile
-            user_roles = user.roles.all()
-            overrider_groups = self.level.overriders.filter(
-                Q(users=profile) | Q(roles__in=user_roles)
-            ).distinct()
-            if not overrider_groups.exists():
-                raise ValidationError({"error": "User is not authorized to override this task"})
+            # Check if user is authorized to override at this level
+            self._check_user_is_overrider(user)
 
             # Mark this task as overridden
             self.status = 'overridden'
@@ -247,12 +288,45 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             self.approval.save()
 
             # Terminate all other tasks (not_started or pending)
-            other_tasks = self.approval.tasks.exclude(id=self.id).filter(status__in=['not_started', 'pending'])
+            other_tasks = self.approval.tasks.exclude(id=self.id).filter(
+                status__in=['not_started', 'pending']
+            )
             other_tasks.update(status='terminated')
 
             if self.approval.content_object:
                 self.approval.content_object.finish_workflow(self.approval)
             # Notify approval completion due to override
+
+    def can_user_approve_or_reject(self, user):
+        """Check if user can approve or reject this task"""
+        try:
+            self._check_user_is_approver(user)
+            return True
+        except ValidationError:
+            return False
+
+    def can_user_override(self, user):
+        """Check if user can override this task"""
+        try:
+            self._check_user_is_overrider(user)
+            return True
+        except ValidationError:
+            return False
+
+    def get_user_permissions(self, user):
+        """Get user's permissions for this task"""
+        institution = self.approval.document.institution
+        is_institution_owner = (
+            hasattr(user, 'profile') and 
+            institution.institution_owners.filter(id=user.profile.id).exists()
+        )
+        
+        return {
+            'can_approve_or_reject': self.can_user_approve_or_reject(user),
+            'can_override': self.can_user_override(user),
+            'can_act': self.status == 'pending',
+            'is_institution_owner': is_institution_owner
+        }
 
 class BaseApprovableModel(SoftDeletableTimeStampedModel):
     STATUS_CHOICES = [
