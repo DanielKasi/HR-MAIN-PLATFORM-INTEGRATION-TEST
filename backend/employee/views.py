@@ -465,6 +465,9 @@ class EmployeeCreateAPIView(APIView):
                     except QualificationAward.DoesNotExist:
                         qual = QualificationAward.objects.create(name=edu["qualification"])
                         edu["qualification_id"] = qual.id
+
+                    finally:
+                        del edu["qualification"]    
                 else:
                     edu["qualification_id"] = None
 

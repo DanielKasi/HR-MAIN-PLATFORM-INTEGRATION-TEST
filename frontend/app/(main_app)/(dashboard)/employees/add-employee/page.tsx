@@ -52,6 +52,7 @@ import {
   getWorkTypes,
   getEmployeeTypes,
   showErrorToast,
+  employeeAPI,
 } from "@/lib/utils";
 import {useBranches} from "@/hooks/use-branches";
 import {MultiSelectBranches} from "@/components/multi-select-branches";
@@ -72,6 +73,9 @@ import type {
   IBankAccount,
   IEmployeeBankAccount,
   IMaritalStatus,
+  IEmployeeDeductionFormData,
+  IEmployeeEducationFormData,
+  IQualificationAward,
 } from "@/types/types.utils";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
@@ -86,7 +90,7 @@ import {createEmployee} from "@/lib/utils";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Icon} from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
-import { formatCurrency } from "@/lib/helpers";
+import {formatCurrency} from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
 
 interface Child extends IChild {}
@@ -136,7 +140,7 @@ export default function AddEmployeeForm() {
 
   const [children, setChildren] = useState<Child[]>([]);
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
-  const [educations, setEducations] = useState<Education[]>([]);
+  const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
   const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
 
@@ -148,7 +152,7 @@ export default function AddEmployeeForm() {
 
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
-  const [editingEducation, setEditingEducation] = useState<Education | null>(null);
+  const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
   const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
 
@@ -165,11 +169,11 @@ export default function AddEmployeeForm() {
     address: "",
   });
 
-  const [educationFormData, setEducationFormData] = useState<Omit<Education, "id">>({
-    qualification: "",
+  const [educationFormData, setEducationFormData] = useState<Omit<IEmployeeEducationFormData, "id">>({
+    name: "",
     institute: "",
     year: "",
-    award: "",
+    qualification_id :0,
   });
 
   const [workExperienceFormData, setWorkExperienceFormData] = useState<Omit<WorkExperience, "id">>({
@@ -207,6 +211,7 @@ export default function AddEmployeeForm() {
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement | null>(null);
+  const [qualifications, setQualifications] = useState<IQualificationAward[]>([])
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -252,7 +257,7 @@ export default function AddEmployeeForm() {
     country: "",
     nin: "",
     tin: "",
-    salary:0,
+    salary: 0,
     nssf_no: "",
     is_active: true,
     skills: "",
@@ -265,7 +270,6 @@ export default function AddEmployeeForm() {
     bank_accounts: [],
     work_experiences: [],
   });
-
 
   const [previewUrl, setPreviewUrl] = useState<string>("");
   // const [uploadError, setUploadError] = useState<string | null>(null);
@@ -376,7 +380,7 @@ export default function AddEmployeeForm() {
   };
 
   const handleAddEducation = () => {
-    if (!educationFormData.qualification || !educationFormData.institute) return;
+    if (!educationFormData.qualification_id || !educationFormData.institute) return;
 
     if (editingEducation) {
       setEducations((prev) =>
@@ -386,24 +390,24 @@ export default function AddEmployeeForm() {
       );
       setEditingEducation(null);
     } else {
-      const newEducation: Education = {
+      const newEducation: IEmployeeEducationFormData = {
         ...educationFormData,
         id: generateId(),
       };
       setEducations((prev) => [...prev, newEducation]);
     }
 
-    setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+    setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
     setIsEducationDialogOpen(false);
   };
 
-  const handleEditEducation = (edu: Education) => {
+  const handleEditEducation = (edu: IEmployeeEducationFormData) => {
     setEditingEducation(edu);
     setEducationFormData({
-      qualification: edu.qualification,
+      qualification_id: edu.qualification_id,
       institute: edu.institute,
       year: edu.year,
-      award: edu.award,
+      name: edu.name,
     });
     setIsEducationDialogOpen(true);
   };
@@ -526,13 +530,15 @@ export default function AddEmployeeForm() {
 
     setLoadingData(true);
     try {
-      const [workTypesData, employeeTypesData] = await Promise.all([
+      const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
         getWorkTypes({institutionId: selectedInstitution.id}),
         getEmployeeTypes({institutionId: selectedInstitution.id}),
+        employeeAPI.getQualificationAwards()
       ]);
-
+    
       setWorkTypes(workTypesData.results || []);
       setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
+      setQualifications(qualification_awards)
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -566,7 +572,7 @@ export default function AddEmployeeForm() {
       nin: "",
       tin: "",
       nssf_no: "",
-      salary:0,
+      salary: 0,
       is_active: true,
       skills: "",
       selected_branches: [],
@@ -672,9 +678,11 @@ export default function AddEmployeeForm() {
       handleProflePictureChange(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      ;
     } catch (error: unknown) {
-      showErrorToast({error, defaultMessage:"An unknown error occurred while processing the image"});
+      showErrorToast({
+        error,
+        defaultMessage: "An unknown error occurred while processing the image",
+      });
     }
   };
 
@@ -684,9 +692,6 @@ export default function AddEmployeeForm() {
     }
     setPreviewUrl("");
     handleProflePictureChange(null);
-    ;
-
-
     const fileInput = profilePicInputRef.current;
     if (fileInput) {
       fileInput.value = "";
@@ -811,11 +816,11 @@ export default function AddEmployeeForm() {
   const [phoneCountryCode, setPhoneCountryCode] = useState<string>("");
   const [spouseFormData, setSpouseFormData] = useState<{
     name: string;
-    phoneNumber: string;
+    phone_number: string;
     dateOfBirth: string;
   }>({
     name: "",
-    phoneNumber: "",
+    phone_number: "",
     dateOfBirth: "",
   });
 
@@ -828,7 +833,6 @@ export default function AddEmployeeForm() {
   };
 
   const handleSubmit = async () => {
-    console.log("\n\n Submitting with current step ", currentStep);
     if (!selectedInstitution) {
       showErrorToast({
         error: new Error("No institution selected"),
@@ -857,7 +861,7 @@ export default function AddEmployeeForm() {
         nin: formData.nin,
         tin: formData.tin,
         nssf_no: formData.nssf_no,
-        salary:formData.salary,
+        salary: formData.salary,
         is_active: formData.is_active,
         skills: formData.skills,
         marital_status: formData.marital_status,
@@ -883,10 +887,10 @@ export default function AddEmployeeForm() {
         })),
         educations: educations.map((edu, idx) => ({
           id: String(idx),
-          qualification: edu.qualification,
+          qualification_id: edu.qualification_id,
           institute: edu.institute,
           year: edu.year,
-          award: edu.award,
+          name: edu.name
         })),
         work_experiences: workExperiences.map((exp, idx) => ({
           id: String(idx),
@@ -901,7 +905,7 @@ export default function AddEmployeeForm() {
           formData.marital_status === "married" && spouseFormData.name
             ? {
                 name: spouseFormData.name,
-                phone_number: spouseFormData.phoneNumber,
+                phone_number: spouseFormData.phone_number,
                 date_of_birth: spouseFormData.dateOfBirth,
               }
             : undefined,
@@ -913,7 +917,7 @@ export default function AddEmployeeForm() {
       });
       router.push("/employees/employee-list");
       showSuccessToast("Employee created successfully");
-            handleClearLocalEmployeeCreateForm();
+      handleClearLocalEmployeeCreateForm();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -930,6 +934,8 @@ export default function AddEmployeeForm() {
   };
 
   useEffect(() => {
+    let updatedFormData: typeof formData | null = null;
+
     const newPhoneNumber =
       phoneInput.countryCode && phoneInput.phoneNumber
         ? `${phoneInput.phoneNumber}`
@@ -937,23 +943,41 @@ export default function AddEmployeeForm() {
 
     const newCountry = selectedCountry?.name?.common || formData.country;
 
+    const newNextOfKinPhoneNUmber =
+      emergencyContactPhoneInput.isValid && emergencyContactPhoneInput.phoneNumber
+        ? `${emergencyContactPhoneInput.phoneNumber}`
+        : nextOfKinFormData.phone_number;
 
-    if (
-      newPhoneNumber !== formData.phone_number ||
-      newCountry !== formData.country 
-    ) {
-      const updatedFormData:typeof formData = {
+    const spousePhoneNUmber =
+      spousePhoneInput.isValid && spousePhoneInput.phoneNumber
+        ? `${spousePhoneInput.phoneNumber}`
+        : spouseFormData.phone_number;
+
+    if (newPhoneNumber !== formData.phone_number || newCountry !== formData.country) {
+      updatedFormData = {
         ...formData,
         phone_number: newPhoneNumber,
-        country: newCountry
+        country: newCountry,
       };
+    }
+
+    if (newNextOfKinPhoneNUmber !== nextOfKinFormData.phone_number) {
+      setNextOfKinFormData((prev) => ({...prev, phone_number: newNextOfKinPhoneNUmber}));
+    }
+
+    if (spousePhoneNUmber !== spouseFormData.phone_number) {
+      setSpouseFormData((prev) => ({...prev, phone_number: spousePhoneNUmber}));
+    }
+
+    if (updatedFormData) {
       setFormData(updatedFormData);
       handleSaveLocalEmployeeCreateForm({
         ...updatedFormData,
-        phone_number_country_code: phoneInput.countryCode
+        phone_number_country_code: phoneInput.countryCode,
       });
     }
-  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput]);
+    // if()
+  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -1195,7 +1219,7 @@ export default function AddEmployeeForm() {
                           <PhoneNumberInput
                             label="Spouse Phone Number"
                             required
-                            value={spouseFormData.phoneNumber || ""}
+                            value={spouseFormData.phone_number || ""}
                             country={spousePhoneInput.country}
                             onChange={setSpousePhoneInput}
                             defaultCountryCode={
@@ -1209,46 +1233,47 @@ export default function AddEmployeeForm() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth" className="text-lg font-medium text-gray-800">
-                    Children
-                  </Label>
-
-                  <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"Yes"}
-                        id="has_children"
-                        onClick={() => setHasChildren(true)}
-                      />
-                      <Label htmlFor="has_children">Has Children</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"No"}
-                        id="has_no_children"
-                        onClick={() => setHasChildren(false)}
-                      />
-                      <Label htmlFor="has_no_children">No Children</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"Yes"}
+                      id="has_children"
+                      onClick={() => setHasChildren(true)}
+                    />
+                    <Label htmlFor="has_children" className="text-lg">
+                      Has Children
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"No"}
+                      id="has_no_children"
+                      onClick={() => setHasChildren(false)}
+                    />
+                    <Label htmlFor="has_no_children" className="text-lg">
+                      No Children
+                    </Label>
+                  </div>
+                </RadioGroup>
 
                 {/* Children Section */}
                 {hasChildren && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-center">
-                      <Button
-                        type="button"
-                        onClick={() => setIsChildDialogOpen(true)}
-                        className="rounded-xl !bg-gray-900 !text-white"
-                        size="sm"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Child
-                      </Button>
+                    <div className="flex items-center justify-start gap-8 mb-4">
+                      <h4 className="text-lg font-medium text-gray-800">Children</h4>
+                      {hasChildren ? (
+                        <Button
+                          type="button"
+                          onClick={() => setIsChildDialogOpen(true)}
+                          className="rounded-xl !bg-gray-900 !text-white"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <></>
+                      )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                       {children.map((child, idx) => (
                         <div
@@ -1294,10 +1319,18 @@ export default function AddEmployeeForm() {
 
                 {/* Emergency Contact Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Emergency Contact(s) / Next of kin
                     </h4>
+                    <Button
+                      type="button"
+                      onClick={() => setIsNextOfKinDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   <div className="space-y-3">
@@ -1347,26 +1380,23 @@ export default function AddEmployeeForm() {
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-center w-full">
-                    <Button
-                      type="button"
-                      onClick={() => setIsNextOfKinDialogOpen(true)}
-                      className="rounded-xl !bg-gray-900 !text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add emergency contact
-                    </Button>
-                  </div>
+                  <div className="flex items-center justify-center w-full"></div>
                 </div>
 
                 {/* Education Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Education Background / Training
                     </h4>
-                    {/* <Button size={"icon"} variant={"ghost"} ></Button> */}
+                    <Button
+                      type="button"
+                      onClick={() => setIsEducationDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   <div className="space-y-3">
@@ -1376,7 +1406,8 @@ export default function AddEmployeeForm() {
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
                             <div>
                               <span className="text-gray-600 block">Qualification</span>
-                              <span className="font-medium">{edu.qualification}</span>
+
+                              <span className="font-medium">{edu.name}</span>
                             </div>
                             <div>
                               <span className="text-gray-600 block">Institute</span>
@@ -1388,7 +1419,7 @@ export default function AddEmployeeForm() {
                             </div>
                             <div>
                               <span className="text-gray-600 block">Award</span>
-                              <span className="font-medium">{edu.award}</span>
+                              <span className="font-medium">{qualifications.find(qual => qual.id === edu.qualification_id)?.name || ""}</span>
                             </div>
                           </div>
                           <DropdownMenu>
@@ -1414,17 +1445,6 @@ export default function AddEmployeeForm() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <div className="flex items-center justify-center py-4">
-                    <Button
-                      type="button"
-                      onClick={() => setIsEducationDialogOpen(true)}
-                      className="rounded-xl !bg-gray-900 !text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Education Background
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -1556,7 +1576,6 @@ export default function AddEmployeeForm() {
                 />
               </div>
 
-
               {/* <div className="space-y-2">
                 <Label htmlFor="qualifications" className="text-sm font-medium text-gray-700">
                   Qualifications
@@ -1602,8 +1621,16 @@ export default function AddEmployeeForm() {
 
             {/* Work Experience Section */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start gap-8">
                 <h4 className="text-lg font-medium text-gray-800">Work Experience</h4>
+                <Button
+                  type="button"
+                  onClick={() => setIsWorkExperienceDialogOpen(true)}
+                  className="rounded-xl !bg-gray-900 !text-white"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -1651,18 +1678,6 @@ export default function AddEmployeeForm() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="flex items-center justify-center py-8">
-                <Button
-                  type="button"
-                  onClick={() => setIsWorkExperienceDialogOpen(true)}
-                  className="rounded-xl !bg-gray-900 !text-white"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add work experience
-                </Button>
               </div>
             </div>
           </div>
@@ -1740,16 +1755,16 @@ export default function AddEmployeeForm() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
-                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} - {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
+                  {formatCurrency(selectedJobPositon?.salary_max || "0")})
                 </Label>
                 <FormattedNumberInput
-                id="salary"
-                value={formData.salary}
-                onValueChange={(val) => handleInputChange("salary", val)}
-                placeholder="Salary"
-                className="h-12 rounded-2xl"
+                  id="salary"
+                  value={formData.salary}
+                  onValueChange={(val) => handleInputChange("salary", val)}
+                  placeholder="Salary"
+                  className="h-12 rounded-2xl"
                 />
-
               </div>
             </div>
           </div>
@@ -2081,7 +2096,7 @@ export default function AddEmployeeForm() {
               if (!open) {
                 setIsEducationDialogOpen(false);
                 setEditingEducation(null);
-                setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+                setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
               } else {
                 setIsEducationDialogOpen(open);
               }
@@ -2103,9 +2118,9 @@ export default function AddEmployeeForm() {
                   <Label htmlFor="eduQualification">Qualification</Label>
                   <Input
                     id="eduQualification"
-                    value={educationFormData.qualification}
+                    value={educationFormData.name}
                     onChange={(e) =>
-                      setEducationFormData((prev) => ({...prev, qualification: e.target.value}))
+                      setEducationFormData((prev) => ({...prev, name: e.target.value}))
                     }
                     placeholder="Qualification"
                   />
@@ -2136,32 +2151,30 @@ export default function AddEmployeeForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eduAward">Award</Label>
-                  <Input
-                    id="eduAward"
-                    value={educationFormData.award}
-                    onChange={(e) =>
-                      setEducationFormData((prev) => ({...prev, award: e.target.value}))
-                    }
-                    placeholder="Award Acquired"
-                    className="rounded-2xl h-12"
-                  />
+                      <Select
+                        value={educationFormData.qualification_id.toString()}
+                        onValueChange={(value: string) => setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))}
+                      >
+                        <SelectTrigger className="h-12 rounded-2xl">
+                          <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {qualifications.map((qual:IQualificationAward, idx) => (
+                            <SelectItem key={idx} value={qual.id.toString()}>
+                              {qual.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
 
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddEducation}
                   className=" text-white rounded-full w-full"
-                  disabled={!educationFormData.qualification || !educationFormData.institute}
+                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institute || !educationFormData.year}
                 >
                   {editingEducation ? "Update Education" : "Add Education Background"}
                 </Button>

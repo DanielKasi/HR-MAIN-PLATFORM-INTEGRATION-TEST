@@ -138,10 +138,11 @@ import {
   IEmployeeSpotCheckSettingFormData,
   IEmployeeBankAccount,
   IWorkExperience,
-  IEducation,
   INextOfKin,
   IChild,
   ISpouse,
+  IEmployeeEducationFormData,
+  IQualificationAward,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -1412,11 +1413,11 @@ export const createEmployee = async ({
           formData.append(`next_of_kin[${index}].address`, nok.address || "")
         })
       } else if (key === "educations" && Array.isArray(value)) {
-        value.forEach((edu:IEducation, index) => {
-          formData.append(`educations[${index}].qualification`, edu.qualification || "")
+        value.forEach((edu:IEmployeeEducationFormData, index) => {
+          formData.append(`educations[${index}].name`, edu.name || "")
           formData.append(`educations[${index}].institute`, edu.institute || "")
           formData.append(`educations[${index}].year`, edu.year || "")
-          formData.append(`educations[${index}].award`, edu.award || "")
+          formData.append(`educations[${index}].qualification_id`, edu.qualification_id.toString() || "")
         })
       } else if (key === "work_experiences" && Array.isArray(value)) {
         value.forEach((exp:IWorkExperience, index) => {
@@ -1486,11 +1487,11 @@ export const updateEmployee = async ({
           formData.append(`next_of_kin[${index}].address`, nok.address || "")
         })
       } else if (key === "educations" && Array.isArray(value)) {
-        value.forEach((edu:IEducation, index) => {
-          formData.append(`educations[${index}].qualification`, edu.qualification || "")
+        value.forEach((edu:IEmployeeEducationFormData, index) => {
+          formData.append(`educations[${index}].name`, edu.name || "")
           formData.append(`educations[${index}].institute`, edu.institute || "")
           formData.append(`educations[${index}].year`, edu.year || "")
-          formData.append(`educations[${index}].award`, edu.award || "")
+          formData.append(`educations[${index}].qualification_id`, edu.qualification_id.toString() || "")
         })
       } else if (key === "work_experiences" && Array.isArray(value)) {
         value.forEach((exp:IWorkExperience, index) => {
@@ -6190,6 +6191,11 @@ export const employeeAPI = {
   getByUserId: async ({ user_id }: { user_id: number }) => {
     const response = await apiRequest.get(`/employee/${user_id}/?by_user=true`);
     return response.data as IEmployee;
+  },
+
+  getQualificationAwards: async () => {
+    const response = await apiRequest.get(`/employee/qualification-awards/`);
+    return response.data as IQualificationAward[];
   },
 };
 

@@ -297,7 +297,7 @@ export default function AdminPage() {
 
               <div className="space-y-4">
                 <Link
-                  href="#"
+                  href="/leave/leave-types"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
                   <Book className="w-5 h-5 text-gray-500" />
@@ -305,7 +305,7 @@ export default function AdminPage() {
                   <span>Leave Types</span>
                 </Link>
                 <Link
-                  href="#"
+                  href="leave/leave-policy"
                   className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                 >
                   <BookAIcon className="w-5 h-5 text-gray-500" />

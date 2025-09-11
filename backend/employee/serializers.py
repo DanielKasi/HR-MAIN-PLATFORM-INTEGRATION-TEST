@@ -348,6 +348,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
         instance.save()
 
         if user_data:
+            print("running employee CustomUserSerializer")
             user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()

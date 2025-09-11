@@ -54,6 +54,7 @@ import {
   showErrorToast,
   getEmployeeById,
   updateEmployee,
+  employeeAPI,
 } from "@/lib/utils";
 import {useBranches} from "@/hooks/use-branches";
 import {MultiSelectBranches} from "@/components/multi-select-branches";
@@ -75,6 +76,8 @@ import type {
   IEmployeeBankAccount,
   IMaritalStatus,
   IEmployee,
+  IEmployeeEducationFormData,
+  IQualificationAward,
 } from "@/types/types.utils";
 import {toast} from "sonner";
 import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
@@ -142,7 +145,7 @@ export default function UpdateEmployeeForm() {
 
   const [children, setChildren] = useState<Child[]>([]);
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
-  const [educations, setEducations] = useState<Education[]>([]);
+  const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
   const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
 
@@ -154,7 +157,7 @@ export default function UpdateEmployeeForm() {
 
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
-  const [editingEducation, setEditingEducation] = useState<Education | null>(null);
+  const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
   const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
 
@@ -171,11 +174,11 @@ export default function UpdateEmployeeForm() {
     address: "",
   });
 
-  const [educationFormData, setEducationFormData] = useState<Omit<Education, "id">>({
-    qualification: "",
+  const [educationFormData, setEducationFormData] = useState<Omit<IEmployeeEducationFormData, "id">>({
+    name: "",
     institute: "",
     year: "",
-    award: "",
+    qualification_id :0,
   });
 
   const [workExperienceFormData, setWorkExperienceFormData] = useState<Omit<WorkExperience, "id">>({
@@ -213,6 +216,7 @@ export default function UpdateEmployeeForm() {
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement | null>(null);
+   const [qualifications, setQualifications] = useState<IQualificationAward[]>([])
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -381,7 +385,7 @@ export default function UpdateEmployeeForm() {
   };
 
   const handleAddEducation = () => {
-    if (!educationFormData.qualification || !educationFormData.institute) return;
+    if (!educationFormData.qualification_id || !educationFormData.institute) return;
 
     if (editingEducation) {
       setEducations((prev) =>
@@ -391,27 +395,28 @@ export default function UpdateEmployeeForm() {
       );
       setEditingEducation(null);
     } else {
-      const newEducation: Education = {
+      const newEducation: IEmployeeEducationFormData = {
         ...educationFormData,
         id: generateId(),
       };
       setEducations((prev) => [...prev, newEducation]);
     }
 
-    setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+    setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
     setIsEducationDialogOpen(false);
   };
 
-  const handleEditEducation = (edu: Education) => {
+  const handleEditEducation = (edu: IEmployeeEducationFormData) => {
     setEditingEducation(edu);
     setEducationFormData({
-      qualification: edu.qualification,
+      qualification_id: edu.qualification_id,
       institute: edu.institute,
       year: edu.year,
-      award: edu.award,
+      name: edu.name,
     });
     setIsEducationDialogOpen(true);
   };
+
 
   const handleDeleteEducation = (id: string) => {
     setEducations((prev) => prev.filter((edu) => edu.id !== id));
@@ -550,7 +555,13 @@ export default function UpdateEmployeeForm() {
       setHasChildren(!!employee.children.length);
       // Assuming next_of_kin is available or empty
       setNextOfKins([]); // Adjust if backend provides next_of_kin
-      setEducations(employee.educations);
+      setEducations(employee.educations.map(ed => ({
+        name:ed.name,
+        qualification_id:ed.qualification.id,
+        year:ed.year,
+        institute:ed.institute,
+        id:ed.id
+      })));
       setWorkExperiences(employee.work_experiences);
       setBankAccounts(employee.bank_accounts);
       // For single bank assumption, set first if exists
@@ -608,13 +619,15 @@ export default function UpdateEmployeeForm() {
 
     setLoadingData(true);
     try {
-      const [workTypesData, employeeTypesData] = await Promise.all([
+      const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
         getWorkTypes({institutionId: selectedInstitution.id}),
         getEmployeeTypes({institutionId: selectedInstitution.id}),
+        employeeAPI.getQualificationAwards()
       ]);
 
       setWorkTypes(workTypesData.results || []);
       setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
+            setQualifications(qualification_awards)
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -912,10 +925,10 @@ export default function UpdateEmployeeForm() {
         })),
         educations: educations.map((edu, idx) => ({
           id: String(idx),
-          qualification: edu.qualification,
+          qualification_id: edu.qualification_id,
           institute: edu.institute,
           year: edu.year,
-          award: edu.award,
+          name: edu.name
         })),
         work_experiences: workExperiences.map((exp, idx) => ({
           id: String(idx),
@@ -1389,50 +1402,51 @@ export default function UpdateEmployeeForm() {
                   </div>
 
                   <div className="space-y-3">
-                    {educations.map((edu) => (
-                      <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
-                            <div>
-                              <span className="text-gray-600 block">Qualification</span>
-                              <span className="font-medium">{edu.qualification}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600 block">Institute</span>
-                              <span className="font-medium">{edu.institute}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600 block">Year</span>
-                              <span className="font-medium">{edu.year}</span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600 block">Award</span>
-                              <span className="font-medium">{edu.award}</span>
-                            </div>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteEducation(edu.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    ))}
+                     {educations.map((edu) => (
+                       <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
+                         <div className="flex items-start justify-between">
+                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                             <div>
+                               <span className="text-gray-600 block">Qualification</span>
+ 
+                               <span className="font-medium">{edu.name}</span>
+                             </div>
+                             <div>
+                               <span className="text-gray-600 block">Institute</span>
+                               <span className="font-medium">{edu.institute}</span>
+                             </div>
+                             <div>
+                               <span className="text-gray-600 block">Year</span>
+                               <span className="font-medium">{edu.year}</span>
+                             </div>
+                             <div>
+                               <span className="text-gray-600 block">Award</span>
+                               <span className="font-medium">{qualifications.find(qual => qual.id === edu.qualification_id)?.name || ""}</span>
+                             </div>
+                           </div>
+                           <DropdownMenu>
+                             <DropdownMenuTrigger asChild>
+                               <Button variant="ghost" size="sm">
+                                 <MoreHorizontal className="w-4 h-4" />
+                               </Button>
+                             </DropdownMenuTrigger>
+                             <DropdownMenuContent align="end">
+                               <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
+                                 <Edit className="w-4 h-4 mr-2" />
+                                 Edit
+                               </DropdownMenuItem>
+                               <DropdownMenuItem
+                                 onClick={() => handleDeleteEducation(edu.id)}
+                                 className="text-red-600"
+                               >
+                                 <Trash2 className="w-4 h-4 mr-2" />
+                                 Delete
+                               </DropdownMenuItem>
+                             </DropdownMenuContent>
+                           </DropdownMenu>
+                         </div>
+                       </div>
+                     ))}
                   </div>
                   <div className="flex items-center justify-center py-4">
                     <Button
@@ -2103,7 +2117,7 @@ export default function UpdateEmployeeForm() {
               if (!open) {
                 setIsEducationDialogOpen(false);
                 setEditingEducation(null);
-                setEducationFormData({qualification: "", institute: "", year: "", award: ""});
+                setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
               } else {
                 setIsEducationDialogOpen(open);
               }
@@ -2125,9 +2139,9 @@ export default function UpdateEmployeeForm() {
                   <Label htmlFor="eduQualification">Qualification</Label>
                   <Input
                     id="eduQualification"
-                    value={educationFormData.qualification || ""}
+                    value={educationFormData.name}
                     onChange={(e) =>
-                      setEducationFormData((prev) => ({...prev, qualification: e.target.value}))
+                      setEducationFormData((prev) => ({...prev, name: e.target.value}))
                     }
                     placeholder="Qualification"
                   />
@@ -2158,32 +2172,30 @@ export default function UpdateEmployeeForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eduAward">Award</Label>
-                  <Input
-                    id="eduAward"
-                    value={educationFormData.award || ""}
-                    onChange={(e) =>
-                      setEducationFormData((prev) => ({...prev, award: e.target.value}))
-                    }
-                    placeholder="Award Acquired"
-                    className="rounded-2xl h-12"
-                  />
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value: string) => setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))}
+                      >
+                        <SelectTrigger className="h-12 rounded-2xl">
+                          <SelectValue placeholder="Select Gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {qualifications.map((qual:IQualificationAward, idx) => (
+                            <SelectItem key={idx} value={qual.id.toString()}>
+                              {qual.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
 
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddEducation}
                   className=" text-white rounded-full w-full"
-                  disabled={!educationFormData.qualification || !educationFormData.institute}
+                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institute || !educationFormData.year}
                 >
                   {editingEducation ? "Update Education" : "Add Education Background"}
                 </Button>
