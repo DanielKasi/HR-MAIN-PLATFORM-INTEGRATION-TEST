@@ -289,6 +289,7 @@ export interface IEmployee {
   bank_accounts: IEmployeeBankAccount[];
   educations: IEducation[];
   work_experiences: IWorkExperience[];
+  next_of_kin:INextOfKin[],
   children: IChild[];
   spouse: {
     name: string;
@@ -602,9 +603,16 @@ export interface IWorkExperience {
   reason_of_leave: string
 }
 
-export interface IEmployeeBankAccount {
+export interface IEmployeeBankAccountFormData {
   id?: string
   bank_id: number
+  account_number: string
+  account_name: string
+}
+
+export interface IEmployeeBankAccount {
+  id?: string
+  bank: number
   account_number: string
   account_name: string
 }
@@ -649,7 +657,7 @@ export interface IEmployeeFormData {
   next_of_kin: INextOfKin[]
   educations: IEmployeeEducationFormData[]
   work_experiences: IWorkExperience[]
-  bank_accounts: IEmployeeBankAccount[]
+  bank_accounts: IEmployeeBankAccountFormData[]
   spouse?: ISpouse
 
   // Legacy fields for backward compatibility

@@ -160,7 +160,7 @@ export default function EditProjectPage() {
     setLoading(true);
 
     try {
-      console.log("Updating project:", formData);
+    // console.log("Updating project:", formData);
       // Replace with your actual API call
       // const response = await apiPost(`/projects/projects/${params.id}/`, formData);
       // if (response.status === 200) {

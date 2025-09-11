@@ -156,7 +156,7 @@ export default function UnlockDialog({
           requiredPermissionCodes,
         );
 
-        console.log("Dispatching temporary permissions : ", requiredPermissions);
+      // console.log("Dispatching temporary permissions : ", requiredPermissions);
 
         // Store the temporary permissions in Redux
         const ipermissions: IPermission[] = requiredPermissions.map((perm) => ({

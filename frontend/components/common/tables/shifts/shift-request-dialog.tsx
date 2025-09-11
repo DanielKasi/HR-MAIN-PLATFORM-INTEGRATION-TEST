@@ -65,7 +65,7 @@ export default function ShiftRequestDialog({
     try {
       const response = await apiRequest.get(`institution/branch-shifts/${selectedBranch.id}/`);
       setShifts(response.data.results || []);
-      console.log(shifts);
+    // console.log(shifts);
     } catch (error) {
       console.error("Failed to fetch branch shifts:", error);
       setShifts([]);
@@ -88,7 +88,7 @@ export default function ShiftRequestDialog({
         date: formData.date,
       });
 
-      console.log("Shift request submitted successfully");
+    // console.log("Shift request submitted successfully");
       onOpenChange(false);
       onRequestSubmitted?.();
     } catch (error) {

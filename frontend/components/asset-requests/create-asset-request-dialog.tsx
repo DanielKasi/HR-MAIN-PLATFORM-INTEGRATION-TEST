@@ -60,7 +60,7 @@ export const CreateAssetRequestDialog = ({
   const fetchAssets = async () => {
     try {
       const response = await assetsAPI.getAll();
-      console.log("Response", response)
+    // console.log("Response", response)
       // Filter for available assets only
       const availableAssets = response.filter(asset => 
         asset.status === "available" && asset.is_active

@@ -325,7 +325,7 @@ export default function JobAdvertsPage() {
         getJobPositions({institutionId: selectedInstitution.id}),
         fetchEmployees({institutionId: selectedInstitution.id}),
       ]);
-      console.log("Fetched job positions:", fetchedJobPositions);
+    // console.log("Fetched job positions:", fetchedJobPositions);
 
       if (fetchedJobPositions) {
         setJobPositions(fetchedJobPositions);

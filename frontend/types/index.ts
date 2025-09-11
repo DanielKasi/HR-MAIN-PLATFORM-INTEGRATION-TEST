@@ -201,7 +201,19 @@ export type ApprovalStep = {
   level: number;
 };
 
-// Interface for Permissions
+export interface BulkEmployeeUploadRowError {
+  row: number
+  errors: any
+}
+
+export interface BulkEmployeeUploadResult {
+  detail?: string
+  created_count: number
+  updated_count: number
+  errors?: BulkEmployeeUploadRowError[]
+  warnings?: any[]
+}
+
 export interface IPermission {
   permission_code: PERMISSION_CODES;
   name: string;

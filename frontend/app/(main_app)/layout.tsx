@@ -23,7 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         // window.history.replaceState({}, document.title, newUrl);
       }
     } catch (e) {
-      console.log("Error setting redirect from URL params");
+    // console.log("Error setting redirect from URL params");
     }
 
     return () => {

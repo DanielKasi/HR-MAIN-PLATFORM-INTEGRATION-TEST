@@ -37,7 +37,7 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
       setSelectedDays(dayIds);
       setHasChanges(false);
     } else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days) {
-      console.log("New branch working days from scope:", scope.branchWorkingDays.branch_days);
+    // console.log("New branch working days from scope:", scope.branchWorkingDays.branch_days);
       setSelectedBranchDays(scope.branchWorkingDays.branch_days);
       setHasChanges(false);
     }
@@ -58,7 +58,7 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
   }, [selectedDays, selectedBranchDays, scope, isAutoSaving]);
 
   React.useEffect(() => {
-    console.log("\n\n selectedBranchDays changed as :", selectedBranchDays);
+  // console.log("\n\n selectedBranchDays changed as :", selectedBranchDays);
 
   }, [selectedBranchDays]);
 
@@ -128,7 +128,7 @@ export function WorkingDaysManager({ scope, systemWorkingDays, onUpdate, isSavin
     setRemovingDayId(branchDay.day_id);
     setIsAutoSaving(true);
     const newSelectedBranchDays = selectedBranchDays.filter(d => d.day_name.toLowerCase() !== branchDay.day_name.toLowerCase());
-    console.log("\n\n Removing branch day:", branchDay, "New selectedBranchDays:", newSelectedBranchDays, "\n\n From branch days : ", selectedBranchDays);
+  // console.log("\n\n Removing branch day:", branchDay, "New selectedBranchDays:", newSelectedBranchDays, "\n\n From branch days : ", selectedBranchDays);
 
     setSelectedBranchDays(newSelectedBranchDays);
     try {

@@ -62,8 +62,8 @@ export function EditAssetDialog({
     if (asset) {
       const categoryId = typeof asset.category === 'object' && asset.category ? asset.category.id : 
                         (typeof asset.category === 'number' ? asset.category : 0);
-      console.log('Asset category:', asset.category);
-      console.log('Extracted category ID:', categoryId);
+    // console.log('Asset category:', asset.category);
+    // console.log('Extracted category ID:', categoryId);
       setFormData({
         asset_name: asset.asset_name,
         serial_number: asset.serial_number,

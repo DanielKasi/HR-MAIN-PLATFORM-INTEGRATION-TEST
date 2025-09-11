@@ -52,7 +52,7 @@ export default function AddEventPage() {
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
 
 
-  console.log("Employees: ", employees);
+// console.log("Employees: ", employees);
 
   // Fetch departments when component mounts or institution changes
   useEffect(() => {
@@ -82,10 +82,10 @@ export default function AddEventPage() {
         specific_employees: formData.specific_employees.length > 0 ? formData.specific_employees : undefined,
       };
 
-      console.log("Event data:", eventData);
+    // console.log("Event data:", eventData);
 
       const response = await calendarAPI.createEvent(eventData);
-      console.log("Event created successfully:", response);
+    // console.log("Event created successfully:", response);
 
       // Show success message
       toast({

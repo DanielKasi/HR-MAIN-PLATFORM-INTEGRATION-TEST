@@ -73,7 +73,7 @@ const AssetReturnDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
-  console.log("returns", assetReturn);
+// console.log("returns", assetReturn);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const returnId = params.id as string;

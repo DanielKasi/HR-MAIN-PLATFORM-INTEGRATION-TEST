@@ -48,7 +48,7 @@ export function Toaster() {
 //   const { toasts } = useToast()
 
 //   // useEffect(()=>{
-//   //   console.log("Toasts changed with toasts : ", toasts)
+//   // // console.log("Toasts changed with toasts : ", toasts)
 //   //   setCurrentToasts(toasts)
 //   // }, [toasts])
 

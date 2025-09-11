@@ -792,7 +792,7 @@ export default function ApplicationsPage() {
     setIsLoadingAdverts(true);
     try {
       const response = await getJobPositionAdverts({ institutionId: selectedInstitution.id });
-      console.log("Job Position Adverts Response:", response);
+    // console.log("Job Position Adverts Response:", response);
 
       let advertsArray: JobPositionAdvert[] = [];
 
@@ -815,7 +815,7 @@ export default function ApplicationsPage() {
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string | number | null) => {
-    console.log("\n\n Updating field : ", field, "\n\n With value : ", value);
+  // console.log("\n\n Updating field : ", field, "\n\n With value : ", value);
 
     const updatedFormData = {
       ...formData,
@@ -1270,7 +1270,7 @@ export default function ApplicationsPage() {
           selectedApplications.find((appl) => appl.id === app.id) && app.status === "shortlisted",
       );
 
-      console.log("\n\n Scheduling interviews with shortlisted applicants : ", shortlistedApps);
+    // console.log("\n\n Scheduling interviews with shortlisted applicants : ", shortlistedApps);
 
       if (shortlistedApps.length === 0) {
         toast.error("Please select shortlisted applications to schedule interviews");
@@ -2502,7 +2502,7 @@ export default function ApplicationsPage() {
                     <EmployeeSearchableSelect
                       value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
                       onValueChange={(values) => {
-                        console.log("\n\n Values changed with values : ", values);
+                      // console.log("\n\n Values changed with values : ", values);
                         const selectedValue = Array.isArray(values) ? values[0] : values;
                         handleInputChange(
                           "recommended_by",

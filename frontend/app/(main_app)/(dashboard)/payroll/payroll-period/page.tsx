@@ -203,7 +203,7 @@ export default function PayrollPeriods() {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("Submitting : ", saving, "\n With Validation errors : ", hasValidationErrors());
+  // console.log("Submitting : ", saving, "\n With Validation errors : ", hasValidationErrors());
     if (saving || hasValidationErrors()) {
       return;
     }

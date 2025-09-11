@@ -52,15 +52,15 @@ export const BankAccountSearchableSelect = ({
 
 
   const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
-    console.log("\n\n Selecting account : ", itemId)
+  // console.log("\n\n Selecting account : ", itemId)
     if (!selectedItems.includes(itemId)) {
       if (multiple) {
-        console.log("\n\n Value changed with mutliple and selected items : ", selectedItems)
+      // console.log("\n\n Value changed with mutliple and selected items : ", selectedItems)
         onValueChange([...selectedItems, itemId]);
       } else {
-        console.log("\n\n Value change with single value  : ", itemId)
+      // console.log("\n\n Value change with single value  : ", itemId)
         onValueChange([itemId]);
-        console.log("\n\n On value change called with : ", [itemId])
+      // console.log("\n\n On value change called with : ", [itemId])
       }
     }
   };

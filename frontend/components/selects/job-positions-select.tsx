@@ -36,7 +36,7 @@ export const JobPositionSearchableSelect = ({
   setPositions,
 }: JobPositionSearchableSelectProps) => {
 
-  console.log("\n\n The passed in position values are : ", value)
+// console.log("\n\n The passed in position values are : ", value)
 
   const currentInstitution = useSelector(selectSelectedInstitution);
   // const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)

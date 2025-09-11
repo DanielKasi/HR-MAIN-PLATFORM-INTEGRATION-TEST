@@ -37,7 +37,7 @@ export const clearStateIfStructureChanged = () => {
   const storedHash = localStorage.getItem('stateHash');
 
   if (storedHash && storedHash !== currentHash) {
-    console.log('State structure changed. Clearing persisted state.');
+  // console.log('State structure changed. Clearing persisted state.');
     localStorage.removeItem(`persist:${PERSIST_KEY}`);
     localStorage.setItem('stateHash', currentHash);
     window.location.reload();
