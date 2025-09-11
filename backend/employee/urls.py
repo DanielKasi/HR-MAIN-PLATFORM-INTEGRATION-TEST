@@ -25,6 +25,8 @@ from .views import (
     EmployeeDashboardAPIView,
     AttendanceDashboardAPIView,
     EmployeeExportView,
+    QualificationAwardListCreateAPIView,
+    QualificationAwardDetailAPIView
 )
 
 urlpatterns = [
@@ -124,6 +126,8 @@ urlpatterns = [
         EmployeeShiftListCreateView.as_view(),
         name="employee-shifts-list",
     ),
+    path('qualification-awards/', QualificationAwardListCreateAPIView.as_view(), name='qualificationaward-list-create'),
+    path('qualification-awards/<int:pk>/', QualificationAwardDetailAPIView.as_view(), name='qualificationaward-detail'),
     path(
         "employee-shifts/detail/<int:pk>/",
         EmployeeShiftDetailView.as_view(),
