@@ -573,10 +573,25 @@ export interface INextOfKin {
 
 export interface IEducation {
   id: string
-  qualification: string
+  name: string
   institute: string
   year: string
-  award: string
+  qualification: IQualificationAward
+}
+
+export interface IEmployeeEducationFormData {
+  id: string
+  name: string
+  institute: string
+  year: string
+  qualification_id: number
+}
+
+
+export interface IQualificationAward {
+  id:number,
+  name:string,
+  description:string
 }
 
 export interface IWorkExperience {
@@ -631,7 +646,7 @@ export interface IEmployeeFormData {
   // Nested arrays and objects
   children: IChild[]
   next_of_kin: INextOfKin[]
-  educations: IEducation[]
+  educations: IEmployeeEducationFormData[]
   work_experiences: IWorkExperience[]
   bank_accounts: IEmployeeBankAccount[]
   spouse?: ISpouse
