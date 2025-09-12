@@ -10,7 +10,6 @@ from django.db import IntegrityError
 @shared_task
 def initiate_next_spotcheck_for_an_employee(employee_id):
 
-    print(f"Initiaiting nex spotcheck for employee: {employee_id}")
     from spotcheck.utilities import (
         get_employee_spotchecks_expires_after_minutes,
         send_spotcheck_email,
@@ -71,7 +70,6 @@ def check_spotcheck_response(spotcheck_id):
     
     spotcheck = EmployeeSpotCheck.objects.get(id=spotcheck_id)
 
-    print(f"========================>Checking spotcheck response for spotcheck: {spotcheck_id} at {timezone.now()}<========================")
     if not spotcheck.responded_at:
         missed_status, _ = SpotCheckStatus.objects.get_or_create(status_name="MISSED")
         spotcheck.status = missed_status

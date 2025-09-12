@@ -6,6 +6,8 @@ from django.utils import timezone
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.db.models import JSONField
 from rest_framework.exceptions import ValidationError
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 class Period(BaseApprovableModel):   
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE) 
@@ -169,6 +171,22 @@ class QuestionTemplate(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution
+    
+class BonusPointSettings(BaseApprovableModel):
+    Institution = models.ForeignKey(Institution, on_delete=models.CASCADE)    
+    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Managers')])
+    bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
+    points = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.content_object} - {self.bonus_for} - {self.points}"
+    
+    def get_institution(self):
+        return self.institution
+
 
 class Meeting(BaseApprovableModel):
     EVENT_MODE_CHOICES = [
@@ -207,3 +225,6 @@ class Meeting(BaseApprovableModel):
 
     def _get_institution_meeting_link(self):
         integration = getattr(self.institution, 'meeting_integration', None)    
+
+    def get_institution(self):
+        return self.institution    

@@ -106,17 +106,14 @@ class UserListAPIView(APIView, SortableAPIMixin):
             )
 
             send_otp_to_user(user, otp)
-            print("📨 OTP sent to user")
 
             cleanup_expired_otps()
-            print("🧹 Expired OTPs cleaned up")
 
             return Response(
                 CustomUserSerializer(user).data,
                 status=status.HTTP_201_CREATED,
             )
 
-        print("❌ Serializer validation errors:", serializer.errors)
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -217,7 +214,6 @@ class ChangeEmailAndResendOTPAPIView(APIView):
             otp = create_and_institution_otp(
                 user_id=user.id, purpose=f"registration_{user.id}", expiry_minutes=15
             )
-            print(f"[DEBUG] OTP for user {user.id} ({new_email}): {otp}")
 
             send_otp_to_user(user, otp)
 
@@ -592,7 +588,6 @@ class UserInstitutionsListAPIView(APIView):
             )
 
         except Exception as e:
-            print("\n\n Exception getting user institutions:", str(e))
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 

@@ -149,25 +149,19 @@ class ApproverGroupListAPIView(APIView, SortableAPIMixin):
 
     @extend_schema(tags=['Approver Groups'])
     def post(self, request):
-        print("📥 Received POST request")
         serializer = ApproverGroupSerializer(data=request.data)
         if serializer.is_valid():
             if not request.user.is_authenticated:
-                print("❌ User not authenticated")
                 return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
             try:
-                print(f"📤 Queuing notification for user {request.user.id}")
                 add_notification(
                     user_id=request.user.id,
                     message="New approver group created successfully."
                 )
                 serializer.save()
-                print("✅ Group saved and notification queued")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
-                print(f"❌ Error queuing notification or saving: {str(e)}")
                 return Response({"error": f"Failed to queue notification or save: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        print(f"❌ Invalid serializer data: {serializer.errors}")
         return Response({"error": "Invalid data", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -417,7 +411,6 @@ class ApprovalDocumentLevelListAPIView(APIView, SortableAPIMixin):
     @extend_schema(tags=['Approval Document Levels'])
     def post(self, request):
         serializer = ApprovalDocumentLevelSerializer(data=request.data)
-        print("data:", request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

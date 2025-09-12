@@ -149,6 +149,4 @@ class EmployeeSpotCheck(TimeStampedModel):
 
             check_spotcheck_response.apply_async(args=[self.id], eta=send_time)
 
-            print(
-                f"=======================>Scheduled check_spotcheck_response for spotcheck {self.id} at {send_time}<===================="
-            )
+        

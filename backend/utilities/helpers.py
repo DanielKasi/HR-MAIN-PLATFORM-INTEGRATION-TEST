@@ -336,7 +336,6 @@ def send_password_link_to_user(user, link):
         html_message=html_message,
     )
     return True
-    print("\n\n Password code sent to ", user)
 
 
 def send_password_reset_link_to_user(user, link):

@@ -24,7 +24,6 @@ class InstitutionSpotCheckSettingCreateView(APIView):
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
         """Create a institution setting."""
-        print("Request data", request.data)
 
         serializer = SpotCheckSerializers.InstitutionSpotCheckSettingSerializer(
             data=request.data
@@ -233,7 +232,6 @@ class EmployeeSpotCheckSettingDetailView(APIView):
     )
     def get(self, request, employee_id):
         """Retrieve details of a specific employee spot check setting."""
-        print("Employee id", employee_id)
         try:
             
             setting = SpotCheckModels.EmployeeSpotCheckSetting.objects.get(
@@ -242,7 +240,6 @@ class EmployeeSpotCheckSettingDetailView(APIView):
             serializer = SpotCheckSerializers.EmployeeSpotCheckSettingSerializer(
                 setting
             )
-            print("setting", setting)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except SpotCheckModels.EmployeeSpotCheckSetting.DoesNotExist:
             return Response(

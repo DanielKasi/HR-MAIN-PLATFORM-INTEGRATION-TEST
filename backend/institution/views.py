@@ -163,7 +163,6 @@ class AIAssistantView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        print("chat_id", chat_id)
 
         if not chat_id:
             chat_id = str(uuid.uuid4())

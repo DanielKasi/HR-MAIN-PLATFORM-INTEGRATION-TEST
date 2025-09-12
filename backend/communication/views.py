@@ -35,7 +35,6 @@ except redis.ConnectionError as e:
 
 def add_notification(user_id: int, message: str) -> None:
     """Add a notification to the user's Redis queue without expiry."""
-    print(f"🔔 Adding notification for user {user_id}: {message}")
     notification = {
         'id': int(time.time() * 1000),
         'message': message
@@ -43,9 +42,7 @@ def add_notification(user_id: int, message: str) -> None:
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
         queue_length = redis_client.llen(f"notifications:{user_id}")
-        print(f"✅ Notification queued for user {user_id}, queue length: {queue_length}")
     except redis.RedisError as e:
-        print(f"❌ Redis error in add_notification: {str(e)}")
         raise
 
 def get_notification(user_id: int) -> Optional[dict]:

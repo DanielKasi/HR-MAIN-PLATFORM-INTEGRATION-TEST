@@ -1003,10 +1003,8 @@ class EmployeeCreateAPIView(APIView):
                         if not existing_user:
                             new_password = generate_compliant_password()
 
-                            print("\n\nNew Employee and the password", new_password)
                             employee_data["user"]["password"] = new_password
                             employee_data["user"]["welcome_email_sent"] = True
-                            print("\n\nNew Employee and the password", new_password)
 
                     if row_errors:
                         errors.append({"row": group.index[0] + 2, "errors": row_errors})
@@ -1143,9 +1141,7 @@ class EmployeeCreateAPIView(APIView):
                                     instance_mappings["bank"][
                                         bank_name.lower()
                                     ] = bank_instance
-                                    print(
-                                        f"Created bank: {bank_name} with ID: {bank_instance.id}"
-                                    )
+    
                                 except Exception as e:
                                     row_errors["bank"] = {
                                         "error": f"Failed to create bank '{bank_name}': {str(e)}"
@@ -1847,7 +1843,6 @@ class EmployeeUpdateAPIView(APIView):
                             final_data["spouse"]["date_of_birth"], "%Y-%m-%d"
                         ).date()
                 except (ValueError, TypeError) as e:
-                    print(f"Error parsing spouse date_of_birth: {str(e)}")
                     raise serializers.ValidationError(
                         {
                             "spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
@@ -1891,7 +1886,6 @@ class EmployeeUpdateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
-        print(f"Parsed final_data: {final_data}")  # Debug log
         return final_data
 
     @extend_schema(

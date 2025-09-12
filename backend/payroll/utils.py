@@ -718,7 +718,6 @@ def generate_attendance_excel(start_date: date, end_date: date, context: dict, i
                 )
             except Exception as e:
                 status = "ERR"
-                print(f"Error for Employee {employee.id}, Date {current_date}: {str(e)}")  # Debug
 
             if status == "P-on-T":
                 present_count += 1
