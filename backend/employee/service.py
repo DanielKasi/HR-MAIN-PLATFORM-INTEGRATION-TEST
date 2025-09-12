@@ -449,7 +449,7 @@ def create_owner_employee(institution):
             position=default_position,
             department=default_dept,
             email=owner.email,
-            gender=owner.gender,
+            gender=owner.gender if owner.gender else "other",
             date_of_joining=timezone.now().date(),
             work_type=WorkType.objects.first(),
             employee_type=EmployeeType.objects.first(),
