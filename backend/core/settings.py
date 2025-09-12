@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "easyaudit",
     "communication",
+    'django.contrib.sites'
 ]
 
 MIDDLEWARE = [
@@ -126,6 +127,8 @@ TEMPLATES = [
         },
     },
 ]
+
+SITE_ID = 1
 
 ASGI_APPLICATION = "core.asgi.application"
 
@@ -254,3 +257,5 @@ SPOTCHECK_DEFAULT_LATE_STARTS_AFTER_MINUTES = int(
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://peracosoft.com/")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+LOGIN_URL = '/login'

@@ -1694,6 +1694,7 @@ class UserProfileListAPIView(APIView):
 
     def get(self, request):
         institution = request.user.profile.institution
+        search_query = request.query_params.get("search", None)
         if not institution:
             return Response({"detail": "Institution not found."}, status=404)
 
@@ -1702,8 +1703,15 @@ class UserProfileListAPIView(APIView):
             profile = user.profile
             if profile.institution.id != institution.id:
                 return Response({"detail": "Access denied."}, status=403)
+      
 
         profiles = Profile.objects.filter(institution=institution)
+
+        if search_query:
+            profiles = profiles.filter(
+                Q(user__fullname__icontains=search_query) |
+                Q(user__email__icontains=search_query)
+            )  
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(profiles, request)
         serializer = ProfileSerializer(
