@@ -10,6 +10,7 @@ import {Icon} from "@iconify/react";
 import {EditEventModal} from "@/components/events-holidays/edit-event-modal";
 import {EditHolidayModal} from "@/components/events-holidays/edit-holiday-modal";
 import {ICalendar, IEvent, IPublicHoliday} from "@/types/types.utils";
+import FixedLoader from "@/components/fixed-loader";
 
 // Define types inline to avoid import issues
 interface ICalendarEvent {
@@ -319,9 +320,7 @@ export default function EventsCalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">Loading calendar...</div>
-      </div>
+      <FixedLoader/>
     );
   }
 

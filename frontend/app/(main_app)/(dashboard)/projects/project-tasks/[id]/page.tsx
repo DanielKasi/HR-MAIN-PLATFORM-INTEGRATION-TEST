@@ -23,6 +23,8 @@ import {
   MessageSquare,
   Paperclip,
   Plus,
+  TrendingUp,
+  List,
 } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,8 +32,8 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import { IProjectTask } from "@/types/types.utils";
-
-
+import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
+import FixedLoader from "@/components/fixed-loader";
 
 interface ITaskTimeSheet {
   id: number;
@@ -91,36 +93,17 @@ const getDaysRemaining = (endDate: string) => {
 export default function TaskDetailsPage() {
   const params = useParams();
   const [task, setTask] = useState<IProjectTask | null>(null);
-  const [timeSheets, setTimeSheets] = useState<ITaskTimeSheet[]>([]);
-  const [comments, setComments] = useState<ITaskComment[]>([]);
+  // const [comments, setComments] = useState<ITaskComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
 
   const fetchTask = async () => {
     try {
-      const response = await apiGet(`projects/tasks/${params.id}/details`);
-      setTask(response.data);
-      setTimeSheets([
-        {
-          id: 1,
-          task: Number(params.id),
-          start_time: "2024-01-15T09:00:00Z",
-          end_time: "2024-01-15T12:00:00Z",
-          notes: "Initial setup and research",
-          user: { id: 1, user: { fullname: "John Doe" } } as UserProfile,
-        },
-      ]);
-      setComments([
-        {
-          id: 1,
-          task: Number(params.id),
-          user: { id: 1, user: { fullname: "Jane Smith" } } as UserProfile,
-          comment: "Started working on this task. The requirements look clear.",
-          created_at: "2024-01-15T10:30:00Z",
-        },
-      ]);
+      const response = await PROJECTS_TASKS_API.getByTaskId({ taskId: Number(params.id) });
+      setTask(response);
+
     } catch (error) {
-      console.error("Error fetching task:", error);
+      showErrorToast({error, defaultMessage: "Failed to fetch task details."});
     } finally {
       setLoading(false);
     }
@@ -132,25 +115,9 @@ export default function TaskDetailsPage() {
     }
   }, [params.id]);
 
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      const comment: ITaskComment = {
-        id: comments.length + 1,
-        task: Number(params.id),
-        user: { id: 1, user: { fullname: "Current User" } } as UserProfile,
-        comment: newComment,
-        created_at: new Date().toISOString(),
-      };
-      setComments([...comments, comment]);
-      setNewComment("");
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-lg">Loading task details...</div>
-      </div>
+            <FixedLoader/>
     );
   }
 
@@ -164,51 +131,55 @@ export default function TaskDetailsPage() {
 
   const daysRemaining = getDaysRemaining(task.end_date);
   const isOverdue = daysRemaining < 0 && task.task_status !== "completed";
-  const totalHours = timeSheets.reduce((acc, sheet) => {
-    const start = new Date(sheet.start_time);
-    const end = new Date(sheet.end_time);
-    return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-  }, 0);
+  const TimeSheetStartDate = task.task_time_sheet.start_time ? new Date(task.task_time_sheet.start_time) :null;
+  const TimeSheetEndDate = task.task_time_sheet.end_time ? new Date(task.task_time_sheet.end_time) :null;
+  let totalHours = 0;
+  if(TimeSheetStartDate && TimeSheetEndDate){
+    totalHours = (TimeSheetEndDate.getTime() - TimeSheetStartDate.getTime()) / (1000 * 60 * 60);
+  }
+  
 
   return (
-    <div className="min-h-screen bg-white rounded-xl p-4">
+    <div className="min-h-screen bg-white rounded-xl p-6">
       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_TASKS}>
-        <div className="max-w-full mx-auto space-y-8">
+        <div className="max-w-full space-y-8">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link href={`/projects/${task.project}`}>
-                <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                </Button>
-              </Link>
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+            <div className="space-y-2">
+              <div className="flex items-center justify-start gap-4 mb-2">
+                <Link href={`/projects/${task.project}`}>
+                  <Button variant="outline" size="sm" className="rounded-full !aspect-square">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
                   {task.task_name}
                 </h1>
-                <div className="flex items-center gap-3">
-                  <Badge className={`${getStatusColor(task.task_status)} border`}>
-                    {task.task_status.replace("_", " ")}
-                  </Badge>
-                  <Badge className={`${getPriorityColor(task.priority)} border`}>
-                    {task.priority} priority
-                  </Badge>
-                  {isOverdue && (
-                    <Badge variant="destructive">{Math.abs(daysRemaining)} days overdue</Badge>
-                  )}
-                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={`${getStatusColor(task.task_status)} border`}>
+                  {task.task_status.replace("_", " ")}
+                </Badge>
+                <Badge className={`${getPriorityColor(task.priority)} border`}>
+                  {task.priority} priority
+                </Badge>
+                {isOverdue && (
+                  <Badge variant="destructive">{Math.abs(daysRemaining)} days overdue</Badge>
+                )}
               </div>
             </div>
             <Link href={`/projects/project-tasks/edit/${task.id}`}>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Task
+              <Button className="!rounded-xl">
+                <Edit className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline-block">Edit Task</span>
               </Button>
             </Link>
           </div>
 
-          <div className={` gap-6 ${(task?.approval_status !== "active" && task?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
-            {task?.approvals && task.approvals.length > 0 &&
+          <div
+            className={`gap-6 ${task?.approval_status !== "active" && task?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+          >
+            {task?.approvals && task.approvals.length > 0 && (
               <div className="order-1 lg:order-2">
                 <ApprovalWorkflow
                   approvals={task.approvals}
@@ -216,238 +187,118 @@ export default function TaskDetailsPage() {
                   onRefresh={fetchTask}
                 />
               </div>
-            }
-            <div className={`${(task?.approval_status !== "active" && task?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
+            )}
 
-
+            <div
+              className={`${task?.approval_status !== "active" && task?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
+            >
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <Card className="shadow-sm rounded-xl">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-blue-100 text-sm font-medium">Time Logged</p>
+                        <p className="text-sm font-medium">Time Logged</p>
                         <p className="text-3xl font-bold">{totalHours.toFixed(1)}h</p>
                       </div>
-                      <Clock className="h-8 w-8 text-blue-200" />
+                      <Clock className="h-8 w-8" />
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <Card className="shadow-sm rounded-xl">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-100 text-sm font-medium">Assignees</p>
+                        <p className="text-sm font-medium">Days Remaining</p>
+                        <p className={`text-3xl font-bold ${isOverdue ? "text-red-600" : "text-green-600"}`}>
+                          {isOverdue ? Math.abs(daysRemaining) : daysRemaining}
+                        </p>
+                      </div>
+                      <Calendar className="h-8 w-8" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm rounded-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Leaders</p>
+                        <p className="text-3xl font-bold">{task.leaders.length}</p>
+                      </div>
+                      <Users className="h-8 w-8" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm rounded-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">Assignees</p>
                         <p className="text-3xl font-bold">{task.assigned_to.length}</p>
                       </div>
-                      <Users className="h-8 w-8 text-green-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-100 text-sm font-medium">Comments</p>
-                        <p className="text-3xl font-bold">{comments.length}</p>
-                      </div>
-                      <MessageSquare className="h-8 w-8 text-purple-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-orange-100 text-sm font-medium">Days Left</p>
-                        <p className="text-3xl font-bold">{isOverdue ? 0 : daysRemaining}</p>
-                      </div>
-                      <Calendar className="h-8 w-8 text-orange-200" />
+                      <Users className="h-8 w-8" />
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Task Overview */}
-                  <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <FileText className="h-5 w-5" />
-                        Task Details
-                      </CardTitle>
+              {/* Main Content */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div className="lg:col-span-2">
+                  <Card className="border-0 !shadow-md">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg font-semibold">Task Description</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div>
-                        <h4 className="font-semibold text-slate-900 mb-2">Description</h4>
-                        <p className="text-slate-600 leading-relaxed">{task.description}</p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <h4 className="font-semibold text-slate-900 mb-2">Timeline</h4>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <Calendar className="h-4 w-4" />
-                              <span>Start: {new Date(task.start_date).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <Calendar className="h-4 w-4" />
-                              <span>Due: {new Date(task.end_date).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h4 className="font-semibold text-slate-900 mb-2">Progress</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-slate-600">Status</span>
-                              <span className="font-medium">{task.task_status.replace("_", " ")}</span>
-                            </div>
-                            <Progress
-                              value={
-                                task.task_status === "completed"
-                                  ? 100
-                                  : task.task_status === "in_progress"
-                                    ? 50
-                                    : 0
-                              }
-                              className="h-3"
-                            />
-                          </div>
-                        </div>
+                      <div className="prose max-w-none">
+                        <p className="text-slate-600">{task.description}</p>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Time Tracking */}
-                  <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                          <Clock className="h-5 w-5" />
-                          Time Tracking
-                        </CardTitle>
-                        <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Log Time
-                        </Button>
+                  {/* Timeline */}
+                  <Card className="border-0 !shadow-md mt-6">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg font-semibold">Timeline</CardTitle>
+                        <p className="text-sm text-slate-600">Task schedule and deadlines</p>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {timeSheets.map((sheet) => (
-                          <div key={sheet.id} className="p-4 border border-slate-200 rounded-lg">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-8 w-8">
-                                  <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
-                                  <AvatarFallback className="text-xs">
-                                    {sheet.user.user.fullname
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-slate-900">{sheet.user.user.fullname}</p>
-                                  <p className="text-sm text-slate-600">
-                                    {new Date(sheet.start_time).toLocaleDateString()} •
-                                    {(
-                                      (new Date(sheet.end_time).getTime() -
-                                        new Date(sheet.start_time).getTime()) /
-                                      (1000 * 60 * 60)
-                                    ).toFixed(1)}
-                                    h
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="text-sm text-slate-600 ml-11">{sheet.notes}</p>
-                          </div>
-                        ))}
-
-                        {timeSheets.length === 0 && (
-                          <div className="text-center py-8">
-                            <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                              No time logged yet
-                            </h3>
-                            <p className="text-slate-600 mb-4">Start tracking time spent on this task</p>
-                            <Button>
-                              <Plus className="mr-2 h-4 w-4" />
-                              Log Time
-                            </Button>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-600 text-sm">Start Date</span>
+                          <span className="font-medium text-slate-900">{new Date(task.start_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-600 text-sm">Due Date</span>
+                          <span className="font-medium text-slate-900">{new Date(task.end_date).toLocaleDateString()}</span>
+                        </div>
+                        {task.start_date && task.end_date && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-600 text-sm">Duration</span>
+                            <span className="font-medium text-slate-900">
+                              {Math.ceil(
+                                (new Date(task.end_date).getTime() - new Date(task.start_date).getTime()) /
+                                (1000 * 60 * 60 * 24)
+                              )}{" "}
+                              days
+                            </span>
                           </div>
                         )}
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Comments */}
-                  <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <MessageSquare className="h-5 w-5" />
-                        Comments ({comments.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Add Comment */}
-                      <div className="space-y-3">
-                        <Textarea
-                          placeholder="Add a comment..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="border-slate-200 focus:border-blue-500"
-                          rows={3}
-                        />
-                        <div className="flex justify-end">
-                          <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                            Add Comment
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Comments List */}
-                      <div className="space-y-4">
-                        {comments.map((comment) => (
-                          <div key={comment.id} className="flex gap-3">
-                            <Avatar className="h-8 w-8 mt-1">
-                              <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
-                              <AvatarFallback className="text-xs">
-                                {comment.user.user.fullname
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-slate-900">{comment.user.user.fullname}</p>
-                                <p className="text-xs text-slate-500">
-                                  {new Date(comment.created_at).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <p className="text-slate-600">{comment.comment}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
 
                 {/* Sidebar */}
                 <div className="space-y-6">
                   {/* Assigned Team */}
-                  <Card className="border-0 shadow-lg">
+                  <Card className="border-0 !shadow-md">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Users className="h-5 w-5" />
@@ -514,7 +365,7 @@ export default function TaskDetailsPage() {
                   </Card>
 
                   {/* Task Info */}
-                  <Card className="border-0 shadow-lg">
+                  <Card className="border-0 !shadow-md">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Activity className="h-5 w-5" />
@@ -561,29 +412,6 @@ export default function TaskDetailsPage() {
                     </CardContent>
                   </Card>
 
-                  {/* Quick Actions */}
-                  <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Target className="h-5 w-5" />
-                        Quick Actions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button variant="outline" className="w-full justify-start bg-transparent">
-                        <Clock className="mr-2 h-4 w-4" />
-                        Log Time
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start bg-transparent">
-                        <Paperclip className="mr-2 h-4 w-4" />
-                        Add Attachment
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start bg-transparent">
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Mark Complete
-                      </Button>
-                    </CardContent>
-                  </Card>
                 </div>
               </div>
             </div>

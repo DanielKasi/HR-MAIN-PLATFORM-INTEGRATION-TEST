@@ -147,6 +147,8 @@ import {
   IProjectFormData,
   IEmployeeBankAccountFormData,
   IProjectDashboard,
+  IProjectTaskFormData,
+  IProjectTask,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -7189,17 +7191,70 @@ export const PROJECTS_API = {
   },
 
   update: async ({ project_id, data }: { project_id: number, data: Partial<IProjectFormData> }) => {
-    const response = await apiRequest.post(`/projects/projects/${project_id}/details/`, data);
+    const response = await apiRequest.patch(`/projects/projects/${project_id}/details/`, data);
     return response.data as IProject;
   },
   delete: async ({ project_id }: { project_id: number }) => {
     await apiRequest.delete(`/projects/projects/${project_id}/details/`);
   },
 
-  getByProjectId: async ({ project_id }: { project_id: number }) => {
+  getByProjectById: async ({ project_id }: { project_id: number }) => {
     const response = await apiRequest.get(`/projects/projects/${project_id}/details/`);
     return response.data as IProject;
   },
+
 }
+
+
+export const PROJECTS_TASKS_API = {
+  getPaginatedTasks: async ({
+    projectId,
+    page = 1,
+    search,
+    ordering,
+  }: {
+    projectId: number;
+    page?: number;
+    search?: string;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    ordering && params.append("ordering", ordering);
+    const endpoint = `projects/tasks/${projectId}/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IProjectTask>;
+  },
+
+  getPaginatedTasksFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(forceUrlToHttps(url));
+    return response.data as IPaginatedResponse<IProjectTask>;
+  },
+
+  create: async ({ projectId, data }: { projectId: number; data: IProjectTaskFormData }) => {
+    const response = await apiRequest.post(`projects/tasks/${projectId}/`, data);
+    return response.data as IProjectTask;
+  },
+
+  update: async ({ taskId, data }: { taskId: number; data: Partial<IProjectTaskFormData> }) => {
+    const response = await apiRequest.patch(`projects/tasks/${taskId}/details/`, data);
+    return response.data as IProjectTask;
+  },
+
+  delete: async ({ taskId }: { taskId: number }) => {
+    await apiRequest.delete(`projects/tasks/${taskId}/details/`);
+  },
+
+  getByTaskId: async ({ taskId }: { taskId: number }) => {
+    const response = await apiRequest.get(`projects/tasks/${taskId}/details/`);
+    return response.data as IProjectTask;
+  },
+};
+
 
 

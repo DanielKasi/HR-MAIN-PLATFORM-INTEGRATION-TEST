@@ -227,7 +227,7 @@ export default function ProjectsPage() {
     {
       key: "status",
       header: "Status",
-      cell: (project) => <Badge>{project.project_status}</Badge>
+      cell: (project) => <Badge variant={"secondary"} className="capitalize">{project.project_status.replace("_", " ")}</Badge>
     },
     {
       key: "actions",
@@ -332,31 +332,7 @@ export default function ProjectsPage() {
                 className="pl-10 !w-full"
               />
             </div>
-            {/* <div className="flex items-center justify-start gap-4">
-              <Button
-                variant={filterStatus === "all" ? "default" : "outline"}
-                onClick={() => setFilterStatus("all")}
-                size="sm"
-                className="rounded-xl"
-              >
-                All
-              </Button>
-              <Button
-                variant={filterStatus === "in_progress" ? "default" : "outline"}
-                onClick={() => setFilterStatus("in_progress")}
-                size="sm"
-                className="rounded-xl"
-              >
-                Active
-              </Button>
-              <Button
-                variant={filterStatus === "completed" ? "default" : "outline"}
-                onClick={() => setFilterStatus("completed")}
-                size="sm" className="rounded-xl"
-              >
-                Completed
-              </Button>
-            </div> */}
+            
           </div>
         </div>
 

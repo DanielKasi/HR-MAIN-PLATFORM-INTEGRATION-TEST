@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import type { UserProfile } from "@/types";
-import { apiGet } from "@/lib/apiRequest";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {useEffect, useState} from "react";
+import {useParams} from "next/navigation";
+import type {UserProfile} from "@/types";
+import {apiGet} from "@/lib/apiRequest";
+import {Button} from "@/components/ui/button";
+import {Badge} from "@/components/ui/badge";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Progress} from "@/components/ui/progress";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {
   ArrowLeft,
   Edit,
@@ -18,13 +18,14 @@ import {
   Plus,
   CheckCircle2,
   AlertTriangle,
-  MoreHorizontal,
   Eye,
   Trash2,
   FileText,
   TrendingUp,
   Activity,
   MoreVertical,
+  ClockAlert,
+  List,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -33,9 +34,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
-import { IProject, IProjectTask } from "@/types/types.utils";
-
+import {ApprovalWorkflow} from "@/components/approvals/approval-workflow";
+import {IProject, IProjectTask} from "@/types/types.utils";
+import {PROJECTS_API} from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import FixedLoader from "@/components/fixed-loader";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -90,8 +102,8 @@ export default function ProjectDetailsPage() {
 
   const fetchProject = async () => {
     try {
-      const response = await apiGet(`projects/projects/${params.id}/details`);
-      setProject(response.data);
+      const project = await PROJECTS_API.getByProjectById({project_id: Number(params.id)});
+      setProject(project);
     } catch (error) {
       console.error("Error fetching project:", error);
     } finally {
@@ -107,9 +119,7 @@ export default function ProjectDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-lg">Loading project details...</div>
-      </div>
+            <FixedLoader/>
     );
   }
 
@@ -134,41 +144,162 @@ export default function ProjectDetailsPage() {
     ).length,
   };
 
+  const columns = [
+    {
+      key: "name",
+      header: "Task Name",
+      className: "w-1/3",
+      cellClassName: "",
+      cell: (task: IProjectTask) => (
+        <div className="space-y-1">
+          <h4 className="font-semibold text-slate-900">{task.task_name}</h4>
+          <p className="text-sm text-slate-600 line-clamp-2">{task.description}</p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      className: "w-1/6",
+      cellClassName: "text-center",
+      cell: (task: IProjectTask) => (
+        <Badge className={`${getStatusColor(task.task_status)} border text-xs`}>
+          {task.task_status.replace("_", " ")}
+        </Badge>
+      ),
+    },
+    {
+      key: "priority",
+      header: "Priority",
+      className: "w-1/6",
+      cellClassName: "text-center",
+      cell: (task: IProjectTask) => (
+        <Badge className={`${getPriorityColor(task.priority)} border text-xs`}>
+          {task.priority}
+        </Badge>
+      ),
+    },
+    {
+      key: "assigned",
+      header: "Assigned",
+      className: "w-1/12",
+      cellClassName: "text-center",
+      cell: (task: IProjectTask) => (
+        <div className="flex items-center justify-center gap-1 text-xs text-slate-600">
+          <Users className="h-3 w-3" />
+          {task.assigned_to.length}
+        </div>
+      ),
+    },
+    {
+      key: "dueDate",
+      header: "Due Date",
+      className: "w-1/6",
+      cellClassName: "",
+      cell: (task: IProjectTask) => {
+        const taskDaysRemaining = getDaysRemaining(task.end_date);
+        const isTaskOverdue = taskDaysRemaining < 0 && task.task_status !== "completed";
+        return (
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <Calendar className="h-3 w-3 flex-shrink-0" />
+            <span>{new Date(task.end_date).toLocaleDateString()}</span>
+            {isTaskOverdue && (
+              <Badge variant="destructive" className="text-xs">
+                Overdue
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "w-1/12 text-right",
+      cellClassName: "text-right",
+      cell: (task: IProjectTask) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/projects/project-tasks/${task.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/projects/project-tasks/edit/${task.id}`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Task
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
+  const tableData = { results: project.project_tasks };
+  const skeletonRows = 3;
+  const emptyState = (
+    <div className="text-center py-12">
+      <Target className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks yet</h3>
+      <p className="text-slate-600 mb-4">Start by creating your first task for this project</p>
+      <Link href={`/projects/project-tasks/add?project=${project.id}`}>
+        <Button className="rounded-xl">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Task
+        </Button>
+      </Link>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-white rounded-xl p-6">
       <div className="max-w-full space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/projects">
-              <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-              </Button>
-            </Link>
-            <div className="space-y-2">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+          <div className="space-y-2">
+            <div className="flex items-center justify-start gap-4 mb-2">
+              <Link href="/projects">
+                <Button variant="outline" size="sm" className=" rounded-full !aspect-square">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </Link>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold bg-gray-900  bg-clip-text text-transparent">
                 {project.project_name}
               </h1>
-              <div className="flex items-center gap-3">
-                <Badge className={`${getStatusColor(project.project_status)} border`}>
-                  {project.project_status.replace("_", " ")}
-                </Badge>
-                {isOverdue && (
-                  <Badge variant="destructive">{Math.abs(daysRemaining)} days overdue</Badge>
-                )}
-              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge className={`${getStatusColor(project.project_status)} border`}>
+                {project.project_status.replace("_", " ")}
+              </Badge>
+              {isOverdue && (
+                <Badge variant="destructive">{Math.abs(daysRemaining)} days overdue</Badge>
+              )}
             </div>
           </div>
           <Link href={`/projects/edit/${project.id}`}>
-            <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Project
+            <Button className="!rounded-xl">
+              <Edit className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline-block">Edit Project</span>
             </Button>
           </Link>
         </div>
 
-        <div className={` gap-6 ${(project?.approval_status !== "active" && project?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
-          {project?.approvals && project.approvals.length > 0 &&
+        <div
+          className={` gap-6 ${project?.approval_status !== "active" && project?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+        >
+          {project?.approvals && project.approvals.length > 0 && (
             <div className="order-1 lg:order-2">
               <ApprovalWorkflow
                 approvals={project.approvals}
@@ -176,229 +307,140 @@ export default function ProjectDetailsPage() {
                 onRefresh={fetchProject}
               />
             </div>
-          }
+          )}
 
-          <div className={`${(project?.approval_status !== "active" && project?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
-
-
+          <div
+            className={`${project?.approval_status !== "active" && project?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
+          >
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <Card className="shadow-sm rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100 text-sm font-medium">Progress</p>
+                      <p className="text-sm font-medium">Progress</p>
                       <p className="text-3xl font-bold">{progress}%</p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-blue-200" />
+                    <TrendingUp className="h-8 w-8" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 text-white">
+              <Card className="shadow-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-100 text-sm font-medium">Completed Tasks</p>
+                      <p className="text-sm font-medium">Total Tasks</p>
+                      <p className="text-3xl font-bold">{taskStats.total}</p>
+                    </div>
+                    <List className="h-8 w-8" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Completed Tasks</p>
                       <p className="text-3xl font-bold">{taskStats.completed}</p>
                     </div>
-                    <CheckCircle2 className="h-8 w-8 text-green-200" />
+                    <CheckCircle2 className="h-8 w-8" />
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+              <Card className="shadow-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-100 text-sm font-medium">In Progress</p>
-                      <p className="text-3xl font-bold">{taskStats.inProgress}</p>
+                      <p className="text-sm font-medium">Tasks Overdue</p>
+                      <p className="text-3xl font-bold">{taskStats.overdue}</p>
                     </div>
-                    <Activity className="h-8 w-8 text-orange-200" />
+                    <AlertTriangle className="h-8 w-8" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+              <Card className="shadow-sm">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-100 text-sm font-medium">Team Members</p>
-                      <p className="text-3xl font-bold">
-                        {project.leaders.length + project.members.length}
+                      <p className="text-sm font-medium">Days remaining</p>
+                      <p className="text-3xl font-bold text-green-600">
+                        {daysRemaining >= 0 ? daysRemaining : 0}
                       </p>
                     </div>
-                    <Users className="h-8 w-8 text-purple-200" />
+                    <Activity className="h-8 w-8 text-green-600" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Project Overview */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <FileText className="h-5 w-5" />
-                      Project Overview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <h4 className="font-semibold text-slate-900 mb-2">Description</h4>
-                      <p className="text-slate-600 leading-relaxed">{project.description}</p>
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+              <div className="lg:col-span-2">
+                <Card className="border-0 !shadow-md">
+                  <CardHeader className="flex flex-row items-center justify-between pb-4">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg font-semibold">Project Tasks</CardTitle>
+                      <p className="text-sm text-slate-600">Manage and track all project tasks</p>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold text-slate-900 mb-2">Timeline</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <Calendar className="h-4 w-4" />
-                            <span>Start: {new Date(project.start_date).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <Calendar className="h-4 w-4" />
-                            <span>End: {new Date(project.end_date).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold text-slate-900 mb-2">Progress</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600">Overall completion</span>
-                            <span className="font-medium">{progress}%</span>
-                          </div>
-                          <Progress value={progress} className="h-3" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Tasks Section */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-xl">
-                        <Target className="h-5 w-5" />
-                        Project Tasks ({project.project_tasks.length})
-                      </CardTitle>
-                      <Link href={`/projects/project-tasks/add?project=${project.id}`}>
-                        <Button variant="outline" size="sm" className="shadow-sm bg-transparent">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Task
-                        </Button>
-                      </Link>
-                    </div>
+                    <Link href={`/projects/project-tasks/add?project=${project.id}`}>
+                      <Button className="rounded-xl">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Task
+                      </Button>
+                    </Link>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {project.project_tasks.map((task) => {
-                        const taskDaysRemaining = getDaysRemaining(task.end_date);
-                        const isTaskOverdue = taskDaysRemaining < 0 && task.task_status !== "completed";
-
-                        return (
-                          <div
-                            key={task.id}
-                            className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow"
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-slate-900 mb-1">{task.task_name}</h4>
-                                <p className="text-sm text-slate-600 line-clamp-2">
-                                  {task.description}
-                                </p>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                    <Link href={`/projects/project-tasks/${task.id}`}>
-                                      <Eye className="mr-2 h-4 w-4" />
-                                      View Details
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem asChild>
-                                    <Link href={`/projects/project-tasks/edit/${task.id}`}>
-                                      <Edit className="mr-2 h-4 w-4" />
-                                      Edit Task
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Badge className={`${getStatusColor(task.task_status)} border text-xs`}>
-                                  {task.task_status.replace("_", " ")}
-                                </Badge>
-                                <Badge className={`${getPriorityColor(task.priority)} border text-xs`}>
-                                  {task.priority}
-                                </Badge>
-                                <div className="flex items-center gap-1 text-xs text-slate-600">
-                                  <Users className="h-3 w-3" />
-                                  {task.assigned_to.length}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 text-xs text-slate-600">
-                                <Calendar className="h-3 w-3" />
-                                <span>{new Date(task.end_date).toLocaleDateString()}</span>
-                                {isTaskOverdue && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    Overdue
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {project.project_tasks.length === 0 && (
-                        <div className="text-center py-12">
-                          <Target className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-slate-900 mb-2">No tasks yet</h3>
-                          <p className="text-slate-600 mb-4">
-                            Start by creating your first task for this project
-                          </p>
-                          <Link href={`/projects/project-tasks/add?project=${project.id}`}>
-                            <Button>
-                              <Plus className="mr-2 h-4 w-4" />
-                              Create Task
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
+                    <Table className={cn("w-full")}>
+                      <TableHeader>
+                        <TableRow className="border-b bg-muted/30">
+                          {columns.map((col) => (
+                            <TableHead key={col.key} className={col.className}>
+                              {col.header}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loading ? (
+                          Array.from({ length: skeletonRows }).map((_, rowIndex) => (
+                            <TableRow key={rowIndex} className="border-b">
+                              {columns.map((col) => (
+                                <TableCell key={col.key}>
+                                  <Skeleton className="h-6 w-3/4" />
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))
+                        ) : (tableData?.results?.length ?? 0) === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={columns.length} className="text-center py-12">
+                              {emptyState}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          tableData?.results?.map((task: IProjectTask, index) => (
+                            <TableRow key={index} className="hover:bg-muted/50 transition-colors border-b">
+                              {columns.map((col) => (
+                                <TableCell key={col.key} className={col.cellClassName}>
+                                  {col.cell(task)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Sidebar */}
-              <div className="space-y-6">
+              <div className="space-y-6 ">
                 {/* Team Members */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Team Members
-                    </CardTitle>
-                  </CardHeader>
+                <Card className="border-0 !shadow-md">
                   <CardContent className="space-y-4">
                     <div>
                       <h4 className="font-medium text-slate-900 mb-3">Project Leaders</h4>
@@ -453,48 +495,6 @@ export default function ProjectDetailsPage() {
                             </div>
                           </div>
                         ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Quick Stats */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Quick Stats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-blue-50 rounded-lg">
-                        <p className="text-2xl font-bold text-blue-600">{taskStats.total}</p>
-                        <p className="text-xs text-blue-700">Total Tasks</p>
-                      </div>
-                      <div className="text-center p-3 bg-green-50 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">{taskStats.completed}</p>
-                        <p className="text-xs text-green-700">Completed</p>
-                      </div>
-                    </div>
-
-                    {taskStats.overdue > 0 && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-red-700">
-                          <AlertTriangle className="h-4 w-4" />
-                          <span className="font-medium">{taskStats.overdue} overdue tasks</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">Days remaining</span>
-                        <span
-                          className={`font-medium ${isOverdue ? "text-red-600" : "text-slate-900"}`}
-                        >
-                          {isOverdue ? `${Math.abs(daysRemaining)} overdue` : `${daysRemaining} days`}
-                        </span>
                       </div>
                     </div>
                   </CardContent>

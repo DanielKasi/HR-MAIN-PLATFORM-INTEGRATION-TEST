@@ -11,6 +11,7 @@ import { TerminationInitiationsAPI } from "@/lib/utils"
 import { ITermination } from "@/types/types.utils"
 import { MAIN_DOMAIN_URL } from "@/constants"
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow"
+import FixedLoader from "@/components/fixed-loader"
 
 const STATUS_STYLES = {
   submitted: "bg-blue-100 text-blue-800 hover:bg-blue-200",
@@ -62,11 +63,7 @@ export default function TerminationInitiationDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading termination details...</div>
-        </div>
-      </div>
+            <FixedLoader/>
     )
   }
 
