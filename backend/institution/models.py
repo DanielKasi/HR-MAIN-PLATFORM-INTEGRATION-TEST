@@ -143,7 +143,6 @@ class Institution(SoftDeletableTimeStampedModel):
             )
 
     def save(self, *args, **kwargs):
-        from calendar2.models import Calendar
         from payroll.utils import PayrollProcessor
         from users.models import Profile
 

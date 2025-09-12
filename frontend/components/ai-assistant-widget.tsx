@@ -522,15 +522,14 @@ export default function AIAssistantWidget() {
                                       </p>
 
                                       {message.links && message.links.length > 0 && (
-                                        <div className="mt-2 flex items-center">
+                                        <div className="mt-2">
                                           <a
                                             href={message.links[0]}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="w-6 h-6 flex items-center justify-center rounded-full bg-red-200 text-red-700 hover:bg-red-300 transition-colors duration-200"
-                                            title="See more"
+                                            className="text-red-700 hover:underline text-sm"
                                           >
-                                            <ExternalLink className="h-3 w-3" />
+                                            For more info...
                                           </a>
                                         </div>
                                       )}

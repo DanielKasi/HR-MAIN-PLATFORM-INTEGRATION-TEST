@@ -8,6 +8,7 @@ from .models import EmployeeAttendance, EmployeeType, UserBranch, Branch, WorkTy
 from employee.models import Employee
 import logging
 from datetime import timedelta
+
 # from payroll.utils import get_employee_attendance_status_for_date
 
 logger = logging.getLogger(__name__)
@@ -232,8 +233,6 @@ class EmployeeBranchService:
             raise
 
 
-
-
 def is_non_working_day(date, employee, institution):
     """
     Determine if a date is a non-working day for the employee's branch or institution.
@@ -254,10 +253,8 @@ def is_non_working_day(date, employee, institution):
 
         # Check for holidays (assuming a Holiday model exists)
         from institution.models import Holiday
-        if Holiday.objects.filter(
-            institution=institution,
-            date=date
-        ).exists():
+
+        if Holiday.objects.filter(institution=institution, date=date).exists():
             return True
 
         return False
@@ -265,8 +262,11 @@ def is_non_working_day(date, employee, institution):
     except Exception:
         # Default to assuming it's a working day if data is missing
         return False
-    
-def get_employee_attendance_status_for_date(employee_id, date, attendance_cache=None, institution=None):
+
+
+def get_employee_attendance_status_for_date(
+    employee_id, date, attendance_cache=None, institution=None
+):
     """
     Determine the attendance or leave status for an employee on a specific date.
     Returns a status code compatible with the Excel report (e.g., 'P-on-T', 'A-L', 'N-W-D').
@@ -283,12 +283,16 @@ def get_employee_attendance_status_for_date(employee_id, date, attendance_cache=
         employee = Employee.objects.get(id=employee_id)
 
         # Check for approved leave first
-        leave = LeaveApplication.objects.filter(
-            employee_id=employee_id,
-            start_date__lte=date,
-            end_date__gte=date,
-            status="approved"
-        ).select_related("leave_type").first()
+        leave = (
+            LeaveApplication.objects.filter(
+                employee_id=employee_id,
+                start_date__lte=date,
+                end_date__gte=date,
+                status="approved",
+            )
+            .select_related("leave_type")
+            .first()
+        )
 
         if leave:
             leave_type_map = {
@@ -335,7 +339,7 @@ def get_employee_attendance_status_for_date(employee_id, date, attendance_cache=
     except Exception as e:
         print(f"Error in get_employee_attendance_status_for_date: {str(e)}")  # Debug
         attendance_cache[cache_key] = "ERR"
-        return "ERR" 
+        return "ERR"
 
 
 def build_attendance_report_data(start_date, end_date, context, institution):
@@ -376,7 +380,9 @@ def build_attendance_report_data(start_date, end_date, context, institution):
                     employee.id, current_date, attendance_cache, institution
                 )
             except Exception as e:
-                print(f"Error for Employee {employee.id}, Date {current_date}: {str(e)}")  # Debug
+                print(
+                    f"Error for Employee {employee.id}, Date {current_date}: {str(e)}"
+                )  # Debug
                 status = "ERR"
 
             # Tally summary counts
@@ -414,25 +420,24 @@ def build_attendance_report_data(start_date, end_date, context, institution):
         "start_date": start_date,
         "end_date": end_date,
         "employees": report_data,
-    }       
+    }
+
 
 def create_owner_employee(institution):
     default_dept, dept_created = Department.objects.get_or_create(
         institution=institution,
-        name="Default Department",
-        defaults = {
-            'description': 'This is the default department for the institution.'
-            }
+        name="Human Resources Department",
+        defaults={"description": "This is the default department for the institution."},
     )
 
     default_position, pos_created = JobPosition.objects.get_or_create(
-        name="Institution Owner",
+        name="HR Manager",
         department=default_dept,
         defaults={
             "description": "This is the default position for the institution owner.",
-            'salary_min': Decimal('0.00'),
-            'is_active': True,
-        }
+            "salary_min": Decimal("0.00"),
+            "is_active": True,
+        },
     )
 
     owner = institution.institution_owner
@@ -443,13 +448,17 @@ def create_owner_employee(institution):
             user=owner,
             position=default_position,
             department=default_dept,
-            email=owner.email,  
-            gender=owner.gender,  
+            email=owner.email,
+            gender=owner.gender,
             date_of_joining=timezone.now().date(),
-            work_type=WorkType.objects.first(),  
-            employee_type=EmployeeType.objects.first(), 
-            salary=default_position.salary_min if hasattr(default_position, 'salary_min') else Decimal('0.00'),
-            is_active=True,  
+            work_type=WorkType.objects.first(),
+            employee_type=EmployeeType.objects.first(),
+            salary=(
+                default_position.salary_min
+                if hasattr(default_position, "salary_min")
+                else Decimal("0.00")
+            ),
+            is_active=True,
         )
 
         employee.sync_leave_balances()
@@ -458,7 +467,3 @@ def create_owner_employee(institution):
         return employee
     else:
         return Employee.objects.get(user=owner, department=default_dept)
-    
-    
-
-    

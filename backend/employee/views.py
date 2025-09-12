@@ -36,7 +36,6 @@ from .serializers import (
     EmployeeShiftSerializer,
 )
 from rest_framework.parsers import MultiPartParser, FormParser
-from institution.utils import generate_compliant_password
 from employee.service import EmployeeBranchService
 from drf_spectacular.utils import (
     extend_schema,
@@ -98,7 +97,7 @@ from collections import defaultdict
 class QualificationAwardListCreateAPIView(APIView):
     @extend_schema(
         summary="List all Qualification Awards",
-        responses={200: QualificationAwardSerializer(many=True)}
+        responses={200: QualificationAwardSerializer(many=True)},
     )
     def get(self, request):
         awards = QualificationAward.objects.all()
@@ -108,7 +107,7 @@ class QualificationAwardListCreateAPIView(APIView):
     @extend_schema(
         summary="Create a new Qualification Award",
         request=QualificationAwardSerializer,
-        responses={201: QualificationAwardSerializer}
+        responses={201: QualificationAwardSerializer},
     )
     def post(self, request):
         serializer = QualificationAwardSerializer(data=request.data)
@@ -121,7 +120,7 @@ class QualificationAwardListCreateAPIView(APIView):
 class QualificationAwardDetailAPIView(APIView):
     @extend_schema(
         summary="Retrieve a Qualification Award by ID",
-        responses={200: QualificationAwardSerializer}
+        responses={200: QualificationAwardSerializer},
     )
     def get(self, request, pk):
         award = get_object_or_404(QualificationAward, pk=pk)
@@ -131,24 +130,24 @@ class QualificationAwardDetailAPIView(APIView):
     @extend_schema(
         summary="Partially update a Qualification Award by ID",
         request=QualificationAwardSerializer,
-        responses={200: QualificationAwardSerializer}
+        responses={200: QualificationAwardSerializer},
     )
     def patch(self, request, pk):
         award = get_object_or_404(QualificationAward, pk=pk)
-        serializer = QualificationAwardSerializer(award, data=request.data, partial=True)
+        serializer = QualificationAwardSerializer(
+            award, data=request.data, partial=True
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(
-        summary="Delete a Qualification Award by ID",
-        responses={204: None}
-    )
+    @extend_schema(summary="Delete a Qualification Award by ID", responses={204: None})
     def delete(self, request, pk):
         award = get_object_or_404(QualificationAward, pk=pk)
         award.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class EmployeeExportView(APIView):
 
@@ -400,17 +399,19 @@ class EmployeeCreateAPIView(APIView):
                 "position",
                 "department",
             ]:
-                final_data[key.replace("[]", "")] = values[0] if len(values) == 1 else values
+                final_data[key.replace("[]", "")] = (
+                    values[0] if len(values) == 1 else values
+                )
                 continue
 
             # Handle nested fields
             for field in nested_fields:
                 if field == "spouse" and key.startswith("spouse."):
-                    subfield = key[len("spouse."):].replace("[]", "")
+                    subfield = key[len("spouse.") :].replace("[]", "")
                     final_data[field][subfield] = values[0] if values else None
                 elif key.startswith(field + "["):
                     try:
-                        index_str, subfield = key[len(field + "["):].split("].", 1)
+                        index_str, subfield = key[len(field + "[") :].split("].", 1)
                         index = int(index_str) if field != "spouse" else None
                     except (ValueError, IndexError):
                         continue
@@ -418,7 +419,9 @@ class EmployeeCreateAPIView(APIView):
                     if field != "spouse":
                         while len(final_data[field]) <= index:
                             final_data[field].append({})
-                        final_data[field][index][subfield] = values[0] if values else None
+                        final_data[field][index][subfield] = (
+                            values[0] if values else None
+                        )
 
         # Transform the defaultdict to a regular dict
         final_data = dict(final_data)
@@ -435,7 +438,9 @@ class EmployeeCreateAPIView(APIView):
         # Fix field names and ensure proper types
         if "bank_accounts" in final_data:
             for bank in final_data["bank_accounts"]:
-                bank["account_name"] = bank.get("account_name", final_data["user"]["fullname"])
+                bank["account_name"] = bank.get(
+                    "account_name", final_data["user"]["fullname"]
+                )
                 bank["account_number"] = bank.get("account_number", "")
 
         if "next_of_kin" in final_data:
@@ -462,12 +467,16 @@ class EmployeeCreateAPIView(APIView):
                         qual_id = int(edu["qualification_id"])
                         if not QualificationAward.objects.filter(id=qual_id).exists():
                             raise serializers.ValidationError(
-                                {"educations": f"QualificationAward with ID {qual_id} does not exist."}
+                                {
+                                    "educations": f"QualificationAward with ID {qual_id} does not exist."
+                                }
                             )
                         edu["qualification_id"] = qual_id
                     except (ValueError, TypeError):
                         raise serializers.ValidationError(
-                            {"educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."}
+                            {
+                                "educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."
+                            }
                         )
                 elif "qualification" in edu and edu["qualification"]:
                     try:
@@ -475,23 +484,35 @@ class EmployeeCreateAPIView(APIView):
                         edu["qualification_id"] = qual.id
                     except QualificationAward.DoesNotExist:
                         try:
-                            qual = QualificationAward.objects.create(name=edu["qualification"])
+                            qual = QualificationAward.objects.create(
+                                name=edu["qualification"]
+                            )
                             edu["qualification_id"] = qual.id
                         except Exception as e:
                             raise serializers.ValidationError(
-                                {"educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"}
+                                {
+                                    "educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"
+                                }
                             )
                     finally:
-                        edu.pop("qualification", None)  # Remove qualification to avoid serializer confusion
+                        edu.pop(
+                            "qualification", None
+                        )  # Remove qualification to avoid serializer confusion
                 else:
                     raise serializers.ValidationError(
-                        {"educations": "Either qualification_id or qualification must be provided."}
+                        {
+                            "educations": "Either qualification_id or qualification must be provided."
+                        }
                     )
 
         if "spouse" in final_data and final_data["spouse"]:
             if not final_data["spouse"].get("name"):
-                final_data["spouse"]["name"] = final_data["user"]["fullname"] + " Spouse"
-            final_data["spouse"]["phone_number"] = final_data["spouse"].get("phone_number") or None
+                final_data["spouse"]["name"] = (
+                    final_data["user"]["fullname"] + " Spouse"
+                )
+            final_data["spouse"]["phone_number"] = (
+                final_data["spouse"].get("phone_number") or None
+            )
         else:
             final_data["spouse"] = None
 
@@ -500,7 +521,9 @@ class EmployeeCreateAPIView(APIView):
             if isinstance(final_data["selected_branches"], str):
                 final_data["selected_branches"] = [int(final_data["selected_branches"])]
             elif isinstance(final_data["selected_branches"], list):
-                final_data["selected_branches"] = [int(x) for x in final_data["selected_branches"] if x]
+                final_data["selected_branches"] = [
+                    int(x) for x in final_data["selected_branches"] if x
+                ]
 
         # Convert scalar fields to appropriate types
         scalar_fields = [
@@ -514,7 +537,9 @@ class EmployeeCreateAPIView(APIView):
             if field in final_data and final_data[field]:
                 try:
                     final_data[field] = (
-                        float(final_data[field]) if field == "salary" else int(final_data[field])
+                        float(final_data[field])
+                        if field == "salary"
+                        else int(final_data[field])
                     )
                 except (ValueError, TypeError):
                     final_data[field] = None
@@ -585,7 +610,7 @@ class EmployeeCreateAPIView(APIView):
                             "institution": "Example University",
                             "name": "Bachelor of Science",
                             "year": 2015,
-                            "qualification_id": 1
+                            "qualification_id": 1,
                         }
                     ],
                 },
@@ -662,7 +687,9 @@ class EmployeeCreateAPIView(APIView):
             employee.user.save()
             employee.confirm_create()
             send_employee_welcome_email.delay_on_commit(
-                employee.user.email, employee.user.fullname, final_data["user"]["password"]
+                employee.user.email,
+                employee.user.fullname,
+                final_data["user"]["password"],
             )
             return Response(
                 EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
@@ -673,14 +700,16 @@ class EmployeeCreateAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-
-
     def handle_bulk_upload(self, request):
-        start_time = timezone.now()
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
             return Response(
-                {"detail": "No institution associated with the requesting user.", "created_count": 0, "updated_count": 0, "warnings": []},
+                {
+                    "detail": "No institution associated with the requesting user.",
+                    "created_count": 0,
+                    "updated_count": 0,
+                    "warnings": [],
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         role = get_or_create_default_role_with_permissions(institution)
@@ -689,9 +718,16 @@ class EmployeeCreateAPIView(APIView):
         file_extension = file.name.split(".")[-1].lower()
 
         if file_extension not in ["csv", "xlsx"]:
-            print(f"Invalid file format: {file_extension}. Only CSV or Excel files are supported.")
+            print(
+                f"Invalid file format: {file_extension}. Only CSV or Excel files are supported."
+            )
             return Response(
-                {"detail": "Invalid file format. Only CSV or Excel files are supported.", "created_count": 0, "updated_count": 0, "warnings": []},
+                {
+                    "detail": "Invalid file format. Only CSV or Excel files are supported.",
+                    "created_count": 0,
+                    "updated_count": 0,
+                    "warnings": [],
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -718,16 +754,27 @@ class EmployeeCreateAPIView(APIView):
             if missing_columns:
                 print(f"Missing required columns: {', '.join(missing_columns)}")
                 return Response(
-                    {"detail": f"Missing required columns: {', '.join(missing_columns)}", "created_count": 0, "updated_count": 0, "warnings": []},
+                    {
+                        "detail": f"Missing required columns: {', '.join(missing_columns)}",
+                        "created_count": 0,
+                        "updated_count": 0,
+                        "warnings": [],
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             # Check for duplicate employee_id
             if "employee_id" in df.columns:
                 employee_ids = df["employee_id"].str.strip().dropna().tolist()
-                duplicate_employee_ids = [eid for eid, count in pd.Series(employee_ids).value_counts().items() if count > 1]
+                duplicate_employee_ids = [
+                    eid
+                    for eid, count in pd.Series(employee_ids).value_counts().items()
+                    if count > 1
+                ]
                 if duplicate_employee_ids:
-                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][["employee_id"]].index.tolist()
+                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][
+                        ["employee_id"]
+                    ].index.tolist()
                     print(f"Duplicate employee IDs found: {duplicate_employee_ids}")
                     return Response(
                         {
@@ -738,8 +785,13 @@ class EmployeeCreateAPIView(APIView):
                             "errors": [
                                 {
                                     "row": idx + 2,
-                                    "errors": {"employee_id": {"error": f"Employee ID '{df.loc[idx, 'employee_id']}' is duplicated in the file"}}
-                                } for idx in duplicate_rows
+                                    "errors": {
+                                        "employee_id": {
+                                            "error": f"Employee ID '{df.loc[idx, 'employee_id']}' is duplicated in the file"
+                                        }
+                                    },
+                                }
+                                for idx in duplicate_rows
                             ],
                         },
                         status=status.HTTP_400_BAD_REQUEST,
@@ -772,37 +824,66 @@ class EmployeeCreateAPIView(APIView):
                             filter_kwargs["institution"] = institution
                         existing = model.objects.filter(**filter_kwargs)
                         for item in existing:
-                            instance_mappings[field][str(getattr(item, lookup_field)).lower()] = item
-                        missing = [v for v in unique_values if v.lower() not in [str(getattr(item, lookup_field)).lower() for item in existing]]
+                            instance_mappings[field][
+                                str(getattr(item, lookup_field)).lower()
+                            ] = item
+                        missing = [
+                            v
+                            for v in unique_values
+                            if v.lower()
+                            not in [
+                                str(getattr(item, lookup_field)).lower()
+                                for item in existing
+                            ]
+                        ]
                         for value in missing:
                             kwargs = {lookup_field: value}
                             if field != "qualification":
                                 kwargs["institution"] = institution
                                 if field == "department":
-                                    kwargs["description"] = "Auto-created during bulk upload"
+                                    kwargs["description"] = (
+                                        "Auto-created during bulk upload"
+                                    )
                             elif field == "qualification":
-                                kwargs["description"] = "Auto-created during bulk upload"
+                                kwargs["description"] = (
+                                    "Auto-created during bulk upload"
+                                )
                             instance = model.objects.create(**kwargs)
                             instance_mappings[field][value.lower()] = instance
                             print(f"Created {field}: {value}")
 
             position_mappings = {}
             if "position" in df.columns:
-                valid_rows = df[(df["position"].notna()) & (df["position"].astype(str).str.strip() != "")].copy()
+                valid_rows = df[
+                    (df["position"].notna())
+                    & (df["position"].astype(str).str.strip() != "")
+                ].copy()
                 if len(valid_rows) > 0:
-                    dept_pos_pairs = valid_rows[["department", "position"]].drop_duplicates()
+                    dept_pos_pairs = valid_rows[
+                        ["department", "position"]
+                    ].drop_duplicates()
                     for _, row in dept_pos_pairs.iterrows():
-                        dept_name = str(row["department"]).strip() if pd.notna(row["department"]) else None
+                        dept_name = (
+                            str(row["department"]).strip()
+                            if pd.notna(row["department"])
+                            else None
+                        )
                         pos_name = str(row["position"]).strip()
                         dept_lower = dept_name.lower() if dept_name else None
                         pos_lower = pos_name.lower()
-                        dept_instance = instance_mappings.get("department", {}).get(dept_lower) if dept_lower else None
+                        dept_instance = (
+                            instance_mappings.get("department", {}).get(dept_lower)
+                            if dept_lower
+                            else None
+                        )
                         filter_kwargs = {"name__iexact": pos_name}
                         if dept_instance:
                             filter_kwargs["department"] = dept_instance
                         else:
                             filter_kwargs["department__isnull"] = True
-                        existing_pos = JobPosition.objects.filter(**filter_kwargs).first()
+                        existing_pos = JobPosition.objects.filter(
+                            **filter_kwargs
+                        ).first()
                         if existing_pos:
                             position_mappings[(dept_lower, pos_lower)] = existing_pos
                         else:
@@ -815,7 +896,11 @@ class EmployeeCreateAPIView(APIView):
                             print(f"Created position: {pos_name}")
 
             # Group rows by employee_id
-            grouped = df.groupby("employee_id") if "employee_id" in df.columns else [(None, df)]
+            grouped = (
+                df.groupby("employee_id")
+                if "employee_id" in df.columns
+                else [(None, df)]
+            )
             with transaction.atomic():
                 for employee_id, group in grouped:
                     row_errors = {}
@@ -823,8 +908,16 @@ class EmployeeCreateAPIView(APIView):
                     first_row = group.iloc[0]
                     employee_data = {
                         "user": {
-                            "fullname": str(first_row["user.fullname"]).strip() if pd.notna(first_row["user.fullname"]) else "",
-                            "email": str(first_row["user.email"]).strip() if pd.notna(first_row["user.email"]) else "",
+                            "fullname": (
+                                str(first_row["user.fullname"]).strip()
+                                if pd.notna(first_row["user.fullname"])
+                                else ""
+                            ),
+                            "email": (
+                                str(first_row["user.email"]).strip()
+                                if pd.notna(first_row["user.email"])
+                                else ""
+                            ),
                         },
                         "selected_branches": [],
                         "bank_accounts": [],
@@ -833,16 +926,24 @@ class EmployeeCreateAPIView(APIView):
                         "work_experiences": [],
                         "children": [],
                         "spouse": None,
-                        "email": str(first_row["user.email"]).strip() if pd.notna(first_row["user.email"]) else "",
+                        "email": (
+                            str(first_row["user.email"]).strip()
+                            if pd.notna(first_row["user.email"])
+                            else ""
+                        ),
                     }
 
-                    print(f"Processing employee_id: {employee_id}, email: {employee_data['user']['email']}")
+                    print(
+                        f"Processing employee_id: {employee_id}, email: {employee_data['user']['email']}"
+                    )
 
                     if employee_id:
                         employee_data["employee_id"] = employee_id
 
                     if not employee_data["user"]["fullname"]:
-                        row_errors["user.fullname"] = {"error": "This field is required."}
+                        row_errors["user.fullname"] = {
+                            "error": "This field is required."
+                        }
                     if not employee_data["user"]["email"]:
                         row_errors["user.email"] = {"error": "This field is required."}
 
@@ -851,48 +952,95 @@ class EmployeeCreateAPIView(APIView):
                     email_changed = False
                     new_password = None
                     if employee_id:
-                        existing_employee = Employee.objects.filter(employee_id=employee_id).first()
-                        if existing_employee and existing_employee.user.email != employee_data["user"]["email"]:
-                            if CustomUser.objects.exclude(id=existing_employee.user.id).filter(email=employee_data["user"]["email"]).exists():
-                                row_errors["user.email"] = {"error": f"Email '{employee_data['user']['email']}' is already in use by another user."}
+                        existing_employee = Employee.objects.filter(
+                            employee_id=employee_id
+                        ).first()
+                        if (
+                            existing_employee
+                            and existing_employee.user.email
+                            != employee_data["user"]["email"]
+                        ):
+                            if (
+                                CustomUser.objects.exclude(id=existing_employee.user.id)
+                                .filter(email=employee_data["user"]["email"])
+                                .exists()
+                            ):
+                                row_errors["user.email"] = {
+                                    "error": f"Email '{employee_data['user']['email']}' is already in use by another user."
+                                }
                             else:
                                 email_changed = True
                                 new_password = generate_compliant_password()
                                 employee_data["user"]["password"] = new_password
                                 employee_data["email"] = employee_data["user"]["email"]
 
-                    existing_user = CustomUser.objects.filter(email=employee_data["user"]["email"]).first()
+                    existing_user = CustomUser.objects.filter(
+                        email=employee_data["user"]["email"]
+                    ).first()
                     if not existing_employee and existing_user:
                         if Employee.objects.filter(user=existing_user).exists():
-                            row_errors["user.email"] = {"error": f"User with email '{employee_data['user']['email']}' is already linked to another employee."}
+                            row_errors["user.email"] = {
+                                "error": f"User with email '{employee_data['user']['email']}' is already linked to another employee."
+                            }
                         else:
-                            if existing_user.fullname != employee_data["user"]["fullname"]:
-                                existing_user.fullname = employee_data["user"]["fullname"]
+                            if (
+                                existing_user.fullname
+                                != employee_data["user"]["fullname"]
+                            ):
+                                existing_user.fullname = employee_data["user"][
+                                    "fullname"
+                                ]
                                 existing_user.save()
                             employee_data["user"] = existing_user
                             employee_data["email"] = existing_user.email
 
-                    if not employee_id and not existing_employee:
-                        employee_data["employee_id"] = self.generate_unique_employee_id()
+                    if not existing_employee:
+                        if not employee_id:
+                            employee_data["employee_id"] = self.generate_employee_id()
+
                         if not existing_user:
                             new_password = generate_compliant_password()
+
+                            print("\n\nNew Employee and the password", new_password)
                             employee_data["user"]["password"] = new_password
                             employee_data["user"]["welcome_email_sent"] = True
+                            print("\n\nNew Employee and the password", new_password)
 
                     if row_errors:
                         errors.append({"row": group.index[0] + 2, "errors": row_errors})
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
                         continue
 
                     # Map scalar fields
                     scalar_fields = [
-                        "department", "work_type", "employee_type", "payroll_branch", "gender",
-                        "marital_status", "is_active", "date_of_birth", "date_of_joining",
-                        "phone_number", "address", "country", "nin", "nssf_no", "tin", "skills", "salary"
+                        "department",
+                        "work_type",
+                        "employee_type",
+                        "payroll_branch",
+                        "gender",
+                        "marital_status",
+                        "is_active",
+                        "date_of_birth",
+                        "date_of_joining",
+                        "phone_number",
+                        "address",
+                        "country",
+                        "nin",
+                        "nssf_no",
+                        "tin",
+                        "skills",
+                        "salary",
                     ]
                     gender_map = {"male": "male", "female": "female", "other": "other"}
-                    marital_status_map = {"single": "single", "married": "married", "divorced": "divorced", "widowed": "widowed"}
+                    marital_status_map = {
+                        "single": "single",
+                        "married": "married",
+                        "divorced": "divorced",
+                        "widowed": "widowed",
+                    }
 
                     for field in scalar_fields:
                         if field in group.columns and pd.notna(first_row[field]):
@@ -904,19 +1052,25 @@ class EmployeeCreateAPIView(APIView):
                                 if instance:
                                     employee_data[field] = instance.id
                                 else:
-                                    row_errors[field] = {"error": f"Invalid {field}: {value}"}
+                                    row_errors[field] = {
+                                        "error": f"Invalid {field}: {value}"
+                                    }
                             elif field == "gender":
                                 mapped = gender_map.get(value.lower())
                                 if mapped:
                                     employee_data[field] = mapped
                                 else:
-                                    row_errors[field] = {"error": f'"{value}" is not a valid choice.'}
+                                    row_errors[field] = {
+                                        "error": f'"{value}" is not a valid choice.'
+                                    }
                             elif field == "marital_status":
                                 mapped = marital_status_map.get(value.lower())
                                 if mapped:
                                     employee_data[field] = mapped
                                 else:
-                                    row_errors[field] = {"error": f'"{value}" is not a valid choice.'}
+                                    row_errors[field] = {
+                                        "error": f'"{value}" is not a valid choice.'
+                                    }
                             elif field == "is_active":
                                 employee_data[field] = value.lower() == "true"
                             elif field in ["date_of_birth", "date_of_joining"]:
@@ -925,10 +1079,14 @@ class EmployeeCreateAPIView(APIView):
                                     if dob:
                                         if field == "date_of_birth":
                                             if dob > date.today():
-                                                row_errors[field] = {"error": "Date of birth cannot be in the future."}
+                                                row_errors[field] = {
+                                                    "error": "Date of birth cannot be in the future."
+                                                }
                                             age = (date.today() - dob).days // 365
                                             if age < 18:
-                                                row_errors[field] = {"error": f"Employee must be at least 18 years old. Current age: {age}."}
+                                                row_errors[field] = {
+                                                    "error": f"Employee must be at least 18 years old. Current age: {age}."
+                                                }
                                             else:
                                                 employee_data[field] = dob
                                         else:
@@ -939,57 +1097,86 @@ class EmployeeCreateAPIView(APIView):
                                 try:
                                     employee_data[field] = float(value)
                                 except ValueError:
-                                    row_errors[field] = {"error": f"Invalid salary format: {value}"}
+                                    row_errors[field] = {
+                                        "error": f"Invalid salary format: {value}"
+                                    }
                             else:
-                                employee_data[field] = value[:100] if field == "address" else value
+                                employee_data[field] = (
+                                    value[:100] if field == "address" else value
+                                )
 
                     # Map position
                     if "position" in group.columns and pd.notna(first_row["position"]):
                         pos_name = str(first_row["position"]).strip()
-                        dept_name = str(first_row.get("department", "")).strip() if pd.notna(first_row.get("department")) else None
+                        dept_name = (
+                            str(first_row.get("department", "")).strip()
+                            if pd.notna(first_row.get("department"))
+                            else None
+                        )
                         dept_lower = dept_name.lower() if dept_name else None
                         pos_lower = pos_name.lower()
-                        position_instance = position_mappings.get((dept_lower, pos_lower))
+                        position_instance = position_mappings.get(
+                            (dept_lower, pos_lower)
+                        )
                         if position_instance:
                             employee_data["position"] = position_instance.id
                         else:
-                            row_errors["position"] = {"error": f"Invalid position: {pos_name}"}
+                            row_errors["position"] = {
+                                "error": f"Invalid position: {pos_name}"
+                            }
 
                     # Map bank details
                     bank_data = {}
                     if "bank" in group.columns and pd.notna(first_row["bank"]):
                         bank_name = str(first_row["bank"]).strip()
                         if bank_name:
-                            bank_instance = instance_mappings["bank"].get(bank_name.lower())
+                            bank_instance = instance_mappings["bank"].get(
+                                bank_name.lower()
+                            )
                             if not bank_instance:
                                 try:
                                     bank_instance = InstitutionBankType.objects.create(
-                                        bank_fullname=bank_name,
-                                        institution=institution
+                                        bank_fullname=bank_name, institution=institution
                                     )
-                                    instance_mappings["bank"][bank_name.lower()] = bank_instance
-                                    print(f"Created bank: {bank_name} with ID: {bank_instance.id}")
+                                    instance_mappings["bank"][
+                                        bank_name.lower()
+                                    ] = bank_instance
+                                    print(
+                                        f"Created bank: {bank_name} with ID: {bank_instance.id}"
+                                    )
                                 except Exception as e:
-                                    row_errors["bank"] = {"error": f"Failed to create bank '{bank_name}': {str(e)}"}
+                                    row_errors["bank"] = {
+                                        "error": f"Failed to create bank '{bank_name}': {str(e)}"
+                                    }
                             if bank_instance:
                                 bank_data["bank_id"] = bank_instance.id
-                                print(f"Bank ID mapped: {bank_instance.id} for {bank_name}")
+                                print(
+                                    f"Bank ID mapped: {bank_instance.id} for {bank_name}"
+                                )
                         else:
-                            row_warnings.append({
-                                "field": "bank",
-                                "message": "Bank name is empty or invalid."
-                            })
+                            row_warnings.append(
+                                {
+                                    "field": "bank",
+                                    "message": "Bank name is empty or invalid.",
+                                }
+                            )
 
-                    if "account_name" in group.columns and pd.notna(first_row["account_name"]):
+                    if "account_name" in group.columns and pd.notna(
+                        first_row["account_name"]
+                    ):
                         account_name = str(first_row["account_name"]).strip()
                         if account_name:
                             bank_data["account_name"] = account_name
                         else:
-                            bank_data["account_name"] = employee_data["user"]["fullname"]
+                            bank_data["account_name"] = employee_data["user"][
+                                "fullname"
+                            ]
                     else:
                         bank_data["account_name"] = employee_data["user"]["fullname"]
 
-                    if "bank_account_number" in group.columns and pd.notna(first_row["bank_account_number"]):
+                    if "bank_account_number" in group.columns and pd.notna(
+                        first_row["bank_account_number"]
+                    ):
                         account_number = str(first_row["bank_account_number"]).strip()
                         if account_number:
                             bank_data["account_number"] = account_number
@@ -998,75 +1185,113 @@ class EmployeeCreateAPIView(APIView):
                         employee_data["bank_accounts"].append(bank_data)
                         print(f"Bank data added: {bank_data}")
                     elif any(bank_data.values()):
-                        row_warnings.append({
-                            "field": "bank_id/account_name/bank_account_number",
-                            "message": "Incomplete bank details; bank_id and bank_account_number are required."
-                        })
+                        row_warnings.append(
+                            {
+                                "field": "bank_id/account_name/bank_account_number",
+                                "message": "Incomplete bank details; bank_id and bank_account_number are required.",
+                            }
+                        )
 
                     # Map next of kin
                     for _, row in group.iterrows():
                         next_of_kin_data = {}
-                        if "emergency_contact_phone" in row and pd.notna(row["emergency_contact_phone"]):
+                        if "emergency_contact_phone" in row and pd.notna(
+                            row["emergency_contact_phone"]
+                        ):
                             phone = str(row["emergency_contact_phone"]).strip()
                             if phone:
                                 next_of_kin_data["phone_number"] = phone
 
-                        if "emergency_contact_name" in row and pd.notna(row["emergency_contact_name"]):
+                        if "emergency_contact_name" in row and pd.notna(
+                            row["emergency_contact_name"]
+                        ):
                             name = str(row["emergency_contact_name"]).strip()
                             if name:
                                 next_of_kin_data["name"] = name
-                        if not next_of_kin_data.get("name") and next_of_kin_data.get("phone_number"):
+                        if not next_of_kin_data.get("name") and next_of_kin_data.get(
+                            "phone_number"
+                        ):
                             next_of_kin_data["name"] = "Primary Contact"
 
-                        if "emergency_contact_relationship" in row and pd.notna(row["emergency_contact_relationship"]):
-                            relationship = str(row["emergency_contact_relationship"]).strip().lower()
-                            valid_relationships = [choice[0] for choice in NextOfKin.RELATIONSHIP_CHOICES]
+                        if "emergency_contact_relationship" in row and pd.notna(
+                            row["emergency_contact_relationship"]
+                        ):
+                            relationship = (
+                                str(row["emergency_contact_relationship"])
+                                .strip()
+                                .lower()
+                            )
+                            valid_relationships = [
+                                choice[0] for choice in NextOfKin.RELATIONSHIP_CHOICES
+                            ]
                             if relationship in valid_relationships:
                                 next_of_kin_data["relationship"] = relationship
                             else:
-                                row_warnings.append({
-                                    "field": "emergency_contact_relationship",
-                                    "message": f"Invalid relationship '{relationship}' mapped to 'other'"
-                                })
+                                row_warnings.append(
+                                    {
+                                        "field": "emergency_contact_relationship",
+                                        "message": f"Invalid relationship '{relationship}' mapped to 'other'",
+                                    }
+                                )
                                 next_of_kin_data["relationship"] = "other"
                         else:
                             next_of_kin_data["relationship"] = "other"
 
                         if "address" in employee_data:
-                            address = employee_data["address"][:100] if employee_data["address"] else ""
+                            address = (
+                                employee_data["address"][:100]
+                                if employee_data["address"]
+                                else ""
+                            )
                             if len(address) > 100:
-                                row_warnings.append({
-                                    "field": "emergency_contact_address",
-                                    "message": f"Address truncated to 100 characters: {address}"
-                                })
+                                row_warnings.append(
+                                    {
+                                        "field": "emergency_contact_address",
+                                        "message": f"Address truncated to 100 characters: {address}",
+                                    }
+                                )
                                 address = address[:100]
                             next_of_kin_data["address"] = address
 
-                        if next_of_kin_data.get("name") and next_of_kin_data.get("phone_number"):
+                        if next_of_kin_data.get("name") and next_of_kin_data.get(
+                            "phone_number"
+                        ):
                             employee_data["next_of_kin"].append(next_of_kin_data)
                             print(f"Next of kin data added: {next_of_kin_data}")
                         elif any(next_of_kin_data.values()):
-                            row_warnings.append({
-                                "field": "emergency_contact_name/emergency_contact_phone",
-                                "message": "Incomplete next of kin details; name and phone_number are required."
-                            })
+                            row_warnings.append(
+                                {
+                                    "field": "emergency_contact_name/emergency_contact_phone",
+                                    "message": "Incomplete next of kin details; name and phone_number are required.",
+                                }
+                            )
 
                     # Map spouse
                     spouse_data = {}
-                    if "spouse_name" in group.columns and pd.notna(first_row["spouse_name"]):
+                    if "spouse_name" in group.columns and pd.notna(
+                        first_row["spouse_name"]
+                    ):
                         name = str(first_row["spouse_name"]).strip()
                         if name and name != "Unknown Spouse":
                             spouse_data["name"] = name
-                    if "spouse_date_of_birth" in group.columns and pd.notna(first_row["spouse_date_of_birth"]):
+                    if "spouse_date_of_birth" in group.columns and pd.notna(
+                        first_row["spouse_date_of_birth"]
+                    ):
                         try:
-                            dob = custom_parse_date(str(first_row["spouse_date_of_birth"]).strip())
+                            dob = custom_parse_date(
+                                str(first_row["spouse_date_of_birth"]).strip()
+                            )
                             if dob:
                                 spouse_data["date_of_birth"] = dob
                             else:
-                                row_errors["spouse_date_of_birth"] = {"error": "Invalid date format."}
+                                row_errors["spouse_date_of_birth"] = {
+                                    "error": "Invalid date format."
+                                }
                         except ValueError as e:
                             row_errors["spouse_date_of_birth"] = {"error": str(e)}
-                    if "spouse_phone_number" in group.columns and pd.notna(first_row["spouse_phone_number"]):
+                    if "spouse_phone_number" in group.columns and pd.notna(
+                        first_row["spouse_phone_number"]
+                    ):
                         phone = str(first_row["spouse_phone_number"]).strip()
                         if phone:
                             spouse_data["phone_number"] = phone
@@ -1080,13 +1305,19 @@ class EmployeeCreateAPIView(APIView):
                             name = str(row["child_name"]).strip()
                             if name:
                                 child_data["name"] = name
-                        if "child_date_of_birth" in row and pd.notna(row["child_date_of_birth"]):
+                        if "child_date_of_birth" in row and pd.notna(
+                            row["child_date_of_birth"]
+                        ):
                             try:
-                                dob = custom_parse_date(str(row["child_date_of_birth"]).strip())
+                                dob = custom_parse_date(
+                                    str(row["child_date_of_birth"]).strip()
+                                )
                                 if dob:
                                     child_data["date_of_birth"] = dob
                                 else:
-                                    row_errors["child_date_of_birth"] = {"error": "Invalid date format."}
+                                    row_errors["child_date_of_birth"] = {
+                                        "error": "Invalid date format."
+                                    }
                             except ValueError as e:
                                 row_errors["child_date_of_birth"] = {"error": str(e)}
                         if "child_gender" in row and pd.notna(row["child_gender"]):
@@ -1095,67 +1326,103 @@ class EmployeeCreateAPIView(APIView):
                             if gender in valid_genders:
                                 child_data["gender"] = gender
                             else:
-                                row_errors["child_gender"] = {"error": f'"{gender}" is not a valid choice.'}
+                                row_errors["child_gender"] = {
+                                    "error": f'"{gender}" is not a valid choice.'
+                                }
                         if child_data.get("name") and child_data.get("date_of_birth"):
                             employee_data["children"].append(child_data)
 
                     # Map education
                     edu_data = {}
-                    if "education_institution" in group.columns and pd.notna(first_row["education_institution"]):
+                    if "education_institution" in group.columns and pd.notna(
+                        first_row["education_institution"]
+                    ):
                         inst = str(first_row["education_institution"]).strip()
                         if inst:
                             edu_data["institution"] = inst
                     else:
                         edu_data["institution"] = "Unknown Institution"
-                    if "education_name" in group.columns and pd.notna(first_row["education_name"]):
+                    if "education_name" in group.columns and pd.notna(
+                        first_row["education_name"]
+                    ):
                         name = str(first_row["education_name"]).strip()
                         if name:
                             edu_data["name"] = name
-                    if "education_year" in group.columns and pd.notna(first_row["education_year"]):
+                    if "education_year" in group.columns and pd.notna(
+                        first_row["education_year"]
+                    ):
                         try:
                             year = int(str(first_row["education_year"]).strip())
                             edu_data["year"] = year
                         except ValueError:
-                            row_errors["education_year"] = {"error": "Invalid year format."}
+                            row_errors["education_year"] = {
+                                "error": "Invalid year format."
+                            }
                     else:
                         edu_data["year"] = date.today().year
-                    if "qualification" in group.columns and pd.notna(first_row["qualification"]):
+                    if "qualification" in group.columns and pd.notna(
+                        first_row["qualification"]
+                    ):
                         qualification_name = str(first_row["qualification"]).strip()
                         if qualification_name:
-                            qualification_instance = instance_mappings["qualification"].get(qualification_name.lower())
+                            qualification_instance = instance_mappings[
+                                "qualification"
+                            ].get(qualification_name.lower())
                             if not qualification_instance:
                                 try:
                                     qualification_instance = QualificationAward.objects.create(
                                         name=qualification_name,
-                                        description="Auto-created during bulk upload"
+                                        description="Auto-created during bulk upload",
                                     )
-                                    instance_mappings["qualification"][qualification_name.lower()] = qualification_instance
+                                    instance_mappings["qualification"][
+                                        qualification_name.lower()
+                                    ] = qualification_instance
                                 except Exception as e:
-                                    row_errors["qualification"] = {"error": f"Failed to create qualification '{qualification_name}': {str(e)}"}
+                                    row_errors["qualification"] = {
+                                        "error": f"Failed to create qualification '{qualification_name}': {str(e)}"
+                                    }
                             if qualification_instance:
-                                edu_data["qualification_id"] = qualification_instance.id  # Maps to qualification
-                    if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
+                                edu_data["qualification_id"] = (
+                                    qualification_instance.id
+                                )  # Maps to qualification
+                    if (
+                        edu_data.get("institution")
+                        and edu_data.get("name")
+                        and edu_data.get("year")
+                    ):
                         employee_data["educations"].append(edu_data)
 
                     # Map work experience
                     exp_data = {}
-                    if "work_company" in group.columns and pd.notna(first_row["work_company"]):
+                    if "work_company" in group.columns and pd.notna(
+                        first_row["work_company"]
+                    ):
                         company = str(first_row["work_company"]).strip()
                         if company:
                             exp_data["company"] = company
-                    if "work_position" in group.columns and pd.notna(first_row["work_position"]):
+                    if "work_position" in group.columns and pd.notna(
+                        first_row["work_position"]
+                    ):
                         pos = str(first_row["work_position"]).strip()
                         if pos:
                             exp_data["position"] = pos
-                    if "work_duration" in group.columns and pd.notna(first_row["work_duration"]):
+                    if "work_duration" in group.columns and pd.notna(
+                        first_row["work_duration"]
+                    ):
                         dur = str(first_row["work_duration"]).strip()
                         if dur:
                             exp_data["duration"] = dur
-                    if "work_reason_of_leaving" in group.columns and pd.notna(first_row["work_reason_of_leaving"]):
+                    if "work_reason_of_leaving" in group.columns and pd.notna(
+                        first_row["work_reason_of_leaving"]
+                    ):
                         reason = str(first_row["work_reason_of_leaving"]).strip()
                         if reason:
                             exp_data["reason_of_leaving"] = reason
-                    if exp_data.get("company") and exp_data.get("position") and exp_data.get("duration"):
+                    if (
+                        exp_data.get("company")
+                        and exp_data.get("position")
+                        and exp_data.get("duration")
+                    ):
                         employee_data["work_experiences"].append(exp_data)
 
                     employee_data["has_children"] = bool(employee_data["children"])
@@ -1163,21 +1430,36 @@ class EmployeeCreateAPIView(APIView):
                     if row_errors:
                         errors.append({"row": group.index[0] + 2, "errors": row_errors})
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
                         continue
 
                     # Validate with EmployeeSerializer
                     serializer_context = {"request": request}
                     if existing_employee:
-                        serializer = EmployeeSerializer(instance=existing_employee, data=employee_data, context=serializer_context, partial=True)
+                        serializer = EmployeeSerializer(
+                            instance=existing_employee,
+                            data=employee_data,
+                            context=serializer_context,
+                            partial=True,
+                        )
                     else:
-                        serializer = EmployeeSerializer(data=employee_data, context=serializer_context)
+                        serializer = EmployeeSerializer(
+                            data=employee_data, context=serializer_context
+                        )
 
                     if not serializer.is_valid():
-                        print(f"Serializer validation failed for employee_id {employee_id}: {serializer.errors}")
-                        errors.append({"row": group.index[0] + 2, "errors": serializer.errors})
+                        print(
+                            f"Serializer validation failed for employee_id {employee_id}: {serializer.errors}"
+                        )
+                        errors.append(
+                            {"row": group.index[0] + 2, "errors": serializer.errors}
+                        )
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
                         continue
 
                     try:
@@ -1197,16 +1479,28 @@ class EmployeeCreateAPIView(APIView):
                                 send_employee_welcome_email.delay_on_commit(
                                     employee.user.email,
                                     employee.user.fullname,
-                                    new_password or employee_data["user"].get("password", ""),
+                                    new_password
+                                    or employee_data["user"].get("password", ""),
                                 )
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
-                        print(f"Employee saved: {employee.employee_id}, created: {not existing_employee}")
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
+                        print(
+                            f"Employee saved: {employee.employee_id}, created: {not existing_employee}"
+                        )
                     except Exception as e:
                         print(f"Failed to save employee_id {employee_id}: {str(e)}")
-                        errors.append({"row": group.index[0] + 2, "errors": {"non_field_errors": str(e)}})
+                        errors.append(
+                            {
+                                "row": group.index[0] + 2,
+                                "errors": {"non_field_errors": str(e)},
+                            }
+                        )
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
 
             if errors:
                 print(f"Upload completed with errors: {errors}")
@@ -1225,14 +1519,18 @@ class EmployeeCreateAPIView(APIView):
                 institution.default_employee_role = role
                 institution.save()
 
-            print(f"Upload successful: created {created_count}, updated {updated_count}")
+            print(
+                f"Upload successful: created {created_count}, updated {updated_count}"
+            )
             return Response(
                 {
                     "detail": "Employees processed successfully",
                     "created_count": created_count,
                     "updated_count": updated_count,
                     "warnings": warnings,
-                    "data": EmployeeSerializer(employees, many=True, context={"request": request}).data,
+                    "data": EmployeeSerializer(
+                        employees, many=True, context={"request": request}
+                    ).data,
                 },
                 status=status.HTTP_200_OK,
             )
@@ -1240,7 +1538,12 @@ class EmployeeCreateAPIView(APIView):
         except Exception as e:
             print(f"Error processing file: {str(e)}")
             return Response(
-                {"detail": f"Error processing file: {str(e)}", "created_count": 0, "updated_count": 0, "warnings": []},
+                {
+                    "detail": f"Error processing file: {str(e)}",
+                    "created_count": 0,
+                    "updated_count": 0,
+                    "warnings": [],
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1337,7 +1640,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "work_reason_of_leaving": "Career growth opportunity",
         }
 
-
         if format_type == "csv":
             df = pd.DataFrame([sample_data], columns=columns)
             output = io.StringIO()
@@ -1429,17 +1731,19 @@ class EmployeeUpdateAPIView(APIView):
                 "position",
                 "department",
             ]:
-                final_data[key.replace("[]", "")] = values[0] if len(values) == 1 else values
+                final_data[key.replace("[]", "")] = (
+                    values[0] if len(values) == 1 else values
+                )
                 continue
 
             # Handle nested fields
             for field in nested_fields:
                 if field == "spouse" and key.startswith("spouse."):
-                    subfield = key[len("spouse."):].replace("[]", "")
+                    subfield = key[len("spouse.") :].replace("[]", "")
                     final_data[field][subfield] = values[0] if values else None
                 elif key.startswith(field + "["):
                     try:
-                        index_str, subfield = key[len(field + "["):].split("].", 1)
+                        index_str, subfield = key[len(field + "[") :].split("].", 1)
                         index = int(index_str) if field != "spouse" else None
                     except (ValueError, IndexError):
                         continue
@@ -1447,7 +1751,9 @@ class EmployeeUpdateAPIView(APIView):
                     if field != "spouse":
                         while len(final_data[field]) <= index:
                             final_data[field].append({})
-                        final_data[field][index][subfield] = values[0] if values else None
+                        final_data[field][index][subfield] = (
+                            values[0] if values else None
+                        )
 
         # Transform the defaultdict to a regular dict
         final_data = dict(final_data)
@@ -1462,7 +1768,9 @@ class EmployeeUpdateAPIView(APIView):
         # Fix field names and ensure proper types
         if "bank_accounts" in final_data:
             for bank in final_data["bank_accounts"]:
-                bank["account_name"] = bank.get("account_name", final_data["user"]["fullname"])
+                bank["account_name"] = bank.get(
+                    "account_name", final_data["user"]["fullname"]
+                )
                 bank["account_number"] = bank.get("account_number", "")
 
         if "next_of_kin" in final_data:
@@ -1489,12 +1797,16 @@ class EmployeeUpdateAPIView(APIView):
                         qual_id = int(edu["qualification_id"])
                         if not QualificationAward.objects.filter(id=qual_id).exists():
                             raise serializers.ValidationError(
-                                {"educations": f"QualificationAward with ID {qual_id} does not exist."}
+                                {
+                                    "educations": f"QualificationAward with ID {qual_id} does not exist."
+                                }
                             )
                         edu["qualification_id"] = qual_id
                     except (ValueError, TypeError):
                         raise serializers.ValidationError(
-                            {"educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."}
+                            {
+                                "educations": f"Invalid qualification_id: {edu['qualification_id']} must be an integer."
+                            }
                         )
                 elif "qualification" in edu and edu["qualification"]:
                     try:
@@ -1502,17 +1814,25 @@ class EmployeeUpdateAPIView(APIView):
                         edu["qualification_id"] = qual.id
                     except QualificationAward.DoesNotExist:
                         try:
-                            qual = QualificationAward.objects.create(name=edu["qualification"])
+                            qual = QualificationAward.objects.create(
+                                name=edu["qualification"]
+                            )
                             edu["qualification_id"] = qual.id
                         except Exception as e:
                             raise serializers.ValidationError(
-                                {"educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"}
+                                {
+                                    "educations": f"Failed to create QualificationAward for '{edu['qualification']}': {str(e)}"
+                                }
                             )
                     finally:
-                        edu.pop("qualification", None)  # Remove qualification to avoid serializer confusion
+                        edu.pop(
+                            "qualification", None
+                        )  # Remove qualification to avoid serializer confusion
                 else:
                     raise serializers.ValidationError(
-                        {"educations": "Either qualification_id or qualification must be provided."}
+                        {
+                            "educations": "Either qualification_id or qualification must be provided."
+                        }
                     )
                 # Ensure institution is not blank
                 if not edu.get("institution"):
@@ -1520,8 +1840,12 @@ class EmployeeUpdateAPIView(APIView):
 
         if "spouse" in final_data and final_data["spouse"]:
             if not final_data["spouse"].get("name"):
-                final_data["spouse"]["name"] = final_data["user"]["fullname"] + " Spouse"
-            final_data["spouse"]["phone_number"] = final_data["spouse"].get("phone_number") or None
+                final_data["spouse"]["name"] = (
+                    final_data["user"]["fullname"] + " Spouse"
+                )
+            final_data["spouse"]["phone_number"] = (
+                final_data["spouse"].get("phone_number") or None
+            )
             # Ensure date_of_birth is properly formatted if provided
             if final_data["spouse"].get("date_of_birth"):
                 try:
@@ -1531,7 +1855,9 @@ class EmployeeUpdateAPIView(APIView):
                         ).date()
                 except (ValueError, TypeError) as e:
                     raise serializers.ValidationError(
-                        {"spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"}
+                        {
+                            "spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
+                        }
                     )
         else:
             final_data["spouse"] = {}  # Ensure spouse is an empty dict instead of None
@@ -1541,7 +1867,9 @@ class EmployeeUpdateAPIView(APIView):
             if isinstance(final_data["selected_branches"], str):
                 final_data["selected_branches"] = [int(final_data["selected_branches"])]
             elif isinstance(final_data["selected_branches"], list):
-                final_data["selected_branches"] = [int(x) for x in final_data["selected_branches"] if x]
+                final_data["selected_branches"] = [
+                    int(x) for x in final_data["selected_branches"] if x
+                ]
 
         # Convert scalar fields to appropriate types
         scalar_fields = [
@@ -1555,7 +1883,9 @@ class EmployeeUpdateAPIView(APIView):
             if field in final_data and final_data[field]:
                 try:
                     final_data[field] = (
-                        float(final_data[field]) if field == "salary" else int(final_data[field])
+                        float(final_data[field])
+                        if field == "salary"
+                        else int(final_data[field])
                     )
                 except (ValueError, TypeError):
                     final_data[field] = None
@@ -1668,8 +1998,6 @@ class EmployeeDeleteAPIView(APIView):
             return Response(
                 {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
             )
-
-
 
 
 @extend_schema(tags=["Employee branch"])

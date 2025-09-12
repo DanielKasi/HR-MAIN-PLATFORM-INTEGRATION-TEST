@@ -276,7 +276,7 @@ class Employee(BaseApprovableModel):
 
         # 🚫 Enforce unique phone number only if provided
         # if self.phone_number:
-            # existing = Employee.objects.filter(phone_number=self.phone_number)
+        # existing = Employee.objects.filter(phone_number=self.phone_number)
         #     if self.pk:
         #         existing = existing.exclude(pk=self.pk)
         #     if existing.exists():
@@ -295,7 +295,6 @@ class Employee(BaseApprovableModel):
                     < (self.date_of_birth.month, self.date_of_birth.day)
                 )
             )
-
 
         # Prevent future date of birth
         if self.date_of_birth and self.date_of_birth > date.today():
@@ -334,7 +333,6 @@ class Employee(BaseApprovableModel):
         return f"{prefix}{new_number:05d}"
 
     def save(self, *args, **kwargs):
-        # 🔐 Ensure validations run before saving
         self.full_clean()
 
         is_new_employee = self.pk is None
