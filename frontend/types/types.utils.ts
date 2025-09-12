@@ -611,8 +611,7 @@ export interface IEmployeeBankAccountFormData {
 }
 
 export interface IEmployeeBankAccount {
-  id?: string
-  bank: number
+  bank: IBankType
   account_number: string
   account_name: string
 }
@@ -703,7 +702,7 @@ export interface ICreateEmployeeForm {
   next_of_kin: INextOfKin[]
   educations: IEducation[]
   work_experiences: IWorkExperience[]
-  bank_accounts: IEmployeeBankAccount[]
+  bank_accounts: IEmployeeBankAccountFormData[]
   spouse?: ISpouse
 
   // Profile picture
