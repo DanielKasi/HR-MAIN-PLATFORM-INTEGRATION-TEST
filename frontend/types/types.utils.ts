@@ -2425,6 +2425,21 @@ export interface IInstitutionSpotCheckSettingFormData extends ISpotCheckSetting 
   institution: number
 }
 
+export type IProjectTaskStatus = "not_started" | "in_progress" | "completed" | "on_hold";
+export type IProjectTaskPriority = "low" | "medium" | "high" | "urgent";
+
+  export interface ITaskTimeSheet {
+  id: number;
+  task: number;
+  start_time: string | null;
+  end_time: string | null;
+  time_spent: string | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  created_by: number | null;
+  updated_by: number | null;
+}
 
 export interface IProjectTask {
   id: number;
@@ -2435,10 +2450,23 @@ export interface IProjectTask {
   assigned_to: UserProfile[];
   start_date: string;
   end_date: string;
-  task_status: "not_started" | "in_progress" | "completed" | "on_hold";
-  priority: "low" | "medium" | "high" | "urgent";
+  task_status: IProjectTaskStatus;
+  priority: IProjectTaskPriority;
+    task_time_sheet:ITaskTimeSheet
 }
 
+
+export interface IProjectTaskFormData {
+  project: number;
+  task_name: string;
+  description: string;
+  leaders: number[];
+  assigned_to: number[];
+  start_date: string;
+  end_date: string;
+  task_status?: IProjectTaskStatus;
+  priority: IProjectTaskPriority;
+}
 
 export type IProjectStatus = | "not_started"
   | "in_progress"

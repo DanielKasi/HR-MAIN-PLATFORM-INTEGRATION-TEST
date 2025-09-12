@@ -114,6 +114,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   }, [data]);
 
   // Fetch first page for paginated mode
+  // Immediate fetch on mount / deps change (preserve previous behavior)
   React.useEffect(() => {
     if (!paginated) return;
     if (!fetchFirstPage) return;
@@ -121,16 +122,35 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       return;
     }
     setLoading(true);
-  // console.log("\n\n Refetching first page with previous data : ", data, "Query :", query);
     fetchFirstPage({search} as Q)
       .then((res) => {
-        console.log("\n\n Refetched first page with data : ", res);
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
         setHasMore(!!res.next);
       })
       .finally(() => setLoading(false));
-    // eslint-disable-next-line
-  }, [...deps, search]);
+  }, [...deps]);
+
+  // Debounced search: wait 1s after the user stops typing before refetching
+  React.useEffect(() => {
+    if (!paginated) return;
+    if (!fetchFirstPage) return;
+
+    const timer = setTimeout(() => {
+      // If we already have a next page and search is empty, skip refetch
+
+      setLoading(true);
+      fetchFirstPage({search} as Q)
+        .then((res) => {
+          setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
+          setHasMore(!!res.next);
+        })
+        .finally(() => setLoading(false));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+    // only debounce on search changes; intentionally exclude deps to avoid
+    // cancelling when the fetchFirstPage identity changes in parent
+  }, [search]);
 
   // Infinite scroll with intersection observer (using callback ref)
   React.useEffect(() => {
@@ -210,6 +230,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                         {multiple && isSelected && onRemove && (
                           <button
                             className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               onRemove(getItemId(itemData), itemData);
@@ -233,6 +254,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+          type="button"
             aria-expanded={open}
             className={cn("w-full justify-between h-12 rounded-2xl", triggerClassName)}
             disabled={disabled}
@@ -244,7 +266,8 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
           </Button>
         </PopoverTrigger>
         <PopoverContent className={cn("w-full p-0", popoverClassName)}>
-          <Command>
+          {/* disable cmdk's internal filtering when using server-side search */}
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder={searchPlaceholder}
               value={search}
@@ -269,6 +292,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                       {getItemLabel(item)}
                       {multiple && isSelected && onRemove && (
                         <button
+                        type="button"
                           className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
                           onClick={(e) => {
                             e.stopPropagation();

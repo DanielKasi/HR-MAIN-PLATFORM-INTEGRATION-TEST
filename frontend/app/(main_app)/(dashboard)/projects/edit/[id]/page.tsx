@@ -13,8 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Calendar, FileText, Settings, Users, Target, X } from "lucide-react";
+
+import { ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -65,7 +65,7 @@ export default function EditProjectPage() {
     if (!project_id || !currentInstitution) return;
     setFetching(true);
     try {
-      const project = await PROJECTS_API.getByProjectId({ project_id: Number(project_id) });
+      const project = await PROJECTS_API.getByProjectById({ project_id: Number(project_id) });
       setFormData({
         project_name: project.project_name,
         description: project.description,
@@ -247,7 +247,7 @@ export default function EditProjectPage() {
                     handleInputChange("project_status", value as IProjectStatus)
                   }
                 >
-                  <SelectTrigger className="h-12 text-base border-slate-200 focus:border-blue-500">
+                  <SelectTrigger className="h-12 rounded-2xl">
                     <SelectValue placeholder="Select project status" />
                   </SelectTrigger>
                   <SelectContent>

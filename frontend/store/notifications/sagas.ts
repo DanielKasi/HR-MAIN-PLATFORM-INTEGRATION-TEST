@@ -7,7 +7,7 @@ import { toast } from "sonner";
 function* handleReceiveNotification(action: ReceiveNotificationAction) {
     if(action.payload && (action.payload as INotification).message){
         // console.warn(`\n\n Notification saga task ran !`);
-        toast.success(`New notification : ${action.payload.message}`);
+        // toast.success(`New notification : ${action.payload.message}`);
     }
 //   yield put(receiveNotification(action.payload as INotification));
 }

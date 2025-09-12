@@ -50,9 +50,6 @@ export function DeleteAssetCategoryDialog({
       <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
         <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <AlertTriangle className="h-6 w-6 text-red-500" />
-            </div>
             <div>
               <DialogTitle className="text-2xl font-bold text-gray-900">Delete Asset Category</DialogTitle>
               <DialogDescription className="text-gray-600 text-base mt-1">
@@ -81,20 +78,11 @@ export function DeleteAssetCategoryDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-3">
+        <DialogFooter className="flex items-center gap-2 pt-6 ">
           <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
             onClick={handleDelete}
             disabled={isSubmitting}
-            className="w-full sm:w-auto"
+            className="w-full rounded-full"
           >
             {isSubmitting ? (
               <>

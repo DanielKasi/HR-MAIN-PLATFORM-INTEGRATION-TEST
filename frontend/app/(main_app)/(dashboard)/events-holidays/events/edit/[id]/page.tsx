@@ -20,24 +20,8 @@ import Link from "next/link";
 import {Badge} from "@/components/ui/badge";
 import {Checkbox} from "@/components/ui/checkbox";
 import {apiGet, apiPatch} from "@/lib/apiRequest";
+import FixedLoader from "@/components/fixed-loader";
 
-interface IEvent {
-  id: number;
-  institution: number;
-  title: string;
-  description: string;
-  date: string;
-  target_audience: "all" | "department" | "individual" | "specific_employees";
-  event_mode: "physical" | "online" | "hybrid";
-  department: any;
-  specific_employees: any[];
-  frequency: string;
-  repeat_until: string;
-  created_at: string;
-  updated_at: string;
-  created_by: any;
-  updated_by: any;
-}
 
 export default function EditEventPage() {
   const params = useParams();
@@ -51,11 +35,11 @@ export default function EditEventPage() {
     title: "",
     description: "",
     date: "",
-    target_audience: "all" as const,
-    event_mode: "physical" as const,
+    target_audience: "all" as "all" | "department" | "individual" | "specific_employees",
+    event_mode: "physical" as "physical" | "online" | "hybrid",
     department: "",
     specific_employees: [] as string[],
-    frequency: "once" as const,
+    frequency: "once" as "once" | "daily" | "weekly" | "monthly" | "yearly",
     repeat_until: "",
     institution: 1,
   });
@@ -155,9 +139,7 @@ export default function EditEventPage() {
 
   if (initialLoading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-lg">Loading event...</div>
-      </div>
+            <FixedLoader/>
     );
   }
 
