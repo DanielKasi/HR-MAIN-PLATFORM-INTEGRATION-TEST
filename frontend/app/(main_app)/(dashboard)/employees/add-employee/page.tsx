@@ -456,48 +456,6 @@ export default function AddEmployeeForm() {
     setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-  const handleAddBankAccount = () => {
-    if (
-      !bankAccountFormData.bank_id ||
-      !bankAccountFormData.account_number ||
-      !bankAccountFormData.account_name
-    )
-      return;
-
-    if (editingBankAccount) {
-      setBankAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === editingBankAccount.id
-            ? {...bankAccountFormData, id: bankAccountFormData.id}
-            : acc,
-        ),
-      );
-      setEditingBankAccount(null);
-    } else {
-      const newBankAccount: IEmployeeBankAccountFormData = {
-        ...bankAccountFormData,
-        id: generateId(),
-      };
-      setBankAccounts((prev) => [...prev, newBankAccount]);
-    }
-
-    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
-    setIsWorkExperienceDialogOpen(false);
-  };
-
-  const handleEditBankAccount = (acc: IEmployeeBankAccountFormData) => {
-    setEditingBankAccount(acc);
-    setBankAccountFormData({
-      bank_id: acc.bank_id,
-      account_number: acc.account_number,
-      account_name: acc.account_name,
-    });
-    setIsBankAccountDialogOpen(true);
-  };
-
-  const handleDeleteBankAccount = (id: string) => {
-    setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
-  };
 
   useEffect(() => {
     loadDropdownData();
@@ -1720,7 +1678,7 @@ export default function AddEmployeeForm() {
                     }
                   }}
                 />
-                {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>}
+                {/* {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>} */}
 
               </div>
               <div className="space-y-2">
@@ -1736,7 +1694,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
-                {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>}
+                {/* {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1751,7 +1709,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
-                 {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>}
+                 {/* {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">

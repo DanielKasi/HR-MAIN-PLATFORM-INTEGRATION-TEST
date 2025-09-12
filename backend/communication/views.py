@@ -114,7 +114,7 @@ async def sse_notifications(request):
                     yield "data: {}\n\n"
                     last_heartbeat = current_time
 
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(5)
 
         response = StreamingHttpResponse(
             event_stream(),

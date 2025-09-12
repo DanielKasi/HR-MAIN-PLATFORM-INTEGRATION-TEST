@@ -125,9 +125,8 @@ const getDaysRemaining = (endDate: string) => {
 };
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<IProject[]>([]);
+  // const [projects, setProjects] = useState<IProject[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
   const currentInstitution = useSelector(selectSelectedInstitution);
   const [ordering, setOrdering] = useState("");
   const tableRefreshRef = useRef<(() => void) | null>(null);
@@ -244,7 +243,7 @@ export default function ProjectsPage() {
             <DropdownMenuItem className="p-0">
               <Link
                 className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
-                href={"projects/add"}
+                href={`projects/${project.id}/`}
               >
                 <Eye className="h-4 w-4 mr-2" /> View Details
               </Link>

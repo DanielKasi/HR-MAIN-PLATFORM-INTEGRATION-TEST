@@ -336,14 +336,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                     </div>
                     {!isMobile && (
                       <>
-                        <div className="hidden md:block min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {currentUser?.fullname || "User"}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {userRole || "Staff"}
-                          </div>
-                        </div>
                         <ChevronDown className="h-4 w-4 hidden md:block flex-shrink-0" />
                       </>
                     )}
@@ -353,13 +345,18 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   align="end"
                   className="rounded-xl p-1 shadow-lg border border-gray-200"
                 >
-                  <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
+                  <DropdownMenuItem className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <div>
+                      <span className="text-sm inline-block font-medium truncate">
+                        {currentUser?.fullname || "User"}
+                      </span>
+                      <div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
+                    </div>
                   </DropdownMenuItem>
                   {isMounted && canViewSettings && (
                     <DropdownMenuItem
-                      className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                      className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                       onClick={() => router.push("/settings")}
                     >
                       <Settings className="mr-2 h-4 w-4" />
@@ -368,7 +365,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   )}
                   <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem
-                    className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                    className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                     onClick={handleLogoutClick}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
