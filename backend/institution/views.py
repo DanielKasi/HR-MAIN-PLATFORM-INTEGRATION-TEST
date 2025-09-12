@@ -111,6 +111,13 @@ class UserChatsView(APIView):
         try:
             user_data = _load_user_file(user_id)
 
+            sorted_chats = sorted(
+                user_data["chats"],
+                key=lambda chat: max(msg["timestamp"] for msg in chat["messages"]),
+                reverse=True,
+            )
+            user_data["chats"] = sorted_chats
+
             serializer = UserChatsSerializer(user_data)
             return Response(serializer.data, status=200)
 
@@ -874,7 +881,6 @@ class InstitutionBankTypeListAPIView(APIView, SortableAPIMixin):
         bank_types = InstitutionBankType.objects.filter(
             institution=institution, deleted_at__isnull=True
         ).order_by("-created_at")
-        
 
         if search_query:
             bank_types = bank_types.filter(
@@ -1685,7 +1691,7 @@ class UserProfileListAPIView(APIView):
         return Response(
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     def get(self, request):
         institution = request.user.profile.institution
         if not institution:
