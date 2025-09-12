@@ -735,11 +735,11 @@ export default function UpdateEmployeeForm() {
         );
       case 3:
         return !!(
-          bankAccountFormData.account_name.trim() &&
-          bankAccountFormData.account_number &&
-          bankAccountFormData.account_number.trim() &&
-          bankAccountFormData.account_number.length <= 20 &&
-          bankAccountFormData.bank_id &&
+          // bankAccountFormData.account_name.trim() &&
+          // bankAccountFormData.account_number &&
+          // bankAccountFormData.account_number.trim() &&
+          // bankAccountFormData.account_number.length <= 20 &&
+          // bankAccountFormData.bank_id &&
           formData.tin &&
           formData.tin.trim() &&
           formData.tin.length <= 12 &&
@@ -1763,9 +1763,9 @@ export default function UpdateEmployeeForm() {
                     }
                   }}
                 />
-                {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (
+                {/* {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (
                   <p className="text-red-400 text-xs">Please select a bank</p>
-                )}
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1780,9 +1780,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
-                {!bankAccountFormData.account_name && (
+                {/* {!bankAccountFormData.account_name && (
                   <p className="text-red-400 text-xs">Please set a bank account name</p>
-                )}
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1797,9 +1797,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
-                {!bankAccountFormData.account_number && (
+                {/* {!bankAccountFormData.account_number && (
                   <p className="text-red-400 text-xs">A bank account number is required</p>
-                )}
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -2128,18 +2128,7 @@ export default function UpdateEmployeeForm() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label htmlFor="nokPhone">Phone Number</Label>
-                  <Input
-                    id="nokPhone"
-                    value={nextOfKinFormData.phone_number}
-                    onChange={(e) =>
-                      setNextOfKinFormData((prev) => ({...prev, phone_number: e.target.value}))
-                    }
-                    placeholder="123456789"
-                    className="rounded-2xl h-12"
-                  />
-                </div> */}
+
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Phone Number"
@@ -2163,15 +2152,6 @@ export default function UpdateEmployeeForm() {
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddNextOfKin}
@@ -2366,15 +2346,6 @@ export default function UpdateEmployeeForm() {
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddWorkExperience}
@@ -2387,92 +2358,6 @@ export default function UpdateEmployeeForm() {
             </DialogContent>
           </Dialog>
 
-          {/* Bank Account Dialog */}
-          {/* <Dialog
-            open={isBankAccountDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsBankAccountDialogOpen(false);
-                setEditingBankAccount(null);
-                setBankAccountFormData({
-                  bank: 0,
-                  account_name: "",
-                  account_number: "",
-                });
-              } else {
-                setIsBankAccountDialogOpen(open);
-              }
-            }}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingBankAccount ? "Edit Bank Account" : "Add Bank Account"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingBankAccount ? "Update bank account information" : "Add bank account"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bank" className="text-sm font-medium text-gray-700">
-                    Bank
-                  </Label>
-                  <BankAccountSearchableSelect
-                    setAccounts={setInstitutionBanks}
-                    value={[bankAccountFormData.bank || ""]}
-                    onValueChange={(values) => {
-                      if (values.length) {
-                        setBankAccountFormData((prev) => ({...prev, bank: Number(values[0])}));
-                      }
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
-                    Bank Account Name
-                  </Label>
-                  <Input
-                    id="bankAccountName"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account name"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
-                    Bank Account Number
-                  </Label>
-                  <Input
-                    id="bankAccountNumber"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account number"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  onClick={handleAddBankAccount}
-                  className=" text-white rounded-full w-full"
-                  disabled={
-                    !bankAccountFormData.account_name ||
-                    !bankAccountFormData.bank ||
-                    !bankAccountFormData.account_number
-                  }
-                >
-                  {editingBankAccount ? "Update Bank Account" : "Add Bank Account"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog> */}
 
           {/* Work Type Modal */}
           <WorkTypeModal

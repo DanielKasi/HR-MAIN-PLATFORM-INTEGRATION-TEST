@@ -1,41 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Calendar, FileText, Settings, Users, Target, X } from "lucide-react";
+import React, {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+
+import {ArrowLeft, Save, Calendar, FileText, Settings, Users, Target, X} from "lucide-react";
 import Link from "next/link";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { Badge } from "@/components/ui/badge";
-import { apiGet, apiPost } from "@/lib/apiRequest";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn, PROJECTS_API, showErrorToast } from "@/lib/utils";
-import { UserProfile } from "@/types";
-import { IProjectFormData } from "@/types/types.utils";
-import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+
+import {cn, PROJECTS_API, showErrorToast} from "@/lib/utils";
+
+import {IProjectFormData} from "@/types/types.utils";
+
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import { toast } from "sonner";
+import {toast} from "sonner";
 
 export default function AddProjectPage() {
   const router = useRouter();
@@ -62,15 +44,14 @@ export default function AddProjectPage() {
 
   useEffect(() => {
     if (currentInstitution) {
-      setFormData(prev => ({ ...prev, institution: currentInstitution.id }))
+      setFormData((prev) => ({...prev, institution: currentInstitution.id}));
     }
-  }, [currentInstitution])
-
+  }, [currentInstitution]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentInstitution) {
-      return
+      return;
     }
 
     const newErrors: Partial<Record<keyof typeof formData, string>> = {};
@@ -88,11 +69,11 @@ export default function AddProjectPage() {
 
     setLoading(true);
     try {
-      await PROJECTS_API.create({ institutionId: currentInstitution.id, data: formData });
+      await PROJECTS_API.create({institutionId: currentInstitution.id, data: formData});
       toast.success("Project created successfully !");
       router.push("/projects");
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Error creating project" })
+      showErrorToast({error, defaultMessage: "Error creating project"});
     } finally {
       setLoading(false);
     }
@@ -149,7 +130,6 @@ export default function AddProjectPage() {
             Set up your project with all the necessary details
           </p>
         </div>
-
 
         {/* Form */}
         <div className="">
@@ -226,7 +206,7 @@ export default function AddProjectPage() {
                     {Math.ceil(
                       (new Date(formData.end_date).getTime() -
                         new Date(formData.start_date).getTime()) /
-                      (1000 * 60 * 60 * 24),
+                        (1000 * 60 * 60 * 24),
                     )}{" "}
                     days
                   </p>
@@ -234,17 +214,19 @@ export default function AddProjectPage() {
               )}
             </div>
 
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               {/* Leaders Selection */}
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Project Leaders *</Label>
+              <div className="">
+                <Label className={`text-base font-medium ${errors.leaders ? "mb-3" : ""}`}>
+                  Project Leaders *
+                </Label>
+                {errors.leaders && <p className="text-sm text-red-600">{errors.leaders}</p>}
                 <UserProfileSearchableSelect
                   value={formData.leaders}
                   onValueChange={(values) => {
                     handleInputChange(
                       "leaders",
-                      values.map(val => Number(val))
+                      values.map((val) => Number(val)),
                     );
                   }}
                   placeholder="Select project leaders"
@@ -252,23 +234,19 @@ export default function AddProjectPage() {
                   showDepartment={true}
                   multiple={true}
                 />
-
-                {errors.leaders && errors.leaders.length > 0 && (
-                  <p className="text-sm text-red-600">{errors.leaders[0]}</p>
-                )}
-                                { !formData.leaders.length && (
-                  <p className="text-sm text-red-600">Project leaders are required</p>
-                )}
               </div>
 
-              <div className="space-y-3">
-                <Label className="text-base font-medium">Project Members *</Label>
+              <div className="">
+                <Label className={`text-base font-medium ${errors.members ? "mb-4" : ""}`}>
+                  Project Members *
+                </Label>
+                {errors.members && <p className="text-sm text-red-600">{errors.members}</p>}
                 <UserProfileSearchableSelect
                   value={formData.members}
                   onValueChange={(values) => {
                     handleInputChange(
                       "members",
-                      values.map(val => Number(val))
+                      values.map((val) => Number(val)),
                     );
                   }}
                   placeholder="Select project members"
@@ -276,26 +254,14 @@ export default function AddProjectPage() {
                   showDepartment={true}
                   multiple={true}
                 />
-
-                {errors.members && errors.members.length > 0 && (
-                  <p className="text-sm text-red-600">{errors.members[0]}</p>
-                )}
-                { !formData.members.length && (
-                  <p className="text-sm text-red-600">Project members are required</p>
-                )
-
-                }
               </div>
-
             </div>
-
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-6">
               <Button type="submit" className="px-8 md:px-24 rounded-full" disabled={loading}>
                 {loading ? "Creating..." : "Create Project"}
               </Button>
-
             </div>
           </form>
         </div>

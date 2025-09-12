@@ -117,19 +117,20 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   React.useEffect(() => {
     if (!paginated) return;
     if (!fetchFirstPage) return;
-    if (data && data.next) {
+    if (data && data.next && !search) {
       return;
     }
     setLoading(true);
   // console.log("\n\n Refetching first page with previous data : ", data, "Query :", query);
-    fetchFirstPage()
+    fetchFirstPage({search} as Q)
       .then((res) => {
+        console.log("\n\n Refetched first page with data : ", res);
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
         setHasMore(!!res.next);
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line
-  }, [...deps]);
+  }, [...deps, search]);
 
   // Infinite scroll with intersection observer (using callback ref)
   React.useEffect(() => {
@@ -171,18 +172,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     };
   }, [paginated, data?.next, fetchFromUrl, loading, sentinelNode]);
 
-  // Filtered items
-  //   const allItems = paginated ? data?.results || [] : staticItems;
-  //   const filteredItems = data?.results.filter((item) => {
-  //     if (hideSelectedFromList && selectedItems.includes(getItemId(item))) return false;
-  //     if (!search) return true;
-  //     const itemLabel = getItemLabel(item);
-  //     const itemValue = getItemValue(item);
-  //     return (
-  //       itemLabel.toLowerCase().includes(search.toLowerCase()) ||
-  //       (itemValue && itemValue.toLowerCase().includes(search.toLowerCase()))
-  //     );
-  //   });
+
 
   const handleSelect = (itemId: string | number) => {
     const item = data?.results.find((i) => getItemId(i) === itemId);
