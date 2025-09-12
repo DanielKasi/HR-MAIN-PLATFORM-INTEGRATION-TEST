@@ -47,7 +47,7 @@ class Command(BaseCommand):
         self.create_default_system_days()
         self.create_default_bank_info()
         self.create_default_awards()
-        self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
+        # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
 
     def resend_welcome_emails(self, reset_password, employee_ids=None):
         self.stdout.write(
