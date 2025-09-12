@@ -397,7 +397,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
             )
 
         except Exception as e:
-            print(f"Error sending email: {e}")
+            pass
 
     def send_shortlist_email(self):
         """Send email notification when applicant is shortlisted"""
@@ -430,8 +430,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
             )
 
         except Exception as e:
-            print(f"Error sending shortlist email to {self.applicant_email}: {str(e)}")
-
+            pass
 
 class InterviewStage(BaseApprovableModel):
     job_position_advert = models.ForeignKey(
@@ -572,9 +571,7 @@ class JobInterview(BaseApprovableModel):
             )
 
         except Exception as e:
-            print(
-                f"Error sending interview email to {self.job_position_application.applicant_email}: {str(e)}"
-            )
+            pass
 
     def send_interview_cancelled_email(self):
         """Send email notification when interview is cancelled"""
@@ -610,9 +607,7 @@ class JobInterview(BaseApprovableModel):
             )
 
         except Exception as e:
-            print(
-                f"Error sending interview cancellation email to {self.job_position_application.applicant_email}: {str(e)}"
-            )
+            pass
 
     def reschedule_interview(self, new_date, new_time, new_location=None):
         """Helper method to reschedule interview and send notification"""
@@ -680,9 +675,7 @@ class JobInterview(BaseApprovableModel):
 
 
         except Exception as e:
-            print(
-                f"Error sending interview reschedule email to {self.job_position_application.applicant_email}: {str(e)}"
-            )
+            pass
 
     def _create_interview_event(self):
         from calendar2.models import Event

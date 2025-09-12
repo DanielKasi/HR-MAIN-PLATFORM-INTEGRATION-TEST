@@ -277,9 +277,7 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
 
         institution = advert.job_position.department.institution
 
-        print(
-            f"Creating advert for institution: {institution.institution_name}\n\n\n\n"
-        )
+        
         content_type = ContentType.objects.get_for_model(JobPositionAdvert)
 
         return advert

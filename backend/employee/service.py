@@ -337,7 +337,6 @@ def get_employee_attendance_status_for_date(
         return status
 
     except Exception as e:
-        print(f"Error in get_employee_attendance_status_for_date: {str(e)}")  # Debug
         attendance_cache[cache_key] = "ERR"
         return "ERR"
 
@@ -380,9 +379,6 @@ def build_attendance_report_data(start_date, end_date, context, institution):
                     employee.id, current_date, attendance_cache, institution
                 )
             except Exception as e:
-                print(
-                    f"Error for Employee {employee.id}, Date {current_date}: {str(e)}"
-                )  # Debug
                 status = "ERR"
 
             # Tally summary counts
