@@ -526,7 +526,6 @@ class EmployeeCreateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
-        print(f"Parsed final_data: {final_data}")  # Debug log
         return final_data
 
     # Rest of the EmployeeCreateAPIView (post method, etc.) remains unchanged
@@ -615,7 +614,6 @@ class EmployeeCreateAPIView(APIView):
             data = request.data
             serializer = EmployeeSerializer(data=data, context={"request": request})
             if not serializer.is_valid():
-                print(f"Serializer errors: {serializer.errors}")  # Debug log
                 return Response(
                     {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
@@ -652,7 +650,6 @@ class EmployeeCreateAPIView(APIView):
         final_data = self.parse_nested_multipart(request.data)
         serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
-            print(f"Serializer errors: {serializer.errors}")  # Debug log
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -682,7 +679,6 @@ class EmployeeCreateAPIView(APIView):
         start_time = timezone.now()
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
-            print("No institution associated with the requesting user.")
             return Response(
                 {"detail": "No institution associated with the requesting user.", "created_count": 0, "updated_count": 0, "warnings": []},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1526,8 +1522,19 @@ class EmployeeUpdateAPIView(APIView):
             if not final_data["spouse"].get("name"):
                 final_data["spouse"]["name"] = final_data["user"]["fullname"] + " Spouse"
             final_data["spouse"]["phone_number"] = final_data["spouse"].get("phone_number") or None
+            # Ensure date_of_birth is properly formatted if provided
+            if final_data["spouse"].get("date_of_birth"):
+                try:
+                    if isinstance(final_data["spouse"]["date_of_birth"], str):
+                        final_data["spouse"]["date_of_birth"] = datetime.strptime(
+                            final_data["spouse"]["date_of_birth"], "%Y-%m-%d"
+                        ).date()
+                except (ValueError, TypeError) as e:
+                    raise serializers.ValidationError(
+                        {"spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"}
+                    )
         else:
-            final_data["spouse"] = None
+            final_data["spouse"] = {}  # Ensure spouse is an empty dict instead of None
 
         # Convert selected_branches to a list of integers
         if "selected_branches" in final_data:
@@ -1560,7 +1567,6 @@ class EmployeeUpdateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
-        print(f"Parsed final_data: {final_data}")  # Debug log
         return final_data
 
     @extend_schema(
@@ -1624,7 +1630,6 @@ class EmployeeUpdateAPIView(APIView):
             employee, data=final_data, context={"request": request}, partial=True
         )
         if not serializer.is_valid():
-            print(f"Serializer errors: {serializer.errors}")  # Debug log
             return Response(
                 {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -2745,7 +2750,6 @@ class ExportAttendanceExcelView(APIView):
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
-            print(f"Institution not found for user {request.user.id}")
             return Response(
                 {"error": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -2759,9 +2763,6 @@ class ExportAttendanceExcelView(APIView):
         context = serializer.get_report_context()
 
         try:
-            print(
-                f"Generating Excel for {start_date} to {end_date}, context: {context}"
-            )
             excel_file = generate_attendance_excel(
                 start_date, end_date, context, institution
             )
@@ -2776,14 +2777,9 @@ class ExportAttendanceExcelView(APIView):
             return response
 
         except ValueError as e:
-            print(f"ValueError in generate_attendance_excel: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            print(
-                f"Unexpected error in generate_attendance_excel: {str(e)}",
-                exc_info=True,
-            )
             return Response(
                 {
                     "error": "An internal server error occurred while generating the Excel."
