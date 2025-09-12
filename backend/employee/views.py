@@ -92,6 +92,7 @@ from django.db.models import Count, F, ExpressionWrapper, FloatField, Avg
 import json
 from .utilities import generate_employee_excel
 from collections import defaultdict
+from django.contrib.sites.shortcuts import get_current_site
 
 
 class QualificationAwardListCreateAPIView(APIView):
@@ -631,6 +632,9 @@ class EmployeeCreateAPIView(APIView):
         ],
     )
     def post(self, request):
+
+        site = get_current_site(request)
+
         if "file" in request.FILES:
             return self.handle_bulk_upload(request)
 
@@ -652,10 +656,11 @@ class EmployeeCreateAPIView(APIView):
                     employee.user.welcome_email_sent = True
                     employee.user.save()
                     send_employee_welcome_email.delay_on_commit(
-                        request,
+                        request.get_host(),
                         employee.user.email,
                         employee.user.fullname,
                         random_password,
+                        company_name=request.user.profile.institution.institution_name,
                     )
                 employee.confirm_create()
                 return Response(
@@ -690,10 +695,11 @@ class EmployeeCreateAPIView(APIView):
             employee.user.save()
             employee.confirm_create()
             send_employee_welcome_email.delay_on_commit(
-                request,
+                request.get_host(),
                 employee.user.email,
                 employee.user.fullname,
                 final_data["user"]["password"],
+                company_name=request.user.profile.institution.institution_name,
             )
             return Response(
                 EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
@@ -705,6 +711,9 @@ class EmployeeCreateAPIView(APIView):
             )
 
     def handle_bulk_upload(self, request):
+
+        site = get_current_site(request)
+
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
             return Response(
@@ -1454,20 +1463,22 @@ class EmployeeCreateAPIView(APIView):
                             updated_count += 1
                             if email_changed:
                                 send_employee_welcome_email.delay_on_commit(
-                                    request,
+                                    request.get_host(),
                                     employee.user.email,
                                     employee.user.fullname,
                                     new_password,
+                                    company_name=institution.institution_name,
                                 )
                         else:
                             created_count += 1
                             if not existing_user:
                                 send_employee_welcome_email.delay_on_commit(
-                                    request,
+                                    request.get_host(),
                                     employee.user.email,
                                     employee.user.fullname,
                                     new_password
                                     or employee_data["user"].get("password", ""),
+                                    company_name=institution.institution_name,
                                 )
                         if row_warnings:
                             warnings.append(
