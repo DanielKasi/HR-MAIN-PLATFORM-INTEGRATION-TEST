@@ -384,8 +384,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if kin_data.get("name"):
                     NextOfKin.objects.create(employee=instance, **kin_data)
                     print(f"Created/Updated NextOfKin: {kin_data}")
-            transaction.commit()
-            print(f"Next of kin committed for employee: {instance.employee_id}")
 
         # Update educations
         if educations_data:
@@ -413,26 +411,39 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
         # Update or create spouse
         if spouse_data is not None:
-            print(f"Processing spouse data: {spouse_data}, has_spouse: {instance.spouse is not None}")
-            if spouse_data.get("name"):
+            print(f"Processing spouse data: {spouse_data}")
+            if spouse_data:  # Check if spouse_data is not empty
+                spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
                 try:
-                    if instance.spouse:
-                        for attr, value in spouse_data.items():
-                            setattr(instance.spouse, attr, value)
-                        instance.spouse.save()
-                        print(f"Updated Spouse: {spouse_data}")
+                    spouse_serializer.is_valid(raise_exception=True)
+                    print(f"Spouse serializer validated data: {spouse_serializer.validated_data}")
+                    # Check if a spouse already exists
+                    existing_spouse = Spouse.objects.filter(employee=instance).first()
+                    if existing_spouse:
+                        print(f"Existing spouse found: {existing_spouse}")
+                        # Update existing spouse
+                        for attr, value in spouse_serializer.validated_data.items():
+                            setattr(existing_spouse, attr, value)
+                        existing_spouse.save()
+                        print(f"Updated Spouse: {spouse_serializer.validated_data}")
                     else:
-                        print(f"Creating new Spouse with data: {spouse_data}")
-                        Spouse.objects.create(employee=instance, **spouse_data)
-                        print(f"Created Spouse: {spouse_data}")
+                        print(f"No existing spouse, creating new one with data: {spouse_serializer.validated_data}")
+                        # Create new spouse
+                        Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
+                        print(f"Created Spouse: {spouse_serializer.validated_data}")
+                except serializers.ValidationError as ve:
+                    print(f"Spouse serializer validation error: {ve.detail}")
+                    raise serializers.ValidationError({"spouse": ve.detail})
+                except IntegrityError as ie:
+                    print(f"Database IntegrityError during spouse creation: {str(ie)}")
+                    raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
                 except Exception as e:
-                    print(f"Failed to update/create spouse: {str(e)}")
+                    print(f"Unexpected error during spouse update/create: {str(e)}")
                     raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
             elif instance.spouse:
+                # If spouse_data is empty but a spouse exists, delete it
                 instance.spouse.delete()
                 print("Deleted existing Spouse")
-            transaction.commit()
-            print(f"Spouse committed for employee: {instance.employee_id}")
 
         # Update selected branches
         if selected_branches is not None:
