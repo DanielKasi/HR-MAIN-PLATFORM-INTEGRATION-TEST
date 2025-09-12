@@ -20,7 +20,6 @@ from django.db.models import Q
 from django.db import transaction
 
 
-
 class PublicHolidayListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -129,7 +128,7 @@ class PublicHolidayDetailView(APIView):
     @transaction.atomic()
     def patch(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
-        public_holiday.approval_status = 'under_update'
+        public_holiday.approval_status = "under_update"
         serializer = PublicHolidaySerializer(
             public_holiday, data=request.data, partial=True
         )
@@ -152,8 +151,8 @@ class PublicHolidayDetailView(APIView):
     )
     def delete(self, request, pk):
         public_holiday = get_object_or_404(PublicHoliday, pk=pk)
-        public_holiday.approval_status = 'under_deletion'
-        public_holiday.save(update_fields=['approval_status'])
+        public_holiday.approval_status = "under_deletion"
+        public_holiday.save(update_fields=["approval_status"])
         public_holiday.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -176,15 +175,13 @@ class EventListCreateView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
-        date = request.query_params.get('date', None)
-        mode = request.query_params.get('mode', None)
+        search_query = request.query_params.get("search", None)
+        date = request.query_params.get("date", None)
+        mode = request.query_params.get("mode", None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
-        events = Event.objects.filter(
-            institution=institution, deleted_at__isnull=True
-        )
+        events = Event.objects.filter(institution=institution, deleted_at__isnull=True)
 
         if date:
             events = events.filter(date=date)
@@ -193,9 +190,11 @@ class EventListCreateView(APIView):
             events = events.filter(event_mode=mode)
         if search_query:
             events = events.filter(
-                Q(title__icontains=search_query) | Q(description__icontains=search_query) |
-                Q(date__icontains=search_query) | Q(frequency__icontains=search_query) | 
-                Q(target_audience__icontains=search_query)
+                Q(title__icontains=search_query)
+                | Q(description__icontains=search_query)
+                | Q(date__icontains=search_query)
+                | Q(frequency__icontains=search_query)
+                | Q(target_audience__icontains=search_query)
             )
         paginator = CustomPageNumberPagination()
         paginated_events = paginator.paginate_queryset(events, request)
@@ -272,7 +271,7 @@ class EventDetailView(APIView):
     @transaction.atomic()
     def patch(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
-        event.approval_stage = 'under_update'
+        event.approval_stage = "under_update"
         serializer = EventSerializer(event, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
@@ -294,8 +293,8 @@ class EventDetailView(APIView):
     @transaction.atomic()
     def delete(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
-        event.approval_status = 'under_deletion'
-        event.save(update_fields=['approval_status'])
+        event.approval_status = "under_deletion"
+        event.save(update_fields=["approval_status"])
         event.confirm_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -318,7 +317,7 @@ class InstitutionCalendarView(APIView):
         tags=["Calendar"],
     )
     def get(self, request):
-        search_query = request.query_params.get('search', None)
+        search_query = request.query_params.get("search", None)
         institution = get_object_or_404(
             Institution, id=request.user.profile.institution.id
         )
@@ -336,10 +335,8 @@ class InstitutionCalendarView(APIView):
             year = timezone.now().year
 
         calendar = Calendar.objects.filter(
-            institution=institution, 
-            year=year,
-            deleted_at__isnull=True
-            ).first()
+            institution=institution, year=year, deleted_at__isnull=True
+        ).first()
 
         if not calendar:
             return Response(
@@ -348,9 +345,7 @@ class InstitutionCalendarView(APIView):
             )
 
         if search_query:
-            calendar = calendar.filter(
-                Q(year__icontains=search_query)
-            )    
+            calendar = calendar.filter(Q(year__icontains=search_query))
 
         serializer = CalendarSerializer(calendar)
         return Response(serializer.data, status=status.HTTP_200_OK)

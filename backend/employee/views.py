@@ -652,7 +652,10 @@ class EmployeeCreateAPIView(APIView):
                     employee.user.welcome_email_sent = True
                     employee.user.save()
                     send_employee_welcome_email.delay_on_commit(
-                        employee.user.email, employee.user.fullname, random_password
+                        request,
+                        employee.user.email,
+                        employee.user.fullname,
+                        random_password,
                     )
                 employee.confirm_create()
                 return Response(
@@ -687,6 +690,7 @@ class EmployeeCreateAPIView(APIView):
             employee.user.save()
             employee.confirm_create()
             send_employee_welcome_email.delay_on_commit(
+                request,
                 employee.user.email,
                 employee.user.fullname,
                 final_data["user"]["password"],
@@ -768,7 +772,9 @@ class EmployeeCreateAPIView(APIView):
                     if count > 1
                 ]
                 if duplicate_employee_ids:
-                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][["employee_id"]].index.tolist()
+                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][
+                        ["employee_id"]
+                    ].index.tolist()
                     return Response(
                         {
                             "detail": "Duplicate employee IDs found in the uploaded file",
@@ -923,7 +929,6 @@ class EmployeeCreateAPIView(APIView):
                             else ""
                         ),
                     }
-
 
                     if employee_id:
                         employee_data["employee_id"] = employee_id
@@ -1433,7 +1438,9 @@ class EmployeeCreateAPIView(APIView):
                         )
 
                     if not serializer.is_valid():
-                        errors.append({"row": group.index[0] + 2, "errors": serializer.errors})
+                        errors.append(
+                            {"row": group.index[0] + 2, "errors": serializer.errors}
+                        )
                         if row_warnings:
                             warnings.append(
                                 {"row": group.index[0] + 2, "warnings": row_warnings}
@@ -1447,6 +1454,7 @@ class EmployeeCreateAPIView(APIView):
                             updated_count += 1
                             if email_changed:
                                 send_employee_welcome_email.delay_on_commit(
+                                    request,
                                     employee.user.email,
                                     employee.user.fullname,
                                     new_password,
@@ -1455,15 +1463,23 @@ class EmployeeCreateAPIView(APIView):
                             created_count += 1
                             if not existing_user:
                                 send_employee_welcome_email.delay_on_commit(
+                                    request,
                                     employee.user.email,
                                     employee.user.fullname,
                                     new_password
                                     or employee_data["user"].get("password", ""),
                                 )
                         if row_warnings:
-                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
+                            warnings.append(
+                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                            )
                     except Exception as e:
-                        errors.append({"row": group.index[0] + 2, "errors": {"non_field_errors": str(e)}})
+                        errors.append(
+                            {
+                                "row": group.index[0] + 2,
+                                "errors": {"non_field_errors": str(e)},
+                            }
+                        )
                         if row_warnings:
                             warnings.append(
                                 {"row": group.index[0] + 2, "warnings": row_warnings}
@@ -1800,7 +1816,11 @@ class EmployeeUpdateAPIView(APIView):
                 if not edu.get("institution"):
                     edu["institution"] = "Unknown Institution"
 
-        if "spouse" in final_data and final_data["spouse"] and any(final_data["spouse"].values()):
+        if (
+            "spouse" in final_data
+            and final_data["spouse"]
+            and any(final_data["spouse"].values())
+        ):
             if not final_data["spouse"].get("name"):
                 final_data["spouse"]["name"] = (
                     final_data["user"]["fullname"] + " Spouse"

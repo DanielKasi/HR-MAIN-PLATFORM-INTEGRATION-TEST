@@ -9,28 +9,30 @@ from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
 
+
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_employee_welcome_email(
-    self, 
-    email: str, 
-    fullname: str, 
+    self,
+    request,
+    email: str,
+    fullname: str,
     password: str,
     company_name: Optional[str] = None,
-    site_id: Optional[int] = None
+    site_id: Optional[int] = None,
 ) -> bool:
     """
     Send welcome email with login credentials to new employee.
-    
+
     Args:
         email (str): Employee's email address
         fullname (str): Employee's full name
         password (str): Temporary password for initial login
         company_name (str, optional): Company name for personalization
         site_id (int, optional): Site ID to build proper URLs
-    
+
     Returns:
         bool: True if email sent successfully, False otherwise
-    
+
     Raises:
         Exception: Re-raises email sending exceptions after retries
     """
@@ -38,7 +40,7 @@ def send_employee_welcome_email(
         # Validate inputs
         if not all([email, fullname, password]):
             raise ValueError("Email, fullname, and password are required")
-        
+
         # Get site information for building URLs
         if site_id:
             try:
@@ -47,41 +49,43 @@ def send_employee_welcome_email(
                 site = Site.objects.get_current()
         else:
             site = Site.objects.get_current()
-        
+
         # Build the full login URL
-        protocol = 'https' if getattr(settings, 'USE_HTTPS', True) else 'http'
-        login_path = getattr(settings, 'LOGIN_URL', '/accounts/login/')
-        if not login_path.startswith('/'):
-            login_path = '/' + login_path
+
+        site = get_current_site(request)
+        protocol = "http" if getattr(settings, "USE_HTTPS", False) else "https"
+        login_path = getattr(settings, "LOGIN_URL", "/accounts/login/")
+        if not login_path.startswith("/"):
+            login_path = "/" + login_path
         login_url = f"{protocol}://{site.domain}{login_path}"
-        
+
         # Prepare email content
-        company = company_name or getattr(settings, 'COMPANY_NAME', 'Our Company')
-        
+        company = company_name or request.user.profile.institution.institution_name
+
         subject = f"Welcome to {company} - Your Account Details"
-        
+
         # Template context
         context = {
-            'fullname': fullname,
-            'email': email,
-            'password': password,
-            'company_name': company,
-            'login_url': login_url,
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@company.com'),
-            'site_domain': site.domain,
-            'site_name': site.name,
+            "fullname": fullname,
+            "email": email,
+            "password": password,
+            "company_name": company,
+            "login_url": login_url,
+            "support_email": getattr(settings, "SUPPORT_EMAIL", "support@company.com"),
+            "site_domain": site.domain,
+            "site_name": site.name,
         }
-        
+
         # Render HTML template
         try:
-            html_message = render_to_string('emails/welcome_email.html', context)
+            html_message = render_to_string("emails/welcome_email.html", context)
         except Exception as e:
             logging.warning(f"Failed to render HTML template: {e}")
             html_message = None
-        
+
         # Render plain text fallback
         try:
-            plain_message = render_to_string('emails/welcome_employee.txt', context)
+            plain_message = render_to_string("emails/welcome_employee.txt", context)
         except Exception as e:
             logging.warning(f"Failed to render text template: {e}")
             plain_message = f"""
@@ -119,20 +123,20 @@ The {company} Team
 ---
 This is an automated message. Please do not reply to this email.
             """.strip()
-        
+
         # Send email with both HTML and plain text versions
         send_mail(
             subject=subject,
             message=plain_message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@company.com'),
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@company.com"),
             recipient_list=[email],
             html_message=html_message,
             fail_silently=False,
         )
-        
+
         logging.info(f"Welcome email sent successfully to {email}")
         return True
-        
+
     except Exception as exc:
         logging.error(f"Failed to send welcome email to {email}: {exc}")
         # Retry logic for transient failures
@@ -141,57 +145,61 @@ This is an automated message. Please do not reply to this email.
         else:
             raise exc
 
+
 @shared_task
-def send_bulk_welcome_emails(employee_data: list, site_id: Optional[int] = None) -> dict:
+def send_bulk_welcome_emails(
+    employee_data: list, site_id: Optional[int] = None
+) -> dict:
     """
     Send welcome emails to multiple employees in batch.
-    
+
     Args:
         employee_data (list): List of dicts with 'email', 'fullname', 'password' keys
         site_id (int, optional): Site ID to build proper URLs
-    
+
     Returns:
         dict: Summary of results with success/failure counts
     """
-    results = {
-        'total': len(employee_data),
-        'successful': 0,
-        'failed': 0,
-        'errors': []
-    }
-    
+    results = {"total": len(employee_data), "successful": 0, "failed": 0, "errors": []}
+
     for employee in employee_data:
         try:
             send_employee_welcome_email.delay(
-                email=employee['email'],
-                fullname=employee['fullname'],
-                password=employee['password'],
-                company_name=employee.get('company_name'),
-                site_id=site_id
+                email=employee["email"],
+                fullname=employee["fullname"],
+                password=employee["password"],
+                company_name=employee.get("company_name"),
+                site_id=site_id,
             )
-            results['successful'] += 1
+            results["successful"] += 1
         except Exception as e:
-            results['failed'] += 1
-            results['errors'].append({
-                'email': employee.get('email', 'unknown'),
-                'error': str(e)
-            })
+            results["failed"] += 1
+            results["errors"].append(
+                {"email": employee.get("email", "unknown"), "error": str(e)}
+            )
 
     return results
 
+
 # Helper function to call from views
-def send_welcome_email_from_view(request: HttpRequest, email: str, fullname: str, password: str, company_name: Optional[str] = None):
+def send_welcome_email_from_view(
+    request: HttpRequest,
+    email: str,
+    fullname: str,
+    password: str,
+    company_name: Optional[str] = None,
+):
     """
     Helper function to send welcome email from a Django view.
     Automatically extracts site information from the request.
-    
+
     Args:
         request: Django HttpRequest object
         email: Employee's email address
         fullname: Employee's full name
         password: Temporary password
         company_name: Optional company name
-    
+
     Returns:
         Celery task result
     """
@@ -201,5 +209,5 @@ def send_welcome_email_from_view(request: HttpRequest, email: str, fullname: str
         fullname=fullname,
         password=password,
         company_name=company_name,
-        site_id=site.id
+        site_id=site.id,
     )
