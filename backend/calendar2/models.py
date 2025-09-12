@@ -15,7 +15,6 @@ class PublicHoliday(BaseApprovableModel):
     title = models.CharField(max_length=100)
     date = models.DateField()
 
-
     def __str__(self):
         return f"{self.title} on {self.date}"
 
@@ -45,7 +44,7 @@ class PublicHoliday(BaseApprovableModel):
         calendar.public_holidays.add(self)
 
     def get_institution(self):
-        return self.institution    
+        return self.institution
 
 
 # Preferably Zoom
@@ -60,12 +59,11 @@ class OnlineMeeting(BaseApprovableModel):
     join_url = models.URLField()
     start_url = models.URLField()
 
-
     def __str__(self):
         return f"Online Meeting for {self.topic} at {self.start_time}"
 
     def get_institution(self):
-        return self.event.institution    
+        return self.event.institution
 
 
 class Event(BaseApprovableModel):
@@ -129,7 +127,6 @@ class Event(BaseApprovableModel):
         null=True,
         help_text="If frequency is set, event will repeat until this date",
     )
-
 
     created_by = models.ForeignKey(
         "users.Profile",
@@ -248,7 +245,7 @@ class Event(BaseApprovableModel):
             calendar.events.add(self)
 
     def get_institution(self):
-        return self.institution        
+        return self.institution
 
 
 class EventOccurrence(models.Model):
@@ -288,7 +285,6 @@ class Calendar(SoftDeletableTimeStampedModel):
         blank=True,
     )
 
-
     def __str__(self):
         return f"Calendar for {self.institution.institution_name} - {self.year}"
 
@@ -322,4 +318,3 @@ class Calendar(SoftDeletableTimeStampedModel):
                 calendar.public_holidays.add(public_holiday)
 
         return calendar
-
