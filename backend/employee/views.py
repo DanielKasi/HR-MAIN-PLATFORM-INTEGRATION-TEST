@@ -718,9 +718,6 @@ class EmployeeCreateAPIView(APIView):
         file_extension = file.name.split(".")[-1].lower()
 
         if file_extension not in ["csv", "xlsx"]:
-            print(
-                f"Invalid file format: {file_extension}. Only CSV or Excel files are supported."
-            )
             return Response(
                 {
                     "detail": "Invalid file format. Only CSV or Excel files are supported.",
@@ -752,7 +749,6 @@ class EmployeeCreateAPIView(APIView):
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
-                print(f"Missing required columns: {', '.join(missing_columns)}")
                 return Response(
                     {
                         "detail": f"Missing required columns: {', '.join(missing_columns)}",
@@ -772,10 +768,7 @@ class EmployeeCreateAPIView(APIView):
                     if count > 1
                 ]
                 if duplicate_employee_ids:
-                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][
-                        ["employee_id"]
-                    ].index.tolist()
-                    print(f"Duplicate employee IDs found: {duplicate_employee_ids}")
+                    duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][["employee_id"]].index.tolist()
                     return Response(
                         {
                             "detail": "Duplicate employee IDs found in the uploaded file",
@@ -850,7 +843,6 @@ class EmployeeCreateAPIView(APIView):
                                 )
                             instance = model.objects.create(**kwargs)
                             instance_mappings[field][value.lower()] = instance
-                            print(f"Created {field}: {value}")
 
             position_mappings = {}
             if "position" in df.columns:
@@ -893,7 +885,6 @@ class EmployeeCreateAPIView(APIView):
                                 department=dept_instance,
                             )
                             position_mappings[(dept_lower, pos_lower)] = new_pos
-                            print(f"Created position: {pos_name}")
 
             # Group rows by employee_id
             grouped = (
@@ -933,9 +924,6 @@ class EmployeeCreateAPIView(APIView):
                         ),
                     }
 
-                    print(
-                        f"Processing employee_id: {employee_id}, email: {employee_data['user']['email']}"
-                    )
 
                     if employee_id:
                         employee_data["employee_id"] = employee_id
@@ -1150,9 +1138,6 @@ class EmployeeCreateAPIView(APIView):
                                     }
                             if bank_instance:
                                 bank_data["bank_id"] = bank_instance.id
-                                print(
-                                    f"Bank ID mapped: {bank_instance.id} for {bank_name}"
-                                )
                         else:
                             row_warnings.append(
                                 {
@@ -1183,7 +1168,6 @@ class EmployeeCreateAPIView(APIView):
 
                     if bank_data.get("bank_id") and bank_data.get("account_number"):
                         employee_data["bank_accounts"].append(bank_data)
-                        print(f"Bank data added: {bank_data}")
                     elif any(bank_data.values()):
                         row_warnings.append(
                             {
@@ -1257,7 +1241,6 @@ class EmployeeCreateAPIView(APIView):
                             "phone_number"
                         ):
                             employee_data["next_of_kin"].append(next_of_kin_data)
-                            print(f"Next of kin data added: {next_of_kin_data}")
                         elif any(next_of_kin_data.values()):
                             row_warnings.append(
                                 {
@@ -1450,12 +1433,7 @@ class EmployeeCreateAPIView(APIView):
                         )
 
                     if not serializer.is_valid():
-                        print(
-                            f"Serializer validation failed for employee_id {employee_id}: {serializer.errors}"
-                        )
-                        errors.append(
-                            {"row": group.index[0] + 2, "errors": serializer.errors}
-                        )
+                        errors.append({"row": group.index[0] + 2, "errors": serializer.errors})
                         if row_warnings:
                             warnings.append(
                                 {"row": group.index[0] + 2, "warnings": row_warnings}
@@ -1483,27 +1461,15 @@ class EmployeeCreateAPIView(APIView):
                                     or employee_data["user"].get("password", ""),
                                 )
                         if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
-                            )
-                        print(
-                            f"Employee saved: {employee.employee_id}, created: {not existing_employee}"
-                        )
+                            warnings.append({"row": group.index[0] + 2, "warnings": row_warnings})
                     except Exception as e:
-                        print(f"Failed to save employee_id {employee_id}: {str(e)}")
-                        errors.append(
-                            {
-                                "row": group.index[0] + 2,
-                                "errors": {"non_field_errors": str(e)},
-                            }
-                        )
+                        errors.append({"row": group.index[0] + 2, "errors": {"non_field_errors": str(e)}})
                         if row_warnings:
                             warnings.append(
                                 {"row": group.index[0] + 2, "warnings": row_warnings}
                             )
 
             if errors:
-                print(f"Upload completed with errors: {errors}")
                 return Response(
                     {
                         "detail": "Some rows failed validation or processing",
@@ -1519,9 +1485,6 @@ class EmployeeCreateAPIView(APIView):
                 institution.default_employee_role = role
                 institution.save()
 
-            print(
-                f"Upload successful: created {created_count}, updated {updated_count}"
-            )
             return Response(
                 {
                     "detail": "Employees processed successfully",
@@ -1536,7 +1499,6 @@ class EmployeeCreateAPIView(APIView):
             )
 
         except Exception as e:
-            print(f"Error processing file: {str(e)}")
             return Response(
                 {
                     "detail": f"Error processing file: {str(e)}",
@@ -1838,7 +1800,7 @@ class EmployeeUpdateAPIView(APIView):
                 if not edu.get("institution"):
                     edu["institution"] = "Unknown Institution"
 
-        if "spouse" in final_data and final_data["spouse"]:
+        if "spouse" in final_data and final_data["spouse"] and any(final_data["spouse"].values()):
             if not final_data["spouse"].get("name"):
                 final_data["spouse"]["name"] = (
                     final_data["user"]["fullname"] + " Spouse"
@@ -1854,13 +1816,14 @@ class EmployeeUpdateAPIView(APIView):
                             final_data["spouse"]["date_of_birth"], "%Y-%m-%d"
                         ).date()
                 except (ValueError, TypeError) as e:
+                    print(f"Error parsing spouse date_of_birth: {str(e)}")
                     raise serializers.ValidationError(
                         {
                             "spouse.date_of_birth": f"Invalid date format. Use YYYY-MM-DD. Error: {str(e)}"
                         }
                     )
         else:
-            final_data["spouse"] = {}  # Ensure spouse is an empty dict instead of None
+            final_data["spouse"] = None  # Set to None if no spouse data is provided
 
         # Convert selected_branches to a list of integers
         if "selected_branches" in final_data:
@@ -1897,6 +1860,7 @@ class EmployeeUpdateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
+        print(f"Parsed final_data: {final_data}")  # Debug log
         return final_data
 
     @extend_schema(

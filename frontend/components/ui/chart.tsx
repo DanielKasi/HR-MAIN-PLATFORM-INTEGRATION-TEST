@@ -18,6 +18,7 @@ export const ChartContainer = ({ children, className, config }: ChartContainerPr
 interface ChartTooltipProps {
   children?: React.ReactNode;
   content?: React.ReactNode;
+  cursor?: boolean
 }
 
 export const ChartTooltip = ({ children, content }: ChartTooltipProps) => {
@@ -25,6 +26,21 @@ export const ChartTooltip = ({ children, content }: ChartTooltipProps) => {
 };
 
 // ChartTooltipContent
-export const ChartTooltipContent = () => {
-  return <div className="p-2 text-sm text-muted-foreground">Tooltip</div>;
+type ChartTooltipContentProps = {
+  hideLabel?: boolean;
+  // also include payload, label, active if you are using them
+  payload?: any;
+  label?: string;
+  active?: boolean;
 };
+
+export function ChartTooltipContent({ hideLabel, payload, label, active }: ChartTooltipContentProps) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="custom-tooltip">
+      {!hideLabel && <p className="label">{label}</p>}
+      <p className="value">{payload[0].value}</p>
+    </div>
+  );
+}

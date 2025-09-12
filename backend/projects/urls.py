@@ -5,6 +5,7 @@ from .views import (
     TaskListCreateView,
     TaskTimeSheetView,
     TaskDetailView,
+    DashboardAnalyticsView,
 )
 
 urlpatterns = [
@@ -27,4 +28,5 @@ urlpatterns = [
         TaskTimeSheetView.as_view(),
         name="task-timesheet",
     ),
+    path("analytics/", DashboardAnalyticsView.as_view(), name="dashboard-analytics"),
 ]

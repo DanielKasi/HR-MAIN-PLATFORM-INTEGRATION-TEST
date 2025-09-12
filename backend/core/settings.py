@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 import dj_database_url
 from corsheaders.defaults import default_headers
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -211,6 +212,9 @@ EMAIL_HOST_PASSWORD = os.environ.get("RESPONSE_EMAIL_PASSWORD", None)
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get("RESPONSE_EMAIL", None)
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+parsed_redis_url = urlparse(REDIS_URL)
 
 # Channel layers configuration
 CHANNEL_LAYERS = {
