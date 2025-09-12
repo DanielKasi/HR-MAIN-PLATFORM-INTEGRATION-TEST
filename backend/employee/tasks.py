@@ -13,7 +13,7 @@ from django.http import HttpRequest
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_employee_welcome_email(
     self,
-    request,
+    domain,
     email: str,
     fullname: str,
     password: str,
@@ -36,6 +36,8 @@ def send_employee_welcome_email(
     Raises:
         Exception: Re-raises email sending exceptions after retries
     """
+
+    print(f"\n\n\n\n{domain}\n\n\n\n")
     try:
         # Validate inputs
         if not all([email, fullname, password]):
@@ -52,15 +54,14 @@ def send_employee_welcome_email(
 
         # Build the full login URL
 
-        site = get_current_site(request)
         protocol = "http" if getattr(settings, "USE_HTTPS", False) else "https"
         login_path = getattr(settings, "LOGIN_URL", "/accounts/login/")
         if not login_path.startswith("/"):
             login_path = "/" + login_path
-        login_url = f"{protocol}://{site.domain}{login_path}"
+        login_url = f"{protocol}://{domain}{login_path}"
 
         # Prepare email content
-        company = company_name or request.user.profile.institution.institution_name
+        company = company_name if company_name else "Company Name"
 
         subject = f"Welcome to {company} - Your Account Details"
 
@@ -72,8 +73,8 @@ def send_employee_welcome_email(
             "company_name": company,
             "login_url": login_url,
             "support_email": getattr(settings, "SUPPORT_EMAIL", "support@company.com"),
-            "site_domain": site.domain,
-            "site_name": site.name,
+            "site_domain": domain,
+            "site_name": domain,  # Will be adjusted to use name insteady of domain
         }
 
         # Render HTML template
