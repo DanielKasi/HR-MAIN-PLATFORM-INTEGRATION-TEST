@@ -221,7 +221,7 @@ class EventListCreateView(APIView):
 
         serializer = EventSerializer(data=request.data)
         if serializer.is_valid():
-            instance = serializer.save(created_by=request.user.profile)
+            instance = serializer.save(created_by=request.user)
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -274,7 +274,7 @@ class EventDetailView(APIView):
         event.approval_stage = "under_update"
         serializer = EventSerializer(event, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save(updated_by=request.user.profile)
+            serializer.save(updated_by=request.user)
             event.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

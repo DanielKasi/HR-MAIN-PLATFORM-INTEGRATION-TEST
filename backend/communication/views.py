@@ -14,6 +14,8 @@ from django.conf import settings
 from typing import Optional
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 
+from utilities.pagination import CustomPageNumberPagination
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -144,7 +146,6 @@ async def sse_notifications(request):
                 if current_time - last_heartbeat > 10:
                     print(f"💓 Sending heartbeat for user {user_id} with unread count: {unread_count}")
                     yield f'data: {{"unread_count": {unread_count}}}\n\n'
-
                     last_heartbeat = current_time
 
                 await asyncio.sleep(5)
@@ -164,41 +165,41 @@ async def sse_notifications(request):
             await sync_to_async(lambda: cleanup_queue(user_id))()
         return HttpResponse(f"Error: {str(e)}", status=500)
 
-@csrf_exempt
-@extend_schema(
-    summary="SSE Proxy for Real-Time Notifications",
-    description="Establishes a Server-Sent Events (SSE) connection to stream real-time notifications for the authenticated user. Includes unread notification count. Requires JWT token in the Authorization header.",
-    responses={
-        200: OpenApiResponse(description="SSE stream of notifications in the format: `data: {\"id\": int, \"message\": string, \"unread_count\": int}\\n\\n` for notifications or `data: {\"unread_count\": int}\\n\\n` for heartbeats"),
-        401: OpenApiResponse(description="Unauthorized - Invalid or missing JWT token"),
-        500: OpenApiResponse(description="Server error - Internal server issue")
-    },
-    auth=["BearerAuth"]
-)
-async def sse_proxy(request):
-    """Proxy endpoint to authenticate with Authorization header and forward to SSE."""
-    try:
-        print("🔍 Starting SSE proxy request processing")
-        authenticator = JWTAuthentication()
-        start_time = time.time()
-        user_auth_tuple = await sync_to_async(authenticator.authenticate)(request)
-        auth_time = time.time() - start_time
-        print(f"🔐 Authentication took {auth_time:.2f} seconds")
+# @csrf_exempt
+# @extend_schema(
+#     summary="SSE Proxy for Real-Time Notifications",
+#     description="Establishes a Server-Sent Events (SSE) connection to stream real-time notifications for the authenticated user. Includes unread notification count. Requires JWT token in the Authorization header.",
+#     responses={
+#         200: OpenApiResponse(description="SSE stream of notifications in the format: `data: {\"id\": int, \"message\": string, \"unread_count\": int}\\n\\n` for notifications or `data: {\"unread_count\": int}\\n\\n` for heartbeats"),
+#         401: OpenApiResponse(description="Unauthorized - Invalid or missing JWT token"),
+#         500: OpenApiResponse(description="Server error - Internal server issue")
+#     },
+#     auth=["BearerAuth"]
+# )
+# async def sse_proxy(request):
+#     """Proxy endpoint to authenticate with Authorization header and forward to SSE."""
+#     try:
+#         print("🔍 Starting SSE proxy request processing")
+#         authenticator = JWTAuthentication()
+#         start_time = time.time()
+#         user_auth_tuple = await sync_to_async(authenticator.authenticate)(request)
+#         auth_time = time.time() - start_time
+#         print(f"🔐 Authentication took {auth_time:.2f} seconds")
 
-        if user_auth_tuple is None:
-            print("❌ User not authenticated")
-            return HttpResponse("Unauthorized", status=401)
+#         if user_auth_tuple is None:
+#             print("❌ User not authenticated")
+#             return HttpResponse("Unauthorized", status=401)
 
-        # Update the request with the authenticated user
-        request.user = user_auth_tuple[0]
+#         # Update the request with the authenticated user
+#         request.user = user_auth_tuple[0]
 
-        # Forward to the existing sse_notifications view
-        print("🔄 Forwarding to SSE notifications endpoint")
-        return await sse_notifications(request)
+#         # Forward to the existing sse_notifications view
+#         print("🔄 Forwarding to SSE notifications endpoint")
+#         return await sse_notifications(request)
 
-    except Exception as e:
-        print(f"❌ Error in SSE proxy: {str(e)}")
-        return HttpResponse(f"Error: {str(e)}", status=500)
+#     except Exception as e:
+#         print(f"❌ Error in SSE proxy: {str(e)}")
+#         return HttpResponse(f"Error: {str(e)}", status=500)
 
 class MarkNotificationRead(APIView):
     """Endpoint to mark a notification as read."""
@@ -260,16 +261,20 @@ class MarkNotificationRead(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetAllNotifications(APIView):
-    """Endpoint to fetch all notifications (read and unread) for the user."""
+    """Endpoint to fetch all notifications (read and unread) for the user with pagination."""
     authentication_classes = [JWTAuthentication]
+    pagination_class = CustomPageNumberPagination
 
     @extend_schema(
         summary="Get All Notifications",
-        description="Retrieves all notifications (both read and unread) for the authenticated user.",
+        description="Retrieves all notifications (both read and unread) for the authenticated user with pagination support. Use 'page' and 'page_size' query parameters to control pagination.",
         responses={
-            200: OpenApiResponse(description="List of notifications", examples={
+            200: OpenApiResponse(description="Paginated list of notifications", examples={
                 "application/json": {
-                    "notifications": [
+                    "count": 100,
+                    "next": "http://api.example.com/notifications?page=2",
+                    "previous": None,
+                    "results": [
                         {"id": 123456789, "message": "Test notification", "is_read": True},
                         {"id": 123456790, "message": "Another notification", "is_read": False}
                     ]
@@ -302,8 +307,12 @@ class GetAllNotifications(APIView):
                     notification_data['is_read'] = is_read
                     notifications_list.append(notification_data)
 
-                print(f"📋 Retrieved {len(notifications_list)} notifications for user {user_id}")
-                return Response({"notifications": notifications_list}, status=status.HTTP_200_OK)
+                # Apply pagination
+                paginator = self.pagination_class()
+                paginated_notifications = paginator.paginate_queryset(notifications_list, request)
+                print(f"📋 Retrieved {len(paginated_notifications)} notifications for user {user_id} on page {paginator.page.number}")
+
+                return paginator.get_paginated_response({"notifications": paginated_notifications})
 
             except redis.RedisError as e:
                 print(f"❌ Redis error in get_all_notifications: {str(e)}")
@@ -313,59 +322,59 @@ class GetAllNotifications(APIView):
             print(f"❌ Error in GetAllNotifications: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class GetUnreadNotifications(APIView):
-    """Endpoint to fetch unread notifications and their count for the user."""
-    authentication_classes = [JWTAuthentication]
+# class GetUnreadNotifications(APIView):
+#     """Endpoint to fetch unread notifications and their count for the user."""
+#     authentication_classes = [JWTAuthentication]
 
-    @extend_schema(
-        summary="Get Unread Notifications",
-        description="Retrieves all unread notifications for the authenticated user along with the total count of unread notifications.",
-        responses={
-            200: OpenApiResponse(description="List of unread notifications and count", examples={
-                "application/json": {
-                    "count": 2,
-                    "notifications": [
-                        {"id": 123456789, "message": "Test notification"},
-                        {"id": 123456790, "message": "Another notification"}
-                    ]
-                }
-            }),
-            401: OpenApiResponse(description="Unauthorized - Invalid or missing JWT token"),
-            500: OpenApiResponse(description="Server error - Internal server issue")
-        },
-        auth=["BearerAuth"]
-    )
-    def get(self, request):
-        try:
-            user = request.user
-            if not user.is_authenticated:
-                print("❌ User not authenticated")
-                return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
+#     @extend_schema(
+#         summary="Get Unread Notifications",
+#         description="Retrieves all unread notifications for the authenticated user along with the total count of unread notifications.",
+#         responses={
+#             200: OpenApiResponse(description="List of unread notifications and count", examples={
+#                 "application/json": {
+#                     "count": 2,
+#                     "notifications": [
+#                         {"id": 123456789, "message": "Test notification"},
+#                         {"id": 123456790, "message": "Another notification"}
+#                     ]
+#                 }
+#             }),
+#             401: OpenApiResponse(description="Unauthorized - Invalid or missing JWT token"),
+#             500: OpenApiResponse(description="Server error - Internal server issue")
+#         },
+#         auth=["BearerAuth"]
+#     )
+#     def get(self, request):
+#         try:
+#             user = request.user
+#             if not user.is_authenticated:
+#                 print("❌ User not authenticated")
+#                 return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
 
-            user_id = user.id
-            try:
-                # Get all notifications for the user
-                notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
-                read_notifications_key = f"read_notifications:{user_id}"
-                unread_notifications = []
+#             user_id = user.id
+#             try:
+#                 # Get all notifications for the user
+#                 notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+#                 read_notifications_key = f"read_notifications:{user_id}"
+#                 unread_notifications = []
 
-                for notification in notifications:
-                    notification_data = json.loads(notification)
-                    notification_id = notification_data['id']
-                    # Only include unread notifications
-                    if not redis_client.sismember(read_notifications_key, notification_id):
-                        unread_notifications.append(notification_data)
+#                 for notification in notifications:
+#                     notification_data = json.loads(notification)
+#                     notification_id = notification_data['id']
+#                     # Only include unread notifications
+#                     if not redis_client.sismember(read_notifications_key, notification_id):
+#                         unread_notifications.append(notification_data)
 
-                print(f"📋 Retrieved {len(unread_notifications)} unread notifications for user {user_id}")
-                return Response({
-                    "count": len(unread_notifications),
-                    "notifications": unread_notifications
-                }, status=status.HTTP_200_OK)
+#                 print(f"📋 Retrieved {len(unread_notifications)} unread notifications for user {user_id}")
+#                 return Response({
+#                     "count": len(unread_notifications),
+#                     "notifications": unread_notifications
+#                 }, status=status.HTTP_200_OK)
 
-            except redis.RedisError as e:
-                print(f"❌ Redis error in get_unread_notifications: {str(e)}")
-                return Response({"error": "Failed to fetch unread notifications"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             except redis.RedisError as e:
+#                 print(f"❌ Redis error in get_unread_notifications: {str(e)}")
+#                 return Response({"error": "Failed to fetch unread notifications"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        except Exception as e:
-            print(f"❌ Error in GetUnreadNotifications: {str(e)}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         except Exception as e:
+#             print(f"❌ Error in GetUnreadNotifications: {str(e)}")
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

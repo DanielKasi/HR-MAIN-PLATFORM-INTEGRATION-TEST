@@ -688,13 +688,12 @@ export default function AddEmployeeForm() {
           formData.fullname &&
           formData.email &&
           formData.country &&
-          formData.marital_status &&
+          // formData.marital_status &&
           formData.address &&
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18 &&
-          phoneInput.isValid
+          currentDate.getFullYear() - DOB.getFullYear() >= 18 
         );
       case 2:
         return !!(
@@ -789,6 +788,7 @@ export default function AddEmployeeForm() {
   };
 
   const handleSubmit = async () => {
+    console.log("\n\n Creating with data : ", formData)
     if (!selectedInstitution) {
       showErrorToast({
         error: new Error("No institution selected"),
@@ -799,6 +799,8 @@ export default function AddEmployeeForm() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+
+    console.log("\n\n Creating with data : ", formData)
 
     try {
       const dataToSubmit: IEmployeeFormData = {
@@ -866,6 +868,8 @@ export default function AddEmployeeForm() {
               }
             : undefined,
       };
+
+
 
       await createEmployee({
         institutionId: selectedInstitution.id,

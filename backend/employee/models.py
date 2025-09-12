@@ -613,9 +613,7 @@ class EmployeeShift(BaseApprovableModel):
     date = models.DateField()
 
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(
-        "users.CustomUser", on_delete=models.PROTECT, related_name="employee_shift"
-    )
+
 
     def __str__(self):
         return f"{self.employee.user.fullname} - shift {self.context.upper()}"

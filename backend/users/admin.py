@@ -20,6 +20,7 @@ class UserRoleInline(admin.TabularInline):
     extra = 1
     verbose_name = "Role"
     verbose_name_plural = "Roles"
+    fk_name = "user"
 
 
 class ProfileInline(admin.StackedInline):

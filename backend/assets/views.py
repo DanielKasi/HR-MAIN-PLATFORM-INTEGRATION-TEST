@@ -224,9 +224,9 @@ class AssetListCreateView(APIView, SortableAPIMixin):
     @transaction.atomic()
     def post(self, request):
         data = request.data.copy()
+        user = request.user
 
-        user_profile = get_object_or_404(Profile, user=request.user)
-        data["created_by"] = user_profile.id
+        data["created_by"] = user
 
         serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():
