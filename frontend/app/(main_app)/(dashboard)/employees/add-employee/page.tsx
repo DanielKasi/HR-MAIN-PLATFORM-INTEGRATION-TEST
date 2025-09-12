@@ -1251,7 +1251,7 @@ export default function AddEmployeeForm() {
                   </div>
                 </div>
 
-                <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                <RadioGroup defaultValue={hasChildren ? "Yes":"No"} className="flex items-center justify-start gap-12">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem
                       value={"Yes"}

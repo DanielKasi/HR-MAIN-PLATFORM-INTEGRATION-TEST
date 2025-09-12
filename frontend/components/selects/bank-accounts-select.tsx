@@ -18,6 +18,7 @@ export interface BankAccountSearchableSelectProps {
   multiple?: boolean;
   hideSelectedFromList?: boolean;
   showSelectedItems?: boolean;
+    defaultLabel?:string;
   setAccounts?: (accounts: IBankAccount[]) => void;
 }
 
@@ -31,6 +32,7 @@ export const BankAccountSearchableSelect = ({
   triggerClassName,
   multiple = false,
   hideSelectedFromList = false,
+  defaultLabel,
   setAccounts,
 }: BankAccountSearchableSelectProps) => {
 
@@ -91,6 +93,7 @@ export const BankAccountSearchableSelect = ({
         popoverClassName="w-full"
         hideSelectedFromList={hideSelectedFromList}
         setParentItems={setAccounts}
+        defaultLabel={defaultLabel}
       />
     </div>
   );

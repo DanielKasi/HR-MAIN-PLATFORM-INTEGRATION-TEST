@@ -40,7 +40,7 @@ import { toast } from "sonner";
 export default function AddProjectPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof formData, string>>>({});
 
   const currentInstitution = useSelector(selectSelectedInstitution);
 
@@ -72,13 +72,13 @@ export default function AddProjectPage() {
     if (!currentInstitution) {
       return
     }
-    // Validate required fields
-    const newErrors: Record<string, string[]> = {};
+
+    const newErrors: Partial<Record<keyof typeof formData, string>> = {};
     if (formData.leaders.length === 0) {
-      newErrors.leaders = ["This field is required."];
+      newErrors.leaders = "This field is required.";
     }
     if (formData.members.length === 0) {
-      newErrors.members = ["This field is required."];
+      newErrors.members = "This field is required.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -108,7 +108,7 @@ export default function AddProjectPage() {
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
-        [field]: [],
+        [field]: "",
       }));
     }
   };
@@ -125,7 +125,7 @@ export default function AddProjectPage() {
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
-        [field]: [],
+        [field]: "",
       }));
     }
   };
@@ -256,6 +256,9 @@ export default function AddProjectPage() {
                 {errors.leaders && errors.leaders.length > 0 && (
                   <p className="text-sm text-red-600">{errors.leaders[0]}</p>
                 )}
+                                { !formData.leaders.length && (
+                  <p className="text-sm text-red-600">Project leaders are required</p>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -274,9 +277,14 @@ export default function AddProjectPage() {
                   multiple={true}
                 />
 
-                {errors.leaders && errors.members.length > 0 && (
+                {errors.members && errors.members.length > 0 && (
                   <p className="text-sm text-red-600">{errors.members[0]}</p>
                 )}
+                { !formData.members.length && (
+                  <p className="text-sm text-red-600">Project members are required</p>
+                )
+
+                }
               </div>
 
             </div>
