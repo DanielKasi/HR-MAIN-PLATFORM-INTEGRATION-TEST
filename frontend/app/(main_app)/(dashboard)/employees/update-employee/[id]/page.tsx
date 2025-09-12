@@ -157,7 +157,9 @@ export default function UpdateEmployeeForm() {
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
   const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
-  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData| null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData | null>(
+    null,
+  );
 
   const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
     name: "",
@@ -172,11 +174,13 @@ export default function UpdateEmployeeForm() {
     address: "",
   });
 
-  const [educationFormData, setEducationFormData] = useState<Omit<IEmployeeEducationFormData, "id">>({
+  const [educationFormData, setEducationFormData] = useState<
+    Omit<IEmployeeEducationFormData, "id">
+  >({
     name: "",
     institute: "",
     year: "",
-    qualification_id :0,
+    qualification_id: 0,
   });
 
   const [workExperienceFormData, setWorkExperienceFormData] = useState<Omit<WorkExperience, "id">>({
@@ -214,7 +218,7 @@ export default function UpdateEmployeeForm() {
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement | null>(null);
-   const [qualifications, setQualifications] = useState<IQualificationAward[]>([])
+  const [qualifications, setQualifications] = useState<IQualificationAward[]>([]);
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -253,7 +257,7 @@ export default function UpdateEmployeeForm() {
     position: 0,
     department: 0,
     work_type: 0,
-    has_children:false,
+    has_children: false,
     employee_type: 0,
     date_of_birth: "",
     date_of_joining: new Date().toISOString().split("T")[0],
@@ -416,7 +420,6 @@ export default function UpdateEmployeeForm() {
     setIsEducationDialogOpen(true);
   };
 
-
   const handleDeleteEducation = (id: string) => {
     setEducations((prev) => prev.filter((edu) => edu.id !== id));
   };
@@ -460,7 +463,6 @@ export default function UpdateEmployeeForm() {
     setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-
   useEffect(() => {
     if (employeeId && selectedInstitution) {
       loadEmployee();
@@ -495,14 +497,14 @@ export default function UpdateEmployeeForm() {
         salary: parseFloat(employee.salary),
         is_active: employee.is_active,
         skills: employee.skills,
-        has_children:employee.has_children,
+        has_children: employee.has_children,
         selected_branches:
           employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
             ? [employee?.payroll_branch?.id as unknown as number]
             : [],
         marital_status: employee.marital_status,
         gender: employee.gender,
-        children: [],
+        children: employee.children,
         next_of_kin: employee.next_of_kin,
         educations: employee.educations,
         bank_accounts: employee.bank_accounts,
@@ -513,21 +515,24 @@ export default function UpdateEmployeeForm() {
       setHasChildren(!!employee.has_children);
       // Assuming next_of_kin is available or empty
       setNextOfKins([]); // Adjust if backend provides next_of_kin
-      setEducations(employee.educations.map(ed => ({
-        name:ed.name,
-        qualification_id:ed.qualification.id,
-        year:ed.year,
-        institute:ed.institute,
-        id:ed.id
-      })));
+      setEducations(
+        employee.educations.map((ed) => ({
+          name: ed.name,
+          qualification_id: ed.qualification.id,
+          year: ed.year,
+          institute: ed.institute,
+          id: ed.id,
+        })),
+      );
       setWorkExperiences(employee.work_experiences);
       setBankAccounts(employee.bank_accounts);
       if (employee.bank_accounts.length > 0) {
-        setBankAccountFormData(prev => ({...prev, 
-          bank_id:employee.bank_accounts[0].bank,
-          account_number:employee.bank_accounts[0].account_number,
-          account_name:employee.bank_accounts[0].account_name,
-          id:employee.bank_accounts[0].id
+        setBankAccountFormData((prev) => ({
+          ...prev,
+          bank_id: employee.bank_accounts[0].bank,
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+          id: employee.bank_accounts[0].id,
         }));
       }
 
@@ -550,7 +555,6 @@ export default function UpdateEmployeeForm() {
       if (employee.employee_profile_picture) {
         setPreviewUrl(employee.employee_profile_picture);
       }
-
 
       setSelectedCountry({name: {common: employee.country}} as ICountry);
 
@@ -578,12 +582,12 @@ export default function UpdateEmployeeForm() {
       const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
         getWorkTypes({institutionId: selectedInstitution.id}),
         getEmployeeTypes({institutionId: selectedInstitution.id}),
-        employeeAPI.getQualificationAwards()
+        employeeAPI.getQualificationAwards(),
       ]);
 
       setWorkTypes(workTypesData.results || []);
       setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
-            setQualifications(qualification_awards)
+      setQualifications(qualification_awards);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -718,7 +722,7 @@ export default function UpdateEmployeeForm() {
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18 
+          currentDate.getFullYear() - DOB.getFullYear() >= 18
         );
       case 2:
         return !!(
@@ -857,7 +861,7 @@ export default function UpdateEmployeeForm() {
         employee_type: formData.employee_type,
         position: formData.position,
         department: formData.department,
-        has_children:hasChildren,
+        has_children: hasChildren,
         children: children.map((child, idx) => ({
           id: String(idx),
           name: child.name,
@@ -876,7 +880,7 @@ export default function UpdateEmployeeForm() {
           qualification_id: edu.qualification_id,
           institute: edu.institute,
           year: edu.year,
-          name: edu.name
+          name: edu.name,
         })),
         work_experiences: workExperiences.map((exp, idx) => ({
           id: String(idx),
@@ -889,11 +893,13 @@ export default function UpdateEmployeeForm() {
       };
       if (formData.marital_status === "married") {
         dataToSubmit["spouse"] = {
-                name: spouseFormData.name,
-                phone_number: spouseFormData.phone_number,
-                date_of_birth: spouseFormData.dateOfBirth,
+          name: spouseFormData.name,
+          phone_number: spouseFormData.phone_number,
+          date_of_birth: spouseFormData.dateOfBirth,
         };
       }
+
+      console.log("\n\n\n Submitting data : ", dataToSubmit)
       await updateEmployee({
         employeeId: parseInt(employeeId),
         employeeData: dataToSubmit,
@@ -915,47 +921,53 @@ export default function UpdateEmployeeForm() {
     }
   };
 
-    useEffect(() => {
-      let updatedFormData: typeof formData | null = null;
-  
-      const newPhoneNumber =
-        phoneInput.countryCode && phoneInput.phoneNumber
-          ? `${phoneInput.phoneNumber}`
-          : formData.phone_number;
-  
-      const newCountry = selectedCountry?.name?.common || formData.country;
-  
-      const newNextOfKinPhoneNUmber =
-        emergencyContactPhoneInput.isValid && emergencyContactPhoneInput.phoneNumber
-          ? `${emergencyContactPhoneInput.phoneNumber}`
-          : nextOfKinFormData.phone_number;
-  
-      const spousePhoneNUmber =
-        spousePhoneInput.isValid && spousePhoneInput.phoneNumber
-          ? `${spousePhoneInput.phoneNumber}`
-          : spouseFormData.phone_number;
-  
-      if (!formData.phone_number || newPhoneNumber !== formData.phone_number || newCountry !== formData.country) {
-        updatedFormData = {
-          ...formData,
-          phone_number: newPhoneNumber,
-          country: newCountry,
-        };
-      }
-  
-      if (!nextOfKinFormData.phone_number || newNextOfKinPhoneNUmber !== nextOfKinFormData.phone_number) {
-        setNextOfKinFormData((prev) => ({...prev, phone_number: newNextOfKinPhoneNUmber}));
-      }
-  
-      if (!spouseFormData.phone_number || spousePhoneNUmber !== spouseFormData.phone_number) {
-        setSpouseFormData((prev) => ({...prev, phone_number: spousePhoneNUmber}));
-      }
-  
-      if (updatedFormData) {
-        setFormData(updatedFormData);
-      }
-    }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
-  
+  useEffect(() => {
+    let updatedFormData: typeof formData | null = null;
+
+    const newPhoneNumber =
+      phoneInput.countryCode && phoneInput.phoneNumber
+        ? `${phoneInput.phoneNumber}`
+        : formData.phone_number;
+
+    const newCountry = selectedCountry?.name?.common || formData.country;
+
+    const newNextOfKinPhoneNUmber =
+      emergencyContactPhoneInput.isValid && emergencyContactPhoneInput.phoneNumber
+        ? `${emergencyContactPhoneInput.phoneNumber}`
+        : nextOfKinFormData.phone_number;
+
+    const spousePhoneNUmber =
+      spousePhoneInput.isValid && spousePhoneInput.phoneNumber
+        ? `${spousePhoneInput.phoneNumber}`
+        : spouseFormData.phone_number;
+
+    if (
+      !formData.phone_number ||
+      newPhoneNumber !== formData.phone_number ||
+      newCountry !== formData.country
+    ) {
+      updatedFormData = {
+        ...formData,
+        phone_number: newPhoneNumber,
+        country: newCountry,
+      };
+    }
+
+    if (
+      !nextOfKinFormData.phone_number ||
+      newNextOfKinPhoneNUmber !== nextOfKinFormData.phone_number
+    ) {
+      setNextOfKinFormData((prev) => ({...prev, phone_number: newNextOfKinPhoneNUmber}));
+    }
+
+    if (!spouseFormData.phone_number || spousePhoneNUmber !== spouseFormData.phone_number) {
+      setSpouseFormData((prev) => ({...prev, phone_number: spousePhoneNUmber}));
+    }
+
+    if (updatedFormData) {
+      setFormData(updatedFormData);
+    }
+  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
 
   // useEffect(() => {
   //   const newPhoneNumber =
@@ -1060,7 +1072,9 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
-                         {!formData.fullname && <p className="text-red-400 text-xs">Employee full name is required</p>}
+                        {!formData.fullname && (
+                          <p className="text-red-400 text-xs">Employee full name is required</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -1075,8 +1089,9 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
-                         {!formData.email && <p className="text-red-400 text-xs">Employee email is required</p>}
-
+                        {!formData.email && (
+                          <p className="text-red-400 text-xs">Employee email is required</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <PhoneNumberInput
@@ -1100,8 +1115,9 @@ export default function UpdateEmployeeForm() {
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
                         />
-                         {!formData.date_of_birth && <p className="text-red-400 text-xs">Employee date of birth is required</p>}
-
+                        {!formData.date_of_birth && (
+                          <p className="text-red-400 text-xs">Employee date of birth is required</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1137,8 +1153,9 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
                       />
-                      {!formData.nin && <p className="text-red-400 text-xs">National ID / Passport is required</p>}
-
+                      {!formData.nin && (
+                        <p className="text-red-400 text-xs">National ID / Passport is required</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-sm font-medium text-gray-700">
@@ -1153,7 +1170,9 @@ export default function UpdateEmployeeForm() {
                           }
                         }}
                       />
-                      {!formData.country && <p className="text-red-400 text-xs">Please select a country</p>}
+                      {!formData.country && (
+                        <p className="text-red-400 text-xs">Please select a country</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="address" className="text-sm font-medium text-gray-700">
@@ -1166,7 +1185,9 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
                       />
-                      {!formData.address && <p className="text-red-400 text-xs">Please set an address</p>}
+                      {!formData.address && (
+                        <p className="text-red-400 text-xs">Please set an address</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1210,7 +1231,9 @@ export default function UpdateEmployeeForm() {
                             placeholder="Enter spouse name"
                             className="h-12 rounded-2xl"
                           />
-                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse name is required</p>}
+                          {!spouseFormData.name && (
+                            <p className="text-red-400 text-xs">Spouse name is required</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
@@ -1224,7 +1247,9 @@ export default function UpdateEmployeeForm() {
                               setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
                             }
                           />
-                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse date of birth is required</p>}
+                          {!spouseFormData.dateOfBirth && (
+                            <p className="text-red-400 text-xs">Spouse date of birth is required</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <PhoneNumberInput
@@ -1235,7 +1260,7 @@ export default function UpdateEmployeeForm() {
                             onChange={setSpousePhoneInput}
                             setError={setSpousePhoneError}
                           />
-                                            {/* <PhoneNumberInput
+                          {/* <PhoneNumberInput
                     label="Phone Number"
                     required
                     value={nextOfKinFormData.phone_number || ""}
@@ -1338,7 +1363,7 @@ export default function UpdateEmployeeForm() {
                     <h4 className="text-lg font-medium text-gray-800">
                       Emergency Contact(s) / Next of kin
                     </h4>
-                                        <Button
+                    <Button
                       type="button"
                       onClick={() => setIsNextOfKinDialogOpen(true)}
                       className="rounded-xl !bg-gray-900 !text-white"
@@ -1394,7 +1419,6 @@ export default function UpdateEmployeeForm() {
                       </div>
                     ))}
                   </div>
-
                 </div>
 
                 {/* Education Section */}
@@ -1403,7 +1427,7 @@ export default function UpdateEmployeeForm() {
                     <h4 className="text-lg font-medium text-gray-800">
                       Education Background / Training
                     </h4>
-                                        <Button
+                    <Button
                       type="button"
                       onClick={() => setIsEducationDialogOpen(true)}
                       className="rounded-xl !bg-gray-900 !text-white"
@@ -1414,53 +1438,55 @@ export default function UpdateEmployeeForm() {
                   </div>
 
                   <div className="space-y-3">
-                     {educations.map((edu) => (
-                       <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
-                         <div className="flex items-start justify-between">
-                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
-                             <div>
-                               <span className="text-gray-600 block">Qualification</span>
- 
-                               <span className="font-medium">{edu.name}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Institute</span>
-                               <span className="font-medium">{edu.institute}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Year</span>
-                               <span className="font-medium">{edu.year}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Award</span>
-                               <span className="font-medium">{qualifications.find(qual => qual.id === edu.qualification_id)?.name || ""}</span>
-                             </div>
-                           </div>
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <Button variant="ghost" size="sm">
-                                 <MoreHorizontal className="w-4 h-4" />
-                               </Button>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuContent align="end">
-                               <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
-                                 <Edit className="w-4 h-4 mr-2" />
-                                 Edit
-                               </DropdownMenuItem>
-                               <DropdownMenuItem
-                                 onClick={() => handleDeleteEducation(edu.id)}
-                                 className="text-red-600"
-                               >
-                                 <Trash2 className="w-4 h-4 mr-2" />
-                                 Delete
-                               </DropdownMenuItem>
-                             </DropdownMenuContent>
-                           </DropdownMenu>
-                         </div>
-                       </div>
-                     ))}
-                  </div>
+                    {educations.map((edu) => (
+                      <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                            <div>
+                              <span className="text-gray-600 block">Qualification</span>
 
+                              <span className="font-medium">{edu.name}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Institute</span>
+                              <span className="font-medium">{edu.institute}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Year</span>
+                              <span className="font-medium">{edu.year}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Award</span>
+                              <span className="font-medium">
+                                {qualifications.find((qual) => qual.id === edu.qualification_id)
+                                  ?.name || ""}
+                              </span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteEducation(edu.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1488,7 +1514,9 @@ export default function UpdateEmployeeForm() {
                   Position *
                 </Label>
                 <JobPositionSearchableSelect
-                defaultLabel={selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name}
+                  defaultLabel={
+                    selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name
+                  }
                   setPositions={setPositions}
                   value={[formData.position.toString() || ""]}
                   onValueChange={(values) => {
@@ -1497,7 +1525,9 @@ export default function UpdateEmployeeForm() {
                     }
                   }}
                 />
-                {!formData.position && <p className="text-red-400 text-xs">Job position is required</p>}
+                {!formData.position && (
+                  <p className="text-red-400 text-xs">Job position is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1539,7 +1569,9 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-                                {!formData.work_type && <p className="text-red-400 text-xs">Work type is required</p>}
+                {!formData.work_type && (
+                  <p className="text-red-400 text-xs">Work type is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1581,7 +1613,9 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-                {!formData.employee_type && <p className="text-red-400 text-xs">Employee type is required</p>}
+                {!formData.employee_type && (
+                  <p className="text-red-400 text-xs">Employee type is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1646,7 +1680,7 @@ export default function UpdateEmployeeForm() {
             <div className="space-y-4">
               <div className="flex items-center justify-start gap-8">
                 <h4 className="text-lg font-medium text-gray-800">Work Experience</h4>
-                                <Button
+                <Button
                   type="button"
                   onClick={() => setIsWorkExperienceDialogOpen(true)}
                   className="rounded-xl !bg-gray-900 !text-white"
@@ -1702,8 +1736,6 @@ export default function UpdateEmployeeForm() {
                   </div>
                 ))}
               </div>
-
-
             </div>
           </div>
         );
@@ -1725,8 +1757,9 @@ export default function UpdateEmployeeForm() {
                     }
                   }}
                 />
-                {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>}
-
+                {!bankAccountFormData.bank_id && (
+                  <p className="text-red-400 text-xs">Please select a bank</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1741,8 +1774,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
-                {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>}
-
+                {!bankAccountFormData.account_name && (
+                  <p className="text-red-400 text-xs">Please set a bank account name</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1757,8 +1791,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
-                 {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>}
-
+                {!bankAccountFormData.account_number && (
+                  <p className="text-red-400 text-xs">A bank account number is required</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -1771,8 +1806,16 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
                 />
-                {!formData.nssf_no && <p className="text-red-400 text-xs">A National Social Security Fund number is required</p>}
-
+                {!formData.nssf_no && (
+                  <p className="text-red-400 text-xs">
+                    A National Social Security Fund number is required
+                  </p>
+                )}
+                {formData.nssf_no.length >= 13 && (
+                  <p className="text-red-400 text-xs">
+                    National Social Security Fund number can not exceed 12 characters
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1786,9 +1829,16 @@ export default function UpdateEmployeeForm() {
                   className="h-12 rounded-2xl"
                   max={12}
                 />
-                                {!formData.tin && <p className="text-red-400 text-xs">A Tax Identification Number number is required</p>}
-                {formData.tin.length > 12 && <p className="text-red-400 text-xs">Tax Identification Number number cannot exceed 12 characters</p>}
-              
+                {!formData.tin && (
+                  <p className="text-red-400 text-xs">
+                    A Tax Identification Number number is required
+                  </p>
+                )}
+                {formData.tin.length > 12 && (
+                  <p className="text-red-400 text-xs">
+                    Tax Identification Number number cannot exceed 12 characters
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1802,8 +1852,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Salary"
                   className="h-12 rounded-2xl"
                 />
-                {!formData.salary && <p className="text-red-400 text-xs">Employee Salary is required</p>}
-
+                {!formData.salary && (
+                  <p className="text-red-400 text-xs">Employee Salary is required</p>
+                )}
               </div>
             </div>
           </div>
@@ -2189,30 +2240,36 @@ export default function UpdateEmployeeForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eduAward">Award</Label>
-                      <Select
-                        value={educationFormData.qualification_id.toString()}
-                        onValueChange={(value: string) => setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))}
-                      >
-                        <SelectTrigger className="h-12 rounded-2xl">
-                          <SelectValue placeholder="Select Gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {qualifications.map((qual:IQualificationAward, idx) => (
-                            <SelectItem key={idx} value={qual.id.toString()}>
-                              {qual.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <Select
+                    value={educationFormData.qualification_id.toString()}
+                    onValueChange={(value: string) =>
+                      setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))
+                    }
+                  >
+                    <SelectTrigger className="h-12 rounded-2xl">
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {qualifications.map((qual: IQualificationAward, idx) => (
+                        <SelectItem key={idx} value={qual.id.toString()}>
+                          {qual.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
-
                 <Button
                   type="button"
                   onClick={handleAddEducation}
                   className=" text-white rounded-full w-full"
-                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institute || !educationFormData.year}
+                  disabled={
+                    !educationFormData.qualification_id ||
+                    !educationFormData.name ||
+                    !educationFormData.institute ||
+                    !educationFormData.year
+                  }
                 >
                   {editingEducation ? "Update Education" : "Add Education Background"}
                 </Button>

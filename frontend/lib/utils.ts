@@ -145,6 +145,7 @@ import {
   IQualificationAward,
   IProject,
   IProjectFormData,
+  IEmployeeBankAccountFormData,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -1490,8 +1491,8 @@ export const updateEmployee = async ({
         formData.append(`work_experiences[${index}].reason_of_leave`, exp.reason_of_leave || "")
       })
     } else if (key === "bank_accounts" && Array.isArray(value)) {
-      value.forEach((bank: IEmployeeBankAccount, index) => {
-        formData.append(`bank_accounts[${index}].bank_id`, bank.bank.toString())
+      value.forEach((bank: IEmployeeBankAccountFormData, index) => {
+        formData.append(`bank_accounts[${index}].bank_id`, bank.bank_id.toString())
         formData.append(`bank_accounts[${index}].account_number`, bank.account_number || "")
         formData.append(`bank_accounts[${index}].account_name`, bank.account_name || "")
       })
