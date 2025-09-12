@@ -11,7 +11,7 @@ import logging
 from asgiref.sync import sync_to_async
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
-from typing import Optional
+from typing import Optional, List, Dict
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -48,38 +48,28 @@ def add_notification(user_id: int, message: str) -> None:
         print(f"❌ Redis error in add_notification: {str(e)}")
         raise
 
-def get_notification(user_id: int) -> Optional[dict]:
-    """Retrieve the oldest unread notification for the user."""
+def get_notifications(user_id: int) -> List[Dict]:
+    """Retrieve all notifications for the user without marking as read."""
     try:
-        # Get all notifications for the user
         notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
         queue_length = len(notifications)
         print(f"🔎 Checking queue for user {user_id}, queue length: {queue_length}")
         
-        # Check for unread notifications
-        read_notifications_key = f"read_notifications:{user_id}"
-        for notification in notifications:
-            notification_data = json.loads(notification)
-            notification_id = notification_data['id']
-            # Check if notification was already read
-            if not redis_client.sismember(read_notifications_key, notification_id):
-                print(f"📥 Retrieved notification for user {user_id}: {notification}")
-                # Mark as read
-                redis_client.sadd(read_notifications_key, notification_id)
-                # Set TTL of 24 hours for read notifications set
-                redis_client.expire(read_notifications_key, 86400)
-                return notification_data
-        print(f"❌ No unread notifications for user {user_id}")
-        return None
+        if not notifications:
+            print(f"❌ No notifications for user {user_id}")
+            return []
+        
+        notification_list = [json.loads(notification) for notification in notifications]
+        print(f"📥 Retrieved {len(notification_list)} notifications for user {user_id}")
+        return notification_list
     except redis.RedisError as e:
-        print(f"❌ Redis error in get_notification: {str(e)}")
-        return None
+        print(f"❌ Redis error in get_notifications: {str(e)}")
+        return []
 
 def cleanup_queue(user_id: int) -> None:
-    """Delete the user's notification queue and read notifications in Redis."""
+    """Delete the user's notification queue in Redis."""
     try:
         redis_client.delete(f"notifications:{user_id}")
-        redis_client.delete(f"read_notifications:{user_id}")
         print(f"🧹 Cleaning up queue for user {user_id}")
     except redis.RedisError as e:
         print(f"❌ Redis error in cleanup_queue: {str(e)}")
@@ -110,10 +100,13 @@ async def sse_notifications(request):
             last_heartbeat = time.time()
 
             while True:
-                notif = await sync_to_async(lambda: get_notification(user_id))()
-                if notif:
-                    print(f"📤 Sending notification to SSE client {user_id}: {notif}")
-                    yield f"data: {json.dumps(notif)}\n\n"
+                notifications = await sync_to_async(lambda: get_notifications(user_id))()
+                if notifications:
+                    for notification in notifications:
+                        print(f"📤 Sending notification to SSE client {user_id}: {notification}")
+                        yield f"data: {json.dumps(notification)}\n\n"
+                else:
+                    print(f"❌ No notifications for user {user_id}")
 
                 current_time = time.time()
                 if current_time - last_heartbeat > 10:
@@ -136,4 +129,40 @@ async def sse_notifications(request):
         print(f"❌ Error in SSE view: {str(e)}")
         if user_id is not None:
             await sync_to_async(lambda: cleanup_queue(user_id))()
+        return HttpResponse(f"Error: {str(e)}", status=500)
+
+@csrf_exempt
+async def mark_notification_read(request):
+    """Mark a notification as read by removing it from the queue."""
+    try:
+        authenticator = JWTAuthentication()
+        user_auth_tuple = await sync_to_async(authenticator.authenticate)(request)
+        if user_auth_tuple is None:
+            return HttpResponse("Unauthorized", status=401)
+
+        user, _ = user_auth_tuple
+        user_id = await sync_to_async(lambda: user.id)()
+        data = json.loads(request.body)
+        notification_id = data.get('notification_id')
+
+        if not notification_id:
+            return HttpResponse("Missing notification_id", status=400)
+
+        try:
+            notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+            for i, notification in enumerate(notifications):
+                notification_data = json.loads(notification)
+                if notification_data['id'] == notification_id:
+                    redis_client.lrem(f"notifications:{user_id}", 1, notification)
+                    print(f"✅ Removed notification {notification_id} for user {user_id}")
+                    break
+            else:
+                print(f"❌ Notification {notification_id} not found for user {user_id}")
+            return HttpResponse(status=200)
+        except redis.RedisError as e:
+            print(f"❌ Redis error in mark_notification_read: {str(e)}")
+            return HttpResponse(f"Error: {str(e)}", status=500)
+
+    except Exception as e:
+        print(f"❌ Error in mark_notification_read: {str(e)}")
         return HttpResponse(f"Error: {str(e)}", status=500)

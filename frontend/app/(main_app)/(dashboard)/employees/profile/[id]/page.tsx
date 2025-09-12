@@ -712,7 +712,7 @@ export default function EmployeeProfile() {
                                   </div>
                                 )}
 
-                                {employee.spouse && (
+                                {employee.spouse && employee.marital_status == "married" && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
                                       Spouse

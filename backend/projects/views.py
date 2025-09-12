@@ -11,10 +11,12 @@ from rest_framework.permissions import IsAuthenticated
 from institution.models import Institution
 from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse
-from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
+from django.db.models import Count, Q
 from django.db import transaction
 from utilities.sortable_api import SortableAPIMixin
+from django.utils import timezone
+
 
 
 
@@ -327,3 +329,181 @@ class TaskTimeSheetView(APIView):
             task_timesheet.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class DashboardAnalyticsView(APIView):
+    @extend_schema(
+        tags=['Dashboard'],
+        summary='Retrieve dashboard analytics for user institution',
+        description='Provides analytics data for projects and tasks filtered by the user\'s institution, including counts by status, priority, and other metrics.',
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'projects': {
+                        'type': 'object',
+                        'properties': {
+                            'total': {'type': 'integer'},
+                            'by_status': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'status': {'type': 'string'},
+                                        'count': {'type': 'integer'}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    'tasks': {
+                        'type': 'object',
+                        'properties': {
+                            'total': {'type': 'integer'},
+                            'by_status': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'status': {'type': 'string'},
+                                        'count': {'type': 'integer'}
+                                    }
+                                }
+                            },
+                            'by_priority': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'priority': {'type': 'string'},
+                                        'count': {'type': 'integer'}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    'active_projects': {'type': 'integer'},
+                    'overdue_tasks': {'type': 'integer'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                'Success Response',
+                value={
+                    'projects': {
+                        'total': 5,
+                        'by_status': [
+                            {'status': 'not_started', 'count': 2},
+                            {'status': 'in_progress', 'count': 2},
+                            {'status': 'completed', 'count': 1},
+                            {'status': 'on_hold', 'count': 0},
+                            {'status': 'cancelled', 'count': 0}
+                        ]
+                    },
+                    'tasks': {
+                        'total': 15,
+                        'by_status': [
+                            {'status': 'not_started', 'count': 6},
+                            {'status': 'in_progress', 'count': 5},
+                            {'status': 'completed', 'count': 3},
+                            {'status': 'on_hold', 'count': 1}
+                        ],
+                        'by_priority': [
+                            {'priority': 'low', 'count': 3},
+                            {'priority': 'medium', 'count': 7},
+                            {'priority': 'high', 'count': 4},
+                            {'priority': 'urgent', 'count': 1}
+                        ]
+                    },
+                    'active_projects': 4,
+                    'overdue_tasks': 2
+                }
+            ),
+            OpenApiExample(
+                'Error Response',
+                value={
+                    'error': 'User has no associated institution'
+                },
+                status_codes=['400']
+            )
+        ]
+    )
+    def get(self, request):
+        # Get user's institution
+        institution = getattr(request.user.profile, 'institution', None)
+        if not institution:
+            return Response({'error': 'User has no associated institution'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Project analytics filtered by institution
+        project_counts = Project.objects.filter(
+            deleted_at__isnull=True,
+            institution=institution
+        ).aggregate(total=Count('id'))
+        project_status_counts = Project.objects.filter(
+            deleted_at__isnull=True,
+            institution=institution
+        ).values('project_status').annotate(count=Count('id'))
+        active_projects = Project.objects.filter(
+            deleted_at__isnull=True,
+            institution=institution
+        ).exclude(project_status__in=['completed', 'cancelled']).count()
+
+        # Task analytics filtered by institution
+        task_counts = Task.objects.filter(
+            deleted_at__isnull=True,
+            project__institution=institution
+        ).aggregate(total=Count('id'))
+        task_status_counts = Task.objects.filter(
+            deleted_at__isnull=True,
+            project__institution=institution
+        ).values('task_status').annotate(count=Count('id'))
+        task_priority_counts = Task.objects.filter(
+            deleted_at__isnull=True,
+            project__institution=institution
+        ).values('priority').annotate(count=Count('id'))
+        overdue_tasks = Task.objects.filter(
+            deleted_at__isnull=True,
+            project__institution=institution,
+            end_date__lt=timezone.now().date(),
+            task_status__in=['not_started', 'in_progress', 'on_hold']
+        ).count()
+
+        # Format response
+        response_data = {
+            'projects': {
+                'total': project_counts['total'],
+                'by_status': [
+                    {
+                        'status': status['project_status'],
+                        'count': status['count']
+                    } for status in project_status_counts
+                ]
+            },
+            'tasks': {
+                'total': task_counts['total'],
+                'by_status': [
+                    {
+                        'status': status['task_status'],
+                        'count': status['count']
+                    } for status in task_status_counts
+                ],
+                'by_priority': [
+                    {
+                        'priority': priority['priority'],
+                        'count': priority['count']
+                    } for priority in task_priority_counts
+                ]
+            },
+            'active_projects': active_projects,
+            'overdue_tasks': overdue_tasks
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)

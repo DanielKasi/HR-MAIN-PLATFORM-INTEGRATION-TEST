@@ -410,40 +410,43 @@ class EmployeeSerializer(BaseApprovableSerializer):
                     print(f"Created/Updated Child: {child_data}")
 
         # Update or create spouse
-        if spouse_data is not None:
+        if spouse_data is not None and spouse_data:  # Only process if spouse_data is non-empty
             print(f"Processing spouse data: {spouse_data}")
-            if spouse_data:  # Check if spouse_data is not empty
-                spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
-                try:
-                    spouse_serializer.is_valid(raise_exception=True)
-                    print(f"Spouse serializer validated data: {spouse_serializer.validated_data}")
-                    # Check if a spouse already exists
-                    existing_spouse = Spouse.objects.filter(employee=instance).first()
-                    if existing_spouse:
-                        print(f"Existing spouse found: {existing_spouse}")
-                        # Update existing spouse
-                        for attr, value in spouse_serializer.validated_data.items():
-                            setattr(existing_spouse, attr, value)
-                        existing_spouse.save()
-                        print(f"Updated Spouse: {spouse_serializer.validated_data}")
-                    else:
-                        print(f"No existing spouse, creating new one with data: {spouse_serializer.validated_data}")
-                        # Create new spouse
-                        Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
-                        print(f"Created Spouse: {spouse_serializer.validated_data}")
-                except serializers.ValidationError as ve:
-                    print(f"Spouse serializer validation error: {ve.detail}")
-                    raise serializers.ValidationError({"spouse": ve.detail})
-                except IntegrityError as ie:
-                    print(f"Database IntegrityError during spouse creation: {str(ie)}")
-                    raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
-                except Exception as e:
-                    print(f"Unexpected error during spouse update/create: {str(e)}")
-                    raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
-            elif instance.spouse:
-                # If spouse_data is empty but a spouse exists, delete it
-                instance.spouse.delete()
-                print("Deleted existing Spouse")
+            spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
+            try:
+                spouse_serializer.is_valid(raise_exception=True)
+                print(f"Spouse serializer validated data: {spouse_serializer.validated_data}")
+                existing_spouse = Spouse.objects.filter(employee=instance).first()
+                if existing_spouse:
+                    print(f"Existing spouse found: {existing_spouse}")
+                    # Update existing spouse
+                    for attr, value in spouse_serializer.validated_data.items():
+                        setattr(existing_spouse, attr, value)
+                    existing_spouse.save()
+                    print(f"Updated Spouse: {spouse_serializer.validated_data}")
+                else:
+                    print(f"No existing spouse, creating new one with data: {spouse_serializer.validated_data}")
+                    # Create new spouse
+                    Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
+                    print(f"Created Spouse: {spouse_serializer.validated_data}")
+            except serializers.ValidationError as ve:
+                print(f"Spouse serializer validation error: {ve.detail}")
+                raise serializers.ValidationError({"spouse": ve.detail})
+            except IntegrityError as ie:
+                print(f"Database IntegrityError during spouse creation: {str(ie)}")
+                raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
+            except Exception as e:
+                print(f"Unexpected error during spouse update/create: {str(e)}")
+                raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
+        elif spouse_data == {}:  # Explicitly handle empty spouse data
+            existing_spouse = Spouse.objects.filter(employee=instance).first()
+            if existing_spouse:
+                existing_spouse.delete()
+                print("Deleted existing Spouse due to empty spouse data")
+            else:
+                print("No spouse data provided and no existing spouse, skipping spouse processing")
+        else:
+            print("No spouse data provided, skipping spouse processing")
 
         # Update selected branches
         if selected_branches is not None:

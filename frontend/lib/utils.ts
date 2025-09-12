@@ -146,6 +146,7 @@ import {
   IProject,
   IProjectFormData,
   IEmployeeBankAccountFormData,
+  IProjectDashboard,
 } from "@/types/types.utils";
 
 import apiRequest from "./apiRequest";
@@ -4225,6 +4226,15 @@ export const getAttendanceDashboard = async () => {
     return response.data as IAttendanceDashboard;
   } catch (error) {
     // console.error("Failed to fetch recruitment dashboard:", error);
+    throw error;
+  }
+};
+
+export const getProjectDashboard = async () => {
+  try {
+    const response = await apiRequest.get("projects/analytics");
+    return response.data as IProjectDashboard;
+  } catch (error) {
     throw error;
   }
 };
