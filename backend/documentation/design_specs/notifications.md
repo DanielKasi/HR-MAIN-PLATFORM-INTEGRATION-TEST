@@ -41,22 +41,23 @@ uvicorn
 ### Setup
 
 1. **Install Redis:**
+
    - On Ubuntu: `sudo apt-get install redis-server`
    - On macOS: `brew install redis`
    - Verify Redis is running: `redis-cli ping` (should return PONG).
 
 2. **Configure Django:**
-   
+
    Add Redis settings to `settings.py`:
-   
+
    ```python
    REDIS_HOST = '127.0.0.1'
    REDIS_PORT = 6379
    REDIS_DB = 0
    ```
-   
+
    Configure JWT authentication in `settings.py`:
-   
+
    ```python
    REST_FRAMEWORK = {
        'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -64,11 +65,11 @@ uvicorn
        ),
    }
    ```
-   
+
    Ensure ASGI is enabled (e.g., asgi.py is set up for Uvicorn).
 
 3. **Run the Server:**
-   
+
    ```bash
    uvicorn your_project.asgi:application --host 0.0.0.0 --port 8000
    ```
@@ -102,7 +103,7 @@ The Django view handles three key functions:
 Notifications are stored in Redis as JSON:
 
 ```json
-{"id": 1757481510478, "message": "New approver group created successfully."}
+{ "id": 1757481510478, "message": "New approver group created successfully." }
 ```
 
 The SSE endpoint (`/api/communication/notifications/sse/`) streams events in the format:
@@ -196,7 +197,7 @@ The frontend uses Next.js to connect to the SSE endpoint, process incoming notif
 ### Setup
 
 1. **Create a Next.js Project:**
-   
+
    ```bash
    npx create-next-app@latest my-app
    cd my-app
@@ -204,9 +205,9 @@ The frontend uses Next.js to connect to the SSE endpoint, process incoming notif
    ```
 
 2. **Configure Environment:**
-   
+
    Add the API base URL to `.env.local`:
-   
+
    ```env
    NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
    ```
@@ -218,34 +219,36 @@ The frontend uses the EventSource API to connect to the SSE endpoint and a React
 #### Component: NotificationListener.js
 
 ```javascript
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export default function NotificationListener({ token, userId }) {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     // Initialize EventSource with JWT token
-    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL}/api/communication/notifications/sse/?token=${token}`);
+    const eventSource = new EventSource(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/communication/notifications/sse/?token=${token}`
+    );
 
     eventSource.onmessage = (event) => {
-    // console.log('Received SSE event:', event.data);
+      // console.log('Received SSE event:', event.data);
       try {
         const data = JSON.parse(event.data);
         if (data.message) {
-        // console.log('Notification:', data);
+          // console.log('Notification:', data);
           setNotifications((prev) => [...prev, data]);
         } else {
-        // console.log('Heartbeat or empty event:', data);
+          // console.log('Heartbeat or empty event:', data);
         }
       } catch (e) {
-        console.error('Error parsing SSE data:', e);
+        console.error("Error parsing SSE data:", e);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE error:', error);
+      console.error("SSE error:", error);
       eventSource.close();
       // Optional: Reconnect logic
       setTimeout(() => {
@@ -254,12 +257,12 @@ export default function NotificationListener({ token, userId }) {
     };
 
     eventSource.onopen = () => {
-    // console.log('SSE connection established');
+      // console.log('SSE connection established');
     };
 
     return () => {
       eventSource.close();
-    // console.log('SSE connection closed');
+      // console.log('SSE connection closed');
     };
   }, [token]);
 
@@ -287,11 +290,11 @@ export default function NotificationListener({ token, userId }) {
 Add the component to a page, e.g., `app/notifications/page.js`:
 
 ```javascript
-import NotificationListener from '@/components/NotificationListener';
+import NotificationListener from "@/components/NotificationListener";
 
 export default function NotificationsPage() {
   // Replace with actual JWT token and user ID from your auth system
-  const token = 'your_jwt_token_here';
+  const token = "your_jwt_token_here";
   const userId = 2;
 
   return (
@@ -314,15 +317,12 @@ The example uses Tailwind CSS for simplicity. Add Tailwind to your Next.js proje
 ```javascript
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './app/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
-  ],
+  content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {},
   },
   plugins: [],
-}
+};
 ```
 
 4. **Add to app/globals.css:**
@@ -351,14 +351,17 @@ module.exports = {
 1. **User Action**: A user sends a POST request to `/api/approval/approver-groups/` (e.g., via a form or API client).
 
 2. **Backend Queues Notification**:
+
    - The Django view validates the request and calls `add_notification(user_id, message)`.
    - The notification is stored in Redis under `notifications:{user_id}` with a 24-hour TTL.
 
 3. **SSE Connection**:
+
    - The Next.js frontend connects to `/api/communication/notifications/sse/` with a JWT token.
    - The Django SSE view authenticates the user and starts streaming events.
 
 4. **Notification Delivery**:
+
    - The backend checks Redis for unread notifications every 0.5 seconds.
    - Unread notifications are sent as SSE events and marked as read in `read_notifications:{user_id}`.
    - The frontend receives the event, parses it, and updates the UI.
@@ -374,21 +377,25 @@ module.exports = {
 ### Backend
 
 1. **Clear Redis:**
+
    ```bash
    redis-cli -h 127.0.0.1 -p 6379 -n 0 DEL notifications:2 read_notifications:2
    ```
 
 2. **Start Django:**
+
    ```bash
    uvicorn your_project.asgi:application --host 0.0.0.0 --port 8000
    ```
 
 3. **Create a Notification:**
+
    ```bash
    curl -X POST -H "Authorization: Bearer your_jwt_token_here" -H "Content-Type: application/json" -d '{"name": "Test Group"}' http://127.0.0.1:8000/api/approval/approver-groups/
    ```
 
    Check logs for:
+
    ```
    🔔 Adding notification for user 2: New approver group created successfully.
    ✅ Notification queued for user 2, queue length: 1
@@ -402,11 +409,13 @@ module.exports = {
 ### Frontend
 
 1. **Start Next.js:**
+
    ```bash
    npm run dev
    ```
 
 2. **Open Notifications Page:**
+
    - Navigate to http://localhost:3000/notifications.
    - Open the browser's developer console (F12) and check for:
      ```

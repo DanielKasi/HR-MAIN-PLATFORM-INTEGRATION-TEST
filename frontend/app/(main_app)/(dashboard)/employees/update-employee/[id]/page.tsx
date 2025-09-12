@@ -73,7 +73,6 @@ import type {
   IGender,
   IJobPosition,
   IBankAccount,
-  IEmployeeBankAccount,
   IMaritalStatus,
   IEmployee,
   IEmployeeEducationFormData,
@@ -145,7 +144,6 @@ export default function UpdateEmployeeForm() {
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
   const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
 
   const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
   const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
@@ -191,7 +189,6 @@ export default function UpdateEmployeeForm() {
   });
 
   const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccountFormData>({
-    id: "",
     bank_id: 0,
     account_number: "",
     account_name: "",
@@ -507,14 +504,19 @@ export default function UpdateEmployeeForm() {
         children: employee.children,
         next_of_kin: employee.next_of_kin,
         educations: employee.educations,
-        bank_accounts: employee.bank_accounts,
+        bank_accounts: employee.bank_accounts.map((acc) => ({
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        })),
         work_experiences: employee.work_experiences,
       });
 
+
+
       setChildren(employee.children);
-      setHasChildren(!!employee.has_children);
-      // Assuming next_of_kin is available or empty
-      setNextOfKins([]); // Adjust if backend provides next_of_kin
+      setHasChildren(employee.has_children);
+      setNextOfKins(employee.next_of_kin);
       setEducations(
         employee.educations.map((ed) => ({
           name: ed.name,
@@ -525,18 +527,17 @@ export default function UpdateEmployeeForm() {
         })),
       );
       setWorkExperiences(employee.work_experiences);
-      setBankAccounts(employee.bank_accounts);
-      if (employee.bank_accounts.length > 0) {
+      if (employee.bank_accounts.length) {
+        console.log("\n\n Setting bank account form data to : ", {bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,})
         setBankAccountFormData((prev) => ({
           ...prev,
-          bank_id: employee.bank_accounts[0].bank,
+          bank_id: Number(employee.bank_accounts[0].bank.id),
           account_number: employee.bank_accounts[0].account_number,
           account_name: employee.bank_accounts[0].account_name,
-          id: employee.bank_accounts[0].id,
         }));
       }
-
-      setHasChildren(employee.has_children);
 
       if (employee.spouse) {
         setSpouseFormData({
@@ -899,7 +900,6 @@ export default function UpdateEmployeeForm() {
         };
       }
 
-      console.log("\n\n\n Submitting data : ", dataToSubmit)
       await updateEmployee({
         employeeId: parseInt(employeeId),
         employeeData: dataToSubmit,
@@ -1273,7 +1273,7 @@ export default function UpdateEmployeeForm() {
                   </div>
                 </div>
 
-                <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                <RadioGroup defaultValue={hasChildren ? "Yes":"No"}  className="flex items-center justify-start gap-12">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem
                       value={"Yes"}
@@ -1748,16 +1748,22 @@ export default function UpdateEmployeeForm() {
                   Bank
                 </Label>
                 <BankAccountSearchableSelect
-                  // defaultLabel={}
+                  defaultLabel={
+                    thisEmployee?.bank_accounts.length
+                      ? thisEmployee.bank_accounts[0].bank.bank_fullname
+                      : ""
+                  }
                   setAccounts={setInstitutionBanks}
-                  selectedItems={[bankAccountFormData.bank_id || 0]}
+                  selectedItems={[
+                    thisEmployee?.bank_accounts.length ? thisEmployee.bank_accounts[0].bank.id : 0,
+                  ]}
                   onValueChange={(values) => {
                     if (values.length) {
                       setBankAccountFormData((prev) => ({...prev, bank_id: Number(values[0])}));
                     }
                   }}
                 />
-                {!bankAccountFormData.bank_id && (
+                {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (
                   <p className="text-red-400 text-xs">Please select a bank</p>
                 )}
               </div>
