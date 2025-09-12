@@ -5,10 +5,20 @@ FRONTEND_LINKS = {
     "Employee List": "/employees/employee-list",
     "Job Adverts": "/job-adverts",
     "Institution Assets": "/assets/assets",
+    "Institution Asset Allocations": "/assets/asset-allocations",
+    "Institution Asset Requests": "/assets/asset-requests",
     "Institution Branches": "/branches",
     "Institution Departments": "/admin/departments",
     "Institution Job Positions": "/job-positions",
     "Employee Terminations ": "/off-boarding/terminations",
+    "Employee Allowance": "/payroll/employee-allowance",
+    "Employee Deductions": "/payroll/employee-deductions",
+    "Employee Tax": "/payroll/employee-tax",
+    "Institution Taxes": "/admin/taxes",
+    "Institution Allowance Types": "/payroll/allowance-types",
+    "Institution Deduction Types": "/payroll/deduction-types",
+    "Institution Projects": "/projects",
+    "Employee Shifts Requests or Allocations": "/employees/shift-requests",
 }
 
 
@@ -42,6 +52,7 @@ def interpret_sql_results_with_groq(
 You are an AI assistant that interprets SQL query results for institution(HR) managers.
 
 Guidelines:
+Note: While responding to would be questions, look at the last messages in the memory provided.
 1. Provide concise, actionable business insights — no explanations or extra commentary.
 2. Do NOT expose sensitive or confidential information, this includes ids of different objects or data in the table.
 3. Use a professional but friendly tone.
@@ -53,6 +64,7 @@ Guidelines:
 9. Suggest **one or more frontend links** from this list if relevant: {list(FRONTEND_LINKS.values())}.
    If none are relevant, respond with an empty list `[]`.
 10. Return the response in this format:
+11. While responding to questions where user was indoubt of the answer, since you have access to previous chats, answers them like your sure ie Yes, .... like that, Try not expose IDs, consider using names.
 
 Insight: <your business insight here>
 Frontend Links: [<link1>, <link2>, ...]  # a JSON-style list
