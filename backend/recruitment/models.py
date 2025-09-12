@@ -330,13 +330,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        on_delete=models.PROTECT,
-        related_name="job_advert_applications_created",
-        null=True,
-        blank=True,
-    )
+
     reviewed_by = models.ForeignKey(
         "users.CustomUser",
         on_delete=models.SET_NULL,
@@ -501,13 +495,7 @@ class JobInterview(BaseApprovableModel):
         max_length=20, choices=status_choices, default="scheduled"
     )
 
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        on_delete=models.PROTECT,
-        related_name="job_interviews_created",
-        null=True,
-        blank=True,
-    )
+
 
     def __str__(self):
         return f"{self.job_position_application.applicant_name} - {self.interview_stage.name} ({self.status})"

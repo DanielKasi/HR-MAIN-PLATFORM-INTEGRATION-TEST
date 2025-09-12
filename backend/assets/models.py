@@ -140,11 +140,6 @@ class Asset(BaseApprovableModel):
         default="available",
     )
 
-    created_by = models.ForeignKey(
-        "users.Profile",
-        on_delete=models.CASCADE,
-        related_name="created_assets",
-    )
 
     current_holder = models.ForeignKey(
         "users.Profile",
@@ -178,7 +173,7 @@ class Asset(BaseApprovableModel):
             create_asset_history(
                 asset=self,
                 event_type="created",
-                performed_by=self.created_by,
+                performed_by=self.created_by.profile,
                 affected_user=None,
                 notes=f"Asset {self.asset_name} created with batch number {self.batch_number}.",
             )

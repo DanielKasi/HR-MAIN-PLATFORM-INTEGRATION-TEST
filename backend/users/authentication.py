@@ -4,11 +4,12 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 import jwt
 import json
-from .models import System, SystemType
 import logging
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+
+def some_function():
+    User = get_user_model()
 
 class CrossSystemAuthentication(BaseAuthentication):
     """
@@ -32,6 +33,7 @@ class CrossSystemAuthentication(BaseAuthentication):
         )
 
     def authenticate_external_system(self, request, api_key):
+        from .models import System
         try:
 
             system = self.get_system_from_api_key(api_key)
@@ -52,6 +54,7 @@ class CrossSystemAuthentication(BaseAuthentication):
             request.access_token_payload = access_token_payload
 
             return (user, access_token)
+        
 
         except AuthenticationFailed as e:
             raise
@@ -63,6 +66,7 @@ class CrossSystemAuthentication(BaseAuthentication):
             raise AuthenticationFailed(_('Authentication failed'))
 
     def get_system_from_api_key(self, api_key):
+        from .models import System
         return System.objects.select_related('system_type').get(
             api_key=api_key,
             system_type__is_active=True

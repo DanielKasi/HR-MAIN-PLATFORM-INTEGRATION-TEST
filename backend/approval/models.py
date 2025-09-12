@@ -1,4 +1,5 @@
 from django.db import models
+from communication.views import add_notification
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -106,6 +107,39 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
     class Meta:
         unique_together = ('approval_document', 'level')
         ordering = ['level']
+
+    def get_approver_users(self) -> set:
+        """Get all unique users who are approvers for this level (direct users + via roles)"""
+        from users.models import CustomUser, Profile, Role  # Import as needed
+        
+        users = set()
+        
+        for group in self.approvers.all():
+            # Direct users in group
+            for profile in group.users.all():
+                if profile.user and profile.user.is_active:
+                    users.add(profile.user)
+            
+            # Users via roles in group
+            for role in group.roles.all():
+                for user_role in role.user_roles.all():  
+                    if user_role.user and user_role.user.is_active:
+                        users.add(user_role.user)
+        
+        return users   
+
+    def get_overriders(self) -> set: 
+        users = set()
+        for group in self.overriders.all():
+            for profile in group.users.all():
+                if profile.user and profile.user.is_active:
+                    users.add(profile.user)
+
+            for role in group.roles.all():        
+                for user_role in role.user_roles.all():  
+                    if user_role.user and user_role.user.is_active:
+                        users.add(user_role.user)
+        return users                
 
 @receiver(pre_save, sender=ApprovalDocumentLevel)
 def set_approval_level(sender, instance, **kwargs):
@@ -229,12 +263,24 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 next_task.status = 'pending'
                 next_task.save(update_fields=["status", "updated_at"])
                 # Notify next approvers 
+                object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+                message = f"A new approval task is pending for you: Approve {object_desc} at level {next_task.level.level}."
+                for approver_user in next_task.level.get_approver_users():
+                    add_notification(
+                        user_id=approver_user.id,
+                        message=message
+                    )
             else:
                 self.approval.status = 'completed'
                 self.approval.save()
                 if self.approval.content_object:
                     self.approval.content_object.finish_workflow(self.approval)
                 # Notify approval completion
+                if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
+                    add_notification(
+                        user_id=self.approval.content_object.created_by.id,
+                        message=f"Your {self.approval.content_object._meta.verbose_name} has been approved."
+                    )
 
     def mark_rejected(self, user, comment: str = None):
         """Mark task as rejected - only approvers can do this"""
@@ -264,6 +310,12 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if self.approval.content_object:
                 self.approval.content_object.finish_workflow(self.approval)
             # Notify task rejection and terminated tasks
+            object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+            if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
+                add_notification(
+                    user_id=self.approval.content_object.created_by.id,
+                    message=f"Your approval request for {object_desc} has been rejected at level {self.level.level}.",
+                )
 
     def mark_overridden(self, user, comment: str = None):
         """Mark task as overridden - only overriders can do this"""
@@ -296,6 +348,12 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if self.approval.content_object:
                 self.approval.content_object.finish_workflow(self.approval)
             # Notify approval completion due to override
+            object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+            if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
+                add_notification(
+                    user_id=self.approval.content_object.created_by.id,
+                    message=f"Your approval request for {object_desc} has been overridden and completed at level {self.level.level}.",
+                )
 
     def can_user_approve_or_reject(self, user):
         """Check if user can approve or reject this task"""
@@ -401,6 +459,15 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                     status=task_status
                 )
             # Notify first task (optional)
+            first_task = approval.tasks.filter(status='pending').first()
+            if first_task:
+                object_desc = str(self) if self else "an object"
+                message = f"A new approval task is pending for you: Approve {object_desc} at level {first_task.level.level}."
+                for approver_user in first_task.level.get_approver_users():
+                    add_notification(
+                        user_id=approver_user.id,
+                        message=message
+                    )
 
     def confirm_create(self):
         if self.approval_status != 'under_creation':

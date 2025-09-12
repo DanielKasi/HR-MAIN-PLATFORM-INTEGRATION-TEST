@@ -128,20 +128,6 @@ class Event(BaseApprovableModel):
         help_text="If frequency is set, event will repeat until this date",
     )
 
-    created_by = models.ForeignKey(
-        "users.Profile",
-        on_delete=models.CASCADE,
-        related_name="created_events",
-        blank=True,
-        null=True,
-    )
-    updated_by = models.ForeignKey(
-        "users.Profile",
-        on_delete=models.CASCADE,
-        related_name="updated_events",
-        blank=True,
-        null=True,
-    )
 
     def __str__(self):
         return f"{self.title} on {self.date} at {self.institution.institution_name}"

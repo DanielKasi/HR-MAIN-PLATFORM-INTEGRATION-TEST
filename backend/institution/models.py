@@ -72,13 +72,6 @@ class Institution(SoftDeletableTimeStampedModel):
     )
     rejection_reason = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_institutions",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
 
     class Meta:
         unique_together = ("institution_owner", "institution_name")
@@ -271,20 +264,7 @@ class InstitutionBankType(BaseApprovableModel):
     bank_fullname = models.CharField(max_length=255, blank=False, null=False)
     bank_code = models.CharField(max_length=20, blank=False, null=False)
     br_code = models.CharField(max_length=20, blank=False, null=False)
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_institution_banks",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-    updated_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="updated_institution_banks",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+
 
     def __str__(self):
         return f"Type: {self.bank_fullname} FOR {self.institution.institution_name}"
@@ -300,20 +280,7 @@ class InstitutionBankAccount(BaseApprovableModel):
     account_name = models.CharField(max_length=255, blank=False, null=False)
     account_number = models.CharField(max_length=50, blank=False, null=False)
 
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_institution_bank_accounts",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-    updated_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="updated_institution_bank_accounts",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+
 
     class Meta:
         unique_together = ("institution_bank", "account_number")
@@ -343,20 +310,7 @@ class InstitutionWorkingDays(BaseApprovableModel):
         blank=True,
     )
 
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_institution_working_days",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-    updated_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="updated_institution_working_days",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+
 
     def __str__(self):
         return f"Working Days for {self.institution.institution_name}"
@@ -372,20 +326,6 @@ class InstitutionTax(BaseApprovableModel):
     tax_name = models.CharField(max_length=100, blank=False)
     tax_status = models.BooleanField(default=True)
 
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        on_delete=models.CASCADE,
-        related_name="created_taxes",
-        null=True,
-        blank=True,
-    )
-    updated_by = models.ForeignKey(
-        "users.CustomUser",
-        on_delete=models.CASCADE,
-        related_name="updated_taxes",
-        null=True,
-        blank=True,
-    )
 
     def __str__(self):
         return self.tax_name
@@ -417,20 +357,7 @@ class InstitutionTaxRule(BaseApprovableModel):
         max_digits=10, decimal_places=2, blank=True, null=True
     )
 
-    updated_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="updated_tax_rules",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_tax_rules",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+     
 
     def __str__(self):
         return self.tax_rule_name
@@ -460,13 +387,7 @@ class Branch(BaseApprovableModel):
     branch_email = models.EmailField(max_length=255, blank=True, null=True)
     branch_opening_time = models.TimeField(default=time(8, 0, 0))
     branch_closing_time = models.TimeField(default=time(23, 0, 0))
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_branches",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -629,7 +550,7 @@ class BranchShift(BaseApprovableModel):
         return self.branch.institution
 
 
-class UserBranch(models.Model):
+class UserBranch(SoftDeletableTimeStampedModel):
     user = models.ForeignKey(
         "users.CustomUser", related_name="attached_branches", on_delete=models.CASCADE
     )
@@ -639,13 +560,7 @@ class UserBranch(models.Model):
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_user_branches",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
+
 
     class Meta:
         unique_together = ["user", "branch"]
@@ -700,13 +615,7 @@ class Department(BaseApprovableModel):
     #     null=True,
     #     blank=True,
     # )
-    created_by = models.ForeignKey(
-        "users.CustomUser",
-        related_name="created_departments",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
+
 
     def __str__(self):
         return self.name
