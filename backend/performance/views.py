@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, OpenApiExample
 
 from settings.models import MeetingIntegration
 from utilities.pagination import CustomPageNumberPagination
@@ -16,6 +16,7 @@ from .serializers import (
     KeyResultSerializer, Feedback360Serializer, EmployeeBonusPointSerializer,
     QuestionTemplateSerializer, BonusPointSettingsSerializer, MeetingSerializer
 )
+from django.db.models import Q, Avg, Count, Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -1113,4 +1114,148 @@ def oauth2callback(request):
     integration.oauth_token = credentials.token
     integration.oauth_refresh_token = credentials.refresh_token
     integration.save()
-    return redirect('meeting_list')    
+    return redirect('meeting_list')   
+
+class AnalyticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                description="Analytics for all performance models.",
+                response=OpenApiTypes.OBJECT,
+                examples=[
+                    OpenApiExample(
+                        "Analytics Response",
+                        value={
+                            "periods": {
+                                "total": 5,
+                                "closed": 2,
+                                "open": 3,
+                            },
+                            "objectives": {
+                                "total": 10,
+                                "average_duration_days": 30.5,
+                            },
+                            "employee_objectives": {
+                                "total": 20,
+                                "status_distribution": {"not_started": 5, "on_track": 10, "closed": 5},
+                            },
+                            "key_results": {
+                                "total": 15,
+                                "average_target_value": 80.0,
+                            },
+                            "feedback_360": {
+                                "total": 25,
+                                "average_rating": 3.5,
+                            },
+                            "employee_bonus_points": {
+                                "total": 30,
+                                "total_points": 1500,
+                                "redeemed": 10,
+                            },
+                            "question_templates": {
+                                "total": 8,
+                                "category_distribution": {"general": 4, "performance_review": 2},
+                            },
+                            "bonus_point_settings": {
+                                "total": 12,
+                                "average_points": 50,
+                            },
+                            "meetings": {
+                                "total": 40,
+                                "mode_distribution": {"online": 20, "hybrid": 10, "physical": 10},
+                            },
+                        }
+                    )
+                ]
+            ),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Performance Management"],
+    )
+    def get(self, request):
+        user = request.user.employee
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Periods Analytics
+        periods = Period.objects.filter(institution=institution)
+        periods_analytics = {
+            "total": periods.count(),
+            "closed": periods.filter(is_closed=True).count(),
+            "open": periods.filter(is_closed=False).count(),
+        }
+
+        # Objectives Analytics
+        objectives = Objectives.objects.filter(institution=institution)
+        objectives_analytics = {
+            "total": objectives.count(),
+            "average_duration_days": objectives.aggregate(avg=Avg('duration'))['avg'].days if objectives.exists() else 0,
+        }
+
+        # EmployeeObjectives Analytics
+        employee_objectives = EmployeeObjectives.objects.filter(employee__institution=institution)
+        employee_objectives_analytics = {
+            "total": employee_objectives.count(),
+            "status_distribution": employee_objectives.values('status').annotate(count=Count('status')),
+        }
+
+        # KeyResults Analytics
+        key_results = KeyResult.objects.filter(institution=institution)
+        key_results_analytics = {
+            "total": key_results.count(),
+            "average_target_value": key_results.aggregate(avg=Avg('target_value'))['avg'] or 0,
+        }
+
+        # Feedback360 Analytics
+        feedback = Feedback360.objects.filter(period__institution=institution)
+        feedback_analytics = {
+            "total": feedback.count(),
+            "average_rating": feedback.aggregate(avg=Avg('rating'))['avg'] or 0,
+        }
+
+        # EmployeeBonusPoints Analytics
+        bonus_points = EmployeeBonusPoint.objects.filter(period__institution=institution)
+        bonus_points_analytics = {
+            "total": bonus_points.count(),
+            "total_points": bonus_points.aggregate(sum=Sum('points'))['sum'] or 0,
+            "redeemed": bonus_points.filter(redeemed=True).count(),
+        }
+
+        # QuestionTemplates Analytics
+        question_templates = QuestionTemplate.objects.filter(institution=institution)
+        question_templates_analytics = {
+            "total": question_templates.count(),
+            "category_distribution": question_templates.values('category').annotate(count=Count('category')),
+        }
+
+        # BonusPointSettings Analytics
+        bonus_point_settings = BonusPointSettings.objects.filter(institution=institution)
+        bonus_point_settings_analytics = {
+            "total": bonus_point_settings.count(),
+            "average_points": bonus_point_settings.aggregate(avg=Avg('points'))['avg'] or 0,
+        }
+
+        # Meetings Analytics
+        meetings = Meeting.objects.filter(institution=institution)
+        meetings_analytics = {
+            "total": meetings.count(),
+            "mode_distribution": meetings.values('mode').annotate(count=Count('mode')),
+        }
+
+        analytics = {
+            "periods": periods_analytics,
+            "objectives": objectives_analytics,
+            "employee_objectives": employee_objectives_analytics,
+            "key_results": key_results_analytics,
+            "feedback_360": feedback_analytics,
+            "employee_bonus_points": bonus_points_analytics,
+            "question_templates": question_templates_analytics,
+            "bonus_point_settings": bonus_point_settings_analytics,
+            "meetings": meetings_analytics,
+        }
+
+        return Response(analytics, status=status.HTTP_200_OK) 
