@@ -70,6 +70,9 @@ export interface ApprovalDocumentFormData {
 }
 
 export type ApprovalStatus = "ongoing" | "rejected" | "completed";
+
+export type ApprovalTaskType = "incoming" | "outgoing" | "all" | "open" | "critical" | "expired";
+
 export type ApprovalTaskStatus =
   | "not_started"
   | "pending"
@@ -128,5 +131,5 @@ export interface ContentTypeLite {
 }
 
 
-// Helper to build approvable read types without mutating existing interfaces
+
 export type Approvable<T> = T & IBaseApprovable;

@@ -1,10 +1,10 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {Button} from "@/components/ui/button";
-import {Badge} from "@/components/ui/badge";
-import {Textarea} from "@/components/ui/textarea";
-import {Label} from "@/components/ui/label";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   CheckCircle,
   Clock,
@@ -17,20 +17,17 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import {
-  approveApprovalTask,
-  overrideApprovalTask,
-  rejectApprovalTask,
-} from "@/lib/api/approvals/utils";
-import type {ApprovableEntityStatus, Approval, ApprovalTask} from "@/types/approvals.types";
-import {formatDate} from "@/lib/helpers";
-import {useSelector} from "react-redux";
-import {selectUser} from "@/store/auth/selectors";
+
+import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils";
+import type { ApprovableEntityStatus, Approval, ApprovalTask } from "@/types/approvals.types";
+
+import { useSelector } from "react-redux";
+import { selectUser } from "@/store/auth/selectors";
+import { formatTransactionDate } from "@/lib/helpers";
 
 interface ApprovalWorkflowProps {
   approvals: Approval[];
   instance_approval_status?: ApprovableEntityStatus;
-  // onApprovalUpdate?: (updatedApproval: Approval) => void;
   onRefresh?: () => void;
   className?: string;
 }
@@ -53,7 +50,7 @@ export function ApprovalWorkflow({
   const [isContentRevealead, setIsContentRevealed] = useState(true);
 
   const handleActionClick = (taskId: number, action: "approve" | "reject" | "override") => {
-    setShowCommentFor({taskId, action});
+    setShowCommentFor({ taskId, action });
     setComment("");
   };
 
@@ -68,11 +65,14 @@ export function ApprovalWorkflow({
     try {
       let updatedTask: ApprovalTask;
       if (showCommentFor.action === "approve") {
-        updatedTask = await approveApprovalTask(showCommentFor.taskId, comment || undefined);
+        updatedTask = await APPROVAL_TASKS_API.approve({
+          id: showCommentFor.taskId,
+          comment: comment,
+        });
       } else if (showCommentFor.action === "override") {
-        updatedTask = await overrideApprovalTask(showCommentFor.taskId, comment || undefined);
+        updatedTask = await APPROVAL_TASKS_API.override({ id: showCommentFor.taskId, comment });
       } else {
-        updatedTask = await rejectApprovalTask(showCommentFor.taskId, comment || undefined);
+        updatedTask = await APPROVAL_TASKS_API.reject({ id: showCommentFor.taskId, comment });
       }
       onRefresh?.();
 
@@ -244,22 +244,20 @@ export function ApprovalWorkflow({
                     <div className="flex flex-col items-start gap-3">
                       <div className="w-full p-3 flex items-start justify-start bg-gray-100 rounded-xl">
                         <div
-                          className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
-                            task.status === "approved"
-                              ? "bg-green-100 border-green-500"
-                              : task.status === "rejected"
-                                ? "bg-red-100 border-red-500"
-                                : "bg-blue-100 border-blue-400"
-                          }`}
+                          className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${task.status === "approved"
+                            ? "bg-green-100 border-green-500"
+                            : task.status === "rejected"
+                              ? "bg-red-100 border-red-500"
+                              : "bg-blue-100 border-blue-400"
+                            }`}
                         >
                           <span
-                            className={`text-xs md:text-sm font-semibold ${
-                              task.status === "approved"
-                                ? "text-green-700"
-                                : task.status === "rejected"
-                                  ? "text-red-700"
-                                  : "text-blue-700"
-                            }`}
+                            className={`text-xs md:text-sm font-semibold ${task.status === "approved"
+                              ? "text-green-700"
+                              : task.status === "rejected"
+                                ? "text-red-700"
+                                : "text-blue-700"
+                              }`}
                           >
                             {taskIndex + 1}
                           </span>
@@ -280,7 +278,7 @@ export function ApprovalWorkflow({
 
                           <p className="text-xs text-gray-500 mt-1">
                             {task.status === "approved" || task.status === "rejected"
-                              ? `${getStatusText(task.status)} - ${formatDate(task.updated_at)}`
+                              ? `${getStatusText(task.status)} - ${formatTransactionDate(task.updated_at)}`
                               : "Pending Approval"}
                             {task.approved_by_fullname && (
                               <span className="ml-1">by {task.approved_by_fullname}</span>
@@ -307,26 +305,26 @@ export function ApprovalWorkflow({
                                     ),
                                   ),
                               ) && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    className="bg-green-600 hover:bg-green-700 text-white text-xs !h-8 rounded-full "
-                                    onClick={() => handleActionClick(task.id, "approve")}
-                                    disabled={isProcessing}
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="text-xs !h-8 rounded-full"
-                                    onClick={() => handleActionClick(task.id, "reject")}
-                                    disabled={isProcessing}
-                                  >
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white text-xs !h-8 rounded-full "
+                                      onClick={() => handleActionClick(task.id, "approve")}
+                                      disabled={isProcessing}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="text-xs !h-8 rounded-full"
+                                      onClick={() => handleActionClick(task.id, "reject")}
+                                      disabled={isProcessing}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </>
+                                )}
 
                               {task.level.overriders_detail.find(
                                 (approver) =>
@@ -339,15 +337,15 @@ export function ApprovalWorkflow({
                                     ),
                                   ),
                               ) && (
-                                <Button
-                                  size="sm"
-                                  className="bg-blue-400 hover:bg-blue-700 text-white text-xs !h-8 rounded-full "
-                                  onClick={() => handleActionClick(task.id, "override")}
-                                  disabled={isProcessing}
-                                >
-                                  Override
-                                </Button>
-                              )}
+                                  <Button
+                                    size="sm"
+                                    className="bg-blue-400 hover:bg-blue-700 text-white text-xs !h-8 rounded-full "
+                                    onClick={() => handleActionClick(task.id, "override")}
+                                    disabled={isProcessing}
+                                  >
+                                    Override
+                                  </Button>
+                                )}
                             </div>
                           )}
 
@@ -359,11 +357,7 @@ export function ApprovalWorkflow({
                                 </Label>
                                 <Textarea
                                   id="comment"
-                                  placeholder={`Add a comment for ${showCommentFor.action === "approve"
-                                        ? "approving..."
-                                        : showCommentFor.action === "override"
-                                          ? "overriding"
-                                          : "rejecting..."} this step...`}
+                                  placeholder={`Add a comment for ${showCommentFor.action}ing this step...`}
                                   value={comment}
                                   onChange={(e) => setComment(e.target.value)}
                                   className="mt-1 text-sm resize-none"
@@ -375,15 +369,10 @@ export function ApprovalWorkflow({
                                   size="sm"
                                   onClick={handleSubmitAction}
                                   disabled={isProcessing}
-                                  className={`text-xs h-8 !rounded-full ${
-                                    showCommentFor.action === "approve"
-                                      ? "bg-green-600 hover:bg-green-700":
-
-                                      showCommentFor.action === "override"
-                                      ?
-                                      "bg-blue-400 hover:bg-blue-500"
-                                      : "bg-red-600 hover:bg-red-700"
-                                  }`}
+                                  className={`text-xs h-8 !rounded-full ${showCommentFor.action === "approve"
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : "bg-red-600 hover:bg-red-700"
+                                    }`}
                                 >
                                   {isProcessing ? (
                                     <>
@@ -391,11 +380,11 @@ export function ApprovalWorkflow({
                                       {showCommentFor.action === "approve"
                                         ? "Approving..."
                                         : showCommentFor.action === "override"
-                                          ? "Overriding"
+                                          ? ""
                                           : "Rejecting..."}
                                     </>
                                   ) : (
-                                    `Confirm ${showCommentFor.action === "approve" ?  "Approval": showCommentFor.action === "override" ? "Overriding"  : "Rejection"}`
+                                    `Confirm ${showCommentFor.action === "approve" ? "Approval" : "Rejection"}`
                                   )}
                                 </Button>
                                 <Button

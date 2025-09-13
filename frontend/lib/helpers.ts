@@ -9,6 +9,7 @@ import { store } from "@/store";
 import { toast } from "sonner";
 import { ICountry } from "@/types/types.utils";
 import { showErrorToast } from "./utils";
+import { INotification } from "@/store/notifications/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -306,5 +307,27 @@ export function forceUrlToHttps(url: string) {
   return url.replace(/^http:\/\//i, "https://");
 }
 
+
+
+export const showBrowserNotification = ({ notification }: { notification: INotification }) => {
+  if (Notification.permission !== 'granted') {
+    console.log('\n\n Notification permission not granted. Not showing notification. ');
+    return;
+  }
+  console.log('\n\n Showing browser notification for: ', notification);
+  const btn = document.createElement("button");
+  btn.style.display = "none";
+  btn.onclick = () => {
+    console.log('\n\n Click triggered for notification: ', notification);
+    new Notification(notification.message, {
+      body: `${notification.id}: Received at ${new Date(notification.timestamp).toLocaleString()} `,
+      icon: '/icon.png', // Optional: Replace with your app's icon
+      tag: notification.id, // Prevents duplicate notifications
+    });
+  };
+  document.body.appendChild(btn);
+  btn.click();
+  document.body.removeChild(btn);
+}
 
 

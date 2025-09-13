@@ -1,8 +1,8 @@
 
 export interface INotification {
-  id: string;
+  id?: string;
   message: string;
-  type: 'info' | 'success' | 'error' | 'warning';
+  type?: 'info' | 'success' | 'error' | 'warning';
   timestamp: string;
 }
 

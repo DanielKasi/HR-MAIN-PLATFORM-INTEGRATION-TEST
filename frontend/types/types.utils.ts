@@ -1,5 +1,5 @@
 import type { Branch, IUser, IUserInstitution, Role, UserProfile } from "."
-import type { IBaseApprovable } from "@/types/approvals.types"
+import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types"
 
 export type ContextType = "employee" | "department" | "job_position"
 export type CalculationMethod = "fixed" | "percentage"
@@ -1783,17 +1783,6 @@ export interface IAsset {
   asset_histories?: IAssetHistory[]
 }
 
-export interface ApprovalTask {
-  id: number
-  approval: number // Foreign key to Approval ID
-  level: number // Foreign key to ApprovalDocumentLevel ID
-  status: "not_started" | "pending" | "rejected" | "approved" | "terminated"
-  comment: string | null
-  approved_by: number | null // Foreign key to User ID
-  created_at: string // ISO datetime string
-  updated_at: string // ISO datetime string or null
-  deleted_at: string | null // ISO datetime string or null
-}
 
 export interface DashboardCategory {
   count: number
@@ -1863,59 +1852,6 @@ export interface IAssetAllocation {
   updated_at: string
 }
 
-export interface IAssetAllocationWorkflow extends IAssetAllocation {
-  workflow_status: string
-  current_step: number
-  total_steps: number
-  approval_tasks: IApprovalTask[]
-}
-
-export interface IApprovalTask {
-  id: number
-  step: IApprovalStep
-  status: "not_started" | "pending" | "completed" | "rejected"
-  comment: string | null
-  approved_by: any | null // Profile details
-  created_at: string
-  updated_at: string
-}
-
-export interface IApprovalStep {
-  id: number
-  step_name: string
-  level: number
-  roles: string[]
-  roles_details: {
-    name: string
-    id: number
-  }[]
-  approvers: string[]
-  approvers_details: {
-    id: string
-    approver_user: {
-      id: number
-      fullname: string
-      email: string
-    }
-  }[]
-  action: string
-  action_details: {
-    id: number
-    code: string
-    label: string
-    category: {
-      code: string
-      label: string
-    }
-  }
-}
-
-export interface IAssetAllocationFormData {
-  asset: number
-  allocated_to: number
-  responding_to_request?: number
-  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled"
-}
 
 // export interface IAssetReturn {
 //   id: number;
@@ -2063,53 +1999,6 @@ export interface IAssetAllocation {
   is_active: boolean
   created_at: string
   updated_at: string
-}
-
-export interface IAssetAllocationWorkflow extends IAssetAllocation {
-  workflow_status: string
-  current_step: number
-  total_steps: number
-  approval_tasks: IApprovalTask[]
-}
-
-export interface IApprovalTask {
-  id: number
-  step: IApprovalStep
-  status: "not_started" | "pending" | "completed" | "rejected"
-  comment: string | null
-  approved_by: any | null // Profile details
-  created_at: string
-  updated_at: string
-}
-
-export interface IApprovalStep {
-  id: number
-  step_name: string
-  level: number
-  roles: string[]
-  roles_details: {
-    name: string
-    id: number
-  }[]
-  approvers: string[]
-  approvers_details: {
-    id: string
-    approver_user: {
-      id: number
-      fullname: string
-      email: string
-    }
-  }[]
-  action: string
-  action_details: {
-    id: number
-    code: string
-    label: string
-    category: {
-      code: string
-      label: string
-    }
-  }
 }
 
 export interface IAssetAllocationFormData {
@@ -2428,7 +2317,7 @@ export interface IInstitutionSpotCheckSettingFormData extends ISpotCheckSetting 
 export type IProjectTaskStatus = "not_started" | "in_progress" | "completed" | "on_hold";
 export type IProjectTaskPriority = "low" | "medium" | "high" | "urgent";
 
-  export interface ITaskTimeSheet {
+export interface ITaskTimeSheet {
   id: number;
   task: number;
   start_time: string | null;
@@ -2452,7 +2341,7 @@ export interface IProjectTask {
   end_date: string;
   task_status: IProjectTaskStatus;
   priority: IProjectTaskPriority;
-    task_time_sheet:ITaskTimeSheet
+  task_time_sheet: ITaskTimeSheet
 }
 
 
