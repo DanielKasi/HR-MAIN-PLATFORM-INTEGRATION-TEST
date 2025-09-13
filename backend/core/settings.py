@@ -5,13 +5,13 @@ from pathlib import Path
 import dj_database_url
 from corsheaders.defaults import default_headers
 from urllib.parse import urlparse
+import base64
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY is missing in the .env file")
 
@@ -19,6 +19,17 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = ["*"]
 
+FIELD_ENCRYPTION_KEY = os.environ.get("FIELD_ENCRYPTION_KEY")
+if not FIELD_ENCRYPTION_KEY:
+    raise RuntimeError("FIELD_ENCRYPTION_KEY is missing. Set it in your .env file.")
+
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+ZOOM_API_KEY = os.getenv('ZOOM_API_KEY')
+ZOOM_API_SECRET = os.getenv('ZOOM_API_SECRET')
+TEAMS_CLIENT_ID = os.getenv('TEAMS_CLIENT_ID')
+TEAMS_CLIENT_SECRET = os.getenv('TEAMS_CLIENT_SECRET')
+TEAMS_TENANT_ID = os.getenv('TEAMS_TENANT_ID')
 
 INSTALLED_APPS = [
     "daphne",
@@ -60,7 +71,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "easyaudit",
     "communication",
-    'django.contrib.sites'
+    'django.contrib.sites',
 ]
 
 MIDDLEWARE = [

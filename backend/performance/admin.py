@@ -1,3 +1,11 @@
 from django.contrib import admin
+from .models import Period, KeyResult, BonusPointSettings, EmmployeeObjectives, EmployeeBonusPoint, Objectives, QuestionTemplate, Meeting
 
-# Register your models here.
+admin.site.register(Period)
+admin.site.register(KeyResult)
+admin.site.register(BonusPointSettings)
+admin.site.register(EmmployeeObjectives)
+admin.site.register(EmployeeBonusPoint)
+admin.site.register(Objectives)
+admin.site.register(QuestionTemplate)
+admin.site.register(Meeting)

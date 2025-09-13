@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import (
+    MeetingIntegrationListCreateView,
+    MeetingIntegrationDetailView,
     SystemConfigurationListCreateAPIView,
     SystemConfigurationRetrieveUpdateDeleteAPIView,
     SystemDayListVIew,
@@ -17,4 +19,6 @@ urlpatterns = [
         SystemConfigurationRetrieveUpdateDeleteAPIView.as_view(),
         name="system-configuration-retrieve-update-delete",
     ),
+    path("meeting-integration/", MeetingIntegrationListCreateView.as_view(), name="meeting-integration"),
+    path("meeting-integration/<int:pk>/", MeetingIntegrationDetailView.as_view())
 ]
