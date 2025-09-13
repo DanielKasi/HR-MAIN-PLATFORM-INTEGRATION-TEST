@@ -86,7 +86,7 @@ const BranchShiftsPage = () => {
   };
 
   const handleAddShift = async () => {
-    console.log("Adding shift with data:", { ...formData, branch: selectedBranch?.id });
+  // console.log("Adding shift with data:", { ...formData, branch: selectedBranch?.id });
     try {
       setLoading(true);
       const response = await apiRequest.post(`/institution/branch-shifts/${selectedBranch?.id}/`, {

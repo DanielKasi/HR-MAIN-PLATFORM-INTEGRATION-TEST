@@ -157,7 +157,7 @@ export default function CreateTerminationInitiationPage() {
                       onValueChange={(values) => {
                         const numberValues = values.map((v) => Number(v));
                         const uniqueValues = [...new Set(numberValues)];
-                        console.log("\n\n Values changed as : ", values);
+                      // console.log("\n\n Values changed as : ", values);
                         form.setValue("employee_id", uniqueValues[0].toString());
                       }}
                       disabled={loading}

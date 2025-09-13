@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
-import {
-  fetchApproverGroups,
-  createApproverGroup,
-  updateApproverGroup,
-  deleteApproverGroup,
-} from "@/lib/api/approvals/utils"
+
 import type { ApproverGroup, ApproverGroupFormData } from "@/types/approvals.types"
 import type { Role, UserProfile } from "@/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
@@ -19,11 +14,12 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { MultiSelectPopover } from "@/components/common/multi-select-popover"
 import FixedLoader from "@/components/fixed-loader"
-import { getRoles, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
 import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { APPROVER_GROUPS_API } from "@/lib/api/approvals/utils"
 
 export default function ApproverGroupsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution)
@@ -63,8 +59,9 @@ export default function ApproverGroupsPage() {
     try {
       setLoading(true)
       const [groupsRes, userProfiles, roles] = await Promise.all([
-        fetchApproverGroups(),
-        usersAPI.getProfilesByInstitutionId({ institutionId: currentInstitution.id }),
+        APPROVER_GROUPS_API.fetchAll(),
+        PROFILES_API.getPaginatedUserProfiles({}),
+
         getRoles({ institutionId: currentInstitution.id }),
       ])
 
@@ -117,17 +114,17 @@ export default function ApproverGroupsPage() {
 
   const handleSave = async () => {
     if (!currentInstitution) {
-      showErrorToast({error:null, defaultMessage: "Missing institution" })
+      showErrorToast({ error: null, defaultMessage: "Missing institution" })
       return
     }
 
     if (!groupName.trim()) {
-      showErrorToast({error:null,  defaultMessage: "Group name is required" })
+      showErrorToast({ error: null, defaultMessage: "Group name is required" })
       return
     }
 
     if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
-      showErrorToast({error:null,  defaultMessage: "Please select at least one user or role" })
+      showErrorToast({ error: null, defaultMessage: "Please select at least one user or role" })
       return
     }
 
@@ -143,11 +140,11 @@ export default function ApproverGroupsPage() {
       }
 
       if (editingGroup) {
-        const updatedGroup = await updateApproverGroup(editingGroup.id, groupData)
+        const updatedGroup = await APPROVER_GROUPS_API.update({ id: editingGroup.id, payload: groupData })
         setApproverGroups((prev) => prev.map((g) => (g.id === editingGroup.id ? updatedGroup : g)))
         showSuccessToast("Approver group updated successfully!")
       } else {
-        const newGroup = await createApproverGroup(groupData)
+        const newGroup = await APPROVER_GROUPS_API.create(groupData)
         setApproverGroups((prev) => [...prev, newGroup])
         showSuccessToast("Approver group created successfully!")
       }
@@ -170,7 +167,7 @@ export default function ApproverGroupsPage() {
 
     try {
       setDeleting(true)
-      await deleteApproverGroup(groupToDelete.id)
+      await APPROVER_GROUPS_API.delete({ id: groupToDelete.id })
       setApproverGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id))
       showSuccessToast("Approver group deleted successfully!")
     } catch (e: any) {
@@ -419,13 +416,19 @@ export default function ApproverGroupsPage() {
       </Dialog>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={openDialog} onOpenChange={
+        (open) => {
+          if (!open) {
+            closeDialog()
+          }
+          setOpenDialog(open)
+        }}>
+        <DialogContent className="sm:max-w-xl ">
           <DialogHeader>
             <DialogTitle>{editingGroup ? "Edit Approver Group" : "Create Approver Group"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 max-h-[80vh] overflow-y-auto">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -484,11 +487,8 @@ export default function ApproverGroupsPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
+          <DialogFooter className="space-x-2 mt-8">
+            <Button className="w-full rounded-full" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : editingGroup ? "Update Group" : "Create Group"}
             </Button>
           </DialogFooter>

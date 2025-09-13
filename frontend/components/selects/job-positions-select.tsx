@@ -5,11 +5,12 @@ import PaginatedSearchableSelect, { PaginatedSelectItem } from "@/components/gen
 import { getPaginatedJobPositions, getPaginatedJobPositionsFromUrl } from "@/lib/utils"
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useEffect, useState } from "react";
+
 
 
 export interface JobPositionSearchableSelectProps {
   value: (string | number)[];
+  defaultLabel?:string;
   onValueChange: (value: (string | number)[]) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -23,6 +24,7 @@ export interface JobPositionSearchableSelectProps {
 
 export const JobPositionSearchableSelect = ({
   value,
+  defaultLabel,
   onValueChange,
   disabled = false,
   showSelectedItems = true,
@@ -34,12 +36,14 @@ export const JobPositionSearchableSelect = ({
   setPositions,
 }: JobPositionSearchableSelectProps) => {
 
-  const currentInstitution = useSelector(selectSelectedInstitution);
-  const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+// console.log("\n\n The passed in position values are : ", value)
 
-  useEffect(() => {
-    setSelectedItems(value);
-  }, [value])
+  const currentInstitution = useSelector(selectSelectedInstitution);
+  // const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+
+  // useEffect(() => {
+  //   setSelectedItems(value);
+  // }, [value])
 
   const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
     if (!currentInstitution) { throw new Error("No intitution found !") }
@@ -52,9 +56,9 @@ export const JobPositionSearchableSelect = ({
 
 
   const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
-    if (!selectedItems.includes(itemId)) {
+    if (!value.includes(itemId)) {
       if (multiple) {
-        onValueChange([...selectedItems, itemId]);
+        onValueChange([...value, itemId]);
       } else {
         onValueChange([itemId]);
       }
@@ -62,7 +66,7 @@ export const JobPositionSearchableSelect = ({
   };
   const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
     if (multiple) {
-      onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
+      onValueChange(value.filter((id) => String(id) !== String(itemId)));
     }
   };
 
@@ -75,7 +79,7 @@ export const JobPositionSearchableSelect = ({
         getItemId={(position) => position.id}
         getItemLabel={(position) => position.name || ""}
         getItemValue={(position) => position.id.toString()}
-        selectedItems={selectedItems}
+        selectedItems={value}
         onSelect={handleSelect}
         onRemove={handleRemove}
         showSelectedItems={showSelectedItems}
@@ -87,6 +91,7 @@ export const JobPositionSearchableSelect = ({
         popoverClassName="w-full"
         hideSelectedFromList={hideSelectedFromList}
         setParentItems={setPositions}
+        defaultLabel={defaultLabel}
       />
     </div>
   );

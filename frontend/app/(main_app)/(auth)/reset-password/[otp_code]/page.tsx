@@ -155,7 +155,7 @@ export default function ResetPasswordPage() {
 //         router.push("/login?password_reset=true");
 //       }
 //     } catch (error: any) {
-//         console.log("Error resetting password : ", error)
+//       // console.log("Error resetting password : ", error)
 //       setErrorMessage(error.response?.data?.error || "Failed to reset password.");
 //     } finally {
 //       setIsSubmitting(false);

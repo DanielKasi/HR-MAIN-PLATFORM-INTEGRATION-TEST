@@ -32,7 +32,7 @@ export const attachEmployeeBranch = async ({
       }
     );
     return response.data;
-    console.log("branches:", response.data)
+  // console.log("branches:", response.data)
   } catch (error) {
     console.error("Error attaching branch to employee:", error);
     throw error;

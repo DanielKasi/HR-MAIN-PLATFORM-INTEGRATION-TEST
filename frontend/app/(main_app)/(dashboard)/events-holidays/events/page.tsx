@@ -35,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import FixedLoader from "@/components/fixed-loader";
 
 interface IEvent {
   id: number;
@@ -147,9 +148,7 @@ export default function EventsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-lg">Loading events...</div>
-      </div>
+           <FixedLoader/>
     );
   }
 

@@ -3,145 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f9;
-            color: #333333;
-        }
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            background-color: #2c3e50;
-            padding: 20px;
-            text-align: center;
-            color: #ffffff;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-        }
-        .content {
-            padding: 30px;
-        }
-        .content h2 {
-            color: #2c3e50;
-            font-size: 20px;
-            margin-top: 0;
-        }
-        .content p {
-            line-height: 1.6;
-            font-size: 16px;
-        }
-        .credentials-box {
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 20px;
-            margin: 20px 0;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .credentials-box p {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #3498db;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 16px;
-            margin: 20px 0;
-        }
-        .btn:hover {
-            background-color: #2980b9;
-        }
-        .security-notice {
-            background-color: #fff3cd;
-            border-left: 4px solid #f1c40f;
-            padding: 15px;
-            margin: 20px 0;
-            font-size: 14px;
-        }
-        .footer {
-            background-color: #f4f4f9;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666666;
-        }
-        .footer p {
-            margin: 5px 0;
-        }
-        @media only screen and (max-width: 600px) {
-            .container {
-                width: 100%;
-                margin: 10px;
-            }
-            .content {
-                padding: 20px;
-            }
-            .header h1 {
-                font-size: 20px;
-            }
-            .btn {
-                display: block;
-                text-align: center;
-            }
-        }
-    </style>
+    <title>Welcome Email</title>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Welcome to {{ company_name }}!</h1>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333333;">
+    <div style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+        <!-- Header -->
+        <div style="background-color: #2c3e50; padding: 20px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 24px;">Welcome to {{ company_name }}!</h1>
         </div>
-        <div class="content">
-            <h2>Hello, {{ fullname }}</h2>
-            <p>We're thrilled to have you join the {{ company_name }} team! Your employee account has been successfully created, and below are your login credentials to get started.</p>
+        
+        <!-- Content -->
+        <div style="padding: 30px;">
+            <h2 style="color: #2c3e50; font-size: 20px; margin-top: 0;">Hello, {{ fullname }}</h2>
+            <p style="line-height: 1.6; font-size: 16px;">We're thrilled to have you join the {{ company_name }} team! Your employee account has been successfully created, and below are your login credentials to get started.</p>
             
-            <div class="credentials-box">
-                <p><strong>Email:</strong> {{ email }}</p>
-                <p><strong>Temporary Password:</strong> {{ password }}</p>
+            <!-- Credentials Box -->
+            <div style="background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 20px; margin: 20px 0; font-family: 'Courier New', Courier, monospace;">
+                <p style="margin: 5px 0; font-size: 14px;"><strong>Email:</strong> {{ email }}</p>
+                <p style="margin: 5px 0; font-size: 14px;"><strong>Temporary Password:</strong> {{ password }}</p>
             </div>
             
-            <p><a href="{{ login_url }}" class="btn">Log In to Your Account</a></p>
+            <!-- Login Button -->
+            <p style="line-height: 1.6; font-size: 16px;">
+                <a href="{{ login_url }}" style="display: inline-block; padding: 12px 24px; background-color: #3498db; color: #ffffff; text-decoration: none; border-radius: 4px; font-size: 16px; margin: 20px 0;">Log In to Your Account</a>
+            </p>
             
-            <div class="security-notice">
-                <p><strong>🔐 Security Notice:</strong></p>
-                <ul>
+            <!-- Security Notice -->
+            <div style="background-color: #fff3cd; border-left: 4px solid #f1c40f; padding: 15px; margin: 20px 0; font-size: 14px;">
+                <p style="margin: 0 0 10px 0;"><strong>🔐 Security Notice:</strong></p>
+                <ul style="margin: 0; padding-left: 20px;">
                     <li>Please log in and change your password immediately.</li>
                     <li>Use a strong password with at least 8 characters, including numbers and symbols.</li>
                     <li>Do not share your login credentials with anyone.</li>
                 </ul>
             </div>
             
-            <h3>Next Steps:</h3>
-            <ol>
-                <li>Visit our <a href="{{ login_url }}">login page</a>.</li>
+            <!-- Next Steps -->
+            <h3 style="color: #2c3e50; font-size: 18px;">Next Steps:</h3>
+            <ol style="line-height: 1.6; font-size: 16px; padding-left: 20px;">
+                <li>Visit our <a href="{{ login_url }}" style="color: #3498db; text-decoration: none;">login page</a>.</li>
                 <li>Log in using the credentials above.</li>
                 <li>Change your password in your profile settings.</li>
                 <li>Complete your profile information.</li>
             </ol>
             
-            <p>If you encounter any issues or have questions, please contact our support team at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+            <p style="line-height: 1.6; font-size: 16px;">If you encounter any issues or have questions, please contact our support team at <a href="mailto:{{ support_email }}" style="color: #3498db; text-decoration: none;">{{ support_email }}</a>.</p>
             
-            <p>We look forward to working with you!</p>
-            <p>Best regards,<br>The {{ company_name }} Team</p>
+            <p style="line-height: 1.6; font-size: 16px;">We look forward to working with you!</p>
+            <p style="line-height: 1.6; font-size: 16px;">Best regards,<br>The {{ company_name }} Team</p>
         </div>
-        <div class="footer">
-            <p>This is an automated message. Please do not reply to this email.</p>
-            <p>For support, contact <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+        
+        <!-- Footer -->
+        <div style="background-color: #f4f4f9; padding: 20px; text-align: center; font-size: 12px; color: #666666;">
+            <p style="margin: 5px 0;">This is an automated message. Please do not reply to this email.</p>
+            <p style="margin: 5px 0;">For support, contact <a href="mailto:{{ support_email }}" style="color: #3498db; text-decoration: none;">{{ support_email }}</a>.</p>
         </div>
     </div>
 </body>

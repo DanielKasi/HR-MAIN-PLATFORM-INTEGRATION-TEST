@@ -1,15 +1,11 @@
 "use client";
 
-import React, {useEffect, useMemo, useState} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  fetchApprovalDocuments,
-  fetchApprovableModels,
-  deleteApprovalDocument,
-} from "@/lib/api/approvals/utils";
-import type {ApprovalDocument, ContentTypeLite} from "@/types/approvals.types";
-import {Button} from "@/components/ui/button";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+
+import type { ApprovalDocument, ContentTypeLite } from "@/types/approvals.types";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,20 +27,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
-import {MoreVertical} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {showErrorToast} from "@/lib/utils";
-import {Badge} from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Check, ChevronsUpDown, MoreVertical } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { showErrorToast } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { APPROVABLE_MODELS_API, APPROVAL_DOCUMENTS_API } from "@/lib/api/approvals/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 
 const actionsMapper: Array<{
-  value:string, label:string
+  value: string, label: string
 }> = [
-  {value:"create", label:"Creation"},
-  {value:"edit", label:"Update"},
-  {value:"delete", label:"Deletion"},
-]
+    { value: "create", label: "Creation" },
+    { value: "edit", label: "Update" },
+    { value: "delete", label: "Deletion" },
+  ]
 
 export default function ApprovalsDocumentsPage() {
   const router = useRouter();
@@ -57,11 +56,13 @@ export default function ApprovalsDocumentsPage() {
   // dialog state
   const [open, setOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
+  const [modelsInputValue, setModelsInputValue] = useState("");
 
   const refresh = async () => {
     const [docsRes, modelsRes] = await Promise.all([
-      fetchApprovalDocuments(),
-      fetchApprovableModels(),
+      APPROVAL_DOCUMENTS_API.fetchAll(),
+      APPROVABLE_MODELS_API.fetchAll(),
     ]);
     setDocs(docsRes?.results || []);
     setModels(modelsRes || []);
@@ -80,7 +81,7 @@ export default function ApprovalsDocumentsPage() {
       setLoading(true);
       await refresh();
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to load approval records"});
+      showErrorToast({ error: e, defaultMessage: "Failed to load approval records" });
       setError(e?.message || "Failed to load approval records");
     } finally {
       setLoading(false);
@@ -102,13 +103,13 @@ export default function ApprovalsDocumentsPage() {
   const onCreate = async () => {
     if (!selectedModelId) return;
     setOpen(false);
-    setTimeout(()=> router.push(`/admin/settings/approvals/create?content=${selectedModelId}`), 1000);
+    setTimeout(() => router.push(`/admin/settings/approvals/create?content=${selectedModelId}`), 1000);
   };
 
   const onDelete = async (id: number) => {
     if (!confirm("Delete this approval document?")) return;
-    const ok = await deleteApprovalDocument(id);
-    if (ok) refresh();
+    await APPROVAL_DOCUMENTS_API.delete({ id });
+    refresh();
   };
 
   return (
@@ -116,57 +117,89 @@ export default function ApprovalsDocumentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold capitalize">Objects Bearing approvals</h1>
         <div className="flex items-center justify-end gap-4">
-          <Button onClick={()=>router.push("/admin/settings/approvals/approver-groups/")} variant={"outline"} className="rounded-lg">Approver Groups</Button>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-lg">Create / Configure</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[520px] rounded-lg">
-            <DialogHeader>
-              <DialogTitle>Select Objects to configure</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div className="text-xs text-gray-600">
-                Everything that can bear an approval is listed.
+          <Button onClick={() => router.push("/admin/settings/approvals/approver-groups/")} variant={"outline"} className="rounded-lg">Approver Groups</Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-lg">Create / Configure</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[520px] rounded-lg">
+              <DialogHeader>
+                <DialogTitle>Select Objects to configure</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 py-2">
+                <div className="text-xs text-gray-600">
+                  Everything that can bear an approval is listed.
+                </div>
+
+                <Popover open={modelsDialogOpen} onOpenChange={setModelsDialogOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      aria-expanded={open}
+                      className={"w-full justify-start gap-8 rounded-xl"}
+                      disabled={models.length === 0}
+                      role="combobox"
+                      variant="outline"
+                    >
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      {models.find((m) => m.id === selectedModelId)?.name || "Select something that can bear an approval"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className={"w-full p-0"}>
+                    <Command shouldFilter={false}>
+                      <CommandInput placeholder={"Select something that can bear an approval"}
+                        value={modelsInputValue}
+                        onValueChange={(value) => {
+                          setModelsInputValue(value);
+                          setSelectedModelId(null);
+                        }}
+                      />
+
+                      <CommandEmpty>Nothing to configure</CommandEmpty>
+                      <CommandGroup>
+                        <CommandList>
+                          {models.filter(mod => mod.name.toLowerCase().includes(modelsInputValue.toLowerCase())).map((item) => {
+                            const isSelected = models.find((m) => m.id === selectedModelId)?.id === item.id;
+                            return (
+                              <CommandItem
+                                key={item.id}
+                                value={item.id.toString()}
+                                onSelect={() => setSelectedModelId(item.id)}
+                              >
+                                {isSelected &&
+                                  <Check
+                                    className={`
+                                    "mr-2 h-4 w-4 ${isSelected ? "opacity - 100" : "opacity - 0"}`
+                                    }
+                                  />
+                                }
+                                {item.name}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandList>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <Select onValueChange={(val) => setSelectedModelId(Number(val))}>
-                <SelectTrigger className="rounded-lg w-full">
-                  <SelectValue placeholder="Choose a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {models.map((m) => (
-                    <SelectItem key={m.id} value={`${m.id}`}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                  {models.length === 0 && (
-                    <div className="px-3 py-2 text-xs text-gray-500">
-                      Nothing to configure
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button className="rounded-lg" variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                className="rounded-lg"
-                onClick={onCreate}
-                disabled={!selectedModelId}
-              >
-                {"Continue"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter className="flex items-center">
+
+                <Button
+                  className="rounded-full w-full"
+                  onClick={onCreate}
+                  disabled={!selectedModelId}
+                >
+                  {"Continue"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
         <Input
-          className="rounded-lg w-full max-w-md"
+          className="rounded-2xl w-full max-w-md"
           placeholder="Search..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -191,18 +224,18 @@ export default function ApprovalsDocumentsPage() {
               <TableRow key={d.id}>
                 <TableCell>
                   <div className="flex items-center justify-start gap-4">
-                  {d.content_type_name || " -"}
+                    {d.content_type_name || " -"}
                     {d.actions.map((action, idx) => (
                       <Badge variant={"info"} className="capitalize" key={idx}>{actionsMapper.find(mapped_action => mapped_action.value === action.name)?.label || action.name}</Badge>
                     ))}
                   </div>
                 </TableCell>
-                <TableCell><div className="truncate text-xs md:text-sm">{d.description }</div> </TableCell>
+                <TableCell><div className="truncate text-xs md:text-sm">{d.description}</div> </TableCell>
                 <TableCell className="min-w-[10rem]">
                   <p className="text-center">
                     {d.levels?.length || 0}
                   </p>
-                  </TableCell>
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

@@ -20,37 +20,13 @@
 //   DropdownMenuTrigger,
 // } from "@/components/ui/dropdown-menu";
 // import {Badge} from "@/components/ui/badge";
-// import {useWebSocket} from "@/lib/WebSocketProvider";
 // import {selectUser} from "@/store/auth/selectors";
-// import {ApprovalStep} from "@/types";
+// import { ApprovalTask } from "@/types/approvals.types";
 
-// export interface ApiTask {
-//   id: number;
-//   step: ApprovalStep;
-//   updated_at: string;
-//   content_object: string;
-//   object_id: number;
-//   status: string;
-// }
 
-// export interface DisplayTask {
-//   id: number;
-//   title: string;
-//   description: string;
-//   time: string;
-//   link: string;
-//   type:
-//     | "product_approval"
-//     | "purchase_order_approval"
-//     | "stock_movement_to_branch"
-//     | "stock_movement_to_shelf"
-//     | "return_request"
-//     | "other";
-//   objectId: number;
-// }
 
 // export function TaskNotification() {
-//   const [tasks, setTasks] = useState<DisplayTask[]>([]);
+//   const [tasks, setTasks] = useState<ApprovalTask[]>([]);
 //   const router = useRouter();
 //   const currentUser = useSelector(selectUser);
 //   const {tasks: apiTasks, connected} = useWebSocket();
@@ -126,20 +102,6 @@
 //     setTasks(convertedTasks as any);
 //   }, [apiTasks, currentUser, connected]);
 
-//   // Show connection status
-//   // useEffect(() => {
-//   //   if (!connected) {
-//   //     toast({
-//   //       title: "Connection Status",
-//   //       description: "Reconnecting to notification service...",
-//   //       variant: "destructive",
-//   //     });
-//   //   }
-//   // }, [connected, toast]);
-
-//   // const toggleHover = () => {
-//   //   setIsHovered(!isHovered);
-//   // };
 
 //   const handleTaskClick = (link: string) => {
 //     router.push(link);

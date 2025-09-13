@@ -1,18 +1,18 @@
 "use client";
 
 import type React from "react";
-import {useState, useEffect, useRef} from "react";
-import {useRouter, usePathname, useSearchParams} from "next/navigation";
-import {ChevronDown, ChevronRight, Settings, User, LogOut, Menu, X} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { ChevronDown, ChevronRight, Settings, User, LogOut, Menu, X } from "lucide-react";
 import Image from "next/image";
-import {useSelector, useDispatch} from "react-redux";
-import {Icon} from "@iconify/react";
+import { useSelector, useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
 
-import type {IUserInstitution} from "../../../types";
-import {IEmployee} from "../../../types/types.utils";
-import {PERMISSION_CODES} from "@/constants";
-import {selectAttachedInstitutions} from "@/store/auth/selectors";
-import {Button} from "@/components/ui/button";
+import type { IUserInstitution } from "../../../types";
+import { IEmployee } from "../../../types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
+import { selectAttachedInstitutions } from "@/store/auth/selectors";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {useMobile} from "@/hooks/use-mobile";
-import {InstitutionBranchSelector} from "@/components/institution-branch-selector";
+import { useMobile } from "@/hooks/use-mobile";
+import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
 // import {TaskNotification} from "@/components/task-notification";
 import Modules from "@/components/modules";
 import {
@@ -46,16 +46,16 @@ import {
   userActivityDetected,
 } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
-import {hasPermission} from "@/lib/helpers";
+import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
 import CreateOrganisationWizard from "./create-organisation/page";
-import {selectSideBarOpened} from "@/store/miscellaneous/selectors";
-import {closeSideBar, openSideBar} from "@/store/miscellaneous/actions";
+import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
+import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
-import {employeeAPI, showErrorToast} from "@/lib/utils";
+import { employeeAPI, showErrorToast } from "@/lib/utils";
 import DashboardSideBar from "@/components/dashboard_components/dashboard-sidebar";
 
 export function hexToHSL(hex: string) {
@@ -95,7 +95,7 @@ export function hexToHSL(hex: string) {
   return `${h} ${s}% ${l}%`;
 }
 
-export default function DashboardLayout({children}: {children: React.ReactNode}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isMobile = useMobile();
   const [userRole, setUserRole] = useState<string | undefined>(undefined);
@@ -156,9 +156,9 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
       selectedInstitution &&
       selectedInstitution.institution_owner_id
     ) {
-      let role = selectedInstitution.institution_owner_id === currentUser.id ? "SuperUser" : "";
+      let role = selectedInstitution.institution_owner_id === currentUser.id ? "Super User" : "";
       if (!role && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
-        const matchingRole = currentUser.roles.find((r: {name: string}) => !!r.name);
+        const matchingRole = currentUser.roles.find((r: { name: string }) => !!r.name);
         if (matchingRole)
           role =
             matchingRole.name.charAt(0).toUpperCase() + matchingRole.name.slice(1).toLowerCase();
@@ -279,18 +279,16 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
 
         {/* Main Content Area */}
         <div
-          className={`flex-1 flex flex-col min-w-0 ${
-            !isMobile ? (isSideBarOpen ? "ml-64" : "ml-20") : ""
-          } transition-all duration-300`}
+          className={`flex-1 flex flex-col min-w-0 ${!isMobile ? (isSideBarOpen ? "ml-64" : "ml-20") : ""
+            } transition-all duration-300`}
         >
           {/* Header */}
           <div className="bg-white p-4 flex justify-between items-center border-b min-h-16 h-20 max-h-20">
             <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={onToggle}
-                className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${
-                  isMobile ? "" : ""
-                }`}
+                className={`mobile-menu-button w-8 h-8 z-[50] bg-transparent rounded-full flex items-center justify-center transition-colors text-gray-600 ${isMobile ? "" : ""
+                  }`}
               >
                 {isMobile ? (
                   <Menu className="w-4 h-4" />
@@ -336,14 +334,6 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                     </div>
                     {!isMobile && (
                       <>
-                        <div className="hidden md:block min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {currentUser?.fullname || "User"}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {userRole || "Staff"}
-                          </div>
-                        </div>
                         <ChevronDown className="h-4 w-4 hidden md:block flex-shrink-0" />
                       </>
                     )}
@@ -353,13 +343,18 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   align="end"
                   className="rounded-xl p-1 shadow-lg border border-gray-200"
                 >
-                  <DropdownMenuItem className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
+                  <DropdownMenuItem className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <div>
+                      <span className="text-sm inline-block font-medium truncate">
+                        {currentUser?.fullname || "User"}
+                      </span>
+                      <div className="text-xs text-gray-500 truncate">{userRole || "Staff"}</div>
+                    </div>
                   </DropdownMenuItem>
                   {isMounted && canViewSettings && (
                     <DropdownMenuItem
-                      className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                      className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                       onClick={() => router.push("/settings")}
                     >
                       <Settings className="mr-2 h-4 w-4" />
@@ -368,7 +363,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
                   )}
                   <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuItem
-                    className="rounded-lg hover:bg-gray-200 hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
+                    className="rounded-lg hover:bg-gray-200 cursor-pointer  hover:bg-opacity-20 active:bg-gray-200 active:bg-opacity-30 transition-all duration-200 focus:bg-gray-200 focus:bg-opacity-20 focus:outline-none my-1 px-3 py-2"
                     onClick={handleLogoutClick}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -399,19 +394,26 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </div>
 
         {/* Logout Dialog */}
-        <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <Dialog open={showLogoutDialog} onOpenChange={
+          (open) => {
+            if (!open) { handleCancelLogout() }
+            else {
+              setShowLogoutDialog(open)
+            }
+          }
+        }>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Confirm Logout</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="w-full text-center">Confirm Logout</DialogTitle>
+              <DialogDescription className="w-full text-center">
                 Are you sure you want to log out of your account?
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex space-x-2 sm:justify-end">
-              <Button type="button" variant="outline" onClick={handleCancelLogout}>
+            <DialogFooter className="flex space-x-2 justify-between gap-6">
+              <Button type="button" className="w-full rounded-full" variant="outline" onClick={handleCancelLogout}>
                 Cancel
               </Button>
-              <Button type="button" variant="default" onClick={handleLogout}>
+              <Button type="button" className="w-full rounded-full" variant="default" onClick={handleLogout}>
                 Logout
               </Button>
             </DialogFooter>
@@ -419,7 +421,7 @@ export default function DashboardLayout({children}: {children: React.ReactNode})
         </Dialog>
 
         {userIsLoading && <FixedLoader />}
-      </div>
+      </div >
     </>
   );
 }

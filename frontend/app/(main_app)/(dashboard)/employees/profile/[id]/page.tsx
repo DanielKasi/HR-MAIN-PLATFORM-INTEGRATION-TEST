@@ -109,7 +109,7 @@ export default function EmployeeProfile() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-  console.log("Spot check setting", spotcheckSetting);
+// console.log("Spot check setting", spotcheckSetting);
 
   // Memoized utility functions
   const formatDate = useCallback((dateString: string | null) => {
@@ -712,7 +712,7 @@ export default function EmployeeProfile() {
                                   </div>
                                 )}
 
-                                {employee.spouse && (
+                                {employee.spouse && employee.marital_status == "married" && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
                                       Spouse
@@ -752,7 +752,7 @@ export default function EmployeeProfile() {
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                       {employee.bank_accounts.map((account, idx) => (
                                         <div key={idx}>
-                                          {account.bank_id && (
+                                          {account.bank && (
                                             <p className="text-gray-800 font-medium break-words">
                                               {account.account_name}
                                             </p>
@@ -798,14 +798,6 @@ export default function EmployeeProfile() {
                                         </p>
                                       </div>
                                       <div className="flex items-center justiify-start gap-8">
-                                        <label className="text-xs text-[#848496]">
-                                          InstiYeartution
-                                        </label>
-                                        <p className="text-gray-800 font-medium capitalize">
-                                          {education.year}
-                                        </p>
-                                      </div>
-                                      <div className="flex items-center justiify-start gap-8">
                                         <label className="text-xs text-[#848496]">Year</label>
                                         <p className="text-gray-800 font-medium capitalize">
                                           {education.year}
@@ -814,7 +806,7 @@ export default function EmployeeProfile() {
                                       <div className="flex items-center justiify-start gap-8">
                                         <label className="text-xs text-[#848496]">Award</label>
                                         <p className="text-gray-800 font-medium capitalize">
-                                          {education.award}
+                                          {education.qualification.name}
                                         </p>
                                       </div>
                                     </div>

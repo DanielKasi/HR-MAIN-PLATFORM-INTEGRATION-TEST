@@ -36,6 +36,7 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
   // For non-paginated mode
   items?: PaginatedSelectItem<T>[];
   // Common props
+  defaultLabel?: string;
   selectedItems?: (string | number)[];
   onSelect: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
   onRemove: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
@@ -63,6 +64,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
   query,
   deps = [],
   items: staticItems = [],
+  defaultLabel,
   selectedItems = [],
   onSelect,
   onRemove,
@@ -103,33 +105,52 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     }
   }, [selectedItems, data]);
 
-  React.useEffect(()=> {
-  if (setParentItems) {
+  React.useEffect(() => {
+    if (setParentItems) {
       if (data?.results && data.next) {
         setParentItems(data.results);
       }
     }
-  }, [data])
-
+  }, [data]);
 
   // Fetch first page for paginated mode
+  // Immediate fetch on mount / deps change (preserve previous behavior)
   React.useEffect(() => {
     if (!paginated) return;
     if (!fetchFirstPage) return;
-    if (data && data.next) {
+    if (data && data.next && !search) {
       return;
     }
     setLoading(true);
-    console.log("\n\n Refetching first page with previous data : ", data, "Query :", query)
-    fetchFirstPage()
+    fetchFirstPage({search} as Q)
       .then((res) => {
         setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
-          setHasMore(!!res.next);
+        setHasMore(!!res.next);
       })
       .finally(() => setLoading(false));
-    // eslint-disable-next-line
   }, [...deps]);
 
+  // Debounced search: wait 1s after the user stops typing before refetching
+  React.useEffect(() => {
+    if (!paginated) return;
+    if (!fetchFirstPage) return;
+
+    const timer = setTimeout(() => {
+      // If we already have a next page and search is empty, skip refetch
+
+      setLoading(true);
+      fetchFirstPage({search} as Q)
+        .then((res) => {
+          setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
+          setHasMore(!!res.next);
+        })
+        .finally(() => setLoading(false));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+    // only debounce on search changes; intentionally exclude deps to avoid
+    // cancelling when the fetchFirstPage identity changes in parent
+  }, [search]);
 
   // Infinite scroll with intersection observer (using callback ref)
   React.useEffect(() => {
@@ -139,7 +160,9 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if(!hasMore){return}
+        if (!hasMore) {
+          return;
+        }
         // console.log("\n\n Trying to fetch with loading : ", loading, "And has more : ", hasMore, "Next url : ", data.next)
         if (entry.isIntersecting && !loading && hasMore) {
           setLoading(true);
@@ -147,7 +170,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
           fetchFromUrl({url: data.next!})
             .then((res) => {
               if (res && (!data.next || data.next !== res.next)) {
-                  setHasMore(!!res.next);
+                setHasMore(!!res.next);
                 setData((prev) => ({
                   ...res,
                   results: [...(prev?.results || []), ...res.results],
@@ -169,18 +192,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
     };
   }, [paginated, data?.next, fetchFromUrl, loading, sentinelNode]);
 
-  // Filtered items
-//   const allItems = paginated ? data?.results || [] : staticItems;
-//   const filteredItems = data?.results.filter((item) => {
-//     if (hideSelectedFromList && selectedItems.includes(getItemId(item))) return false;
-//     if (!search) return true;
-//     const itemLabel = getItemLabel(item);
-//     const itemValue = getItemValue(item);
-//     return (
-//       itemLabel.toLowerCase().includes(search.toLowerCase()) ||
-//       (itemValue && itemValue.toLowerCase().includes(search.toLowerCase()))
-//     );
-//   });
+
 
   const handleSelect = (itemId: string | number) => {
     const item = data?.results.find((i) => getItemId(i) === itemId);
@@ -199,40 +211,50 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
       <div className="py-1">
         {showSelectedItems && (
           <div className="flex items-center justify-start gap-2 flex-wrap ">
-            {data?.results
-              .filter((resItem) =>
-                selectedItems.find((item) => String(item) === String(getItemId(resItem))),
-              )
-              .map((itemData, idx) => {
-                const isSelected =
-                  selectedItems.includes(getItemId(itemData)) ||
-                  selectedItems.includes(String(getItemId(itemData)));
-                return (
-                  <span
-                    key={idx}
-                    className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
-                  >
-                    {getItemLabel(itemData)}
-                    {multiple && isSelected && onRemove && (
-                      <button
-                        className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(getItemId(itemData), itemData);
-                        }}
+            {!defaultLabel ? (
+              <>
+                {data?.results
+                  .filter((resItem) =>
+                    selectedItems.find((item) => String(item) === String(getItemId(resItem))),
+                  )
+                  .map((itemData, idx) => {
+                    const isSelected =
+                      selectedItems.includes(getItemId(itemData)) ||
+                      selectedItems.includes(String(getItemId(itemData)));
+                    return (
+                      <span
+                        key={idx}
+                        className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
                       >
-                        <X className="!h-3 !w-3 text-red-500" />
-                      </button>
-                    )}
-                  </span>
-                );
-              })}
+                        {getItemLabel(itemData)}
+                        {multiple && isSelected && onRemove && (
+                          <button
+                            className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemove(getItemId(itemData), itemData);
+                            }}
+                          >
+                            <X className="!h-3 !w-3 text-red-500" />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })}
+              </>
+            ) : (
+              <span className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs">
+                {defaultLabel}
+              </span>
+            )}
           </div>
         )}
       </div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+          type="button"
             aria-expanded={open}
             className={cn("w-full justify-between h-12 rounded-2xl", triggerClassName)}
             disabled={disabled}
@@ -244,7 +266,8 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
           </Button>
         </PopoverTrigger>
         <PopoverContent className={cn("w-full p-0", popoverClassName)}>
-          <Command>
+          {/* disable cmdk's internal filtering when using server-side search */}
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder={searchPlaceholder}
               value={search}
@@ -269,6 +292,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
                       {getItemLabel(item)}
                       {multiple && isSelected && onRemove && (
                         <button
+                        type="button"
                           className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
                           onClick={(e) => {
                             e.stopPropagation();

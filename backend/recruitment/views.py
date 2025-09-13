@@ -290,7 +290,6 @@ class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
         tags=["Recruitment"],
     )
     def post(self, request, institution_id):
-        print("Request body", request.data)
         serializer = JobAdvertApplicationSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

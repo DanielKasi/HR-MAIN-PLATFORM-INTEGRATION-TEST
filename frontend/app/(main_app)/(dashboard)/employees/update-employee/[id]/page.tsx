@@ -73,22 +73,19 @@ import type {
   IGender,
   IJobPosition,
   IBankAccount,
-  IEmployeeBankAccount,
   IMaritalStatus,
   IEmployee,
   IEmployeeEducationFormData,
   IQualificationAward,
+  IEmployeeBankAccountFormData,
 } from "@/types/types.utils";
 import {toast} from "sonner";
-import {selectEmployeeCreationForm} from "@/store/miscellaneous/selectors";
 import {useDispatch} from "react-redux";
-import {clearEmployeeForm, saveEmployeeForm} from "@/store/miscellaneous/actions";
 import {PERMISSION_CODES} from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import {Steps} from "@/components/generic/steps";
-import {createEmployee} from "@/lib/utils";
 import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
 import {Icon} from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
@@ -97,7 +94,7 @@ import FormattedNumberInput from "@/components/common/inputs/formatted-number-in
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
-interface Education extends IEducation {}
+
 interface WorkExperience extends IWorkExperience {}
 
 const maritalStatusOptions: Array<{value: IMaritalStatus; label: string}> = [
@@ -147,7 +144,6 @@ export default function UpdateEmployeeForm() {
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
   const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
 
   const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
   const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
@@ -159,7 +155,9 @@ export default function UpdateEmployeeForm() {
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
   const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
-  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData | null>(
+    null,
+  );
 
   const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
     name: "",
@@ -174,11 +172,13 @@ export default function UpdateEmployeeForm() {
     address: "",
   });
 
-  const [educationFormData, setEducationFormData] = useState<Omit<IEmployeeEducationFormData, "id">>({
+  const [educationFormData, setEducationFormData] = useState<
+    Omit<IEmployeeEducationFormData, "id">
+  >({
     name: "",
     institute: "",
     year: "",
-    qualification_id :0,
+    qualification_id: 0,
   });
 
   const [workExperienceFormData, setWorkExperienceFormData] = useState<Omit<WorkExperience, "id">>({
@@ -188,8 +188,7 @@ export default function UpdateEmployeeForm() {
     reason_of_leave: "",
   });
 
-  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccount>({
-    id: "",
+  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccountFormData>({
     bank_id: 0,
     account_number: "",
     account_name: "",
@@ -216,7 +215,7 @@ export default function UpdateEmployeeForm() {
   const [isAddingWorkType, setIsAddingWorkType] = useState(false);
   const [isAddingEmployeeType, setIsAddingEmployeeType] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement | null>(null);
-   const [qualifications, setQualifications] = useState<IQualificationAward[]>([])
+  const [qualifications, setQualifications] = useState<IQualificationAward[]>([]);
   const [workTypeFormData, setWorkTypeFormData] = useState<IWorkTypeFormData>({
     name: "",
     description: "",
@@ -232,7 +231,7 @@ export default function UpdateEmployeeForm() {
   });
 
   // useEffect(()=>{
-  //   console.log("\n\n Positions updated to : ", positions)
+  // // console.log("\n\n Positions updated to : ", positions)
   // }, [positions])
 
   useEffect(() => {
@@ -255,6 +254,7 @@ export default function UpdateEmployeeForm() {
     position: 0,
     department: 0,
     work_type: 0,
+    has_children: false,
     employee_type: 0,
     date_of_birth: "",
     date_of_joining: new Date().toISOString().split("T")[0],
@@ -417,7 +417,6 @@ export default function UpdateEmployeeForm() {
     setIsEducationDialogOpen(true);
   };
 
-
   const handleDeleteEducation = (id: string) => {
     setEducations((prev) => prev.filter((edu) => edu.id !== id));
   };
@@ -461,49 +460,6 @@ export default function UpdateEmployeeForm() {
     setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-  const handleAddBankAccount = () => {
-    if (
-      !bankAccountFormData.bank_id ||
-      !bankAccountFormData.account_number ||
-      !bankAccountFormData.account_name
-    )
-      return;
-
-    if (editingBankAccount) {
-      setBankAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === editingBankAccount.id
-            ? {...bankAccountFormData, id: bankAccountFormData.id}
-            : acc,
-        ),
-      );
-      setEditingBankAccount(null);
-    } else {
-      const newBankAccount: IEmployeeBankAccount = {
-        ...bankAccountFormData,
-        id: generateId(),
-      };
-      setBankAccounts((prev) => [...prev, newBankAccount]);
-    }
-
-    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
-    setIsWorkExperienceDialogOpen(false);
-  };
-
-  const handleEditBankAccount = (acc: IEmployeeBankAccount) => {
-    setEditingBankAccount(acc);
-    setBankAccountFormData({
-      bank_id: acc.bank_id,
-      account_number: acc.account_number,
-      account_name: acc.account_name,
-    });
-    setIsBankAccountDialogOpen(true);
-  };
-
-  const handleDeleteBankAccount = (id: string) => {
-    setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
-  };
-
   useEffect(() => {
     if (employeeId && selectedInstitution) {
       loadEmployee();
@@ -538,43 +494,55 @@ export default function UpdateEmployeeForm() {
         salary: parseFloat(employee.salary),
         is_active: employee.is_active,
         skills: employee.skills,
+        has_children: employee.has_children,
         selected_branches:
           employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
             ? [employee?.payroll_branch?.id as unknown as number]
             : [],
         marital_status: employee.marital_status,
         gender: employee.gender,
-        children: [],
-        next_of_kin: [],
-        educations: [],
-        bank_accounts: [],
-        work_experiences: [],
+        children: employee.children,
+        next_of_kin: employee.next_of_kin,
+        educations: employee.educations,
+        bank_accounts: employee.bank_accounts.map((acc) => ({
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        })),
+        work_experiences: employee.work_experiences,
       });
 
-      setChildren(employee.children);
-      setHasChildren(!!employee.children.length);
-      // Assuming next_of_kin is available or empty
-      setNextOfKins([]); // Adjust if backend provides next_of_kin
-      setEducations(employee.educations.map(ed => ({
-        name:ed.name,
-        qualification_id:ed.qualification.id,
-        year:ed.year,
-        institute:ed.institute,
-        id:ed.id
-      })));
-      setWorkExperiences(employee.work_experiences);
-      setBankAccounts(employee.bank_accounts);
-      // For single bank assumption, set first if exists
-      if (employee.bank_accounts.length > 0) {
-        setBankAccountFormData(employee.bank_accounts[0]);
-      }
 
+
+      setChildren(employee.children);
       setHasChildren(employee.has_children);
+      setNextOfKins(employee.next_of_kin);
+      setEducations(
+        employee.educations.map((ed) => ({
+          name: ed.name,
+          qualification_id: ed.qualification.id,
+          year: ed.year,
+          institute: ed.institute,
+          id: ed.id,
+        })),
+      );
+      setWorkExperiences(employee.work_experiences);
+      if (employee.bank_accounts.length) {
+        console.log("\n\n Setting bank account form data to : ", {bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,})
+        setBankAccountFormData((prev) => ({
+          ...prev,
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        }));
+      }
 
       if (employee.spouse) {
         setSpouseFormData({
           name: employee.spouse.name,
-          phoneNumber: employee.spouse.phone_number,
+          phone_number: employee.spouse.phone_number,
           dateOfBirth: employee.spouse.date_of_birth,
         });
         // Set spousePhoneInput if needed
@@ -588,13 +556,6 @@ export default function UpdateEmployeeForm() {
       if (employee.employee_profile_picture) {
         setPreviewUrl(employee.employee_profile_picture);
       }
-
-      setSelectedJobPosition({
-        id: employee.position.id,
-        name: employee.position.name,
-        // Add other fields as needed, e.g., salary_min, salary_max if available
-        department: employee.position.department_id,
-      } as IJobPosition);
 
       setSelectedCountry({name: {common: employee.country}} as ICountry);
 
@@ -622,12 +583,12 @@ export default function UpdateEmployeeForm() {
       const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
         getWorkTypes({institutionId: selectedInstitution.id}),
         getEmployeeTypes({institutionId: selectedInstitution.id}),
-        employeeAPI.getQualificationAwards()
+        employeeAPI.getQualificationAwards(),
       ]);
 
       setWorkTypes(workTypesData.results || []);
       setEmployeeTypes(Array.isArray(employeeTypesData.results) ? employeeTypesData.results : []);
-            setQualifications(qualification_awards)
+      setQualifications(qualification_awards);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -655,7 +616,6 @@ export default function UpdateEmployeeForm() {
       }
       setFormData(updatedFormData);
     } else if (field === "department") {
-      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -775,11 +735,11 @@ export default function UpdateEmployeeForm() {
         );
       case 3:
         return !!(
-          bankAccountFormData.account_name.trim() &&
-          bankAccountFormData.account_number &&
-          bankAccountFormData.account_number.trim() &&
-          bankAccountFormData.account_number.length <= 20 &&
-          bankAccountFormData.bank_id &&
+          // bankAccountFormData.account_name.trim() &&
+          // bankAccountFormData.account_number &&
+          // bankAccountFormData.account_number.trim() &&
+          // bankAccountFormData.account_number.length <= 20 &&
+          // bankAccountFormData.bank_id &&
           formData.tin &&
           formData.tin.trim() &&
           formData.tin.length <= 12 &&
@@ -795,12 +755,6 @@ export default function UpdateEmployeeForm() {
   };
 
   const nextStep = () => {
-    console.log(
-      "\n\n Validating next step with current step : ",
-      currentStep,
-      "\n\n Valid : ",
-      isCurrentStepValid(),
-    );
     if (isCurrentStepValid() && currentStep < steps.length) {
       setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
       setCurrentStep((prev) => prev + 1 || 1);
@@ -853,11 +807,11 @@ export default function UpdateEmployeeForm() {
   const [phoneCountryCode, setPhoneCountryCode] = useState<string>("");
   const [spouseFormData, setSpouseFormData] = useState<{
     name: string;
-    phoneNumber: string;
+    phone_number: string;
     dateOfBirth: string;
   }>({
     name: "",
-    phoneNumber: "",
+    phone_number: "",
     dateOfBirth: "",
   });
 
@@ -870,7 +824,6 @@ export default function UpdateEmployeeForm() {
   };
 
   const handleSubmit = async () => {
-    console.log("\n\n Submitting with current step ", currentStep);
     if (!selectedInstitution) {
       showErrorToast({
         error: new Error("No institution selected"),
@@ -909,7 +862,7 @@ export default function UpdateEmployeeForm() {
         employee_type: formData.employee_type,
         position: formData.position,
         department: formData.department,
-
+        has_children: hasChildren,
         children: children.map((child, idx) => ({
           id: String(idx),
           name: child.name,
@@ -928,7 +881,7 @@ export default function UpdateEmployeeForm() {
           qualification_id: edu.qualification_id,
           institute: edu.institute,
           year: edu.year,
-          name: edu.name
+          name: edu.name,
         })),
         work_experiences: workExperiences.map((exp, idx) => ({
           id: String(idx),
@@ -942,7 +895,7 @@ export default function UpdateEmployeeForm() {
       if (formData.marital_status === "married") {
         dataToSubmit["spouse"] = {
           name: spouseFormData.name,
-          phone_number: spouseFormData.phoneNumber,
+          phone_number: spouseFormData.phone_number,
           date_of_birth: spouseFormData.dateOfBirth,
         };
       }
@@ -969,6 +922,8 @@ export default function UpdateEmployeeForm() {
   };
 
   useEffect(() => {
+    let updatedFormData: typeof formData | null = null;
+
     const newPhoneNumber =
       phoneInput.countryCode && phoneInput.phoneNumber
         ? `${phoneInput.phoneNumber}`
@@ -976,15 +931,61 @@ export default function UpdateEmployeeForm() {
 
     const newCountry = selectedCountry?.name?.common || formData.country;
 
-    if (newPhoneNumber !== formData.phone_number || newCountry !== formData.country) {
-      const updatedFormData: typeof formData = {
+    const newNextOfKinPhoneNUmber =
+      emergencyContactPhoneInput.isValid && emergencyContactPhoneInput.phoneNumber
+        ? `${emergencyContactPhoneInput.phoneNumber}`
+        : nextOfKinFormData.phone_number;
+
+    const spousePhoneNUmber =
+      spousePhoneInput.isValid && spousePhoneInput.phoneNumber
+        ? `${spousePhoneInput.phoneNumber}`
+        : spouseFormData.phone_number;
+
+    if (
+      !formData.phone_number ||
+      newPhoneNumber !== formData.phone_number ||
+      newCountry !== formData.country
+    ) {
+      updatedFormData = {
         ...formData,
         phone_number: newPhoneNumber,
         country: newCountry,
       };
+    }
+
+    if (
+      !nextOfKinFormData.phone_number ||
+      newNextOfKinPhoneNUmber !== nextOfKinFormData.phone_number
+    ) {
+      setNextOfKinFormData((prev) => ({...prev, phone_number: newNextOfKinPhoneNUmber}));
+    }
+
+    if (!spouseFormData.phone_number || spousePhoneNUmber !== spouseFormData.phone_number) {
+      setSpouseFormData((prev) => ({...prev, phone_number: spousePhoneNUmber}));
+    }
+
+    if (updatedFormData) {
       setFormData(updatedFormData);
     }
-  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput]);
+  }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
+
+  // useEffect(() => {
+  //   const newPhoneNumber =
+  //     phoneInput.countryCode && phoneInput.phoneNumber
+  //       ? `${phoneInput.phoneNumber}`
+  //       : formData.phone_number;
+
+  //   const newCountry = selectedCountry?.name?.common || formData.country;
+
+  //   if (newPhoneNumber !== formData.phone_number || newCountry !== formData.country) {
+  //     const updatedFormData: typeof formData = {
+  //       ...formData,
+  //       phone_number: newPhoneNumber,
+  //       country: newCountry,
+  //     };
+  //     setFormData(updatedFormData);
+  //   }
+  // }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput]);
 
   const renderStep = () => {
     if (loadingData) {
@@ -1071,6 +1072,9 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                        {!formData.fullname && (
+                          <p className="text-red-400 text-xs">Employee full name is required</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -1085,6 +1089,9 @@ export default function UpdateEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                        {!formData.email && (
+                          <p className="text-red-400 text-xs">Employee email is required</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <PhoneNumberInput
@@ -1108,6 +1115,9 @@ export default function UpdateEmployeeForm() {
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
                         />
+                        {!formData.date_of_birth && (
+                          <p className="text-red-400 text-xs">Employee date of birth is required</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1143,6 +1153,9 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.nin && (
+                        <p className="text-red-400 text-xs">National ID / Passport is required</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-sm font-medium text-gray-700">
@@ -1157,6 +1170,9 @@ export default function UpdateEmployeeForm() {
                           }
                         }}
                       />
+                      {!formData.country && (
+                        <p className="text-red-400 text-xs">Please select a country</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="address" className="text-sm font-medium text-gray-700">
@@ -1169,6 +1185,9 @@ export default function UpdateEmployeeForm() {
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.address && (
+                        <p className="text-red-400 text-xs">Please set an address</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1212,6 +1231,9 @@ export default function UpdateEmployeeForm() {
                             placeholder="Enter spouse name"
                             className="h-12 rounded-2xl"
                           />
+                          {!spouseFormData.name && (
+                            <p className="text-red-400 text-xs">Spouse name is required</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
@@ -1225,62 +1247,73 @@ export default function UpdateEmployeeForm() {
                               setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
                             }
                           />
+                          {!spouseFormData.dateOfBirth && (
+                            <p className="text-red-400 text-xs">Spouse date of birth is required</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <PhoneNumberInput
                             label="Spouse Phone Number"
                             required
-                            value={spouseFormData.phoneNumber || ""}
+                            value={spouseFormData.phone_number || ""}
                             country={spousePhoneInput.country}
                             onChange={setSpousePhoneInput}
                             setError={setSpousePhoneError}
                           />
+                          {/* <PhoneNumberInput
+                    label="Phone Number"
+                    required
+                    value={nextOfKinFormData.phone_number || ""}
+                    country={emergencyContactPhoneInput.country}
+                    onChange={setEmergencyContactPhoneInput}
+                  /> */}
                         </div>
                       </>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth" className="text-lg font-medium text-gray-800">
-                    Children
-                  </Label>
-
-                  <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"Yes"}
-                        id="has_children"
-                        onClick={() => setHasChildren(true)}
-                      />
-                      <Label htmlFor="has_children">Has Children</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value={"No"}
-                        id="has_no_children"
-                        onClick={() => setHasChildren(false)}
-                      />
-                      <Label htmlFor="has_no_children">No Children</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                <RadioGroup defaultValue={hasChildren ? "Yes":"No"}  className="flex items-center justify-start gap-12">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"Yes"}
+                      id="has_children"
+                      onClick={() => setHasChildren(true)}
+                    />
+                    <Label htmlFor="has_children" className="text-lg">
+                      Has Children
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"No"}
+                      id="has_no_children"
+                      onClick={() => setHasChildren(false)}
+                    />
+                    <Label htmlFor="has_no_children" className="text-lg">
+                      No Children
+                    </Label>
+                  </div>
+                </RadioGroup>
 
                 {/* Children Section */}
                 {hasChildren && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-center">
-                      <Button
-                        type="button"
-                        onClick={() => setIsChildDialogOpen(true)}
-                        className="rounded-xl !bg-gray-900 !text-white"
-                        size="sm"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Child
-                      </Button>
+                    <div className="flex items-center justify-start gap-8 mb-4">
+                      <h4 className="text-lg font-medium text-gray-800">Children</h4>
+                      {hasChildren ? (
+                        <Button
+                          type="button"
+                          onClick={() => setIsChildDialogOpen(true)}
+                          className="rounded-xl !bg-gray-900 !text-white"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <></>
+                      )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                       {children.map((child, idx) => (
                         <div
@@ -1326,10 +1359,18 @@ export default function UpdateEmployeeForm() {
 
                 {/* Emergency Contact Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Emergency Contact(s) / Next of kin
                     </h4>
+                    <Button
+                      type="button"
+                      onClick={() => setIsNextOfKinDialogOpen(true)}
+                      className="rounded-xl !bg-gray-900 !text-white"
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
 
                   <div className="space-y-3">
@@ -1378,86 +1419,73 @@ export default function UpdateEmployeeForm() {
                       </div>
                     ))}
                   </div>
-
-                  <div className="flex items-center justify-center w-full">
-                    <Button
-                      type="button"
-                      onClick={() => setIsNextOfKinDialogOpen(true)}
-                      className="rounded-xl !bg-gray-900 !text-white"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add emergency contact
-                    </Button>
-                  </div>
                 </div>
 
                 {/* Education Section */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-start gap-8">
                     <h4 className="text-lg font-medium text-gray-800">
                       Education Background / Training
                     </h4>
-                    {/* <Button size={"icon"} variant={"ghost"} ></Button> */}
-                  </div>
-
-                  <div className="space-y-3">
-                     {educations.map((edu) => (
-                       <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
-                         <div className="flex items-start justify-between">
-                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
-                             <div>
-                               <span className="text-gray-600 block">Qualification</span>
- 
-                               <span className="font-medium">{edu.name}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Institute</span>
-                               <span className="font-medium">{edu.institute}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Year</span>
-                               <span className="font-medium">{edu.year}</span>
-                             </div>
-                             <div>
-                               <span className="text-gray-600 block">Award</span>
-                               <span className="font-medium">{qualifications.find(qual => qual.id === edu.qualification_id)?.name || ""}</span>
-                             </div>
-                           </div>
-                           <DropdownMenu>
-                             <DropdownMenuTrigger asChild>
-                               <Button variant="ghost" size="sm">
-                                 <MoreHorizontal className="w-4 h-4" />
-                               </Button>
-                             </DropdownMenuTrigger>
-                             <DropdownMenuContent align="end">
-                               <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
-                                 <Edit className="w-4 h-4 mr-2" />
-                                 Edit
-                               </DropdownMenuItem>
-                               <DropdownMenuItem
-                                 onClick={() => handleDeleteEducation(edu.id)}
-                                 className="text-red-600"
-                               >
-                                 <Trash2 className="w-4 h-4 mr-2" />
-                                 Delete
-                               </DropdownMenuItem>
-                             </DropdownMenuContent>
-                           </DropdownMenu>
-                         </div>
-                       </div>
-                     ))}
-                  </div>
-                  <div className="flex items-center justify-center py-4">
                     <Button
                       type="button"
                       onClick={() => setIsEducationDialogOpen(true)}
                       className="rounded-xl !bg-gray-900 !text-white"
                       size="sm"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Education Background
+                      <Plus className="w-4 h-4" />
                     </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {educations.map((edu) => (
+                      <div key={edu.id} className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 text-sm">
+                            <div>
+                              <span className="text-gray-600 block">Qualification</span>
+
+                              <span className="font-medium">{edu.name}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Institute</span>
+                              <span className="font-medium">{edu.institute}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Year</span>
+                              <span className="font-medium">{edu.year}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block">Award</span>
+                              <span className="font-medium">
+                                {qualifications.find((qual) => qual.id === edu.qualification_id)
+                                  ?.name || ""}
+                              </span>
+                            </div>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditEducation(edu)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteEducation(edu.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1486,6 +1514,9 @@ export default function UpdateEmployeeForm() {
                   Position *
                 </Label>
                 <JobPositionSearchableSelect
+                  defaultLabel={
+                    selectedJobPositon ? selectedJobPositon.name : thisEmployee?.position.name
+                  }
                   setPositions={setPositions}
                   value={[formData.position.toString() || ""]}
                   onValueChange={(values) => {
@@ -1494,6 +1525,9 @@ export default function UpdateEmployeeForm() {
                     }
                   }}
                 />
+                {!formData.position && (
+                  <p className="text-red-400 text-xs">Job position is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1535,6 +1569,9 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.work_type && (
+                  <p className="text-red-400 text-xs">Work type is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1576,6 +1613,9 @@ export default function UpdateEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.employee_type && (
+                  <p className="text-red-400 text-xs">Employee type is required</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -1638,8 +1678,16 @@ export default function UpdateEmployeeForm() {
 
             {/* Work Experience Section */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start gap-8">
                 <h4 className="text-lg font-medium text-gray-800">Work Experience</h4>
+                <Button
+                  type="button"
+                  onClick={() => setIsWorkExperienceDialogOpen(true)}
+                  className="rounded-xl !bg-gray-900 !text-white"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -1688,18 +1736,6 @@ export default function UpdateEmployeeForm() {
                   </div>
                 ))}
               </div>
-
-              <div className="flex items-center justify-center py-8">
-                <Button
-                  type="button"
-                  onClick={() => setIsWorkExperienceDialogOpen(true)}
-                  className="rounded-xl !bg-gray-900 !text-white"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add work experience
-                </Button>
-              </div>
             </div>
           </div>
         );
@@ -1712,15 +1748,24 @@ export default function UpdateEmployeeForm() {
                   Bank
                 </Label>
                 <BankAccountSearchableSelect
+                  defaultLabel={
+                    thisEmployee?.bank_accounts.length
+                      ? thisEmployee.bank_accounts[0].bank.bank_fullname
+                      : ""
+                  }
                   setAccounts={setInstitutionBanks}
-                  selectedItems={[bankAccountFormData.bank_id || 0]}
+                  selectedItems={[
+                    thisEmployee?.bank_accounts.length ? thisEmployee.bank_accounts[0].bank.id : 0,
+                  ]}
                   onValueChange={(values) => {
-                    console.log("\n\n Received account ids : ", values);
                     if (values.length) {
                       setBankAccountFormData((prev) => ({...prev, bank_id: Number(values[0])}));
                     }
                   }}
                 />
+                {/* {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (
+                  <p className="text-red-400 text-xs">Please select a bank</p>
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1735,6 +1780,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
+                {/* {!bankAccountFormData.account_name && (
+                  <p className="text-red-400 text-xs">Please set a bank account name</p>
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1749,6 +1797,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
+                {/* {!bankAccountFormData.account_number && (
+                  <p className="text-red-400 text-xs">A bank account number is required</p>
+                )} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -1761,6 +1812,16 @@ export default function UpdateEmployeeForm() {
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.nssf_no && (
+                  <p className="text-red-400 text-xs">
+                    A National Social Security Fund number is required
+                  </p>
+                )}
+                {formData.nssf_no.length >= 13 && (
+                  <p className="text-red-400 text-xs">
+                    National Social Security Fund number can not exceed 12 characters
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1774,6 +1835,16 @@ export default function UpdateEmployeeForm() {
                   className="h-12 rounded-2xl"
                   max={12}
                 />
+                {!formData.tin && (
+                  <p className="text-red-400 text-xs">
+                    A Tax Identification Number number is required
+                  </p>
+                )}
+                {formData.tin.length > 12 && (
+                  <p className="text-red-400 text-xs">
+                    Tax Identification Number number cannot exceed 12 characters
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1787,6 +1858,9 @@ export default function UpdateEmployeeForm() {
                   placeholder="Salary"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.salary && (
+                  <p className="text-red-400 text-xs">Employee Salary is required</p>
+                )}
               </div>
             </div>
           </div>
@@ -2054,18 +2128,7 @@ export default function UpdateEmployeeForm() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label htmlFor="nokPhone">Phone Number</Label>
-                  <Input
-                    id="nokPhone"
-                    value={nextOfKinFormData.phone_number}
-                    onChange={(e) =>
-                      setNextOfKinFormData((prev) => ({...prev, phone_number: e.target.value}))
-                    }
-                    placeholder="123456789"
-                    className="rounded-2xl h-12"
-                  />
-                </div> */}
+
                 <div className="space-y-2">
                   <PhoneNumberInput
                     label="Phone Number"
@@ -2089,15 +2152,6 @@ export default function UpdateEmployeeForm() {
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddNextOfKin}
@@ -2172,30 +2226,36 @@ export default function UpdateEmployeeForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eduAward">Award</Label>
-                      <Select
-                        value={formData.gender}
-                        onValueChange={(value: string) => setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))}
-                      >
-                        <SelectTrigger className="h-12 rounded-2xl">
-                          <SelectValue placeholder="Select Gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {qualifications.map((qual:IQualificationAward, idx) => (
-                            <SelectItem key={idx} value={qual.id.toString()}>
-                              {qual.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <Select
+                    value={educationFormData.qualification_id.toString()}
+                    onValueChange={(value: string) =>
+                      setEducationFormData((prev) => ({...prev, qualification_id: Number(value)}))
+                    }
+                  >
+                    <SelectTrigger className="h-12 rounded-2xl">
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {qualifications.map((qual: IQualificationAward, idx) => (
+                        <SelectItem key={idx} value={qual.id.toString()}>
+                          {qual.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
-
                 <Button
                   type="button"
                   onClick={handleAddEducation}
                   className=" text-white rounded-full w-full"
-                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institute || !educationFormData.year}
+                  disabled={
+                    !educationFormData.qualification_id ||
+                    !educationFormData.name ||
+                    !educationFormData.institute ||
+                    !educationFormData.year
+                  }
                 >
                   {editingEducation ? "Update Education" : "Add Education Background"}
                 </Button>
@@ -2286,15 +2346,6 @@ export default function UpdateEmployeeForm() {
                 </div>
               </div>
               <DialogFooter>
-                {/* <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-
-                  }}
-                >
-                  Cancel
-                </Button> */}
                 <Button
                   type="button"
                   onClick={handleAddWorkExperience}
@@ -2307,92 +2358,6 @@ export default function UpdateEmployeeForm() {
             </DialogContent>
           </Dialog>
 
-          {/* Bank Account Dialog */}
-          {/* <Dialog
-            open={isBankAccountDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsBankAccountDialogOpen(false);
-                setEditingBankAccount(null);
-                setBankAccountFormData({
-                  bank: 0,
-                  account_name: "",
-                  account_number: "",
-                });
-              } else {
-                setIsBankAccountDialogOpen(open);
-              }
-            }}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingBankAccount ? "Edit Bank Account" : "Add Bank Account"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingBankAccount ? "Update bank account information" : "Add bank account"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bank" className="text-sm font-medium text-gray-700">
-                    Bank
-                  </Label>
-                  <BankAccountSearchableSelect
-                    setAccounts={setInstitutionBanks}
-                    value={[bankAccountFormData.bank || ""]}
-                    onValueChange={(values) => {
-                      if (values.length) {
-                        setBankAccountFormData((prev) => ({...prev, bank: Number(values[0])}));
-                      }
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
-                    Bank Account Name
-                  </Label>
-                  <Input
-                    id="bankAccountName"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account name"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
-                    Bank Account Number
-                  </Label>
-                  <Input
-                    id="bankAccountNumber"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account number"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  onClick={handleAddBankAccount}
-                  className=" text-white rounded-full w-full"
-                  disabled={
-                    !bankAccountFormData.account_name ||
-                    !bankAccountFormData.bank ||
-                    !bankAccountFormData.account_number
-                  }
-                >
-                  {editingBankAccount ? "Update Bank Account" : "Add Bank Account"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog> */}
 
           {/* Work Type Modal */}
           <WorkTypeModal

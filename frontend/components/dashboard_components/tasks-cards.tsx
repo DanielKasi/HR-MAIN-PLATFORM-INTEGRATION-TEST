@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { ApprovalTasksDashboardResponse, TaskType } from "@/types/types.utils"
-import { getTasksDashboard } from "@/lib/utils"
+import { getDashboardTasksAnalytics } from "@/lib/utils"
 
 // Tasks Cards Component
 export function TasksCards({ branchId }: { branchId: string | null }) {
@@ -21,7 +21,7 @@ export function TasksCards({ branchId }: { branchId: string | null }) {
     try {
       setLoading(true)
       setError(null)
-      const data = await getTasksDashboard()
+      const data = await getDashboardTasksAnalytics()
       setDashboardData(data)
     } catch (error) {
       console.error("Error fetching tasks:", error)

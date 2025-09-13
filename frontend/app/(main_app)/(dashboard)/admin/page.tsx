@@ -60,7 +60,7 @@ export default function AdminPage() {
   // Handle successful theme color update
   const handleThemeUpdateSuccess = () => {
     // We could show a success toast/notification here
-    console.log("Theme color updated successfully");
+  // console.log("Theme color updated successfully");
   };
 
   return (

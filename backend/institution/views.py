@@ -111,6 +111,13 @@ class UserChatsView(APIView):
         try:
             user_data = _load_user_file(user_id)
 
+            sorted_chats = sorted(
+                user_data["chats"],
+                key=lambda chat: max(msg["timestamp"] for msg in chat["messages"]),
+                reverse=True,
+            )
+            user_data["chats"] = sorted_chats
+
             serializer = UserChatsSerializer(user_data)
             return Response(serializer.data, status=200)
 
@@ -156,7 +163,6 @@ class AIAssistantView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        print("chat_id", chat_id)
 
         if not chat_id:
             chat_id = str(uuid.uuid4())
@@ -852,7 +858,7 @@ class InstitutionDetailAPIView(APIView):
             return Response({"detail": "Institution not found."}, status=404)
 
 
-class InstitutionBankTypeListAPIView(APIView):
+class InstitutionBankTypeListAPIView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ["bank_fullname", "created_at", "bank_code", "is_active"]
     default_ordering = ["bank_fullname"]
 
@@ -1685,6 +1691,33 @@ class UserProfileListAPIView(APIView):
             {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    def get(self, request):
+        institution = request.user.profile.institution
+        search_query = request.query_params.get("search", None)
+        if not institution:
+            return Response({"detail": "Institution not found."}, status=404)
+
+        user = request.user
+        if not user.is_staff and institution.institution_owner != user:
+            profile = user.profile
+            if profile.institution.id != institution.id:
+                return Response({"detail": "Access denied."}, status=403)
+      
+
+        profiles = Profile.objects.filter(institution=institution)
+
+        if search_query:
+            profiles = profiles.filter(
+                Q(user__fullname__icontains=search_query) |
+                Q(user__email__icontains=search_query)
+            )  
+        paginator = CustomPageNumberPagination()
+        paginator_qs = paginator.paginate_queryset(profiles, request)
+        serializer = ProfileSerializer(
+            paginator_qs, many=True, context={"request": request}
+        )
+        return paginator.get_paginated_response(serializer.data)
+
 
 class UserProfileDetailAPIView(APIView):
     @extend_schema(
@@ -1693,29 +1726,15 @@ class UserProfileDetailAPIView(APIView):
         summary="Get all user profiles",
         tags=["User Management"],
     )
-    def get(self, request, institution_id):
+    def get(self, request, profile_id):
         try:
-            institution = Institution.objects.get(id=institution_id)
-        except Institution.DoesNotExist:
-            return Response({"detail": "Institution not found."}, status=404)
-
-        user = request.user
-
-        if not user.is_staff and institution.institution_owner != user:
-            try:
-                profile = user.profile
-                if profile.institution_id != institution.id:
-                    return Response({"detail": "Access denied."}, status=403)
-            except Profile.DoesNotExist:
-                return Response({"detail": "Access denied."}, status=403)
-
-        profiles = Profile.objects.filter(institution=institution_id)
-        paginator = CustomPageNumberPagination()
-        paginator_qs = paginator.paginate_queryset(profiles, request)
-        serializer = ProfileSerializer(
-            paginator_qs, many=True, context={"request": request}
-        )
-        return paginator.get_paginated_response(serializer.data)
+            profile = Profile.objects.get(id=profile_id)
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = ProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class InstitutionUserProfileAPIView(APIView):

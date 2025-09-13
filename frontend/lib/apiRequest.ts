@@ -144,11 +144,14 @@ export const apiRequest = async (
   if (response.status >= 200 && response.status <= 300) {
     return response;
   } else {
-    const err: CustomApiRequestError = {
+    let err: CustomApiRequestError = {
       message: Array.isArray(response?.data?.error) ? response?.data?.error[0] : typeof (response?.data?.error) === "string" ? response?.data?.error : response.data?.detail || null,
       status: response.status,
       custom_code: response.data?.custom_code || null,
     };
+    if(endpoint.endsWith("employee/create/")){
+      err = response.data
+    }
     throw err;
   }
 };

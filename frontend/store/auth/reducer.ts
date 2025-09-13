@@ -175,7 +175,7 @@ export const authReducer = (
         temporaryPermissions: action.payload as IPermission[],
       };
     case AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS:
-      console.log("\n\n Got dispatched action : ", action)
+    // console.log("\n\n Got dispatched action : ", action)
       return { ...state, temporaryPermissions: [] };
     case AUTH_ACTION_TYPES.SET_INACTIVITY_TIMEOUT:
       return { ...state, inactivityTimeout: action.payload as number };

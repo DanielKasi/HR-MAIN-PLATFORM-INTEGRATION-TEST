@@ -220,7 +220,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
         ]
 
     def validate_date_of_birth(self, value):
-        print(f"Validating date_of_birth: {value}, type: {type(value)}")
         if value:
             today = date.today()
             msgs = []
@@ -235,20 +234,8 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError({"error": " ".join(msgs)})
         return value
 
-    def validate(self, data):
-        marital_status = data.get('marital_status', getattr(self.instance, 'marital_status', 'single'))
-        spouse_data = data.get('spouse')
-        if marital_status == 'married' and not spouse_data:
-            raise serializers.ValidationError({"error": "Spouse details are required for married employees."})
-        if marital_status != 'married' and spouse_data:
-            raise serializers.ValidationError({"error": "Spouse details should only be provided for married employees."})
-        return data
-
     @transaction.atomic
     def create(self, validated_data):
-        print(f"Raw request data: {self.context['request'].data}")
-        print(f"Validated data: {validated_data}")
-
         user_data = validated_data.pop("user", None)
         selected_branches = validated_data.pop("selected_branches", [])
         bank_accounts_data = validated_data.pop("bank_accounts", [])
@@ -258,10 +245,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
 
-        print(f"Bank accounts data: {bank_accounts_data}")
-        print(f"Next of kin data: {next_of_kin_data}")
-        print(f"Educations data: {educations_data}")
-        print(f"Spouse data: {spouse_data}")
 
         if user_data:
             user_serializer = CustomUserSerializer(data=user_data)
@@ -299,11 +282,14 @@ class EmployeeSerializer(BaseApprovableSerializer):
             bank_type = bank_data.pop('bank', None)
             if bank_type:
                 EmployeeBankAccount.objects.create(employee=employee, bank=bank_type, **bank_data)
-
+            else:
+                continue
         # Create NextOfKin instances
         for kin_data in next_of_kin_data:
             if kin_data.get("name"):
                 NextOfKin.objects.create(employee=employee, **kin_data)
+            else:
+                continue
 
         # Create Education instances
         for edu_data in educations_data:
@@ -317,7 +303,8 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
         # Create Child instances
         for child_data in children_data:
-            Child.objects.create(employee=employee, **child_data)
+            if child_data.get("name"):
+                Child.objects.create(employee=employee, **child_data)
 
         # Create Spouse instance if provided
         if spouse_data and spouse_data.get("name"):
@@ -340,7 +327,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        print(f"Update validated data: {validated_data}")
 
         user_data = validated_data.pop("user", None)
         selected_branches = validated_data.pop("selected_branches", None)
@@ -371,10 +357,12 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 bank_type = bank_data.pop('bank', None)
                 if bank_type:
                     EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
+                else:
+                    continue
 
         # Update next of kin
         if next_of_kin_data:
-            instance.next_of_kin.all().delete()
+            instance.next_of_kins.all().delete()
             for kin_data in next_of_kin_data:
                 if kin_data.get("name"):
                     NextOfKin.objects.create(employee=instance, **kin_data)
@@ -384,7 +372,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             instance.educations.all().delete()
             for edu_data in educations_data:
                 qualification = edu_data.pop('qualification', None)
-                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year") and qualification:
+                if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
                     Education.objects.create(employee=instance, qualification=qualification, **edu_data)
 
         # Update work experiences
@@ -400,18 +388,34 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if child_data.get("name"):
                     Child.objects.create(employee=instance, **child_data)
 
-        # Update spouse
-        if spouse_data is not None:
-            if spouse_data.get("name"):  # Update or create spouse
-                if instance.spouse:  # Update existing spouse
-                    for attr, value in spouse_data.items():
-                        setattr(instance.spouse, attr, value)
-                    instance.spouse.save()
-                else:  # Create new spouse
-                    Spouse.objects.create(employee=instance, **spouse_data)
-            elif instance.spouse:  # Remove spouse if empty data provided
-                instance.spouse.delete()
-
+        # Update or create spouse
+        if spouse_data is not None and spouse_data:  # Only process if spouse_data is non-empty
+            spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
+            try:
+                spouse_serializer.is_valid(raise_exception=True)
+                existing_spouse = Spouse.objects.filter(employee=instance).first()
+                if existing_spouse:
+                    # Update existing spouse
+                    for attr, value in spouse_serializer.validated_data.items():
+                        setattr(existing_spouse, attr, value)
+                    existing_spouse.save()
+                else:
+                    # Create new spouse
+                    Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
+            except serializers.ValidationError as ve:
+                raise serializers.ValidationError({"spouse": ve.detail})
+            except IntegrityError as ie:
+                raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
+            except Exception as e:
+                raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
+        elif spouse_data == {}:  # Explicitly handle empty spouse data
+            existing_spouse = Spouse.objects.filter(employee=instance).first()
+            if existing_spouse:
+                existing_spouse.delete()
+            else:
+                pass
+        else:
+            pass
         # Update selected branches
         if selected_branches is not None:
             instance.user.attached_branches.all().delete()
@@ -480,6 +484,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             data["payroll_branch"] = BranchSerializer(instance.payroll_branch).data
         data["work_type"] = WorkTypeSerializer(instance.work_type).data
         data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
+        data["next_of_kin"] = NextOfKinSerializer(instance.next_of_kins.all(), many=True).data
         data.pop("department_details", None)
         data.pop("position_details", None)
         return data

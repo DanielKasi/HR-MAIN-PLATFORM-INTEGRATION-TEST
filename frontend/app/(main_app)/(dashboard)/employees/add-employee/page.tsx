@@ -71,7 +71,7 @@ import type {
   IGender,
   IJobPosition,
   IBankAccount,
-  IEmployeeBankAccount,
+  IEmployeeBankAccountFormData,
   IMaritalStatus,
   IEmployeeDeductionFormData,
   IEmployeeEducationFormData,
@@ -142,7 +142,7 @@ export default function AddEmployeeForm() {
   const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
   const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
   const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccount[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<IEmployeeBankAccountFormData[]>([]);
 
   const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
   const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
@@ -154,7 +154,7 @@ export default function AddEmployeeForm() {
   const [editingNextOfKin, setEditingNextOfKin] = useState<NextOfKin | null>(null);
   const [editingEducation, setEditingEducation] = useState<IEmployeeEducationFormData | null>(null);
   const [editingWorkExperience, setEditingWorkExperience] = useState<WorkExperience | null>(null);
-  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccount | null>(null);
+  const [editingBankAccount, setEditingBankAccount] = useState<IEmployeeBankAccountFormData | null>(null);
 
   const [childFormData, setChildFormData] = useState<Omit<Child, "id">>({
     name: "",
@@ -183,7 +183,7 @@ export default function AddEmployeeForm() {
     reason_of_leave: "",
   });
 
-  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccount>({
+  const [bankAccountFormData, setBankAccountFormData] = useState<IEmployeeBankAccountFormData>({
     id: "",
     bank_id: 0,
     account_number: "",
@@ -227,7 +227,7 @@ export default function AddEmployeeForm() {
   });
 
   // useEffect(()=>{
-  //   console.log("\n\n Positions updated to : ", positions)
+  // // console.log("\n\n Positions updated to : ", positions)
   // }, [positions])
 
   useEffect(() => {
@@ -255,6 +255,7 @@ export default function AddEmployeeForm() {
     date_of_joining: new Date().toISOString().split("T")[0],
     address: "",
     country: "",
+    has_children:false,
     nin: "",
     tin: "",
     salary: 0,
@@ -455,48 +456,6 @@ export default function AddEmployeeForm() {
     setWorkExperiences((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-  const handleAddBankAccount = () => {
-    if (
-      !bankAccountFormData.bank_id ||
-      !bankAccountFormData.account_number ||
-      !bankAccountFormData.account_name
-    )
-      return;
-
-    if (editingBankAccount) {
-      setBankAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === editingBankAccount.id
-            ? {...bankAccountFormData, id: bankAccountFormData.id}
-            : acc,
-        ),
-      );
-      setEditingBankAccount(null);
-    } else {
-      const newBankAccount: IEmployeeBankAccount = {
-        ...bankAccountFormData,
-        id: generateId(),
-      };
-      setBankAccounts((prev) => [...prev, newBankAccount]);
-    }
-
-    setWorkExperienceFormData({company: "", position: "", duration: "", reason_of_leave: ""});
-    setIsWorkExperienceDialogOpen(false);
-  };
-
-  const handleEditBankAccount = (acc: IEmployeeBankAccount) => {
-    setEditingBankAccount(acc);
-    setBankAccountFormData({
-      bank_id: acc.bank_id,
-      account_number: acc.account_number,
-      account_name: acc.account_name,
-    });
-    setIsBankAccountDialogOpen(true);
-  };
-
-  const handleDeleteBankAccount = (id: string) => {
-    setBankAccounts((prev) => prev.filter((exp) => exp.id !== id));
-  };
 
   useEffect(() => {
     loadDropdownData();
@@ -574,6 +533,7 @@ export default function AddEmployeeForm() {
       nssf_no: "",
       salary: 0,
       is_active: true,
+      has_children:false,
       skills: "",
       selected_branches: [],
       marital_status: "single",
@@ -621,7 +581,7 @@ export default function AddEmployeeForm() {
       setFormData(updatedFormData);
       handleSaveLocalEmployeeCreateForm(updatedFormData);
     } else if (field === "department") {
-      console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
+    // console.log("\n\n Setting form data in handleInputChange 'department' condition  \n\n");
       // Clear position when department changes
       const departmentValue = typeof value === "number" ? value : Number(value);
       const updatedFormData = {
@@ -728,12 +688,12 @@ export default function AddEmployeeForm() {
           formData.fullname &&
           formData.email &&
           formData.country &&
-          formData.marital_status &&
+          // formData.marital_status &&
           formData.address &&
           formData.date_of_birth &&
           formData.nin &&
           formData.phone_number &&
-          currentDate.getFullYear() - DOB.getFullYear() >= 18
+          currentDate.getFullYear() - DOB.getFullYear() >= 18 
         );
       case 2:
         return !!(
@@ -758,12 +718,7 @@ export default function AddEmployeeForm() {
   };
 
   const nextStep = () => {
-    console.log(
-      "\n\n Validating next step with current step : ",
-      currentStep,
-      "\n\n Valid : ",
-      isCurrentStepValid(),
-    );
+
     if (isCurrentStepValid() && currentStep < steps.length) {
       setCompletedSteps((prev) => [...prev.filter((s) => s !== currentStep), currentStep]);
       setCurrentStep((prev) => prev + 1);
@@ -833,6 +788,7 @@ export default function AddEmployeeForm() {
   };
 
   const handleSubmit = async () => {
+    console.log("\n\n Creating with data : ", formData)
     if (!selectedInstitution) {
       showErrorToast({
         error: new Error("No institution selected"),
@@ -843,6 +799,8 @@ export default function AddEmployeeForm() {
 
     setIsSubmitting(true);
     setSubmitError(null);
+
+    console.log("\n\n Creating with data : ", formData)
 
     try {
       const dataToSubmit: IEmployeeFormData = {
@@ -871,7 +829,7 @@ export default function AddEmployeeForm() {
         employee_type: formData.employee_type,
         position: formData.position,
         department: formData.department,
-
+        has_children:hasChildren,
         children: children.map((child, idx) => ({
           id: String(idx),
           name: child.name,
@@ -910,6 +868,8 @@ export default function AddEmployeeForm() {
               }
             : undefined,
       };
+
+
 
       await createEmployee({
         institutionId: selectedInstitution.id,
@@ -976,7 +936,6 @@ export default function AddEmployeeForm() {
         phone_number_country_code: phoneInput.countryCode,
       });
     }
-    // if()
   }, [phoneInput, selectedCountry?.name?.common, emergencyContactPhoneInput, spousePhoneInput]);
 
   const renderStep = () => {
@@ -1057,6 +1016,8 @@ export default function AddEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.fullname && <p className="text-red-400 text-xs">Employee full name is required</p>}
+
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
@@ -1071,6 +1032,8 @@ export default function AddEmployeeForm() {
                           className="h-12 rounded-2xl"
                           required
                         />
+                         {!formData.email && <p className="text-red-400 text-xs">Employee email is required</p>}
+
                       </div>
                       <div className="space-y-2">
                         <PhoneNumberInput
@@ -1091,12 +1054,15 @@ export default function AddEmployeeForm() {
                         </Label>
                         <Input
                           id="dateOfBirth"
+                          required
                           type="date"
                           max={maxDate18}
                           value={formData.date_of_birth}
                           onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                           className="h-12 rounded-2xl"
                         />
+                         {!formData.date_of_birth && <p className="text-red-400 text-xs">Employee date of birth is required</p>}
+
                       </div>
                     </div>
                   </div>
@@ -1128,16 +1094,20 @@ export default function AddEmployeeForm() {
                       <Input
                         id="nin"
                         value={formData.nin}
+                        required
                         onChange={(e) => handleInputChange("nin", e.target.value)}
                         placeholder="Enter national ID number"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.nin && <p className="text-red-400 text-xs">National ID / Passport is required</p>}
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-sm font-medium text-gray-700">
                         Nationality
                       </Label>
                       <CountrySelect
+                      
                         selectedCountry={selectedCountry}
                         onCountryChange={(country) => {
                           setSelectedCountry(country);
@@ -1146,6 +1116,7 @@ export default function AddEmployeeForm() {
                           }
                         }}
                       />
+                      {!formData.country && <p className="text-red-400 text-xs">Please select a country</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="address" className="text-sm font-medium text-gray-700">
@@ -1153,11 +1124,13 @@ export default function AddEmployeeForm() {
                       </Label>
                       <Input
                         id="address"
+                        required
                         value={formData.address}
                         onChange={(e) => handleInputChange("address", e.target.value)}
                         placeholder="Enter full address"
                         className="h-12 rounded-2xl"
                       />
+                      {!formData.address && <p className="text-red-400 text-xs">Please set an address</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -1194,6 +1167,7 @@ export default function AddEmployeeForm() {
                           </Label>
                           <Input
                             id="spouse_name"
+                            required
                             value={spouseFormData.name}
                             onChange={(e) =>
                               setSpouseFormData((prev) => ({...prev, name: e.target.value}))
@@ -1201,11 +1175,13 @@ export default function AddEmployeeForm() {
                             placeholder="Enter spouse name"
                             className="h-12 rounded-2xl"
                           />
+                          {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse name is required</p>}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="childDob">Spouse's Date Of Birth</Label>
                           <Input
                             id="spouseDob"
+                            required
                             type="date"
                             max={maxDate18}
                             className="rounded-2xl h-12"
@@ -1213,7 +1189,11 @@ export default function AddEmployeeForm() {
                             onChange={(e) =>
                               setSpouseFormData((prev) => ({...prev, dateOfBirth: e.target.value}))
                             }
+                            
+                          
                           />
+                {!spouseFormData.dateOfBirth && <p className="text-red-400 text-xs">Spouse date of birth is required</p>}
+
                         </div>
                         <div className="space-y-2">
                           <PhoneNumberInput
@@ -1233,7 +1213,7 @@ export default function AddEmployeeForm() {
                   </div>
                 </div>
 
-                <RadioGroup defaultValue="No" className="flex items-center justify-start gap-12">
+                <RadioGroup defaultValue={hasChildren ? "Yes":"No"} className="flex items-center justify-start gap-12">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem
                       value={"Yes"}
@@ -1477,6 +1457,7 @@ export default function AddEmployeeForm() {
                     }
                   }}
                 />
+                {!formData.position && <p className="text-red-400 text-xs">Job position is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1518,6 +1499,7 @@ export default function AddEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.work_type && <p className="text-red-400 text-xs">Work type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1559,6 +1541,7 @@ export default function AddEmployeeForm() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                {!formData.employee_type && <p className="text-red-400 text-xs">Employee type is required</p>}
               </div>
 
               <div className="space-y-2">
@@ -1699,6 +1682,8 @@ export default function AddEmployeeForm() {
                     }
                   }}
                 />
+                {/* {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>} */}
+
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
@@ -1713,6 +1698,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account name"
                   className="h-12 rounded-2xl"
                 />
+                {/* {!bankAccountFormData.account_name && <p className="text-red-400 text-xs">Please set a bank account name</p>} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
@@ -1727,6 +1713,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter bank account number"
                   className="h-12 rounded-2xl"
                 />
+                 {/* {!bankAccountFormData.account_number && <p className="text-red-400 text-xs">A bank account number is required</p>} */}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
@@ -1739,6 +1726,7 @@ export default function AddEmployeeForm() {
                   placeholder="Enter NSSF"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.nssf_no && <p className="text-red-400 text-xs">A National Social Security Fund number is required</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1752,11 +1740,13 @@ export default function AddEmployeeForm() {
                   className="h-12 rounded-2xl"
                   max={12}
                 />
+                {!formData.tin && <p className="text-red-400 text-xs">A Tax Identification Number number is required</p>}
+                {formData.tin.length > 12 && <p className="text-red-400 text-xs">Tax Identification Number number cannot exceed 12 characters</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
                   Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
-                  {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                  {formatCurrency(selectedJobPositon?.salary_max || "0")}) <span className="text-xs">This is the suggested salary range based on the job position </span>
                 </Label>
                 <FormattedNumberInput
                   id="salary"
@@ -1765,6 +1755,7 @@ export default function AddEmployeeForm() {
                   placeholder="Salary"
                   className="h-12 rounded-2xl"
                 />
+                {!formData.salary && <p className="text-red-400 text-xs">Employee Salary is required</p>}
               </div>
             </div>
           </div>

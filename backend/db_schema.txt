@@ -123,4 +123,6 @@ WHERE d.institution_id = ? AND e.is_active = true AND e.deleted_at IS NULL;
 - onboarding_employeeseparation (employee_separation_type, employee, separation_type, separation_status(planned, completed, or cancelled), and more)
 - onboarding_terminationinitiation (separation, termination_letter, comments, last_working_day, initiation_status(submitted, under_review, approved, rejected), and more)
 - onboarding_retirementrequest (separation, retirement_letter, comments, last_working_day, request_status, and more)    
-- 
+- calendar2_publicholiday (title, institution, date(datefield))
+- employee_employeeshift (employee, context(REQUEST, ALLOCATION), shift, shift_status(APPROVED, REJECTED, PENDING), date)
+- calendar2_event (title, description,target_audience,frequency(once, daily, weekly, monthly, yearly), institution, date(datefield))

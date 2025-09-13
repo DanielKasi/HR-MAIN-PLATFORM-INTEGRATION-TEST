@@ -90,7 +90,7 @@ export default function DashboardSideBar() {
   useEffect(() => {
     if (selectedInstitution && currentUser) {
       if (currentUser.id !== selectedInstitution.institution_owner_id) {
-        console.log("\n\n Fetching related employee by user id ");
+      // console.log("\n\n Fetching related employee by user id ");
         fetchRelatedEmployeeByUserId();
       }
     }
@@ -337,7 +337,7 @@ export default function DashboardSideBar() {
       icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
       submenu: [
         {title: "Analytics", href: "/analytics/project"},
-        {title: "Projects", href: "#"},
+        {title: "Projects", href: "/projects"},
         {title: "Tasks", href: "#"},
         {title: "Timesheet", href: "#"},
       ],
@@ -369,7 +369,7 @@ export default function DashboardSideBar() {
     if (isMobile) {
       // setMobileMenuOpen(!mobileMenuOpen);
       dispatch(!isSideBarOpen ? openSideBar() : closeSideBar());
-      console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
+    // console.log("Dispatching toggle action with sidebar state:", isSideBarOpen);
     } else {
       if (isSideBarOpen) {
         dispatch(closeSideBar());

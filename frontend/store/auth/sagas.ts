@@ -178,20 +178,20 @@ function* inactivityWatcher() {
       });
       const { timeout, cancel, confirm, activity } = raceResult as InactivityRaceResult;
       if (timeout) {
-        console.log("\n\n Timeout set as : ", timeout)
+      // console.log("\n\n Timeout set as : ", timeout)
         const refreshInProgress = yield select(selectRefreshInProgress);
         if (!refreshInProgress as unknown as boolean) {
           yield put(logoutSuccess());
         }
       } else if (confirm) {
-        console.log("\n\n Logout is confirmed from saga ...")
+      // console.log("\n\n Logout is confirmed from saga ...")
         yield put(hideLogoutWarning());
         yield put(logoutStart());
       } else if (cancel) {
         yield put(hideLogoutWarning());
         yield put(refreshAccessTokenStart());
       } else if (activity) {
-        console.log("\n\n Activity detected from saga ...")
+      // console.log("\n\n Activity detected from saga ...")
         yield put(hideLogoutWarning());
       }
     });

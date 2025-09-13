@@ -148,7 +148,7 @@ export function EditPayslipDialog({
                   id="total_allowances"
                   value={editFormData.total_allowances}
                   onValueChange={(e) => {
-                    console.log("\n\n\n Got parsed value as : ", e)
+                  // console.log("\n\n\n Got parsed value as : ", e)
                     setEditFormData((prev) => ({
                       ...prev,
                       total_allowances: e,

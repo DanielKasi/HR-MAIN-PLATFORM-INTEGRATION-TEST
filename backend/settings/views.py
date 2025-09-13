@@ -2,10 +2,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema
-from .models import SystemConfiguration, SystemDay
-from .serializers import SystemConfigurationSerializer, SystemDaySerializer
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from institution.models import Institution
+from utilities.sortable_api import SortableAPIMixin
+from .models import MeetingIntegration, SystemConfiguration, SystemDay
+from .serializers import MeetingIntegrationSerializer, SystemConfigurationSerializer, SystemDaySerializer
 from utilities.pagination import CustomPageNumberPagination
 from slugify import slugify
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
 
 class SystemDayListVIew(APIView):
     @extend_schema(
@@ -94,3 +100,120 @@ class SystemConfigurationRetrieveUpdateDeleteAPIView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         system_config.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+class MeetingIntegrationListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['platform', 'updated_at']
+    default_ordering = ['-updated_at']
+
+    @extend_schema(
+        request=MeetingIntegrationSerializer,
+        responses={
+            201: OpenApiResponse(response=MeetingIntegrationSerializer, description="Meeting integration created successfully."),
+            400: OpenApiResponse(description="Bad request, validation errors."),
+        },
+        tags=["Performance Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+
+        serializer = MeetingIntegrationSerializer(data=request.data, context={"request": request})
+
+        if serializer.is_valid():
+            instance = serializer.save()
+            
+            instance.confirm_create()
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by platform"},
+            {"name": "updated_at", "type": "date", "description": "Filter by update date"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'platform,-updated_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(response=MeetingIntegrationSerializer(many=True), description="List of meeting integrations."),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Performance Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        integrations = MeetingIntegration.objects.filter(institution=institution)
+        search_query = request.query_params.get("search", None)
+        updated_at = request.query_params.get("updated_at", None)
+
+        if search_query:
+            integrations = integrations.filter(platform__icontains=search_query)
+        if updated_at:
+            integrations = integrations.filter(updated_at__date=updated_at)
+
+        try:
+            integrations = self.apply_sorting(integrations, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(integrations, request)
+        serializer = MeetingIntegrationSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class MeetingIntegrationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(response=MeetingIntegrationSerializer, description="Meeting integration details."),
+            404: OpenApiResponse(description="Meeting integration not found."),
+        },
+        tags=["Performance Management"],
+    )
+    def get(self, request, pk):
+        integration = get_object_or_404(MeetingIntegration, pk=pk)
+        serializer = MeetingIntegrationSerializer(integration)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(description="Meeting integration marked for deletion and sent for approval."),
+            404: OpenApiResponse(description="Meeting integration not found."),
+        },
+        tags=["Performance Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        integration = get_object_or_404(MeetingIntegration, pk=pk)
+        integration.approval_status = 'under_deletion'
+        integration.save(update_fields=['approval_status'])
+        integration.confirm_delete()
+        return Response({"message": "Meeting integration submitted for deletion approval."}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=MeetingIntegrationSerializer,
+        responses={
+            200: OpenApiResponse(response=MeetingIntegrationSerializer, description="Meeting integration updated successfully."),
+            404: OpenApiResponse(description="Meeting integration not found."),
+            400: OpenApiResponse(description="Bad request, validation errors."),
+        },
+        tags=["Performance Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        integration = get_object_or_404(MeetingIntegration, pk=pk)
+        integration.approval_status = 'under_update'
+        serializer = MeetingIntegrationSerializer(integration, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            integration.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    

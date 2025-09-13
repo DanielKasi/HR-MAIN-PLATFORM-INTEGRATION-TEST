@@ -105,7 +105,7 @@ const EmployeeShiftsPage = () => {
         date: formData.date,
       });
 
-      console.log("Allocation created successfully");
+    // console.log("Allocation created successfully");
       setIsAddDialogOpen(false);
       setFormData({ employee_id: "", shift_id: "", date: "" });
       if (refreshRef.current) {
@@ -134,7 +134,7 @@ const EmployeeShiftsPage = () => {
         date: formData.date,
       });
 
-      console.log("Allocation updated successfully");
+    // console.log("Allocation updated successfully");
       setIsEditDialogOpen(false);
       setSelectedShift(null);
     } catch (error) {
@@ -150,7 +150,7 @@ const EmployeeShiftsPage = () => {
     setIsSubmitting(true);
     try {
       await apiRequest.delete(`employee/employee-shifts/detail/${selectedShift.id}/`);
-      console.log("Allocation deleted successfully");
+    // console.log("Allocation deleted successfully");
       setIsDeleteDialogOpen(false);
       setSelectedShift(null);
     } catch (error) {

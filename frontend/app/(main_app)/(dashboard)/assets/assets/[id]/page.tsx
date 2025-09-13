@@ -83,7 +83,7 @@ const AssetDetailPage = () => {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false)
 
-  console.log("Asset", asset)
+// console.log("Asset", asset)
 
   const assetId = params.id as string
 

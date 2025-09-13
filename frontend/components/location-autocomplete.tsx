@@ -91,7 +91,7 @@ export function LocationAutocomplete({
         setOptions([]);
       }
     } catch (error) {
-      console.log("Error fetching location suggestions:", error);
+    // console.log("Error fetching location suggestions:", error);
       setOptions([]);
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export function LocationAutocomplete({
         onCoordinatesChange?.(lat.toString(), lon.toString());
       }
     } catch (error) {
-      console.log("Failed to get coordinates from selected location:", error);
+    // console.log("Failed to get coordinates from selected location:", error);
     }
   };
 

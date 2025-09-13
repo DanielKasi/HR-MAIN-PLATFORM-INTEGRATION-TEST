@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { TerminationInitiationsAPI } from "@/lib/utils"
 import { ITermination } from "@/types/types.utils"
+import FixedLoader from "@/components/fixed-loader"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
@@ -100,11 +101,7 @@ export default function EditTerminationPage() {
 
   if (!termination) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading termination details...</div>
-        </div>
-      </div>
+            <FixedLoader/>
     )
   }
 

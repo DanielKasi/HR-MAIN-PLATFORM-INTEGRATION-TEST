@@ -3,23 +3,23 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  RefreshCw, 
-  Package, 
-  User, 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
-  Wrench, 
-  Archive, 
-  History, 
-  FileText, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  RefreshCw,
+  Package,
+  User,
+  Calendar,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Wrench,
+  Archive,
+  History,
+  FileText,
+  MapPin,
   Tag,
   Users,
   ArrowDown,
@@ -31,11 +31,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation, IAssetAllocationWorkflow } from "@/types/types.utils";
+import type { IAssetAllocation } from "@/types/types.utils";
 import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
 import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
 
@@ -92,7 +91,7 @@ const AssetAllocationDetailPage = () => {
   const [approvalComments, setApprovalComments] = useState<{ [key: number]: string }>({});
   const [showCommentInput, setShowCommentInput] = useState<{ [key: number]: boolean }>({});
 
-  console.log("Allocations", allocation);
+  // console.log("Allocations", allocation);
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
   const allocationId = params.id as string;
@@ -127,26 +126,26 @@ const AssetAllocationDetailPage = () => {
     router.push("/assets/asset-allocations");
   };
 
- 
 
-  
+
+
 
   const handleApproval = async (taskId: number, action: 'completed' | 'rejected') => {
     if (!allocation) return;
-    
+
     const comment = approvalComments[taskId] || "";
-    
+
     try {
       setIsApproving(true);
       await assetsAPI.approveAssetAllocation(taskId, action, comment);
-      
+
       // Refresh the allocation details to get updated workflow status
       await fetchAllocationDetails();
-      
+
       // Clear comment and hide input for this task
       setApprovalComments(prev => ({ ...prev, [taskId]: "" }));
       setShowCommentInput(prev => ({ ...prev, [taskId]: false }));
-      
+
       toast.success(`Asset allocation ${action}d successfully`);
     } catch (error) {
       console.warn(`Error ${action}ing asset allocation:`, error);
@@ -156,7 +155,7 @@ const AssetAllocationDetailPage = () => {
     }
   };
 
-  
+
 
 
   if (isLoading) {
@@ -186,7 +185,7 @@ const AssetAllocationDetailPage = () => {
     );
   }
 
- 
+
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6 bg-white rounded-lg">
       {/* Header */}
@@ -214,7 +213,7 @@ const AssetAllocationDetailPage = () => {
             <div className="">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Asset</h3>
-                
+
               </div>
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
@@ -225,7 +224,7 @@ const AssetAllocationDetailPage = () => {
                     {getStatusDisplay(allocation.allocation_status)}
                   </Badge>
                 </div>
-                
+
                 <p className="text-sm text-gray-500">{allocation.asset?.serial_number}</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
@@ -255,19 +254,19 @@ const AssetAllocationDetailPage = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
                 <div className="flex items-center gap-2 ">
                   <User className="h-5 w-5 text-gray-600" />
-                  <div className="flex flex-col"> 
+                  <div className="flex flex-col">
                     <p className="font-medium text-gray-900">{allocation.allocated_to?.user.fullname}</p>
                     <p className="text-sm text-gray-500">EMP-{allocation.allocated_to?.user.id}</p>
                   </div>
-                  
+
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   <div>
                     <p className="text-sm text-gray-500">Position</p>
                     <p className="text-sm text-gray-500">{allocation.allocated_to?.user.roles?.[0]?.name || "Not specified"}</p>
-                    
+
                   </div>
-                  <div className="flex flex-col"> 
+                  <div className="flex flex-col">
                     <p className="text-sm text-gray-500">Department</p>
                     <p className="text-sm text-gray-500">Not specified</p>
                   </div>
@@ -287,7 +286,7 @@ const AssetAllocationDetailPage = () => {
             </div>
           </div>
 
-        
+
         </div>
 
         {/* Vertical Separator Line - Hidden on mobile, visible on larger screens */}
@@ -300,21 +299,19 @@ const AssetAllocationDetailPage = () => {
           {allocation.tasks && allocation.tasks.length > 0 && (
             <div className="border-gray-200 p-4 lg:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 lg:mb-6">Approvals</h3>
-              
+
               {/* Approval Steps */}
               <div className="space-y-4 lg:space-y-6">
                 {/* @ts-ignore - tasks property may exist at runtime */}
                 {allocation.tasks && allocation.tasks.map((task: any, index: any) => (
                   <div key={task.id} className="relative">
                     <div className="flex items-start gap-3 lg:gap-4">
-                      <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
-                        task.status === 'completed' 
-                          ? 'bg-green-100 border-green-500' 
+                      <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${task.status === 'completed'
+                          ? 'bg-green-100 border-green-500'
                           : 'bg-blue-100 border-blue-400'
-                      }`}>
-                        <span className={`text-xs lg:text-sm font-semibold ${
-                          task.status === 'completed' ? 'text-green-700' : 'text-blue-700'
                         }`}>
+                        <span className={`text-xs lg:text-sm font-semibold ${task.status === 'completed' ? 'text-green-700' : 'text-blue-700'
+                          }`}>
                           {index + 1}
                         </span>
                       </div>
@@ -322,22 +319,21 @@ const AssetAllocationDetailPage = () => {
 
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
                           <h4 className="text-sm font-medium text-gray-900">{task.step.step_name}</h4>
-                          
-                          <Badge className={`text-xs mt-1 ${
-                          task.status === 'completed' 
-                            ? 'bg-green-100 text-green-800 border-green-200' 
-                            : 'bg-blue-100 text-blue-800 border-blue-200'
+
+                          <Badge className={`text-xs mt-1 ${task.status === 'completed'
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : 'bg-blue-100 text-blue-800 border-blue-200'
                             }`}>
                             {task.status === 'completed' ? 'Approved' : 'Pending'}
                           </Badge>
                         </div>
-                        
+
                         <p className="text-xs text-gray-500 mt-1">
-                            {task.status === 'completed' 
-                              ? `Approved - ${formatDate(task.updated_at)}`
-                              : 'Pending Approval'
-                            }
-                          </p>
+                          {task.status === 'completed'
+                            ? `Approved - ${formatDate(task.updated_at)}`
+                            : 'Pending Approval'
+                          }
+                        </p>
                         {task.status === 'completed' && task.comments && (
                           <p className="text-xs text-gray-500 mt-1">
                             {task.comments}
@@ -345,8 +341,8 @@ const AssetAllocationDetailPage = () => {
                         )}
                         {task.status === 'pending' && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-3">
-                            <Button 
-                              
+                            <Button
+
                               className="bg-green-600 hover:bg-green-700 text-white w-full text-xs !max-w-[100px] !h-[20px] !rounded-full"
                               onClick={() => handleApproval(task.id, 'completed')}
                               disabled={isApproving}
@@ -360,9 +356,9 @@ const AssetAllocationDetailPage = () => {
                                 'Approve'
                               )}
                             </Button>
-                            <Button 
-                              
-                              variant="outline" 
+                            <Button
+
+                              variant="outline"
                               className="text-red-600 border-red-300 text-xs !w-[100px] !h-[20px] !rounded-full"
                               onClick={() => handleApproval(task.id, 'rejected')}
                               disabled={isApproving}
@@ -391,7 +387,7 @@ const AssetAllocationDetailPage = () => {
             </div>
           )}
 
-          
+
 
         </div>
       </div>

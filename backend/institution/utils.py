@@ -63,7 +63,6 @@ def _save_user_file(user_id, data):
 def add_message(user_id, role, message_text, chat_id=None, chat_title="New Chat"):
     data = _load_user_file(user_id)
 
-    print("chat_id add_message", chat_id)
 
     if chat_id is None:
         chat_id = str(uuid.uuid4())

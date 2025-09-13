@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {apiGet} from "@/lib/apiRequest";
+import FixedLoader from "@/components/fixed-loader";
 
 interface IEvent {
   id: number;
@@ -108,9 +109,7 @@ export default function EventDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
-        <div className="text-lg">Loading event details...</div>
-      </div>
+            <FixedLoader/>
     );
   }
 

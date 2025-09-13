@@ -46,7 +46,7 @@ export default function EmployeeShifts({employee}: Props) {
   };
 
   const handleRequestSubmitted = () => {
-    console.log("Shift request submitted successfully!");
+  // console.log("Shift request submitted successfully!");
   };
 
   // console.log("loggedInUser", loggedInUser);

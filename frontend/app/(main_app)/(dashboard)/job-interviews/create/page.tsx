@@ -517,7 +517,7 @@ export default function CreateInterviewPage() {
     }),
   );
 
-  console.log("\n\n Filtered positions from applications : ", jobPositionItems);
+// console.log("\n\n Filtered positions from applications : ", jobPositionItems);
 
   const interviewStageItems: SearchableSelectItem[] = filteredInterviewStages.map((stage) => ({
     id: stage.id,
@@ -774,7 +774,7 @@ export default function CreateInterviewPage() {
               <Dialog
                 open={isCreateStageDialogOpen}
                 onOpenChange={(open) => {
-                  console.log("Dialog state changing to:", open);
+                // console.log("Dialog state changing to:", open);
                   setIsCreateStageDialogOpen(open);
                 }}
               >

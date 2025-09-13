@@ -391,7 +391,7 @@ export default function ApplicationViewPage() {
 
   useEffect(() => {
     if (selectedInstitution?.id) {
-      console.log("Interview stages:", getInterviewStages({ institutionId: selectedInstitution.id }));
+    // console.log("Interview stages:", getInterviewStages({ institutionId: selectedInstitution.id }));
     }
   }, [selectedInstitution?.id]);
 

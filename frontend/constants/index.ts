@@ -2,6 +2,7 @@ import {Approval} from "@/types/approvals.types";
 import {IPenaltyType} from "@/types/types.utils";
 
 export const MAIN_DOMAIN_URL = "https://peracosoft.com";
+export const NOTIFICATIONS_STREAM_BASE_PATH = "/communication/notifications/sse/"
 
 export const LEAVE_CATEGORIES: Array<{value: string; label: string}> = [
   {value: "annual", label: "Annual Leave"},

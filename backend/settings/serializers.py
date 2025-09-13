@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SystemConfiguration, SystemDay
+from .models import SystemConfiguration, SystemDay, MeetingIntegration
 
 
 class SystemConfigurationSerializer(serializers.ModelSerializer):
@@ -24,3 +24,33 @@ class SystemDaySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
         read_only_fields = ["id", "day_code", "day_name", "level"]
+
+class MeetingIntegrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MeetingIntegration
+        fields = '__all__'
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "institution",
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+
+        user = getattr(request.user, 'profile', None) if request and hasattr(request, "user") else None
+
+        if user:
+            institution = getattr(user, "institution", None)
+            
+            if not institution:
+                raise serializers.ValidationError({"error": "Institution not found for this user."})
+
+            validated_data["institution"] = institution
+        else:
+            raise serializers.ValidationError({"error": "User institution is required."})
+
+        instance = super().create(validated_data)
+        return instance
+        

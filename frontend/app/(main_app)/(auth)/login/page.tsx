@@ -71,7 +71,7 @@ export default function LoginPage() {
       }
       let errorMessage = "";
 
-      console.log(authError);
+    // console.log(authError);
 
       if (authError.customCode === CUSTOM_CODES.SELF_CREATED_UNVERIFIED) {
         errorMessage = "You need to verify your email to login";

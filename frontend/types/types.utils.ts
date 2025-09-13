@@ -1,5 +1,5 @@
 import type { Branch, IUser, IUserInstitution, Role, UserProfile } from "."
-import type { IBaseApprovable } from "@/types/approvals.types"
+import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types"
 
 export type ContextType = "employee" | "department" | "job_position"
 export type CalculationMethod = "fixed" | "percentage"
@@ -281,7 +281,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 export interface IEmployee {
   id: number;
   date_of_birth: string;
-  user: IUser|null;
+  user: IUser | null;
   roles: Role[]
   employee_working_days: any | null;
   work_type: IWorkType;
@@ -289,6 +289,7 @@ export interface IEmployee {
   bank_accounts: IEmployeeBankAccount[];
   educations: IEducation[];
   work_experiences: IWorkExperience[];
+  next_of_kin: INextOfKin[],
   children: IChild[];
   spouse: {
     name: string;
@@ -436,6 +437,44 @@ export interface ILeaveDashboard {
   }>
 }
 
+export interface ProjectStatusCount {
+  status: string
+  count: number
+}
+
+export interface TaskStatusCount {
+  status: string
+  count: number
+}
+
+export interface TaskPriorityCount {
+  priority: string
+  count: number
+}
+
+export interface ProjectsAnalytics {
+  total: number
+  by_status: ProjectStatusCount[]
+}
+
+export interface TasksAnalytics {
+  total: number
+  by_status: TaskStatusCount[]
+  by_priority: TaskPriorityCount[]
+}
+
+export interface IProjectDashboard {
+  projects: ProjectsAnalytics
+  tasks: TasksAnalytics
+  active_projects: number
+  overdue_tasks: number
+}
+
+export interface DashboardError {
+  error: string
+}
+
+export type DashboardResponse = IProjectDashboard | DashboardError
 export interface IAttendanceDashboard {
   total_attendance_records: number
   attendance_by_status: Array<{
@@ -589,9 +628,9 @@ export interface IEmployeeEducationFormData {
 
 
 export interface IQualificationAward {
-  id:number,
-  name:string,
-  description:string
+  id: number,
+  name: string,
+  description: string
 }
 
 export interface IWorkExperience {
@@ -602,9 +641,15 @@ export interface IWorkExperience {
   reason_of_leave: string
 }
 
-export interface IEmployeeBankAccount {
+export interface IEmployeeBankAccountFormData {
   id?: string
   bank_id: number
+  account_number: string
+  account_name: string
+}
+
+export interface IEmployeeBankAccount {
+  bank: IBankType
   account_number: string
   account_name: string
 }
@@ -636,19 +681,20 @@ export interface IEmployeeFormData {
   nin: string
   tin: string
   nssf_no: string
-  salary:number
+  salary: number
   is_active: boolean
   skills: string
   marital_status: IMaritalStatus
   employee_profile_picture?: File | null
-  selected_branches: number[]
+  selected_branches: number[],
+  has_children: boolean,
 
   // Nested arrays and objects
   children: IChild[]
   next_of_kin: INextOfKin[]
   educations: IEmployeeEducationFormData[]
   work_experiences: IWorkExperience[]
-  bank_accounts: IEmployeeBankAccount[]
+  bank_accounts: IEmployeeBankAccountFormData[]
   spouse?: ISpouse
 
   // Legacy fields for backward compatibility
@@ -681,19 +727,20 @@ export interface ICreateEmployeeForm {
   date_of_joining: string
   skills: string
   selected_branches: number[]
-  is_active: boolean
+  is_active: boolean,
+  has_children: boolean,
 
   // Financial Information
   tin: string
   nssf_no: string
-  salary:number
+  salary: number
 
   // Nested structures
   children: IChild[]
   next_of_kin: INextOfKin[]
   educations: IEducation[]
   work_experiences: IWorkExperience[]
-  bank_accounts: IEmployeeBankAccount[]
+  bank_accounts: IEmployeeBankAccountFormData[]
   spouse?: ISpouse
 
   // Profile picture
@@ -1736,17 +1783,6 @@ export interface IAsset {
   asset_histories?: IAssetHistory[]
 }
 
-export interface ApprovalTask {
-  id: number
-  approval: number // Foreign key to Approval ID
-  level: number // Foreign key to ApprovalDocumentLevel ID
-  status: "not_started" | "pending" | "rejected" | "approved" | "terminated"
-  comment: string | null
-  approved_by: number | null // Foreign key to User ID
-  created_at: string // ISO datetime string
-  updated_at: string // ISO datetime string or null
-  deleted_at: string | null // ISO datetime string or null
-}
 
 export interface DashboardCategory {
   count: number
@@ -1816,59 +1852,6 @@ export interface IAssetAllocation {
   updated_at: string
 }
 
-export interface IAssetAllocationWorkflow extends IAssetAllocation {
-  workflow_status: string
-  current_step: number
-  total_steps: number
-  approval_tasks: IApprovalTask[]
-}
-
-export interface IApprovalTask {
-  id: number
-  step: IApprovalStep
-  status: "not_started" | "pending" | "completed" | "rejected"
-  comment: string | null
-  approved_by: any | null // Profile details
-  created_at: string
-  updated_at: string
-}
-
-export interface IApprovalStep {
-  id: number
-  step_name: string
-  level: number
-  roles: string[]
-  roles_details: {
-    name: string
-    id: number
-  }[]
-  approvers: string[]
-  approvers_details: {
-    id: string
-    approver_user: {
-      id: number
-      fullname: string
-      email: string
-    }
-  }[]
-  action: string
-  action_details: {
-    id: number
-    code: string
-    label: string
-    category: {
-      code: string
-      label: string
-    }
-  }
-}
-
-export interface IAssetAllocationFormData {
-  asset: number
-  allocated_to: number
-  responding_to_request?: number
-  allocation_status?: "pending" | "allocated" | "rejected" | "cancelled"
-}
 
 // export interface IAssetReturn {
 //   id: number;
@@ -2016,53 +1999,6 @@ export interface IAssetAllocation {
   is_active: boolean
   created_at: string
   updated_at: string
-}
-
-export interface IAssetAllocationWorkflow extends IAssetAllocation {
-  workflow_status: string
-  current_step: number
-  total_steps: number
-  approval_tasks: IApprovalTask[]
-}
-
-export interface IApprovalTask {
-  id: number
-  step: IApprovalStep
-  status: "not_started" | "pending" | "completed" | "rejected"
-  comment: string | null
-  approved_by: any | null // Profile details
-  created_at: string
-  updated_at: string
-}
-
-export interface IApprovalStep {
-  id: number
-  step_name: string
-  level: number
-  roles: string[]
-  roles_details: {
-    name: string
-    id: number
-  }[]
-  approvers: string[]
-  approvers_details: {
-    id: string
-    approver_user: {
-      id: number
-      fullname: string
-      email: string
-    }
-  }[]
-  action: string
-  action_details: {
-    id: number
-    code: string
-    label: string
-    category: {
-      code: string
-      label: string
-    }
-  }
 }
 
 export interface IAssetAllocationFormData {
@@ -2378,6 +2314,21 @@ export interface IInstitutionSpotCheckSettingFormData extends ISpotCheckSetting 
   institution: number
 }
 
+export type IProjectTaskStatus = "not_started" | "in_progress" | "completed" | "on_hold";
+export type IProjectTaskPriority = "low" | "medium" | "high" | "urgent";
+
+export interface ITaskTimeSheet {
+  id: number;
+  task: number;
+  start_time: string | null;
+  end_time: string | null;
+  time_spent: string | null;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  created_by: number | null;
+  updated_by: number | null;
+}
 
 export interface IProjectTask {
   id: number;
@@ -2388,9 +2339,30 @@ export interface IProjectTask {
   assigned_to: UserProfile[];
   start_date: string;
   end_date: string;
-  task_status: "not_started" | "in_progress" | "completed" | "on_hold";
-  priority: "low" | "medium" | "high" | "urgent";
+  task_status: IProjectTaskStatus;
+  priority: IProjectTaskPriority;
+  task_time_sheet: ITaskTimeSheet
 }
+
+
+export interface IProjectTaskFormData {
+  project: number;
+  task_name: string;
+  description: string;
+  leaders: number[];
+  assigned_to: number[];
+  start_date: string;
+  end_date: string;
+  task_status?: IProjectTaskStatus;
+  priority: IProjectTaskPriority;
+}
+
+export type IProjectStatus = | "not_started"
+  | "in_progress"
+  | "planning"
+  | "on_hold"
+  | "cancelled"
+  | "completed";
 
 export interface IProject {
   id: number;
@@ -2401,14 +2373,22 @@ export interface IProject {
   description: string;
   start_date: string;
   end_date: string;
-  project_status:
-  | "not_started"
-  | "in_progress"
-  | "planning"
-  | "on_hold"
-  | "cancelled"
-  | "completed";
+  project_status: IProjectStatus
   project_tasks: IProjectTask[];
+}
+
+
+
+export interface IProjectFormData {
+  institution: number;
+  project_name: string;
+  leaders: number[];
+  members: number[];
+  description: string;
+  start_date: string;
+  end_date: string;
+  project_status?: IProjectStatus
+
 }
 
 // Apply approvals to existing READ interfaces via declaration merging
