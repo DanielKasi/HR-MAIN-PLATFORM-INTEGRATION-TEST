@@ -303,18 +303,35 @@ class TaskSerializer(BaseApprovableSerializer):
         if not project:
             raise serializers.ValidationError({"error": "Project is required."})
 
-        leaders_ids = [leader.id for leader in leaders]
-        assigned_to_ids = [profile.id for profile in assigned_to]
+        # Get the project's leaders and members
+        project_leaders = set(project.leaders.values_list("id", flat=True))
+        project_members = set(project.members.values_list("id", flat=True))
+        project_participants = project_leaders.union(project_members)
 
+        # Validate leaders
+        leaders_ids = [leader.id for leader in leaders]
+        invalid_leaders = [leader_id for leader_id in leaders_ids if leader_id not in project_participants]
+        if invalid_leaders:
+            raise serializers.ValidationError(
+                {"error": f"Leaders with IDs {list(invalid_leaders)} are not part of the project."}
+            )
+
+        # Validate assigned_to
+        assigned_to_ids = [profile.id for profile in assigned_to]
+        invalid_assigned_to = [assigned_id for assigned_id in assigned_to_ids if assigned_id not in project_participants]
+        if invalid_assigned_to:
+            raise serializers.ValidationError(
+                {"error": f"Assignees with IDs {list(invalid_assigned_to)} are not part of the project."}
+            )
+
+        # Existing validation for institution
         from users.models import Profile
 
         if leaders:
             valid_leaders = Profile.objects.filter(
                 id__in=leaders_ids, institution=project.institution
             ).values_list("id", flat=True)
-
             invalid_leaders = set(leaders_ids) - set(valid_leaders)
-
             if invalid_leaders:
                 raise serializers.ValidationError(
                     {"error": f"Leaders with IDs {list(invalid_leaders)} do not belong to the institution."}
@@ -324,14 +341,18 @@ class TaskSerializer(BaseApprovableSerializer):
             valid_assigned_to = Profile.objects.filter(
                 id__in=assigned_to_ids, institution=project.institution
             ).values_list("id", flat=True)
-
             invalid_assigned_to = set(assigned_to_ids) - set(valid_assigned_to)
+            if invalid_assigned_to:
+                raise serializers.ValidationError(
+                    {"error": f"Assignees with IDs {list(invalid_assigned_to)} do not belong to the institution."}
+                )
 
+        # Validate dates
         start_date = data.get("start_date")
         end_date = data.get("end_date")
-
         if start_date and end_date and start_date > end_date:
             raise serializers.ValidationError({"error": "Start date cannot be after end date."})
+
         return data
 
     @transaction.atomic

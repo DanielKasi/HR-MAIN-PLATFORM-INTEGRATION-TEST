@@ -22,4 +22,5 @@ urlpatterns = [
     path('meetings/<int:pk>/', views.MeetingDetailView.as_view(), name='meeting_detail'),
     path('initiate-oauth/', views.initiate_oauth, name='initiate_oauth'),
     path('oauth2callback/', views.oauth2callback, name='oauth2callback'),
+    path('analytics/', views.AnalyticsView.as_view(), name='analytics'),
 ]

@@ -570,14 +570,19 @@ class ApprovalTaskListAPIView(APIView, SortableAPIMixin):
             tasks = tasks.filter(
                 Q(task_name__icontains=search_query) |
                 Q(approval__name__icontains=search_query) |
-                Q(comments__icontains=search_query)
+                Q(comment__icontains=search_query)
             )
         
         if status_filter:
             tasks = tasks.filter(status=status_filter)
             
         if assigned_to:
-            tasks = tasks.filter(assigned_to_id=assigned_to)
+            tasks = tasks.filter(
+                Q(level__approvers__users__user__id=assigned_to) |
+                Q(level__overriders__users__user__id=assigned_to) |
+                Q(level__approvers__roles__user_roles__user__id=assigned_to) |
+                Q(level__overriders__roles__user_roles__user__id=assigned_to)
+            ).distinct()
         
         try:
             tasks = self.apply_sorting(tasks, request)
