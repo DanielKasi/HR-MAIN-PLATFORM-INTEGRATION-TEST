@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { fetchApprovalDocumentById, fetchApprovalDocumentLevels } from "@/lib/api/approvals/utils"
 import type { ApprovalDocument, ApprovalDocumentLevel } from "@/types/approvals.types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +11,7 @@ import FixedLoader from "@/components/fixed-loader"
 import { showErrorToast } from "@/lib/utils"
 import { ArrowLeft, FileText, Users, Shield, CheckCircle2, Edit, Calendar } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
+import { APPROVAL_DOCUMENTS_API } from "@/lib/api/approvals/utils"
 
 export default function ApprovalDetailsPage() {
   const params = useParams()
@@ -31,7 +31,7 @@ export default function ApprovalDetailsPage() {
     try {
       setLoading(true)
       const [documentRes] = await Promise.all([
-        fetchApprovalDocumentById(Number.parseInt(approvalId))
+        APPROVAL_DOCUMENTS_API.fetchById({ id: Number.parseInt(approvalId) })
       ])
       setApprovalDocument(documentRes)
     } catch (e: any) {
@@ -123,19 +123,6 @@ export default function ApprovalDetailsPage() {
               ))}
             </div>
           </div>
-
-          {/* <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              Created: {new Date(approvalDocument.created_at).toLocaleDateString()}
-            </div>
-            {approvalDocument.updated_at !== approvalDocument.created_at && (
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Updated: {new Date(approvalDocument.updated_at).toLocaleDateString()}
-              </div>
-            )}
-          </div> */}
         </CardContent>
       </Card>
 
@@ -158,72 +145,72 @@ export default function ApprovalDetailsPage() {
             <div className="space-y-4">
               {approvalDocument.levels.map((level, index) => (
                 <Fragment key={index}>
-                <div className="rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          Level {index + 1}
-                        </Badge>
-                        <span className="font-medium">{level.name}</span>
-                      </div>
-                      {level.description && <p className="text-sm text-muted-foreground mt-1">{level.description}</p>}
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="flex items-center gap-1 mb-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">Approver Groups</span>
-                      </div>
-                      {level.approvers_detail && level.approvers_detail.length > 0 ? (
-                        <div className="space-y-2">
-                          {level.approvers_detail.map((approver) => (
-                            <div
-                              key={approver.id}
-                              className="flex items-center justify-between p-2 bg-muted/50 rounded"
-                            >
-                              <span className="font-medium">{approver.approver_group.name}</span>
-                              <div className="text-xs text-muted-foreground">
-                                {approver.approver_group.users_display.length} users, {approver.approver_group.roles_display.length}{" "}
-                                roles
-                              </div>
-                            </div>
-                          ))}
+                  <div className="rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            Level {index + 1}
+                          </Badge>
+                          <span className="font-medium">{level.name}</span>
                         </div>
-                      ) : (
-                        <p className="text-muted-foreground">No approver groups assigned</p>
-                      )}
+                        {level.description && <p className="text-sm text-muted-foreground mt-1">{level.description}</p>}
+                      </div>
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-1 mb-2">
-                        <Shield className="h-4 w-4 text-orange-600" />
-                        <span className="font-medium">Overrider Groups</span>
-                      </div>
-                      {level.overriders_detail && level.overriders_detail.length > 0 ? (
-                        <div className="space-y-2">
-                          {level.overriders_detail.map((overrider) => (
-                            <div
-                              key={overrider.id}
-                              className="flex items-center justify-between p-2 bg-muted/50 rounded"
-                            >
-                              <span className="font-medium">{overrider.approver_group.name}</span>
-                              <div className="text-xs text-muted-foreground">
-                                {overrider.approver_group.users_display.length} users, {overrider.approver_group.roles_display.length}{" "}
-                                roles
-                              </div>
-                            </div>
-                          ))}
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="flex items-center gap-1 mb-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="font-medium">Approver Groups</span>
                         </div>
-                      ) : (
-                        <p className="text-muted-foreground">No overrider groups assigned</p>
-                      )}
+                        {level.approvers_detail && level.approvers_detail.length > 0 ? (
+                          <div className="space-y-2">
+                            {level.approvers_detail.map((approver) => (
+                              <div
+                                key={approver.id}
+                                className="flex items-center justify-between p-2 bg-muted/50 rounded"
+                              >
+                                <span className="font-medium">{approver.approver_group.name}</span>
+                                <div className="text-xs text-muted-foreground">
+                                  {approver.approver_group.users_display.length} users, {approver.approver_group.roles_display.length}{" "}
+                                  roles
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No approver groups assigned</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-1 mb-2">
+                          <Shield className="h-4 w-4 text-orange-600" />
+                          <span className="font-medium">Overrider Groups</span>
+                        </div>
+                        {level.overriders_detail && level.overriders_detail.length > 0 ? (
+                          <div className="space-y-2">
+                            {level.overriders_detail.map((overrider) => (
+                              <div
+                                key={overrider.id}
+                                className="flex items-center justify-between p-2 bg-muted/50 rounded"
+                              >
+                                <span className="font-medium">{overrider.approver_group.name}</span>
+                                <div className="text-xs text-muted-foreground">
+                                  {overrider.approver_group.users_display.length} users, {overrider.approver_group.roles_display.length}{" "}
+                                  roles
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-muted-foreground">No overrider groups assigned</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                {index !== approvalDocument.levels.length -1 && <Separator/> }
+                  {index !== approvalDocument.levels.length - 1 && <Separator />}
                 </Fragment>
               ))}
             </div>

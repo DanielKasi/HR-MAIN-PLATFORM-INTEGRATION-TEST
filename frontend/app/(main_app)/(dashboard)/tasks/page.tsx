@@ -1,203 +1,203 @@
-"use client";
+"use client"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Filter, Search, SortAsc, SortDesc, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { formatDistanceToNow } from "date-fns"
+import { useSelector } from "react-redux"
 
-import type React from "react";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 
-import { useState, useEffect } from "react";
-import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
-import { useSelector } from "react-redux";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// import { useWebSocket } from "@/lib/WebSocketProvider";
-import { selectUser } from "@/store/auth/selectors";
-import { useDocumentTitle } from "@/hooks/use-document-title";
-
-export interface DisplayTask {
-  id: number;
-  title: string;
-  description: string;
-  time: string;
-  link: string;
-  type:
-  | "product_approval"
-  | "stock_approval"
-  | "purchase_order_approval"
-  | "stock_movement_to_branch"
-  | "stock_movement_to_shelf"
-  | "return_request"
-  | "other";
-}
-
-export type TaskType = "incoming" | "outgoing" | "all" | "open" | "critical" | "expired";
+import { selectUser } from "@/store/auth/selectors"
+import { useDocumentTitle } from "@/hooks/use-document-title"
+import type { ApprovalTaskType, ApprovalTaskStatus, ApprovalTask } from "@/types/approvals.types"
+import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils"
+import { getDashboardTasksAnalytics, showErrorToast } from "@/lib/utils"
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<DisplayTask[]>([]);
-  const originParams = useSearchParams();
-  const originTaskType = originParams.get("type") || "all" as TaskType;
-  const [filteredTasks, setFilteredTasks] = useState<DisplayTask[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const taskId = useSearchParams().get("taskId");
-  const currentUser = useSelector(selectUser);
-  // const { tasks: apiTasks, connected, sendMessage } = useWebSocket();
+  const [tasks, setTasks] = useState<ApprovalTask[]>([])
+  const [filteredTasks, setFilteredTasks] = useState<ApprovalTask[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [nextUrl, setNextUrl] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(true)
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const taskType = (searchParams.get("type") || "all") as ApprovalTaskType
+  const currentUser = useSelector(selectUser)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
   useDocumentTitle("TASKS")
 
-  // Convert API tasks to display format
-  useEffect(() => {
-    if (!apiTasks) {
-      setIsLoading(true);
-
-      return;
+  // Map task types to status filters
+  const getStatusFromTaskType = (type: ApprovalTaskType): ApprovalTaskStatus | undefined => {
+    switch (type) {
+      case "incoming":
+      case "open":
+        return "pending"
+      case "outgoing":
+        return "approved"
+      case "critical":
+      case "expired":
+        return "pending"
+      default:
+        return undefined
     }
+  }
 
-    setIsLoading(false);
-    setError(null);
+  const fetchTasks = useCallback(
+    async (reset = false) => {
+      if (!currentUser?.id) return
 
-    // Convert API tasks to display format
-    const convertedTasks = apiTasks
-      .filter(
-        (task) =>
-          task.status === "pending" &&
-          (task.step.roles_details.find((role: { id: number }) =>
-            currentUser?.roles.some((u_role) => u_role.id === role.id),
-          ) ||
-            task.step.approvers_details?.map(
-              (appr: { approver_user: { user: { id: number | undefined } } }) =>
-                appr.approver_user.user.id === currentUser?.id,
-            )),
-      )
-      .map((task) => {
-        // Determine task type based on action category
-        let taskType:
-          | "product_approval"
-          | "purchase_order_approval"
-          | "stock_movement_to_branch"
-          | "stock_movement_to_shelf"
-          | "return_request"
-          | "other" = "other";
+      try {
+        setIsLoading(reset)
+        setError(null)
 
-        if (task.step.action_details.code.toLowerCase().includes("product")) {
-          taskType = "product_approval";
-        } else if (task.step.action_details.code.toLowerCase().includes("purchase")) {
-          taskType = "purchase_order_approval";
-        } else if (task.step.action_details.code.toLowerCase().includes("branch")) {
-          taskType = "stock_movement_to_branch";
-        } else if (task.step.action_details.code.toLowerCase().includes("shelf")) {
-          taskType = "stock_movement_to_shelf";
-        } else if (task.step.action_details.code.toLowerCase().includes("return")) {
-          taskType = "return_request";
+        const status = getStatusFromTaskType(taskType)
+        // const response = await APPROVAL_TASKS_API.fetchAll({
+        //   // assigned_to: currentUser.id,
+        //   status,
+        //   page_size: 20,
+        // })
+        const response = await getDashboardTasksAnalytics()
+
+
+        if (reset && taskType) {
+          let filteredTasks: ApprovalTask[] = []
+          if (taskType === "all") {
+            filteredTasks = [...response.incoming.tasks, ...response.outgoing.tasks, ...response.critical.tasks, ...response.expired.tasks];
+          }
+          else {
+            filteredTasks = response[taskType as keyof typeof response]?.tasks || [];
+          }
+          setTasks(filteredTasks);
         }
+        // setNextUrl(response.next)
+        // setHasMore(!!response.next)
+        setHasMore(false) // Disable infinite scroll for now
+      } catch (err) {
+        showErrorToast({ error: err, defaultMessage: "Failed to fetch tasks" })
+      } finally {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+      }
+    },
+    [currentUser?.id, taskType],
+  )
 
-        // Build link based on action type
-        let link = "#";
+  const loadMoreTasks = useCallback(async () => {
+    if (!nextUrl || isLoadingMore) return
 
-        if (taskType === "product_approval") {
-          link = `/inventory/products/${task.object_id}`;
-        } else if (taskType === "purchase_order_approval") {
-          link = `/inventory/purchase-orders/${task.object_id}`;
-        } else if (taskType === "stock_movement_to_branch") {
-          link = `/main-branch-allocations/${task.object_id}`;
-        } else if (taskType === "stock_movement_to_shelf") {
-          link = `/main-branch-allocations/${task.object_id}`;
-        } else if (taskType === "return_request") {
-          link = `/return-requests/${task.object_id}`;
-        }
+    try {
+      setIsLoadingMore(true)
+      const response = await APPROVAL_TASKS_API.fetchPaginatedTasksFromUrl(nextUrl)
 
-        return {
-          id: task.id,
-          title: task.step.step_name,
-          description: `Approval needed for ${task.step.action_details.label}`,
-          time: formatDistanceToNow(new Date(task.updated_at), {
-            addSuffix: true,
-          }),
-          link,
-          type: taskType,
-        };
-      });
-
-    setTasks(convertedTasks as any);
-  }, [apiTasks, currentUser]);
-
-  // Request fresh data when component mounts
-  useEffect(() => {
-    if (connected) {
-      sendMessage({ type: "fetch_tasks" });
+      setTasks((prev) => [...prev, ...response.results])
+      setNextUrl(response.next)
+      setHasMore(!!response.next)
+    } catch (err) {
+      setError("Failed to load more tasks")
+      console.error("Error loading more tasks:", err)
+    } finally {
+      setIsLoadingMore(false)
     }
-  }, [connected, sendMessage]);
+  }, [nextUrl, isLoadingMore])
 
+  const lastTaskElementRefCallback = useCallback(
+    (node: HTMLDivElement) => {
+      if (isLoadingMore) return
+      if (observerRef.current) observerRef.current.disconnect()
+
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          loadMoreTasks()
+        }
+      })
+
+      if (node) observerRef.current.observe(node)
+    },
+    [isLoadingMore, hasMore, loadMoreTasks],
+  )
+
+  // Initial fetch and refetch when task type changes
   useEffect(() => {
-    applyFilters(tasks, searchQuery, filterType, sortOrder, taskId);
-  }, [searchQuery, filterType, sortOrder, tasks, taskId]);
+    fetchTasks(true)
+  }, [fetchTasks])
 
-  const applyFilters = (
-    tasks: DisplayTask[],
-    search: string,
-    type = "all",
-    sort: "asc" | "desc",
-    id: string | null = null,
-  ) => {
-    let filtered = [...tasks];
+  // Apply search and sort filters
+  useEffect(() => {
+    let filtered = [...tasks]
 
     // Apply search filter
-    if (search) {
+    if (searchQuery) {
       filtered = filtered.filter(
         (task) =>
-          task.title.toLowerCase().includes(search.toLowerCase()) ||
-          task.description.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    if (id) {
-      filtered = filtered.filter((task) => task.id.toString() === id);
-    }
-    // Apply type filter
-    if (type && type !== "all") {
-      filtered = filtered.filter((task) => task.type === type);
+          task.level.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          task.level.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     }
 
-    // Apply sorting by time
+    // Apply sorting by updated_at
     filtered.sort((a, b) => {
-      // Convert human-readable time to date for accurate sorting
-      const timeA = new Date(a.time.replace("ago", "ago")).getTime();
-      const timeB = new Date(b.time.replace("ago", "ago")).getTime();
+      const timeA = new Date(a.updated_at).getTime()
+      const timeB = new Date(b.updated_at).getTime()
+      return sortOrder === "asc" ? timeA - timeB : timeB - timeA
+    })
 
-      return sort === "asc" ? timeA - timeB : timeB - timeA;
-    });
+    setFilteredTasks(filtered)
+  }, [tasks, searchQuery, sortOrder])
 
-    setFilteredTasks(filtered);
-  };
+  const getStatusIcon = (status: ApprovalTaskStatus) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />
+      case "approved":
+        return <CheckCircle className="h-4 w-4" />
+      case "rejected":
+        return <XCircle className="h-4 w-4" />
+      case "terminated":
+        return <AlertCircle className="h-4 w-4" />
+      default:
+        return <Clock className="h-4 w-4" />
+    }
+  }
 
-  const handleTaskClick = (link: string) => {
-    router.push(link);
-  };
+  const getStatusColor = (status: ApprovalTaskStatus) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "approved":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "terminated":
+        return "bg-gray-100 text-gray-800 border-gray-200"
+      default:
+        return "bg-blue-100 text-blue-800 border-blue-200"
+    }
+  }
+
+  const handleTaskClick = (task: ApprovalTask) => {
+    // Navigate to the object that needs approval - this would need to be customized based on your routing
+    router.push(`/approvals/${task.id}`)
+  }
 
   const toggleSortOrder = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+  }
 
   const refreshTasks = () => {
-    if (connected) {
-      sendMessage({ type: "fetch_tasks" });
-    }
-  };
+    fetchTasks(true)
+  }
 
-  // Loading UI with skeleton
+  // Loading UI
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4">
@@ -206,35 +206,26 @@ export default function TasksPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Pending Tasks</CardTitle>
-            <CardDescription>Loading tasks...</CardDescription>
+            <CardTitle>Loading Tasks...</CardTitle>
+            <CardDescription>Please wait while we fetch your tasks</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex w-full items-center gap-2 md:w-1/2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input disabled className="h-9" placeholder="Search tasks..." />
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <div className="h-9 w-[180px] animate-pulse rounded-md bg-muted" />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+                  <div className="h-10 w-10 animate-pulse rounded-full bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
                   </div>
-                  <div className="h-9 w-9 animate-pulse rounded-md bg-muted" />
+                  <div className="h-6 w-16 animate-pulse rounded bg-muted" />
                 </div>
-              </div>
-              <div className="flex h-[200px] items-center justify-center">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="h-16 w-16 animate-pulse rounded-full bg-muted" />
-                  <h3 className="mt-4 text-lg font-semibold">Loading tasks</h3>
-                </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
@@ -245,18 +236,13 @@ export default function TasksPage() {
           <Badge className="text-sm" variant="outline">
             {filteredTasks.length} {filteredTasks.length === 1 ? "Task" : "Tasks"}
           </Badge>
-          {!connected && (
-            <Badge className="text-sm" variant="destructive">
-              Offline
-            </Badge>
-          )}
         </div>
       </div>
 
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-destructive">
           <p>{error}</p>
-          <Button className="mt-2" size="sm" variant="outline" onClick={refreshTasks}>
+          <Button className="mt-2 bg-transparent" size="sm" variant="outline" onClick={refreshTasks}>
             Retry
           </Button>
         </div>
@@ -264,7 +250,9 @@ export default function TasksPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle><span className="capitalize">{originTaskType} Tasks</span></CardTitle>
+          <CardTitle>
+            <span className="capitalize">{taskType}</span> Tasks
+          </CardTitle>
           <CardDescription>Tasks that require your attention and action</CardDescription>
         </CardHeader>
         <CardContent>
@@ -280,109 +268,65 @@ export default function TasksPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="h-9 w-[180px]">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="incoming">Incoming</SelectItem>
-                      <SelectItem value="outgoing">Outgoing</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="h-9 w-9" size="icon" variant="outline" onClick={toggleSortOrder}>
-                  {sortOrder === "asc" ? (
-                    <SortAsc className="h-4 w-4" />
-                  ) : (
-                    <SortDesc className="h-4 w-4" />
-                  )}
+                <Button className="h-9 w-9 bg-transparent" size="icon" variant="outline" onClick={toggleSortOrder}>
+                  {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
                 </Button>
-                <Button className="h-9 w-9" size="icon" variant="outline" onClick={refreshTasks}>
-                  <svg
-                    className="lucide lucide-refresh-cw"
-                    fill="none"
-                    height="16"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    width="16"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                    <path d="M21 3v5h-5" />
-                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                    <path d="M3 21v-5h5" />
-                  </svg>
+                <Button className="h-9 w-9 bg-transparent" size="icon" variant="outline" onClick={refreshTasks}>
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {filteredTasks.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Task</TableHead>
-                    <TableHead className="hidden md:table-cell">Description</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTasks.map((task) => (
-                    <TableRow
-                      key={task.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleTaskClick(task.link)}
+              <div className="space-y-3">
+                {filteredTasks.map((task, index) => (
+                  <div
+                    key={task.id}
+                    ref={index === filteredTasks.length - 1 ? lastTaskElementRefCallback : undefined}
+                    className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => handleTaskClick(task)}
+                  >
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full border ${getStatusColor(task.status)}`}
                     >
-                      <TableCell className="font-medium">{task.title}</TableCell>
-                      <TableCell className="hidden md:table-cell">{task.description}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className="text-xs"
-                          variant={
-                            task.type === "product_approval"
-                              ? "destructive"
-                              : task.type === "purchase_order_approval"
-                                ? "success"
-                                : task.type === "stock_approval"
-                                  ? "default"
-                                  : task.type === "stock_movement_to_branch"
-                                    ? "warning"
-                                    : task.type === "stock_movement_to_shelf"
-                                      ? "secondary"
-                                      : task.type === "return_request"
-                                        ? "info"
-                                        : "outline"
-                          }
-                        >
-                          {task.type === "product_approval"
-                            ? "Product"
-                            : task.type === "purchase_order_approval"
-                              ? "Purchase Order"
-                              : task.type === "stock_approval"
-                                ? "Stock"
-                                : task.type === "stock_movement_to_branch"
-                                  ? "Stock Allocation To Branch"
-                                  : task.type === "stock_movement_to_shelf"
-                                    ? "Stock Allocation To Shelf"
-                                    : task.type === "return_request"
-                                      ? "Return Request"
-                                      : "Other"}
+                      {getStatusIcon(task.status)}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-sm truncate">
+                          {task.level.name || `Level ${task.level.level}`}
+                        </h3>
+                        <Badge variant="outline" className="text-xs">
+                          {task.status.replace("_", " ").toUpperCase()}
                         </Badge>
-                      </TableCell>
-                      <TableCell>{task.time}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{task.level.description}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span>Updated {formatDistanceToNow(new Date(task.updated_at), { addSuffix: true })}</span>
+                        {task.approved_by_fullname && (
+                          <>
+                            <Separator orientation="vertical" className="h-3" />
+                            <span>By {task.approved_by_fullname}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {formatDistanceToNow(new Date(task.updated_at))}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoadingMore && (
+                  <div className="flex items-center justify-center p-4">
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    <span className="text-sm text-muted-foreground">Loading more tasks...</span>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed">
                 <div className="flex flex-col items-center justify-center text-center p-4">
@@ -391,8 +335,7 @@ export default function TasksPage() {
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">No tasks found</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    No tasks match your current filters. Try changing your search or filter
-                    settings.
+                    No tasks match your current search. Try adjusting your search terms.
                   </p>
                 </div>
               </div>
@@ -401,5 +344,5 @@ export default function TasksPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

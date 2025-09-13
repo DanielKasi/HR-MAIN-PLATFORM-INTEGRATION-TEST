@@ -3,21 +3,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import {
-  fetchActions,
-  fetchApprovableModels,
-  createApprovalDocument,
-  createApprovalDocumentLevel,
-  deleteApprovalDocumentLevel,
-  fetchApprovalDocumentLevels,
-  fetchApproverGroups,
-  createApproverGroup,
-  fetchApprovalDocumentById,
-} from "@/lib/api/approvals/utils"
+
 import type {
   Action,
   ContentTypeLite,
-  ApprovalDocumentLevel,
   ApprovalDocumentFormData,
   ApprovalDocument,
   ApprovalDocumentLevelFormData,
@@ -42,6 +31,7 @@ import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { ACTIONS_API, APPROVABLE_MODELS_API, APPROVAL_DOCUMENT_LEVELS_API, APPROVAL_DOCUMENTS_API, APPROVER_GROUPS_API } from "@/lib/api/approvals/utils"
 
 export default function ApprovalCreatePage() {
   const searchParams = useSearchParams()
@@ -98,7 +88,7 @@ export default function ApprovalCreatePage() {
     if (!createdApprovalDocument || !currentInstitution) return
 
     try {
-      const response = await fetchApprovalDocumentById(createdApprovalDocument.id)
+      const response = await APPROVAL_DOCUMENTS_API.fetchById({ id: createdApprovalDocument.id })
       setCreatedApprovalDocument(response);
     } catch (error) {
       // If there's an error or no existing document, continue with creation flow
@@ -113,12 +103,12 @@ export default function ApprovalCreatePage() {
     try {
       setLoading(true)
       const [modelsRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
-        fetchApprovableModels(),
-        fetchActions(),
+        APPROVABLE_MODELS_API.fetchAll(),
+        ACTIONS_API.fetchActions(),
         PROFILES_API.getPaginatedUserProfiles({}),
 
         getRoles({ institutionId: currentInstitution.id }),
-        fetchApproverGroups(),
+        APPROVER_GROUPS_API.fetchAll(),
       ])
 
       const normalizedActions = Array.isArray(actionsRes)
@@ -175,7 +165,7 @@ export default function ApprovalCreatePage() {
         actions: selectedActionIds,
       }
 
-      const createdDoc = await createApprovalDocument(documentData)
+      const createdDoc = await APPROVAL_DOCUMENTS_API.create(documentData)
       setCreatedApprovalDocument(createdDoc)
       showSuccessToast("Approval document created successfully!")
     } catch (e: any) {
@@ -213,7 +203,7 @@ export default function ApprovalCreatePage() {
         roles: selectedGroupRoleIds,
       }
 
-      const createdGroup = await createApproverGroup(groupData)
+      const createdGroup = await APPROVER_GROUPS_API.create(groupData)
       setApproverGroups((prev) => [...prev, createdGroup])
       resetApproverGroupDialog()
       showSuccessToast("Approver group created successfully!")
@@ -259,7 +249,7 @@ export default function ApprovalCreatePage() {
         approval_document: createdApprovalDocument?.id,
       }
 
-      await createApprovalDocumentLevel(levelData)
+      await APPROVAL_DOCUMENT_LEVELS_API.create(levelData)
       await fetchExistingApprovalDocument()
       resetLevelDialog()
       showSuccessToast("Approval level created successfully!")
@@ -282,7 +272,7 @@ export default function ApprovalCreatePage() {
   const removeLevelFromList = async (levelId: number) => {
     try {
       setDeletingLevel(true)
-      await deleteApprovalDocumentLevel(levelId)
+      await APPROVAL_DOCUMENT_LEVELS_API.delete({ id: levelId })
 
       // Refetch levels to ensure data consistency
       if (createdApprovalDocument) {

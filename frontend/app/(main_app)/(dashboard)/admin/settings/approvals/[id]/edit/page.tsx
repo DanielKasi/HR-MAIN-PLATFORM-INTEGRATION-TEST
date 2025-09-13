@@ -3,16 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  fetchApprovalDocumentById,
-  updateApprovalDocument,
-  fetchActions,
-  createApprovalDocumentLevel,
-  updateApprovalDocumentLevel,
-  deleteApprovalDocumentLevel,
-  fetchApproverGroups,
-  createApproverGroup,
-} from "@/lib/api/approvals/utils";
 import type {
   ApprovalDocument,
   ApprovalDocumentLevel,
@@ -57,6 +47,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { ACTIONS_API, APPROVAL_DOCUMENT_LEVELS_API, APPROVAL_DOCUMENTS_API, APPROVER_GROUPS_API } from "@/lib/api/approvals/utils";
 
 export default function ApprovalEditPage() {
   const params = useParams();
@@ -115,11 +106,11 @@ export default function ApprovalEditPage() {
     try {
       setLoading(true);
       const [documentRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
-        fetchApprovalDocumentById(Number.parseInt(approvalId)),
-        fetchActions(),
+        APPROVAL_DOCUMENTS_API.fetchById({id:Number.parseInt(approvalId)}),
+        ACTIONS_API.fetchActions(),
         PROFILES_API.getPaginatedUserProfiles({}),
         getRoles({ institutionId: currentInstitution.id }),
-        fetchApproverGroups(),
+        APPROVER_GROUPS_API.fetchAll(),
       ]);
 
       const normalizedActions = Array.isArray(actionsRes)
@@ -172,7 +163,7 @@ export default function ApprovalEditPage() {
         actions: selectedActionIds,
       };
 
-      await updateApprovalDocument(approvalDocument.id, documentData);
+      await APPROVAL_DOCUMENTS_API.update({id:approvalDocument.id, payload:documentData});
       showSuccessToast("Approval document updated successfully!");
     } catch (e: any) {
       showErrorToast({ error: e, defaultMessage: "Failed to update approval document" });
@@ -208,7 +199,7 @@ export default function ApprovalEditPage() {
         roles: selectedGroupRoleIds,
       };
 
-      const createdGroup = await createApproverGroup(groupData);
+      const createdGroup = await APPROVER_GROUPS_API.create(groupData);
       setApproverGroups((prev) => [...prev, createdGroup]);
       resetApproverGroupDialog();
       showSuccessToast("Approver group created successfully!");
@@ -272,10 +263,10 @@ export default function ApprovalEditPage() {
       };
 
       if (editingLevel) {
-        await updateApprovalDocumentLevel(editingLevel.id, levelData);
+        await APPROVAL_DOCUMENT_LEVELS_API.update({id:editingLevel.id, payload:levelData});
         showSuccessToast("Approval level updated successfully!");
       } else {
-        await createApprovalDocumentLevel(levelData);
+        await APPROVAL_DOCUMENT_LEVELS_API.create(levelData);
         showSuccessToast("Approval level created successfully!");
       }
       loadData();
@@ -306,7 +297,7 @@ export default function ApprovalEditPage() {
 
     try {
       setDeletingLevel(true);
-      await deleteApprovalDocumentLevel(levelToDelete);
+      await APPROVAL_DOCUMENT_LEVELS_API.delete({id:levelToDelete});
       await loadData()
       showSuccessToast("Approval level deleted successfully!");
     } catch (e: any) {

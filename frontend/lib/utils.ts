@@ -151,12 +151,13 @@ import {
   IProjectTask,
 } from "@/types/types.utils";
 
+import { ApprovalTask } from "@/types/approvals.types";
+
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
 import { toast } from "sonner";
 import { BulkEmployeeUploadResult, IKYCDocument, IUserInstitution, IUserInstitutionFormData, Role, UserProfile } from "@/types";
 import { forceUrlToHttps } from "./helpers";
-import { create } from "domain";
 import { MAIN_DOMAIN_URL } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -4203,7 +4204,7 @@ export const getPayslips = async (
   }
 };
 
-export const getTasksDashboard = async () => {
+export const getDashboardTasksAnalytics = async () => {
   try {
     const response = await apiRequest.get("approval/tasks-analytics/");
     return response.data as ApprovalTasksDashboardResponse;
@@ -7255,6 +7256,5 @@ export const PROJECTS_TASKS_API = {
     return response.data as IProjectTask;
   },
 };
-
 
 
