@@ -1,5 +1,7 @@
 from django.db import models
 from approval.models import BaseApprovableModel
+from performance.teams_api import create_teams_meeting, update_teams_meeting
+from performance.zoom_api import create_zoom_meeting
 from employee.models import Employee
 from institution.models import Institution
 from django.utils import timezone
@@ -8,6 +10,12 @@ from django.db.models import JSONField
 from rest_framework.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
+from dateutil.rrule import rrulestr
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import os
+from google.auth.transport.requests import Request
 
 class Period(BaseApprovableModel):   
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE) 
@@ -28,7 +36,7 @@ class Objectives(BaseApprovableModel):
         ("months", "Months"),
         ("years", "Years")
     ]
-    Institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     description = models.TextField()
     managers = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name="objectivemanagers")
@@ -123,7 +131,14 @@ class Feedback360(BaseApprovableModel):
 
 class EmployeeBonusPoint(BaseApprovableModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    points = models.IntegerField()
+    bonus_point_setting = models.ForeignKey(
+        'BonusPointSettings',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='employee_bonus_points',
+        help_text="The bonus point setting that triggered this award, if applicable."
+    )
     reason = models.TextField()
     date = models.DateTimeField(default=timezone.now)
     period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True, blank=True)
@@ -172,59 +187,322 @@ class QuestionTemplate(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-class BonusPointSettings(BaseApprovableModel):
-    Institution = models.ForeignKey(Institution, on_delete=models.CASCADE)    
-    object_id = models.PositiveIntegerField()
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    content_object = GenericForeignKey('content_type', 'object_id')
-    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Managers')])
-    bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
-    points = models.PositiveIntegerField()
+class EmployeeObjectives(BaseApprovableModel):
+    STATUS_CHOICES = [
+        ("not_started", "Not Started"),
+        ("on_track", "On Track"),
+        ("closed", "Closed"),
+        ("at_risk", "At Risk"),
+        ("behind", "Behind")
+    ]
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    objective = models.ForeignKey(Objectives, on_delete=models.CASCADE)
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default="not_started")
+    start_date = models.DateField()
+    end_date = models.DateField()
+    key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.content_object} - {self.bonus_for} - {self.points}"
+        return f"{self.employee.user.fullname} - {self.objective.name}"
+
+    def get_institution(self):
+        return self.employee.institution    
     
+class BonusPointSettings(BaseApprovableModel):
+    CONDITION_OPERATOR_CHOICES = [
+        ('=', 'Equal'),
+        ('<', 'Less than'),
+        ('>', 'Greater than'),
+        ('<=', 'Less than or equal'),
+        ('>=', 'Greater than or equal'),
+    ]
+    ALLOWED_FIELDS = {
+        'Period': ['start_date', 'end_date', 'is_closed'],
+        'Objectives': ['name', 'description', 'duration_unit', 'duration', 'self_employee_progress_update'],
+        'EmployeeObjectives': ['status', 'start_date', 'end_date'],
+        'KeyResult': ['title', 'description', 'target_value', 'duration', 'progress_type'],
+        'Feedback360': ['rating', 'submission_date', 'is_anonymous'],
+        'EmployeeBonusPoint': ['points', 'date', 'redeemed'],
+        'QuestionTemplate': ['name', 'description', 'category'],
+        'Meeting': ['title', 'start_time', 'end_time', 'mode'],
+    }
+    
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'model__in': [
+        'period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
+    ]})
+    content_object = GenericForeignKey('content_type', 'object_id')
+    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Members')])
+    bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
+    points = models.PositiveIntegerField()
+    condition_field = models.CharField(max_length=255)
+    condition_operator = models.CharField(max_length=10, choices=CONDITION_OPERATOR_CHOICES)
+    condition_value = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.content_object} - {self.bonus_for} - {self.points} ({self.condition_field} {self.condition_operator} {self.condition_value})"
+
     def get_institution(self):
         return self.institution
+
+    def clean(self):
+        allowed_models = ['period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting']
+        if self.content_type.model not in allowed_models:
+            raise ValidationError({"error": f"Invalid content_type. Must be one of: {', '.join(allowed_models)}"})
+        
+        model_name = self.content_type.model
+        model_class = self.content_type.model_class()
+        allowed_fields = self.ALLOWED_FIELDS.get(model_name.capitalize(), [])
+        if self.condition_field not in allowed_fields:
+            raise ValidationError({"error": f"Invalid condition_field for {model_name}. Must be one of: {', '.join(allowed_fields)}"})
+
+        # Validate condition_value based on field type
+        field = model_class._meta.get_field(self.condition_field)
+        if isinstance(field, (models.DateField, models.DateTimeField)):
+            try:
+                from datetime import datetime
+                datetime.strptime(self.condition_value, '%Y-%m-%d')
+            except ValueError:
+                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
+        elif isinstance(field, models.BooleanField):
+            if self.condition_value.lower() not in ['true', 'false']:
+                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be 'true' or 'false'."})
+        elif isinstance(field, models.IntegerField) or isinstance(field, models.FloatField):
+            try:
+                float(self.condition_value)
+            except ValueError:
+                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a number."})
 
 
 class Meeting(BaseApprovableModel):
     EVENT_MODE_CHOICES = [
-        ("physical", "Physical"),
-        ("online", "Online"),
-        ("hybrid", "Hybrid"),
+        ('physical', 'Physical'),
+        ('online', 'Online'),
+        ('hybrid', 'Hybrid'),
     ]
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE) 
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    mode = models.CharField(max_length=20, choices=EVENT_MODE_CHOICES, default="physical") 
-    location = models.CharField(max_length=255, blank=True, null=True) 
-    online_link = models.URLField(blank=True, null=True)  
-    participants = models.ManyToManyField(Employee, related_name='meetings')         
+    mode = models.CharField(max_length=20, choices=EVENT_MODE_CHOICES, default='physical')
+    location = models.CharField(max_length=255, blank=True, null=True)
+    online_link = models.URLField(blank=True, null=True)
+    participants = models.ManyToManyField(Employee, related_name='meetings')
     organizer = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='organized_meetings')
-    agenda = models.TextField(blank=True, null=True) 
+    agenda = models.TextField(blank=True, null=True)
     minutes = models.TextField(blank=True, null=True)
     is_recurring = models.BooleanField(default=False)
-    recurrence_rule = models.CharField(max_length=255, blank=True, null=True) 
+    recurrence_rule = models.CharField(max_length=255, blank=True, null=True)
     calendar_event_id = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} on {self.start_time.date()}"
 
-    def get_institution(self):
-        return self.institution 
-    
+    def _get_institution_meeting_link(self):
+        integration = self.institution.meeting_integrations.first()
+        if not integration:
+            return None
+        if integration.platform == 'zoom':
+            return self._create_zoom_meeting(integration)
+        elif integration.platform == 'google_meet':
+            return self._create_google_meet(integration)
+        elif integration.platform == 'microsoft_teams':
+            return self._create_teams_meeting(integration)
+        return None
+
+    def _create_zoom_meeting(self, integration):
+        duration = int((self.end_time - self.start_time).total_seconds() / 60)
+        zoom_data = create_zoom_meeting(
+            api_key=integration.api_key,
+            api_secret=integration.api_secret,
+            topic=self.title,
+            start_time=self.start_time.isoformat(),
+            duration=duration,
+            recurrence=self._get_zoom_recurrence() if self.is_recurring else None,
+        )
+        self.calendar_event_id = zoom_data['id']
+        return zoom_data['join_url']
+
+    def _create_google_meet(self, integration):
+        credentials = Credentials(
+            token=integration.oauth_token,
+            refresh_token=integration.oauth_refresh_token,
+            client_id=os.getenv('GOOGLE_CLIENT_ID'),
+            client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+            token_uri='https://oauth2.googleapis.com/token',
+        )
+        if credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+            integration.oauth_token = credentials.token
+            integration.oauth_refresh_token = credentials.refresh_token
+            integration.save()
+        service = build('calendar', 'v3', credentials=credentials)
+        event = {
+            'summary': self.title,
+            'description': self.description,
+            'start': {'dateTime': self.start_time.isoformat(), 'timeZone': 'UTC'},
+            'end': {'dateTime': self.end_time.isoformat(), 'timeZone': 'UTC'},
+            'conferenceData': {
+                'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
+            },
+            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+        }
+        if self.is_recurring and self.recurrence_rule:
+            event['recurrence'] = [self.recurrence_rule]
+        event = service.events().insert(calendarId='primary', body=event, conferenceDataVersion=1).execute()
+        self.calendar_event_id = event['id']
+        return event.get('hangoutLink')
+
+    def _create_teams_meeting(self, integration):
+        teams_data = create_teams_meeting(
+            client_id=integration.api_key,
+            client_secret=integration.api_secret,
+            tenant_id=integration.tenant_id,
+            subject=self.title,
+            start_time=self.start_time.isoformat(),
+            end_time=self.end_time.isoformat(),
+            recurrence=self._get_teams_recurrence() if self.is_recurring else None,
+            attendees=[p.user.email for p in self.participants.all()],
+        )
+        self.calendar_event_id = teams_data['id']
+        return teams_data['onlineMeeting']['joinUrl']
+
+    def _get_zoom_recurrence(self):
+        if not self.recurrence_rule:
+            return None
+        rrule = rrulestr(self.recurrence_rule)
+        recurrence_type = {
+            0: 1,  # Daily
+            1: 2,  # Weekly
+            2: 3,  # Monthly
+        }.get(rrule._freq, 1)
+        return {
+            'type': recurrence_type,
+            'repeat_interval': rrule._interval,
+            'weekly_days': ','.join(str(d + 1) for d in rrule._byweekday) if rrule._byweekday else None,
+            'end_date_time': (rrulestr(self.recurrence_rule)._until or self.end_time).isoformat(),
+        }
+
+    def _get_teams_recurrence(self):
+        if not self.recurrence_rule:
+            return None
+        rrule = rrulestr(self.recurrence_rule)
+        recurrence_type = {
+            0: 'daily',
+            1: 'weekly',
+            2: 'monthly'
+        }.get(rrule._freq, 'daily')
+        pattern = {
+            'type': recurrence_type,
+            'interval': rrule._interval,
+        }
+        if rrule._byweekday:
+            pattern['daysOfWeek'] = [rrule._byweekday[i].weekday for i in range(len(rrule._byweekday))]
+        range_end = rrule._until or self.end_time
+        return {
+            'pattern': pattern,
+            'range': {
+                'type': 'endDate',
+                'endDate': range_end.strftime('%Y-%m-%d')
+            }
+        }
+
+    def _sync_to_calendar(self):
+        if self.mode not in ['online', 'hybrid']:
+            return
+        integration = self.institution.meeting_integrations.first()
+        if not integration:
+            return
+        if self.calendar_event_id:
+            if integration.platform == 'google_meet':
+                self._update_google_calendar_event(integration)
+            elif integration.platform == 'zoom':
+                self._update_zoom_meeting(integration)
+            elif integration.platform == 'microsoft_teams':
+                self._update_teams_meeting(integration)
+        else:
+            self.online_link = self._get_institution_meeting_link()
+            if self.online_link:
+                self.save()
+
+    def _update_google_calendar_event(self, integration):
+        credentials = Credentials(
+            token=integration.oauth_token,
+            refresh_token=integration.oauth_refresh_token,
+            client_id=os.getenv('GOOGLE_CLIENT_ID'),
+            client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+            token_uri='https://oauth2.googleapis.com/token',
+        )
+        if credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+            integration.oauth_token = credentials.token
+            integration.oauth_refresh_token = credentials.refresh_token
+            integration.save()
+        service = build('calendar', 'v3', credentials=credentials)
+        event = {
+            'summary': self.title,
+            'description': self.description,
+            'start': {'dateTime': self.start_time.isoformat(), 'timeZone': 'UTC'},
+            'end': {'dateTime': self.end_time.isoformat(), 'timeZone': 'UTC'},
+            'conferenceData': {
+                'createRequest': {'requestId': f'meet-{self.id}', 'conferenceSolutionKey': {'type': 'hangoutsMeet'}}
+            },
+            'attendees': [{'email': p.user.email} for p in self.participants.all()],
+        }
+        if self.is_recurring and self.recurrence_rule:
+            event['recurrence'] = [self.recurrence_rule]
+        try:
+            updated_event = service.events().update(
+                calendarId='primary',
+                eventId=self.calendar_event_id,
+                body=event,
+                conferenceDataVersion=1
+            ).execute()
+            self.online_link = updated_event.get('hangoutLink')
+        except Exception as e:
+            print(f"Error updating Google Calendar event: {e}")
+
+    def _update_zoom_meeting(self, integration):
+        from .zoom_api import update_zoom_meeting
+        duration = int((self.end_time - self.start_time).total_seconds() / 60)
+        try:
+            zoom_data = update_zoom_meeting(
+                api_key=integration.api_key,
+                api_secret=integration.api_secret,
+                meeting_id=self.calendar_event_id,
+                topic=self.title,
+                start_time=self.start_time.isoformat(),
+                duration=duration,
+                recurrence=self._get_zoom_recurrence() if self.is_recurring else None,
+            )
+            self.online_link = zoom_data['join_url']
+        except Exception as e:
+            print(f"Error updating Zoom meeting: {e}")
+
+    def _update_teams_meeting(self, integration):
+        try:
+            teams_data = update_teams_meeting(
+                client_id=integration.api_key,
+                client_secret=integration.api_secret,
+                tenant_id=integration.tenant_id,
+                meeting_id=self.calendar_event_id,
+                subject=self.title,
+                start_time=self.start_time.isoformat(),
+                end_time=self.end_time.isoformat(),
+                recurrence=self._get_teams_recurrence() if self.is_recurring else None,
+                attendees=[p.user.email for p in self.participants.all()],
+            )
+            self.online_link = teams_data['onlineMeeting']['joinUrl']
+        except Exception as e:
+            print(f"Error updating Teams meeting: {e}")
+
     def save(self, *args, **kwargs):
         if self.mode in ['online', 'hybrid'] and not self.online_link:
-            # Fetch institution's integration details
             self.online_link = self._get_institution_meeting_link()
         super().save(*args, **kwargs)
         self._sync_to_calendar()
 
-    def _get_institution_meeting_link(self):
-        integration = getattr(self.institution, 'meeting_integration', None)    
-
     def get_institution(self):
-        return self.institution    
+        return self.institution     

@@ -107,3 +107,5 @@ The project uses [redis](https://redis.io/docs/latest/operate/oss_and_stack/inst
 - Customer Management
 - Reports & Analytics
 
+## to generate a field encryption key
+python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"

@@ -1,7 +1,9 @@
 from django.db import models
+from approval.models import BaseApprovableModel
 from institution.models import Institution
 from slugify import slugify
 from django.utils import timezone
+from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 
 
@@ -38,7 +40,7 @@ class SystemDay(models.Model):
     def __str__(self):
         return self.day_name
     
-class MeetingIntegration(models.Model):
+class MeetingIntegration(BaseApprovableModel):
     PLATFORM_CHOICES = [
         ('zoom', 'Zoom'),
         ('google_meet', 'Google Meet'),
@@ -46,11 +48,15 @@ class MeetingIntegration(models.Model):
     ]
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='meeting_integrations')
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
-    api_key = models.CharField(max_length=255, blank=True, null=True)  # For Zoom
-    api_secret = models.CharField(max_length=255, blank=True, null=True)  # For Zoom
-    oauth_token = models.TextField(blank=True, null=True)  # For Google Meet/Teams
-    oauth_refresh_token = models.TextField(blank=True, null=True)
+    api_key = EncryptedCharField(max_length=255, blank=True, null=True)
+    api_secret = EncryptedCharField(max_length=255, blank=True, null=True)
+    oauth_token = EncryptedTextField(blank=True, null=True)
+    oauth_refresh_token = EncryptedTextField(blank=True, null=True)
+    tenant_id = EncryptedCharField(max_length=255, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.platform} for {self.institution}"    
+        return f"{self.platform} for {self.institution}"   
+    
+    def get_institution(self):
+        return self.institution 
