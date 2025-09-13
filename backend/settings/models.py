@@ -44,7 +44,7 @@ class MeetingIntegration(models.Model):
         ('google_meet', 'Google Meet'),
         ('microsoft_teams', 'Microsoft Teams'),
     ]
-    institution = models.ForeignKey('Institution', on_delete=models.CASCADE, related_name='meeting_integrations')
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='meeting_integrations')
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
     api_key = models.CharField(max_length=255, blank=True, null=True)  # For Zoom
     api_secret = models.CharField(max_length=255, blank=True, null=True)  # For Zoom
