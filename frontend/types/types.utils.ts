@@ -2391,6 +2391,230 @@ export interface IProjectFormData {
 
 }
 
+export type IDurationUnit = "days" | "months" | "years"
+
+export interface IPeriod {
+  id: number
+  institution: IUserInstitution
+  name: string
+  start_date: string
+  end_date: string
+  is_closed: boolean
+}
+
+export interface IPeriodFormData {
+  institution: number
+  name: string
+  start_date: string
+  end_date: string
+  is_closed?: boolean
+}
+
+export type IObjectiveStatus = "not_started" | "on_track" | "closed" | "at_risk" | "behind"
+
+export interface IObjectives {
+  id: number
+  institution: IUserInstitution
+  name: string
+  description: string
+  managers?: IEmployee | null
+  duration_unit: IDurationUnit
+  duration: string
+  key_result?: IKeyResult | null
+  assignees?: IEmployee | null
+  self_employee_progress_update: boolean
+}
+
+export interface IObjectivesFormData {
+  institution: number
+  name: string
+  description: string
+  managers_id?: number
+  duration_unit: IDurationUnit
+  duration: string
+  key_result?: number
+  assignees_id?: number
+  self_employee_progress_update?: boolean
+}
+
+export interface IEmployeeObjectives {
+  id: number
+  employee: IEmployee
+  objective: IObjectives
+  status: IObjectiveStatus
+  start_date: string
+  end_date: string
+  key_result?: IKeyResult | null
+}
+
+export interface IEmployeeObjectivesFormData {
+  employee: number
+  objective: number
+  status: IObjectiveStatus
+  start_date: string
+  end_date: string
+  key_result?: number
+}
+
+export type IProgressType = "percentage" | "number"
+
+export interface IKeyResult {
+  id: number
+  institution: IUserInstitution
+  title: string
+  description: string
+  target_value: number
+  duration: string
+  progress_type: IProgressType
+}
+
+export interface IKeyResultFormData {
+  institution: number
+  title: string
+  description: string
+  target_value: number
+  duration: string
+  progress_type: IProgressType
+}
+
+export interface IFeedback360 {
+  id: number
+  reviewee: IEmployee
+  reviewer: IEmployee
+  period?: IPeriod | null
+  feedback_text?: string | null
+  rating?: number | null
+  is_anonymous: boolean
+  submission_date: string
+  strengths?: string | null
+  areas_for_improvement?: string | null
+}
+
+export interface IFeedback360FormData {
+  reviewee: number
+  reviewer: number
+  period?: number
+  feedback_text?: string
+  rating?: number
+  is_anonymous?: boolean
+  submission_date?: string
+  strengths?: string
+  areas_for_improvement?: string
+}
+
+export interface IEmployeeBonusPoint {
+  id: number
+  employee: IEmployee
+  bonus_point_setting?: IBonusPointSettings | null
+  reason: string
+  date: string
+  period?: IPeriod | null
+  redeemed: boolean
+  points: number
+}
+
+export interface IEmployeeBonusPointFormData {
+  employee: number
+  bonus_point_setting?: number
+  reason: string
+  date?: string
+  period?: number
+  redeemed?: boolean
+  points: number
+}
+
+export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general"
+
+export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no"
+
+export interface IQuestionTemplate {
+  id: number
+  institution: IUserInstitution
+  name: string
+  description?: string | null
+  category: IQuestionCategory
+  questions: any[]
+}
+
+export interface IQuestionTemplateFormData {
+  institution: number
+  name: string
+  description?: string
+  category: IQuestionCategory
+  questions: any[]
+}
+
+export type IApplicableFor = "managers" | "members"
+
+export type IBonusFor = "completing" | "closing"
+
+export type IConditionOperator = "=" | "<" | ">" | "<=" | ">="
+
+export interface IBonusPointSettings {
+  id: number
+  institution: IUserInstitution
+  object_id: number
+  content_type: number
+  content_object: any
+  applicable_for: IApplicableFor
+  bonus_for: IBonusFor
+  points: number
+  condition_field: string
+  condition_operator: IConditionOperator
+  condition_value: string
+}
+
+export interface IBonusPointSettingsFormData {
+  institution: number
+  object_id: number
+  content_type: number
+  applicable_for: IApplicableFor
+  bonus_for: IBonusFor
+  points: number
+  condition_field: string
+  condition_operator: IConditionOperator
+  condition_value: string
+}
+
+export type IEventMode = "physical" | "online" | "hybrid"
+
+export interface IMeeting {
+  id: number
+  institution: IUserInstitution
+  title: string
+  description?: string | null
+  start_time: string
+  end_time: string
+  mode: IEventMode
+  location?: string | null
+  online_link?: string | null
+  participants: IEmployee[]
+  organizer?: IEmployee | null
+  agenda?: string | null
+  minutes?: string | null
+  is_recurring: boolean
+  recurrence_rule?: string | null
+  calendar_event_id?: string | null
+}
+
+export interface IMeetingFormData {
+  institution: number
+  title: string
+  description?: string
+  start_time: string
+  end_time: string
+  mode: IEventMode
+  location?: string
+  participants: number[]
+  organizer?: number
+  agenda?: string
+  minutes?: string
+  is_recurring?: boolean
+  recurrence_rule?: string
+  online_link?: string | null
+}
+
+
 // Apply approvals to existing READ interfaces via declaration merging
 export interface IAllowanceType extends IBaseApprovable { }
 export interface IAsset extends IBaseApprovable { }
@@ -2455,3 +2679,15 @@ export interface ITermination extends IBaseApprovable { }
 export interface IOnBoarding extends IBaseApprovable { }
 export interface ITax extends IBaseApprovable { }
 export interface IProjectTask extends IBaseApprovable { }
+
+
+export interface IPeriod extends IBaseApprovable { }
+export interface IObjectives extends IBaseApprovable { }
+export interface IEmployeeObjectives extends IBaseApprovable { }
+export interface IKeyResult extends IBaseApprovable { }
+export interface IFeedback360 extends IBaseApprovable { }
+export interface IEmployeeBonusPoint extends IBaseApprovable { }
+export interface IQuestionTemplate extends IBaseApprovable { }
+export interface IBonusPointSettings extends IBaseApprovable { }
+export interface IMeeting extends IBaseApprovable { }
+
