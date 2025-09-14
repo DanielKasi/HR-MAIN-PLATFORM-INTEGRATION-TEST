@@ -6,7 +6,6 @@ import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useEffect, useState } from "react";
 import { UserProfile } from "@/types";
-import { profile } from "console";
 import { PROFILES_API } from "@/lib/utils";
 
 

@@ -60,7 +60,7 @@ export default function AdminPage() {
   // Handle successful theme color update
   const handleThemeUpdateSuccess = () => {
     // We could show a success toast/notification here
-  // console.log("Theme color updated successfully");
+    // console.log("Theme color updated successfully");
   };
 
   return (
@@ -205,7 +205,7 @@ export default function AdminPage() {
                     href="/admin/departments"
                     className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
                   >
-                    <Icon icon="hugeicons:departement" className="!w-5 !h-5"  />
+                    <Icon icon="hugeicons:departement" className="!w-5 !h-5" />
                     <span>Departments</span>
                   </Link>
                 </div>
@@ -314,6 +314,8 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+
         </div>
       </div>
     </ProtectedPage>

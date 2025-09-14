@@ -132,7 +132,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    console.log('\n\n Notifications changed as : ', notifications);
+    // console.log('\n\n Notifications changed as : ', notifications);
     const lastNotification = notifications.find(n => n.id);
     if (!lastNotification) {
       console.warn('No valid notification found');
