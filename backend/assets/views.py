@@ -226,7 +226,7 @@ class AssetListCreateView(APIView, SortableAPIMixin):
         data = request.data.copy()
         user = request.user
 
-        data["created_by"] = user
+        data["created_by"] = user.id
 
         serializer = AssetSerializer(data=data, context={"request": request})
         if serializer.is_valid():

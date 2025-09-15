@@ -14,6 +14,7 @@ from .serializers import (
     ActionSerializer, ApproverGroupSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentLevelSerializer, ApprovalSerializer, ApprovalTaskSerializer
 )
+from django.urls import reverse, NoReverseMatch
 from utilities.pagination import CustomPageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiResponse,OpenApiParameter
@@ -29,6 +30,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound
 
 
 class ActionListAPIView(APIView, SortableAPIMixin):
@@ -154,11 +156,14 @@ class ApproverGroupListAPIView(APIView, SortableAPIMixin):
             if not request.user.is_authenticated:
                 return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
             try:
+                # Save the ApproverGroup to get the object ID
+                approver_group = serializer.save()
                 add_notification(
                     user_id=request.user.id,
-                    message="New approver group created successfully."
+                    message="New approver group created successfully.",
+                    model_name="ApproverGroup",
+                    object_id=str(approver_group.id)  # Pass the ID of the created object
                 )
-                serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response({"error": f"Failed to queue notification or save: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -537,45 +542,109 @@ class ApprovalDetailAPIView(APIView):
 class ApprovalTaskListAPIView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ['approval', 'level', 'status', 'is_active', 'comment']
     default_ordering = ['approval']
+
     @extend_schema(
         tags=['Approval Tasks'],
         parameters=[
-            OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search approval tasks by task name or approval name'),
+            OpenApiParameter(name='search', type=str, location=OpenApiParameter.QUERY, required=False, description='Search approval tasks by task name, approval name, or comment'),
             OpenApiParameter(name='status', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by task status'),
             OpenApiParameter(name='assigned_to', type=int, location=OpenApiParameter.QUERY, required=False, description='Filter by assigned user ID'),
+            OpenApiParameter(name='type', type=str, location=OpenApiParameter.QUERY, required=False, description='Filter by task type: incoming, open, critical, expired, outgoing'),
             OpenApiParameter(name='page', type=int, location=OpenApiParameter.QUERY, required=False, description='Page number'),
             OpenApiParameter(name='page_size', type=int, location=OpenApiParameter.QUERY, required=False, description='Number of results per page'),
         ]
     )
     def get(self, request):
-        user = request.user.profile
+        user = request.user
+        profile = user.profile
         search_query = request.query_params.get('search', None)
         status_filter = request.query_params.get('status', None)
         assigned_to = request.query_params.get('assigned_to', None)
-        
+        type_filter = request.query_params.get('type', None)
+
         try:
-            institution = Institution.objects.get(id=user.institution.id)
+            institution = Institution.objects.get(id=profile.institution.id)
         except Institution.DoesNotExist:
             return Response(
                 {"detail": "Institution not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
+
+        # Get user's roles
+        user_roles = Role.objects.filter(user_roles__user=user)
+
+        # Get groups the user belongs to, filtered by institution
+        user_groups = ApproverGroup.objects.filter(
+            Q(users=profile) | Q(roles__in=user_roles),
+            institution=institution
+        ).distinct()
+
+        # Get levels where user's groups are approvers
+        levels = ApprovalDocumentLevel.objects.filter(
+            approvers__in=user_groups
+        ).distinct()
+
+        # Base tasks query
         tasks = ApprovalTask.objects.filter(
             approval__document__institution=institution,
             deleted_at__isnull=True
         )
-        
+
+        # Apply type filter
+        if type_filter:
+            current_time = timezone.now()
+            critical_threshold = timedelta(days=5)
+            expired_threshold = timedelta(days=7)
+
+            if type_filter == 'incoming':
+                tasks = tasks.filter(
+                    level__in=levels,
+                    approval__status='ongoing',
+                    status='not_started'
+                )
+            elif type_filter == 'open':
+                tasks = tasks.filter(
+                    level__in=levels,
+                    approval__status='ongoing',
+                    status='pending'
+                )
+            elif type_filter == 'critical':
+                tasks = tasks.filter(
+                    level__in=levels,
+                    approval__status='ongoing',
+                    status='pending',
+                    updated_at__lt=current_time - critical_threshold
+                )
+            elif type_filter == 'expired':
+                tasks = tasks.filter(
+                    level__in=levels,
+                    approval__status='ongoing',
+                    status='pending',
+                    updated_at__lt=current_time - expired_threshold
+                )
+            elif type_filter == 'outgoing':
+                tasks = tasks.filter(
+                    approved_by=user,
+                    status__in=('approved', 'rejected'),
+                    updated_at__gte=current_time - timedelta(days=7)
+                )
+            else:
+                return Response(
+                    {"detail": "Invalid type filter. Use: incoming, open, critical, expired, outgoing."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Apply other filters
         if search_query:
             tasks = tasks.filter(
                 Q(task_name__icontains=search_query) |
                 Q(approval__name__icontains=search_query) |
                 Q(comment__icontains=search_query)
             )
-        
+
         if status_filter:
             tasks = tasks.filter(status=status_filter)
-            
+
         if assigned_to:
             tasks = tasks.filter(
                 Q(level__approvers__users__user__id=assigned_to) |
@@ -583,16 +652,41 @@ class ApprovalTaskListAPIView(APIView, SortableAPIMixin):
                 Q(level__approvers__roles__user_roles__user__id=assigned_to) |
                 Q(level__overriders__roles__user_roles__user__id=assigned_to)
             ).distinct()
-        
+
         try:
             tasks = self.apply_sorting(tasks, request)
         except ValueError as e:
-            return Response({"detail":str(e)}, status=status.HTTP_400_BAD_REQUEST) 
-           
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(tasks, request)
         serializer = ApprovalTaskSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+
+        # Enhance serialized data with content object information
+        data = serializer.data
+        for task_data, task in zip(data, paginated_qs):
+            approval = task.approval
+            content_type = approval.content_type
+            object_id = approval.object_id
+
+            content_info = {
+                'content_type': {
+                    'app_label': content_type.app_label,
+                    'model': content_type.model,
+                },
+                'object_id': object_id,
+            }
+
+            # Attempt to generate a URL for the content object
+            try:
+                view_name = f"{content_type.app_label}-{content_type.model}-detail"
+                content_info['url'] = reverse(view_name, kwargs={'pk': object_id})
+            except NoReverseMatch:
+                content_info['url'] = None
+
+            task_data['content_object'] = content_info
+
+        return paginator.get_paginated_response(data)
 
     @extend_schema(tags=['Approval Tasks'])
     def post(self, request):
@@ -608,13 +702,42 @@ class ApprovalTaskDetailAPIView(APIView):
         try:
             return ApprovalTask.objects.get(pk=pk)
         except ApprovalTask.DoesNotExist:
-            raise Http404
+            raise NotFound("Approval task not found.")
 
     @extend_schema(tags=['Approval Tasks'])
     def get(self, request, pk):
         task = self.get_object(pk)
         serializer = ApprovalTaskSerializer(task)
-        return Response(serializer.data)
+        data = serializer.data
+
+        # Get the related content object details
+        approval = task.approval
+        content_type = approval.content_type
+        object_id = approval.object_id
+        content_object = approval.content_object
+
+        # Prepare content object information
+        content_info = {
+            'content_type': {
+                'app_label': content_type.app_label,
+                'model': content_type.model,
+            },
+            'object_id': object_id,
+        }
+
+        # Attempt to generate a URL for the content object
+        try:
+            # Assume the detail view follows Django's default naming convention: <app_label>-<model_name>-detail
+            view_name = f"{content_type.app_label}-{content_type.model}-detail"
+            content_info['url'] = reverse(view_name, kwargs={'pk': object_id})
+        except NoReverseMatch:
+            # If no detail view exists, URL will not be included
+            content_info['url'] = None
+
+        # Add content object details to the response
+        data['content_object'] = content_info
+
+        return Response(data)
 
     @extend_schema(tags=['Approval Tasks'])
     def patch(self, request, pk):
@@ -722,14 +845,14 @@ class ApprovalTasksDashboardAPIView(APIView):
 
     @extend_schema(
         responses={200: OpenApiTypes.OBJECT},
-        description="Retrieve incoming tasks (not started yet for the user), open tasks (pending for the user), critical tasks (pending and approaching expiration threshold), expired tasks (pending and past expiration threshold), and outgoing tasks (recently approved or rejected by the user), along with counts for each category. Expiration is calculated based on time since the task became pending (critical: >5 days, expired: >7 days).",
+        description="Retrieve counts of incoming tasks (not started yet for the user), open tasks (pending for the user), critical tasks (pending and approaching expiration threshold), expired tasks (pending and past expiration threshold), and outgoing tasks (recently approved or rejected by the user). Expiration is calculated based on time since the task became pending (critical: >5 days, expired: >7 days).",
         tags=["Approval Workflow"],
     )
     def get(self, request):
         user = request.user
         profile = user.profile
 
-        # Get user's roles (assuming through model exists as per existing code)
+        # Get user's roles
         user_roles = Role.objects.filter(user_roles__user=user)
 
         # Get user's institution
@@ -738,11 +861,11 @@ class ApprovalTasksDashboardAPIView(APIView):
         except AttributeError:
             return Response({"detail": "User profile does not have an associated institution."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get groups the user belongs to (directly or via roles), filtered by institution
+        # Get groups the user belongs to, filtered by institution
         user_groups = ApproverGroup.objects.filter(
             Q(users=profile) | Q(roles__in=user_roles),
             institution=institution
-            ).distinct()
+        ).distinct()
 
         # Get levels where user's groups are approvers
         levels = ApprovalDocumentLevel.objects.filter(
@@ -756,53 +879,38 @@ class ApprovalTasksDashboardAPIView(APIView):
             approval__document__institution=institution
         )
 
-        # Incoming tasks: not started (future levels for the user)
-        incoming_tasks_qs = base_tasks.filter(status='not_started').order_by('approval__id', 'level__level')
+        # Incoming tasks: not started
+        incoming_tasks_qs = base_tasks.filter(status='not_started')
 
         # Open tasks: pending for the user
-        open_tasks_qs = base_tasks.filter(status='pending').order_by('-updated_at')
+        open_tasks_qs = base_tasks.filter(status='pending')
 
-        # Define thresholds (arbitrary, as no due_date in models; based on time since became pending)
+        # Define thresholds
         current_time = timezone.now()
         critical_threshold = timedelta(days=5)
         expired_threshold = timedelta(days=7)
 
-        # Critical tasks: pending > 5 days since became pending
+        # Critical tasks: pending > 5 days
         critical_tasks_qs = open_tasks_qs.filter(updated_at__lt=current_time - critical_threshold)
 
-        # Expired tasks: pending > 7 days since became pending (still pending, no auto-expiration)
+        # Expired tasks: pending > 7 days
         expired_tasks_qs = open_tasks_qs.filter(updated_at__lt=current_time - expired_threshold)
 
-        # Outgoing tasks: recently (last 7 days) approved or rejected by this specific user
+        # Outgoing tasks: recently approved or rejected by this user
         outgoing_tasks_qs = ApprovalTask.objects.filter(
             approved_by=user,
             status__in=('approved', 'rejected'),
             updated_at__gte=current_time - timedelta(days=7),
             approval__document__institution=institution
-        ).order_by('-updated_at')
+        )
 
-        # Prepare response data
+        # Prepare response data with counts only
         data = {
-            'incoming': {
-                'count': incoming_tasks_qs.count(),
-                'tasks': ApprovalTaskSerializer(incoming_tasks_qs, many=True).data
-            },
-            'open': {
-                'count': open_tasks_qs.count(),
-                'tasks': ApprovalTaskSerializer(open_tasks_qs, many=True).data
-            },
-            'critical': {
-                'count': critical_tasks_qs.count(),
-                'tasks': ApprovalTaskSerializer(critical_tasks_qs, many=True).data
-            },
-            'expired': {
-                'count': expired_tasks_qs.count(),
-                'tasks': ApprovalTaskSerializer(expired_tasks_qs, many=True).data
-            },
-            'outgoing': {
-                'count': outgoing_tasks_qs.count(),
-                'tasks': ApprovalTaskSerializer(outgoing_tasks_qs, many=True).data
-            },
+            'incoming': {'count': incoming_tasks_qs.count()},
+            'open': {'count': open_tasks_qs.count()},
+            'critical': {'count': critical_tasks_qs.count()},
+            'expired': {'count': expired_tasks_qs.count()},
+            'outgoing': {'count': outgoing_tasks_qs.count()},
         }
 
         return Response(data, status=status.HTTP_200_OK)

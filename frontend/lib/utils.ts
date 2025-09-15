@@ -149,9 +149,28 @@ import {
   IProjectDashboard,
   IProjectTaskFormData,
   IProjectTask,
+  IEmployeeObjectives,
+  IBonusPointSettings,
+  IBonusPointSettingsFormData,
+  IDurationUnit,
+  IEmployeeBonusPoint,
+  IEmployeeBonusPointFormData,
+  IEmployeeObjectivesFormData,
+  IEventMode,
+  IFeedback360,
+  IFeedback360FormData,
+  IKeyResult,
+  IKeyResultFormData,
+  IMeeting,
+  IMeetingFormData,
+  IObjectives,
+  IObjectivesFormData,
+  IObjectiveStatus,
+  IPeriod,
+  IPeriodFormData,
+  IQuestionTemplate,
+  IQuestionTemplateFormData,
 } from "@/types/types.utils";
-
-import { ApprovalTask } from "@/types/approvals.types";
 
 import apiRequest from "./apiRequest";
 import { IEmployee } from "@/types/types.utils";
@@ -5397,6 +5416,23 @@ export const payrollAPI = {
   },
 };
 
+export const ROLES_API = {
+  getPaginatedFirstPage: async ({ institutionId }: { institutionId: number }) => {
+  const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
+  return response.data as IPaginatedResponse<Role>
+},
+
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<Role>> => {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<Role>;
+  },
+
+}
+
 export const institutionAPI = {
   getDasboardAnalytics: async ({ institutionId }: { institutionId: number }) => {
     const response = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
@@ -5672,13 +5708,8 @@ export const assetCategoriesAPI = {
   }: {
     url: string;
   }): Promise<IPaginatedResponse<IAssetCategory>> => {
-    try {
       const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetCategory>;
-    } catch (error) {
-      console.error("Error fetching asset categories from URL:", error);
-      throw error;
-    }
   },
 
   getById: async (id: number): Promise<IAssetCategory> => {
@@ -7254,6 +7285,470 @@ export const PROJECTS_TASKS_API = {
   getByTaskId: async ({ taskId }: { taskId: number }) => {
     const response = await apiRequest.get(`projects/tasks/${taskId}/details/`);
     return response.data as IProjectTask;
+  },
+};
+
+
+
+export const PERIODS_API = {
+  getPaginated: async ({
+    page = 1,
+    search,
+    start_date,
+    is_closed,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    start_date?: string;
+    is_closed?: boolean;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (start_date) {
+      params.append("start_date", start_date);
+    }
+    if (is_closed !== undefined) {
+      params.append("is_closed", is_closed.toString());
+    }
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/periods/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IPeriod>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IPeriod>;
+  },
+
+  create: async ({ data }: { data: IPeriodFormData }) => {
+    const response = await apiRequest.post(`performance/periods/`, data);
+    return response.data as IPeriod;
+  },
+
+  update: async ({ periodId, data }: { periodId: number; data: Partial<IPeriodFormData> }) => {
+    const response = await apiRequest.patch(`performance/periods/${periodId}/`, data);
+    return response.data as IPeriod;
+  },
+
+  delete: async ({ periodId }: { periodId: number }) => {
+    await apiRequest.delete(`performance/periods/${periodId}/`);
+  },
+
+  getById: async ({ periodId }: { periodId: number }) => {
+    const response = await apiRequest.get(`performance/periods/${periodId}/`);
+    return response.data as IPeriod;
+  },
+};
+
+export const OBJECTIVES_API = {
+  getPaginated: async ({
+    page = 1,
+    search,
+    duration_unit,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    duration_unit?: IDurationUnit;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (duration_unit) {
+      params.append("duration_unit", duration_unit);
+    }
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/objectives/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IObjectives>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IObjectives>;
+  },
+
+  create: async ({ data }: { data: IObjectivesFormData }) => {
+    const response = await apiRequest.post(`performance/objectives/`, data);
+    return response.data as IObjectives;
+  },
+
+  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectivesFormData> }) => {
+    const response = await apiRequest.patch(`performance/objectives/${objectiveId}/`, data);
+    return response.data as IObjectives;
+  },
+
+  delete: async ({ objectiveId }: { objectiveId: number }) => {
+    await apiRequest.delete(`performance/objectives/${objectiveId}/`);
+  },
+
+  getById: async ({ objectiveId }: { objectiveId: number }) => {
+    const response = await apiRequest.get(`performance/objectives/${objectiveId}/`);
+    return response.data as IObjectives;
+  },
+};
+
+export const EMPLOYEE_OBJECTIVES_API = {
+  getPaginated: async ({
+    page = 1,
+    search,
+    status,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    status?: IObjectiveStatus;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (status) {
+      params.append("status", status);
+    }
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/employee-objectives/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IEmployeeObjectives>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IEmployeeObjectives>;
+  },
+
+  create: async ({ data }: { data: IEmployeeObjectivesFormData }) => {
+    const response = await apiRequest.post(`performance/employee-objectives/`, data);
+    return response.data as IEmployeeObjectives;
+  },
+
+  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IEmployeeObjectivesFormData> }) => {
+    const response = await apiRequest.patch(`performance/employee-objectives/${objectiveId}/`, data);
+    return response.data as IEmployeeObjectives;
+  },
+
+  delete: async ({ objectiveId }: { objectiveId: number }) => {
+    await apiRequest.delete(`performance/employee-objectives/${objectiveId}/`);
+  },
+
+  getById: async ({ objectiveId }: { objectiveId: number }) => {
+    const response = await apiRequest.get(`performance/employee-objectives/${objectiveId}/`);
+    return response.data as IEmployeeObjectives;
+  },
+};
+
+export const KEY_RESULTS_API = {
+  getPaginated: async ({
+    page = 1,
+    ordering,
+  }: {
+    page?: number;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/key-results/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IKeyResult>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IKeyResult>;
+  },
+
+  create: async ({ data }: { data: IKeyResultFormData }) => {
+    const response = await apiRequest.post(`performance/key-results/`, data);
+    return response.data as IKeyResult;
+  },
+
+  update: async ({ keyResultId, data }: { keyResultId: number; data: Partial<IKeyResultFormData> }) => {
+    const response = await apiRequest.patch(`performance/key-results/${keyResultId}/`, data);
+    return response.data as IKeyResult;
+  },
+
+  delete: async ({ keyResultId }: { keyResultId: number }) => {
+    await apiRequest.delete(`performance/key-results/${keyResultId}/`);
+  },
+
+  getById: async ({ keyResultId }: { keyResultId: number }) => {
+    const response = await apiRequest.get(`performance/key-results/${keyResultId}/`);
+    return response.data as IKeyResult;
+  },
+};
+
+export const FEEDBACK_360_API = {
+  getPaginated: async ({
+    page = 1,
+    ordering,
+  }: {
+    page?: number;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/feedback/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IFeedback360>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IFeedback360>;
+  },
+
+  create: async ({ data }: { data: IFeedback360FormData }) => {
+    const response = await apiRequest.post(`performance/feedback/`, data);
+    return response.data as IFeedback360;
+  },
+
+  update: async ({ feedbackId, data }: { feedbackId: number; data: Partial<IFeedback360FormData> }) => {
+    const response = await apiRequest.patch(`performance/feedback/${feedbackId}/`, data);
+    return response.data as IFeedback360;
+  },
+
+  delete: async ({ feedbackId }: { feedbackId: number }) => {
+    await apiRequest.delete(`performance/feedback/${feedbackId}/`);
+  },
+
+  getById: async ({ feedbackId }: { feedbackId: number }) => {
+    const response = await apiRequest.get(`performance/feedback/${feedbackId}/`);
+    return response.data as IFeedback360;
+  },
+};
+
+export const EMPLOYEE_BONUS_POINTS_API = {
+  getPaginated: async ({
+    page = 1,
+    ordering,
+  }: {
+    page?: number;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/bonus-points/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IEmployeeBonusPoint>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IEmployeeBonusPoint>;
+  },
+
+  create: async ({ data }: { data: IEmployeeBonusPointFormData }) => {
+    const response = await apiRequest.post(`performance/bonus-points/`, data);
+    return response.data as IEmployeeBonusPoint;
+  },
+
+  update: async ({ bonusPointId, data }: { bonusPointId: number; data: Partial<IEmployeeBonusPointFormData> }) => {
+    const response = await apiRequest.patch(`performance/bonus-points/${bonusPointId}/`, data);
+    return response.data as IEmployeeBonusPoint;
+  },
+
+  delete: async ({ bonusPointId }: { bonusPointId: number }) => {
+    await apiRequest.delete(`performance/bonus-points/${bonusPointId}/`);
+  },
+
+  getById: async ({ bonusPointId }: { bonusPointId: number }) => {
+    const response = await apiRequest.get(`performance/bonus-points/${bonusPointId}/`);
+    return response.data as IEmployeeBonusPoint;
+  },
+};
+
+export const QUESTION_TEMPLATES_API = {
+  getPaginated: async ({
+    page = 1,
+    ordering,
+  }: {
+    page?: number;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/question-templates/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IQuestionTemplate>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IQuestionTemplate>;
+  },
+
+  create: async ({ data }: { data: IQuestionTemplateFormData }) => {
+    const response = await apiRequest.post(`performance/question-templates/`, data);
+    return response.data as IQuestionTemplate;
+  },
+
+  update: async ({ templateId, data }: { templateId: number; data: Partial<IQuestionTemplateFormData> }) => {
+    const response = await apiRequest.patch(`performance/question-templates/${templateId}/`, data);
+    return response.data as IQuestionTemplate;
+  },
+
+  delete: async ({ templateId }: { templateId: number }) => {
+    await apiRequest.delete(`performance/question-templates/${templateId}/`);
+  },
+
+  getById: async ({ templateId }: { templateId: number }) => {
+    const response = await apiRequest.get(`performance/question-templates/${templateId}/`);
+    return response.data as IQuestionTemplate;
+  },
+};
+
+export const BONUS_POINT_SETTINGS_API = {
+  getPaginated: async ({
+    page = 1,
+    ordering,
+  }: {
+    page?: number;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/bonus-point-settings/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IBonusPointSettings>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IBonusPointSettings>;
+  },
+
+  create: async ({ data }: { data: IBonusPointSettingsFormData }) => {
+    const response = await apiRequest.post(`performance/bonus-point-settings/`, data);
+    return response.data as IBonusPointSettings;
+  },
+
+  update: async ({ settingsId, data }: { settingsId: number; data: Partial<IBonusPointSettingsFormData> }) => {
+    const response = await apiRequest.patch(`performance/bonus-point-settings/${settingsId}/`, data);
+    return response.data as IBonusPointSettings;
+  },
+
+  delete: async ({ settingsId }: { settingsId: number }) => {
+    await apiRequest.delete(`performance/bonus-point-settings/${settingsId}/`);
+  },
+
+  getById: async ({ settingsId }: { settingsId: number }) => {
+    const response = await apiRequest.get(`performance/bonus-point-settings/${settingsId}/`);
+    return response.data as IBonusPointSettings;
+  },
+};
+
+export const MEETINGS_API = {
+  getPaginated: async ({
+    page = 1,
+    search,
+    mode,
+    start_time,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    mode?: IEventMode;
+    start_time?: string;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (mode) {
+      params.append("mode", mode);
+    }
+    if (start_time) {
+      params.append("start_time", start_time);
+    }
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/meetings/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IMeeting>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IMeeting>;
+  },
+
+  create: async ({ data }: { data: IMeetingFormData }) => {
+    const response = await apiRequest.post(`performance/meetings/`, data);
+    return response.data as IMeeting;
+  },
+
+  update: async ({ meetingId, data }: { meetingId: number; data: Partial<IMeetingFormData> }) => {
+    const response = await apiRequest.patch(`performance/meetings/${meetingId}/`, data);
+    return response.data as IMeeting;
+  },
+
+  delete: async ({ meetingId }: { meetingId: number }) => {
+    await apiRequest.delete(`performance/meetings/${meetingId}/`);
+  },
+
+  getById: async ({ meetingId }: { meetingId: number }) => {
+    const response = await apiRequest.get(`performance/meetings/${meetingId}/`);
+    return response.data as IMeeting;
+  },
+};
+
+export const PERFORMANCE_ANALYTICS_API = {
+  get: async () => {
+    const response = await apiRequest.get(`performance/analytics/`);
+    return response.data;
   },
 };
 

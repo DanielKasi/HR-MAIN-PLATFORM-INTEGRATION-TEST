@@ -351,7 +351,7 @@ export default function CreateInterviewPage() {
 
   const fetchFirstPage = async (query?: {search?: string; page?: number}) => {
     if (!selectedInstitution) {
-      throw new Error("No intitution found !");
+      throw new Error("No institution found !");
     }
     return await getPaginatedJobAdverts({institutionId: selectedInstitution.id, ...query});
   };

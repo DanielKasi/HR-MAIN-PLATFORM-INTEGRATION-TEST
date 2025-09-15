@@ -6,7 +6,6 @@ import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useEffect, useState } from "react";
 import { UserProfile } from "@/types";
-import { profile } from "console";
 import { PROFILES_API } from "@/lib/utils";
 
 
@@ -46,7 +45,7 @@ export const UserProfileSearchableSelect = ({
   }, [value])
 
   const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
-    if (!currentInstitution) { throw new Error("No intitution found !") }
+    if (!currentInstitution) { throw new Error("No institution found !") }
     return await PROFILES_API.getPaginatedUserProfiles({ ...query });
   };
 

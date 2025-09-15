@@ -1,135 +1,147 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
+import {useEffect, useState} from "react";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
 
-import type { ApproverGroup, ApproverGroupFormData } from "@/types/approvals.types"
-import type { Role, UserProfile } from "@/types"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { MultiSelectPopover } from "@/components/common/multi-select-popover"
-import FixedLoader from "@/components/fixed-loader"
-import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils"
-import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react"
-import { ConfirmationDialog } from "@/components/confirmation-dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { APPROVER_GROUPS_API } from "@/lib/api/approvals/utils"
+import type {ApproverGroup, ApproverGroupFormData} from "@/types/approvals.types";
+import type {Role, UserProfile} from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {Textarea} from "@/components/ui/textarea";
+import {Badge} from "@/components/ui/badge";
+import {Separator} from "@/components/ui/separator";
+import {MultiSelectPopover} from "@/components/common/multi-select-popover";
+import FixedLoader from "@/components/fixed-loader";
+import {getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI} from "@/lib/utils";
+import {Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye} from "lucide-react";
+import {ConfirmationDialog} from "@/components/confirmation-dialog";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {APPROVER_GROUPS_API} from "@/lib/api/approvals/utils";
+import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
+import RoleSearchableSelect from "@/components/selects/role-searchable-select";
 
 export default function ApproverGroupsPage() {
-  const currentInstitution = useSelector(selectSelectedInstitution)
+  const currentInstitution = useSelector(selectSelectedInstitution);
 
   // Data states
-  const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([])
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([])
-  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
+  const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Loading states
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Dialog states
-  const [openDialog, setOpenDialog] = useState(false)
-  const [editingGroup, setEditingGroup] = useState<ApproverGroup | null>(null)
-  const [viewDetailsOpen, setViewDetailsOpen] = useState(false)
-  const [viewingGroup, setViewingGroup] = useState<ApproverGroup | null>(null)
-  const [groupName, setGroupName] = useState("")
-  const [groupDescription, setGroupDescription] = useState("")
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([])
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<ApproverGroup | null>(null);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [viewingGroup, setViewingGroup] = useState<ApproverGroup | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
 
   // Delete confirmation states
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
 
   useEffect(() => {
-    loadData()
-  }, [currentInstitution])
+    loadData();
+  }, [currentInstitution]);
 
   const loadData = async () => {
-    if (!currentInstitution) return
+    if (!currentInstitution) return;
 
     try {
-      setLoading(true)
+      setLoading(true);
       const [groupsRes, userProfiles, roles] = await Promise.all([
         APPROVER_GROUPS_API.fetchAll(),
         PROFILES_API.getPaginatedUserProfiles({}),
+        getRoles({institutionId: currentInstitution.id}),
+      ]);
 
-        getRoles({ institutionId: currentInstitution.id }),
-      ])
-
-      setApproverGroups(groupsRes.results)
+      setApproverGroups(groupsRes.results);
       if (userProfiles) {
-        setAvailableUsers(userProfiles.results)
+        setAvailableUsers(userProfiles.results);
       }
       if (roles) {
-        setAvailableRoles(roles)
+        setAvailableRoles(roles);
       }
     } catch (e: any) {
-      showErrorToast({ error: e, defaultMessage: "Failed to load approver groups" })
+      showErrorToast({error: e, defaultMessage: "Failed to load approver groups"});
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const openCreateDialog = () => {
-    setEditingGroup(null)
-    resetForm()
-    setOpenDialog(true)
-  }
+    setEditingGroup(null);
+    resetForm();
+    setOpenDialog(true);
+  };
 
   const openEditDialog = (group: ApproverGroup) => {
-    setEditingGroup(group)
-    setGroupName(group.name)
-    setGroupDescription(group.description || "")
-    setSelectedUserIds(group.users_display.map((u) => u.id))
-    setSelectedRoleIds(group.roles_display.map((r) => r.id))
-    setOpenDialog(true)
-  }
+    setEditingGroup(group);
+    setGroupName(group.name);
+    setGroupDescription(group.description || "");
+    setSelectedUserIds(group.users_display.map((u) => u.id));
+    setSelectedRoleIds(group.roles_display.map((r) => r.id));
+    setOpenDialog(true);
+  };
 
   const openViewDetails = (group: ApproverGroup) => {
-    setViewingGroup(group)
-    setViewDetailsOpen(true)
-  }
+    setViewingGroup(group);
+    setViewDetailsOpen(true);
+  };
 
   const resetForm = () => {
-    setGroupName("")
-    setGroupDescription("")
-    setSelectedUserIds([])
-    setSelectedRoleIds([])
-  }
+    setGroupName("");
+    setGroupDescription("");
+    setSelectedUserIds([]);
+    setSelectedRoleIds([]);
+  };
 
   const closeDialog = () => {
-    setOpenDialog(false)
-    setEditingGroup(null)
-    resetForm()
-  }
+    setOpenDialog(false);
+    setEditingGroup(null);
+    resetForm();
+  };
 
   const handleSave = async () => {
     if (!currentInstitution) {
-      showErrorToast({ error: null, defaultMessage: "Missing institution" })
-      return
+      showErrorToast({error: null, defaultMessage: "Missing institution"});
+      return;
     }
 
     if (!groupName.trim()) {
-      showErrorToast({ error: null, defaultMessage: "Group name is required" })
-      return
+      showErrorToast({error: null, defaultMessage: "Group name is required"});
+      return;
     }
 
     if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
-      showErrorToast({ error: null, defaultMessage: "Please select at least one user or role" })
-      return
+      showErrorToast({error: null, defaultMessage: "Please select at least one user or role"});
+      return;
     }
 
     try {
-      setSaving(true)
+      setSaving(true);
 
       const groupData: ApproverGroupFormData = {
         institution: currentInstitution.id,
@@ -137,61 +149,64 @@ export default function ApproverGroupsPage() {
         description: groupDescription,
         users: selectedUserIds,
         roles: selectedRoleIds,
-      }
+      };
 
       if (editingGroup) {
-        const updatedGroup = await APPROVER_GROUPS_API.update({ id: editingGroup.id, payload: groupData })
-        setApproverGroups((prev) => prev.map((g) => (g.id === editingGroup.id ? updatedGroup : g)))
-        showSuccessToast("Approver group updated successfully!")
+        const updatedGroup = await APPROVER_GROUPS_API.update({
+          id: editingGroup.id,
+          payload: groupData,
+        });
+        setApproverGroups((prev) => prev.map((g) => (g.id === editingGroup.id ? updatedGroup : g)));
+        showSuccessToast("Approver group updated successfully!");
       } else {
-        const newGroup = await APPROVER_GROUPS_API.create(groupData)
-        setApproverGroups((prev) => [...prev, newGroup])
-        showSuccessToast("Approver group created successfully!")
+        const newGroup = await APPROVER_GROUPS_API.create(groupData);
+        setApproverGroups((prev) => [...prev, newGroup]);
+        showSuccessToast("Approver group created successfully!");
       }
 
-      closeDialog()
+      closeDialog();
     } catch (e: any) {
-      showErrorToast({ error: e, defaultMessage: "Failed to save approver group" })
+      showErrorToast({error: e, defaultMessage: "Failed to save approver group"});
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleDeleteClick = (group: ApproverGroup) => {
-    setGroupToDelete(group)
-    setDeleteConfirmOpen(true)
-  }
+    setGroupToDelete(group);
+    setDeleteConfirmOpen(true);
+  };
 
   const confirmDelete = async () => {
-    if (!groupToDelete) return
+    if (!groupToDelete) return;
 
     try {
-      setDeleting(true)
-      await APPROVER_GROUPS_API.delete({ id: groupToDelete.id })
-      setApproverGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id))
-      showSuccessToast("Approver group deleted successfully!")
+      setDeleting(true);
+      await APPROVER_GROUPS_API.delete({id: groupToDelete.id});
+      setApproverGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+      showSuccessToast("Approver group deleted successfully!");
     } catch (e: any) {
-      showErrorToast({ error: e, defaultMessage: "Failed to delete approver group" })
+      showErrorToast({error: e, defaultMessage: "Failed to delete approver group"});
     } finally {
-      setDeleting(false)
-      setDeleteConfirmOpen(false)
-      setGroupToDelete(null)
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+      setGroupToDelete(null);
     }
-  }
+  };
 
   const cancelDelete = () => {
-    setDeleteConfirmOpen(false)
-    setGroupToDelete(null)
-  }
+    setDeleteConfirmOpen(false);
+    setGroupToDelete(null);
+  };
 
   const filteredGroups = approverGroups.filter(
     (group) =>
       group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       group.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  );
 
   if (loading) {
-    return <FixedLoader />
+    return <FixedLoader />;
   }
 
   return (
@@ -200,7 +215,9 @@ export default function ApproverGroupsPage() {
       <div className="flex items-center justify-between mb-8">
         <div className="space-y-1">
           <h1 className="text-xl lg:text-2xl font-bold">Approver Groups</h1>
-          <p className="text-muted-foreground">Manage groups of users and roles for approval workflows</p>
+          <p className="text-muted-foreground">
+            Manage groups of users and roles for approval workflows
+          </p>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />
@@ -225,9 +242,13 @@ export default function ApproverGroupsPage() {
       {filteredGroups.length === 0 ? (
         <div className="text-center py-12">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{searchTerm ? "No groups found" : "No approver groups yet"}</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            {searchTerm ? "No groups found" : "No approver groups yet"}
+          </h3>
           <p className="text-muted-foreground mb-4">
-            {searchTerm ? "Try adjusting your search terms" : "Create your first approver group to get started"}
+            {searchTerm
+              ? "Try adjusting your search terms"
+              : "Create your first approver group to get started"}
           </p>
           {!searchTerm && (
             <Button onClick={openCreateDialog}>
@@ -254,7 +275,9 @@ export default function ApproverGroupsPage() {
                     <div>
                       <div className="font-medium">{group.name}</div>
                       {group.description && (
-                        <div className="text-sm text-muted-foreground mt-1">{group.description}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {group.description}
+                        </div>
                       )}
                     </div>
                   </TableCell>
@@ -354,7 +377,9 @@ export default function ApproverGroupsPage() {
             <div className="space-y-6 py-4">
               <div>
                 <h3 className="text-lg font-semibold">{viewingGroup.name}</h3>
-                {viewingGroup.description && <p className="text-muted-foreground mt-1">{viewingGroup.description}</p>}
+                {viewingGroup.description && (
+                  <p className="text-muted-foreground mt-1">{viewingGroup.description}</p>
+                )}
               </div>
 
               <Separator />
@@ -369,11 +394,16 @@ export default function ApproverGroupsPage() {
                   {viewingGroup.users_display.length > 0 ? (
                     <div className="space-y-2">
                       {viewingGroup.users_display.map((user) => (
-                        <div key={user.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                        <div
+                          key={user.id}
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded"
+                        >
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                             <Users className="h-4 w-4 text-blue-600" />
                           </div>
-                          <span className="text-sm">{user.user?.fullname || `User ${user.id}`}</span>
+                          <span className="text-sm">
+                            {user.user?.fullname || `User ${user.id}`}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -391,7 +421,10 @@ export default function ApproverGroupsPage() {
                   {viewingGroup.roles_display.length > 0 ? (
                     <div className="space-y-2">
                       {viewingGroup.roles_display.map((role) => (
-                        <div key={role.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                        <div
+                          key={role.id}
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded"
+                        >
                           <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                             <Shield className="h-4 w-4 text-orange-600" />
                           </div>
@@ -416,16 +449,20 @@ export default function ApproverGroupsPage() {
       </Dialog>
 
       {/* Create/Edit Dialog */}
-      <Dialog open={openDialog} onOpenChange={
-        (open) => {
+      <Dialog
+        open={openDialog}
+        onOpenChange={(open) => {
           if (!open) {
-            closeDialog()
+            closeDialog();
           }
-          setOpenDialog(open)
-        }}>
+          setOpenDialog(open);
+        }}
+      >
         <DialogContent className="sm:max-w-xl ">
           <DialogHeader>
-            <DialogTitle>{editingGroup ? "Edit Approver Group" : "Create Approver Group"}</DialogTitle>
+            <DialogTitle>
+              {editingGroup ? "Edit Approver Group" : "Create Approver Group"}
+            </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 py-4 max-h-[80vh] overflow-y-auto">
@@ -454,34 +491,28 @@ export default function ApproverGroupsPage() {
 
             <Separator />
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium mb-2">Roles</label>
-                <MultiSelectPopover
-                  items={availableRoles.map((role) => ({
-                    id: role.id,
-                    name: role.name,
-                    label: role.name,
-                  }))}
-                  selectedIds={selectedRoleIds}
-                  onSelectionChange={setSelectedRoleIds}
+
+                <RoleSearchableSelect
+                  value={selectedRoleIds}
+                  onValueChange={(values) => setSelectedRoleIds(values.map((val) => Number(val)))}
                   placeholder="Select roles..."
-                  emptyMessage="No roles available"
+                  multiple={true}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">Users</label>
-                <MultiSelectPopover
-                  items={availableUsers.map((user) => ({
-                    id: user.id,
-                    name: user.user?.fullname || `User ${user.id}`,
-                    label: user.user?.fullname || `User ${user.id}`,
-                  }))}
-                  selectedIds={selectedUserIds}
-                  onSelectionChange={setSelectedUserIds}
+
+                <UserProfileSearchableSelect
+                  value={selectedUserIds}
+                  onValueChange={(values) => setSelectedUserIds(values.map((val) => Number(val)))}
                   placeholder="Select users..."
-                  emptyMessage="No users available"
+                  showEmployeeId={false}
+                  showDepartment={false}
+                  multiple={true}
                 />
               </div>
             </div>
@@ -507,5 +538,5 @@ export default function ApproverGroupsPage() {
         disabled={deleting}
       />
     </div>
-  )
+  );
 }
