@@ -2,49 +2,49 @@
 
 import type React from "react";
 
-import {useState, useEffect, forwardRef} from "react";
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Label} from "@/components/ui/label";
-import {Textarea} from "@/components/ui/textarea";
+import { useState, useEffect, forwardRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
-import {Switch} from "@/components/ui/switch";
-import {cn} from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 export interface FormField {
-  name: string;
-  label: string;
-  type: "text" | "textarea" | "select" | "date" | "number" | "switch" | "multiselect";
-  placeholder?: string;
-  required?: boolean;
-  options?: {value: string | number; label: string}[];
-  validation?: (value: any) => string | null;
-  disabled?: boolean;
-  description?: string;
-  customRender?: (
-    field: FormField,
-    value: any,
-    onChange: (value: any) => void,
-    error?: string,
-  ) => React.ReactNode;
+    name: string;
+    label: string;
+    type: "text" | "textarea" | "select" | "date" | "number" | "switch" | "multiselect";
+    placeholder?: string;
+    required?: boolean;
+    options?: { value: string | number; label: string }[];
+    validation?: (value: any) => string | null;
+    disabled?: boolean;
+    description?: string;
+    customRender?: (
+        field: FormField,
+        value: any,
+        onChange: (value: any) => void,
+        error?: string,
+    ) => React.ReactNode;
 }
 
 interface PerformanceFormProps {
-  fields: FormField[];
-  initialData?: Record<string, any>;
-  onSubmit: (data: Record<string, any>) => void;
-  onCancel?: () => void;
-  isLoading?: boolean;
-  submitLabel?: string;
-  showCancel?: boolean;
-  showSubmit?: boolean;
-  className?: string;
+    fields: FormField[];
+    initialData?: Record<string, any>;
+    onSubmit: (data: Record<string, any>) => void;
+    onCancel?: () => void;
+    isLoading?: boolean;
+    submitLabel?: string;
+    showCancel?: boolean;
+    showSubmit?: boolean;
+    className?: string;
 }
 
 export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>(
@@ -125,7 +125,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                             onChange={(e) => handleChange(field.name, e.target.value)}
                             placeholder={field.placeholder}
                             disabled={field.disabled || isLoading}
-                            className={cn(error && "border-red-500")}
+                            className={cn("rounded-xl", error && "border-red-500")}
                         />
                     )
 
@@ -148,7 +148,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                             onValueChange={(val) => handleChange(field.name, val)}
                             disabled={field.disabled || isLoading}
                         >
-                            <SelectTrigger className={cn(error && "border-red-500")}>
+                            <SelectTrigger className={cn(error && "border-red-500 !rounded-xl")}>
                                 <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
                             </SelectTrigger>
                             <SelectContent>
@@ -162,7 +162,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                     )
 
                 case "date":
-                    return (                
+                    return (
                         <Input
                             type={"date"}
                             value={value || ""}
@@ -171,7 +171,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                             disabled={field.disabled || isLoading}
                             className={cn(error && "border-red-500")}
                         />
-                    
+
                     )
 
                 case "switch":
@@ -193,7 +193,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
 
         return (
             <form ref={ref} onSubmit={handleSubmit} className={cn("space-y-6", className)}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                     {fields.map((field) => (
                         <div key={field.name} className={cn("space-y-2", field.type === "textarea" && "md:col-span-2")}>
                             <Label htmlFor={field.name} className="text-sm font-medium text-slate-700">
@@ -219,17 +219,17 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                                 Cancel
                             </Button>
                         )}
-                        {showSubmit && (
+                        {/* {showSubmit && (
                             <Button type="submit" disabled={isLoading} className="px-8 w-full rounded-full">
                                 {isLoading ? "Saving..." : submitLabel}
                             </Button>
-                        )}
+                        )} */}
                     </div>
                 )}
             </form>
         )
     }
-  );
+);
 
 PerformanceForm.displayName = "PerformanceForm";
 

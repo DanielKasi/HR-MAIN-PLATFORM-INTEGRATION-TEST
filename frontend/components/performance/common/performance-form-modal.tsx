@@ -1,18 +1,17 @@
+"use client"
 
-"use client";
-
-
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { X } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import type React from "react"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface PerformanceFormModalProps<T = any> {
     isOpen: boolean
     onClose: () => void
     title: string
     children: React.ReactNode
-    onSubmit?: () => void
+    onSubmit?: (data: T) => void
     submitLabel?: string
     isLoading?: boolean
     size?: "sm" | "md" | "lg" | "xl"
@@ -35,9 +34,21 @@ export function PerformanceFormModal<T = any>({
         xl: "max-w-4xl",
     }
 
+    const handleSubmit = () => {
+        console.log("Modal submit button clicked")
+        const modalContent = document.querySelector('[role="dialog"]')
+        const form = modalContent?.querySelector("form") as HTMLFormElement
+        if (form) {
+            console.log("Found form, triggering submit")
+            form.requestSubmit()
+        } else {
+            console.log("No form found in modal")
+        }
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn("p-0 rounded-xl overflow-y-hidden", sizeClasses[size])}>
+            <DialogContent className={cn("p-0", sizeClasses[size])}>
                 <DialogHeader className="px-6 py-4 border-b">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="text-xl font-semibold text-slate-900">{title}</DialogTitle>
@@ -48,7 +59,7 @@ export function PerformanceFormModal<T = any>({
 
                 {onSubmit && (
                     <DialogFooter className="px-6 py-4 border-t bg-slate-50">
-                        <Button onClick={onSubmit} disabled={isLoading} className="w-full rounded-full">
+                        <Button onClick={handleSubmit} disabled={isLoading} className="w-full rounded-full">
                             {isLoading ? "Saving..." : submitLabel}
                         </Button>
                     </DialogFooter>
