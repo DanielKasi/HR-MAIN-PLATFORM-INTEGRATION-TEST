@@ -259,27 +259,36 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             current_level = self.level.level
             next_task = self.approval.tasks.filter(level__level=current_level + 1).first()
 
+            # Get model_name and object_id for content_object
+            content_object = self.approval.content_object
+            model_name = ContentType.objects.get_for_model(content_object).model if content_object else None
+            object_id = str(content_object.id) if content_object else None
+
             if next_task:
                 next_task.status = 'pending'
                 next_task.save(update_fields=["status", "updated_at"])
                 # Notify next approvers 
-                object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+                object_desc = str(content_object) if content_object else "an object"
                 message = f"A new approval task is pending for you: Approve {object_desc} at level {next_task.level.level}."
                 for approver_user in next_task.level.get_approver_users():
                     add_notification(
                         user_id=approver_user.id,
-                        message=message
+                        message=message,
+                        model_name=model_name,
+                        object_id=object_id
                     )
             else:
                 self.approval.status = 'completed'
                 self.approval.save()
-                if self.approval.content_object:
-                    self.approval.content_object.finish_workflow(self.approval)
+                if content_object:
+                    content_object.finish_workflow(self.approval)
                 # Notify approval completion
                 if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                     add_notification(
                         user_id=self.approval.content_object.created_by.id,
-                        message=f"Your {self.approval.content_object._meta.verbose_name} has been approved."
+                        message=f"Your {self.approval.content_object._meta.verbose_name} has been approved.",
+                        model_name=model_name,
+                        object_id=object_id
                     )
 
     def mark_rejected(self, user, comment: str = None):
@@ -307,14 +316,21 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             )
             terminated_tasks.update(status='terminated')
 
-            if self.approval.content_object:
-                self.approval.content_object.finish_workflow(self.approval)
+            # Get model_name and object_id for content_object
+            content_object = self.approval.content_object
+            model_name = ContentType.objects.get_for_model(content_object).model if content_object else None
+            object_id = str(content_object.id) if content_object else None
+
+            if content_object:
+                content_object.finish_workflow(self.approval)
             # Notify task rejection and terminated tasks
-            object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+            object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been rejected at level {self.level.level}.",
+                    model_name=model_name,
+                    object_id=object_id
                 )
 
     def mark_overridden(self, user, comment: str = None):
@@ -345,14 +361,21 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             )
             other_tasks.update(status='terminated')
 
-            if self.approval.content_object:
-                self.approval.content_object.finish_workflow(self.approval)
+            # Get model_name and object_id for content_object
+            content_object = self.approval.content_object
+            model_name = ContentType.objects.get_for_model(content_object).model if content_object else None
+            object_id = str(content_object.id) if content_object else None
+
+            if content_object:
+                content_object.finish_workflow(self.approval)
             # Notify approval completion due to override
-            object_desc = str(self.approval.content_object) if self.approval.content_object else "an object"
+            object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been overridden and completed at level {self.level.level}.",
+                    model_name=model_name,
+                    object_id=object_id
                 )
 
     def can_user_approve_or_reject(self, user):
@@ -420,10 +443,10 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
             # Auto-complete the action
             if action_name in ['create', 'update']:
                 self.approval_status = 'active'
-                self.is_active = True  
+                self.is_active = True
                 self.deleted_at = None
             elif action_name == 'delete':
-                self.is_active = False  
+                self.is_active = False
                 self.deleted_at = timezone.now()
             self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
             
@@ -436,7 +459,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                 object_id=self.pk
             )  # Not calling .save()
             self.finish_workflow(dummy_approval)
-            return  
+            return
 
         # Proceed with approval creation
         with transaction.atomic():
@@ -458,7 +481,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                     level=lvl,
                     status=task_status
                 )
-            # Notify first task (optional)
+            # Notify first task
             first_task = approval.tasks.filter(status='pending').first()
             if first_task:
                 object_desc = str(self) if self else "an object"
@@ -466,7 +489,8 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                 for approver_user in first_task.level.get_approver_users():
                     add_notification(
                         user_id=approver_user.id,
-                        message=message
+                        message=message,
+                        obj=self  # Pass the current instance
                     )
 
     def confirm_create(self):
