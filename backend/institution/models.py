@@ -51,9 +51,9 @@ class Institution(SoftDeletableTimeStampedModel):
     country_code = models.CharField(max_length=10, blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-    zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
-    zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
-    zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
+    # zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
+    # zoom_client_id = models.CharField(max_length=100, blank=True, null=True)
+    # zoom_client_secret = models.CharField(max_length=100, blank=True, null=True)
     user_inactivity_time = models.PositiveIntegerField(
         default=15, help_text="User inactivity time in minutes before automatic logout"
     )
