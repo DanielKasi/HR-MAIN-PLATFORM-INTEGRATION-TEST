@@ -30,6 +30,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound
 
 
 class ActionListAPIView(APIView, SortableAPIMixin):
@@ -657,7 +658,32 @@ class ApprovalTaskListAPIView(APIView, SortableAPIMixin):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(tasks, request)
         serializer = ApprovalTaskSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)
+
+        # Enhance serialized data with content object information
+        data = serializer.data
+        for task_data, task in zip(data, paginated_qs):
+            approval = task.approval
+            content_type = approval.content_type
+            object_id = approval.object_id
+
+            content_info = {
+                'content_type': {
+                    'app_label': content_type.app_label,
+                    'model': content_type.model,
+                },
+                'object_id': object_id,
+            }
+
+            # Attempt to generate a URL for the content object
+            try:
+                view_name = f"{content_type.app_label}-{content_type.model}-detail"
+                content_info['url'] = reverse(view_name, kwargs={'pk': object_id})
+            except NoReverseMatch:
+                content_info['url'] = None
+
+            task_data['content_object'] = content_info
+
+        return paginator.get_paginated_response(data)
 
     @extend_schema(tags=['Approval Tasks'])
     def post(self, request):
