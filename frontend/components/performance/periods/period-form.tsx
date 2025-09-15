@@ -34,13 +34,13 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
             type: "date",
             required: true,
             validation: (value: string) => {
-                const startDate = new Date(value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                // const startDate = new Date(value);
+                // const today = new Date();
+                // today.setHours(0, 0, 0, 0);
 
-                if (startDate < today) {
-                    return "Start date cannot be in the past";
-                }
+                // if (startDate < today) {
+                //     return "Start date cannot be in the past";
+                // }
                 return null;
             }
         },

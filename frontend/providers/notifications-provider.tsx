@@ -8,6 +8,7 @@ import { receiveNotification } from '@/store/notifications/actions';
 import { selectNotifications } from '@/store/notifications/selectors';
 import { MAIN_DOMAIN_URL, NOTIFICATIONS_STREAM_BASE_PATH } from '@/constants';
 import { showErrorToast } from '@/lib/utils';
+import { INotification } from '@/store/notifications/types';
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
@@ -78,8 +79,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.slice(6));
-                dispatch(receiveNotification(data));
+                const data:INotification = JSON.parse(line.slice(6));
+                if(data && data.id){
+                dispatch(receiveNotification(data))
+              }
               } catch (error) {
                 showErrorToast({ error, defaultMessage: 'Error parsing notification' });
               }
@@ -127,24 +130,22 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    if (!notifications || notifications.length === 0) {
+    if (!notifications || notifications.length === 0 || notifications === prevNotificationsRef.current) {
       console.warn('No notifications to show');
       return;
     }
 
     // console.log('\n\n Notifications changed as : ', notifications);
-    const lastNotification = notifications.find(n => n.id);
-    if (!lastNotification) {
-      console.warn('No valid notification found');
-      return;
+    const lastNotification = notifications[notifications.length - 1]
+    if(lastNotification.message){
+      console.log("Showing notification ...")
+      await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
+        body: `${lastNotification.type?.toUpperCase() || "Alert "}: Received at ${new Date(lastNotification.timestamp).toLocaleString()} `,
+        icon: '/icon.png', // Our app's icon
+        tag: lastNotification.id || "hr-notification", // Prevents duplicates
+        data: { url: `/approvals/${lastNotification.id} ` }, // Navigate to approval page
+      });
     }
-    await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
-      body: `${lastNotification.type?.toUpperCase() || "Alert "}: Received at ${new Date(lastNotification.timestamp).toLocaleString()} `,
-      icon: '/icon.png', // Our app's icon
-      tag: lastNotification.id || "hr-notification", // Prevents duplicates
-      data: { url: `/approvals/${lastNotification.id} ` }, // Navigate to approval page
-    });
-
 
     prevNotificationsRef.current = notifications;
   };
@@ -164,3 +165,4 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 export default NotificationsProvider;
+
