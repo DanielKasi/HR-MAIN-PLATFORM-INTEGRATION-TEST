@@ -33,11 +33,13 @@ except redis.ConnectionError as e:
     logger.error(f"❌ Failed to connect to Redis: {str(e)}")
     raise
 
-def add_notification(user_id: int, message: str) -> None:
-    """Add a notification to the user's Redis queue without expiry."""
+def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None) -> None:
+    """Add a notification to the user's Redis queue with optional model and object ID."""
     notification = {
         'id': str(int(time.time() * 1000)),  # Store ID as string
-        'message': message
+        'message': message,
+        'model_name': model_name,
+        'object_id': object_id
     }
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
@@ -52,7 +54,6 @@ def get_notification(user_id: int) -> Optional[dict]:
     lock_key = f"lock:notifications:{user_id}"
     with redis_client.lock(lock_key, timeout=5):
         try:
-            # Option 1: Peek at notifications (use lrange)
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
             queue_length = len(notifications)
             print(f"🔎 Checking queue for user {user_id}, queue length: {queue_length}")
@@ -72,28 +73,6 @@ def get_notification(user_id: int) -> Optional[dict]:
                     continue
             print(f"❌ No unread notifications for user {user_id}")
             return None
-
-            # Option 2: Pop notifications (uncomment to use lpop instead)
-            """
-            notification = redis_client.lpop(f"notifications:{user_id}")
-            if not notification:
-                print(f"❌ No notifications in queue for user {user_id}")
-                return None
-            try:
-                notification_data = json.loads(notification)
-                notification_id = str(notification_data['id'])
-                read_notifications_key = f"read_notifications:{user_id}"
-                read_notifications = redis_client.smembers(read_notifications_key)
-                print(f"📋 Read notifications for user {user_id}: {read_notifications}")
-                if redis_client.sismember(read_notifications_key, notification_id):
-                    print(f"📥 Notification {notification_id} already read, skipping")
-                    return get_notification(user_id)  # Recurse to get next notification
-                print(f"📥 Retrieved notification for user {user_id}: {notification}")
-                return notification_data
-            except (json.JSONDecodeError, KeyError) as e:
-                print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
-                return get_notification(user_id)  # Recurse to try next notification
-            """
         except redis.RedisError as e:
             print(f"❌ Redis error in get_notification: {str(e)}")
             return None
