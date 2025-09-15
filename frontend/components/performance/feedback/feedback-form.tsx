@@ -88,8 +88,8 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
         if (!currentInstitution || revieweeValue.length === 0 || reviewerValue.length === 0) return
 
         const feedbackData: IFeedback360FormData = {
-            reviewee: Number(revieweeValue[0]),
-            reviewer: Number(reviewerValue[0]),
+            reviewee_id: Number(revieweeValue[0]),
+            reviewer_id: Number(reviewerValue[0]),
             period: periodValue ? Number(periodValue) : undefined,
             feedback_text: formData.feedback_text,
             strengths: formData.strengths || undefined,

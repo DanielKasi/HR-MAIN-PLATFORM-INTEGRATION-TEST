@@ -65,7 +65,7 @@ export function PeriodsTable({ periods, onEdit, onDelete, onAdd, onSearch, isLoa
             label: "Edit",
             icon: <Edit className="h-4 w-4" />,
             onClick: onEdit,
-            show: (period) => !period.is_closed,
+            // show: (period) => !period.is_closed,
         },
         {
             label: "Delete",

@@ -1,20 +1,19 @@
 "use client"
 
-import { IEmployee } from "@/types/types.utils"
+
 import PaginatedSearchableSelect, { PaginatedSelectItem } from "@/components/generic/paginated-searchable-select"
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils"
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useEffect, useState } from "react";
+import { Role } from "@/types";
+import { ROLES_API } from "@/lib/utils";
 
 
-export interface EmployeeSearchableSelectProps {
+export interface RoleSearchableSelectProps {
   value: (string | number)[];
   onValueChange: (value: (string | number)[]) => void;
   disabled?: boolean;
   placeholder?: string;
-  showEmployeeId?: boolean;
-  showDepartment?: boolean;
   className?: string;
   triggerClassName?: string;
   multiple?: boolean;
@@ -22,19 +21,17 @@ export interface EmployeeSearchableSelectProps {
   showSelectedItems?: boolean;
 }
 
-export const EmployeeSearchableSelect = ({
+export const RoleSearchableSelect = ({
   value,
   onValueChange,
   disabled = false,
   showSelectedItems = true,
-  placeholder = "Select employee(s)",
-  showEmployeeId = true,
-  showDepartment = true,
   className,
   triggerClassName,
   multiple = false,
+  placeholder = `Select role${multiple ? 's':''}`,
   hideSelectedFromList = false,
-}: EmployeeSearchableSelectProps) => {
+}: RoleSearchableSelectProps) => {
 
   const currentInstitution = useSelector(selectSelectedInstitution);
   const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
@@ -45,15 +42,15 @@ export const EmployeeSearchableSelect = ({
 
   const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
     if (!currentInstitution) { throw new Error("No institution found !") }
-    return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+    return await ROLES_API.getPaginatedFirstPage({institutionId:currentInstitution.id});
   };
 
   const fetchFromUrl = async ({ url }: { url: string }) => {
-    return await getPaginatedEmployeesFromUrl({ url });
+    return await ROLES_API.getPaginatedFromUrl({ url });
   };
 
 
-  const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+  const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<Role>) => {
     if (!selectedItems.includes(itemId)) {
       if (multiple) {
         onValueChange([...selectedItems, itemId]);
@@ -62,8 +59,7 @@ export const EmployeeSearchableSelect = ({
       }
     }
   };
-  const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-  // console.log("\n\n Removing item  : ", itemId)
+  const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<Role>) => {
     if (multiple) {
       onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
     }
@@ -71,13 +67,13 @@ export const EmployeeSearchableSelect = ({
 
   return (
     <div className={className}>
-      <PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+      <PaginatedSearchableSelect<Role, { search?: string; page?: number }>
         paginated
         fetchFirstPage={fetchFirstPage}
         fetchFromUrl={fetchFromUrl}
-        getItemId={(emp) => emp.id}
-        getItemLabel={(emp) => emp.user?.fullname || ""}
-        getItemValue={(emp) => emp.id.toString()}
+        getItemId={(role) => role.id}
+        getItemLabel={(role) => role.name || ""}
+        getItemValue={(role) => role.id.toString()}
         selectedItems={selectedItems}
         onSelect={handleSelect}
         onRemove={handleRemove}
@@ -85,7 +81,7 @@ export const EmployeeSearchableSelect = ({
         multiple={multiple}
         disabled={disabled}
         placeholder={placeholder}
-        searchPlaceholder="Search employees by name, email, ID, or department..."
+        searchPlaceholder="Search roles by name"
         triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
         popoverClassName="w-full"
         hideSelectedFromList={hideSelectedFromList}
@@ -94,4 +90,4 @@ export const EmployeeSearchableSelect = ({
   );
 }
 
-export default EmployeeSearchableSelect
+export default RoleSearchableSelect

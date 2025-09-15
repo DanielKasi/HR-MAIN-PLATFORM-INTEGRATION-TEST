@@ -45,7 +45,7 @@ export const EmployeeSearchableSelect = ({
 
   // Fetchers
   const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
-    if (!currentInstitution) { throw new Error("No intitution found !") }
+    if (!currentInstitution) { throw new Error("No institution found !") }
     return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
   };
 

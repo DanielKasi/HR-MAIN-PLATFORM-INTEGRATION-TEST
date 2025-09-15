@@ -5416,6 +5416,23 @@ export const payrollAPI = {
   },
 };
 
+export const ROLES_API = {
+  getPaginatedFirstPage: async ({ institutionId }: { institutionId: number }) => {
+  const response = await apiRequest.get(`user/role/?Institution_id=${institutionId}`);
+  return response.data as IPaginatedResponse<Role>
+},
+
+  getPaginatedFromUrl: async ({
+    url,
+  }: {
+    url: string;
+  }): Promise<IPaginatedResponse<Role>> => {
+      const response = await apiRequest.get(forceUrlToHttps(url));
+      return response.data as IPaginatedResponse<Role>;
+  },
+
+}
+
 export const institutionAPI = {
   getDasboardAnalytics: async ({ institutionId }: { institutionId: number }) => {
     const response = await apiRequest.get(`/institution/${institutionId}/dashboard-analytics/`);
@@ -5691,13 +5708,8 @@ export const assetCategoriesAPI = {
   }: {
     url: string;
   }): Promise<IPaginatedResponse<IAssetCategory>> => {
-    try {
       const response = await apiRequest.get(forceUrlToHttps(url));
       return response.data as IPaginatedResponse<IAssetCategory>;
-    } catch (error) {
-      console.error("Error fetching asset categories from URL:", error);
-      throw error;
-    }
   },
 
   getById: async (id: number): Promise<IAssetCategory> => {

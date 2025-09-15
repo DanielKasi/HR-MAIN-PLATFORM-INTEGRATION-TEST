@@ -2491,8 +2491,8 @@ export interface IFeedback360 {
 }
 
 export interface IFeedback360FormData {
-  reviewee: number
-  reviewer: number
+  reviewee_id: number
+  reviewer_id: number
   period?: number
   feedback_text?: string
   rating?: number
