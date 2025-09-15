@@ -79,27 +79,29 @@ def get_notification(user_id: int) -> Optional[dict]:
 
 def get_unread_count(user_id: int) -> int:
     """Get the count of unread notifications for the user."""
-    try:
-        notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
-        print(f"📋 Raw notifications for user {user_id}: {notifications}")
-        read_notifications_key = f"read_notifications:{user_id}"
-        read_notifications = redis_client.smembers(read_notifications_key)
-        print(f"📋 Read notifications for user {user_id}: {read_notifications}")
-        unread_count = 0
-        for notification in notifications:
-            try:
-                notification_data = json.loads(notification)
-                notification_id = str(notification_data['id'])
-                if not redis_client.sismember(read_notifications_key, notification_id):
-                    unread_count += 1
-            except (json.JSONDecodeError, KeyError) as e:
-                print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
-                continue
-        print(f"📊 Unread notification count for user {user_id}: {unread_count}")
-        return unread_count
-    except redis.RedisError as e:
-        print(f"❌ Redis error in get_unread_count: {str(e)}")
-        return 0
+    lock_key = f"lock:notifications:{user_id}"
+    with redis_client.lock(lock_key, timeout=5):
+        try:
+            notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+            print(f"📋 Raw notifications for user {user_id}: {notifications}")
+            read_notifications_key = f"read_notifications:{user_id}"
+            read_notifications = redis_client.smembers(read_notifications_key)
+            print(f"📋 Read notifications for user {user_id}: {read_notifications}")
+            unread_count = 0
+            for notification in notifications:
+                try:
+                    notification_data = json.loads(notification)
+                    notification_id = str(notification_data['id'])
+                    if not redis_client.sismember(read_notifications_key, notification_id):
+                        unread_count += 1
+                except (json.JSONDecodeError, KeyError) as e:
+                    print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
+                    continue
+            print(f"📊 Unread notification count for user {user_id}: {unread_count}")
+            return unread_count
+        except redis.RedisError as e:
+            print(f"❌ Redis error in get_unread_count: {str(e)}")
+            return 0
 
 def mark_notification_read(user_id: int, notification_id: str) -> None:
     """Mark a notification as read for the user."""
@@ -122,9 +124,9 @@ def cleanup_queue(user_id: int) -> None:
 @csrf_exempt
 @extend_schema(
     summary="SSE for Real-Time Notifications",
-    description="Internal endpoint to handle Server-Sent Events (SSE) connections for streaming real-time notifications to the authenticated user. Includes unread notification count.",
+    description="Internal endpoint to handle Server-Sent Events (SSE) connections for streaming real-time notifications to the authenticated user. Includes unread notification count and optional model and object ID.",
     responses={
-        200: OpenApiResponse(description="SSE stream of notifications in the format: `data: {\"id\": string, \"message\": string, \"unread_count\": int}\\n\\n` for notifications or `data: {\"unread_count\": int}\\n\\n` for heartbeats"),
+        200: OpenApiResponse(description="SSE stream of notifications in the format: `data: {\"id\": string, \"message\": string, \"model_name\": string|null, \"object_id\": string|null, \"unread_count\": int}\\n\\n` for notifications or `data: {\"unread_count\": int}\\n\\n` for heartbeats"),
         401: OpenApiResponse(description="Unauthorized - Invalid or missing JWT token"),
         500: OpenApiResponse(description="Server error - Internal server issue")
     },
@@ -161,7 +163,7 @@ async def sse_notifications(request):
                     notif['unread_count'] = unread_count
                     print(f"📤 Sending notification to SSE client {user_id}: {notif}")
                     yield f"data: {json.dumps(notif)}\n\n"
-                    await sync_to_async(lambda: mark_notification_read(user_id, notif['id']))()
+                    # Removed: await sync_to_async(lambda: mark_notification_read(user_id, notif['id']))()
                 
                 current_time = time.time()
                 if current_time - last_heartbeat > 10:
@@ -245,7 +247,7 @@ class GetAllNotifications(APIView):
 
     @extend_schema(
         summary="Get All Notifications",
-        description="Retrieves all notifications (both read and unread) for the authenticated user with pagination support. Use 'page' and 'page_size' query parameters to control pagination.",
+        description="Retrieves all notifications (both read and unread) for the authenticated user with pagination support. Use 'page' and 'page_size' query parameters to control pagination. Notifications include optional model_name and object_id fields.",
         responses={
             200: OpenApiResponse(description="Paginated list of notifications", examples={
                 "application/json": {
@@ -253,8 +255,20 @@ class GetAllNotifications(APIView):
                     "next": "http://api.example.com/notifications?page=2",
                     "previous": None,
                     "results": [
-                        {"id": "123456789", "message": "Test notification", "is_read": True},
-                        {"id": "123456790", "message": "Another notification", "is_read": False}
+                        {
+                            "id": "123456789",
+                            "message": "Test notification",
+                            "model_name": "approvergroup",
+                            "object_id": "1",
+                            "is_read": True
+                        },
+                        {
+                            "id": "123456790",
+                            "message": "Another notification",
+                            "model_name": "assets",
+                            "object_id": 1,
+                            "is_read": False
+                        }
                     ]
                 }
             }),
