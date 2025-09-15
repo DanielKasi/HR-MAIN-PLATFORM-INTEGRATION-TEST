@@ -486,11 +486,15 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
             if first_task:
                 object_desc = str(self) if self else "an object"
                 message = f"A new approval task is pending for you: Approve {object_desc} at level {first_task.level.level}."
+                # Get model_name and object_id for the content object
+                model_name = content_type.model
+                object_id = str(self.pk)
                 for approver_user in first_task.level.get_approver_users():
                     add_notification(
                         user_id=approver_user.id,
                         message=message,
-                        obj=self  # Pass the current instance
+                        model_name=model_name,
+                        object_id=object_id
                     )
 
     def confirm_create(self):

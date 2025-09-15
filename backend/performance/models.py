@@ -5,7 +5,6 @@ from performance.zoom_api import create_zoom_meeting
 from employee.models import Employee
 from institution.models import Institution
 from django.utils import timezone
-from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.db.models import JSONField
 from rest_framework.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
@@ -16,6 +15,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import os
 from google.auth.transport.requests import Request
+from datetime import datetime
+
 
 class Period(BaseApprovableModel):   
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE) 
@@ -45,9 +46,8 @@ class Objectives(BaseApprovableModel):
         choices=DURATION_CHOICES,
         default="days"
     )
-    duration = models.DurationField()
+    duration = models.IntegerField()
     key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
-    assignees = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
     self_employee_progress_update = models.BooleanField(default=False)
 
     def __str__(self):
@@ -73,7 +73,6 @@ class EmmployeeObjectives(BaseApprovableModel):
     )
     start_date = models.DateField()
     end_date = models.DateField()
-    key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.objective.name}"
@@ -90,7 +89,7 @@ class KeyResult(BaseApprovableModel):
     title = models.CharField(max_length=255)  
     description = models.TextField()  
     target_value = models.FloatField()
-    duration  = models.DurationField()
+    duration  = models.IntegerField()
     progress_type = models.CharField(
         max_length=255,
         choices=PROGRESS_TYPE_CHOICES,
@@ -217,27 +216,24 @@ class BonusPointSettings(BaseApprovableModel):
         ('>=', 'Greater than or equal'),
     ]
     ALLOWED_FIELDS = {
-        'Objectives': ['name', 'description', 'duration_unit', 'duration', 'self_employee_progress_update'],
-        'EmployeeObjectives': ['status', 'start_date', 'end_date'],
-        'KeyResult': ['title', 'description', 'target_value', 'duration', 'progress_type'],
-        'Feedback360': ['rating', 'submission_date', 'is_anonymous'],
-        'EmployeeBonusPoint': ['points', 'date', 'redeemed'],
-        'QuestionTemplate': ['name', 'description', 'category'],
-        'Meeting': ['title', 'start_time', 'end_time', 'mode'],
+        'EmployeeObjectives': ['completion_date', 'end_date'],
+        # 'KeyResult': ['completion_date', 'end_date'],
+        'Task': ['completion_date', 'end_date'],
+        'Project': ['completion_date', 'end_date'],
     }
     
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'model__in': [
-        'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
+        'objectives', 'keyresult', 'task', 'project'
     ]})
     content_object = GenericForeignKey('content_type', 'object_id')
     applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Members')])
     bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
     points = models.PositiveIntegerField()
-    condition_field = models.CharField(max_length=255)
+    condition_field = models.CharField(max_length=255, choices=[('completion_date', 'Completion Date'), ('end_date', 'End Date')])
     condition_operator = models.CharField(max_length=10, choices=CONDITION_OPERATOR_CHOICES)
-    condition_value = models.CharField(max_length=255)
+    condition_value = models.CharField(max_length=255, choices=[('end_date', 'End Date')])
 
     def __str__(self):
         return f"{self.content_object} - {self.bonus_for} - {self.points} ({self.condition_field} {self.condition_operator} {self.condition_value})"
@@ -246,7 +242,7 @@ class BonusPointSettings(BaseApprovableModel):
         return self.institution
 
     def clean(self):
-        allowed_models = ['period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting']
+        allowed_models = ['objectives', 'keyresult', 'task', 'project']
         if self.content_type.model not in allowed_models:
             raise ValidationError({"error": f"Invalid content_type. Must be one of: {', '.join(allowed_models)}"})
         
@@ -260,18 +256,9 @@ class BonusPointSettings(BaseApprovableModel):
         field = model_class._meta.get_field(self.condition_field)
         if isinstance(field, (models.DateField, models.DateTimeField)):
             try:
-                from datetime import datetime
                 datetime.strptime(self.condition_value, '%Y-%m-%d')
             except ValueError:
                 raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
-        elif isinstance(field, models.BooleanField):
-            if self.condition_value.lower() not in ['true', 'false']:
-                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be 'true' or 'false'."})
-        elif isinstance(field, models.IntegerField) or isinstance(field, models.FloatField):
-            try:
-                float(self.condition_value)
-            except ValueError:
-                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a number."})
 
 
 class Meeting(BaseApprovableModel):
