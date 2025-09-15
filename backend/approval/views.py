@@ -156,11 +156,14 @@ class ApproverGroupListAPIView(APIView, SortableAPIMixin):
             if not request.user.is_authenticated:
                 return Response({"error": "User not authenticated"}, status=status.HTTP_401_UNAUTHORIZED)
             try:
+                # Save the ApproverGroup to get the object ID
+                approver_group = serializer.save()
                 add_notification(
                     user_id=request.user.id,
-                    message="New approver group created successfully."
+                    message="New approver group created successfully.",
+                    model_name="ApproverGroup",
+                    object_id=str(approver_group.id)  # Pass the ID of the created object
                 )
-                serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response({"error": f"Failed to queue notification or save: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
