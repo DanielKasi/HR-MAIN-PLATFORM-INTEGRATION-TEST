@@ -217,7 +217,6 @@ class BonusPointSettings(BaseApprovableModel):
         ('>=', 'Greater than or equal'),
     ]
     ALLOWED_FIELDS = {
-        'Period': ['start_date', 'end_date', 'is_closed'],
         'Objectives': ['name', 'description', 'duration_unit', 'duration', 'self_employee_progress_update'],
         'EmployeeObjectives': ['status', 'start_date', 'end_date'],
         'KeyResult': ['title', 'description', 'target_value', 'duration', 'progress_type'],
@@ -230,7 +229,7 @@ class BonusPointSettings(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'model__in': [
-        'period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
+        'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
     ]})
     content_object = GenericForeignKey('content_type', 'object_id')
     applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Members')])
