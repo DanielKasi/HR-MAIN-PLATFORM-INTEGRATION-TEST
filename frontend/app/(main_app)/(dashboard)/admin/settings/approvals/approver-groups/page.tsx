@@ -1,9 +1,9 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useRef} from "react";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
-
+import {PaginatedTable, ColumnDef} from "@/components/common/tables/paginated-table";
 import type {ApproverGroup, ApproverGroupFormData} from "@/types/approvals.types";
 import type {Role, UserProfile} from "@/types";
 import {
@@ -23,7 +23,6 @@ import FixedLoader from "@/components/fixed-loader";
 import {getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI} from "@/lib/utils";
 import {Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye} from "lucide-react";
 import {ConfirmationDialog} from "@/components/confirmation-dialog";
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {APPROVER_GROUPS_API} from "@/lib/api/approvals/utils";
-import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import RoleSearchableSelect from "@/components/selects/role-searchable-select";
 
 export default function ApproverGroupsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution);
@@ -44,40 +41,35 @@ export default function ApproverGroupsPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Loading states
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const tableRefreshRef = useRef<(() => void) | null>(null);;
+  const [saving, setSaving] = useState(false);;
+  const [deleting, setDeleting] = useState(false);;
 
   // Dialog states
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<ApproverGroup | null>(null);
-  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
-  const [viewingGroup, setViewingGroup] = useState<ApproverGroup | null>(null);
-  const [groupName, setGroupName] = useState("");
-  const [groupDescription, setGroupDescription] = useState("");
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [openDialog, setOpenDialog] = useState(false);;
+  const [editingGroup, setEditingGroup] = useState<ApproverGroup | null>(null);;
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);;
+  const [viewingGroup, setViewingGroup] = useState<ApproverGroup | null>(null);;
+  const [groupName, setGroupName] = useState("");;
+  const [groupDescription, setGroupDescription] = useState("");;
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);;
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);;
 
   // Delete confirmation states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [currentInstitution]);
-
-  const loadData = async () => {
+  const loadUserRoles = async () => {
     if (!currentInstitution) return;
 
     try {
-      setLoading(true);
-      const [groupsRes, userProfiles, roles] = await Promise.all([
-        APPROVER_GROUPS_API.fetchAll(),
+      const [userProfiles, roles] = await Promise.all([
         PROFILES_API.getPaginatedUserProfiles({}),
         getRoles({institutionId: currentInstitution.id}),
       ]);
 
-      setApproverGroups(groupsRes.results);
       if (userProfiles) {
         setAvailableUsers(userProfiles.results);
       }
@@ -85,13 +77,19 @@ export default function ApproverGroupsPage() {
         setAvailableRoles(roles);
       }
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to load approver groups"});
-    } finally {
-      setLoading(false);
+      showErrorToast({error: e, defaultMessage: "Failed to load users and roles"});
     }
   };
 
+  useEffect(() => {
+    loadUserRoles();
+  }, [currentInstitution]);
+
   const openCreateDialog = () => {
+    setEditingGroup(null);
+    resetForm();
+    setOpenDialog(true);
+  };
     setEditingGroup(null);
     resetForm();
     setOpenDialog(true);
@@ -105,13 +103,28 @@ export default function ApproverGroupsPage() {
     setSelectedRoleIds(group.roles_display.map((r) => r.id));
     setOpenDialog(true);
   };
+    setEditingGroup(group);
+    setGroupName(group.name);
+    setGroupDescription(group.description || "");
+    setSelectedUserIds(group.users_display.map((u) => u.id));
+    setSelectedRoleIds(group.roles_display.map((r) => r.id));
+    setOpenDialog(true);
+  };
 
   const openViewDetails = (group: ApproverGroup) => {
     setViewingGroup(group);
     setViewDetailsOpen(true);
   };
+    setViewingGroup(group);
+    setViewDetailsOpen(true);
+  };
 
   const resetForm = () => {
+    setGroupName("");
+    setGroupDescription("");
+    setSelectedUserIds([]);
+    setSelectedRoleIds([]);
+  };
     setGroupName("");
     setGroupDescription("");
     setSelectedUserIds([]);
@@ -123,9 +136,15 @@ export default function ApproverGroupsPage() {
     setEditingGroup(null);
     resetForm();
   };
+    setOpenDialog(false);
+    setEditingGroup(null);
+    resetForm();
+  };
 
   const handleSave = async () => {
     if (!currentInstitution) {
+      showErrorToast({error: null, defaultMessage: "Missing institution"});
+      return;
       showErrorToast({error: null, defaultMessage: "Missing institution"});
       return;
     }
@@ -133,14 +152,19 @@ export default function ApproverGroupsPage() {
     if (!groupName.trim()) {
       showErrorToast({error: null, defaultMessage: "Group name is required"});
       return;
+      showErrorToast({error: null, defaultMessage: "Group name is required"});
+      return;
     }
 
     if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
       showErrorToast({error: null, defaultMessage: "Please select at least one user or role"});
       return;
+      showErrorToast({error: null, defaultMessage: "Please select at least one user or role"});
+      return;
     }
 
     try {
+      setSaving(true);
       setSaving(true);
 
       const groupData: ApproverGroupFormData = {
@@ -150,22 +174,22 @@ export default function ApproverGroupsPage() {
         users: selectedUserIds,
         roles: selectedRoleIds,
       };
+      };
 
       if (editingGroup) {
-        const updatedGroup = await APPROVER_GROUPS_API.update({
-          id: editingGroup.id,
-          payload: groupData,
-        });
-        setApproverGroups((prev) => prev.map((g) => (g.id === editingGroup.id ? updatedGroup : g)));
+        await APPROVER_GROUPS_API.update({id: editingGroup.id, payload: groupData});
+        tableRefreshRef.current?.();
         showSuccessToast("Approver group updated successfully!");
       } else {
-        const newGroup = await APPROVER_GROUPS_API.create(groupData);
-        setApproverGroups((prev) => [...prev, newGroup]);
+        await APPROVER_GROUPS_API.create(groupData);
+        tableRefreshRef.current?.();
         showSuccessToast("Approver group created successfully!");
       }
 
       closeDialog();
+      closeDialog();
     } catch (e: any) {
+      showErrorToast({error: e, defaultMessage: "Failed to save approver group"});
       showErrorToast({error: e, defaultMessage: "Failed to save approver group"});
     } finally {
       setSaving(false);
@@ -183,7 +207,7 @@ export default function ApproverGroupsPage() {
     try {
       setDeleting(true);
       await APPROVER_GROUPS_API.delete({id: groupToDelete.id});
-      setApproverGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+      tableRefreshRef.current?.();
       showSuccessToast("Approver group deleted successfully!");
     } catch (e: any) {
       showErrorToast({error: e, defaultMessage: "Failed to delete approver group"});
@@ -198,16 +222,6 @@ export default function ApproverGroupsPage() {
     setDeleteConfirmOpen(false);
     setGroupToDelete(null);
   };
-
-  const filteredGroups = approverGroups.filter(
-    (group) =>
-      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      group.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  if (loading) {
-    return <FixedLoader />;
-  }
 
   return (
     <div className="p-6 bg-white rounded-xl">
@@ -239,132 +253,143 @@ export default function ApproverGroupsPage() {
       </div>
 
       {/* Groups Table */}
-      {filteredGroups.length === 0 ? (
-        <div className="text-center py-12">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            {searchTerm ? "No groups found" : "No approver groups yet"}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {searchTerm
-              ? "Try adjusting your search terms"
-              : "Create your first approver group to get started"}
-          </p>
-          {!searchTerm && (
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="w-full max-w-full overflow-x-auto bg-white">
-          <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name & Description</TableHead>
-                <TableHead>Users</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead className="w-[50px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredGroups.map((group) => (
-                <TableRow key={group.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{group.name}</div>
-                      {group.description && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {group.description}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-blue-600" />
-                        <Badge variant="secondary" className="text-xs">
-                          {group.users_display.length}
-                        </Badge>
-                      </div>
-                      {group.users_display.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {group.users_display.slice(0, 2).map((user) => (
-                            <Badge key={user.id} variant="outline" className="text-xs">
-                              {user.user?.fullname || `User ${user.id}`}
-                            </Badge>
-                          ))}
-                          {group.users_display.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{group.users_display.length - 2} more
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">No users assigned</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-orange-600" />
-                        <Badge variant="secondary" className="text-xs">
-                          {group.roles_display.length}
-                        </Badge>
-                      </div>
-                      {group.roles_display.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {group.roles_display.slice(0, 2).map((role) => (
-                            <Badge key={role.id} variant="outline" className="text-xs">
-                              {role.name}
-                            </Badge>
-                          ))}
-                          {group.roles_display.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{group.roles_display.length - 2} more
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">No roles assigned</p>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openViewDetails(group)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEditDialog(group)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(group)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <PaginatedTable<ApproverGroup>
+        fetchFirstPage={async () => {
+          if (!currentInstitution) throw new Error("No institution selected");
+          return await APPROVER_GROUPS_API.fetchAll({
+            search: searchTerm || undefined,
+          });
+        }}
+        fetchFromUrl={APPROVER_GROUPS_API.fetchFromUrl}
+        deps={[currentInstitution?.id, searchTerm]}
+        className="w-full max-w-full overflow-x-auto bg-white"
+        tableClassName="min-w-[800px] [&_th]:border-0 [&_td]:border-0"
+        columns={[
+          {
+            key: "name",
+            header: "Name & Description",
+            cell: (group) => (
+              <div>
+                <div className="font-medium">{group.name}</div>
+                {group.description && (
+                  <div className="text-sm text-muted-foreground mt-1">{group.description}</div>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "users",
+            header: "Users",
+            cell: (group) => (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <Badge variant="secondary" className="text-xs">
+                    {group.users_display.length}
+                  </Badge>
+                </div>
+                {group.users_display.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {group.users_display.slice(0, 2).map((user) => (
+                      <Badge key={user.id} variant="outline" className="text-xs">
+                        {user.user?.fullname || `User ${user.id}`}
+                      </Badge>
+                    ))}
+                    {group.users_display.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{group.users_display.length - 2} more
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No users assigned</p>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "roles",
+            header: "Roles",
+            cell: (group) => (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-orange-600" />
+                  <Badge variant="secondary" className="text-xs">
+                    {group.roles_display.length}
+                  </Badge>
+                </div>
+                {group.roles_display.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {group.roles_display.slice(0, 2).map((role) => (
+                      <Badge key={role.id} variant="outline" className="text-xs">
+                        {role.name}
+                      </Badge>
+                    ))}
+                    {group.roles_display.length > 2 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{group.roles_display.length - 2} more
+                      </Badge>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No roles assigned</p>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            header: "Actions",
+            className: "w-[50px]",
+            cell: (group) => (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => openViewDetails(group)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openEditDialog(group)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteClick(group)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ),
+          },
+        ]}
+        refreshRef={tableRefreshRef}
+        emptyState={
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm ? "No groups found" : "No approver groups yet"}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "Try adjusting your search terms"
+                : "Create your first approver group to get started"}
+            </p>
+            {!searchTerm && (
+              <Button onClick={openCreateDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Group
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* View Details Dialog */}
       <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
