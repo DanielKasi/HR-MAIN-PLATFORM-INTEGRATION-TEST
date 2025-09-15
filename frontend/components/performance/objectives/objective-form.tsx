@@ -1,94 +1,83 @@
-"use client";
+"use client"
 
-import {useState, useEffect, forwardRef} from "react";
-import {PerformanceForm, type FormField} from "../common/performance-form";
+import { useState, useEffect, forwardRef } from "react"
+import { PerformanceForm, type FormField } from "../common/performance-form"
 import type {
   IObjectives,
   IObjectivesFormData,
   IDurationUnit,
+  IKeyResult,
   IKeyResultFormData,
-} from "@/types/types.utils";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
-import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
-import {KEY_RESULTS_API} from "@/lib/utils";
-import type {IKeyResult} from "@/types/types.utils";
-import {Button} from "@/components/ui/button";
-import {Plus} from "lucide-react";
-import {Label} from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {cn} from "@/lib/utils";
-import {KeyResultForm} from "@/components/key-results";
-import {toast} from "sonner";
+} from "@/types/types.utils"
+import { useSelector } from "react-redux"
+import { selectSelectedInstitution } from "@/store/auth/selectors"
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select"
+import { KEY_RESULTS_API } from "@/lib/utils"
+import { KeyResultModal } from "../key-results/key-results-modal"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 
 interface ObjectiveFormProps {
-  initialData?: IObjectives;
-  onSubmit: (data: IObjectivesFormData) => void;
-  isLoading?: boolean;
+  initialData?: IObjectives
+  onSubmit: (data: IObjectivesFormData) => void
+  isLoading?: boolean
 }
 
 export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
-  ({initialData, onSubmit, isLoading}, ref) => {
-    const currentInstitution = useSelector(selectSelectedInstitution);
-    const [keyResults, setKeyResults] = useState<IKeyResult[]>([]);
-    const [managersValue, setManagersValue] = useState<(string | number)[]>([]);
-    const [assigneesValue, setAssigneesValue] = useState<(string | number)[]>([]);
-    const [isKeyResultModalOpen, setIsKeyResultModalOpen] = useState(false);
-    const [isCreatingKeyResult, setIsCreatingKeyResult] = useState(false);
+  ({ initialData, onSubmit, isLoading }, ref) => {
+    const currentInstitution = useSelector(selectSelectedInstitution)
+    const [keyResults, setKeyResults] = useState<IKeyResult[]>([])
+    const [managersValue, setManagersValue] = useState<(string | number)[]>([])
+    const [assigneesValue, setAssigneesValue] = useState<(string | number)[]>([])
+    const [isKeyResultModalOpen, setIsKeyResultModalOpen] = useState(false)
+    const [isCreatingKeyResult, setIsCreatingKeyResult] = useState(false)
 
-    const handleCreateKeyResult = async (data: IKeyResultFormData) => {
-      setIsCreatingKeyResult(true);
+    const fetchKeyResults = async () => {
       try {
-        const newKeyResult = await KEY_RESULTS_API.create({data});
-
-        setKeyResults((prev) => [...prev, newKeyResult]);
-        setIsKeyResultModalOpen(false);
-        toast.success("Key result created successfully!");
-      } catch (error: any) {
-        toast.error(error?.message || "Failed to create key result. Please try again.");
-      } finally {
-        setIsCreatingKeyResult(false);
+        const response = await KEY_RESULTS_API.getPaginated({})
+        setKeyResults(response.results)
+      } catch (error) {
+        console.error("Failed to fetch key results:", error)
       }
-    };
+    }
 
     useEffect(() => {
-      const fetchKeyResults = async () => {
-        try {
-          const response = await KEY_RESULTS_API.getPaginated({});
-          setKeyResults(response.results);
-        } catch (error) {
-          console.error("Failed to fetch key results:", error);
-        }
-      };
-
-      fetchKeyResults();
+      fetchKeyResults()
 
       if (initialData) {
         if (initialData.managers) {
-          setManagersValue([initialData.managers.id]);
+          setManagersValue([initialData.managers.id])
         }
         if (initialData.assignees) {
-          setAssigneesValue([initialData.assignees.id]);
+          setAssigneesValue([initialData.assignees.id])
         }
       }
-    }, [initialData]);
+    }, [initialData])
+
+    const handleCreateKeyResult = async (data: IKeyResultFormData) => {
+      console.log("Creating key result with data:", data)
+      setIsCreatingKeyResult(true)
+      try {
+        await KEY_RESULTS_API.create({ data })
+        await fetchKeyResults() // Refresh the list
+        setIsKeyResultModalOpen(false)
+      } catch (error) {
+        console.error("Failed to create key result:", error)
+      } finally {
+        setIsCreatingKeyResult(false)
+      }
+    }
 
     const durationUnitOptions = [
-      {value: "days", label: "Days"},
-      {value: "months", label: "Months"},
-      {value: "years", label: "Years"},
-    ];
+      { value: "days", label: "Days" },
+      { value: "months", label: "Months" },
+      { value: "years", label: "Years" },
+    ]
 
     const keyResultOptions = keyResults.map((kr) => ({
       value: kr.id,
       label: `${kr.title} (${kr.progress_type})`,
-    }));
+    }))
 
     const fields: FormField[] = [
       {
@@ -98,8 +87,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         placeholder: "e.g., Increase team productivity",
         required: true,
         validation: (value: string) => {
-          if (value.length < 5) return "Objective name must be at least 5 characters";
-          return null;
+          if (value.length < 5) return "Objective name must be at least 5 characters"
+          return null
         },
       },
       {
@@ -109,8 +98,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         placeholder: "Describe the objective in detail...",
         required: true,
         validation: (value: string) => {
-          if (value.length < 10) return "Description must be at least 10 characters";
-          return null;
+          if (value.length < 10) return "Description must be at least 10 characters"
+          return null
         },
       },
       {
@@ -120,10 +109,10 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         placeholder: "e.g., 3",
         required: true,
         validation: (value: string) => {
-          const num = Number.parseInt(value);
-          if (num < 1) return "Duration must be at least 1";
-          if (num > 365) return "Duration cannot exceed 365";
-          return null;
+          const num = Number.parseInt(value)
+          if (num < 1) return "Duration must be at least 1"
+          if (num > 365) return "Duration cannot exceed 365"
+          return null
         },
       },
       {
@@ -139,39 +128,6 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         type: "select",
         options: keyResultOptions,
         placeholder: "Select a key result",
-        customRender: (field, value, onChange, error) => (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-slate-700">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsKeyResultModalOpen(true)}
-                disabled={isLoading}
-                className="h-8 w-8 p-0"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <Select value={value || ""} onValueChange={(val) => onChange(val)} disabled={isLoading}>
-              <SelectTrigger className={cn(error && "border-red-500")}>
-                <SelectValue placeholder={field.placeholder || `Select ${field.label}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {field.options?.map((option) => (
-                  <SelectItem key={String(option.value)} value={String(option.value)}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-          </div>
-        ),
       },
       {
         name: "self_employee_progress_update",
@@ -179,10 +135,10 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         type: "switch",
         description: "Allow employees to update their own progress",
       },
-    ];
+    ]
 
     const handleSubmit = (formData: Record<string, any>) => {
-      if (!currentInstitution) return;
+      if (!currentInstitution) return
 
       const objectiveData: IObjectivesFormData = {
         institution: currentInstitution.id,
@@ -194,13 +150,13 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         assignees_id: assigneesValue.length > 0 ? Number(assigneesValue[0]) : undefined,
         key_result: formData.key_result ? Number(formData.key_result) : undefined,
         self_employee_progress_update: formData.self_employee_progress_update || false,
-      };
+      }
 
-      onSubmit(objectiveData);
-    };
+      onSubmit(objectiveData)
+    }
 
     const getInitialFormData = () => {
-      if (!initialData) return {};
+      if (!initialData) return {}
 
       return {
         name: initialData.name,
@@ -209,11 +165,11 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         duration_unit: initialData.duration_unit,
         key_result: initialData.key_result?.id,
         self_employee_progress_update: initialData.self_employee_progress_update,
-      };
-    };
+      }
+    }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 ">
         <PerformanceForm
           ref={ref}
           fields={fields}
@@ -225,11 +181,30 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
           showSubmit={false}
         />
 
-        {/* Employee Selection Section */}
+        <div className="border-t pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Key Result</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsKeyResultModalOpen(true)}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Key Result
+            </Button>
+          </div>
+          <p className="text-sm text-slate-600 mb-4">
+            You can select an existing key result or create a new one to link with this objective.
+          </p>
+        </div>
+
         <div className="border-t pt-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Assignment</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Manager (Optional)</label>
               <EmployeeSearchableSelect
@@ -255,20 +230,16 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
             </div>
           </div>
         </div>
-        {/* KeyResult Creation Modal */}
-        {currentInstitution && (
-          <KeyResultForm
-            open={isKeyResultModalOpen}
-            onOpenChange={setIsKeyResultModalOpen}
-            onSubmit={handleCreateKeyResult}
-            institutions={[currentInstitution]}
-            progressTypes={["percentage", "number"]}
-            isLoading={isCreatingKeyResult}
-          />
-        )}
-      </div>
-    );
-  },
-);
 
-ObjectiveForm.displayName = "ObjectiveForm";
+        <KeyResultModal
+          isOpen={isKeyResultModalOpen}
+          onClose={() => setIsKeyResultModalOpen(false)}
+          onSubmit={handleCreateKeyResult}
+          isLoading={isCreatingKeyResult}
+        />
+      </div>
+    )
+  },
+)
+
+ObjectiveForm.displayName = "ObjectiveForm"
