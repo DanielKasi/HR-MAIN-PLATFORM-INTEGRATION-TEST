@@ -231,6 +231,11 @@ export const APPROVER_GROUPS_API = {
     return res.data as IPaginatedResponse<ApproverGroup>
   },
 
+    fetchFromUrl: async ({ url }: { url: string }) => {
+    const res = await apiRequest.get(url);
+    return res.data as IPaginatedResponse<ApproverGroup>;
+  },
+
   fetchById: async ({ id }: { id: number }) => {
     const res = await apiRequest.get(`${BASE}/approver-groups/${id}/`);
     return res.data as ApproverGroup;
@@ -249,4 +254,6 @@ export const APPROVER_GROUPS_API = {
   delete: async ({ id }: { id: number }) => {
     await apiRequest.delete(`${BASE}/approver-groups/${id}/`);
   },
+
+
 };

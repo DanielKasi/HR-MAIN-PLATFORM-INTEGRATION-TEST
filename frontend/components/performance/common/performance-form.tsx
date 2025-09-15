@@ -1,42 +1,50 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, forwardRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import {useState, useEffect, forwardRef} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Switch} from "@/components/ui/switch";
+import {cn} from "@/lib/utils";
 
 export interface FormField {
-    name: string
-    label: string
-    type: "text" | "textarea" | "select" | "date" | "number" | "switch" | "multiselect"
-    placeholder?: string
-    required?: boolean
-    options?: { value: string | number; label: string }[]
-    validation?: (value: any) => string | null
-    disabled?: boolean
-    description?: string
+  name: string;
+  label: string;
+  type: "text" | "textarea" | "select" | "date" | "number" | "switch" | "multiselect";
+  placeholder?: string;
+  required?: boolean;
+  options?: {value: string | number; label: string}[];
+  validation?: (value: any) => string | null;
+  disabled?: boolean;
+  description?: string;
+  customRender?: (
+    field: FormField,
+    value: any,
+    onChange: (value: any) => void,
+    error?: string,
+  ) => React.ReactNode;
 }
 
 interface PerformanceFormProps {
-    fields: FormField[]
-    initialData?: Record<string, any>
-    onSubmit: (data: Record<string, any>) => void
-    onCancel?: () => void
-    isLoading?: boolean
-    submitLabel?: string
-    showCancel?: boolean
-    showSubmit?: boolean // Added showSubmit prop to control submit button visibility
-    className?: string
+  fields: FormField[];
+  initialData?: Record<string, any>;
+  onSubmit: (data: Record<string, any>) => void;
+  onCancel?: () => void;
+  isLoading?: boolean;
+  submitLabel?: string;
+  showCancel?: boolean;
+  showSubmit?: boolean;
+  className?: string;
 }
 
 export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>(
@@ -154,38 +162,7 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                     )
 
                 case "date":
-                    return (
-                        // <Popover>
-                        //     <PopoverTrigger asChild>
-                        //         <Button
-                        //             variant="outline"
-                        //             className={cn(
-                        //                 "w-full justify-start text-left font-normal",
-                        //                 !value && "text-muted-foreground",
-                        //                 error && "border-red-500",
-                        //             )}
-                        //             disabled={field.disabled || isLoading}
-                        //         >
-                        //             <CalendarIcon className="mr-2 h-4 w-4" />
-                        //             {value ? format(new Date(value), "PPP") : field.placeholder || "Pick a date"}
-                        //         </Button>
-                        //     </PopoverTrigger>
-                        //     <PopoverContent className="w-auto p-0">
-                        //         <Calendar
-                        //         classNames={{
-                        //             weekdays:"flex items-center justify-center gap-3",
-                        //         }}
-                        //             mode="single"
-                        //             selected={value ? new Date(value) : undefined}
-                        //             onSelect={(date) =>{ 
-                        //                 date?.setDate(date.getDate() + 1)
-                        //                 console.log("Selected date : ", date?.toISOString().split("T")[0])
-                        //                 handleChange(field.name, date?.toISOString().split("T")[0])}}
-                        //             autoFocus
-                        //         />
-                        //     </PopoverContent>
-                        // </Popover>
-                                            
+                    return (                
                         <Input
                             type={"date"}
                             value={value || ""}
@@ -251,7 +228,8 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                 )}
             </form>
         )
-    },
-)
+    }
+  );
 
-PerformanceForm.displayName = "PerformanceForm"
+PerformanceForm.displayName = "PerformanceForm";
+
