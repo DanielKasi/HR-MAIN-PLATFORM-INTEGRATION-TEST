@@ -25,8 +25,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import apiRequest from "@/lib/apiRequest";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { extractRequiredPermissions, hasAnyRequiredPermissions } from "@/lib/helpers";
-import { loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout } from "@/utils/authUtils";
-import { AUTH_API } from "@/utils/authUtils";
+import { loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout } from "@/utils/auth-utils";
+import { AUTH_API } from "@/utils/auth-utils";
 
 interface UserProfile {
   id: number;

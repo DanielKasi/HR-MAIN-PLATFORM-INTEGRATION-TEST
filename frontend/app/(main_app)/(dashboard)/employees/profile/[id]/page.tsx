@@ -794,7 +794,7 @@ export default function EmployeeProfile() {
                                           Institution
                                         </label>
                                         <p className="text-gray-800 font-medium capitalize">
-                                          {education.institute}
+                                          {education.institution}
                                         </p>
                                       </div>
                                       <div className="flex items-center justiify-start gap-8">

@@ -171,7 +171,7 @@ export default function AddEmployeeForm() {
 
   const [educationFormData, setEducationFormData] = useState<Omit<IEmployeeEducationFormData, "id">>({
     name: "",
-    institute: "",
+    institution: "",
     year: "",
     qualification_id :0,
   });
@@ -381,7 +381,7 @@ export default function AddEmployeeForm() {
   };
 
   const handleAddEducation = () => {
-    if (!educationFormData.qualification_id || !educationFormData.institute) return;
+    if (!educationFormData.qualification_id || !educationFormData.institution) return;
 
     if (editingEducation) {
       setEducations((prev) =>
@@ -398,7 +398,7 @@ export default function AddEmployeeForm() {
       setEducations((prev) => [...prev, newEducation]);
     }
 
-    setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
+    setEducationFormData({qualification_id: 0, institution: "", year: "", name: ""});
     setIsEducationDialogOpen(false);
   };
 
@@ -406,7 +406,7 @@ export default function AddEmployeeForm() {
     setEditingEducation(edu);
     setEducationFormData({
       qualification_id: edu.qualification_id,
-      institute: edu.institute,
+      institution: edu.institution,
       year: edu.year,
       name: edu.name,
     });
@@ -846,7 +846,7 @@ export default function AddEmployeeForm() {
         educations: educations.map((edu, idx) => ({
           id: String(idx),
           qualification_id: edu.qualification_id,
-          institute: edu.institute,
+          institution: edu.institution,
           year: edu.year,
           name: edu.name
         })),
@@ -1391,7 +1391,7 @@ export default function AddEmployeeForm() {
                             </div>
                             <div>
                               <span className="text-gray-600 block">Institute</span>
-                              <span className="font-medium">{edu.institute}</span>
+                              <span className="font-medium">{edu.institution}</span>
                             </div>
                             <div>
                               <span className="text-gray-600 block">Year</span>
@@ -2087,7 +2087,7 @@ export default function AddEmployeeForm() {
               if (!open) {
                 setIsEducationDialogOpen(false);
                 setEditingEducation(null);
-                setEducationFormData({qualification_id: 0, institute: "", year: "", name: ""});
+                setEducationFormData({qualification_id: 0, institution: "", year: "", name: ""});
               } else {
                 setIsEducationDialogOpen(open);
               }
@@ -2120,9 +2120,9 @@ export default function AddEmployeeForm() {
                   <Label htmlFor="eduInstitute">Institute</Label>
                   <Input
                     id="eduInstitute"
-                    value={educationFormData.institute}
+                    value={educationFormData.institution}
                     onChange={(e) =>
-                      setEducationFormData((prev) => ({...prev, institute: e.target.value}))
+                      setEducationFormData((prev) => ({...prev, institution: e.target.value}))
                     }
                     placeholder="Institute Name"
                     className="rounded-2xl h-12"
@@ -2165,7 +2165,7 @@ export default function AddEmployeeForm() {
                   type="button"
                   onClick={handleAddEducation}
                   className=" text-white rounded-full w-full"
-                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institute || !educationFormData.year}
+                  disabled={!educationFormData.qualification_id || !educationFormData.name || !educationFormData.institution || !educationFormData.year}
                 >
                   {editingEducation ? "Update Education" : "Add Education Background"}
                 </Button>

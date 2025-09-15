@@ -4,6 +4,8 @@ export interface INotification {
   message: string;
   type?: 'info' | 'success' | 'error' | 'warning';
   timestamp: string;
+  model_name:string;
+  object_id:number
 }
 
 export enum NOTIFICATION_ACTION_TYPES {

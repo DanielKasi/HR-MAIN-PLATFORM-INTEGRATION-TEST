@@ -9,6 +9,7 @@ import { selectNotifications } from '@/store/notifications/selectors';
 import { MAIN_DOMAIN_URL, NOTIFICATIONS_STREAM_BASE_PATH } from '@/constants';
 import { showErrorToast } from '@/lib/utils';
 import { INotification } from '@/store/notifications/types';
+import { getNotificationPath } from '@/utils/notifications-path-matcher';
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
@@ -80,7 +81,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (line.startsWith('data: ')) {
               try {
                 const data:INotification = JSON.parse(line.slice(6));
-                if(data && data.id){
+                if(data && data.id && !notifications.find(notif => notif.id === data.id)){
+                //   console.log("\n\n Notification received:", data, "And dispatched to notifications store", notifications);
                 dispatch(receiveNotification(data))
               }
               } catch (error) {
@@ -135,16 +137,16 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    // console.log('\n\n Notifications changed as : ', notifications);
     const lastNotification = notifications[notifications.length - 1]
     if(lastNotification.message){
-      console.log("Showing notification ...")
+      const url = getNotificationPath(lastNotification);
       await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
         body: `${lastNotification.type?.toUpperCase() || "Alert "}: Received at ${new Date(lastNotification.timestamp).toLocaleString()} `,
         icon: '/icon.png', // Our app's icon
-        tag: lastNotification.id || "hr-notification", // Prevents duplicates
-        data: { url: `/approvals/${lastNotification.id} ` }, // Navigate to approval page
+        tag: lastNotification.id || (notifications.length -1).toString() , // Prevents duplicates
+        data: { url}, // Navigate to approval page
       });
+              
     }
 
     prevNotificationsRef.current = notifications;

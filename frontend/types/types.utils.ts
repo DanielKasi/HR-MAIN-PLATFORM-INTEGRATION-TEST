@@ -613,7 +613,7 @@ export interface INextOfKin {
 export interface IEducation {
   id: string
   name: string
-  institute: string
+  institution: string
   year: string
   qualification: IQualificationAward
 }
@@ -621,7 +621,7 @@ export interface IEducation {
 export interface IEmployeeEducationFormData {
   id: string
   name: string
-  institute: string
+  institution: string
   year: string
   qualification_id: number
 }

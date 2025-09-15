@@ -128,7 +128,8 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                             onChange={(e) => handleChange(field.name, e.target.value)}
                             placeholder={field.placeholder}
                             disabled={field.disabled || isLoading}
-                            className={cn("min-h-[100px]", error && "border-red-500")}
+                            className={cn("min-h-[100px] rounded-xl resize-none", error && "border-red-500")}
+                            rows={3}
                         />
                     )
 
@@ -237,12 +238,12 @@ export const PerformanceForm = forwardRef<HTMLFormElement, PerformanceFormProps>
                 {(showSubmit || (showCancel && onCancel)) && (
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         {showCancel && onCancel && (
-                            <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+                            <Button type="button" variant="outline" className="w-full rounded-full" onClick={onCancel} disabled={isLoading}>
                                 Cancel
                             </Button>
                         )}
                         {showSubmit && (
-                            <Button type="submit" disabled={isLoading} className="px-8">
+                            <Button type="submit" disabled={isLoading} className="px-8 w-full rounded-full">
                                 {isLoading ? "Saving..." : submitLabel}
                             </Button>
                         )}

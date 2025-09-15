@@ -1428,7 +1428,7 @@ export const createEmployee = async ({
       } else if (key === "educations" && Array.isArray(value)) {
         value.forEach((edu: IEmployeeEducationFormData, index) => {
           formData.append(`educations[${index}].name`, edu.name || "")
-          formData.append(`educations[${index}].institute`, edu.institute || "")
+          formData.append(`educations[${index}].institution`, edu.institution || "")
           formData.append(`educations[${index}].year`, edu.year || "")
           formData.append(`educations[${index}].qualification_id`, edu.qualification_id.toString() || "")
         })
@@ -1502,7 +1502,7 @@ export const updateEmployee = async ({
     } else if (key === "educations" && Array.isArray(value)) {
       value.forEach((edu: IEmployeeEducationFormData, index) => {
         formData.append(`educations[${index}].name`, edu.name || "")
-        formData.append(`educations[${index}].institute`, edu.institute || "")
+        formData.append(`educations[${index}].institution`, edu.institution || "")
         formData.append(`educations[${index}].year`, edu.year || "")
         formData.append(`educations[${index}].qualification_id`, edu.qualification_id.toString() || "")
       })

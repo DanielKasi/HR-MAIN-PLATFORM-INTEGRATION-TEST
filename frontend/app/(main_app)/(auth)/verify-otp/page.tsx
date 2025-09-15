@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import apiRequest from "@/lib/apiRequest";
 import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
-import { AUTH_API } from "@/utils/authUtils";
+import { AUTH_API } from "@/utils/auth-utils";
 import { maskEmail } from "@/lib/helpers";
 
 export default function VerifyOTPPage() {

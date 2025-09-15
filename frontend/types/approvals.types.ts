@@ -80,6 +80,14 @@ export type ApprovalTaskStatus =
   | "approved"
   | "terminated";
 
+export type ApprovalTaskContentObject = {
+  content_type:{
+    app_label:string,
+    model:string
+  },
+  object_id:number
+}
+
 export interface ApprovalTask {
   id: number;
   status: ApprovalTaskStatus;
@@ -88,6 +96,7 @@ export interface ApprovalTask {
   approved_by_fullname?: string | null;
   updated_at: string;
   level: ApprovalDocumentLevel;
+  content_object:ApprovalTaskContentObject
 }
 
 
