@@ -42,7 +42,7 @@ import {
   setCurrentUser,
 } from "@/store/auth/actions";
 import {toast} from "sonner";
-import {AUTH_API, type LoginResponse} from "@/utils/authUtils";
+import {AUTH_API, type LoginResponse} from "@/utils/auth-utils";
 
 import {LocationAutocomplete} from "@/components/location-autocomplete";
 import {Textarea} from "@/components/ui/textarea";

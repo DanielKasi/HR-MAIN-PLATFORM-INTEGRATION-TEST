@@ -613,6 +613,18 @@ export default function PayrollPeriods() {
                                   {formatDate(period.pay_date)}
                                 </div>
                               </TableCell>
+                                                            <TableCell>
+                                <div className="font-semibold text-gray-700">
+                                  {(() => {
+                                    const daysRemaining = getDaysRemaining(period.pay_date);
+                                    return daysRemaining < 0
+                                      ? `${Math.abs(daysRemaining)} days ago`
+                                      : daysRemaining === 0
+                                        ? "Today"
+                                        : `${daysRemaining} days`;
+                                  })()}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <Badge
                                   className={`font-medium px-3 py-1 ${period.is_processed
@@ -630,18 +642,7 @@ export default function PayrollPeriods() {
                                   </div>
                                 </Badge>
                               </TableCell>
-                              <TableCell>
-                                <div className="font-semibold text-gray-700">
-                                  {(() => {
-                                    const daysRemaining = getDaysRemaining(period.pay_date);
-                                    return daysRemaining < 0
-                                      ? `${Math.abs(daysRemaining)} days ago`
-                                      : daysRemaining === 0
-                                        ? "Today"
-                                        : `${daysRemaining} days`;
-                                  })()}
-                                </div>
-                              </TableCell>
+
                               <TableCell className="text-right">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>

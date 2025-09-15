@@ -3,7 +3,7 @@ import axios, { InternalAxiosRequestConfig } from "axios";
 import { CustomApiRequestError } from "@/constants";
 import { store } from "@/store";
 import { logoutStart, setAccessToken, setRefreshToken } from "@/store/auth/actions";
-import { LoginResponse } from "@/utils/authUtils";
+import { LoginResponse } from "@/utils/auth-utils";
 import { MAIN_DOMAIN_URL } from "@/constants";
 
 const axiosJsonInstance = axios.create({

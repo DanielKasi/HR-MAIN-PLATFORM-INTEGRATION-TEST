@@ -11,6 +11,7 @@ import type {
   ApproverGroup,
   ApproverGroupFormData,
   ApprovalTaskStatus,
+  ApprovalTaskType,
 } from "@/types/approvals.types";
 import { ApprovalTasksDashboardResponse, IPaginatedResponse } from "@/types/types.utils";
 
@@ -73,6 +74,7 @@ export const APPROVAL_TASKS_API = {
   },
   fetchAll: async (params?: {
     search?: string;
+    type?:ApprovalTaskType,
     status?: ApprovalTaskStatus;
     assigned_to?: number;
     page?: number;

@@ -25,7 +25,7 @@ import {clearAuthError, loginStart} from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
 import {Icon} from "@iconify/react";
-import { AUTH_API } from "@/utils/authUtils";
+import { AUTH_API } from "@/utils/auth-utils";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
