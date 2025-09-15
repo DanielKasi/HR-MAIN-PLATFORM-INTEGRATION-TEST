@@ -1,11 +1,10 @@
 "use client";
 
-import {useEffect, useState, useRef} from "react";
+import {useState, useRef} from "react";
 import {useSelector} from "react-redux";
 import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {PaginatedTable, ColumnDef} from "@/components/common/tables/paginated-table";
 import type {ApproverGroup, ApproverGroupFormData} from "@/types/approvals.types";
-import type {Role, UserProfile} from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +17,8 @@ import {Button} from "@/components/ui/button";
 import {Textarea} from "@/components/ui/textarea";
 import {Badge} from "@/components/ui/badge";
 import {Separator} from "@/components/ui/separator";
-import {MultiSelectPopover} from "@/components/common/multi-select-popover";
-import FixedLoader from "@/components/fixed-loader";
-import {getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI} from "@/lib/utils";
+
+import {showErrorToast, showSuccessToast} from "@/lib/utils";
 import {Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye} from "lucide-react";
 import {ConfirmationDialog} from "@/components/confirmation-dialog";
 import {
@@ -30,14 +28,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {APPROVER_GROUPS_API} from "@/lib/api/approvals/utils";
+import RoleSearchableSelect from "@/components/selects/role-searchable-select";
+import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 
 export default function ApproverGroupsPage() {
   const currentInstitution = useSelector(selectSelectedInstitution);
 
-  // Data states
-  const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
+  // // Data states
+  // const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([]);
+  // const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  // const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Loading states
@@ -58,38 +58,12 @@ export default function ApproverGroupsPage() {
   // Delete confirmation states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
 
-  const loadUserRoles = async () => {
-    if (!currentInstitution) return;
-
-    try {
-      const [userProfiles, roles] = await Promise.all([
-        PROFILES_API.getPaginatedUserProfiles({}),
-        getRoles({institutionId: currentInstitution.id}),
-      ]);
-
-      if (userProfiles) {
-        setAvailableUsers(userProfiles.results);
-      }
-      if (roles) {
-        setAvailableRoles(roles);
-      }
-    } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to load users and roles"});
-    }
-  };
-
-  useEffect(() => {
-    loadUserRoles();
-  }, [currentInstitution]);
+  // useEffect(() => {
+  //   loadUserRoles();
+  // }, [currentInstitution]);
 
   const openCreateDialog = () => {
-    setEditingGroup(null);
-    resetForm();
-    setOpenDialog(true);
-  };
     setEditingGroup(null);
     resetForm();
     setOpenDialog(true);
@@ -103,28 +77,15 @@ export default function ApproverGroupsPage() {
     setSelectedRoleIds(group.roles_display.map((r) => r.id));
     setOpenDialog(true);
   };
-    setEditingGroup(group);
-    setGroupName(group.name);
-    setGroupDescription(group.description || "");
-    setSelectedUserIds(group.users_display.map((u) => u.id));
-    setSelectedRoleIds(group.roles_display.map((r) => r.id));
-    setOpenDialog(true);
-  };
+    
 
   const openViewDetails = (group: ApproverGroup) => {
     setViewingGroup(group);
     setViewDetailsOpen(true);
   };
-    setViewingGroup(group);
-    setViewDetailsOpen(true);
-  };
+    ;
 
   const resetForm = () => {
-    setGroupName("");
-    setGroupDescription("");
-    setSelectedUserIds([]);
-    setSelectedRoleIds([]);
-  };
     setGroupName("");
     setGroupDescription("");
     setSelectedUserIds([]);
@@ -136,15 +97,9 @@ export default function ApproverGroupsPage() {
     setEditingGroup(null);
     resetForm();
   };
-    setOpenDialog(false);
-    setEditingGroup(null);
-    resetForm();
-  };
 
   const handleSave = async () => {
     if (!currentInstitution) {
-      showErrorToast({error: null, defaultMessage: "Missing institution"});
-      return;
       showErrorToast({error: null, defaultMessage: "Missing institution"});
       return;
     }
@@ -152,19 +107,14 @@ export default function ApproverGroupsPage() {
     if (!groupName.trim()) {
       showErrorToast({error: null, defaultMessage: "Group name is required"});
       return;
-      showErrorToast({error: null, defaultMessage: "Group name is required"});
-      return;
     }
 
     if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
       showErrorToast({error: null, defaultMessage: "Please select at least one user or role"});
       return;
-      showErrorToast({error: null, defaultMessage: "Please select at least one user or role"});
-      return;
     }
 
     try {
-      setSaving(true);
       setSaving(true);
 
       const groupData: ApproverGroupFormData = {
@@ -173,7 +123,6 @@ export default function ApproverGroupsPage() {
         description: groupDescription,
         users: selectedUserIds,
         roles: selectedRoleIds,
-      };
       };
 
       if (editingGroup) {
@@ -187,15 +136,12 @@ export default function ApproverGroupsPage() {
       }
 
       closeDialog();
-      closeDialog();
     } catch (e: any) {
-      showErrorToast({error: e, defaultMessage: "Failed to save approver group"});
       showErrorToast({error: e, defaultMessage: "Failed to save approver group"});
     } finally {
       setSaving(false);
-    }
   };
-
+  }
   const handleDeleteClick = (group: ApproverGroup) => {
     setGroupToDelete(group);
     setDeleteConfirmOpen(true);
@@ -565,3 +511,4 @@ export default function ApproverGroupsPage() {
     </div>
   );
 }
+
