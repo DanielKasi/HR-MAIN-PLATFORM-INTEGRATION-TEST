@@ -52,7 +52,7 @@ def add_notification(user_id: int, message: str, model_name: str = None, object_
 def get_notification(user_id: int) -> Optional[dict]:
     """Retrieve the oldest unread notification for the user."""
     lock_key = f"lock:notifications:{user_id}"
-    with redis_client.lock(lock_key, timeout=5):
+    with redis_client.lock(lock_key, timeout=50):
         try:
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
             queue_length = len(notifications)
