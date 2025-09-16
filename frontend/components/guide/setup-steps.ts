@@ -12,7 +12,7 @@ export const SETUP_STEPS: SetupStep[] = [
   {
     id: "create-role",
     title: "Create Role and Permissions",
-    description: "Define roles for your staff members",
+    description: "Define roles for your staff assignees",
     endpoint_to_check: "user/role/?Institution_id={InstitutionId}",
     to_complete_step_page_link: "/users/roles",
     status: "pending",
@@ -20,7 +20,7 @@ export const SETUP_STEPS: SetupStep[] = [
   {
     id: "add-staff",
     title: "Add Staff and Permissions",
-    description: "Add staff members with appropriate permissions",
+    description: "Add staff assignees with appropriate permissions",
     endpoint_to_check: "institution/profile/{InstitutionId}/",
     to_complete_step_page_link: "/users",
     status: "pending",

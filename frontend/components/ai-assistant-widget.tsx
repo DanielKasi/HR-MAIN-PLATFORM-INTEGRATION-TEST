@@ -66,7 +66,6 @@ const TypingIndicator = () => {
             style={{animationDelay: "400ms", animationDuration: "1.4s"}}
           ></div>
         </div>
-        <p className="text-xs sm:text-sm text-gray-600 ml-2">AI is thinking...</p>
       </div>
     </div>
   );
@@ -197,7 +196,7 @@ export default function AIAssistantWidget() {
 
       setMessages((prev) => [...prev, errorChatMessage]);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 

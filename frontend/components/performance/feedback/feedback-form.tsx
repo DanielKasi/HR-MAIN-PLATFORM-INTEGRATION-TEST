@@ -27,8 +27,8 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
     useEffect(() => {
         // Set initial values
         if (initialData) {
-            setRevieweeValue([initialData.reviewee.id])
-            setReviewerValue([initialData.reviewer.id])
+            initialData.given_by && setRevieweeValue([initialData.given_by.id])
+            initialData.reviewer && setReviewerValue([initialData.reviewer.id])
             if (initialData.period) {
                 setPeriodValue(String(initialData.period.id))
             }
@@ -88,7 +88,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
         if (!currentInstitution || revieweeValue.length === 0 || reviewerValue.length === 0) return
 
         const feedbackData: IFeedback360FormData = {
-            reviewee_id: Number(revieweeValue[0]),
+            reviewee_id:formData.is_anonymous ? Number(revieweeValue[0]):null,
             reviewer_id: Number(reviewerValue[0]),
             period: periodValue ? Number(periodValue) : undefined,
             feedback_text: formData.feedback_text,
@@ -125,12 +125,12 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                 <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700">
-                        Reviewee (Person being reviewed) <span className="text-red-500">*</span>
+                        Given by (Person who gave feedback) <span className="text-red-500">*</span>
                     </label>
                     <EmployeeSearchableSelect
                         value={revieweeValue}
                         onValueChange={setRevieweeValue}
-                        placeholder="Select reviewee"
+                        placeholder="Select here..."
                         multiple={false}
                         disabled={isLoading || !!initialData}
                     />

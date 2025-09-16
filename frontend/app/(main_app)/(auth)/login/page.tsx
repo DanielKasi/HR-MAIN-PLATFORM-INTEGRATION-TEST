@@ -228,7 +228,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button
-              className={`${loadingState.auth ? "opacity-80" : "opacity-100"} w-full`}
+              className={`${loadingState.auth ? "opacity-80" : "opacity-100"} w-full h-12 rounded-xl`}
               type="submit"
             >
               {loadingState.auth ? "Signing In..." : "Sign In"}

@@ -2,20 +2,20 @@
 
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table"
 import { StatusBadge } from "../common/status-badge"
-import type { IObjectives } from "@/types/types.utils"
+import type { IObjective } from "@/types/types.utils"
 import { Edit, Trash2, Target, User, Clock } from "lucide-react"
 
 interface ObjectivesTableProps {
-    objectives: IObjectives[]
-    onEdit: (objective: IObjectives) => void
-    onDelete: (objective: IObjectives) => void
+    objectives: IObjective[]
+    onEdit: (objective: IObjective) => void
+    onDelete: (objective: IObjective) => void
     onAdd: () => void
     onSearch?: (query: string) => void
     isLoading?: boolean
 }
 
 export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch, isLoading }: ObjectivesTableProps) {
-    const columns: TableColumn<IObjectives>[] = [
+    const columns: TableColumn<IObjective>[] = [
         {
             key: "name",
             label: "Objective",
@@ -97,7 +97,7 @@ export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch,
         },
     ]
 
-    const actions: TableAction<IObjectives>[] = [
+    const actions: TableAction<IObjective>[] = [
         {
             label: "Edit",
             icon: <Edit className="h-4 w-4" />,

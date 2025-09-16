@@ -41,7 +41,7 @@ export default function AddTaskPage() {
     priority: "medium",
     project: projectId ? Number(projectId) : 0,
     assigned_to: [],
-    leaders: [],
+    managers: [],
   });
 
   useEffect(() => {
@@ -251,11 +251,11 @@ export default function AddTaskPage() {
               <div className="space-y-3">
                 <Label className="text-base font-medium">Task Leaders (Optional)</Label>
                 <UserProfileSearchableSelect
-                  value={formData.leaders}
+                  value={formData.managers}
                   onValueChange={(values) => {
-                    handleInputChange("leaders", values.map((val) => Number(val)));
+                    handleInputChange("managers", values.map((val) => Number(val)));
                   }}
-                  placeholder="Select task leaders"
+                  placeholder="Select task managers"
                   showEmployeeId={false}
                   showDepartment={true}
                   multiple={true}

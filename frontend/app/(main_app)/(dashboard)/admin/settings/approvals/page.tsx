@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { APPROVABLE_MODELS_API, APPROVAL_DOCUMENTS_API } from "@/lib/api/approvals/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 
 const actionsMapper: Array<{
@@ -58,6 +59,7 @@ export default function ApprovalsDocumentsPage() {
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
   const [modelsInputValue, setModelsInputValue] = useState("");
+  const [documentToDelete, setDocumentToDelete] = useState<ApprovalDocument | null>(null);
 
   const refresh = async () => {
     const [docsRes, modelsRes] = await Promise.all([
@@ -106,13 +108,14 @@ export default function ApprovalsDocumentsPage() {
     setTimeout(() => router.push(`/admin/settings/approvals/create?content=${selectedModelId}`), 1000);
   };
 
-  const onDelete = async (id: number) => {
-    if (!confirm("Delete this approval document?")) return;
+  const handleDelete = async (id: number) => {
+    if (!documentToDelete) return;
     await APPROVAL_DOCUMENTS_API.delete({ id });
     refresh();
   };
 
   return (
+    <>
     <div className="p-4 space-y-4 bg-white rounded-xl">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold capitalize">Objects Bearing approvals</h1>
@@ -250,7 +253,7 @@ export default function ApprovalsDocumentsPage() {
                       <DropdownMenuItem asChild>
                         <Link href={`/admin/settings/approvals/${d.id}/edit/`}>Edit</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(d.id)}>Delete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDocumentToDelete(d)}>Delete</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -267,5 +270,17 @@ export default function ApprovalsDocumentsPage() {
         </Table>
       </div>
     </div>
+      {documentToDelete && (
+                <ConfirmationDialog
+                    description="Are you sure you want to delete this approval ? This action cannot be undone."
+                    isOpen={!!documentToDelete}
+                    title={`Delete ${documentToDelete.content_type_name}`}
+                    onConfirm={() => handleDelete(documentToDelete.id)}
+                    onClose={() => {
+                        setDocumentToDelete(null)
+                    }}
+                />
+            )}
+    </>
   );
 }

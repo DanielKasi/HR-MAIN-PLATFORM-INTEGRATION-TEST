@@ -18,14 +18,14 @@ interface FeedbackTableProps {
 export function FeedbackTable({ feedback, onEdit, onDelete, onAdd, onSearch, isLoading }: FeedbackTableProps) {
     const columns: TableColumn<IFeedback360>[] = [
         {
-            key: "reviewee",
+            key: "given_by",
             label: "Reviewee",
             render: (item) => (
                 <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-slate-400" />
                     <div>
-                        <div className="font-medium text-slate-900">{item.reviewee.user?.fullname || "Unknown"}</div>
-                        <div className="text-sm text-slate-500">{item.reviewee.department?.name || "No department"}</div>
+                        <div className="font-medium text-slate-900">{item.given_by.user?.fullname || "Unknown"}</div>
+                        <div className="text-sm text-slate-500">{item.given_by.department?.name || "No department"}</div>
                     </div>
                 </div>
             ),
@@ -163,7 +163,7 @@ export function FeedbackTable({ feedback, onEdit, onDelete, onAdd, onSearch, isL
             actions={actions}
             onAdd={onAdd}
             addLabel="Give Feedback"
-            searchPlaceholder="Search by reviewee or reviewer..."
+            searchPlaceholder="Search by given_by or reviewer..."
             onSearch={onSearch}
             isLoading={isLoading}
             emptyMessage="No feedback found"

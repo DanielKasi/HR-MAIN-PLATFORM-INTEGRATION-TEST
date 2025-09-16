@@ -115,25 +115,6 @@ export const InstitutionSpotcheckConfigurations = () => {
     }
   };
 
-  const handleDeleteInstitutionSpotcheckConfig = async () => {
-    if (!institution?.id || !institutionSpotcheckSetting) return;
-    
-    if (confirm("Are you sure you want to delete the institution spotcheck configuration? This action cannot be undone.")) {
-      setIsLoading(true);
-      try {
-        // Note: The API might not have a delete endpoint, so we'll just clear the local state
-        // If delete endpoint exists, uncomment the line below:
-        // await spotcheckAPI.CONFIGS.INSTITUTION.delete(institution.id);
-        setInstitutionSpotcheckSetting(null);
-        resetInstitutionSpotcheckForm();
-        toast.success("Institution spotcheck configuration deleted successfully");
-      } catch (error) {
-        showErrorToast({ error, defaultMessage: "Failed to delete institution spotcheck configuration" });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
 
   useEffect(() => {
     if (institution) {

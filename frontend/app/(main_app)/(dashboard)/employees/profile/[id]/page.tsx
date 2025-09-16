@@ -806,7 +806,7 @@ export default function EmployeeProfile() {
                                       <div className="flex items-center justiify-start gap-8">
                                         <label className="text-xs text-[#848496]">Award</label>
                                         <p className="text-gray-800 font-medium capitalize">
-                                          {education.qualification?.name}
+                                          {education.qualification?.name || ""}
                                         </p>
                                       </div>
                                     </div>

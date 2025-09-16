@@ -445,7 +445,7 @@ export default function ProjectDetailsPage() {
                     <div>
                       <h4 className="font-medium text-slate-900 mb-3">Project Leaders</h4>
                       <div className="space-y-2">
-                        {project.leaders.map((leader) => (
+                        {project.managers.map((leader) => (
                           <div
                             key={leader.id}
                             className="flex items-center gap-3 p-2 rounded-lg bg-slate-50"
@@ -473,7 +473,7 @@ export default function ProjectDetailsPage() {
                     <div>
                       <h4 className="font-medium text-slate-900 mb-3">Team Members</h4>
                       <div className="space-y-2">
-                        {project.members.map((member) => (
+                        {project.assignees.map((member) => (
                           <div
                             key={member.id}
                             className="flex items-center gap-3 p-2 rounded-lg bg-slate-50"

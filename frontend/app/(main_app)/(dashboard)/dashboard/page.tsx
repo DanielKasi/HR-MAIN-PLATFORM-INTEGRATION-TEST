@@ -13,54 +13,60 @@ import {EmployeeCountChart} from "@/components/dashboard-new/employee-count-char
 import {GenderDistribution} from "@/components/dashboard-new/gender-distribution";
 import {ProjectCards} from "@/components/dashboard-new/project-cards";
 import Link from "next/link";
-import { SimpleCalendarWidget } from "@/components/calendar-widget";
-import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-holidays";
-import { institutionAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
-import { IInstitutionAnalytics } from "@/types/types.utils";
+import {SimpleCalendarWidget} from "@/components/calendar-widget";
+import {EventsAndHolidaysWidget} from "@/components/dashboard-new/events-and-holidays";
+import {institutionAPI, showErrorToast} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectUser} from "@/store/auth/selectors";
+import {IInstitutionAnalytics} from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { USER_GENDER } from "@/types";
-import { TasksCards } from "@/components/dashboard_components/tasks-cards";
-
-
+import {USER_GENDER} from "@/types";
+import {TasksCards} from "@/components/dashboard_components/tasks-cards";
 
 export default function Dashboard() {
-  const [data, setData] = useState<IInstitutionAnalytics|null>(null);
+  const [data, setData] = useState<IInstitutionAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const currentInstitution = useSelector(selectSelectedInstitution);
   const [currentPayroll, setCurrentPayroll] = useState(0);
   const [totalCurrentYear, setTotalCurrentYear] = useState(0);
-  const [pastYearTotal, setPastYearTotal]  = useState(0);
+  const [pastYearTotal, setPastYearTotal] = useState(0);
   const [growthPercentage, setGrowthPercentage] = useState(0);
   const currentUser = useSelector(selectUser);
 
-  useEffect(()=>{
+  useEffect(() => {
     const percentage =
-    pastYearTotal > 0 ? ((totalCurrentYear - pastYearTotal) / pastYearTotal) * 100 : 0;
+      pastYearTotal > 0 ? ((totalCurrentYear - pastYearTotal) / pastYearTotal) * 100 : 0;
     setGrowthPercentage(percentage);
-  }, [pastYearTotal, totalCurrentYear])
+  }, [pastYearTotal, totalCurrentYear]);
 
-  useEffect(()=>{
-     setCurrentPayroll(data?.payroll_summary?.current?.find((item: any) => item.month === "Sep")?.payroll || 0);
-    setTotalCurrentYear(data?.payroll_summary?.current?.reduce((sum: number, item: any) => sum + item.payroll, 0) || 0);
-      setPastYearTotal(data?.payroll_summary?.past?.total || 0);
-  }, [data])
+  useEffect(() => {
+    setCurrentPayroll(
+      data?.payroll_summary?.current?.find((item: any) => item.month === "Sep")?.payroll || 0,
+    );
+    setTotalCurrentYear(
+      data?.payroll_summary?.current?.reduce((sum: number, item: any) => sum + item.payroll, 0) ||
+        0,
+    );
+    setPastYearTotal(data?.payroll_summary?.past?.total || 0);
+  }, [data]);
 
-  useEffect(()=>{
-    refreshData()
-  }, [])
+  useEffect(() => {
+    refreshData();
+  }, []);
 
   const refreshData = useCallback(async () => {
-
-    if (!currentInstitution){return};
+    if (!currentInstitution) {
+      return;
+    }
 
     setLoading(true);
     try {
-      const newData =  await institutionAPI.getDasboardAnalytics({institutionId:currentInstitution?.id});
+      const newData = await institutionAPI.getDasboardAnalytics({
+        institutionId: currentInstitution?.id,
+      });
       setData(newData);
     } catch (error) {
-      showErrorToast({error, defaultMessage:"Failed to fetch data !"})
+      showErrorToast({error, defaultMessage: "Failed to fetch data !"});
     } finally {
       setLoading(false);
     }
@@ -69,13 +75,12 @@ export default function Dashboard() {
   const now = new Date();
   const hour = now.getHours();
 
+  const capitalizeFirstLetter = (str: string) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
-const capitalizeFirstLetter = (str: string) => {
-  if (!str) return "";
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
-    let greeting = "Hello";
+  let greeting = "Hello";
   if (hour >= 5 && hour < 12) {
     greeting = "Good morning";
   } else if (hour >= 12 && hour < 17) {
@@ -84,26 +89,33 @@ const capitalizeFirstLetter = (str: string) => {
     greeting = "Good evening";
   }
 
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="space-y-6">
         {/* Header */}
-        
+
         <div className="flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">{greeting}, {currentUser?.gender === USER_GENDER.MALE
-                    ? "Mr"
-                    : currentUser?.gender === USER_GENDER.FEMALE
-                      ? "Ms"
-                      : ""}.{" "}
-                 {capitalizeFirstLetter(currentUser?.fullname || "")}</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">
+            {greeting},{" "}
+            <span className="inline-block">
+              {currentUser?.gender === USER_GENDER.MALE
+                ? "Mr"
+                : currentUser?.gender === USER_GENDER.FEMALE
+                  ? "Ms"
+                  : ""}
+              . {capitalizeFirstLetter(currentUser?.fullname.split(" ")[0] || "")}{" "}
+              {capitalizeFirstLetter(currentUser?.fullname.split(" ")[1] || "")}
+            </span>
+          </h1>
 
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link href={"/employees/add-employee"} className="flex items-center justify-start gap-3">
+              <Link
+                href={"/employees/add-employee"}
+                className="flex items-center justify-start gap-3"
+              >
                 <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
                 <span className="hidden lg:inline">Add Employee</span>
-                
               </Link>
             </Button>
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
@@ -113,7 +125,10 @@ const capitalizeFirstLetter = (str: string) => {
               </Link>
             </Button>
             <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link href={"/events-holidays/events/add"} className="flex items-center justify-start gap-3">
+              <Link
+                href={"/events-holidays/events/add"}
+                className="flex items-center justify-start gap-3"
+              >
                 <Icon icon="hugeicons:calendar-add-01" className="!w-6 !h-6" />
                 <span className="hidden lg:inline">Add event</span>
               </Link>
@@ -194,12 +209,12 @@ const capitalizeFirstLetter = (str: string) => {
 
             {/* Projects */}
             {/* <ProjectCards /> */}
-            <EmployeeAttendance showingOnDashboard={true} scope={{type:"default"}} />
+            <EmployeeAttendance showingOnDashboard={true} scope={{type: "default"}} />
           </div>
 
           {/* Sidebar */}
           <div className="flex flex-col gap-4 lg:col-span-1">
-             <SimpleCalendarWidget />
+            <SimpleCalendarWidget />
             <EventsAndHolidaysWidget />
           </div>
         </div>

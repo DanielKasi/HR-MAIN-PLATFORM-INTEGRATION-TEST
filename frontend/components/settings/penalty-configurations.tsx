@@ -1,31 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { penaltyConfigAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IInstitutionPenaltyConfig, IInstitutionPenaltyConfigFormData } from "@/types/types.utils";
+import {useState, useEffect, useRef} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {Icon} from "@iconify/react";
+import {toast} from "sonner";
+import {Plus, Edit, Trash2} from "lucide-react";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {penaltyConfigAPI, showErrorToast} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import type {
+  IInstitutionPenaltyConfig,
+  IInstitutionPenaltyConfigFormData,
+} from "@/types/types.utils";
 import FormatNumberInput from "@/components/format-number-input";
+import {ConfirmationDialog} from "../confirmation-dialog";
 
 export const PenaltyConfigurations = () => {
   const institution = useSelector(selectSelectedInstitution);
-  
-  const [penaltyConfigs, setPenaltyConfigs] = useState<IInstitutionPenaltyConfig[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isPenaltyFormOpen, setIsPenaltyFormOpen] = useState(false);
-  const [editingPenaltyConfig, setEditingPenaltyConfig] = useState<IInstitutionPenaltyConfig | null>(null);
+  const [editingPenaltyConfig, setEditingPenaltyConfig] =
+    useState<IInstitutionPenaltyConfig | null>(null);
+  const [penaltyConfigurationToDelete, setPenaltyConfigurationToDelete] =
+    useState<IInstitutionPenaltyConfig | null>(null);
   const [penaltySearchTerm, setPenaltySearchTerm] = useState("");
   const [penaltyTypeFilter, setPenaltyTypeFilter] = useState("all");
   const [penaltyFormData, setPenaltyFormData] = useState<IInstitutionPenaltyConfigFormData>({
@@ -43,7 +60,7 @@ export const PenaltyConfigurations = () => {
     field: keyof IInstitutionPenaltyConfigFormData,
     value: string | number,
   ) => {
-    setPenaltyFormData((prev) => ({ ...prev, [field]: value }));
+    setPenaltyFormData((prev) => ({...prev, [field]: value}));
   };
 
   const resetPenaltyForm = () => {
@@ -94,27 +111,27 @@ export const PenaltyConfigurations = () => {
       // Trigger table refresh
       institutionPenaltyRefreshRef.current?.();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save penalty configuration" });
+      showErrorToast({error, defaultMessage: "Failed to save penalty configuration"});
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeletePenaltyConfig = async (config: IInstitutionPenaltyConfig) => {
-    if (confirm(`Are you sure you want to delete the penalty configuration for ${config.penalty_type}?`)) {
+    if (penaltyConfigurationToDelete) {
       try {
         await penaltyConfigAPI.deleteInstitutionPenaltyConfig(config.id);
         toast.success("Penalty configuration deleted successfully");
         // Trigger table refresh
         institutionPenaltyRefreshRef.current?.();
       } catch (error) {
-        showErrorToast({ error, defaultMessage: "Failed to delete penalty configuration" });
+        showErrorToast({error, defaultMessage: "Failed to delete penalty configuration"});
       }
     }
   };
 
   const getPenaltyTypeLabel = (type: string) => {
-    const types: { [key: string]: string } = {
+    const types: {[key: string]: string} = {
       late_coming: "Late Coming",
       early_leaving: "Early Checkout",
       absent: "Absent",
@@ -135,35 +152,35 @@ export const PenaltyConfigurations = () => {
   const formatPenaltyValue = (config: IInstitutionPenaltyConfig) => {
     if (config.penalty_value_type === "fixed") {
       let value: number;
-      
-      if (typeof config.penalty_value === 'string') {
+
+      if (typeof config.penalty_value === "string") {
         value = parseFloat(config.penalty_value);
-      } else if (typeof config.penalty_value === 'number') {
+      } else if (typeof config.penalty_value === "number") {
         value = config.penalty_value;
       } else {
         return "N/A";
       }
-      
+
       if (isNaN(value)) {
         return "N/A";
       }
-      
+
       return `$${value.toFixed(2)}`;
     } else if (config.penalty_value_type === "percentage") {
       let percentage: number;
-      
-      if (typeof config.percentage === 'string') {
+
+      if (typeof config.percentage === "string") {
         percentage = parseFloat(config.percentage);
-      } else if (typeof config.percentage === 'number') {
+      } else if (typeof config.percentage === "number") {
         percentage = config.percentage;
       } else {
         return "N/A";
       }
-      
+
       if (isNaN(percentage)) {
         return "N/A";
       }
-      
+
       return `${percentage}%`;
     }
     return "N/A";
@@ -286,7 +303,10 @@ export const PenaltyConfigurations = () => {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="sm">
-                                    <Icon icon="hugeicons:more-horizontal-square-01" className="!h-4 !w-4 text-dark" />
+                                    <Icon
+                                      icon="hugeicons:more-horizontal-square-01"
+                                      className="!h-4 !w-4 text-dark"
+                                    />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -294,7 +314,7 @@ export const PenaltyConfigurations = () => {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onClick={() => handleDeletePenaltyConfig(config)}
                                     className="text-red-600"
                                   >
@@ -427,6 +447,17 @@ export const PenaltyConfigurations = () => {
             </div>
           </div>
         </div>
+      )}
+      {penaltyConfigurationToDelete && (
+        <ConfirmationDialog
+          description="Are you sure you want to delete this penalty configuration ? This action cannot be undone."
+          isOpen={!!penaltyConfigurationToDelete}
+          title={`Delete penalty configuratio ${penaltyConfigurationToDelete.penalty_type}?`}
+          onConfirm={() => handleDeletePenaltyConfig(penaltyConfigurationToDelete)}
+          onClose={() => {
+            setPenaltyConfigurationToDelete(null);
+          }}
+        />
       )}
     </div>
   );

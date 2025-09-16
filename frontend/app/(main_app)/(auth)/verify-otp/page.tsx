@@ -234,7 +234,7 @@ export default function VerifyOTPPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col">
-              <Button className="w-full" disabled={isSubmitting || resendDisabled} type="submit">
+              <Button className="w-full h-12 rounded-xl" disabled={isSubmitting || resendDisabled} type="submit">
                 {isSubmitting ? "Verifying..." : "Verify"}
               </Button>
               <p className="mt-4 text-center text-sm text-muted-foreground">
