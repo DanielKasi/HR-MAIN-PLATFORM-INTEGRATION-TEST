@@ -314,6 +314,10 @@ class BonusPointSettings(BaseApprovableModel):
                 datetime.strptime(self.condition_value, '%Y-%m-%d')
             except ValueError:
                 raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
+            
+
+    # def finish_workflow(self, approval: Approval):
+
 
 
 class Meeting(BaseApprovableModel):
