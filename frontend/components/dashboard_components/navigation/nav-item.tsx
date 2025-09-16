@@ -8,7 +8,6 @@ import { useMobile } from "@/hooks/use-mobile";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { NavItem } from "@/types";
 
-
 export const NavItemComponent = ({
 	item,
 	isMobileView = false,
@@ -17,8 +16,7 @@ export const NavItemComponent = ({
 	onExpand,
 	onToggle,
 }: {
-
-	item: NavItem;
+	item: NavIte;
 	expandedItems: { [key: string]: boolean };
 	isMobileView: boolean;
 	index: number;
@@ -41,8 +39,9 @@ export const NavItemComponent = ({
 			<Button
 				disabled={!item.href || (item.href.startsWith("#") && !item.submenu?.length)}
 				variant="ghost"
-				className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
-					}`}
+				className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
+					isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
+				}`}
 				onMouseEnter={() => {
 					if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true);
 				}}
@@ -89,12 +88,13 @@ export const NavItemComponent = ({
 								key={`${sub.href}-${index}`}
 								variant="ghost"
 								// disabled={!sub.href || sub.href.startsWith("#")}
-								className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${!sub.href || sub.href.startsWith("#")
-									? " text-gray-500/80"
-									: pathname === sub.href
-										? "bg-primary/80  text-gray-100"
-										: "bg-gray-200/20  hover:bg-primary/60"
-									}`}
+								className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${
+									!sub.href || sub.href.startsWith("#")
+										? " text-gray-500/80"
+										: pathname === sub.href
+											? "bg-primary/80  text-gray-100"
+											: "bg-gray-200/20  hover:bg-primary/60"
+								}`}
 								onClick={() => {
 									router.push(sub.href);
 									if (isMobileView) {

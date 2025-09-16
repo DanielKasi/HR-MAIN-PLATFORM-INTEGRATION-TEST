@@ -6,9 +6,11 @@
 		"dev": "next dev --turbopack",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-		"lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+		"lint": "next lint",
+		"lint:fix": "next lint --fix",
 		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"type-check": "tsc --noEmit",
 		"postinstall": "husky && node scripts/setup-hooks.js",
 		"prepare": "husky"
 	},
@@ -125,7 +127,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.32.1",
 		"@typescript-eslint/parser": "^8.32.1",
 		"eslint": "^9.27.0",
-		"eslint-config-prettier": "^10.1.5",
+		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-prettier": "^5.4.0",
 		"eslint-plugin-react": "^7.37.5",
@@ -133,15 +135,19 @@
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"globals": "^16.2.0",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.0.0",
+		"lint-staged": "^16.1.6",
 		"postcss": "^8",
-		"prettier": "^3.5.3",
+		"prettier": "^3.6.2",
 		"tailwindcss": "^3.4.17",
 		"typescript": "^5"
 	},
 	"lint-staged": {
-		"*.{js,jsx,ts,tsx,json,css,scss,md}": [
-			"pnpm format"
+		"*.{js,jsx,ts,tsx}": [
+			"prettier --write",
+			"eslint --fix"
+		],
+		"*.{json,md,css,scss}": [
+			"prettier --write"
 		]
 	}
 }
