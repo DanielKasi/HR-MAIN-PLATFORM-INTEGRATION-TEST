@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, forwardRef, useMemo } from "react"
-import { PerformanceForm, type FormField } from "../common/performance-form"
+import { useState, useEffect, forwardRef, useMemo } from "react";
+import { PerformanceForm, type FormField } from "../common/performance-form";
 import type {
 	IObjective,
 	IObjectiveFormData,
@@ -10,11 +10,9 @@ import type {
 	IKeyResultFormData,
 } from "@/types/types.utils";
 
-import { useState, useEffect, forwardRef } from "react";
 import { useSelector } from "react-redux";
 import { Plus } from "lucide-react";
 
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import { KeyResultModal } from "../key-results/key-results-modal";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -83,7 +81,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 		const keyResultOptions = keyResults.map((kr) => ({
 			value: kr.id,
 			label: `${kr.title} (${kr.progress_type})`,
-		}))
+		}));
 
 		const fields: FormField[] = [
 			{
@@ -93,8 +91,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				placeholder: "e.g., Increase team productivity",
 				required: true,
 				validation: (value: string) => {
-					if (value.length < 5) return "Objective name must be at least 5 characters"
-					return null
+					if (value.length < 5) return "Objective name must be at least 5 characters";
+					return null;
 				},
 			},
 			{
@@ -103,8 +101,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				type: "date",
 				required: true,
 				validation: (value: string) => {
-					if (value.length < 5) return "Objective name must be at least 5 characters"
-					return null
+					if (value.length < 5) return "Objective name must be at least 5 characters";
+					return null;
 				},
 			},
 			{
@@ -114,8 +112,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				placeholder: "Describe the objective in detail...",
 				required: true,
 				validation: (value: string) => {
-					if (value.length < 10) return "Description must be at least 10 characters"
-					return null
+					if (value.length < 10) return "Description must be at least 10 characters";
+					return null;
 				},
 			},
 			{
@@ -125,10 +123,10 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				placeholder: "e.g., 3",
 				required: true,
 				validation: (value: string) => {
-					const num = Number.parseInt(value)
-					if (num < 1) return "Duration must be at least 1"
-					if (num > 365) return "Duration cannot exceed 365"
-					return null
+					const num = Number.parseInt(value);
+					if (num < 1) return "Duration must be at least 1";
+					if (num > 365) return "Duration cannot exceed 365";
+					return null;
 				},
 			},
 			{
@@ -151,7 +149,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				type: "switch",
 				description: "Allow employees to update their own progress",
 			},
-		]
+		];
 
 		const handleSubmit = (formData: IObjectiveFormData) => {
 			if (!currentInstitution) return;
@@ -163,17 +161,17 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				duration: formData.duration,
 				duration_unit: formData.duration_unit as IDurationUnit,
 				managers_id: managersValue.length > 0 ? Number(managersValue[0]) : undefined,
-				assignees_id: assigneesValue.map(item => Number(item)),
+				assignees_id: assigneesValue.map((item) => Number(item)),
 				key_result: formData.key_result ? Number(formData.key_result) : undefined,
 				self_employee_progress_update: formData.self_employee_progress_update || false,
-				creation_date: formData.creation_date
-			}
+				creation_date: formData.creation_date,
+			};
 
 			onSubmit(objectiveData);
 		};
 
 		const getInitialFormData = () => {
-			if (!initialData) return {}
+			if (!initialData) return {};
 
 			return {
 				name: initialData.name,
@@ -182,8 +180,8 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				duration_unit: initialData.duration_unit,
 				key_result: initialData.key_result?.id,
 				self_employee_progress_update: initialData.self_employee_progress_update,
-			}
-		}
+			};
+		};
 
 		return (
 			<div className="space-y-6 ">
@@ -259,4 +257,4 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 	},
 );
 
-ObjectiveForm.displayName = "ObjectiveForm"
+ObjectiveForm.displayName = "ObjectiveForm";

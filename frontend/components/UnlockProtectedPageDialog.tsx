@@ -26,7 +26,7 @@ import apiRequest from "@/lib/apiRequest";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { extractRequiredPermissions, hasAnyRequiredPermissions } from "@/lib/helpers";
 import { loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout } from "@/utils/auth-utils";
-import { IPermission } from "@/types/index";
+import { Permission, Role } from "@/types/index";
 import { PERMISSION_CODES } from "@/constants";
 
 interface UserProfile {
@@ -44,12 +44,6 @@ interface IUser {
 	is_staff: boolean;
 	roles: Role[];
 	branches: Branch[];
-}
-
-interface Role {
-	id: number;
-	name: string;
-	description: string;
 }
 
 interface Branch {
@@ -159,11 +153,7 @@ export default function UnlockDialog({
 				// console.log("Dispatching temporary permissions : ", requiredPermissions);
 
 				// Store the temporary permissions in Redux
-				const ipermissions: IPermission[] = requiredPermissions.map((perm) => ({
-					permission_code: perm.permission_code as PERMISSION_CODES,
-					name: perm.permission_name,
-					description: perm.permission_description,
-				}));
+				const ipermissions: Permission[] = requiredPermissions;
 
 				setTemporaryPermissionsWithTimeout(ipermissions);
 

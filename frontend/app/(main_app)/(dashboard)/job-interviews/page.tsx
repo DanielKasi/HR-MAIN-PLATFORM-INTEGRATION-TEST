@@ -105,7 +105,7 @@ export default function InterviewsPage() {
 		const uniqueInterviewers = new Set<string>();
 		interviews.forEach((interview) => {
 			interview.interview_stage_details?.interviewers_details?.forEach((employee) => {
-				uniqueInterviewers.add(`${employee.first_name} ${employee.last_name}`);
+				uniqueInterviewers.add(`${employee.user?.fullname} `);
 			});
 		});
 		return [
@@ -189,10 +189,8 @@ export default function InterviewsPage() {
 					interview.interview_stage_details?.name
 						.toLowerCase()
 						.includes(searchTerm.toLowerCase()) ||
-					interview.interview_stage_details?.interviewers_details?.some(
-						(employee) =>
-							employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-							employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()),
+					interview.interview_stage_details?.interviewers_details?.some((employee) =>
+						employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()),
 					),
 			);
 		}
@@ -206,7 +204,7 @@ export default function InterviewsPage() {
 		if (interviewerFilter && interviewerFilter !== "all") {
 			filtered = filtered.filter((interview) =>
 				interview.interview_stage_details?.interviewers_details?.some(
-					(employee) => `${employee.first_name} ${employee.last_name}` === interviewerFilter,
+					(employee) => `${employee.user?.fullname}` === interviewerFilter,
 				),
 			);
 		}
@@ -467,7 +465,7 @@ export default function InterviewsPage() {
 								const ratedInterviews = interviews.filter((i) => i.rating);
 								const averageRating =
 									ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
-									ratedInterviews.length || 0;
+										ratedInterviews.length || 0;
 								const roundedAverage = Math.round(averageRating);
 
 								return (
@@ -551,10 +549,10 @@ export default function InterviewsPage() {
 						interviewerFilter !== "all" ||
 						dateRange.from ||
 						dateRange.to) && (
-							<Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
-								Clear Filters
-							</Button>
-						)}
+						<Button variant="outline" onClick={clearFilters} className="flex items-center gap-2">
+							Clear Filters
+						</Button>
+					)}
 				</div>
 			</div>
 
@@ -655,11 +653,11 @@ export default function InterviewsPage() {
 										return (
 											<div className="text-center py-8 text-gray-500">
 												{searchTerm ||
-													statusFilter !== "all" ||
-													interviewerFilter !== "all" ||
-													jobPositionFilter !== "all" ||
-													dateRange.from ||
-													dateRange.to
+												statusFilter !== "all" ||
+												interviewerFilter !== "all" ||
+												jobPositionFilter !== "all" ||
+												dateRange.from ||
+												dateRange.to
 													? "No interviews match your current filters."
 													: "No interviews have been scheduled yet."}
 											</div>
@@ -682,8 +680,7 @@ export default function InterviewsPage() {
 										if (interviewerFilter !== "all") {
 											const hasInterviewer =
 												interview.interview_stage_details?.interviewers_details?.some(
-													(employee: any) =>
-														`${employee.first_name} ${employee.last_name}` === interviewerFilter,
+													(employee: any) => `${employee.user?.fullname} ` === interviewerFilter,
 												);
 
 											if (!hasInterviewer) return false;
@@ -722,11 +719,11 @@ export default function InterviewsPage() {
 										return (
 											<div className="text-center py-8 text-gray-500">
 												{searchTerm ||
-													statusFilter !== "all" ||
-													interviewerFilter !== "all" ||
-													jobPositionFilter !== "all" ||
-													dateRange.from ||
-													dateRange.to
+												statusFilter !== "all" ||
+												interviewerFilter !== "all" ||
+												jobPositionFilter !== "all" ||
+												dateRange.from ||
+												dateRange.to
 													? "No interviews match your current filters."
 													: "No interviews have been scheduled yet."}
 											</div>

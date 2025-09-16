@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 
-import { IPermission, Role } from "@/types";
+import { Permission, Role } from "@/types";
 import { PERMISSION_CODES } from "@/constants";
 import {
 	selectSelectedInstitution,
@@ -34,7 +34,7 @@ export function usePermission(permissionCode: PERMISSION_CODES) {
 
 			// Check temporary permissions first
 			const hasTemporaryPermission = temporaryPermissions.some(
-				(permission: IPermission) => permission.permission_code === permissionCode,
+				(permission: Permission) => permission.permission_code === permissionCode,
 			);
 
 			if (hasTemporaryPermission) {

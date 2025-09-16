@@ -327,7 +327,7 @@ const buildStagesForJob = (
 
 		const interviewerNames = Array.isArray(stage.interviewers_details)
 			? stage.interviewers_details
-					.map((emp) => emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || "Unknown")
+					.map((emp) => emp.user?.fullname || `${emp.user?.fullname}` || "Unknown")
 					.join(", ")
 			: "Not assigned";
 

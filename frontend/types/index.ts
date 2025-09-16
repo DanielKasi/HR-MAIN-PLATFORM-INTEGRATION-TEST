@@ -203,7 +203,7 @@ export interface BulkEmployeeUploadResult {
 	warnings?: any[];
 }
 
-export interface IPermission {
+export interface Permission {
 	permission_code: PERMISSION_CODES;
 	name: string;
 	description: string;

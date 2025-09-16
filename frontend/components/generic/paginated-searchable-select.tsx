@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Check, X } from "lucide-react";
-
 import {
 	Command,
 	CommandEmpty,
@@ -26,27 +24,21 @@ export type FetchFirstPageFn<T, Q = unknown> = (query?: Q) => Promise<IPaginated
 export type FetchFromUrlFn<T> = (args: { url: string }) => Promise<IPaginatedResponse<T>>;
 
 export interface PaginatedSearchableSelectProps<T, Q = unknown> {
-	// Required for paginated mode
 	paginated?: boolean;
 	fetchFirstPage?: FetchFirstPageFn<T, Q>;
 	fetchFromUrl?: FetchFromUrlFn<T>;
 	query?: Q;
 	deps?: React.DependencyList;
+	refreshTrigger?: number; // Added to trigger re-fetch on content type change
 	getItemId: (item: T) => string | number;
 	getItemValue: (item: T) => string;
 	getItemLabel: (item: T) => string;
-	// For non-paginated mode
 	items?: PaginatedSelectItem<T>[];
-	// Common props
 	defaultLabel?: string;
 	selectedItems?: (string | number)[];
 	onSelect: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
 	onRemove: (itemId: string | number, item: PaginatedSelectItem<T>) => void;
 	showSelectedItems?: boolean;
-	// showSelectedItems?: (
-	//     selectedIds: (string | number)[],
-	//     items: PaginatedSelectItem<T>[]
-	// ) => React.ReactNode;
 	multiple?: boolean;
 	disabled?: boolean;
 	className?: string;
@@ -65,15 +57,16 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	fetchFromUrl,
 	query,
 	deps = [],
+	refreshTrigger,
+	getItemId,
+	getItemValue,
+	getItemLabel,
 	items: staticItems = [],
 	defaultLabel,
 	selectedItems = [],
 	onSelect,
 	onRemove,
 	showSelectedItems = true,
-	getItemId,
-	getItemLabel,
-	getItemValue,
 	multiple = false,
 	disabled = false,
 	className,
@@ -105,70 +98,40 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		if (itemMatch) {
 			setSelectedItem(itemMatch);
 		}
-	}, [selectedItems, data]);
+	}, [selectedItems, data, getItemId, multiple]);
 
 	React.useEffect(() => {
-		if (setParentItems) {
-			if (data?.results && data.next) {
-				setParentItems(data.results);
-			}
+		if (setParentItems && data?.results && data.next) {
+			setParentItems(data.results);
 		}
-	}, [data]);
+	}, [data, setParentItems]);
 
 	// Fetch first page for paginated mode
-	// Immediate fetch on mount / deps change (preserve previous behavior)
 	React.useEffect(() => {
-		if (!paginated) return;
-		if (!fetchFirstPage) return;
-		if (data && data.next && !search) {
-			return;
-		}
+		if (!paginated || !fetchFirstPage) return;
+		if (data && data.next && !search) return; // Skip if we have a next page and no search
 		setLoading(true);
-		fetchFirstPage({ search } as Q)
+		fetchFirstPage({ search, ...query } as Q)
 			.then((res) => {
 				setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
 				setHasMore(!!res.next);
 			})
+			.catch((error) => {
+				console.error("Failed to fetch first page", error);
+				toast.error("Failed to load items");
+			})
 			.finally(() => setLoading(false));
-	}, [...deps]);
+	}, [paginated, fetchFirstPage, search, query, refreshTrigger, ...deps]);
 
-	// Debounced search: wait 1s after the user stops typing before refetching
+	// Infinite scroll with intersection observer
 	React.useEffect(() => {
-		if (!paginated) return;
-		if (!fetchFirstPage) return;
-
-		const timer = setTimeout(() => {
-			// If we already have a next page and search is empty, skip refetch
-
-			setLoading(true);
-			fetchFirstPage({ search } as Q)
-				.then((res) => {
-					setData(res as IPaginatedResponse<PaginatedSelectItem<T>>);
-					setHasMore(!!res.next);
-				})
-				.finally(() => setLoading(false));
-		}, 1000);
-
-		return () => clearTimeout(timer);
-		// only debounce on search changes; intentionally exclude deps to avoid
-		// cancelling when the fetchFirstPage identity changes in parent
-	}, [search]);
-
-	// Infinite scroll with intersection observer (using callback ref)
-	React.useEffect(() => {
-		if (!paginated || !data?.next || !fetchFromUrl) return;
-		if (loading) return;
-		if (!sentinelNode) return;
+		if (!paginated || !data?.next || !fetchFromUrl || loading || !sentinelNode) return;
 		const observer = new IntersectionObserver(
 			(entries) => {
 				const entry = entries[0];
-				if (!hasMore) {
-					return;
-				}
-				// console.log("\n\n Trying to fetch with loading : ", loading, "And has more : ", hasMore, "Next url : ", data.next)
-				if (entry.isIntersecting && !loading && hasMore) {
+				if (!hasMore) return;
+				if (entry.isIntersecting && !loading) {
 					setLoading(true);
-
 					fetchFromUrl({ url: data.next! })
 						.then((res) => {
 							if (res && (!data.next || data.next !== res.next)) {
@@ -178,6 +141,10 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 									results: [...(prev?.results || []), ...res.results],
 								}));
 							}
+						})
+						.catch((error) => {
+							console.error("Failed to fetch next page", error);
+							toast.error("Failed to load more items");
 						})
 						.finally(() => setLoading(false));
 				}
@@ -189,16 +156,11 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			},
 		);
 		observer.observe(sentinelNode);
-		return () => {
-			observer.disconnect();
-		};
-	}, [paginated, data?.next, fetchFromUrl, loading, sentinelNode]);
-
-
+		return () => observer.disconnect();
+	}, [paginated, data?.next, fetchFromUrl, loading, sentinelNode, hasMore]);
 
 	const handleSelect = (itemId: string | number) => {
 		const item = data?.results.find((i) => getItemId(i) === itemId);
-		// console.log("\n\n Item selected : ", item)
 		if (!item) return;
 		if (multiple && selectedItems.includes(itemId) && onRemove) {
 			onRemove(itemId, item);
@@ -212,7 +174,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		<div className={cn("relative", className)}>
 			<div className="py-1">
 				{showSelectedItems && (
-					<div className="flex items-center justify-start gap-2 flex-wrap ">
+					<div className="flex items-center justify-start gap-2 flex-wrap">
 						{!defaultLabel ? (
 							<>
 								{data?.results
@@ -226,7 +188,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 										return (
 											<span
 												key={idx}
-												className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
+												className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
 											>
 												{getItemLabel(itemData)}
 												{multiple && isSelected && onRemove && (
@@ -246,7 +208,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 									})}
 							</>
 						) : (
-							<span className="px-2 rounded-full text-sm inline-flex  bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs">
+							<span className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs">
 								{defaultLabel}
 							</span>
 						)}
@@ -268,7 +230,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className={cn("w-full p-0", popoverClassName)}>
-					{/* disable cmdk's internal filtering when using server-side search */}
 					<Command shouldFilter={false}>
 						<CommandInput
 							placeholder={searchPlaceholder}
@@ -307,7 +268,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 										</CommandItem>
 									);
 								})}
-								{/* Intersection observer sentinel */}
 								{paginated && hasMore && <div ref={sentinelRef} className="h-3" />}
 								{loading && (
 									<div className="text-center py-2 text-xs text-gray-500">Loading more...</div>

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getDepartments, createJobPosition } from "@/lib/utils";
+import FormattedNumberInput from "../common/inputs/formatted-number-input";
 
 function formatWithCommas(value: string) {
 	const num = value.replace(/,/g, "");
@@ -63,21 +64,15 @@ export function CreateJobPositionDialog({
 		reports_to: null,
 		job_position_status: "inactive",
 		offer_letter_template: null,
-		salary: "",
+		salary_min: "0.00",
+		salary_max: "0.00",
 	});
 	const [departments, setDepartments] = useState<IDepartment[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [errors, setErrors] = useState<Partial<Record<keyof JobPositionFormData, string>>>({});
-	const [salaryDisplay, setSalaryDisplay] = useState(
-		formData.salary ? formatWithCommas(String(formData.salary)) : "",
-	);
 
 	const selectedInstitution = useSelector(selectSelectedInstitution);
-
-	useEffect(() => {
-		setSalaryDisplay(formData.salary ? formatWithCommas(String(formData.salary)) : "");
-	}, [formData.salary]);
 
 	useEffect(() => {
 		if (open && selectedInstitution) {
@@ -128,10 +123,16 @@ export function CreateJobPositionDialog({
 			newErrors.department = "Please select a department";
 		}
 
-		if (!formData.salary.trim()) {
-			newErrors.salary = "Salary is required";
-		} else if (isNaN(Number(formData.salary)) || Number(formData.salary) <= 0) {
-			newErrors.salary = "Please enter a valid salary amount";
+		if (!formData.salary_min.trim()) {
+			newErrors.salary_min = "Minimum Salary is required";
+		} else if (isNaN(Number(formData.salary_min)) || Number(formData.salary_min) <= 0) {
+			newErrors.salary_min = "Please enter a valid salary amount";
+		}
+
+		if (!formData.salary_max.trim()) {
+			newErrors.salary_max = "Maximum Salary is required";
+		} else if (isNaN(Number(formData.salary_max)) || Number(formData.salary_max) <= 0) {
+			newErrors.salary_max = "Please enter a valid salary amount";
 		}
 
 		setErrors(newErrors);
@@ -162,7 +163,8 @@ export function CreateJobPositionDialog({
 				name: formData.name.trim(),
 				description: formData.description.trim(),
 				department: formData.department!,
-				salary: Number(formData.salary),
+				salary_min: Number(formData.salary_min),
+				salary_max: Number(formData.salary_max),
 				affected_employees: [],
 				job_position_status: formData.job_position_status,
 			};
@@ -183,7 +185,8 @@ export function CreateJobPositionDialog({
 					reports_to: null,
 					job_position_status: "inactive",
 					offer_letter_template: null,
-					salary: "",
+					salary_min: "0.00",
+					salary_max: "0.00",
 				});
 			} else {
 				toast.error("Failed to create job position. Please try again.");
@@ -271,25 +274,35 @@ export function CreateJobPositionDialog({
 
 							{/* Salary */}
 							<div className="space-y-2">
-								<Label htmlFor="salary">Salary</Label>
-								<Input
-									id="salary"
-									type="text"
-									inputMode="numeric"
+								<Label htmlFor="salary">Minimum Salary</Label>
+								<FormattedNumberInput
+									id="min_salary"
 									placeholder="50,000"
-									value={salaryDisplay}
-									onChange={(e) => {
-										const raw = e.target.value;
-										const numeric = unformat(raw);
-
-										if (!/^\d*$/.test(numeric)) return;
-
-										setSalaryDisplay(formatWithCommas(numeric));
-										updateFormData("salary", numeric);
+									value={formData.salary_min}
+									onValueChange={(val) => {
+										updateFormData("salary_min", val);
 									}}
-									className={errors.salary ? "border-destructive" : ""}
+									className={errors.salary_min ? "border-destructive" : ""}
 								/>
-								{errors.salary && <p className="text-sm text-destructive">{errors.salary}</p>}
+								{errors.salary_min && (
+									<p className="text-sm text-destructive">{errors.salary_min}</p>
+								)}
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="salary">Maximum Salary</Label>
+								<FormattedNumberInput
+									id="salary_max"
+									placeholder="50,000"
+									value={formData.salary_max}
+									onValueChange={(val) => {
+										updateFormData("salary_max", val);
+									}}
+									className={errors.salary_min ? "border-destructive" : ""}
+								/>
+								{errors.salary_min && (
+									<p className="text-sm text-destructive">{errors.salary_min}</p>
+								)}
 							</div>
 
 							{/* Job Description */}

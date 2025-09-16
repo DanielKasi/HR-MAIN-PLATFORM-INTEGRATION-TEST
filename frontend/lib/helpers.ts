@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import apiRequest from "./apiRequest";
 import { showErrorToast } from "./utils";
 
-import { IPermission, Permission, Role } from "@/types";
+import { Permission, Role } from "@/types";
 import { store } from "@/store";
 import { ICountry } from "@/types/types.utils";
 import { INotification } from "@/store/notifications/types";
@@ -163,7 +163,7 @@ export function hasPermission(permissionCode: string): boolean {
 
 		// Check temporary permissions first
 		const hasTemporaryPermission = temporaryPermissions.some(
-			(permission: IPermission) => permission.permission_code === permissionCode,
+			(permission: Permission) => permission.permission_code === permissionCode,
 		);
 
 		if (hasTemporaryPermission) {

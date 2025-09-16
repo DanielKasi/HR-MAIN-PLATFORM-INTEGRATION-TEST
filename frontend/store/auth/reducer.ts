@@ -1,7 +1,7 @@
 import { AuthAction } from "./actions";
 import { AUTH_ACTION_TYPES } from "./types";
 
-import { Branch, IPermission, ITill, IUser, IUserInstitution, StoredColorData } from "@/types";
+import { Branch, Permission, ITill, IUser, IUserInstitution, StoredColorData } from "@/types";
 import { CUSTOM_CODES } from "@/constants";
 
 export type AuthError = {
@@ -33,7 +33,7 @@ export type AuthState = {
 		value: ITill | null;
 		loading: boolean;
 	};
-	temporaryPermissions: IPermission[];
+	temporaryPermissions: Permission[];
 	inactivityTimeout: number; // In milliseconds
 	logoutWarningVisible: boolean;
 	refreshInProgress: boolean;
@@ -172,7 +172,7 @@ export const authReducer = (
 		case AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS:
 			return {
 				...state,
-				temporaryPermissions: action.payload as IPermission[],
+				temporaryPermissions: action.payload as Permission[],
 			};
 		case AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS:
 			// console.log("\n\n Got dispatched action : ", action)

@@ -178,20 +178,16 @@ export function AssetHistory({ asset, onRefresh }: AssetHistoryProps) {
 										<Clock className="h-3 w-3" />
 										<span>{format(new Date(item.created_at), "MMM dd, yyyy 'at' h:mm a")}</span>
 									</div>
-									{item.performed_by_details && (
+									{item.performed_by && (
 										<div className="flex items-center space-x-1">
 											<User className="h-3 w-3" />
-											<span>
-												by {item.performed_by_details.fullname || `User ${item.performed_by}`}
-											</span>
+											<span>by {item.performed_by.user.fullname}</span>
 										</div>
 									)}
-									{item.affected_user_details && (
+									{item.affected_user && (
 										<div className="flex items-center space-x-1">
 											<User className="h-3 w-3" />
-											<span>
-												to {item.affected_user_details.fullname || `User ${item.affected_user}`}
-											</span>
+											<span>to {item.affected_user.user.fullname}</span>
 										</div>
 									)}
 								</div>

@@ -389,8 +389,7 @@ export default function EditInterviewPage() {
 										<div>
 											<p>
 												<span className="font-medium">Interviewer:</span>
-												{selectedStage.interviewers_details?.[0]?.first_name}{" "}
-												{selectedStage.interviewers_details?.[0]?.last_name}
+												{selectedStage.interviewers_details?.[0].user?.fullname}
 											</p>
 											<p>
 												<span className="font-medium">Email:</span>{" "}

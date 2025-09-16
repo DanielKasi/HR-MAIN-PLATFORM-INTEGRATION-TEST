@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { IAsset, IAssetReturnFormData } from "@/types/types.utils";
-import { apiRequest } from "@/lib/apiRequest";
+import apiRequest from "@/lib/apiRequest";
 
 interface AssetReturnDialogProps {
 	asset: IAsset;
@@ -36,16 +36,16 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [formData, setFormData] = useState<IAssetReturnFormData>({
-		asset_id: asset.id,
-		return_reason: "",
-		asset_condition: "good",
+		asset: asset.id,
 		notes: "",
+		condition: "good",
+		allocation: 0,
 	});
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (!formData.return_reason.trim()) {
+		if (!formData?.notes?.trim()) {
 			toast.error("Please provide a return reason");
 
 			return;
@@ -54,11 +54,7 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 		setLoading(true);
 
 		try {
-			const response = await apiRequest({
-				url: `/assets/asset-returns/`,
-				method: "POST",
-				data: formData,
-			});
+			const response = await apiRequest.post(`/assets/asset-returns/`, formData);
 
 			if (response.success) {
 				toast.success("Asset returned successfully");
@@ -66,10 +62,10 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 				onReturn();
 				// Reset form
 				setFormData({
-					asset_id: asset.id,
-					return_reason: "",
-					asset_condition: "good",
+					asset: asset.id,
+					condition: "good",
 					notes: "",
+					allocation: 0,
 				});
 			} else {
 				toast.error(response.message || "Failed to return asset");
@@ -94,10 +90,10 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 			setOpen(false);
 			// Reset form when closing
 			setFormData({
-				asset_id: asset.id,
-				return_reason: "",
-				asset_condition: "good",
+				asset: asset.id,
 				notes: "",
+				condition: "good",
+				allocation: 0,
 			});
 		}
 	};
@@ -143,20 +139,20 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 							</Label>
 							<Textarea
 								id="return_reason"
-								value={formData.return_reason}
-								onChange={(e) => handleInputChange("return_reason", e.target.value)}
+								value={formData.notes}
+								onChange={(e) => handleInputChange("notes", e.target.value)}
 								placeholder="Enter reason for return..."
 								className="col-span-3"
 								required
 							/>
 						</div>
 						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor="asset_condition" className="text-right">
+							<Label htmlFor="condition" className="text-right">
 								Asset Condition
 							</Label>
 							<Select
-								value={formData.asset_condition}
-								onValueChange={(value) => handleInputChange("asset_condition", value as any)}
+								value={formData.condition}
+								onValueChange={(value) => handleInputChange("condition", value as any)}
 							>
 								<SelectTrigger className="col-span-3">
 									<SelectValue placeholder="Select condition" />

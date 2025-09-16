@@ -4,7 +4,7 @@ import { AUTH_ACTION_TYPES } from "./types";
 import { AuthError } from "./reducer";
 
 import { ITill, StoredColorData } from "@/types";
-import { Branch, IPermission, IUser, IUserInstitution } from "@/types";
+import { Branch, Permission, IUser, IUserInstitution } from "@/types";
 import { getAuthError } from "@/utils/error-utils";
 
 type UpdateThemeAction = ActionWithPayLoad<AUTH_ACTION_TYPES.UPDATE_THEME, StoredColorData>;
@@ -52,7 +52,7 @@ type FetchUpToDateInstitution = Action<AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTIT
 
 type SetTemporaryPermissions = ActionWithPayLoad<
 	AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS,
-	IPermission[]
+	Permission[]
 >;
 type ClearTemporaryPermissions = Action<AUTH_ACTION_TYPES.CLEAR_TEMPORARY_PERMISSIONS>;
 
@@ -136,7 +136,7 @@ export const fetchUpToDateInstitution = (): FetchUpToDateInstitution =>
 	createAction(AUTH_ACTION_TYPES.FETCH_UP_TO_DATE_INSTITUTION);
 
 export const setTemporaryPermissions = (
-	temporaryPermissions: IPermission[],
+	temporaryPermissions: Permission[],
 ): SetTemporaryPermissions =>
 	createAction(AUTH_ACTION_TYPES.SET_TEMPORARY_PERMISSIONS, temporaryPermissions);
 export const clearTemporaryPermissions = (): ClearTemporaryPermissions =>

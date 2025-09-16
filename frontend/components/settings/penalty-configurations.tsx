@@ -38,18 +38,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { penaltyConfigAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type {
-	IInstitutionPenaltyConfig,
-	IInstitutionPenaltyConfigFormData,
-} from "@/types/types.utils";
+
 import FormatNumberInput from "@/components/format-number-input";
 
 export const PenaltyConfigurations = () => {

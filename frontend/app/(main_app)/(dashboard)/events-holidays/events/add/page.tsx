@@ -229,9 +229,7 @@ export default function AddEventPage() {
 	// Filter employees based on search term
 	const filteredEmployees = employees.filter(
 		(employee) =>
-			`${employee.first_name} ${employee.last_name}`
-				.toLowerCase()
-				.includes(employeeSearchTerm.toLowerCase()) ||
+			`${employee.user?.fullname} `.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
 			employee.employee_id?.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
 			(employee.department?.name &&
 				employee.department.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())),

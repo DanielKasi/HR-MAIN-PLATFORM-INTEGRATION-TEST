@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { IPermission, IUser, IUserInstitution } from "@/types";
+import { Permission, IUser, IUserInstitution } from "@/types";
 import apiRequest from "@/lib/apiRequest";
 import { getInstitutionById } from "@/lib/helpers";
 import { store } from "@/store";
@@ -106,7 +106,7 @@ export function hasTemporaryPermissions(): boolean {
 }
 
 export function setTemporaryPermissionsWithTimeout(
-	permissions: IPermission[],
+	permissions: Permission[],
 	timeoutMs: number = 30 * 60 * 1000, // 30 minutes default
 ) {
 	store.dispatch(

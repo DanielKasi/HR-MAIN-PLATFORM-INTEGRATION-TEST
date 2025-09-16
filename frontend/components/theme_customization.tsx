@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { getDefaultInstitutionId, getInstitutionById } from "@/lib/helpers";
-import { hexToHSL } from "@/app/(dashboard)/layout";
+import { hexToHSL } from "@/app/(main_app)/(dashboard)/layout";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { removeThemeStart, updateThemeStart } from "@/store/auth/actions";
 

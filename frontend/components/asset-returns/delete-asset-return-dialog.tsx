@@ -67,9 +67,6 @@ export function DeleteAssetReturnDialog({
 								<strong>Serial Number:</strong> {assetReturn.asset?.serial_number}
 							</p>
 							<p>
-								<strong>Condition:</strong> {assetReturn.asset_condition}
-							</p>
-							<p>
 								<strong>Return Date:</strong>{" "}
 								{new Date(assetReturn.created_at).toLocaleDateString()}
 							</p>

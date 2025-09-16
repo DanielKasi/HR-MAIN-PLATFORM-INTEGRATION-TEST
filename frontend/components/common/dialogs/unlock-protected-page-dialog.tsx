@@ -26,40 +26,7 @@ import apiRequest from "@/lib/apiRequest";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { extractRequiredPermissions, hasAnyRequiredPermissions } from "@/lib/helpers";
 import { loginWithEmailAndPassword, setTemporaryPermissionsWithTimeout } from "@/utils/auth-utils";
-
-interface UserProfile {
-	id: number;
-	user: IUser;
-	institution: number;
-	bio: string | null;
-}
-
-interface IUser {
-	id: number;
-	fullname: string;
-	email: string;
-	is_active: boolean;
-	is_staff: boolean;
-	roles: Role[];
-	branches: Branch[];
-}
-
-interface Role {
-	id: number;
-	name: string;
-	description: string;
-}
-
-interface Branch {
-	id: number;
-	institution: number;
-	branch_name: string;
-	branch_phone_number?: string;
-	branch_location: string;
-	branch_email?: string;
-	branch_opening_time?: string;
-	branch_closing_time?: string;
-}
+import { IUser, UserProfile } from "@/types";
 
 interface UnlockDialogProps {
 	isOpen: boolean;

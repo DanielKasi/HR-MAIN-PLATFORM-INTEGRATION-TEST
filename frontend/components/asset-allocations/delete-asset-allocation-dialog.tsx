@@ -90,7 +90,7 @@ export const DeleteAssetAllocationDialog = ({
 
 						<div className="flex items-center space-x-2">
 							<User className="h-4 w-4 text-gray-500" />
-							<span>Allocated to: {allocation.allocated_to?.fullname}</span>
+							<span>Allocated to: {allocation.allocated_to?.user.fullname}</span>
 						</div>
 
 						<div className="text-sm text-gray-600 font-mono">

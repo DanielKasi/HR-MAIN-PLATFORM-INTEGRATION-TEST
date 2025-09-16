@@ -35,10 +35,10 @@ export function FeedbackTable({
 					<User className="h-4 w-4 text-slate-400" />
 					<div>
 						<div className="font-medium text-slate-900">
-							{item.given_by.user?.fullname || "Unknown"}
+							{item.given_by?.user?.fullname || "Unknown"}
 						</div>
 						<div className="text-sm text-slate-500">
-							{item.given_by.department?.name || "No department"}
+							{item.given_by?.department?.name || "No department"}
 						</div>
 					</div>
 				</div>
@@ -49,7 +49,7 @@ export function FeedbackTable({
 			label: "Reviewer",
 			render: (item) => (
 				<div className="flex items-center gap-2">
-					{item.is_anonymous ? (
+					{!item.given_by ? (
 						<>
 							<EyeOff className="h-4 w-4 text-slate-400" />
 							<span className="text-slate-500 italic">Anonymous</span>
@@ -59,10 +59,10 @@ export function FeedbackTable({
 							<User className="h-4 w-4 text-slate-400" />
 							<div>
 								<div className="font-medium text-slate-900">
-									{item.reviewer.user?.fullname || "Unknown"}
+									{item.reviewer?.user?.fullname || "Unknown"}
 								</div>
 								<div className="text-sm text-slate-500">
-									{item.reviewer.department?.name || "No department"}
+									{item.reviewer?.department?.name || "No department"}
 								</div>
 							</div>
 						</>
