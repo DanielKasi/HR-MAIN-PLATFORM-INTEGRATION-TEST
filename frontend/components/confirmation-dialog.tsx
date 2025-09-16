@@ -1,49 +1,51 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 interface ConfirmationDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title: string;
-  description: string;
-  disabled?: boolean;
-  confirmText?: string;
-  cancelText?: string;
+	isOpen: boolean;
+	onClose: () => void;
+	onConfirm: () => void;
+	title: string;
+	description: string;
+	disabled?: boolean;
+	confirmText?: string;
+	cancelText?: string;
 }
 
 export function ConfirmationDialog({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  description,
-  disabled = false,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+	isOpen,
+	onClose,
+	onConfirm,
+	title,
+	description,
+	disabled = false,
+	confirmText = "Confirm",
+	cancelText = "Cancel",
 }: ConfirmationDialogProps) {
-  return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={disabled}>{cancelText}</AlertDialogCancel>
-          <AlertDialogAction disabled={disabled} onClick={onConfirm}>{confirmText}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
+	return (
+		<AlertDialog open={isOpen} onOpenChange={onClose}>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>{title}</AlertDialogTitle>
+					<AlertDialogDescription>{description}</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={disabled}>{cancelText}</AlertDialogCancel>
+					<AlertDialogAction disabled={disabled} onClick={onConfirm}>
+						{confirmText}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
 }

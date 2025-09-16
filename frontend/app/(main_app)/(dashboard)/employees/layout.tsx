@@ -5,8 +5,7 @@
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function EmployeesLayout({ children }: { children: React.ReactNode }) {
-  useDocumentTitle("EMPLOYEES")
-  return (
-    <>{children}</>
-  );
+	useDocumentTitle("EMPLOYEES");
+
+	return <>{children}</>;
 }

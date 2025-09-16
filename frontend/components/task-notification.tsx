@@ -23,8 +23,6 @@
 // import {selectUser} from "@/store/auth/selectors";
 // import { ApprovalTask } from "@/types/approvals.types";
 
-
-
 // export function TaskNotification() {
 //   const [tasks, setTasks] = useState<ApprovalTask[]>([]);
 //   const router = useRouter();
@@ -101,7 +99,6 @@
 
 //     setTasks(convertedTasks as any);
 //   }, [apiTasks, currentUser, connected]);
-
 
 //   const handleTaskClick = (link: string) => {
 //     router.push(link);

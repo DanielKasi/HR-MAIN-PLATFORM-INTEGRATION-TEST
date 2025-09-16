@@ -1,181 +1,200 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { PerformanceForm, type FormField } from "../common/performance-form"
-import type { IEmployeeObjective, IEmployeeObjectiveFormData, IObjectiveStatus } from "@/types/types.utils"
-import { useSelector } from "react-redux"
-import { selectSelectedInstitution } from "@/store/auth/selectors"
-import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select"
-import { ObjectiveSelect } from "@/components/selects/objective-select"
-import { KEY_RESULTS_API } from "@/lib/utils"
-import type { IKeyResult } from "@/types/types.utils"
+import type {
+	IEmployeeObjective,
+	IEmployeeObjectiveFormData,
+	IObjectiveStatus,
+} from "@/types/types.utils";
+import type { IKeyResult } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
+import { PerformanceForm, type FormField } from "../common/performance-form";
+
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
+import { ObjectiveSelect } from "@/components/selects/objective-select";
+import { KEY_RESULTS_API } from "@/lib/utils";
 
 interface EmployeeObjectiveFormProps {
-    initialData?: IEmployeeObjective
-    onSubmit: (data: IEmployeeObjectiveFormData) => void
-    onCancel?: () => void
-    isLoading?: boolean
+	initialData?: IEmployeeObjective;
+	onSubmit: (data: IEmployeeObjectiveFormData) => void;
+	onCancel?: () => void;
+	isLoading?: boolean;
 }
 
-export function EmployeeObjectiveForm({ initialData, onSubmit, onCancel, isLoading }: EmployeeObjectiveFormProps) {
-    const currentInstitution = useSelector(selectSelectedInstitution)
-    const [keyResults, setKeyResults] = useState<IKeyResult[]>([])
-    const [employeeValue, setEmployeeValue] = useState<(string | number)[]>([])
-    const [objectiveValue, setObjectiveValue] = useState<string>("")
+export function EmployeeObjectiveForm({
+	initialData,
+	onSubmit,
+	onCancel,
+	isLoading,
+}: EmployeeObjectiveFormProps) {
+	const currentInstitution = useSelector(selectSelectedInstitution);
+	const [keyResults, setKeyResults] = useState<IKeyResult[]>([]);
+	const [employeeValue, setEmployeeValue] = useState<(string | number)[]>([]);
+	const [objectiveValue, setObjectiveValue] = useState<string>("");
 
-    useEffect(() => {
-        // Fetch key results for selection
-        const fetchKeyResults = async () => {
-            try {
-                const response = await KEY_RESULTS_API.getPaginated({})
-                setKeyResults(response.results)
-            } catch (error) {
-                console.error("Failed to fetch key results:", error)
-            }
-        }
+	useEffect(() => {
+		// Fetch key results for selection
+		const fetchKeyResults = async () => {
+			try {
+				const response = await KEY_RESULTS_API.getPaginated({});
 
-        fetchKeyResults()
+				setKeyResults(response.results);
+			} catch (error) {
+				console.error("Failed to fetch key results:", error);
+			}
+		};
 
-        // Set initial values
-        if (initialData) {
-            setEmployeeValue([initialData.employee.id])
-            setObjectiveValue(String(initialData.objective.id))
-        }
-    }, [initialData])
+		fetchKeyResults();
 
-    const statusOptions = [
-        { value: "not_started", label: "Not Started" },
-        { value: "on_track", label: "On Track" },
-        { value: "at_risk", label: "At Risk" },
-        { value: "behind", label: "Behind" },
-        { value: "closed", label: "Closed" },
-    ]
+		// Set initial values
+		if (initialData) {
+			setEmployeeValue([initialData.employee.id]);
+			setObjectiveValue(String(initialData.objective.id));
+		}
+	}, [initialData]);
 
-    const keyResultOptions = keyResults.map((kr) => ({
-        value: kr.id,
-        label: `${kr.title} (${kr.progress_type})`,
-    }))
+	const statusOptions = [
+		{ value: "not_started", label: "Not Started" },
+		{ value: "on_track", label: "On Track" },
+		{ value: "at_risk", label: "At Risk" },
+		{ value: "behind", label: "Behind" },
+		{ value: "closed", label: "Closed" },
+	];
 
-    const fields: FormField[] = [
-        {
-            name: "status",
-            label: "Status",
-            type: "select",
-            options: statusOptions,
-            required: true,
-        },
-        {
-            name: "start_date",
-            label: "Start Date",
-            type: "date",
-            required: true,
-            validation: (value: string) => {
-                const startDate = new Date(value)
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
+	const keyResultOptions = keyResults.map((kr) => ({
+		value: kr.id,
+		label: `${kr.title} (${kr.progress_type})`,
+	}));
 
-                // Allow past dates for existing objectives
-                if (!initialData && startDate < today) {
-                    return "Start date cannot be in the past"
-                }
-                return null
-            },
-        },
-        {
-            name: "end_date",
-            label: "End Date",
-            type: "date",
-            required: true,
-            validation: (value: string, formData?: Record<string, any>) => {
-                if (!formData?.start_date) return null
+	const fields: FormField[] = [
+		{
+			name: "status",
+			label: "Status",
+			type: "select",
+			options: statusOptions,
+			required: true,
+		},
+		{
+			name: "start_date",
+			label: "Start Date",
+			type: "date",
+			required: true,
+			validation: (value: string) => {
+				const startDate = new Date(value);
+				const today = new Date();
 
-                const startDate = new Date(formData.start_date)
-                const endDate = new Date(value)
+				today.setHours(0, 0, 0, 0);
 
-                if (endDate <= startDate) {
-                    return "End date must be after start date"
-                }
+				// Allow past dates for existing objectives
+				if (!initialData && startDate < today) {
+					return "Start date cannot be in the past";
+				}
 
-                return null
-            },
-        },
-        {
-            name: "key_result",
-            label: "Key Result (Optional)",
-            type: "select",
-            options: keyResultOptions,
-            placeholder: "Select a key result",
-        },
-    ]
+				return null;
+			},
+		},
+		{
+			name: "end_date",
+			label: "End Date",
+			type: "date",
+			required: true,
+			validation: (value: string, formData?: Record<string, any>) => {
+				if (!formData?.start_date) return null;
 
-    const handleSubmit = (formData: Record<string, any>) => {
-        if (!currentInstitution || employeeValue.length === 0 || !objectiveValue) return
+				const startDate = new Date(formData.start_date);
+				const endDate = new Date(value);
 
-        const employeeObjectiveData: IEmployeeObjectiveFormData = {
-            employee: Number(employeeValue[0]),
-            objective: Number(objectiveValue),
-            status: formData.status as IObjectiveStatus,
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            key_result: formData.key_result ? Number(formData.key_result) : undefined,
-        }
+				if (endDate <= startDate) {
+					return "End date must be after start date";
+				}
 
-        onSubmit(employeeObjectiveData)
-    }
+				return null;
+			},
+		},
+		{
+			name: "key_result",
+			label: "Key Result (Optional)",
+			type: "select",
+			options: keyResultOptions,
+			placeholder: "Select a key result",
+		},
+	];
 
-    const getInitialFormData = () => {
-        if (!initialData) return { status: "not_started" }
+	const handleSubmit = (formData: Record<string, any>) => {
+		if (!currentInstitution || employeeValue.length === 0 || !objectiveValue) return;
 
-        return {
-            status: initialData.status,
-            start_date: initialData.start_date,
-            end_date: initialData.end_date,
-            key_result: initialData.key_result?.id,
-        }
-    }
+		const employeeObjectiveData: IEmployeeObjectiveFormData = {
+			employee: Number(employeeValue[0]),
+			objective: Number(objectiveValue),
+			status: formData.status as IObjectiveStatus,
+			start_date: formData.start_date,
+			end_date: formData.end_date,
+			key_result: formData.key_result ? Number(formData.key_result) : undefined,
+		};
 
-    return (
-        <div className="space-y-6">
-            {/* Employee and Objective Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">
-                        Employee <span className="text-red-500">*</span>
-                    </label>
-                    <EmployeeSearchableSelect
-                        value={employeeValue}
-                        onValueChange={setEmployeeValue}
-                        placeholder="Select employee"
-                        multiple={false}
-                        disabled={isLoading || !!initialData}
-                    />
-                    {!!initialData && <p className="text-xs text-slate-500">Employee cannot be changed after creation</p>}
-                </div>
+		onSubmit(employeeObjectiveData);
+	};
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">
-                        Objective <span className="text-red-500">*</span>
-                    </label>
-                    <ObjectiveSelect
-                        value={objectiveValue}
-                        onValueChange={setObjectiveValue}
-                        placeholder="Select objective"
-                        disabled={isLoading || !!initialData}
-                    />
-                    {!!initialData && <p className="text-xs text-slate-500">Objective cannot be changed after creation</p>}
-                </div>
-            </div>
+	const getInitialFormData = () => {
+		if (!initialData) return { status: "not_started" };
 
-            {/* Form Fields */}
-            <PerformanceForm
-                fields={fields}
-                initialData={getInitialFormData()}
-                onSubmit={handleSubmit}
-                onCancel={onCancel}
-                isLoading={isLoading}
-                submitLabel={initialData ? "Update Assignment" : "Create Assignment"}
-                showCancel={false}
-            />
-        </div>
-    )
+		return {
+			status: initialData.status,
+			start_date: initialData.start_date,
+			end_date: initialData.end_date,
+			key_result: initialData.key_result?.id,
+		};
+	};
+
+	return (
+		<div className="space-y-6">
+			{/* Employee and Objective Selection */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div className="space-y-2">
+					<label className="text-sm font-medium text-slate-700">
+						Employee <span className="text-red-500">*</span>
+					</label>
+					<EmployeeSearchableSelect
+						value={employeeValue}
+						onValueChange={setEmployeeValue}
+						placeholder="Select employee"
+						multiple={false}
+						disabled={isLoading || !!initialData}
+					/>
+					{!!initialData && (
+						<p className="text-xs text-slate-500">Employee cannot be changed after creation</p>
+					)}
+				</div>
+
+				<div className="space-y-2">
+					<label className="text-sm font-medium text-slate-700">
+						Objective <span className="text-red-500">*</span>
+					</label>
+					<ObjectiveSelect
+						value={objectiveValue}
+						onValueChange={setObjectiveValue}
+						placeholder="Select objective"
+						disabled={isLoading || !!initialData}
+					/>
+					{!!initialData && (
+						<p className="text-xs text-slate-500">Objective cannot be changed after creation</p>
+					)}
+				</div>
+			</div>
+
+			{/* Form Fields */}
+			<PerformanceForm
+				fields={fields}
+				initialData={getInitialFormData()}
+				onSubmit={handleSubmit}
+				onCancel={onCancel}
+				isLoading={isLoading}
+				submitLabel={initialData ? "Update Assignment" : "Create Assignment"}
+				showCancel={false}
+			/>
+		</div>
+	);
 }
