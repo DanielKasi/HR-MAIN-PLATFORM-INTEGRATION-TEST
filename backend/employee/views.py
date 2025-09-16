@@ -242,56 +242,194 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+from django.db.models import Q
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from datetime import datetime, date
+
+
 class EmployeeListAPIView(APIView, SortableAPIMixin):
-    allowed_ordering_fields = ["user", "email", "department", "is_active", "position"]
+    allowed_ordering_fields = ["user", "email", "department", "is_active", "position", "date_of_joining", "salary"]
     default_ordering = ["user"]
 
     @extend_schema(
         request=None,
         responses={200: EmployeeSerializer(many=True)},
-        description="Retrieve a list of employees.",
-        summary="List Employees",
+        description="Retrieve a filtered and sorted list of employees.",
+        summary="List Employees with Filters",
         tags=["Employee Management"],
+        parameters=[
+            OpenApiParameter(name="search", type=OpenApiTypes.STR, description="Search across multiple fields"),
+            OpenApiParameter(name="department_id", type=OpenApiTypes.INT, description="Filter by department ID"),
+            OpenApiParameter(name="position_id", type=OpenApiTypes.INT, description="Filter by position ID"),
+            OpenApiParameter(name="work_type_id", type=OpenApiTypes.INT, description="Filter by work type ID"),
+            OpenApiParameter(name="employee_type_id", type=OpenApiTypes.INT, description="Filter by employee type ID"),
+            OpenApiParameter(name="payroll_branch_id", type=OpenApiTypes.INT, description="Filter by payroll branch ID"),
+            OpenApiParameter(name="gender", type=OpenApiTypes.STR, description="Filter by gender (male, female, other)"),
+            OpenApiParameter(name="marital_status", type=OpenApiTypes.STR, description="Filter by marital status (single, married, divorced, widowed)"),
+            OpenApiParameter(name="has_children", type=OpenApiTypes.BOOL, description="Filter by whether employee has children"),
+            OpenApiParameter(name="salary_min", type=OpenApiTypes.NUMBER, description="Minimum salary filter"),
+            OpenApiParameter(name="salary_max", type=OpenApiTypes.NUMBER, description="Maximum salary filter"),
+            OpenApiParameter(name="date_of_joining_from", type=OpenApiTypes.DATE, description="Filter employees joined from this date (YYYY-MM-DD)"),
+            OpenApiParameter(name="date_of_joining_to", type=OpenApiTypes.DATE, description="Filter employees joined up to this date (YYYY-MM-DD)"),
+            OpenApiParameter(name="age_min", type=OpenApiTypes.INT, description="Minimum age filter"),
+            OpenApiParameter(name="age_max", type=OpenApiTypes.INT, description="Maximum age filter")
+        ]
     )
     def get(self, request, institution_id):
-        search_query = request.query_params.get("search", None)
         try:
+            # Base queryset
             employees = Employee.objects.filter(
-                department__institution_id=institution_id, deleted_at__isnull=True
+                department__institution_id=institution_id, 
+                deleted_at__isnull=True
+            ).select_related(
+                'user', 'department', 'position', 'work_type', 
+                'employee_type', 'payroll_branch'
             )
-            query_params = request.query_params.dict()
-            model_fields = {field.name for field in Employee._meta.get_fields()}
-            filters = {
-                k: v
-                for k, v in query_params.items()
-                if k.split("__")[0] in model_fields
-            }
-            if filters:
-                employees = employees.filter(**filters)
-            if search_query:
-                employees = employees.filter(
-                    Q(employee_id__icontains=search_query)
-                    | Q(user__fullname__icontains=search_query)
-                    | Q(work_type__name__icontains=search_query)
-                    | Q(employee_type__name__icontains=search_query)
-                    | Q(position__name__icontains=search_query)
-                    | Q(user__email__icontains=search_query)
-                    | Q(department__name__icontains=search_query)
-                )
 
+            # Apply filters
+            employees = self._apply_filters(employees, request.query_params)
+
+            # Apply sorting
             try:
                 employees = self.apply_sorting(employees, request)
             except ValueError as e:
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Paginate results
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(employees, request)
             serializer = EmployeeSerializer(paginated_qs, many=True)
             return paginator.get_paginated_response(serializer.data)
+
         except Exception as e:
             return Response(
                 {"detail": "Error retrieving employees."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def _apply_filters(self, queryset, query_params):
+        """Apply all filters to the queryset"""
+        
+        # Search filter
+        search_query = query_params.get("search")
+        if search_query:
+            queryset = queryset.filter(
+                Q(employee_id__icontains=search_query) |
+                Q(user__fullname__icontains=search_query) |
+                Q(user__email__icontains=search_query) |
+                Q(email__icontains=search_query) |
+                Q(work_type__name__icontains=search_query) |
+                Q(employee_type__name__icontains=search_query) |
+                Q(position__name__icontains=search_query) |
+                Q(department__name__icontains=search_query) |
+                Q(phone_number__icontains=search_query) |
+                Q(skills__icontains=search_query)
+            )
+
+        # Department filter
+        department_id = query_params.get("department_id")
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+
+        # Position filter
+        position_id = query_params.get("position_id")
+        if position_id:
+            queryset = queryset.filter(position_id=position_id)
+
+        # Work type filter
+        work_type_id = query_params.get("work_type_id")
+        if work_type_id:
+            queryset = queryset.filter(work_type_id=work_type_id)
+
+        # Employee type filter
+        employee_type_id = query_params.get("employee_type_id")
+        if employee_type_id:
+            queryset = queryset.filter(employee_type_id=employee_type_id)
+
+        # Payroll branch filter
+        payroll_branch_id = query_params.get("payroll_branch_id")
+        if payroll_branch_id:
+            queryset = queryset.filter(payroll_branch_id=payroll_branch_id)
+
+        # Gender filter
+        gender = query_params.get("gender")
+        if gender and gender in ['male', 'female', 'other']:
+            queryset = queryset.filter(gender=gender)
+
+        # Marital status filter
+        marital_status = query_params.get("marital_status")
+        if marital_status and marital_status in ['single', 'married', 'divorced', 'widowed']:
+            queryset = queryset.filter(marital_status=marital_status)
+
+        # Has children filter
+        has_children = query_params.get("has_children")
+        if has_children is not None:
+            has_children_bool = has_children.lower() in ['true', '1', 'yes']
+            queryset = queryset.filter(has_children=has_children_bool)
+
+        # Salary range filters
+        salary_min = query_params.get("salary_min")
+        if salary_min:
+            try:
+                queryset = queryset.filter(salary__gte=float(salary_min))
+            except ValueError:
+                pass
+
+        salary_max = query_params.get("salary_max")
+        if salary_max:
+            try:
+                queryset = queryset.filter(salary__lte=float(salary_max))
+            except ValueError:
+                pass
+
+        # Date of joining filters
+        date_of_joining_from = query_params.get("date_of_joining_from")
+        if date_of_joining_from:
+            try:
+                from_date = datetime.strptime(date_of_joining_from, "%Y-%m-%d").date()
+                queryset = queryset.filter(date_of_joining__gte=from_date)
+            except ValueError:
+                pass
+
+        date_of_joining_to = query_params.get("date_of_joining_to")
+        if date_of_joining_to:
+            try:
+                to_date = datetime.strptime(date_of_joining_to, "%Y-%m-%d").date()
+                queryset = queryset.filter(date_of_joining__lte=to_date)
+            except ValueError:
+                pass
+
+        # Age filters (calculated from date_of_birth)
+        age_min = query_params.get("age_min")
+        age_max = query_params.get("age_max")
+        
+        if age_min or age_max:
+            today = date.today()
+            
+            if age_min:
+                try:
+                    age_min_int = int(age_min)
+                    # Calculate the birth date for minimum age
+                    max_birth_date = date(today.year - age_min_int, today.month, today.day)
+                    queryset = queryset.filter(date_of_birth__lte=max_birth_date)
+                except ValueError:
+                    pass
+            
+            if age_max:
+                try:
+                    age_max_int = int(age_max)
+                    # Calculate the birth date for maximum age
+                    min_birth_date = date(today.year - age_max_int - 1, today.month, today.day)
+                    queryset = queryset.filter(date_of_birth__gt=min_birth_date)
+                except ValueError:
+                    pass
+
+
+        return queryset
 
 
 class EmployeeDetailAPIView(APIView):
@@ -1561,6 +1699,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nssf_no",
             "tin",
             "skills",
+            "salary",
             "marital_status",
             "bank",
             "account_name",
@@ -1602,6 +1741,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
             "nssf_no": "NSSF123456",
             "tin": "TIN987654321",
             "skills": "Python, Django, React",
+            "salary": "50000",
             "marital_status": "Married",
             "bank": "First National Bank",
             "account_name": "John Doe",
