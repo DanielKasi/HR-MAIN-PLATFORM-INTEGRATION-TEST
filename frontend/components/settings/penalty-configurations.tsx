@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {Icon} from "@iconify/react";
 import {toast} from "sonner";
-import {Plus, Edit, Trash2} from "lucide-react";
+import {Plus, Edit, Trash2, X} from "lucide-react";
 import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
 import {TableSkeleton} from "@/components/common/table-skeleton";
 import {penaltyConfigAPI, showErrorToast} from "@/lib/utils";
@@ -345,12 +345,12 @@ export const PenaltyConfigurations = () => {
                 {editingPenaltyConfig ? "Edit Penalty Configuration" : "Add Penalty Configuration"}
               </h3>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={resetPenaltyForm}
-                className="h-8 w-8 p-0 hover:bg-gray-100"
+                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100"
               >
-                <Icon icon="hugeicons:close-01" className="h-4 w-4" />
+                <X className="h-4 w-4 text-gray-900" />
               </Button>
             </div>
 
@@ -430,17 +430,9 @@ export const PenaltyConfigurations = () => {
 
             <div className="flex justify-end space-x-3 mt-6">
               <Button
-                variant="outline"
-                onClick={resetPenaltyForm}
-                disabled={isLoading}
-                className="flex-1 rounded-full bg-transparent"
-              >
-                Cancel
-              </Button>
-              <Button
                 onClick={handleSavePenaltyConfig}
                 disabled={isLoading}
-                className="bg-primary hover:bg-primary text-white flex-1 rounded-full"
+                className="rounded-full w-full"
               >
                 {isLoading ? "Saving..." : editingPenaltyConfig ? "Update" : "Create"}
               </Button>

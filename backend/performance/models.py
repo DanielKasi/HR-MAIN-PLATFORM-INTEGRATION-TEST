@@ -50,6 +50,7 @@ class Objectives(BaseApprovableModel):
     key_result = models.ForeignKey('KeyResult', on_delete=models.PROTECT, null=True, blank=True)
     date = models.DateField(default=timezone.now)
     assignees = models.ManyToManyField(Employee, through='EmployeeObjectives', related_name="assigned_objectives")
+    completion_date = models.DateField(null=True, blank=True)
 
 
     def __str__(self):
@@ -314,9 +315,6 @@ class BonusPointSettings(BaseApprovableModel):
                 datetime.strptime(self.condition_value, '%Y-%m-%d')
             except ValueError:
                 raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
-            
-
-    # def finish_workflow(self, approval: Approval):
 
 
 

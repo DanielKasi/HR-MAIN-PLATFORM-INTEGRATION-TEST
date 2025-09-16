@@ -281,7 +281,7 @@ export default function DashboardSideBar() {
         { title: "360 Feedback", href: "/performance/feedback" },
         { title: "Meetings", href: "/performance/meetings" },
         { title: "Key Results", href: "#" },
-        { title: "Employee Bonus Point", href: "/performance/employee-objectives" },
+        { title: "Employee Objectives", href: "/performance/employee-objectives" },
         { title: "Period", href: "/performance/periods" },
         { title: "Question Template", href: "#" },
       ],

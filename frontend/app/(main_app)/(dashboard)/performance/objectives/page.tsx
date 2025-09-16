@@ -92,7 +92,7 @@ export default function ObjectivesPage() {
     setSearchQuery(query);
   };
 
-  // Calculate stats
+
   const totalObjectives = objectives.length;
   const withManagers = objectives.filter((o) => o.managers).length;
   const withAssignees = objectives.filter((o) => o.assignees).length;
