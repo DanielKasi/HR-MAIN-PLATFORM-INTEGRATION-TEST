@@ -1,11 +1,10 @@
-from django.db import models
-from approval.models import BaseApprovableModel
+from django.db import models, transaction
+from approval.models import Approval, BaseApprovableModel
 from performance.teams_api import create_teams_meeting, update_teams_meeting
 from performance.zoom_api import create_zoom_meeting
 from employee.models import Employee
 from institution.models import Institution
 from django.utils import timezone
-from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.db.models import JSONField
 from rest_framework.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
@@ -16,9 +15,11 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import os
 from google.auth.transport.requests import Request
+from datetime import datetime
+
 
 class Period(BaseApprovableModel):   
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE) 
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT) 
     name = models.CharField(max_length=50)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -36,19 +37,20 @@ class Objectives(BaseApprovableModel):
         ("months", "Months"),
         ("years", "Years")
     ]
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT)
     name = models.CharField(max_length=50)
     description = models.TextField()
-    managers = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name="objectivemanagers")
+    managers = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True, related_name="objectivemanagers")
     duration_unit = models.CharField(
         max_length=255,
         choices=DURATION_CHOICES,
         default="days"
     )
-    duration = models.DurationField()
-    key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
-    assignees = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True)
-    self_employee_progress_update = models.BooleanField(default=False)
+    duration = models.IntegerField()
+    key_result = models.ForeignKey('KeyResult', on_delete=models.PROTECT, null=True, blank=True)
+    date = models.DateField(default=timezone.now)
+    assignees = models.ManyToManyField(Employee, through='EmployeeObjectives', related_name="assigned_objectives")
+
 
     def __str__(self):
         return self.name
@@ -56,7 +58,83 @@ class Objectives(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-class EmmployeeObjectives(BaseApprovableModel):
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.is_active = True
+                    self.deleted_at = None
+
+                    if isinstance(self, Objectives):
+                        # Get existing EmployeeObjectives records
+                        existing_employee_ids = set(
+                            EmployeeObjectives.objects.filter(objective=self).values_list('employee_id', flat=True)
+                        )
+                        # Create EmployeeObjectives only for new assignees
+                        for assignee in self.assignees.all():
+                            if assignee.id not in existing_employee_ids:
+                                EmployeeObjectives.objects.create(
+                                    employee=assignee,
+                                    objective=self,
+                                    status="not_started",
+                                    assignment_date=timezone.now()
+                                )
+
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+                    if isinstance(self, Objectives):
+                        existing_employee_objectives = EmployeeObjectives.objects.filter(objective=self)
+                        existing_employee_ids = set(existing_employee_objectives.values_list('employee_id', flat=True))
+                        new_assignee_ids = set(self.assignees.values_list('id', flat=True))
+
+                        # Delete EmployeeObjectives for removed assignees
+                        for employee_objective in existing_employee_objectives:
+                            if employee_objective.employee_id not in new_assignee_ids:
+                                employee_objective.delete()
+
+                        # Create EmployeeObjectives for new assignees
+                        for assignee in self.assignees.all():
+                            if assignee.id not in existing_employee_ids:
+                                EmployeeObjectives.objects.create(
+                                    employee=assignee,
+                                    objective=self,
+                                    status="not_started",
+                                    assignment_date=timezone.now()
+                                )
+
+                elif approval.action.name == "delete":
+                    self.approval_status = "under_deletion"
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.delete()
+                    return
+
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
+                    self.approval_status = "active"
+                    self.is_active = False
+                    self.deleted_at = None
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == "delete":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+            self.save(
+                update_fields=[
+                    "approval_status",
+                    "is_active",
+                    "deleted_at",
+                ]
+            )
+
+class EmployeeObjectives(BaseApprovableModel):
     STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("on_track", "On Track"),
@@ -64,16 +142,17 @@ class EmmployeeObjectives(BaseApprovableModel):
         ("at_risk", "At Risk"),
         ("behind", "Bahind")
     ]
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    objective = models.ForeignKey(Objectives, on_delete=models.CASCADE)    
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
+    objective = models.ForeignKey(Objectives, on_delete=models.PROTECT)    
     status = models.CharField(
         max_length=255,
         choices=STATUS_CHOICES,
         default="not_started"
     )
-    start_date = models.DateField()
-    end_date = models.DateField()
-    key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    assignment_date = models.DateField(default=timezone.now)
+    completion_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.objective.name}"
@@ -86,15 +165,17 @@ class KeyResult(BaseApprovableModel):
         ("percentage", "Percentage"),
         ("number", "Number")
     ]
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT)
     title = models.CharField(max_length=255)  
     description = models.TextField()  
-    target_value = models.FloatField()
+    target_value = models.FloatField(null=True, blank=True)
     duration  = models.DurationField()
     progress_type = models.CharField(
         max_length=255,
         choices=PROGRESS_TYPE_CHOICES,
-        default="percentage"
+        default="percentage",
+        null=True,
+        blank=True
     )
 
     def __str__(self):
@@ -104,25 +185,16 @@ class KeyResult(BaseApprovableModel):
         return self.institution
 
 class Feedback360(BaseApprovableModel):
-    RATING_CHOICES = [
-        (1, "Poor"),
-        (2, "Fair"),
-        (3, "Good"),
-        (4, "Very Good"),
-        (5, "Excellent"),
-    ]
-    reviewee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='received_feedback')
-    reviewer = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='given_feedback')
-    period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True, blank=True)
+    reviewer = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='received_feedback', null=True, blank=True)
+    given_by = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='given_feedback', null=True, blank=True)
+    period = models.ForeignKey(Period, on_delete=models.PROTECT, null=True, blank=True)
     feedback_text = models.TextField(blank=True, null=True)
-    rating = models.IntegerField(choices=RATING_CHOICES, null=True, blank=True)
-    is_anonymous = models.BooleanField(default=False)
+    rating = models.IntegerField()
     submission_date = models.DateTimeField(default=timezone.now)
-    strengths = models.TextField(blank=True, null=True)
-    areas_for_improvement = models.TextField(blank=True, null=True)
+
 
     def __str__(self):
-        return f"Feedback from {self.reviewer.user.fullname} to {self.reviewee.user.fullname}"
+        return f"Feedback from {self.reviewer.user.fullname} to {self.given_by.user.fullname}"
     
     def get_institution(self):
         return self.period.institution
@@ -130,10 +202,10 @@ class Feedback360(BaseApprovableModel):
 
 
 class EmployeeBonusPoint(BaseApprovableModel):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
     bonus_point_setting = models.ForeignKey(
         'BonusPointSettings',
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name='employee_bonus_points',
@@ -141,7 +213,7 @@ class EmployeeBonusPoint(BaseApprovableModel):
     )
     reason = models.TextField()
     date = models.DateTimeField(default=timezone.now)
-    period = models.ForeignKey(Period, on_delete=models.SET_NULL, null=True, blank=True)
+    period = models.ForeignKey(Period, on_delete=models.PROTECT, null=True, blank=True)
     redeemed = models.BooleanField(default=False)
 
     def __str__(self):
@@ -149,6 +221,7 @@ class EmployeeBonusPoint(BaseApprovableModel):
 
     def get_institution(self):
         return self.period.institution
+        
 
 class QuestionTemplate(BaseApprovableModel):
     CATEGORY_CHOICES = [
@@ -163,7 +236,7 @@ class QuestionTemplate(BaseApprovableModel):
         ("multiple_choice", "Multiple Choice"),
         ("yes_no", "Yes/No"),
     ]
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="general")
@@ -187,26 +260,7 @@ class QuestionTemplate(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-class EmployeeObjectives(BaseApprovableModel):
-    STATUS_CHOICES = [
-        ("not_started", "Not Started"),
-        ("on_track", "On Track"),
-        ("closed", "Closed"),
-        ("at_risk", "At Risk"),
-        ("behind", "Behind")
-    ]
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    objective = models.ForeignKey(Objectives, on_delete=models.CASCADE)
-    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default="not_started")
-    start_date = models.DateField()
-    end_date = models.DateField()
-    key_result = models.ForeignKey('KeyResult', on_delete=models.SET_NULL, null=True, blank=True)
 
-    def __str__(self):
-        return f"{self.employee.user.fullname} - {self.objective.name}"
-
-    def get_institution(self):
-        return self.employee.institution    
     
 class BonusPointSettings(BaseApprovableModel):
     CONDITION_OPERATOR_CHOICES = [
@@ -217,27 +271,24 @@ class BonusPointSettings(BaseApprovableModel):
         ('>=', 'Greater than or equal'),
     ]
     ALLOWED_FIELDS = {
-        'Objectives': ['name', 'description', 'duration_unit', 'duration', 'self_employee_progress_update'],
-        'EmployeeObjectives': ['status', 'start_date', 'end_date'],
-        'KeyResult': ['title', 'description', 'target_value', 'duration', 'progress_type'],
-        'Feedback360': ['rating', 'submission_date', 'is_anonymous'],
-        'EmployeeBonusPoint': ['points', 'date', 'redeemed'],
-        'QuestionTemplate': ['name', 'description', 'category'],
-        'Meeting': ['title', 'start_time', 'end_time', 'mode'],
+        'Objectives': ['completion_date', 'end_date'],
+        # 'KeyResult': ['completion_date', 'end_date'],
+        'Task': ['completion_date', 'end_date'],
+        'Project': ['completion_date', 'end_date'],
     }
     
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, limit_choices_to={'model__in': [
-        'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
+    content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT, limit_choices_to={'model__in': [
+        'objectives', 'task', 'project'
     ]})
     content_object = GenericForeignKey('content_type', 'object_id')
-    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Members')])
+    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('assignees', 'Assignees')])
     bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
     points = models.PositiveIntegerField()
-    condition_field = models.CharField(max_length=255)
+    condition_field = models.CharField(max_length=255, choices=[('completion_date', 'Completion Date')])
     condition_operator = models.CharField(max_length=10, choices=CONDITION_OPERATOR_CHOICES)
-    condition_value = models.CharField(max_length=255)
+    condition_value = models.CharField(max_length=255, choices=[('end_date', 'End Date')])
 
     def __str__(self):
         return f"{self.content_object} - {self.bonus_for} - {self.points} ({self.condition_field} {self.condition_operator} {self.condition_value})"
@@ -246,7 +297,7 @@ class BonusPointSettings(BaseApprovableModel):
         return self.institution
 
     def clean(self):
-        allowed_models = ['period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting']
+        allowed_models = ['objectives', 'keyresult', 'task', 'project']
         if self.content_type.model not in allowed_models:
             raise ValidationError({"error": f"Invalid content_type. Must be one of: {', '.join(allowed_models)}"})
         
@@ -260,18 +311,13 @@ class BonusPointSettings(BaseApprovableModel):
         field = model_class._meta.get_field(self.condition_field)
         if isinstance(field, (models.DateField, models.DateTimeField)):
             try:
-                from datetime import datetime
                 datetime.strptime(self.condition_value, '%Y-%m-%d')
             except ValueError:
                 raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
-        elif isinstance(field, models.BooleanField):
-            if self.condition_value.lower() not in ['true', 'false']:
-                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be 'true' or 'false'."})
-        elif isinstance(field, models.IntegerField) or isinstance(field, models.FloatField):
-            try:
-                float(self.condition_value)
-            except ValueError:
-                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a number."})
+            
+
+    # def finish_workflow(self, approval: Approval):
+
 
 
 class Meeting(BaseApprovableModel):
@@ -280,7 +326,7 @@ class Meeting(BaseApprovableModel):
         ('online', 'Online'),
         ('hybrid', 'Hybrid'),
     ]
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     start_time = models.DateTimeField()
@@ -289,7 +335,7 @@ class Meeting(BaseApprovableModel):
     location = models.CharField(max_length=255, blank=True, null=True)
     online_link = models.URLField(blank=True, null=True)
     participants = models.ManyToManyField(Employee, related_name='meetings')
-    organizer = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='organized_meetings')
+    organizer = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True, related_name='organized_meetings')
     agenda = models.TextField(blank=True, null=True)
     minutes = models.TextField(blank=True, null=True)
     is_recurring = models.BooleanField(default=False)

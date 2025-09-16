@@ -32,7 +32,7 @@ import {
   fetchUserById,
   LoginResponse,
   loginWithEmailAndPassword,
-} from "@/utils/authUtils";
+} from "@/utils/auth-utils";
 import { IUser, IUserInstitution } from "@/types";
 import { Task } from "redux-saga";
 

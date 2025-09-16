@@ -3,14 +3,14 @@
 import { useRef } from "react"
 import { PerformanceFormModal } from "../common/performance-form-modal"
 import { ObjectiveForm } from "./objective-form"
-import type { IObjectives, IObjectivesFormData } from "@/types/types.utils"
+import type { IObjective, IObjectiveFormData } from "@/types/types.utils"
 
 
 interface ObjectiveModalProps {
     isOpen: boolean
     onClose: () => void
-    objective?: IObjectives
-    onSubmit: (data: IObjectivesFormData) => void
+    objective?: IObjective
+    onSubmit: (data: IObjectiveFormData) => void
     isLoading?: boolean
 }
 
@@ -24,7 +24,7 @@ export function ObjectiveModal({ isOpen, onClose, objective, onSubmit, isLoading
     }
 
     return (
-        <PerformanceFormModal<IObjectivesFormData>
+        <PerformanceFormModal<IObjectiveFormData>
             isOpen={isOpen}
             onClose={onClose}
             title={objective ? "Edit Objective" : "Create New Objective"}

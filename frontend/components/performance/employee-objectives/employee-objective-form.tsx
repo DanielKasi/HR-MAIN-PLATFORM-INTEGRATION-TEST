@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { PerformanceForm, type FormField } from "../common/performance-form"
-import type { IEmployeeObjectives, IEmployeeObjectivesFormData, IObjectiveStatus } from "@/types/types.utils"
+import type { IEmployeeObjective, IEmployeeObjectiveFormData, IObjectiveStatus } from "@/types/types.utils"
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select"
@@ -11,8 +11,8 @@ import { KEY_RESULTS_API } from "@/lib/utils"
 import type { IKeyResult } from "@/types/types.utils"
 
 interface EmployeeObjectiveFormProps {
-    initialData?: IEmployeeObjectives
-    onSubmit: (data: IEmployeeObjectivesFormData) => void
+    initialData?: IEmployeeObjective
+    onSubmit: (data: IEmployeeObjectiveFormData) => void
     onCancel?: () => void
     isLoading?: boolean
 }
@@ -111,7 +111,7 @@ export function EmployeeObjectiveForm({ initialData, onSubmit, onCancel, isLoadi
     const handleSubmit = (formData: Record<string, any>) => {
         if (!currentInstitution || employeeValue.length === 0 || !objectiveValue) return
 
-        const employeeObjectiveData: IEmployeeObjectivesFormData = {
+        const employeeObjectiveData: IEmployeeObjectiveFormData = {
             employee: Number(employeeValue[0]),
             objective: Number(objectiveValue),
             status: formData.status as IObjectiveStatus,

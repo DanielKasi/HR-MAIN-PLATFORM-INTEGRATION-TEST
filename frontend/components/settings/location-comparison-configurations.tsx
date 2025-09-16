@@ -1,35 +1,54 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { branchLocationComparisonConfigAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import type { IBranchLocationComparisonConfig, IBranchLocationComparisonConfigFormData } from "@/types/types.utils";
+import {useState, useEffect, useRef} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Badge} from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {Icon} from "@iconify/react";
+import {toast} from "sonner";
+import {Plus, Edit, Trash2} from "lucide-react";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {branchLocationComparisonConfigAPI, showErrorToast} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import type {
+  IBranchLocationComparisonConfig,
+  IBranchLocationComparisonConfigFormData,
+} from "@/types/types.utils";
+import {ConfirmationDialog} from "../confirmation-dialog";
 
 export const LocationComparisonConfigurations = () => {
   const institution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLocationComparisonFormOpen, setIsLocationComparisonFormOpen] = useState(false);
-  const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] = useState<IBranchLocationComparisonConfig | null>(null);
+  const [editingLocationComparisonConfig, setEditingLocationComparisonConfig] =
+    useState<IBranchLocationComparisonConfig | null>(null);
+  const [locationComparisonConfigurationToDelete, setLocationComparisonConfigurationToDelete] =
+    useState<IBranchLocationComparisonConfig | null>(null);
   const [locationComparisonSearchTerm, setLocationComparisonSearchTerm] = useState("");
-  const [locationComparisonFormData, setLocationComparisonFormData] = useState<IBranchLocationComparisonConfigFormData>({
-    branch: selectedBranch?.id || 0,
-    radius_in_meters: 0,
-  });
+  const [locationComparisonFormData, setLocationComparisonFormData] =
+    useState<IBranchLocationComparisonConfigFormData>({
+      branch: selectedBranch?.id || 0,
+      radius_in_meters: 0,
+    });
 
   const locationComparisonRefreshRef = useRef<(() => void) | null>(null);
 
@@ -38,7 +57,7 @@ export const LocationComparisonConfigurations = () => {
     field: keyof IBranchLocationComparisonConfigFormData,
     value: number,
   ) => {
-    setLocationComparisonFormData((prev) => ({ ...prev, [field]: value }));
+    setLocationComparisonFormData((prev) => ({...prev, [field]: value}));
   };
 
   const resetLocationComparisonForm = () => {
@@ -80,28 +99,33 @@ export const LocationComparisonConfigurations = () => {
         );
         toast.success("Location comparison configuration updated successfully");
       } else {
-        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(locationComparisonFormData);
+        await branchLocationComparisonConfigAPI.createBranchLocationComparisonConfig(
+          locationComparisonFormData,
+        );
         toast.success("Location comparison configuration created successfully");
       }
       resetLocationComparisonForm();
       // Trigger table refresh
       locationComparisonRefreshRef.current?.();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save location comparison configuration" });
+      showErrorToast({error, defaultMessage: "Failed to save location comparison configuration"});
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteLocationComparisonConfig = async (config: IBranchLocationComparisonConfig) => {
-    if (confirm(`Are you sure you want to delete the location comparison configuration?`)) {
+    if (locationComparisonConfigurationToDelete) {
       try {
         await branchLocationComparisonConfigAPI.deleteBranchLocationComparisonConfig(config.id);
         toast.success("Location comparison configuration deleted successfully");
         // Trigger table refresh
         locationComparisonRefreshRef.current?.();
       } catch (error) {
-        showErrorToast({ error, defaultMessage: "Failed to delete location comparison configuration" });
+        showErrorToast({
+          error,
+          defaultMessage: "Failed to delete location comparison configuration",
+        });
       }
     }
   };
@@ -128,7 +152,8 @@ export const LocationComparisonConfigurations = () => {
             <div>
               <h3 className="font-medium text-blue-900">Selected Branch</h3>
               <p className="text-sm text-blue-700">
-                Managing location comparison configuration for: <strong>{selectedBranch.branch_name}</strong>
+                Managing location comparison configuration for:{" "}
+                <strong>{selectedBranch.branch_name}</strong>
               </p>
             </div>
           </div>
@@ -165,7 +190,9 @@ export const LocationComparisonConfigurations = () => {
                 search: locationComparisonSearchTerm || undefined,
               });
             }}
-            fetchFromUrl={branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl}
+            fetchFromUrl={
+              branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigsFromUrl
+            }
             deps={[selectedBranch?.id, locationComparisonSearchTerm]}
             className="space-y-4"
             footerClassName="pt-4"
@@ -222,15 +249,20 @@ export const LocationComparisonConfigurations = () => {
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="sm">
-                                      <Icon icon="hugeicons:more-horizontal-square-01" className="!h-4 !w-4 text-dark" />
+                                      <Icon
+                                        icon="hugeicons:more-horizontal-square-01"
+                                        className="!h-4 !w-4 text-dark"
+                                      />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEditLocationComparisonConfig(config)}>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditLocationComparisonConfig(config)}
+                                    >
                                       <Edit className="h-4 w-4 mr-2" />
                                       Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem 
+                                    <DropdownMenuItem
                                       onClick={() => handleDeleteLocationComparisonConfig(config)}
                                       className="text-red-600"
                                     >
@@ -259,7 +291,9 @@ export const LocationComparisonConfigurations = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {editingLocationComparisonConfig ? "Edit Location Comparison Configuration" : "Add Location Comparison Configuration"}
+                {editingLocationComparisonConfig
+                  ? "Edit Location Comparison Configuration"
+                  : "Add Location Comparison Configuration"}
               </h3>
               <Button
                 variant="ghost"
@@ -279,7 +313,12 @@ export const LocationComparisonConfigurations = () => {
                   type="number"
                   min="0"
                   value={locationComparisonFormData.radius_in_meters}
-                  onChange={(e) => handleLocationComparisonInputChange("radius_in_meters", Number.parseInt(e.target.value) || 0)}
+                  onChange={(e) =>
+                    handleLocationComparisonInputChange(
+                      "radius_in_meters",
+                      Number.parseInt(e.target.value) || 0,
+                    )
+                  }
                   placeholder="Enter radius in meters"
                 />
               </div>
@@ -304,6 +343,20 @@ export const LocationComparisonConfigurations = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {locationComparisonConfigurationToDelete && (
+        <ConfirmationDialog
+          description="Are you sure you want to delete this branch's location comparison configuration ? This action cannot be undone."
+          isOpen={!!locationComparisonConfigurationToDelete}
+          title={`Delete location comparison configuration for branch ${locationComparisonConfigurationToDelete.branch_name}?`}
+          onConfirm={() =>
+            handleDeleteLocationComparisonConfig(locationComparisonConfigurationToDelete)
+          }
+          onClose={() => {
+            setLocationComparisonConfigurationToDelete(null);
+          }}
+        />
       )}
     </div>
   );

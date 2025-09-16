@@ -28,7 +28,7 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 from users.models import Profile
-from django.db.models import Q
+from django.db.models import Q, Count
 from employee.models import Employee
 from django.db import transaction
 from utilities.sortable_api import SortableAPIMixin

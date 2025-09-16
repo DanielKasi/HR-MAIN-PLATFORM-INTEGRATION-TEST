@@ -20,13 +20,13 @@ class KeyResultSerializer(serializers.ModelSerializer):
 
 class ObjectivesSerializer(serializers.ModelSerializer):
     managers = EmployeeSerializer(read_only=True)
-    assignees = EmployeeSerializer(read_only=True)
+    assignees = EmployeeSerializer(many=True, read_only=True)
     key_result = KeyResultSerializer(read_only=True)
     managers_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='managers', write_only=True, required=False
     )
     assignees_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='assignees', write_only=True, required=False
+        queryset=Employee.objects.all(), source='assignees', write_only=True, many=True, required=False
     )
     key_result_id = serializers.PrimaryKeyRelatedField(
         queryset=KeyResult.objects.all(), source='key_result', write_only=True, required=False
@@ -37,18 +37,23 @@ class ObjectivesSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['institution']
 
+    def create(self, validated_data):
+        # Pop assignees but don't create EmployeeObjectives records
+        assignees = validated_data.pop('assignees', [])
+        validated_data['institution'] = self.context['request'].user.profile.institution
+        objective = Objectives.objects.create(**validated_data)
+        if assignees:
+            objective.assignees.set(assignees)  # Set the M2M relationship
+        return objective
+
 class EmployeeObjectivesSerializer(serializers.ModelSerializer):
     employee = EmployeeSerializer(read_only=True)
     objective = ObjectivesSerializer(read_only=True)
-    key_result = KeyResultSerializer(read_only=True)
     employee_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='employee', write_only=True
     )
     objective_id = serializers.PrimaryKeyRelatedField(
         queryset=Objectives.objects.all(), source='objective', write_only=True
-    )
-    key_result_id = serializers.PrimaryKeyRelatedField(
-        queryset=KeyResult.objects.all(), source='key_result', write_only=True, required=False
     )
 
     class Meta:

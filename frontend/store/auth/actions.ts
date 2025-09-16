@@ -5,7 +5,7 @@ import {AuthError} from "./reducer";
 
 import {ITill, StoredColorData} from "@/types";
 import {Branch, IPermission, IUser, IUserInstitution} from "@/types";
-import {getAuthError} from "@/utils/errorUtils";
+import {getAuthError} from "@/utils/error-utils";
 
 type UpdateThemeAction = ActionWithPayLoad<AUTH_ACTION_TYPES.UPDATE_THEME, StoredColorData>;
 type RemoveThemeAction = Action<AUTH_ACTION_TYPES.REMOVE_THEME>;

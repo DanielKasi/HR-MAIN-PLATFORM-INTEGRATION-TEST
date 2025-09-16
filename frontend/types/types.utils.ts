@@ -613,15 +613,15 @@ export interface INextOfKin {
 export interface IEducation {
   id: string
   name: string
-  institute: string
+  institution: string
   year: string
-  qualification: IQualificationAward
+  qualification: IQualificationAward|null
 }
 
 export interface IEmployeeEducationFormData {
   id: string
   name: string
-  institute: string
+  institution: string
   year: string
   qualification_id: number
 }
@@ -2335,7 +2335,7 @@ export interface IProjectTask {
   project: number;
   task_name: string;
   description: string;
-  leaders: UserProfile[];
+  managers: UserProfile[];
   assigned_to: UserProfile[];
   start_date: string;
   end_date: string;
@@ -2349,7 +2349,7 @@ export interface IProjectTaskFormData {
   project: number;
   task_name: string;
   description: string;
-  leaders: number[];
+  managers: number[];
   assigned_to: number[];
   start_date: string;
   end_date: string;
@@ -2368,8 +2368,8 @@ export interface IProject {
   id: number;
   institution: number;
   project_name: string;
-  leaders: UserProfile[];
-  members: UserProfile[];
+  managers: UserProfile[];
+  assignees: UserProfile[];
   description: string;
   start_date: string;
   end_date: string;
@@ -2382,8 +2382,8 @@ export interface IProject {
 export interface IProjectFormData {
   institution: number;
   project_name: string;
-  leaders: number[];
-  members: number[];
+  managers: number[];
+  assignees: number[];
   description: string;
   start_date: string;
   end_date: string;
@@ -2412,20 +2412,21 @@ export interface IPeriodFormData {
 
 export type IObjectiveStatus = "not_started" | "on_track" | "closed" | "at_risk" | "behind"
 
-export interface IObjectives {
+export interface IObjective {
   id: number
   institution: IUserInstitution
   name: string
   description: string
   managers?: IEmployee | null
   duration_unit: IDurationUnit
-  duration: string
+  duration: string,
+  creation_date:string,
   key_result?: IKeyResult | null
-  assignees?: IEmployee | null
+  assignees?: IEmployee[]
   self_employee_progress_update: boolean
 }
 
-export interface IObjectivesFormData {
+export interface IObjectiveFormData {
   institution: number
   name: string
   description: string
@@ -2433,21 +2434,22 @@ export interface IObjectivesFormData {
   duration_unit: IDurationUnit
   duration: string
   key_result?: number
-  assignees_id?: number
+  assignees_id?: number[],
+    creation_date:string,
   self_employee_progress_update?: boolean
 }
 
-export interface IEmployeeObjectives {
+export interface IEmployeeObjective {
   id: number
   employee: IEmployee
-  objective: IObjectives
+  objective: IObjective
   status: IObjectiveStatus
   start_date: string
   end_date: string
   key_result?: IKeyResult | null
 }
 
-export interface IEmployeeObjectivesFormData {
+export interface IEmployeeObjectiveFormData {
   employee: number
   objective: number
   status: IObjectiveStatus
@@ -2479,8 +2481,8 @@ export interface IKeyResultFormData {
 
 export interface IFeedback360 {
   id: number
-  reviewee: IEmployee
-  reviewer: IEmployee
+  given_by: IEmployee|null
+  reviewer: IEmployee|null
   period?: IPeriod | null
   feedback_text?: string | null
   rating?: number | null
@@ -2491,8 +2493,8 @@ export interface IFeedback360 {
 }
 
 export interface IFeedback360FormData {
-  reviewee_id: number
-  reviewer_id: number
+  reviewee_id: number|null
+  reviewer_id: number|null
   period?: number
   feedback_text?: string
   rating?: number
@@ -2544,7 +2546,7 @@ export interface IQuestionTemplateFormData {
   questions: any[]
 }
 
-export type IApplicableFor = "managers" | "members"
+export type IApplicableFor = "managers" | "assignees"
 
 export type IBonusFor = "completing" | "closing"
 
@@ -2605,7 +2607,7 @@ export interface IMeetingFormData {
   end_time: string
   mode: IEventMode
   location?: string
-  participants: number[]
+  participant_ids: number[]
   organizer?: number
   agenda?: string
   minutes?: string
@@ -2682,8 +2684,8 @@ export interface IProjectTask extends IBaseApprovable { }
 
 
 export interface IPeriod extends IBaseApprovable { }
-export interface IObjectives extends IBaseApprovable { }
-export interface IEmployeeObjectives extends IBaseApprovable { }
+export interface IObjective extends IBaseApprovable { }
+export interface IEmployeeObjective extends IBaseApprovable { }
 export interface IKeyResult extends IBaseApprovable { }
 export interface IFeedback360 extends IBaseApprovable { }
 export interface IEmployeeBonusPoint extends IBaseApprovable { }

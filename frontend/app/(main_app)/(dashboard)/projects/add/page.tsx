@@ -38,8 +38,8 @@ export default function AddProjectPage() {
     end_date: "",
     project_status: "planning" as const,
     institution: 0,
-    leaders: [],
-    members: [],
+    managers: [],
+    assignees: [],
   });
 
   useEffect(() => {
@@ -55,11 +55,11 @@ export default function AddProjectPage() {
     }
 
     const newErrors: Partial<Record<keyof typeof formData, string>> = {};
-    if (formData.leaders.length === 0) {
-      newErrors.leaders = "This field is required.";
+    if (formData.managers.length === 0) {
+      newErrors.managers = "This field is required.";
     }
-    if (formData.members.length === 0) {
-      newErrors.members = "This field is required.";
+    if (formData.assignees.length === 0) {
+      newErrors.assignees = "This field is required.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -94,7 +94,7 @@ export default function AddProjectPage() {
     }
   };
 
-  const handleUserSelection = (userId: number, field: "leaders" | "members") => {
+  const handleUserSelection = (userId: number, field: "managers" | "assignees") => {
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field].includes(userId)
@@ -217,19 +217,19 @@ export default function AddProjectPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               {/* Leaders Selection */}
               <div className="">
-                <Label className={`text-base font-medium ${errors.leaders ? "mb-3" : ""}`}>
+                <Label className={`text-base font-medium ${errors.managers ? "mb-3" : ""}`}>
                   Project Leaders *
                 </Label>
-                {errors.leaders && <p className="text-sm text-red-600">{errors.leaders}</p>}
+                {errors.managers && <p className="text-sm text-red-600">{errors.managers}</p>}
                 <UserProfileSearchableSelect
-                  value={formData.leaders}
+                  value={formData.managers}
                   onValueChange={(values) => {
                     handleInputChange(
-                      "leaders",
+                      "managers",
                       values.map((val) => Number(val)),
                     );
                   }}
-                  placeholder="Select project leaders"
+                  placeholder="Select project managers"
                   showEmployeeId={false}
                   showDepartment={true}
                   multiple={true}
@@ -237,19 +237,19 @@ export default function AddProjectPage() {
               </div>
 
               <div className="">
-                <Label className={`text-base font-medium ${errors.members ? "mb-4" : ""}`}>
+                <Label className={`text-base font-medium ${errors.assignees ? "mb-4" : ""}`}>
                   Project Members *
                 </Label>
-                {errors.members && <p className="text-sm text-red-600">{errors.members}</p>}
+                {errors.assignees && <p className="text-sm text-red-600">{errors.assignees}</p>}
                 <UserProfileSearchableSelect
-                  value={formData.members}
+                  value={formData.assignees}
                   onValueChange={(values) => {
                     handleInputChange(
-                      "members",
+                      "assignees",
                       values.map((val) => Number(val)),
                     );
                   }}
-                  placeholder="Select project members"
+                  placeholder="Select project assignees"
                   showEmployeeId={false}
                   showDepartment={true}
                   multiple={true}

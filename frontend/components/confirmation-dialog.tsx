@@ -28,7 +28,7 @@ export function ConfirmationDialog({
   onConfirm,
   title,
   description,
-  disabled,
+  disabled = false,
   confirmText = "Confirm",
   cancelText = "Cancel",
 }: ConfirmationDialogProps) {

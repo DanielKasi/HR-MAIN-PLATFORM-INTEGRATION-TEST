@@ -1,139 +1,140 @@
-"use client"
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Filter, Search, SortAsc, SortDesc, RefreshCw, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
-import { useSelector } from "react-redux"
+"use client";
+import {useState, useEffect, useCallback, useRef} from "react";
+import {
+  Filter,
+  Search,
+  SortAsc,
+  SortDesc,
+  RefreshCw,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import {useRouter, useSearchParams} from "next/navigation";
+import {formatDistanceToNow} from "date-fns";
+import {useSelector} from "react-redux";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
+import {Separator} from "@/components/ui/separator";
 
-import { selectUser } from "@/store/auth/selectors"
-import { useDocumentTitle } from "@/hooks/use-document-title"
-import type { ApprovalTaskType, ApprovalTaskStatus, ApprovalTask } from "@/types/approvals.types"
-import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils"
-import { getDashboardTasksAnalytics, showErrorToast } from "@/lib/utils"
+import {selectUser} from "@/store/auth/selectors";
+import {useDocumentTitle} from "@/hooks/use-document-title";
+import type {ApprovalTaskType, ApprovalTaskStatus, ApprovalTask} from "@/types/approvals.types";
+import {APPROVAL_TASKS_API} from "@/lib/api/approvals/utils";
+import {getDashboardTasksAnalytics, showErrorToast} from "@/lib/utils";
+import { getApprovalTaskPath } from "@/utils/notifications-path-matcher";
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<ApprovalTask[]>([])
-  const [filteredTasks, setFilteredTasks] = useState<ApprovalTask[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [nextUrl, setNextUrl] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(true)
+  const [tasks, setTasks] = useState<ApprovalTask[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<ApprovalTask[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nextUrl, setNextUrl] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const taskType = (searchParams.get("type") || "all") as ApprovalTaskType
-  const currentUser = useSelector(selectUser)
-  const observerRef = useRef<IntersectionObserver | null>(null)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const taskType = (searchParams.get("type") || "all") as ApprovalTaskType;
+  const currentUser = useSelector(selectUser);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
-  useDocumentTitle("TASKS")
+  useDocumentTitle("TASKS");
 
   // Map task types to status filters
   const getStatusFromTaskType = (type: ApprovalTaskType): ApprovalTaskStatus | undefined => {
     switch (type) {
       case "incoming":
       case "open":
-        return "pending"
+        return "pending";
       case "outgoing":
-        return "approved"
+        return "approved";
       case "critical":
       case "expired":
-        return "pending"
+        return "pending";
       default:
-        return undefined
+        return undefined;
     }
-  }
+  };
 
   const fetchTasks = useCallback(
     async (reset = false) => {
-      if (!currentUser?.id) return
+      if (!currentUser?.id) return;
 
       try {
-        setIsLoading(reset)
-        setError(null)
+        setIsLoading(reset);
+        setError(null);
 
-        const status = getStatusFromTaskType(taskType)
-        // const response = await APPROVAL_TASKS_API.fetchAll({
-        //   // assigned_to: currentUser.id,
-        //   status,
-        //   page_size: 20,
-        // })
-        const response = await getDashboardTasksAnalytics()
+        // const status = getStatusFromTaskType(taskType);
+        const response = await APPROVAL_TASKS_API.fetchAll({
+          assigned_to: currentUser.id,
+          type: taskType !== "all" ? taskType : undefined,
+          page_size: 20,
+        });
 
-
-        if (reset && taskType) {
-          let filteredTasks: ApprovalTask[] = []
-          if (taskType === "all") {
-            filteredTasks = [...response.incoming.tasks, ...response.outgoing.tasks, ...response.critical.tasks, ...response.expired.tasks];
-          }
-          else {
-            filteredTasks = response[taskType as keyof typeof response]?.tasks || [];
-          }
-          setTasks(filteredTasks);
+        if(response.results){
+          setTasks(response.results);
         }
-        // setNextUrl(response.next)
-        // setHasMore(!!response.next)
-        setHasMore(false) // Disable infinite scroll for now
+        setNextUrl(response.next);
+        setHasMore(!!response.next);
       } catch (err) {
-        showErrorToast({ error: err, defaultMessage: "Failed to fetch tasks" })
+        showErrorToast({error: err, defaultMessage: "Failed to fetch tasks"});
       } finally {
-        setIsLoading(false)
-        setIsLoadingMore(false)
+        setIsLoading(false);
+        setIsLoadingMore(false);
       }
     },
     [currentUser?.id, taskType],
-  )
+  );
 
   const loadMoreTasks = useCallback(async () => {
-    if (!nextUrl || isLoadingMore) return
+    if (!nextUrl || isLoadingMore) return;
 
     try {
-      setIsLoadingMore(true)
-      const response = await APPROVAL_TASKS_API.fetchPaginatedTasksFromUrl(nextUrl)
+      setIsLoadingMore(true);
+      const response = await APPROVAL_TASKS_API.fetchPaginatedTasksFromUrl(nextUrl);
 
-      setTasks((prev) => [...prev, ...response.results])
-      setNextUrl(response.next)
-      setHasMore(!!response.next)
+      setTasks((prev) => [...prev, ...response.results]);
+      setNextUrl(response.next);
+      setHasMore(!!response.next);
     } catch (err) {
-      setError("Failed to load more tasks")
-      console.error("Error loading more tasks:", err)
+      setError("Failed to load more tasks");
+      console.error("Error loading more tasks:", err);
     } finally {
-      setIsLoadingMore(false)
+      setIsLoadingMore(false);
     }
-  }, [nextUrl, isLoadingMore])
+  }, [nextUrl, isLoadingMore]);
 
   const lastTaskElementRefCallback = useCallback(
     (node: HTMLDivElement) => {
-      if (isLoadingMore) return
-      if (observerRef.current) observerRef.current.disconnect()
+      if (isLoadingMore) return;
+      if (observerRef.current) observerRef.current.disconnect();
 
       observerRef.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
-          loadMoreTasks()
+          loadMoreTasks();
         }
-      })
+      });
 
-      if (node) observerRef.current.observe(node)
+      if (node) observerRef.current.observe(node);
     },
     [isLoadingMore, hasMore, loadMoreTasks],
-  )
+  );
 
   // Initial fetch and refetch when task type changes
   useEffect(() => {
-    fetchTasks(true)
-  }, [fetchTasks])
+    fetchTasks(true);
+  }, [fetchTasks]);
 
   // Apply search and sort filters
   useEffect(() => {
-    let filtered = [...tasks]
+    let filtered = [...tasks];
 
     // Apply search filter
     if (searchQuery) {
@@ -141,70 +142,69 @@ export default function TasksPage() {
         (task) =>
           task.level.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           task.level.description.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+      );
     }
 
     // Apply sorting by updated_at
     filtered.sort((a, b) => {
-      const timeA = new Date(a.updated_at).getTime()
-      const timeB = new Date(b.updated_at).getTime()
-      return sortOrder === "asc" ? timeA - timeB : timeB - timeA
-    })
+      const timeA = new Date(a.updated_at).getTime();
+      const timeB = new Date(b.updated_at).getTime();
+      return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+    });
 
-    setFilteredTasks(filtered)
-  }, [tasks, searchQuery, sortOrder])
+    setFilteredTasks(filtered);
+  }, [tasks, searchQuery, sortOrder]);
 
   const getStatusIcon = (status: ApprovalTaskStatus) => {
     switch (status) {
       case "pending":
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
       case "approved":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className="h-4 w-4" />;
       case "rejected":
-        return <XCircle className="h-4 w-4" />
+        return <XCircle className="h-4 w-4" />;
       case "terminated":
-        return <AlertCircle className="h-4 w-4" />
+        return <AlertCircle className="h-4 w-4" />;
       default:
-        return <Clock className="h-4 w-4" />
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
   const getStatusColor = (status: ApprovalTaskStatus) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "approved":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "rejected":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200";
       case "terminated":
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200";
     }
-  }
+  };
 
   const handleTaskClick = (task: ApprovalTask) => {
-    // Navigate to the object that needs approval - this would need to be customized based on your routing
-    router.push(`/approvals/${task.id}`)
-  }
+    router.push(getApprovalTaskPath(task));
+  };
 
   const toggleSortOrder = () => {
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-  }
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+  };
 
   const refreshTasks = () => {
-    fetchTasks(true)
-  }
+    fetchTasks(true);
+  };
 
   // Loading UI
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 rounded-lg p-4 bg-white">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
         </div>
-        <Card>
+        <Card className="border-none bg-transparent shadow-none ">
           <CardHeader>
             <CardTitle>Loading Tasks...</CardTitle>
             <CardDescription>Please wait while we fetch your tasks</CardDescription>
@@ -225,11 +225,11 @@ export default function TasksPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 bg-white p-6 rounded-lg">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
         <div className="flex items-center gap-2">
@@ -242,20 +242,25 @@ export default function TasksPage() {
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-destructive">
           <p>{error}</p>
-          <Button className="mt-2 bg-transparent" size="sm" variant="outline" onClick={refreshTasks}>
+          <Button
+            className="mt-2 bg-transparent"
+            size="sm"
+            variant="outline"
+            onClick={refreshTasks}
+          >
             Retry
           </Button>
         </div>
       )}
 
-      <Card>
+      <Card className="border-none bg-transparent shadow-none !p-0">
         <CardHeader>
           <CardTitle>
             <span className="capitalize">{taskType}</span> Tasks
           </CardTitle>
           <CardDescription>Tasks that require your attention and action</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex w-full items-center gap-2 md:w-1/2">
@@ -268,10 +273,24 @@ export default function TasksPage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button className="h-9 w-9 bg-transparent" size="icon" variant="outline" onClick={toggleSortOrder}>
-                  {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                <Button
+                  className="h-9 w-9 bg-transparent"
+                  size="icon"
+                  variant="outline"
+                  onClick={toggleSortOrder}
+                >
+                  {sortOrder === "asc" ? (
+                    <SortAsc className="h-4 w-4" />
+                  ) : (
+                    <SortDesc className="h-4 w-4" />
+                  )}
                 </Button>
-                <Button className="h-9 w-9 bg-transparent" size="icon" variant="outline" onClick={refreshTasks}>
+                <Button
+                  className="h-9 w-9 bg-transparent"
+                  size="icon"
+                  variant="outline"
+                  onClick={refreshTasks}
+                >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
@@ -282,7 +301,9 @@ export default function TasksPage() {
                 {filteredTasks.map((task, index) => (
                   <div
                     key={task.id}
-                    ref={index === filteredTasks.length - 1 ? lastTaskElementRefCallback : undefined}
+                    ref={
+                      index === filteredTasks.length - 1 ? lastTaskElementRefCallback : undefined
+                    }
                     className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => handleTaskClick(task)}
                   >
@@ -301,9 +322,14 @@ export default function TasksPage() {
                           {task.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{task.level.description}</p>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {task.level.description}
+                      </p>
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>Updated {formatDistanceToNow(new Date(task.updated_at), { addSuffix: true })}</span>
+                        <span>
+                          Updated{" "}
+                          {formatDistanceToNow(new Date(task.updated_at), {addSuffix: true})}
+                        </span>
                         {task.approved_by_fullname && (
                           <>
                             <Separator orientation="vertical" className="h-3" />
@@ -344,5 +370,5 @@ export default function TasksPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

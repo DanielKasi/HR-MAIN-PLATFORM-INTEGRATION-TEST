@@ -1,4 +1,6 @@
 from django.shortcuts import render
+
+from employee.models import Employee
 from .models import Project, Task, TaskTimeSheet
 from .serializers import (
     ProjectSerializer,
@@ -18,11 +20,9 @@ from utilities.sortable_api import SortableAPIMixin
 from django.utils import timezone
 
 
-
-
 class ProjectListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
-    allowed_ordering_fields = ['project_name', 'created_at', 'leaders', 'is_active', 'members', 'description', 'start_date', 'end_date', 'project_status']
+    allowed_ordering_fields = ['project_name', 'created_at', 'managers', 'is_active', 'assignees', 'description', 'start_date', 'end_date', 'project_status']
     default_ordering = ['project_name']
 
     @extend_schema(
@@ -46,7 +46,7 @@ class ProjectListCreateView(APIView, SortableAPIMixin):
         try:
             projects = self.apply_sorting(projects, request)
         except ValueError as e:
-            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         paginator = CustomPageNumberPagination()
         paginated_projects = paginator.paginate_queryset(projects, request)
         serializer = ProjectSerializer(paginated_projects, many=True)
@@ -66,11 +66,9 @@ class ProjectListCreateView(APIView, SortableAPIMixin):
     @transaction.atomic
     def post(self, request, institution_id):
         institution = get_object_or_404(Institution, id=institution_id)
-
-        serializer = ProjectSerializer(data=request.data)
-
+        serializer = ProjectSerializer(data={**request.data, "institution": institution.id})
         if serializer.is_valid():
-            instance = serializer.save()
+            instance = serializer.save(created_by=request.user.profile)
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -90,7 +88,7 @@ class ProjectDetailView(APIView):
         tags=["Projects Mgt"],
     )
     def get(self, request, project_id):
-        project = Project.objects.filter(id=project_id).first()
+        project = Project.objects.filter(id=project_id, deleted_at__isnull=True).first()
         if not project:
             return Response(
                 {"detail": "Project not found."},
@@ -111,16 +109,15 @@ class ProjectDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
-    @transaction.atomic()
+    @transaction.atomic
     def patch(self, request, project_id):
-        project = Project.objects.filter(id=project_id).first()
-        project.approval_status = 'under_update'
+        project = Project.objects.filter(id=project_id, deleted_at__isnull=True).first()
         if not project:
             return Response(
                 {"detail": "Project not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
+        project.approval_status = 'under_update'
         serializer = ProjectSerializer(project, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
@@ -138,9 +135,9 @@ class ProjectDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
-    @transaction.atomic()
+    @transaction.atomic
     def delete(self, request, project_id):
-        project = get_object_or_404(Project, id=project_id)
+        project = get_object_or_404(Project, id=project_id, deleted_at__isnull=True)
         project.approval_status = 'under_deletion'
         project.save(update_fields=['approval_status'])
         project.confirm_delete()
@@ -152,39 +149,61 @@ class ProjectDetailView(APIView):
 
 class TaskListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
-    allowed_ordering_fields = ['task_name', 'created_at', 'leaders', 'is_active', 'assigned_to', 'description', 'start_date', 'end_date', 'project', 'task_status', 'priority']
+    allowed_ordering_fields = ['task_name', 'created_at', 'managers', 'is_active', 'assignees', 'description', 'start_date', 'end_date', 'project', 'task_status', 'priority']
     default_ordering = ['task_name']
 
     @extend_schema(
         operation_id="List Tasks",
-        summary="List all tasks for a project",
+        summary="List all tasks for a project (or all in institution if no project filter), with optional filters for status, priority, and assignees",
         responses={
             200: TaskSerializer(many=True),
             401: OpenApiResponse(description="Unauthorized"),
         },
         tags=["Projects Mgt"],
     )
-    def get(self, request, project_id):
+    def get(self, request, project_id=None):
+        user = request.user.profile
+        institution = user.institution
         search_query = request.query_params.get('search', None)
-        project = Project.objects.filter(id=project_id).first()
-        if not project:
-            return Response(
-                {"detail": "Project not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        status_filter = request.query_params.get('status', None)
+        priority_filter = request.query_params.get('priority', None)
+        assignee_id = request.query_params.get('assignee', None)
+        project_filter_id = request.query_params.get('project_id', None) or project_id
 
-        tasks = Task.objects.filter(project_id=project_id, deleted_at__isnull=True)
+        tasks = Task.objects.filter(project__institution=institution, deleted_at__isnull=True)
 
         if search_query:
             tasks = tasks.filter(
                 Q(task_name__icontains=search_query)
             )
 
+        if project_filter_id:
+            tasks = tasks.filter(project__id=project_filter_id)
+
+        if status_filter:
+            if status_filter not in dict(Task.TASK_STATUS_CHOICES):
+                return Response({"detail": f"Invalid status: {status_filter}"}, status=status.HTTP_400_BAD_REQUEST)
+            tasks = tasks.filter(task_status=status_filter)
+
+        if priority_filter:
+            if priority_filter not in dict(Task.PRIORITY_CHOICES):
+                return Response({"detail": f"Invalid priority: {priority_filter}"}, status=status.HTTP_400_BAD_REQUEST)
+            tasks = tasks.filter(priority=priority_filter)
+
+        if assignee_id:
+            if assignee_id.lower() == 'me':
+                try:
+                    employee = Employee.objects.get(user=request.user)
+                    assignee_id = employee.id
+                except Employee.DoesNotExist:
+                    return Response({"detail": "User is not associated with an employee."}, status=status.HTTP_400_BAD_REQUEST)
+            tasks = tasks.filter(assignees__id=assignee_id)
+
         try:
             tasks = self.apply_sorting(tasks, request)
         except ValueError as e:
-            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
-        
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
         paginator = CustomPageNumberPagination()
         paginated_tasks = paginator.paginate_queryset(tasks, request)
         serializer = TaskSerializer(paginated_tasks, many=True)
@@ -201,9 +220,12 @@ class TaskListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Projects Mgt"],
     )
-    @transaction.atomic()
-    def post(self, request, project_id):
-        serializer = TaskSerializer(data=request.data)
+    @transaction.atomic
+    def post(self, request, project_id=None):
+        context = {'request': request}
+        if project_id:
+            context['project_id'] = project_id
+        serializer = TaskSerializer(data=request.data, context=context)
         if serializer.is_valid():
             instance = serializer.save(created_by=request.user.profile)
             instance.confirm_create()
@@ -225,7 +247,7 @@ class TaskDetailView(APIView):
         tags=["Projects Mgt"],
     )
     def get(self, request, task_id):
-        task = Task.objects.filter(id=task_id).first()
+        task = Task.objects.filter(id=task_id, deleted_at__isnull=True).first()
         if not task:
             return Response(
                 {"detail": "Task not found."},
@@ -246,17 +268,16 @@ class TaskDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
-    @transaction.atomic()
+    @transaction.atomic
     def patch(self, request, task_id):
-        task = Task.objects.filter(id=task_id).first()
-        task.approval_status = 'under_update'
+        task = Task.objects.filter(id=task_id, deleted_at__isnull=True).first()
         if not task:
             return Response(
                 {"detail": "Task not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        serializer = TaskSerializer(task, data=request.data, partial=True)
+        task.approval_status = 'under_update'
+        serializer = TaskSerializer(task, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save(updated_by=request.user.profile)
             task.confirm_update()
@@ -273,8 +294,9 @@ class TaskDetailView(APIView):
         },
         tags=["Projects Mgt"],
     )
+    @transaction.atomic
     def delete(self, request, task_id):
-        task = get_object_or_404(Task, id=task_id)
+        task = get_object_or_404(Task, id=task_id, deleted_at__isnull=True)
         task.approval_status = 'under_deletion'
         task.save(update_fields=['approval_status'])
         task.confirm_delete()
@@ -295,12 +317,13 @@ class TaskTimeSheetView(APIView):
             200: TaskTimeSheetSerializer,
             400: OpenApiResponse(description="Bad Request"),
             401: OpenApiResponse(description="Unauthorized"),
+            403: OpenApiResponse(description="Forbidden"),
         },
         tags=["Projects Mgt"],
     )
-    @transaction.atomic()
+    @transaction.atomic
     def patch(self, request, task_timesheet_id):
-        task_timesheet = TaskTimeSheet.objects.filter(id=task_timesheet_id).first()
+        task_timesheet = TaskTimeSheet.objects.filter(id=task_timesheet_id, deleted_at__isnull=True).first()
 
         if not task_timesheet:
             return Response(
@@ -308,15 +331,13 @@ class TaskTimeSheetView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if request.user.profile not in task_timesheet.task.leaders.all():
+        if request.user.profile not in task_timesheet.task.managers.all():
             return Response(
                 {"detail": "You do not have permission to update this task timesheet."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         task_timesheet.approval_status = 'under_update'
-
-        
 
         serializer = TaskTimeSheetSerializer(
             task_timesheet,
@@ -325,11 +346,10 @@ class TaskTimeSheetView(APIView):
             context={"request": request},
         )
         if serializer.is_valid():
-            serializer.save(updated_by=request.user)
+            serializer.save(updated_by=request.user.profile)
             task_timesheet.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class DashboardAnalyticsView(APIView):

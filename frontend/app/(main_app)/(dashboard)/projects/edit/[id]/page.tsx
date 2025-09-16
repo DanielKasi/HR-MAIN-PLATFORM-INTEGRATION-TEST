@@ -46,8 +46,8 @@ export default function EditProjectPage() {
     end_date: "",
     project_status: "planning",
     institution: 0,
-    leaders: [],
-    members: [],
+    managers: [],
+    assignees: [],
   });
 
   useEffect(() => {
@@ -73,8 +73,8 @@ export default function EditProjectPage() {
         end_date: project.end_date,
         project_status: project.project_status,
         institution: project.institution,
-        leaders: project.leaders.map((leader) => leader.id),
-        members: project.members.map((member) => member.id),
+        managers: project.managers.map((leader) => leader.id),
+        assignees: project.assignees.map((member) => member.id),
       });
     } catch (error) {
       showErrorToast({ error, defaultMessage: "Error fetching project details" });
@@ -92,11 +92,11 @@ export default function EditProjectPage() {
 
     // Validate required fields
     const newErrors: Record<string, string[]> = {};
-    if (formData.leaders.length === 0) {
-      newErrors.leaders = ["This field is required."];
+    if (formData.managers.length === 0) {
+      newErrors.managers = ["This field is required."];
     }
-    if (formData.members.length === 0) {
-      newErrors.members = ["This field is required."];
+    if (formData.assignees.length === 0) {
+      newErrors.assignees = ["This field is required."];
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -266,17 +266,17 @@ export default function EditProjectPage() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Project Leaders *</Label>
                   <UserProfileSearchableSelect
-                    value={formData.leaders}
+                    value={formData.managers}
                     onValueChange={(values) => {
-                      handleInputChange("leaders", values.map((val) => Number(val)));
+                      handleInputChange("managers", values.map((val) => Number(val)));
                     }}
-                    placeholder="Select project leaders"
+                    placeholder="Select project managers"
                     showEmployeeId={false}
                     showDepartment={true}
                     multiple={true}
                   />
-                  {errors.leaders && errors.leaders.length > 0 && (
-                    <p className="text-sm text-red-600">{errors.leaders[0]}</p>
+                  {errors.managers && errors.managers.length > 0 && (
+                    <p className="text-sm text-red-600">{errors.managers[0]}</p>
                   )}
                 </div>
 
@@ -284,17 +284,17 @@ export default function EditProjectPage() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Project Members *</Label>
                   <UserProfileSearchableSelect
-                    value={formData.members}
+                    value={formData.assignees}
                     onValueChange={(values) => {
-                      handleInputChange("members", values.map((val) => Number(val)));
+                      handleInputChange("assignees", values.map((val) => Number(val)));
                     }}
-                    placeholder="Select project members"
+                    placeholder="Select project assignees"
                     showEmployeeId={false}
                     showDepartment={true}
                     multiple={true}
                   />
-                  {errors.members && errors.members.length > 0 && (
-                    <p className="text-sm text-red-600">{errors.members[0]}</p>
+                  {errors.assignees && errors.assignees.length > 0 && (
+                    <p className="text-sm text-red-600">{errors.assignees[0]}</p>
                   )}
                 </div>
               </div>

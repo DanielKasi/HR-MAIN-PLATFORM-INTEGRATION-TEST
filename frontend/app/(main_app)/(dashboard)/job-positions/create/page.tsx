@@ -184,7 +184,6 @@ export default function CreateJobPositionPage() {
       toast.error("Please fix the form errors before submitting");
       return;
     }
-
     setIsSubmitting(true);
 
     try {

@@ -60,8 +60,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
         {
             name: "start_time",
             label: "Start Date & Time",
-            type: "text", // We'll handle datetime manually
-            placeholder: "YYYY-MM-DDTHH:MM",
+            type: "datetime-local",
             required: true,
             validation: (value: string) => {
                 try {
@@ -80,8 +79,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
         {
             name: "end_time",
             label: "End Date & Time",
-            type: "text", // We'll handle datetime manually
-            placeholder: "YYYY-MM-DDTHH:MM",
+            type: "datetime-local", // We'll handle datetime manually
             required: true,
             validation: (value: string, formData?: Record<string, any>) => {
                 try {
@@ -175,7 +173,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
             mode: formData.mode as IEventMode,
             location: formData.location || undefined,
             online_link: formData.online_link || undefined,
-            participants: participantsValue.map((id) => Number(id)),
+            participant_ids: participantsValue.map((id) => Number(id)),
             organizer: organizerValue.length > 0 ? Number(organizerValue[0]) : undefined,
             agenda: formData.agenda || undefined,
             is_recurring: formData.is_recurring || false,

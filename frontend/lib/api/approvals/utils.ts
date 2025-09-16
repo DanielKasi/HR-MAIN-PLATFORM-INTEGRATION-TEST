@@ -11,6 +11,7 @@ import type {
   ApproverGroup,
   ApproverGroupFormData,
   ApprovalTaskStatus,
+  ApprovalTaskType,
 } from "@/types/approvals.types";
 import { ApprovalTasksDashboardResponse, IPaginatedResponse } from "@/types/types.utils";
 
@@ -73,6 +74,7 @@ export const APPROVAL_TASKS_API = {
   },
   fetchAll: async (params?: {
     search?: string;
+    type?:ApprovalTaskType,
     status?: ApprovalTaskStatus;
     assigned_to?: number;
     page?: number;
@@ -229,6 +231,11 @@ export const APPROVER_GROUPS_API = {
     return res.data as IPaginatedResponse<ApproverGroup>
   },
 
+    fetchFromUrl: async ({ url }: { url: string }) => {
+    const res = await apiRequest.get(url);
+    return res.data as IPaginatedResponse<ApproverGroup>;
+  },
+
   fetchById: async ({ id }: { id: number }) => {
     const res = await apiRequest.get(`${BASE}/approver-groups/${id}/`);
     return res.data as ApproverGroup;
@@ -247,4 +254,6 @@ export const APPROVER_GROUPS_API = {
   delete: async ({ id }: { id: number }) => {
     await apiRequest.delete(`${BASE}/approver-groups/${id}/`);
   },
+
+
 };

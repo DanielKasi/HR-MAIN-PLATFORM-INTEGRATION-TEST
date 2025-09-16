@@ -25,7 +25,7 @@ import {clearAuthError, loginStart} from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
 import {Icon} from "@iconify/react";
-import { AUTH_API } from "@/utils/authUtils";
+import { AUTH_API } from "@/utils/auth-utils";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -228,7 +228,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button
-              className={`${loadingState.auth ? "opacity-80" : "opacity-100"} w-full`}
+              className={`${loadingState.auth ? "opacity-80" : "opacity-100"} w-full h-12 rounded-xl`}
               type="submit"
             >
               {loadingState.auth ? "Signing In..." : "Sign In"}

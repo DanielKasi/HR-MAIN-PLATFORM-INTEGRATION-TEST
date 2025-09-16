@@ -2,13 +2,13 @@
 
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table"
 import { StatusBadge } from "../common/status-badge"
-import type { IEmployeeObjectives } from "@/types/types.utils"
+import type { IEmployeeObjective } from "@/types/types.utils"
 import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react"
 
 interface EmployeeObjectivesTableProps {
-    employeeObjectives: IEmployeeObjectives[]
-    onEdit: (employeeObjective: IEmployeeObjectives) => void
-    onDelete: (employeeObjective: IEmployeeObjectives) => void
+    employeeObjectives: IEmployeeObjective[]
+    onEdit: (employeeObjective: IEmployeeObjective) => void
+    onDelete: (employeeObjective: IEmployeeObjective) => void
     onAdd: () => void
     onSearch?: (query: string) => void
     isLoading?: boolean
@@ -22,7 +22,7 @@ export function EmployeeObjectivesTable({
     onSearch,
     isLoading,
 }: EmployeeObjectivesTableProps) {
-    const columns: TableColumn<IEmployeeObjectives>[] = [
+    const columns: TableColumn<IEmployeeObjective>[] = [
         {
             key: "employee",
             label: "Employee",
@@ -113,7 +113,7 @@ export function EmployeeObjectivesTable({
         },
     ]
 
-    const actions: TableAction<IEmployeeObjectives>[] = [
+    const actions: TableAction<IEmployeeObjective>[] = [
         {
             label: "Edit",
             icon: <Edit className="h-4 w-4" />,

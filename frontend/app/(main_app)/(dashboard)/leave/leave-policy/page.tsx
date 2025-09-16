@@ -1,33 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSelector } from "react-redux";
-import {
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Settings,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import {useState, useEffect, useRef} from "react";
+import {useSelector} from "react-redux";
+import {Plus, MoreVertical, Edit, Trash2, Settings, Loader2} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Badge} from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -37,18 +23,25 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType } from "@/types/types.utils";
-import { LeavePoliciesAPI, getLeaveTypes } from "@/lib/utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PERMISSION_CODES } from "@/constants";
+import {Label} from "@/components/ui/label";
+import {Textarea} from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {toast} from "sonner";
+import {ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType} from "@/types/types.utils";
+import {LeavePoliciesAPI, getLeaveTypes} from "@/lib/utils";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
+import {PERMISSION_CODES} from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {Icon} from "@iconify/react";
+import FormatNumberInput from "@/components/format-number-input";
 
 type LeavePolicy = ILeavePolicyResponse & {
   leave_type: ILeaveType;
@@ -149,7 +142,7 @@ const LeavePolicyComponent = () => {
       }
 
       try {
-        const leaveTypesData = await getLeaveTypes({ institutionId: selectedInstitution.id });
+        const leaveTypesData = await getLeaveTypes({institutionId: selectedInstitution.id});
         const activeLeaveTypes = leaveTypesData.filter((type) => type.is_active !== false);
         setLeaveTypes(activeLeaveTypes);
       } catch (error) {
@@ -194,7 +187,9 @@ const LeavePolicyComponent = () => {
         description: formData.description,
         leave_type: parseInt(formData.leave_type),
         min_notice_days: parseInt(formData.min_notice_days),
-        max_consecutive_days: formData.max_consecutive_days ? parseInt(formData.max_consecutive_days) : 0,
+        max_consecutive_days: formData.max_consecutive_days
+          ? parseInt(formData.max_consecutive_days)
+          : 0,
         requires_manager_approval: formData.requires_manager_approval,
         requires_hr_approval: formData.requires_hr_approval,
         applicable_after_probation_months: parseInt(formData.applicable_after_probation_months),
@@ -253,7 +248,9 @@ const LeavePolicyComponent = () => {
         description: formData.description,
         leave_type: parseInt(formData.leave_type),
         min_notice_days: parseInt(formData.min_notice_days),
-        max_consecutive_days: formData.max_consecutive_days ? parseInt(formData.max_consecutive_days) : 0,
+        max_consecutive_days: formData.max_consecutive_days
+          ? parseInt(formData.max_consecutive_days)
+          : 0,
         requires_manager_approval: formData.requires_manager_approval,
         requires_hr_approval: formData.requires_hr_approval,
         applicable_after_probation_months: parseInt(formData.applicable_after_probation_months),
@@ -340,7 +337,6 @@ const LeavePolicyComponent = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Leave Policies</h1>
-
               </div>
             </div>
           </div>
@@ -348,7 +344,10 @@ const LeavePolicyComponent = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4 justify-between">
                 <div className="relative flex-1 max-w-sm">
-                  <Icon icon="hugeicons:search-01" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5" />
+                  <Icon
+                    icon="hugeicons:search-01"
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 !h-5 !w-5"
+                  />
                   <Input
                     placeholder="Search"
                     value={searchTerm}
@@ -384,7 +383,6 @@ const LeavePolicyComponent = () => {
                 </Select>
               </div>
               <div className="flex items-center gap-2">
-
                 <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_POLICIES}>
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
@@ -395,28 +393,38 @@ const LeavePolicyComponent = () => {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[980px] w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[80vh] md:max-h-[65svh] ">
                       <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-                        <DialogTitle className="text-2xl font-bold text-gray-900">Add Leave Policy</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold text-gray-900">
+                          Add Leave Policy
+                        </DialogTitle>
                         <DialogDescription className="text-gray-600 text-base">
-                          Create a new leave policy to manage employee leave requests and approval workflows.
+                          Create a new leave policy to manage employee leave requests and approval
+                          workflows.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
                         <div className="space-y-3">
-                          <Label htmlFor="name" className="text-sm font-semibold text-gray-800">Policy Name *</Label>
+                          <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
+                            Policy Name *
+                          </Label>
                           <Input
                             id="name"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
                             placeholder="e.g., Annual Leave Policy"
                             disabled={isSubmitting}
                             className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label htmlFor="leave_type" className="text-sm font-semibold text-gray-800">Leave Type *</Label>
+                          <Label
+                            htmlFor="leave_type"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Leave Type *
+                          </Label>
                           <Select
                             value={formData.leave_type}
-                            onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                            onValueChange={(value) => setFormData({...formData, leave_type: value})}
                             disabled={isSubmitting}
                           >
                             <SelectTrigger className="h-12 rounded-xl">
@@ -432,11 +440,18 @@ const LeavePolicyComponent = () => {
                           </Select>
                         </div>
                         <div className="space-y-3 md:col-span-2">
-                          <Label htmlFor="description" className="text-sm font-semibold text-gray-800">Description *</Label>
+                          <Label
+                            htmlFor="description"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Description *
+                          </Label>
                           <Textarea
                             id="description"
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                              setFormData({...formData, description: e.target.value})
+                            }
                             rows={4}
                             placeholder="Provide a detailed description of this leave policy..."
                             disabled={isSubmitting}
@@ -444,36 +459,58 @@ const LeavePolicyComponent = () => {
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label htmlFor="min_notice_days" className="text-sm font-semibold text-gray-800">Minimum Notice Days *</Label>
-                          <Input
+                          <Label
+                            htmlFor="min_notice_days"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Minimum Notice Days *
+                          </Label>
+                          <FormatNumberInput
                             id="min_notice_days"
-                            type="number"
-                            value={formData.min_notice_days}
-                            onChange={(e) => setFormData({ ...formData, min_notice_days: e.target.value })}
+                            value={formData.min_notice_days?.toString() || ""}
+                            onChange={(formatted, numeric) =>
+                              setFormData({...formData, min_notice_days: numeric.toString()})
+                            }
                             placeholder="e.g., 7"
                             disabled={isSubmitting}
                             className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label htmlFor="max_consecutive_days" className="text-sm font-semibold text-gray-800">Max Consecutive Days</Label>
-                          <Input
+                          <Label
+                            htmlFor="max_consecutive_days"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Max Consecutive Days
+                          </Label>
+                          <FormatNumberInput
                             id="max_consecutive_days"
-                            type="number"
-                            value={formData.max_consecutive_days}
-                            onChange={(e) => setFormData({ ...formData, max_consecutive_days: e.target.value })}
+                            value={formData.max_consecutive_days?.toString() || ""}
+                            onChange={(formatted, numeric) =>
+                              setFormData({...formData, max_consecutive_days: numeric.toString()})
+                            }
                             placeholder="Leave empty for no limit"
                             disabled={isSubmitting}
                             className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                           />
                         </div>
                         <div className="space-y-3">
-                          <Label htmlFor="applicable_after_probation_months" className="text-sm font-semibold text-gray-800">Applicable After Probation (Months) *</Label>
+                          <Label
+                            htmlFor="applicable_after_probation_months"
+                            className="text-sm font-semibold text-gray-800"
+                          >
+                            Applicable After Probation (Months) *
+                          </Label>
                           <Input
                             id="applicable_after_probation_months"
                             type="number"
                             value={formData.applicable_after_probation_months}
-                            onChange={(e) => setFormData({ ...formData, applicable_after_probation_months: e.target.value })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                applicable_after_probation_months: e.target.value,
+                              })
+                            }
                             placeholder="e.g., 3"
                             disabled={isSubmitting}
                             className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -485,11 +522,19 @@ const LeavePolicyComponent = () => {
                               id="requires_manager_approval"
                               type="checkbox"
                               checked={formData.requires_manager_approval}
-                              onChange={(e) => setFormData({ ...formData, requires_manager_approval: e.target.checked })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  requires_manager_approval: e.target.checked,
+                                })
+                              }
                               disabled={isSubmitting}
                               className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                             />
-                            <Label htmlFor="requires_manager_approval" className="text-sm font-medium text-gray-800">
+                            <Label
+                              htmlFor="requires_manager_approval"
+                              className="text-sm font-medium text-gray-800"
+                            >
                               Requires Manager Approval
                             </Label>
                           </div>
@@ -498,11 +543,16 @@ const LeavePolicyComponent = () => {
                               id="requires_hr_approval"
                               type="checkbox"
                               checked={formData.requires_hr_approval}
-                              onChange={(e) => setFormData({ ...formData, requires_hr_approval: e.target.checked })}
+                              onChange={(e) =>
+                                setFormData({...formData, requires_hr_approval: e.target.checked})
+                              }
                               disabled={isSubmitting}
                               className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                             />
-                            <Label htmlFor="requires_hr_approval" className="text-sm font-medium text-gray-800">
+                            <Label
+                              htmlFor="requires_hr_approval"
+                              className="text-sm font-medium text-gray-800"
+                            >
                               Requires HR Approval
                             </Label>
                           </div>
@@ -540,37 +590,49 @@ const LeavePolicyComponent = () => {
                 </ProtectedComponent>
 
                 {/* Edit Dialog */}
-                <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-                  setIsEditDialogOpen(open);
-                  if (!open) {
-                    resetForm();
-                    setEditingPolicy(null);
-                  }
-                }}>
+                <Dialog
+                  open={isEditDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsEditDialogOpen(open);
+                    if (!open) {
+                      resetForm();
+                      setEditingPolicy(null);
+                    }
+                  }}
+                >
                   <DialogContent className="sm:max-w-[980px] w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[90vh]">
                     <DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-                      <DialogTitle className="text-2xl font-bold text-gray-900">Edit Leave Policy</DialogTitle>
+                      <DialogTitle className="text-2xl font-bold text-gray-900">
+                        Edit Leave Policy
+                      </DialogTitle>
                       <DialogDescription className="text-gray-600 text-base">
                         Make changes to the existing leave policy configuration.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
                       <div className="space-y-3">
-                        <Label htmlFor="edit-name" className="text-sm font-semibold text-gray-800">Policy Name *</Label>
+                        <Label htmlFor="edit-name" className="text-sm font-semibold text-gray-800">
+                          Policy Name *
+                        </Label>
                         <Input
                           id="edit-name"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onChange={(e) => setFormData({...formData, name: e.target.value})}
                           placeholder="e.g., Annual Leave Policy"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="edit-leave_type" className="text-sm font-semibold text-gray-800">Leave Type *</Label>
+                        <Label
+                          htmlFor="edit-leave_type"
+                          className="text-sm font-semibold text-gray-800"
+                        >
+                          Leave Type *
+                        </Label>
                         <Select
                           value={formData.leave_type}
-                          onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
+                          onValueChange={(value) => setFormData({...formData, leave_type: value})}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger className="h-12 rounded-xl">
@@ -586,11 +648,16 @@ const LeavePolicyComponent = () => {
                         </Select>
                       </div>
                       <div className="space-y-3 md:col-span-2">
-                        <Label htmlFor="edit-description" className="text-sm font-semibold text-gray-800">Description *</Label>
+                        <Label
+                          htmlFor="edit-description"
+                          className="text-sm font-semibold text-gray-800"
+                        >
+                          Description *
+                        </Label>
                         <Textarea
                           id="edit-description"
                           value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
                           rows={4}
                           placeholder="Provide a detailed description of this leave policy..."
                           disabled={isSubmitting}
@@ -598,36 +665,60 @@ const LeavePolicyComponent = () => {
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="edit-min_notice_days" className="text-sm font-semibold text-gray-800">Minimum Notice Days *</Label>
+                        <Label
+                          htmlFor="edit-min_notice_days"
+                          className="text-sm font-semibold text-gray-800"
+                        >
+                          Minimum Notice Days *
+                        </Label>
                         <Input
                           id="edit-min_notice_days"
                           type="number"
                           value={formData.min_notice_days}
-                          onChange={(e) => setFormData({ ...formData, min_notice_days: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({...formData, min_notice_days: e.target.value})
+                          }
                           placeholder="e.g., 7"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="edit-max_consecutive_days" className="text-sm font-semibold text-gray-800">Max Consecutive Days</Label>
+                        <Label
+                          htmlFor="edit-max_consecutive_days"
+                          className="text-sm font-semibold text-gray-800"
+                        >
+                          Max Consecutive Days
+                        </Label>
                         <Input
                           id="edit-max_consecutive_days"
                           type="number"
                           value={formData.max_consecutive_days}
-                          onChange={(e) => setFormData({ ...formData, max_consecutive_days: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({...formData, max_consecutive_days: e.target.value})
+                          }
                           placeholder="Leave empty for no limit"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="edit-applicable_after_probation_months" className="text-sm font-semibold text-gray-800">Applicable After Probation (Months) *</Label>
+                        <Label
+                          htmlFor="edit-applicable_after_probation_months"
+                          className="text-sm font-semibold text-gray-800"
+                        >
+                          Applicable After Probation (Months) *
+                        </Label>
                         <Input
                           id="edit-applicable_after_probation_months"
                           type="number"
                           value={formData.applicable_after_probation_months}
-                          onChange={(e) => setFormData({ ...formData, applicable_after_probation_months: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              applicable_after_probation_months: e.target.value,
+                            })
+                          }
                           placeholder="e.g., 3"
                           disabled={isSubmitting}
                           className="h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
@@ -639,11 +730,19 @@ const LeavePolicyComponent = () => {
                             id="edit-requires_manager_approval"
                             type="checkbox"
                             checked={formData.requires_manager_approval}
-                            onChange={(e) => setFormData({ ...formData, requires_manager_approval: e.target.checked })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                requires_manager_approval: e.target.checked,
+                              })
+                            }
                             disabled={isSubmitting}
                             className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                           />
-                          <Label htmlFor="edit-requires_manager_approval" className="text-sm font-medium text-gray-800">
+                          <Label
+                            htmlFor="edit-requires_manager_approval"
+                            className="text-sm font-medium text-gray-800"
+                          >
                             Requires Manager Approval
                           </Label>
                         </div>
@@ -652,11 +751,16 @@ const LeavePolicyComponent = () => {
                             id="edit-requires_hr_approval"
                             type="checkbox"
                             checked={formData.requires_hr_approval}
-                            onChange={(e) => setFormData({ ...formData, requires_hr_approval: e.target.checked })}
+                            onChange={(e) =>
+                              setFormData({...formData, requires_hr_approval: e.target.checked})
+                            }
                             disabled={isSubmitting}
                             className="h-5 w-5 text-myOrange focus:ring-orange-500 border-gray-300 rounded"
                           />
-                          <Label htmlFor="edit-requires_hr_approval" className="text-sm font-medium text-gray-800">
+                          <Label
+                            htmlFor="edit-requires_hr_approval"
+                            className="text-sm font-medium text-gray-800"
+                          >
                             Requires HR Approval
                           </Label>
                         </div>
@@ -675,11 +779,7 @@ const LeavePolicyComponent = () => {
                       >
                         Cancel
                       </Button>
-                      <Button
-                        onClick={handleEditPolicy}
-                        disabled={isSubmitting}
-                        className="flex-1"
-                      >
+                      <Button onClick={handleEditPolicy} disabled={isSubmitting} className="flex-1">
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -694,20 +794,26 @@ const LeavePolicyComponent = () => {
                 </Dialog>
 
                 {/* Delete Dialog */}
-                <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
-                  setIsDeleteDialogOpen(open);
-                  if (!open) {
-                    setDeletingPolicy(null);
-                  }
-                }}>
+                <Dialog
+                  open={isDeleteDialogOpen}
+                  onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) {
+                      setDeletingPolicy(null);
+                    }
+                  }}
+                >
                   <DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
                     <DialogHeader className="space-y-4 pb-6">
                       <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto">
                         <Trash2 className="w-8 h-8 text-red-600" />
                       </div>
-                      <DialogTitle className="text-2xl font-bold text-gray-900 text-center">Delete Leave Policy</DialogTitle>
+                      <DialogTitle className="text-2xl font-bold text-gray-900 text-center">
+                        Delete Leave Policy
+                      </DialogTitle>
                       <DialogDescription className="text-gray-600 text-center text-base">
-                        Are you sure you want to delete "{deletingPolicy?.name}"? This action cannot be undone and will permanently remove the policy from your system.
+                        Are you sure you want to delete "{deletingPolicy?.name}"? This action cannot
+                        be undone and will permanently remove the policy from your system.
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="flex gap-3 pt-6">
@@ -755,20 +861,22 @@ const LeavePolicyComponent = () => {
 
                 // Transform the data to include populated leave_type
                 const transformedResults = response.results.map((policy) => {
-                  const leaveType = leaveTypes.find(lt => lt.id === policy.leave_type) || {
-                    id: policy.leave_type as number,
-                    name: 'Unknown',
-                    category: 'unknown' as any,
-                    max_days_per_year: 0,
-                    description: 'Unknown leave type',
-                    carry_forward_allowed: false,
-                    max_carry_forward_days: 0,
-                    is_active: true,
-                    requires_document: false,
-                    gender_specific: null,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  } as ILeaveType;
+                  const leaveType =
+                    leaveTypes.find((lt) => lt.id === policy.leave_type) ||
+                    ({
+                      id: policy.leave_type as number,
+                      name: "Unknown",
+                      category: "unknown" as any,
+                      max_days_per_year: 0,
+                      description: "Unknown leave type",
+                      carry_forward_allowed: false,
+                      max_carry_forward_days: 0,
+                      is_active: true,
+                      requires_document: false,
+                      gender_specific: null,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    } as ILeaveType);
 
                   return {
                     ...policy,
@@ -781,25 +889,27 @@ const LeavePolicyComponent = () => {
                   results: transformedResults,
                 };
               }}
-              fetchFromUrl={async ({ url }) => {
-                const response = await LeavePoliciesAPI.getPaginatedFromUrl({ url });
+              fetchFromUrl={async ({url}) => {
+                const response = await LeavePoliciesAPI.getPaginatedFromUrl({url});
 
                 // Transform the data to include populated leave_type
                 const transformedResults = response.results.map((policy) => {
-                  const leaveType = leaveTypes.find(lt => lt.id === policy.leave_type) || {
-                    id: policy.leave_type as number,
-                    name: 'Unknown',
-                    category: 'unknown' as any,
-                    max_days_per_year: 0,
-                    description: 'Unknown leave type',
-                    carry_forward_allowed: false,
-                    max_carry_forward_days: 0,
-                    is_active: true,
-                    requires_document: false,
-                    gender_specific: null,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  } as ILeaveType;
+                  const leaveType =
+                    leaveTypes.find((lt) => lt.id === policy.leave_type) ||
+                    ({
+                      id: policy.leave_type as number,
+                      name: "Unknown",
+                      category: "unknown" as any,
+                      max_days_per_year: 0,
+                      description: "Unknown leave type",
+                      carry_forward_allowed: false,
+                      max_carry_forward_days: 0,
+                      is_active: true,
+                      requires_document: false,
+                      gender_specific: null,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    } as ILeaveType);
 
                   return {
                     ...policy,
@@ -816,7 +926,7 @@ const LeavePolicyComponent = () => {
               className="space-y-4"
               footerClassName="pt-4"
             >
-              {({ data, loading, refresh }) => {
+              {({data, loading, refresh}) => {
                 // Store refresh function in ref when component mounts/updates
                 useEffect(() => {
                   refreshTableRef.current = refresh;
@@ -829,15 +939,19 @@ const LeavePolicyComponent = () => {
                 if (!data || data.results.length === 0) {
                   return (
                     <div className="text-center py-8 text-gray-500">
-                      {searchTerm ? "No leave policies found matching your search criteria" : "No leave policies found"}
+                      {searchTerm
+                        ? "No leave policies found matching your search criteria"
+                        : "No leave policies found"}
                     </div>
                   );
                 }
 
                 // Apply client-side filters (status and category filters)
                 const filteredResults = data.results.filter((policy) => {
-                  const matchesStatus = statusFilter === "all" || policy.is_active === (statusFilter === "active");
-                  const matchesCategory = categoryFilter === "all" || policy.leave_type?.category === categoryFilter;
+                  const matchesStatus =
+                    statusFilter === "all" || policy.is_active === (statusFilter === "active");
+                  const matchesCategory =
+                    categoryFilter === "all" || policy.leave_type?.category === categoryFilter;
 
                   return matchesStatus && matchesCategory;
                 });
@@ -860,7 +974,12 @@ const LeavePolicyComponent = () => {
                             <TableHead>
                               <div className="flex items-center gap-2">
                                 <span>Policy Name</span>
-                                <Button size="sm" variant={ordering === "name" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "name" ? "" : "name")}>
+                                <Button
+                                  size="sm"
+                                  variant={ordering === "name" ? "default" : "outline"}
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => setOrdering(ordering === "name" ? "" : "name")}
+                                >
                                   <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
@@ -868,7 +987,14 @@ const LeavePolicyComponent = () => {
                             <TableHead>
                               <div className="flex items-center gap-2">
                                 <span>Leave Type</span>
-                                <Button size="sm" variant={ordering === "leave_type" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "leave_type" ? "" : "leave_type")}>
+                                <Button
+                                  size="sm"
+                                  variant={ordering === "leave_type" ? "default" : "outline"}
+                                  className="h-6 w-6 p-0"
+                                  onClick={() =>
+                                    setOrdering(ordering === "leave_type" ? "" : "leave_type")
+                                  }
+                                >
                                   <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
@@ -876,7 +1002,14 @@ const LeavePolicyComponent = () => {
                             <TableHead>
                               <div className="flex items-center gap-2">
                                 <span>Category</span>
-                                <Button size="sm" variant={ordering === "category" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "category" ? "" : "category")}>
+                                <Button
+                                  size="sm"
+                                  variant={ordering === "category" ? "default" : "outline"}
+                                  className="h-6 w-6 p-0"
+                                  onClick={() =>
+                                    setOrdering(ordering === "category" ? "" : "category")
+                                  }
+                                >
                                   <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
@@ -885,7 +1018,16 @@ const LeavePolicyComponent = () => {
                             <TableHead>
                               <div className="flex items-center gap-2">
                                 <span>Notice Days</span>
-                                <Button size="sm" variant={ordering === "min_notice_days" ? "default" : "outline"} className="h-6 w-6 p-0" onClick={() => setOrdering(ordering === "min_notice_days" ? "" : "min_notice_days")}>
+                                <Button
+                                  size="sm"
+                                  variant={ordering === "min_notice_days" ? "default" : "outline"}
+                                  className="h-6 w-6 p-0"
+                                  onClick={() =>
+                                    setOrdering(
+                                      ordering === "min_notice_days" ? "" : "min_notice_days",
+                                    )
+                                  }
+                                >
                                   <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
                                 </Button>
                               </div>
@@ -899,10 +1041,12 @@ const LeavePolicyComponent = () => {
                           {filteredResults.map((policy) => (
                             <TableRow key={policy.id}>
                               <TableCell className="font-medium">{policy.name}</TableCell>
-                              <TableCell>{policy.leave_type?.name || 'Unknown'}</TableCell>
+                              <TableCell>{policy.leave_type?.name || "Unknown"}</TableCell>
                               <TableCell>
-                                <Badge className={getCategoryColor(policy.leave_type?.category || '')}>
-                                  {policy.leave_type?.category || 'Unknown'}
+                                <Badge
+                                  className={getCategoryColor(policy.leave_type?.category || "")}
+                                >
+                                  {policy.leave_type?.category || "Unknown"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -917,7 +1061,9 @@ const LeavePolicyComponent = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge className={getApprovalColor(policy.requires_manager_approval)}>
+                                <Badge
+                                  className={getApprovalColor(policy.requires_manager_approval)}
+                                >
                                   {policy.requires_manager_approval ? "Required" : "Not Required"}
                                 </Badge>
                               </TableCell>
@@ -929,37 +1075,51 @@ const LeavePolicyComponent = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-
-                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}>
-                                      <DropdownMenuItem onClick={() => {
-                                        const policyWithLeaveType = {
-                                          ...policy,
-                                          leave_type: leaveTypes.find(lt => lt.id === policy.leave_type) || {} as ILeaveType
-                                        } as LeavePolicy;
-                                        setEditingPolicy(policyWithLeaveType);
-                                        setFormData({
-                                          name: policy.name,
-                                          description: policy.description,
-                                          leave_type: policy.leave_type?.toString() || "",
-                                          min_notice_days: policy.min_notice_days.toString(),
-                                          max_consecutive_days: policy.max_consecutive_days?.toString() || "",
-                                          requires_manager_approval: policy.requires_manager_approval,
-                                          requires_hr_approval: policy.requires_hr_approval,
-                                          applicable_after_probation_months: policy.applicable_after_probation_months.toString(),
-                                        });
-                                        setIsEditDialogOpen(true);
-                                      }}>
+                                    <ProtectedComponent
+                                      permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}
+                                    >
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          const policyWithLeaveType = {
+                                            ...policy,
+                                            leave_type:
+                                              leaveTypes.find(
+                                                (lt) => lt.id === policy.leave_type,
+                                              ) || ({} as ILeaveType),
+                                          } as LeavePolicy;
+                                          setEditingPolicy(policyWithLeaveType);
+                                          setFormData({
+                                            name: policy.name,
+                                            description: policy.description,
+                                            leave_type: policy.leave_type?.toString() || "",
+                                            min_notice_days: policy.min_notice_days.toString(),
+                                            max_consecutive_days:
+                                              policy.max_consecutive_days?.toString() || "",
+                                            requires_manager_approval:
+                                              policy.requires_manager_approval,
+                                            requires_hr_approval: policy.requires_hr_approval,
+                                            applicable_after_probation_months:
+                                              policy.applicable_after_probation_months.toString(),
+                                          });
+                                          setIsEditDialogOpen(true);
+                                        }}
+                                      >
                                         <Edit className="h-4 w-4 mr-2" />
                                         Edit
                                       </DropdownMenuItem>
                                     </ProtectedComponent>
 
-                                    <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}>
+                                    <ProtectedComponent
+                                      permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}
+                                    >
                                       <DropdownMenuItem
                                         onClick={() => {
                                           const policyWithLeaveType = {
                                             ...policy,
-                                            leave_type: leaveTypes.find(lt => lt.id === policy.leave_type) || {} as ILeaveType
+                                            leave_type:
+                                              leaveTypes.find(
+                                                (lt) => lt.id === policy.leave_type,
+                                              ) || ({} as ILeaveType),
                                           } as LeavePolicy;
                                           setDeletingPolicy(policyWithLeaveType);
                                           setIsDeleteDialogOpen(true);
@@ -986,7 +1146,9 @@ const LeavePolicyComponent = () => {
                           <div className="flex justify-between items-start mb-3">
                             <div>
                               <h3 className="font-medium text-sm">{policy.name}</h3>
-                              <p className="text-xs text-gray-500 mt-1">{policy.leave_type?.name || 'Unknown'}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {policy.leave_type?.name || "Unknown"}
+                              </p>
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -995,36 +1157,48 @@ const LeavePolicyComponent = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}>
-                                  <DropdownMenuItem onClick={() => {
-                                    const policyWithLeaveType = {
-                                      ...policy,
-                                      leave_type: leaveTypes.find(lt => lt.id === policy.leave_type) || {} as ILeaveType
-                                    } as LeavePolicy;
-                                    setEditingPolicy(policyWithLeaveType);
-                                    setFormData({
-                                      name: policy.name,
-                                      description: policy.description,
-                                      leave_type: policy.leave_type?.toString() || "",
-                                      min_notice_days: policy.min_notice_days.toString(),
-                                      max_consecutive_days: policy.max_consecutive_days?.toString() || "",
-                                      requires_manager_approval: policy.requires_manager_approval,
-                                      requires_hr_approval: policy.requires_hr_approval,
-                                      applicable_after_probation_months: policy.applicable_after_probation_months.toString(),
-                                    });
-                                    setIsEditDialogOpen(true);
-                                  }}>
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      const policyWithLeaveType = {
+                                        ...policy,
+                                        leave_type:
+                                          leaveTypes.find((lt) => lt.id === policy.leave_type) ||
+                                          ({} as ILeaveType),
+                                      } as LeavePolicy;
+                                      setEditingPolicy(policyWithLeaveType);
+                                      setFormData({
+                                        name: policy.name,
+                                        description: policy.description,
+                                        leave_type: policy.leave_type?.toString() || "",
+                                        min_notice_days: policy.min_notice_days.toString(),
+                                        max_consecutive_days:
+                                          policy.max_consecutive_days?.toString() || "",
+                                        requires_manager_approval: policy.requires_manager_approval,
+                                        requires_hr_approval: policy.requires_hr_approval,
+                                        applicable_after_probation_months:
+                                          policy.applicable_after_probation_months.toString(),
+                                      });
+                                      setIsEditDialogOpen(true);
+                                    }}
+                                  >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
                                 </ProtectedComponent>
 
-                                <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}>
+                                <ProtectedComponent
+                                  permissionCode={PERMISSION_CODES.CAN_DELETE_LEAVE_POLICIES}
+                                >
                                   <DropdownMenuItem
                                     onClick={() => {
                                       const policyWithLeaveType = {
                                         ...policy,
-                                        leave_type: leaveTypes.find(lt => lt.id === policy.leave_type) || {} as ILeaveType
+                                        leave_type:
+                                          leaveTypes.find((lt) => lt.id === policy.leave_type) ||
+                                          ({} as ILeaveType),
                                       } as LeavePolicy;
                                       setDeletingPolicy(policyWithLeaveType);
                                       setIsDeleteDialogOpen(true);
@@ -1047,8 +1221,10 @@ const LeavePolicyComponent = () => {
                             </div>
                             <div>
                               <span className="text-gray-500">Category:</span>
-                              <Badge className={`ml-2 ${getCategoryColor(policy.leave_type?.category || '')}`}>
-                                {policy.leave_type?.category || 'Unknown'}
+                              <Badge
+                                className={`ml-2 ${getCategoryColor(policy.leave_type?.category || "")}`}
+                              >
+                                {policy.leave_type?.category || "Unknown"}
                               </Badge>
                             </div>
                             <div>
@@ -1057,7 +1233,9 @@ const LeavePolicyComponent = () => {
                             </div>
                             <div>
                               <span className="text-gray-500">HR Approval:</span>
-                              <span className="ml-1">{policy.requires_hr_approval ? "Yes" : "No"}</span>
+                              <span className="ml-1">
+                                {policy.requires_hr_approval ? "Yes" : "No"}
+                              </span>
                             </div>
                           </div>
                         </Card>

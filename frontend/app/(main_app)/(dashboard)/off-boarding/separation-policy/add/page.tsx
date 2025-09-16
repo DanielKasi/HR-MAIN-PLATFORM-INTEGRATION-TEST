@@ -24,6 +24,7 @@ import Link from "next/link";
 import type {ISeparationType} from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
 import {Icon} from "@iconify/react";
+import FormatNumberInput from "@/components/format-number-input";
 
 interface FormData {
   separation_type: string;
@@ -288,18 +289,18 @@ export default function AddSeparationPolicyPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                <button
-                  type="button"
-                  className="text-[16-px] hover:underline border border-gray-300 rounded-md p-2"
-                  onClick={() =>
-                    router.push("/off-boarding/separation-types?from=/off-boarding/separation-policy/add")
-                  }
+                  <button
+                    type="button"
+                    className="text-[16-px] hover:underline border border-gray-300 rounded-md p-2"
+                    onClick={() =>
+                      router.push(
+                        "/off-boarding/separation-types?from=/off-boarding/separation-policy/add",
+                      )
+                    }
                   >
-                  <Icon icon="hugeicons:add-01" className="inline-block mr-1" />
-                </button>
-                
+                    <Icon icon="hugeicons:add-01" className="inline-block mr-1" />
+                  </button>
                 </div>
-                
               </div>
             </div>
 
@@ -330,13 +331,14 @@ export default function AddSeparationPolicyPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="min_notice_days">Minimum Notice Days *</Label>
-                <Input
+                <FormatNumberInput
                   id="min_notice_days"
-                  type="number"
                   min="0"
                   placeholder="e.g., 14"
-                  value={formData.min_notice_days}
-                  onChange={(e) => handleInputChange("min_notice_days", e.target.value)}
+                  value={formData.min_notice_days?.toString() || ""}
+                  onChange={(formatted, numeric) =>
+                    handleInputChange("min_notice_days", numeric.toString())
+                  }
                   className={errors.min_notice_days ? "border-red-500" : ""}
                 />
                 {errors.min_notice_days && (
@@ -346,13 +348,14 @@ export default function AddSeparationPolicyPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="max_notice_days">Maximum Notice Days *</Label>
-                <Input
+                <FormatNumberInput
                   id="max_notice_days"
-                  type="number"
                   min="0"
                   placeholder="e.g., 30"
                   value={formData.max_notice_days}
-                  onChange={(e) => handleInputChange("max_notice_days", e.target.value)}
+                  onChange={(formatted, numeric) =>
+                    handleInputChange("max_notice_days", numeric.toString())
+                  }
                   className={errors.max_notice_days ? "border-red-500" : ""}
                 />
                 {errors.max_notice_days && (
@@ -424,9 +427,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.is_active}
-                onCheckedChange={(checked: boolean) =>
-                  handleInputChange("is_active", checked)
-                }
+                onCheckedChange={(checked: boolean) => handleInputChange("is_active", checked)}
               />
             </div>
 
@@ -441,9 +442,7 @@ export default function AddSeparationPolicyPage() {
               </div>
               <Switch
                 checked={formData.enforce_policy}
-                onCheckedChange={(checked: boolean) =>
-                  handleInputChange("enforce_policy", checked)
-                }
+                onCheckedChange={(checked: boolean) => handleInputChange("enforce_policy", checked)}
               />
             </div>
           </CardContent>

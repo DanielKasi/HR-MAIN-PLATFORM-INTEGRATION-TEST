@@ -109,7 +109,7 @@ export default function EmployeeProfile() {
 
   const selectedInstitution = useSelector(selectSelectedInstitution);
 
-// console.log("Spot check setting", spotcheckSetting);
+  // console.log("Spot check setting", spotcheckSetting);
 
   // Memoized utility functions
   const formatDate = useCallback((dateString: string | null) => {
@@ -613,7 +613,7 @@ export default function EmployeeProfile() {
 
                       {activeTab === "general_info" && (
                         <Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
-                          <CardContent className="p-4 md:p-6 space-y-6">                            
+                          <CardContent className="p-4 md:p-6 space-y-6">
                             <div>
                               <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {employee.salary && (
@@ -648,9 +648,9 @@ export default function EmployeeProfile() {
                                       </p>
                                     ))}
                                   </div>
-                                ):
-                                <></>
-                              }
+                                ) : (
+                                  <></>
+                                )}
                                 {employee.date_of_joining && (
                                   <div>
                                     <label className="text-sm font-medium text-[#848496]">
@@ -734,7 +734,7 @@ export default function EmployeeProfile() {
                                     </label>
                                     <div className="text-gray-800 font-medium grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                       {employee.children.map((child, idx) => (
-                                        <span>
+                                        <span key={idx}>
                                           {child.name} ({child.gender})
                                         </span>
                                       ))}
@@ -794,7 +794,7 @@ export default function EmployeeProfile() {
                                           Institution
                                         </label>
                                         <p className="text-gray-800 font-medium capitalize">
-                                          {education.institute}
+                                          {education.institution}
                                         </p>
                                       </div>
                                       <div className="flex items-center justiify-start gap-8">
@@ -806,7 +806,7 @@ export default function EmployeeProfile() {
                                       <div className="flex items-center justiify-start gap-8">
                                         <label className="text-xs text-[#848496]">Award</label>
                                         <p className="text-gray-800 font-medium capitalize">
-                                          {education.qualification.name}
+                                          {education.qualification?.name || ""}
                                         </p>
                                       </div>
                                     </div>
@@ -822,7 +822,7 @@ export default function EmployeeProfile() {
                                 <label className="text-xs text-[#848496]">Work Experience</label>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                   {employee.work_experiences.map((exp, idx) => (
-                                    <div className="flex flex-col items-start gap-4">
+                                    <div key={idx} className="flex flex-col items-start gap-4">
                                       <label className="text-xs text-[#848496]">
                                         Company : {exp.company}
                                       </label>
