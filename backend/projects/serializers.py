@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from .models import Project, Task, TaskDocument, TaskTimeSheet, ProjectDocument
 from django.db import transaction
-from users.models import Profile
+from employee.models import Employee
 from approval.serializers import BaseApprovableSerializer
+from django.utils import timezone
 
 
 class ProjectDocumentSerializer(BaseApprovableSerializer):
@@ -47,9 +48,6 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
         start_time = data.get("start_time")
         end_time = data.get("end_time")
 
-        if self.instance:
-            task = self.instance.task
-
         request = self.context.get("request")
 
         if not request or not request.user.is_authenticated:
@@ -63,14 +61,14 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
         task = self.instance.task if self.instance else None
 
         if task:
-            task_leaders = task.leaders.all()
-            if current_user_profile not in task_leaders:
+            task_managers = task.managers.all()
+            if current_user_profile not in task_managers:
                 raise serializers.ValidationError(
-                    {"error": "Only task leaders can update timesheets for this task"}
+                    {"error": "Only task managers can update timesheets for this task"}
                 )
 
             if start_time and not self.instance.start_time:
-                if task.status != "not_started":
+                if task.task_status != "not_started":
                     raise serializers.ValidationError(
                         {"error": "Start time can only be set when the task is not started"}
                     )
@@ -97,7 +95,6 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError(
                     {"error": "Start time can only be set once and cannot be changed"}
                 )
-
         return value
 
     def create(self, validated_data):
@@ -112,20 +109,21 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
         request = self.context.get("request")
         current_user_profile = request.user.profile
 
-        if current_user_profile not in instance.task.leaders.all():
-            raise serializers.ValidationError({"error": "Only task leaders can update timesheets"})
+        if current_user_profile not in instance.task.managers.all():
+            raise serializers.ValidationError({"error": "Only task managers can update timesheets"})
 
         task = instance.task
 
         if start_time and not instance.start_time:
-            if task.status == "not_started":
-                task.status = "in_progress"
-                task.save(update_fields=["status"])
+            if task.task_status == "not_started":
+                task.task_status = "in_progress"
+                task.save(update_fields=["task_status"])
 
         if end_time and not instance.end_time:
-            if task.status == "in_progress":
-                task.status = "completed"
-                task.save(update_fields=["status"])
+            if task.task_status == "in_progress":
+                task.task_status = "completed"
+                task.completion_date = timezone.now().date()
+                task.save(update_fields=["task_status", "completion_date"])
 
         validated_data["updated_by"] = current_user_profile
 
@@ -138,28 +136,27 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
 
 class ProjectSerializer(BaseApprovableSerializer):
     project_tasks = serializers.SerializerMethodField()
-    leaders = serializers.PrimaryKeyRelatedField(
-        queryset=Profile.objects.all(), many=True
+    managers = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), many=True
     )
-    members = serializers.PrimaryKeyRelatedField(
-        queryset=Profile.objects.all(), many=True
+    assignees = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), many=True
     )
 
     class Meta:
         model = Project
-
         fields = [
             "id",
             "institution",
             "project_name",
-            "leaders",
-            "members",
+            "managers",
+            "assignees",
             "description",
             "start_date",
             "end_date",
             "project_status",
             "project_tasks",
-            "is_active"
+            "is_active",
         ]
         read_only_fields = [
             "id",
@@ -176,90 +173,90 @@ class ProjectSerializer(BaseApprovableSerializer):
 
     def validate(self, data):
         institution = data.get("institution")
-        leaders = data.get("leaders", [])
-        members = data.get("members", [])
+        managers = data.get("managers", [])
+        assignees = data.get("assignees", [])
 
-        leader_ids = [leader.id for leader in leaders]
-        member_ids = [member.id for member in members]
+        manager_ids = [manager.id for manager in managers]
+        assignee_ids = [assignee.id for assignee in assignees]
 
         if not institution:
             raise serializers.ValidationError({"error": "Institution is required"})
 
-        from users.models import Profile
+        from employee.models import Employee
 
-        if leaders:
-            valid_leaders = Profile.objects.filter(
-                id__in=leader_ids, institution=institution
+        if managers:
+            valid_managers = Employee.objects.filter(
+                id__in=manager_ids, department__institution=institution
             ).values_list("id", flat=True)
 
-            invalid_leaders = set(leader_ids) - set(valid_leaders)
-            if invalid_leaders:
+            invalid_managers = set(manager_ids) - set(valid_managers)
+            if invalid_managers:
                 raise serializers.ValidationError(
-                    {"error": f"Leaders with IDs {list(invalid_leaders)} do not belong to the selected institution"}
+                    {"error": f"Managers with IDs {list(invalid_managers)} do not belong to the selected institution"}
                 )
 
-        if members:
-            valid_members = Profile.objects.filter(
-                id__in=member_ids, institution=institution
+        if assignees:
+            valid_assignees = Employee.objects.filter(
+                id__in=assignee_ids, department__institution=institution
             ).values_list("id", flat=True)
 
-            invalid_members = set(member_ids) - set(valid_members)
-            if invalid_members:
+            invalid_assignees = set(assignee_ids) - set(valid_assignees)
+            if invalid_assignees:
                 raise serializers.ValidationError(
-                    {"error": f"Members with IDs {list(invalid_members)} do not belong to the selected institution"}
+                    {"error": f"Assignees with IDs {list(invalid_assignees)} do not belong to the selected institution"}
                 )
 
         return data
 
     @transaction.atomic
     def create(self, validated_data):
-        leaders = validated_data.pop("leaders", [])
-        members = validated_data.pop("members", [])
+        managers = validated_data.pop("managers", [])
+        assignees = validated_data.pop("assignees", [])
 
         project = Project.objects.create(**validated_data)
 
-        if leaders:
-            project.leaders.set(leaders)
+        if managers:
+            project.managers.set(managers)
 
-        if members:
-            project.members.set(members)
+        if assignees:
+            project.assignees.set(assignees)
 
         return project
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        leaders = validated_data.pop("leaders", None)
-        members = validated_data.pop("members", None)
+        managers = validated_data.pop("managers", None)
+        assignees = validated_data.pop("assignees", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if leaders is not None:
-            instance.leaders.set(leaders)
-        if members is not None:
-            instance.members.set(members)
+        if managers is not None:
+            instance.managers.set(managers)
+        if assignees is not None:
+            instance.assignees.set(assignees)
 
         return instance
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
 
-        from users.serializers import ProfileSerializer
+        from employee.serializers import EmployeeSerializer
 
-        rep["leaders"] = ProfileSerializer(instance.leaders.all(), many=True).data
-        rep["members"] = ProfileSerializer(instance.members.all(), many=True).data
+        rep["managers"] = EmployeeSerializer(instance.managers.all(), many=True).data
+        rep["assignees"] = EmployeeSerializer(instance.assignees.all(), many=True).data
 
         return rep
 
 
 class TaskSerializer(BaseApprovableSerializer):
     task_time_sheet = serializers.SerializerMethodField()
-    leaders = serializers.PrimaryKeyRelatedField(
-        queryset=Profile.objects.all(), many=True, required=False
+    managers = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), many=True, required=False
     )
-    assigned_to = serializers.PrimaryKeyRelatedField(
-        queryset=Profile.objects.all(), many=True, required=False
+    assignees = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), many=True, required=False
     )
 
     class Meta:
@@ -269,14 +266,14 @@ class TaskSerializer(BaseApprovableSerializer):
             "project",
             "task_name",
             "description",
-            "leaders",
-            "assigned_to",
+            "managers",
+            "assignees",
             "task_status",
             "start_date",
             "end_date",
             "priority",
             "task_time_sheet",
-            "is_active"
+            "is_active",
         ]
         read_only_fields = [
             "id",
@@ -297,54 +294,59 @@ class TaskSerializer(BaseApprovableSerializer):
 
     def validate(self, data):
         project = data.get("project")
-        leaders = data.get("leaders", [])
-        assigned_to = data.get("assigned_to", [])
+        managers = data.get("managers", [])
+        assignees = data.get("assignees", [])
 
         if not project:
             raise serializers.ValidationError({"error": "Project is required."})
 
-        # Get the project's leaders and members
-        project_leaders = set(project.leaders.values_list("id", flat=True))
-        project_members = set(project.members.values_list("id", flat=True))
-        project_participants = project_leaders.union(project_members)
+        # Enforce project matches URL project_id if provided in context
+        context_project_id = self.context.get('project_id')
+        if context_project_id and project.id != context_project_id:
+            raise serializers.ValidationError({"error": "Project does not match the specified ID."})
 
-        # Validate leaders
-        leaders_ids = [leader.id for leader in leaders]
-        invalid_leaders = [leader_id for leader_id in leaders_ids if leader_id not in project_participants]
-        if invalid_leaders:
+        # Get the project's managers and assignees
+        project_managers = set(project.managers.values_list("id", flat=True))
+        project_assignees = set(project.assignees.values_list("id", flat=True))
+        project_participants = project_managers.union(project_assignees)
+
+        # Validate managers
+        manager_ids = [manager.id for manager in managers]
+        invalid_managers = [manager_id for manager_id in manager_ids if manager_id not in project_participants]
+        if invalid_managers:
             raise serializers.ValidationError(
-                {"error": f"Leaders with IDs {list(invalid_leaders)} are not part of the project."}
+                {"error": f"Managers with IDs {list(invalid_managers)} are not part of the project."}
             )
 
-        # Validate assigned_to
-        assigned_to_ids = [profile.id for profile in assigned_to]
-        invalid_assigned_to = [assigned_id for assigned_id in assigned_to_ids if assigned_id not in project_participants]
-        if invalid_assigned_to:
+        # Validate assignees
+        assignee_ids = [assignee.id for assignee in assignees]
+        invalid_assignees = [assignee_id for assignee_id in assignee_ids if assignee_id not in project_participants]
+        if invalid_assignees:
             raise serializers.ValidationError(
-                {"error": f"Assignees with IDs {list(invalid_assigned_to)} are not part of the project."}
+                {"error": f"Assignees with IDs {list(invalid_assignees)} are not part of the project."}
             )
 
-        # Existing validation for institution
-        from users.models import Profile
+        # Validate institution
+        from employee.models import Employee
 
-        if leaders:
-            valid_leaders = Profile.objects.filter(
-                id__in=leaders_ids, institution=project.institution
+        if managers:
+            valid_managers = Employee.objects.filter(
+                id__in=manager_ids, department__institution=project.institution
             ).values_list("id", flat=True)
-            invalid_leaders = set(leaders_ids) - set(valid_leaders)
-            if invalid_leaders:
+            invalid_managers = set(manager_ids) - set(valid_managers)
+            if invalid_managers:
                 raise serializers.ValidationError(
-                    {"error": f"Leaders with IDs {list(invalid_leaders)} do not belong to the institution."}
+                    {"error": f"Managers with IDs {list(invalid_managers)} do not belong to the institution."}
                 )
 
-        if assigned_to:
-            valid_assigned_to = Profile.objects.filter(
-                id__in=assigned_to_ids, institution=project.institution
+        if assignees:
+            valid_assignees = Employee.objects.filter(
+                id__in=assignee_ids, department__institution=project.institution
             ).values_list("id", flat=True)
-            invalid_assigned_to = set(assigned_to_ids) - set(valid_assigned_to)
-            if invalid_assigned_to:
+            invalid_assignees = set(assignee_ids) - set(valid_assignees)
+            if invalid_assignees:
                 raise serializers.ValidationError(
-                    {"error": f"Assignees with IDs {list(invalid_assigned_to)} do not belong to the institution."}
+                    {"error": f"Assignees with IDs {list(invalid_assignees)} do not belong to the institution."}
                 )
 
         # Validate dates
@@ -357,47 +359,45 @@ class TaskSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        leaders = validated_data.pop("leaders", [])
-        assigned_to = validated_data.pop("assigned_to", [])
+        managers = validated_data.pop("managers", [])
+        assignees = validated_data.pop("assignees", [])
 
         task = Task.objects.create(**validated_data)
 
-        if leaders:
-            task.leaders.set(leaders)
+        if managers:
+            task.managers.set(managers)
 
-        if assigned_to:
-            task.assigned_to.set(assigned_to)
-
-        TaskTimeSheet.objects.create(
-            task=task,
-        )
+        if assignees:
+            task.assignees.set(assignees)
 
         return task
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        leaders = validated_data.pop("leaders", None)
-        assigned_to = validated_data.pop("assigned_to", None)
+        managers = validated_data.pop("managers", None)
+        assignees = validated_data.pop("assignees", None)
+
+        # Capture old status before update
+        old_status = instance.task_status
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if leaders is not None:
-            instance.leaders.set(leaders)
-        if assigned_to is not None:
-            instance.assigned_to.set(assigned_to)
+
+        if managers is not None:
+            instance.managers.set(managers)
+        if assignees is not None:
+            instance.assignees.set(assignees)
 
         return instance
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
 
-        from users.serializers import ProfileSerializer
+        from employee.serializers import EmployeeSerializer
 
-        rep["leaders"] = ProfileSerializer(instance.leaders.all(), many=True).data
-        rep["assigned_to"] = ProfileSerializer(
-            instance.assigned_to.all(), many=True
-        ).data
+        rep["managers"] = EmployeeSerializer(instance.managers.all(), many=True).data
+        rep["assignees"] = EmployeeSerializer(instance.assignees.all(), many=True).data
 
         return rep

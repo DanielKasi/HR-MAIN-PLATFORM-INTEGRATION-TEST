@@ -65,7 +65,7 @@ class PeriodListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        periods = Period.objects.filter(institution=institution)
+        periods = Period.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         start_date = request.query_params.get("start_date", None)
         is_closed = request.query_params.get("is_closed", None)
@@ -179,7 +179,7 @@ class ObjectivesListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        objectives = Objectives.objects.filter(institution=institution)
+        objectives = Objectives.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         duration_unit = request.query_params.get("duration_unit", None)
 
@@ -290,7 +290,7 @@ class EmployeeObjectivesListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        objectives = EmployeeObjectives.objects.filter(employee__payroll_branch__institution=institution)
+        objectives = EmployeeObjectives.objects.filter(employee__payroll_branch__institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         status_filter = request.query_params.get("status", None)
         employee_id = request.query_params.get("employee_id", None)
@@ -407,7 +407,7 @@ class KeyResultListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        key_results = KeyResult.objects.filter(institution=institution)
+        key_results = KeyResult.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         progress_type = request.query_params.get("progress_type", None)
 
@@ -518,7 +518,7 @@ class Feedback360ListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        feedback = Feedback360.objects.filter(period__institution=institution)
+        feedback = Feedback360.objects.filter(period__institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         rating = request.query_params.get("rating", None)
 
@@ -641,7 +641,7 @@ class EmployeeBonusPointListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        bonus_points = EmployeeBonusPoint.objects.filter(period__institution=institution)
+        bonus_points = EmployeeBonusPoint.objects.filter(period__institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         redeemed = request.query_params.get("redeemed", None)
         bonus_point_setting_id = request.query_params.get("bonus_point_setting_id", None)
@@ -766,7 +766,7 @@ class QuestionTemplateListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        templates = QuestionTemplate.objects.filter(institution=institution)
+        templates = QuestionTemplate.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         category = request.query_params.get("category", None)
 
@@ -878,7 +878,7 @@ class BonusPointSettingsListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        settings = BonusPointSettings.objects.filter(institution=institution)
+        settings = BonusPointSettings.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         applicable_for = request.query_params.get("applicable_for", None)
         condition_field = request.query_params.get("condition_field", None)
@@ -999,7 +999,7 @@ class MeetingListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        meetings = Meeting.objects.filter(institution=institution)
+        meetings = Meeting.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         mode = request.query_params.get("mode", None)
         start_time = request.query_params.get("start_time", None)

@@ -221,6 +221,7 @@ class EmployeeBonusPoint(BaseApprovableModel):
 
     def get_institution(self):
         return self.period.institution
+        
 
 class QuestionTemplate(BaseApprovableModel):
     CATEGORY_CHOICES = [
@@ -282,7 +283,7 @@ class BonusPointSettings(BaseApprovableModel):
         'objectives', 'task', 'project'
     ]})
     content_object = GenericForeignKey('content_type', 'object_id')
-    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('members', 'Members')])
+    applicable_for = models.CharField(max_length=255, choices=[('managers', 'Managers'), ('assignees', 'Assignees')])
     bonus_for = models.CharField(max_length=255, choices=[('completing', 'Completing'), ('closing', 'Closing')])
     points = models.PositiveIntegerField()
     condition_field = models.CharField(max_length=255, choices=[('completion_date', 'Completion Date')])

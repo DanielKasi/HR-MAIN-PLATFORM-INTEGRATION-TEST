@@ -1,7 +1,8 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.db.models import UniqueConstraint, Q
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
+from employee.models import Employee
 
 class BaseModel(models.Model):
     created_by = models.ForeignKey(
@@ -43,8 +44,8 @@ class Project(BaseModel, BaseApprovableModel):
 
     project_name = models.CharField(max_length=255, blank=False)
 
-    leaders = models.ManyToManyField("users.Profile", related_name="led_projects")
-    members = models.ManyToManyField("users.Profile", related_name="project_members")
+    managers = models.ManyToManyField(Employee, related_name="led_projects")
+    assignees = models.ManyToManyField(Employee, related_name="project_members")
     completion_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
 
@@ -118,14 +119,14 @@ class Task(BaseModel, BaseApprovableModel):
     task_name = models.CharField(max_length=255, blank=False)
     description = models.TextField(blank=True)
 
-    leaders = models.ManyToManyField(
-        "users.Profile",
+    managers = models.ManyToManyField(
+        Employee,
         related_name="led_tasks",
         blank=True,
     )
 
-    assigned_to = models.ManyToManyField(
-        "users.Profile",
+    assignees = models.ManyToManyField(
+        Employee,
         related_name="assigned_tasks",
         blank=True,
     )
@@ -171,6 +172,58 @@ class Task(BaseModel, BaseApprovableModel):
             )
         ]
 
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.is_active = True
+                    self.deleted_at = None
+
+                    if not hasattr(self, "timesheet"):
+                        TaskTimeSheet.objects.create(
+                            task=self,
+                            created_by=self.created_by
+                            )
+                elif approval.action.name == "update":
+                    if hasattr(self, "timesheet"):
+                        timesheet = self.timesheet
+                        if self.task_status == "in_progress" and timesheet.start_time is None:
+                            timesheet.start_time = timezone.now()   
+                            timesheet.save()
+                        elif self.task_status == "completed" and timesheet.end_time is None:
+                            timesheet.end_time = timezone.now()
+                            self.completion_date = timezone.now().date()
+                            self.save(update_fields=["completion_date"])
+                            timesheet.save()     
+                    
+                            
+                elif approval.action.name == "delete":
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.save()
+
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
+                    self.approval_status = "active"
+                    self.is_active = False
+                    self.deleted_at = None
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == "delete":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+            self.save(
+                update_fields=[
+                    "approval_status",
+                    "is_active",
+                    "deleted_at",
+                ]
+            )        
+
 
 class TaskDocument(BaseModel, BaseApprovableModel):
     task = models.ForeignKey(
@@ -209,8 +262,7 @@ class TaskTimeSheet(BaseModel, BaseApprovableModel):
     notes = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Timesheet for Task: {self.task.task_name} by {self.user.user.email} in Project: {self.task.project.project_name} ({self.task.project.institution})"
-
+        return f"Timesheet for Task: {self.task.task_name} by {self.created_by.user.email if self.created_by else 'Unknown'} in Project: {self.task.project.project_name} ({self.task.project.institution})"
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "Time Sheets"
