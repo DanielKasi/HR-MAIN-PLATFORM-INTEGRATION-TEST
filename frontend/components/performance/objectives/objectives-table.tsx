@@ -59,13 +59,13 @@ export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch,
 		},
 		{
 			key: "assignees",
-			label: "Assignee",
+			label: "Assignees",
 			render: (objective) => (
 				<div className="flex items-center gap-2">
 					{objective.assignees ? (
 						<>
 							<User className="h-4 w-4 text-slate-400" />
-							<span className="text-slate-600">{objective.assignees.user?.fullname || "Unknown"}</span>
+							<span className="text-slate-600">{objective.assignees.length}</span>
 						</>
 					) : (
 						<span className="text-slate-400 italic">No assignee</span>

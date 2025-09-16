@@ -1,7 +1,7 @@
 // Update newBranch institution when selectedInstitution changes
 "use client";
 
-import type { Branch } from "@/types";
+import type { Branch, BranchFormData } from "@/types";
 
 import { useEffect, useState } from "react";
 import { Edit, MapPin, Plus, Search, Trash, Loader2, MoreVertical, ArrowLeft } from "lucide-react";
@@ -44,6 +44,8 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { PERMISSION_CODES } from "@/constants";
 import { fetchUpToDateInstitution } from "@/store/auth/actions";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
+import { IBankAccount } from "@/types/types.utils";
 
 export default function BranchesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -53,13 +55,12 @@ export default function BranchesPage() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [gettingCurrentLocation, setGettingCurrentLocation] = useState(false);
-
+	const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const router = useRouter();
 	const dispatch = useDispatch();
 
-	const [newBranch, setNewBranch] = useState<Branch>({
-		id: 0,
+	const [newBranch, setNewBranch] = useState<BranchFormData>({
 		branch_name: "",
 		branch_location: "",
 		branch_latitude: "",
@@ -69,7 +70,7 @@ export default function BranchesPage() {
 		branch_opening_time: "",
 		branch_closing_time: "",
 		institution: selectedInstitution?.id ?? 0,
-		tills: [],
+		paying_bank_account: 0,
 	});
 	const [editBranch, setEditBranch] = useState<Branch | null>(null);
 
@@ -109,6 +110,7 @@ export default function BranchesPage() {
 	useEffect(() => {
 		if (selectedInstitution?.id) {
 			fetchBranches();
+
 		}
 	}, [selectedInstitution?.id]);
 
@@ -130,16 +132,15 @@ export default function BranchesPage() {
 		}
 
 		try {
-			const branchData = {
+			const branchData: BranchFormData = {
 				...newBranch,
-				institution: selectedInstitution.id, // Use current institution ID
+				institution: selectedInstitution.id,
 			};
 			const response = await apiRequest.post("institution/branch/", branchData);
 
 			if (response.status === 201) {
 				setIsAddDialogOpen(false);
 				setNewBranch({
-					id: 0,
 					branch_name: "",
 					branch_location: "",
 					branch_latitude: "",
@@ -149,7 +150,7 @@ export default function BranchesPage() {
 					branch_opening_time: "",
 					branch_closing_time: "",
 					institution: selectedInstitution.id,
-					tills: [],
+					paying_bank_account: 0
 				});
 				toast.success("The branch has been successfully added.");
 				// Refresh branches list
@@ -437,6 +438,23 @@ export default function BranchesPage() {
 													</Button>
 												</div>
 											</div>
+
+											<div className="grid grid-cols-4 items-center gap-4">
+												<Label className="text-right" htmlFor="branch_closing_time">
+													Closing Time
+												</Label>
+												<BankAccountSearchableSelect
+													className="col-span-3"
+													setAccounts={setInstitutionBanks}
+													selectedItems={[newBranch.paying_bank_account || 0]}
+													onValueChange={(values) => {
+														if (values.length) {
+															setNewBranch((prev) => ({ ...prev, paying_bank_account: Number(values[0]) }));
+														}
+													}}
+												/>
+
+											</div>
 										</div>
 									</ScrollArea>
 									<DialogFooter className="pt-4">
@@ -657,10 +675,10 @@ export default function BranchesPage() {
 												setEditBranch((prev) =>
 													prev
 														? {
-																...prev,
-																branch_latitude: lat,
-																branch_longitude: lon,
-															}
+															...prev,
+															branch_latitude: lat,
+															branch_longitude: lon,
+														}
 														: prev,
 												)
 											}

@@ -127,8 +127,8 @@ export default function InterviewViewPage() {
 		));
 	};
 
-	const getInitials = (firstName: string, lastName: string) => {
-		return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
+	const getInitials = (fullName: string) => {
+		return `${fullName.split(" ")[0]?.charAt(0) || ""}${fullName.split(" ")[1]?.charAt(0) || ""}`.toUpperCase();
 	};
 
 	const downloadFile = (filePath: string, fileName: string) => {
@@ -306,9 +306,7 @@ export default function InterviewViewPage() {
 													<AvatarFallback>
 														{getInitials(
 															interview.interview_stage_details?.interviewers_details?.[0]
-																?.first_name || "",
-															interview.interview_stage_details?.interviewers_details?.[0]
-																?.last_name || "",
+																?.user?.fullname || ""
 														)}
 													</AvatarFallback>
 												</Avatar>
@@ -316,12 +314,9 @@ export default function InterviewViewPage() {
 													<h4 className="font-medium">
 														{
 															interview.interview_stage_details?.interviewers_details?.[0]
-																?.first_name
+																?.user?.fullname
 														}{" "}
-														{
-															interview.interview_stage_details?.interviewers_details?.[0]
-																?.last_name
-														}
+
 													</h4>
 													<p className="text-sm text-muted-foreground">
 														{interview.interview_stage_details?.interviewers_details?.[0]?.email}
@@ -332,21 +327,6 @@ export default function InterviewViewPage() {
 																?.phone_number
 														}
 													</p>
-													<div className="mt-2 flex flex-wrap gap-2">
-														<Badge variant="outline">
-															{
-																interview.interview_stage_details?.interviewers_details?.[0]
-																	?.experience
-															}{" "}
-															years exp
-														</Badge>
-														<Badge variant="outline">
-															{
-																interview.interview_stage_details?.interviewers_details?.[0]
-																	?.qualifications
-															}
-														</Badge>
-													</div>
 												</div>
 											</div>
 										</CardContent>

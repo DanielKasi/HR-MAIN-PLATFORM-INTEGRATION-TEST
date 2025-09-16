@@ -161,7 +161,7 @@ export default function EmployeeShiftDialog({
 					<DialogDescription>
 						{shiftId
 							? "Update employee shift assignment"
-							: `Assign a shift to ${employee?.first_name} ${employee?.last_name}`}
+							: `Assign a shift to ${employee.user?.fullname || "Unkown employee"}`}
 					</DialogDescription>
 				</DialogHeader>
 
