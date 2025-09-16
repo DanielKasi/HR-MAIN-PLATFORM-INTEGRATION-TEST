@@ -16,13 +16,14 @@ import { BranchPenaltyConfigurations } from "@/components/settings/branch-penalt
 import { InstitutionSpotcheckConfigurations } from "@/components/settings/institution-spotcheck-configurations"
 import { BranchSpotcheckConfigurations } from "@/components/settings/branch-spotcheck-configurations"
 import { LocationComparisonConfigurations } from "@/components/settings/location-comparison-configurations"
+import { InstitutionBonusPointSettingsTable } from "@/components/performance/bonus-points/institution-bonus-points-settings-table";
 
 
 
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
-    "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison" | "institution_spotcheck" | "branch_spotcheck"
+    "institution" | "kyc" | "penalties" | "branch_penalties" | "location_comparison" | "institution_spotcheck" | "branch_spotcheck"|"bonus_point_settings"
   >("institution")
   const [confirmationDialog, setConfirmationDialog] = useState({
     isOpen: false,
@@ -73,6 +74,8 @@ export default function SettingsPage() {
   const renderLocationComparisonConfigurations = () => (
     <LocationComparisonConfigurations />
   );
+
+    const renderBonusPointSettings = () => <InstitutionBonusPointSettingsTable />;
 
 
   return (
@@ -294,25 +297,57 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </button>
+
+                            <button
+                onClick={() => setActiveTab("bonus_point_settings")}
+                className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+                  activeTab === "bonus_point_settings"
+                    ? "bg-red-50 border border-red-200"
+                    : "hover:bg-gray-50"
+                }`}
+              >
+                <Icon
+                  icon="hugeicons:award-02"
+                  className={`w-5 h-5 ${activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-500"}`}
+                />
+                <div className="whitespace-nowrap lg:whitespace-normal">
+                  <div
+                    className={`font-medium text-sm lg:text-base ${
+                      activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-900"
+                    }`}
+                  >
+                    Bonus Point Settings
+                  </div>
+                  <div
+                    className={`text-xs lg:text-sm hidden lg:block ${
+                      activeTab === "bonus_point_settings" ? "text-[#6B7280]" : "text-[#6B7280]"
+                    }`}
+                  >
+                    Manage institution-level bonus point settings
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Right Content Panel */}
-        <div className="lg:flex-[7.0] p-4 md:p-6 bg-white">
+        <div className="lg:flex-[7.0] p-4 md:p-6">
           {activeTab === "institution"
             ? renderInstitutionSettings()
             : activeTab === "kyc"
-              ? renderKYCDocuments()
-              : activeTab === "penalties"
-                ? renderPenaltyConfigurations()
-                : activeTab === "branch_penalties"
-                  ? renderBranchPenaltyConfigurations()
-                  : activeTab === "location_comparison"
-                    ? renderLocationComparisonConfigurations()
-                    : activeTab === "institution_spotcheck"
-                      ? renderInstitutionSpotcheckConfigurations()
-                      : renderBranchSpotcheckConfigurations()}
+            ? renderKYCDocuments()
+            : activeTab === "penalties"
+            ? renderPenaltyConfigurations()
+            : activeTab === "branch_penalties"
+            ? renderBranchPenaltyConfigurations()
+            : activeTab === "location_comparison"
+            ? renderLocationComparisonConfigurations()
+            : activeTab === "institution_spotcheck"
+            ? renderInstitutionSpotcheckConfigurations()
+            : activeTab === "branch_spotcheck"
+            ? renderBranchSpotcheckConfigurations()
+            : renderBonusPointSettings()}
         </div>
       </div>
 

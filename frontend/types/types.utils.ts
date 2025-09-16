@@ -2512,7 +2512,6 @@ export interface IEmployeeBonusPoint {
   date: string
   period?: IPeriod | null
   redeemed: boolean
-  points: number
 }
 
 export interface IEmployeeBonusPointFormData {
@@ -2522,8 +2521,35 @@ export interface IEmployeeBonusPointFormData {
   date?: string
   period?: number
   redeemed?: boolean
-  points: number
 }
+
+
+export interface IBonusPointSettings {
+  id: number
+  institution: IUserInstitution
+  object_id: number
+  content_type: number
+  content_object: any
+  applicable_for: IApplicableFor
+  bonus_for: IBonusFor
+  points: number
+  condition_field: "completion_date"
+  condition_operator: IConditionOperator
+  condition_value: "end_date"
+}
+
+export interface IBonusPointSettingsFormData {
+  institution: number
+  object_id: number
+  content_type: number
+  applicable_for: IApplicableFor
+  bonus_for: IBonusFor
+  points: number
+  condition_field: "completion_date"
+  condition_operator: IConditionOperator
+  condition_value: "end_date"
+}
+
 
 export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general"
 
@@ -2552,31 +2578,6 @@ export type IBonusFor = "completing" | "closing"
 
 export type IConditionOperator = "=" | "<" | ">" | "<=" | ">="
 
-export interface IBonusPointSettings {
-  id: number
-  institution: IUserInstitution
-  object_id: number
-  content_type: number
-  content_object: any
-  applicable_for: IApplicableFor
-  bonus_for: IBonusFor
-  points: number
-  condition_field: string
-  condition_operator: IConditionOperator
-  condition_value: string
-}
-
-export interface IBonusPointSettingsFormData {
-  institution: number
-  object_id: number
-  content_type: number
-  applicable_for: IApplicableFor
-  bonus_for: IBonusFor
-  points: number
-  condition_field: string
-  condition_operator: IConditionOperator
-  condition_value: string
-}
 
 export type IEventMode = "physical" | "online" | "hybrid"
 

@@ -57,6 +57,7 @@ import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-s
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
 import EmployeePenalties from "@/components/common/tables/penalties/employee-penalties";
 import {ApprovalWorkflow} from "@/components/approvals/approval-workflow";
+import {EmployeeBonusPointsTable} from "@/components/performance/bonus-points/bonus-points-table";
 
 export default function EmployeeProfile() {
   const params = useParams();
@@ -77,6 +78,7 @@ export default function EmployeeProfile() {
     | "shifts"
     | "penalties"
     | "general_info"
+    | "performance"
   >("general_info");
   const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
   const [attendancePage, setAttendancePage] = useState(1);
@@ -360,6 +362,7 @@ export default function EmployeeProfile() {
       {id: "spotchecks", label: "Spotchecks", hasData: true}, // Component handles own loading
       {id: "penalties", label: "Penalties", hasData: true}, // Component handles own loading
       {id: "shifts", label: "Shifts", hasData: true}, // Component handles own loading
+      {id: "performance", label: "Performance", hasData: true},
     ],
     [tabDataCache],
   );
@@ -1355,6 +1358,9 @@ export default function EmployeeProfile() {
                       )}
 
                       {activeTab === "shifts" && employee && <EmployeeShifts employee={employee} />}
+                      {activeTab === "performance" && (
+                        <EmployeeBonusPointsTable employee={employee} />
+                      )}
                     </CardContent>
                   </Card>
                 </div>

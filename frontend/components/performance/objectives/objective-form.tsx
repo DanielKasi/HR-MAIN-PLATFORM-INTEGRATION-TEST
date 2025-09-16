@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, forwardRef } from "react"
+import { useState, useEffect, forwardRef, useMemo } from "react" 
 import { PerformanceForm, type FormField } from "../common/performance-form"
 import type {
   IObjective,
@@ -74,12 +74,15 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
       { value: "years", label: "Years" },
     ]
 
-    const keyResultOptions = keyResults.map((kr) => ({
-      value: kr.id,
-      label: `${kr.title} (${kr.progress_type})`,
-    }))
+    const keyResultOptions = useMemo(() =>  // Memoize to stabilize when keyResults changes
+      keyResults.map((kr) => ({
+        value: kr.id,
+        label: `${kr.title} (${kr.progress_type})`,
+      })),
+    [keyResults])
 
-    const fields: FormField[] = [
+    // Stabilize fields with useMemo to prevent unnecessary re-renders in PerformanceForm
+    const fields: FormField[] = useMemo(() => [
       {
         name: "name",
         label: "Objective Name",
@@ -91,13 +94,15 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
           return null
         },
       },
-            {
+      {
         name: "creation_date",
         label: "Creation Date",
         type: "date",
         required: true,
-        validation: (value: string) => {
-          if (value.length < 5) return "Objective name must be at least 5 characters"
+        validation: (value: string) => {  // Fix: Proper validation for date
+          if (!value) return "Creation date is required"
+          const selectedDate = new Date(value)
+          if (isNaN(selectedDate.getTime())) return "Invalid date format"
           return null
         },
       },
@@ -145,7 +150,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         type: "switch",
         description: "Allow employees to update their own progress",
       },
-    ]
+    ], [keyResultOptions])  // Depend on keyResultOptions
 
     const handleSubmit = (formData: IObjectiveFormData) => {
       if (!currentInstitution) return
@@ -160,13 +165,14 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         assignees_id: assigneesValue.map(item => Number(item)),
         key_result: formData.key_result ? Number(formData.key_result) : undefined,
         self_employee_progress_update: formData.self_employee_progress_update || false,
-        creation_date:formData.creation_date
+        creation_date: formData.creation_date
       }
 
       onSubmit(objectiveData)
     }
 
-    const getInitialFormData = () => {
+    // Stabilize initialData with useMemo to prevent resets on every re-render
+    const getInitialFormData = useMemo(() => {
       if (!initialData) return {}
 
       return {
@@ -176,15 +182,16 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         duration_unit: initialData.duration_unit,
         key_result: initialData.key_result?.id,
         self_employee_progress_update: initialData.self_employee_progress_update,
+        creation_date: initialData.creation_date,  // Add this to preserve date on edit
       }
-    }
+    }, [initialData])
 
     return (
       <div className="space-y-6 ">
         <PerformanceForm<IObjectiveFormData>
           ref={ref}
           fields={fields}
-          initialData={getInitialFormData()}
+          initialData={getInitialFormData}
           onSubmit={handleSubmit}
           isLoading={isLoading}
           submitLabel={initialData ? "Update Objective" : "Create Objective"}
@@ -234,7 +241,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
                 value={assigneesValue}
                 onValueChange={setAssigneesValue}
                 placeholder="Select assignee"
-                multiple={false}
+                multiple={true}  // Fix: Original code had multiple={false}, but assignees are array – adjust if needed
                 disabled={isLoading}
               />
               <p className="text-xs text-slate-500">Employee assigned to achieve this objective</p>

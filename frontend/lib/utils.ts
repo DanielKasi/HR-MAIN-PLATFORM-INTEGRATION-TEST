@@ -7288,6 +7288,61 @@ export const PROJECTS_TASKS_API = {
   },
 };
 
+export const OBJECTIVES_API = {
+  getPaginated: async ({
+    page = 1,
+    search,
+    duration_unit,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    duration_unit?: IDurationUnit;
+    ordering?: string;
+  }) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+    });
+
+    if (search) {
+      params.append("search", search);
+    }
+    if (duration_unit) {
+      params.append("duration_unit", duration_unit);
+    }
+    if (ordering) {
+      params.append("ordering", ordering);
+    }
+    const endpoint = `performance/objectives/?${params.toString()}`;
+    const response = await apiRequest.get(endpoint);
+    return response.data as IPaginatedResponse<IObjective>;
+  },
+
+  getPaginatedFromUrl: async ({ url }: { url: string }) => {
+    const response = await apiRequest.get(url);
+    return response.data as IPaginatedResponse<IObjective>;
+  },
+
+  create: async ({ data }: { data: IObjectiveFormData }) => {
+    const response = await apiRequest.post(`performance/objectives/`, data);
+    return response.data as IObjective;
+  },
+
+  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectiveFormData> }) => {
+    const response = await apiRequest.patch(`performance/objectives/${objectiveId}/`, data);
+    return response.data as IObjective;
+  },
+
+  delete: async ({ objectiveId }: { objectiveId: number }) => {
+    await apiRequest.delete(`performance/objectives/${objectiveId}/`);
+  },
+
+  getById: async ({ objectiveId }: { objectiveId: number }) => {
+    const response = await apiRequest.get(`performance/objectives/${objectiveId}/`);
+    return response.data as IObjective;
+  },
+};
+
 
 
 export const PERIODS_API = {
@@ -7350,60 +7405,7 @@ export const PERIODS_API = {
   },
 };
 
-export const OBJECTIVES_API = {
-  getPaginated: async ({
-    page = 1,
-    search,
-    duration_unit,
-    ordering,
-  }: {
-    page?: number;
-    search?: string;
-    duration_unit?: IDurationUnit;
-    ordering?: string;
-  }) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-    });
 
-    if (search) {
-      params.append("search", search);
-    }
-    if (duration_unit) {
-      params.append("duration_unit", duration_unit);
-    }
-    if (ordering) {
-      params.append("ordering", ordering);
-    }
-    const endpoint = `performance/objectives/?${params.toString()}`;
-    const response = await apiRequest.get(endpoint);
-    return response.data as IPaginatedResponse<IObjective>;
-  },
-
-  getPaginatedFromUrl: async ({ url }: { url: string }) => {
-    const response = await apiRequest.get(url);
-    return response.data as IPaginatedResponse<IObjective>;
-  },
-
-  create: async ({ data }: { data: IObjectiveFormData }) => {
-    const response = await apiRequest.post(`performance/objectives/`, data);
-    return response.data as IObjective;
-  },
-
-  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectiveFormData> }) => {
-    const response = await apiRequest.patch(`performance/objectives/${objectiveId}/`, data);
-    return response.data as IObjective;
-  },
-
-  delete: async ({ objectiveId }: { objectiveId: number }) => {
-    await apiRequest.delete(`performance/objectives/${objectiveId}/`);
-  },
-
-  getById: async ({ objectiveId }: { objectiveId: number }) => {
-    const response = await apiRequest.get(`performance/objectives/${objectiveId}/`);
-    return response.data as IObjective;
-  },
-};
 
 export const EMPLOYEE_OBJECTIVES_API = {
   getPaginated: async ({
