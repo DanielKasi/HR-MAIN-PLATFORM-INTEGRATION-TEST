@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import {useState, useEffect, useRef} from "react";
 import Link from "next/link";
-import { Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Badge} from "@/components/ui/badge";
+import {Input} from "@/components/ui/input";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 
 import {
   Dialog,
@@ -17,22 +17,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ISeparationPolicy } from "@/types/types.utils";
-import { SeparationPoliciesAPI } from "@/lib/utils";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {ISeparationPolicy} from "@/types/types.utils";
+import {SeparationPoliciesAPI} from "@/lib/utils";
+import {PaginatedTableWrapper} from "@/components/common/tables/paginated-table-wrapper";
+import {TableSkeleton} from "@/components/common/table-skeleton";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution} from "@/store/auth/selectors";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/constants";
-import { Icon } from "@iconify/react";
+import {PERMISSION_CODES} from "@/constants";
+import {Icon} from "@iconify/react";
 
 export default function SeparationPoliciesPage() {
   const [ordering, setOrdering] = useState("");
@@ -50,7 +50,7 @@ export default function SeparationPoliciesPage() {
   const router = useRouter();
 
   const handleDeleteSuccess = (deletedId: number) => {
-    setDeleteDialog({ open: false, policy: null });
+    setDeleteDialog({open: false, policy: null});
     refreshTableRef.current?.();
   };
 
@@ -74,9 +74,7 @@ export default function SeparationPoliciesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Separation Policies</h1>
-
         </div>
-
       </div>
 
       {/* Search and Filters */}
@@ -89,7 +87,9 @@ export default function SeparationPoliciesPage() {
                 <Input
                   placeholder="Search policies..."
                   value={searchTerm}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSearchTerm(e.target.value)
+                  }
                   className="pl-10"
                 />
               </div>
@@ -116,41 +116,41 @@ export default function SeparationPoliciesPage() {
       {/* Table */}
       <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}>
         <div className="-ml-4">
-          <CardHeader>
-
-          </CardHeader>
+          <CardHeader></CardHeader>
           <CardContent>
             <PaginatedTableWrapper<ISeparationPolicy>
               fetchFirstPage={async () => {
-                if (!selectedInstitution) throw new Error("No institution selected")
+                if (!selectedInstitution) throw new Error("No institution selected");
                 return await SeparationPoliciesAPI.getPaginated({
                   institutionId: selectedInstitution.id,
                   page: 1,
                   search: searchTerm || undefined,
                   ordering: ordering || undefined,
-                })
+                });
               }}
               fetchFromUrl={SeparationPoliciesAPI.getPaginatedFromUrl}
               deps={[selectedInstitution?.id, searchTerm, ordering]}
               className="space-y-4"
               footerClassName="pt-4"
             >
-              {({ data, loading, refresh }) => {
+              {({data, loading, refresh}) => {
                 // Store refresh function in ref when component mounts/updates
                 useEffect(() => {
-                  refreshTableRef.current = refresh
-                }, [refresh])
+                  refreshTableRef.current = refresh;
+                }, [refresh]);
 
                 if (loading) {
-                  return <TableSkeleton rows={10} columns={6} />
+                  return <TableSkeleton rows={10} columns={6} />;
                 }
 
                 if (!data || data.results.length === 0) {
                   return (
                     <div className="text-center py-8 text-gray-500">
-                      {searchTerm ? "No policies found matching your search criteria" : "No policies found."}
+                      {searchTerm
+                        ? "No policies found matching your search criteria"
+                        : "No policies found."}
                     </div>
-                  )
+                  );
                 }
 
                 return (
@@ -158,41 +158,65 @@ export default function SeparationPoliciesPage() {
                     <Table className="min-w-[800px] [&_th]:border-0 [&_td]:border-0">
                       <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                          <TableHeader className="bg-gray-50/50">
-                            <TableRow>
-                              <TableHead>
-                                Policy Name
-                                <Button size="sm" variant={ordering === "policy_name" ? "default" : "outline"} onClick={() => setOrdering(ordering === "policy_name" ? "" : "policy_name")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-                                </Button>
-                              </TableHead>
+                          <TableHead>
+                            Policy Name
+                            <Button
+                              size="sm"
+                              variant={ordering === "policy_name" ? "default" : "outline"}
+                              onClick={() =>
+                                setOrdering(ordering === "policy_name" ? "" : "policy_name")
+                              }
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </TableHead>
 
-                              <TableHead>
-                                Separation Type
-                                <Button size="sm" variant={ordering === "separation_type__separation_type" ? "default" : "outline"} onClick={() => setOrdering(ordering === "separation_type__separation_type" ? "" : "separation_type__separation_type")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-                                </Button>
-                              </TableHead>
+                          <TableHead>
+                            Separation Type
+                            <Button
+                              size="sm"
+                              variant={
+                                ordering === "separation_type__separation_type"
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setOrdering(
+                                  ordering === "separation_type__separation_type"
+                                    ? ""
+                                    : "separation_type__separation_type",
+                                )
+                              }
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </TableHead>
 
-                              <TableHead>
-                                Notice Period
-                                <Button size="sm" variant={ordering === "min_notice_days" ? "default" : "outline"} onClick={() => setOrdering(ordering === "min_notice_days" ? "" : "min_notice_days")}>
-                                  <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
-                                </Button>
-                              </TableHead>
+                          <TableHead>
+                            Notice Period
+                            <Button
+                              size="sm"
+                              variant={ordering === "min_notice_days" ? "default" : "outline"}
+                              onClick={() =>
+                                setOrdering(ordering === "min_notice_days" ? "" : "min_notice_days")
+                              }
+                            >
+                              <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+                            </Button>
+                          </TableHead>
 
-                              <TableHead>Status</TableHead>
-                              <TableHead>Enforcement</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Enforcement</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.results.map((policy) => (
                           <TableRow key={policy.id}>
                             <TableCell>{policy.policy_name || "N/A"}</TableCell>
-                            <TableCell>{policy.separation_type?.separation_type || "N/A"}</TableCell>
+                            <TableCell>
+                              {policy.separation_type?.separation_type || "N/A"}
+                            </TableCell>
                             <TableCell>
                               {policy.min_notice_days} - {policy.max_notice_days} days
                             </TableCell>
@@ -221,31 +245,51 @@ export default function SeparationPoliciesPage() {
                                   align="end"
                                   className="w-48 bg-white border border-gray-200 shadow-lg"
                                 >
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}>
-                                    <DropdownMenuItem onClick={() => { router.push(`/off-boarding/separation-policy/${policy.id}`) }} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        router.push(`/off-boarding/separation-policy/${policy.id}`);
+                                      }}
+                                      className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                                    >
                                       <Eye className="h-4 w-4" /> View Details
                                     </DropdownMenuItem>
                                   </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_POLICIES}>
-                                    <DropdownMenuItem onClick={() => { router.push(`/off-boarding/separation-policy/edit/${policy.id}/`) }} className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_EDIT_SEPARATION_POLICIES}
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        router.push(
+                                          `/off-boarding/separation-policy/edit/${policy.id}/`,
+                                        );
+                                      }}
+                                      className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                                    >
                                       <Edit className="h-4 w-4" /> Edit
                                     </DropdownMenuItem>
                                   </ProtectedComponent>
-                                  <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_POLICIES}>
-                                    <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, policy })} className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer">
+                                  <ProtectedComponent
+                                    permissionCode={PERMISSION_CODES.CAN_DELETE_SEPARATION_POLICIES}
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteDialog({open: true, policy})}
+                                      className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
+                                    >
                                       <Trash2 className="h-4 w-4" /> Delete
                                     </DropdownMenuItem>
                                   </ProtectedComponent>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                )
+                );
               }}
             </PaginatedTableWrapper>
           </CardContent>
@@ -254,7 +298,7 @@ export default function SeparationPoliciesPage() {
 
       <Dialog
         open={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog({ open, policy: null })}
+        onOpenChange={(open) => setDeleteDialog({open, policy: null})}
       >
         <DialogContent>
           <DialogHeader>
@@ -264,7 +308,7 @@ export default function SeparationPoliciesPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, policy: null })}>
+            <Button variant="outline" onClick={() => setDeleteDialog({open: false, policy: null})}>
               Cancel
             </Button>
             <Button

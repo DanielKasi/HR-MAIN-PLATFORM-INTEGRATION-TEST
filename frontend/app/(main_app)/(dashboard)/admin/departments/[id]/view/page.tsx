@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {useState, useMemo, useEffect} from "react";
+import {useRouter, useParams} from "next/navigation";
+import {useSelector} from "react-redux";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import {Skeleton} from "@/components/ui/skeleton";
 
 import {
   Search,
@@ -30,22 +30,16 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import {
-  getDepartment,
-  showErrorToast,
-} from "@/lib/utils";
-import type { IDepartment, IJobPosition } from "@/types/types.utils";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import {getDepartment, showErrorToast} from "@/lib/utils";
+import type {IDepartment, IJobPosition} from "@/types/types.utils";
 
 import RichTextDisplay from "@/components/common/rich-text-display";
-import { EmployeesTable } from "@/app/(main_app)/(dashboard)/employees/employee-list/employees-table";
-import { JobPositionsTable } from "@/components/common/tables/job-positions/job-positions-table";
-import { RecruitmentHistoryTable } from "@/components/common/tables/recruitment/recruitment-history-table";
-import { useDocumentTitle } from "@/hooks/use-document-title";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
-
-// Helper function to get application data from onboarding
-
+import {EmployeesTable} from "@/app/(main_app)/(dashboard)/employees/employee-list/employees-table";
+import {JobPositionsTable} from "@/components/common/tables/job-positions/job-positions-table";
+import {RecruitmentHistoryTable} from "@/components/common/tables/recruitment/recruitment-history-table";
+import {useDocumentTitle} from "@/hooks/use-document-title";
+import {ApprovalWorkflow} from "@/components/approvals/approval-workflow";
 
 export default function DepartmentDetailView() {
   const router = useRouter();
@@ -67,9 +61,7 @@ export default function DepartmentDetailView() {
   const [activeTab, setActiveTab] = useState("overview");
   const [statusFilter, setStatusFilter] = useState("all");
 
-
   useDocumentTitle(department ? `${department.name} - Department` : "Department Details");
-
 
   // Effects
   useEffect(() => {
@@ -93,11 +85,11 @@ export default function DepartmentDetailView() {
       setIsRefreshing(true);
       setError("");
 
-      const department = await getDepartment({ departmentId });
+      const department = await getDepartment({departmentId});
       setDepartment(department);
     } catch (err) {
       setError("Failed to fetch department data");
-      showErrorToast({ error: err, defaultMessage: "Failed to load department data" });
+      showErrorToast({error: err, defaultMessage: "Failed to load department data"});
     } finally {
       setIsRefreshing(false);
     }
@@ -158,11 +150,11 @@ export default function DepartmentDetailView() {
   }
 
   return (
-
     <div className="flex flex-col w-full h-full min-h-screen p-3 md:p-6 bg-white rounded-lg py-8">
-
-      <div className={` gap-6 ${(department?.approval_status !== "active" && department?.approvals?.length) ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}>
-        {department?.approvals && department.approvals.length > 0 &&
+      <div
+        className={` gap-6 ${department?.approval_status !== "active" && department?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+      >
+        {department?.approvals && department.approvals.length > 0 && (
           <div className="order-1 lg:order-2">
             <ApprovalWorkflow
               approvals={department.approvals}
@@ -170,10 +162,11 @@ export default function DepartmentDetailView() {
               onRefresh={fetchDepartmentData}
             />
           </div>
-        }
+        )}
 
-        <div className={`${(department?.approval_status !== "active" && department?.approvals?.length) ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}>
-
+        <div
+          className={`${department?.approval_status !== "active" && department?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
+        >
           <div className="flex justify-between items-start gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
@@ -210,7 +203,12 @@ export default function DepartmentDetailView() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2  md:flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchDepartmentData} disabled={isRefreshing}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchDepartmentData}
+                disabled={isRefreshing}
+              >
                 <RefreshCw className={`h-4 w-4 md:mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                 <span className="hidden md:inline">Refresh</span>
               </Button>
@@ -221,7 +219,6 @@ export default function DepartmentDetailView() {
               </Button>
             </div>
           </div>
-
 
           {/* Tabs */}
           <Tabs
@@ -250,8 +247,7 @@ export default function DepartmentDetailView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {
-                      selectedInstitution && selectedBranch &&
+                    {selectedInstitution && selectedBranch && (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm font-medium text-muted-foreground">Institution</p>
@@ -262,13 +258,15 @@ export default function DepartmentDetailView() {
                           <p className="text-sm">{selectedBranch.branch_name}</p>
                         </div>
                       </div>
-                    }
+                    )}
                     {department && (
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Description</p>
                         <RichTextDisplay
                           className={
-                            "text-sm" + !department.description ? "text-muted-foreground italic" : ""
+                            "text-sm" + !department.description
+                              ? "text-muted-foreground italic"
+                              : ""
                           }
                           htmlContent={department.description || "No description"}
                         />
@@ -370,7 +368,10 @@ export default function DepartmentDetailView() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="">
-                    <JobPositionsTable searchTerm={jobPositionsSearchTerm} setCurrentJobPostions={setCurrentJobPostions} />
+                    <JobPositionsTable
+                      searchTerm={jobPositionsSearchTerm}
+                      setCurrentJobPostions={setCurrentJobPostions}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -404,8 +405,7 @@ export default function DepartmentDetailView() {
             </TabsContent>
           </Tabs>
         </div>
-
-      </div >
+      </div>
     </div>
   );
 }

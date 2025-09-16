@@ -291,45 +291,34 @@ const processInterviewsForJob = (
 };
 
 // Group interviews by stage for a specific job
-// Group interviews by stage for a specific job
 const buildStagesForJob = (
   interviewStages: IInterviewStage[],
   interviews: IInterview[],
   jobPositionId: number,
 ): ProcessedStage[] => {
-  // Filter stages for the specific job position
   const jobStages = interviewStages.filter((stage) => stage.job_position_advert === jobPositionId);
 
   // Filter interviews for the specific job position and exclude rejected ones
   const jobInterviews = interviews.filter(
     (interview) =>
       interview.job_position_application_details?.job_position_advert === jobPositionId,
-    // Note: We don't filter by status here because we want to show all interviews in their respective stages
-    // but we'll handle rejected ones in the UI
   );
 
-  // Build processed stages
   const processedStages: ProcessedStage[] = jobStages.map((stage, index) => {
     const colors = getStageColors(index);
 
-    // Find interviews for this stage
     const stageInterviews = jobInterviews.filter(
       (interview) => interview.interview_stage_details?.id === stage.id,
     );
 
-    // Process candidates for this stage
     const allCandidates = processInterviewsForJob(stageInterviews, jobPositionId);
 
-    // Separate active and rejected candidates for counting
     const activeCandidates = allCandidates.filter(
       (candidate) => candidate.status !== "rejected" && candidate.status !== "cancelled",
     );
 
-    // Use all candidates for the candidates array (UI will handle display)
-    // but use active candidates for count
     const candidates = allCandidates;
 
-    // Get interviewer names
     const interviewerNames = Array.isArray(stage.interviewers_details)
       ? stage.interviewers_details
           .map((emp) => emp.user?.fullname || `${emp.first_name} ${emp.last_name}` || "Unknown")
@@ -339,7 +328,7 @@ const buildStagesForJob = (
     return {
       id: stage.id.toString(),
       name: stage.name,
-      count: activeCandidates.length, // Count only active candidates
+      count: activeCandidates.length,
       level: stage.level,
       interviewer: interviewerNames,
       icon: getStageIcon(stage.name, index),
