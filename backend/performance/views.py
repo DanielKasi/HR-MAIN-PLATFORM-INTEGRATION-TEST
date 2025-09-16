@@ -290,9 +290,10 @@ class EmployeeObjectivesListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        objectives = EmployeeObjectives.objects.filter(employee__institution=institution)
+        objectives = EmployeeObjectives.objects.filter(employee__payroll_branch__institution=institution)
         search_query = request.query_params.get("search", None)
         status_filter = request.query_params.get("status", None)
+        employee_id = request.query_params.get("employee_id", None)
 
         if search_query:
             objectives = objectives.filter(
@@ -301,6 +302,8 @@ class EmployeeObjectivesListCreateView(APIView, SortableAPIMixin):
             )
         if status_filter:
             objectives = objectives.filter(status=status_filter)
+        if employee_id:
+            objectives = objectives.filter(employee_id=employee_id)
 
         try:
             objectives = self.apply_sorting(objectives, request)

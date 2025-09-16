@@ -1,5 +1,5 @@
-from django.db import models
-from approval.models import BaseApprovableModel
+from django.db import models, transaction
+from approval.models import Approval, BaseApprovableModel
 from performance.teams_api import create_teams_meeting, update_teams_meeting
 from performance.zoom_api import create_zoom_meeting
 from employee.models import Employee
@@ -48,8 +48,8 @@ class Objectives(BaseApprovableModel):
     )
     duration = models.IntegerField()
     key_result = models.ForeignKey('KeyResult', on_delete=models.PROTECT, null=True, blank=True)
-    date = models.DateField(default=timezone.now())
-    assignees = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True)
+    date = models.DateField(default=timezone.now)
+    assignees = models.ManyToManyField(Employee, through='EmployeeObjectives', related_name="assigned_objectives")
 
 
     def __str__(self):
@@ -58,7 +58,83 @@ class Objectives(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-class EmmployeeObjectives(BaseApprovableModel):
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.is_active = True
+                    self.deleted_at = None
+
+                    if isinstance(self, Objectives):
+                        # Get existing EmployeeObjectives records
+                        existing_employee_ids = set(
+                            EmployeeObjectives.objects.filter(objective=self).values_list('employee_id', flat=True)
+                        )
+                        # Create EmployeeObjectives only for new assignees
+                        for assignee in self.assignees.all():
+                            if assignee.id not in existing_employee_ids:
+                                EmployeeObjectives.objects.create(
+                                    employee=assignee,
+                                    objective=self,
+                                    status="not_started",
+                                    assignment_date=timezone.now()
+                                )
+
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+                    if isinstance(self, Objectives):
+                        existing_employee_objectives = EmployeeObjectives.objects.filter(objective=self)
+                        existing_employee_ids = set(existing_employee_objectives.values_list('employee_id', flat=True))
+                        new_assignee_ids = set(self.assignees.values_list('id', flat=True))
+
+                        # Delete EmployeeObjectives for removed assignees
+                        for employee_objective in existing_employee_objectives:
+                            if employee_objective.employee_id not in new_assignee_ids:
+                                employee_objective.delete()
+
+                        # Create EmployeeObjectives for new assignees
+                        for assignee in self.assignees.all():
+                            if assignee.id not in existing_employee_ids:
+                                EmployeeObjectives.objects.create(
+                                    employee=assignee,
+                                    objective=self,
+                                    status="not_started",
+                                    assignment_date=timezone.now()
+                                )
+
+                elif approval.action.name == "delete":
+                    self.approval_status = "under_deletion"
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.delete()
+                    return
+
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
+                    self.approval_status = "active"
+                    self.is_active = False
+                    self.deleted_at = None
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == "delete":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+            self.save(
+                update_fields=[
+                    "approval_status",
+                    "is_active",
+                    "deleted_at",
+                ]
+            )
+
+class EmployeeObjectives(BaseApprovableModel):
     STATUS_CHOICES = [
         ("not_started", "Not Started"),
         ("on_track", "On Track"),
@@ -75,7 +151,7 @@ class EmmployeeObjectives(BaseApprovableModel):
     )
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
-    assignment_date = models.DateField(default=timezone.now())
+    assignment_date = models.DateField(default=timezone.now)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.objective.name}"
@@ -189,26 +265,7 @@ class QuestionTemplate(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-class EmployeeObjectives(BaseApprovableModel):
-    STATUS_CHOICES = [
-        ("not_started", "Not Started"),
-        ("on_track", "On Track"),
-        ("closed", "Closed"),
-        ("at_risk", "At Risk"),
-        ("behind", "Behind")
-    ]
-    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
-    objective = models.ForeignKey(Objectives, on_delete=models.PROTECT)
-    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default="not_started")
-    start_date = models.DateField()
-    end_date = models.DateField()
-    key_result = models.ForeignKey('KeyResult', on_delete=models.PROTECT, null=True, blank=True)
 
-    def __str__(self):
-        return f"{self.employee.user.fullname} - {self.objective.name}"
-
-    def get_institution(self):
-        return self.employee.institution    
     
 class BonusPointSettings(BaseApprovableModel):
     CONDITION_OPERATOR_CHOICES = [
