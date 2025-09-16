@@ -45,7 +45,7 @@ class Project(BaseModel, BaseApprovableModel):
 
     leaders = models.ManyToManyField("users.Profile", related_name="led_projects")
     members = models.ManyToManyField("users.Profile", related_name="project_members")
-
+    completion_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True)
 
     start_date = models.DateField(null=True, blank=True)
@@ -132,6 +132,7 @@ class Task(BaseModel, BaseApprovableModel):
 
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+    completion_date = models.DateField(null=True, blank=True)
 
     task_status = models.CharField(
         max_length=20,

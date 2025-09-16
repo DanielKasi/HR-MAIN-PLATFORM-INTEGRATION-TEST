@@ -152,6 +152,7 @@ class EmployeeObjectives(BaseApprovableModel):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     assignment_date = models.DateField(default=timezone.now)
+    completion_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.employee.user.fullname} - {self.objective.name}"
@@ -184,13 +185,6 @@ class KeyResult(BaseApprovableModel):
         return self.institution
 
 class Feedback360(BaseApprovableModel):
-    RATING_CHOICES = [
-        (1, "Poor"),
-        (2, "Fair"),
-        (3, "Good"),
-        (4, "Very Good"),
-        (5, "Excellent"),
-    ]
     reviewer = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='received_feedback', null=True, blank=True)
     given_by = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='given_feedback', null=True, blank=True)
     period = models.ForeignKey(Period, on_delete=models.PROTECT, null=True, blank=True)
