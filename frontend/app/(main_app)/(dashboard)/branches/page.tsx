@@ -1,4 +1,3 @@
-// Update newBranch institution when selectedInstitution changes
 "use client";
 
 import type { Branch, BranchFormData } from "@/types";
