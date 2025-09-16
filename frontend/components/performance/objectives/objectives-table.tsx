@@ -16,7 +16,14 @@ interface ObjectivesTableProps {
 	isLoading?: boolean;
 }
 
-export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch, isLoading }: ObjectivesTableProps) {
+export function ObjectivesTable({
+	objectives,
+	onEdit,
+	onDelete,
+	onAdd,
+	onSearch,
+	isLoading,
+}: ObjectivesTableProps) {
 	const columns: TableColumn<IObjective>[] = [
 		{
 			key: "name",
@@ -49,7 +56,9 @@ export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch,
 					{objective.managers ? (
 						<>
 							<User className="h-4 w-4 text-slate-400" />
-							<span className="text-slate-600">{objective.managers.user?.fullname || "Unknown"}</span>
+							<span className="text-slate-600">
+								{objective.managers.user?.fullname || "Unknown"}
+							</span>
 						</>
 					) : (
 						<span className="text-slate-400 italic">No manager</span>
@@ -82,7 +91,9 @@ export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch,
 						<div className="flex items-center gap-2">
 							<Target className="h-4 w-4 text-blue-500" />
 							<div>
-								<div className="text-sm font-medium text-slate-900">{objective.key_result.title}</div>
+								<div className="text-sm font-medium text-slate-900">
+									{objective.key_result.title}
+								</div>
 								<StatusBadge status={objective.key_result.progress_type} />
 							</div>
 						</div>
@@ -95,9 +106,11 @@ export function ObjectivesTable({ objectives, onEdit, onDelete, onAdd, onSearch,
 		{
 			key: "self_employee_progress_update",
 			label: "Self Updates",
-			render: (objective) => <StatusBadge status={objective.self_employee_progress_update ? "enabled" : "disabled"} />,
+			render: (objective) => (
+				<StatusBadge status={objective.self_employee_progress_update ? "enabled" : "disabled"} />
+			),
 		},
-	]
+	];
 
 	const actions: TableAction<IObjective>[] = [
 		{

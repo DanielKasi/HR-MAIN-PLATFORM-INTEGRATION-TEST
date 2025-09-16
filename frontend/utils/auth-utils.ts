@@ -109,15 +109,7 @@ export function setTemporaryPermissionsWithTimeout(
 	permissions: Permission[],
 	timeoutMs: number = 30 * 60 * 1000, // 30 minutes default
 ) {
-	store.dispatch(
-		setTemporaryPermissions(
-			permissions.map((perm) => ({
-				permission_code: perm.permission_code,
-				name: perm.name,
-				description: perm.description,
-			})),
-		),
-	);
+	store.dispatch(setTemporaryPermissions(permissions));
 
 	setTimeout(() => {
 		store.dispatch(clearTemporaryPermissions());

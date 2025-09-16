@@ -514,7 +514,7 @@ export default function UpdateEmployeeForm() {
 			setEducations(
 				employee.educations.map((ed) => ({
 					name: ed.name,
-					qualification_id: ed.qualification.id,
+					qualification_id: ed.qualification?.id || 0,
 					year: ed.year,
 					institution: ed.institution,
 					id: ed.id,

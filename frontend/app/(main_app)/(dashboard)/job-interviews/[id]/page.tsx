@@ -305,18 +305,17 @@ export default function InterviewViewPage() {
 
 													<AvatarFallback>
 														{getInitials(
-															interview.interview_stage_details?.interviewers_details?.[0]
-																?.user?.fullname || ""
+															interview.interview_stage_details?.interviewers_details?.[0]?.user
+																?.fullname || "",
 														)}
 													</AvatarFallback>
 												</Avatar>
 												<div className="flex-1">
 													<h4 className="font-medium">
 														{
-															interview.interview_stage_details?.interviewers_details?.[0]
-																?.user?.fullname
+															interview.interview_stage_details?.interviewers_details?.[0]?.user
+																?.fullname
 														}{" "}
-
 													</h4>
 													<p className="text-sm text-muted-foreground">
 														{interview.interview_stage_details?.interviewers_details?.[0]?.email}

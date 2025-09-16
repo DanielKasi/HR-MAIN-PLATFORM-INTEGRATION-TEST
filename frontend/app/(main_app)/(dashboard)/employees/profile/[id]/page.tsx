@@ -603,10 +603,11 @@ export default function EmployeeProfile() {
 														<button
 															key={tab.id}
 															onClick={() => handleTabChange(tab.id as any)}
-															className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${activeTab === tab.id
+															className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+																activeTab === tab.id
 																	? "text-gray-800 font-semibold"
 																	: "text-[#848496] hover:text-gray-800"
-																}`}
+															}`}
 														>
 															{tab.label}
 															{activeTab === tab.id && (
@@ -881,10 +882,11 @@ export default function EmployeeProfile() {
 														<div className="flex gap-8">
 															<button
 																onClick={() => setLeaveSubTab("balances")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "balances"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	leaveSubTab === "balances"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																Leave Balances
 																{leaveSubTab === "balances" && (
@@ -893,10 +895,11 @@ export default function EmployeeProfile() {
 															</button>
 															<button
 																onClick={() => setLeaveSubTab("applications")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${leaveSubTab === "applications"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	leaveSubTab === "applications"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																Leave Applications
 																{leaveSubTab === "applications" && (
@@ -930,10 +933,11 @@ export default function EmployeeProfile() {
 														<div className="flex gap-8">
 															<button
 																onClick={() => setAssetSubTab("requests")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "requests"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	assetSubTab === "requests"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																Asset Requests
 																{assetSubTab === "requests" && (
@@ -942,10 +946,11 @@ export default function EmployeeProfile() {
 															</button>
 															<button
 																onClick={() => setAssetSubTab("allocations")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${assetSubTab === "allocations"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	assetSubTab === "allocations"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																Asset Allocations
 																{assetSubTab === "allocations" && (
@@ -994,10 +999,11 @@ export default function EmployeeProfile() {
 														<div className="flex gap-8">
 															<button
 																onClick={() => setDocumentsSubTab("contracts")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${documentsSubTab === "contracts"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	documentsSubTab === "contracts"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																Contracts
 																{documentsSubTab === "contracts" && (
@@ -1024,10 +1030,11 @@ export default function EmployeeProfile() {
 														<div className="flex gap-8">
 															<button
 																onClick={() => setSpotcheckSubTab("spotchecks")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "spotchecks"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	spotcheckSubTab === "spotchecks"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																<div className="flex items-center gap-2">
 																	<Clock className="w-4 h-4" />
@@ -1039,10 +1046,11 @@ export default function EmployeeProfile() {
 															</button>
 															<button
 																onClick={() => setSpotcheckSubTab("configs")}
-																className={`pb-3 text-sm font-medium transition-colors relative ${spotcheckSubTab === "configs"
+																className={`pb-3 text-sm font-medium transition-colors relative ${
+																	spotcheckSubTab === "configs"
 																		? "text-gray-800 font-semibold"
 																		: "text-[#848496] hover:text-gray-800"
-																	}`}
+																}`}
 															>
 																<div className="flex items-center gap-2">
 																	<Settings className="w-4 h-4" />

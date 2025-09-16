@@ -55,7 +55,6 @@ export default function BranchesPage() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [gettingCurrentLocation, setGettingCurrentLocation] = useState(false);
-	const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const router = useRouter();
 	const dispatch = useDispatch();
@@ -110,7 +109,6 @@ export default function BranchesPage() {
 	useEffect(() => {
 		if (selectedInstitution?.id) {
 			fetchBranches();
-
 		}
 	}, [selectedInstitution?.id]);
 
@@ -150,7 +148,7 @@ export default function BranchesPage() {
 					branch_opening_time: "",
 					branch_closing_time: "",
 					institution: selectedInstitution.id,
-					paying_bank_account: 0
+					paying_bank_account: 0,
 				});
 				toast.success("The branch has been successfully added.");
 				// Refresh branches list
@@ -445,15 +443,16 @@ export default function BranchesPage() {
 												</Label>
 												<BankAccountSearchableSelect
 													className="col-span-3"
-													setAccounts={setInstitutionBanks}
 													selectedItems={[newBranch.paying_bank_account || 0]}
 													onValueChange={(values) => {
 														if (values.length) {
-															setNewBranch((prev) => ({ ...prev, paying_bank_account: Number(values[0]) }));
+															setNewBranch((prev) => ({
+																...prev,
+																paying_bank_account: Number(values[0]),
+															}));
 														}
 													}}
 												/>
-
 											</div>
 										</div>
 									</ScrollArea>
@@ -675,10 +674,10 @@ export default function BranchesPage() {
 												setEditBranch((prev) =>
 													prev
 														? {
-															...prev,
-															branch_latitude: lat,
-															branch_longitude: lon,
-														}
+																...prev,
+																branch_latitude: lat,
+																branch_longitude: lon,
+															}
 														: prev,
 												)
 											}
