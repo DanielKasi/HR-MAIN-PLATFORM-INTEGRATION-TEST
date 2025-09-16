@@ -9,7 +9,7 @@
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
 		"format": "prettier --write .",
-		"prepare": "cd .. && npx husky frontend/.husky || true"
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^3.9.1",
@@ -131,6 +131,7 @@
 		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-plugin-unused-imports": "^4.1.4",
 		"globals": "^16.2.0",
+		"husky": "^9.1.7",
 		"lint-staged": "^16.0.0",
 		"postcss": "^8",
 		"prettier": "^3.5.3",
