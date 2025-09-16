@@ -269,7 +269,7 @@ class AssetRequest(BaseApprovableModel):
                 if approval.action.name == "create":
                     self.asset_request_status = "rejected"
                     self.approval_status = "active"
-                    self.is_active = True  #
+                    self.is_active = False
                     self.deleted_at = None
                 elif approval.action.name == "update":
                     self.approval_status = "active"
