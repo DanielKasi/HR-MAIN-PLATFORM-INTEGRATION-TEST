@@ -12,6 +12,7 @@ export const createBranch = async ({
 	try {
 		// Adjust the endpoint and payload as needed for your backend
 		const response = await apiRequest.post(`/institutions/${institutionId}/branches/`, branchData);
+
 		return response.data;
 	} catch (error) {
 		console.error("Error creating branch:", error);
@@ -34,6 +35,7 @@ export const attachEmployeeBranch = async ({
 			employee_id,
 			branches,
 		});
+
 		return response.data;
 		// console.log("branches:", response.data)
 	} catch (error) {

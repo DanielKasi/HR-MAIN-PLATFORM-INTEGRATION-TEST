@@ -1,16 +1,18 @@
 "use client";
 
+import type { IEmployee } from "@/types/types.utils";
+
 import React, { useRef, useState } from "react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import ShiftsTable from "@/components/common/tables/shifts/shifts-table";
 import { shiftsAPI, showErrorToast } from "@/lib/utils";
-import { toast } from "sonner";
-import type { IEmployee } from "@/types/types.utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import EmployeeShiftDialog from "@/components/common/tables/shifts/employee-shift-dialog";
 import ShiftRequestDialog from "@/components/common/tables/shifts/shift-request-dialog";
 import { selectUser } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
 
 interface Props {
 	employee: IEmployee;

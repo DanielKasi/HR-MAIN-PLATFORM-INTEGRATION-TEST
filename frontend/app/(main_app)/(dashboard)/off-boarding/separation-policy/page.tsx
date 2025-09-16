@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Plus, Search, Eye, Edit, Trash2, MoreHorizontal, MoreVertical } from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2, MoreVertical } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +19,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-
 import {
 	Dialog,
 	DialogContent,
@@ -28,7 +31,6 @@ import { ISeparationPolicy } from "@/types/types.utils";
 import { SeparationPoliciesAPI } from "@/lib/utils";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	DropdownMenu,
@@ -36,10 +38,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
-import { Icon } from "@iconify/react";
 
 export default function SeparationPoliciesPage() {
 	const [ordering, setOrdering] = useState("");
@@ -123,11 +123,12 @@ export default function SeparationPoliciesPage() {
 			{/* Table */}
 			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_SEPARATION_POLICIES}>
 				<div className="-ml-4">
-					<CardHeader></CardHeader>
+					<CardHeader />
 					<CardContent>
 						<PaginatedTableWrapper<ISeparationPolicy>
 							fetchFirstPage={async () => {
 								if (!selectedInstitution) throw new Error("No institution selected");
+
 								return await SeparationPoliciesAPI.getPaginated({
 									institutionId: selectedInstitution.id,
 									page: 1,

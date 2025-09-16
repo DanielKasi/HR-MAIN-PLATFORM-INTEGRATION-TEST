@@ -1,8 +1,13 @@
 "use client";
 
+import type { IAssetAllocation } from "@/types/types.utils";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { Clock, CheckCircle, XCircle, AlertCircle, Package } from "lucide-react";
+
+import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
+
 import { Badge } from "@/components/ui/badge";
 import {
 	Table,
@@ -12,13 +17,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { assetsAPI, showErrorToast } from "@/lib/utils";
-import type { IAssetAllocation } from "@/types/types.utils";
-import { toast } from "sonner";
-import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 
 interface EmployeeAssetAllocationsProps {
 	employeeId: string;
@@ -176,6 +178,7 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 							if (!selectedInstitution || !employeeId) {
 								throw new Error("No employee or Institution Found");
 							}
+
 							return await assetsAPI.getPaginatedAssetAllocations({
 								institutionId: selectedInstitution.id,
 								page: 1,

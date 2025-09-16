@@ -1,9 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useRef, useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 import dynamic from "next/dynamic";
+
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -22,6 +24,7 @@ export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreema
 		if (colorRef.current) {
 			const computedStyle = getComputedStyle(colorRef.current);
 			const bgColor = computedStyle.backgroundColor;
+
 			if (bgColor && bgColor !== "rgba(0, 0, 0, 0)") {
 				setPrimaryColor(bgColor);
 			}
@@ -100,6 +103,7 @@ export function DepartmentTreemap({ data, onRefresh, loading }: DepartmentTreema
 						value={year.toString()}
 						onValueChange={(e) => {
 							const newTime = new Date();
+
 							newTime.setFullYear(Number(e));
 							setYear(newTime.getFullYear());
 							onRefresh(newTime.getFullYear());

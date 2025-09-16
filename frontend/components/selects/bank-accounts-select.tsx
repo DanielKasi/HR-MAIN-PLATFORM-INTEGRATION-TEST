@@ -1,13 +1,13 @@
 "use client";
 
+import { useSelector } from "react-redux";
+
 import { IBankAccount } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { bankAccountsAPI } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useEffect, useState } from "react";
 
 export interface BankAccountSearchableSelectProps {
 	selectedItems: (string | number)[];
@@ -47,6 +47,7 @@ export const BankAccountSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await bankAccountsAPI.getAll(query?.search);
 	};
 

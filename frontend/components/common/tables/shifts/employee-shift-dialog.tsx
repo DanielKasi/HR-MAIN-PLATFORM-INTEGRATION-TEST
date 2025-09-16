@@ -1,6 +1,17 @@
 "use client";
 
+import type {
+	IEmployee,
+	IEmployeeShiftFormData,
+	IEmployeeShift,
+	IBranchShift,
+} from "@/types/types.utils";
+
 import { useEffect, useState } from "react";
+import { Clock, User } from "lucide-react";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import {
 	Dialog,
 	DialogContent,
@@ -18,17 +29,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Clock, User } from "lucide-react";
-import { useSelector } from "react-redux";
 import { selectSelectedBranch } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
-import { toast } from "sonner";
-import type {
-	IEmployee,
-	IEmployeeShiftFormData,
-	IEmployeeShift,
-	IBranchShift,
-} from "@/types/types.utils";
 
 interface Props {
 	isOpen: boolean;
@@ -64,6 +66,7 @@ export default function EmployeeShiftDialog({
 		setLoadingShifts(true);
 		try {
 			const response = await apiRequest.get(`institution/branch-shifts/${selectedBranch.id}/`);
+
 			setBranchShifts(response.data.results || []);
 		} catch (error) {
 			console.error("Failed to fetch branch shifts:", error);
@@ -97,6 +100,7 @@ export default function EmployeeShiftDialog({
 				try {
 					const response = await apiRequest.get(`employee/employee-shifts/${shiftId}/`);
 					const data: IEmployeeShift = response.data;
+
 					setForm({
 						shift: data.shift.id,
 						context: data.context,
@@ -114,6 +118,7 @@ export default function EmployeeShiftDialog({
 	const handleSubmit = async () => {
 		if (!form.shift || !form.date) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 

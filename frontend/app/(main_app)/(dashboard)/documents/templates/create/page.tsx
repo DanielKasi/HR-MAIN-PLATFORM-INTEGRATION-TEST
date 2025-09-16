@@ -3,11 +3,15 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { ArrowLeft, Upload, FileText, File, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -15,13 +19,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, FileText, File, Plus, X, Loader2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { getDocumentTypes, createDocumentTemplate } from "@/lib/utils";
 import { IDocumentTemplateFormData, IDocumentType } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { RichEditorField } from "@/components/common/rich-editor";
 // import dynamic from "next/dynamic"
@@ -55,6 +54,7 @@ export default function CreateTemplatePage() {
 		setIsLoadingTypes(true);
 		try {
 			const types = await getDocumentTypes({ institutionId: Number(INSTITUTION_ID) });
+
 			setDocumentTypes(types);
 		} catch (error) {
 			console.error("Failed to load document types:", error);
@@ -74,6 +74,7 @@ export default function CreateTemplatePage() {
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0] || null;
+
 		setFormData((prev) => ({ ...prev, file }));
 	};
 

@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import type { IBranchShift, IBranchWorkingDays, IShiftFormData } from "@/types/types.utils";
 
-import apiRequest from "@/lib/apiRequest";
-import { selectSelectedBranch } from "@/store/auth/selectors";
+import { useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import { ArrowLeft, Edit, MoreVertical, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import apiRequest from "@/lib/apiRequest";
+import { selectSelectedBranch } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,11 +57,8 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, MoreVertical, Trash2 } from "lucide-react";
-import type { IBranchShift, IBranchWorkingDays, IShiftFormData } from "@/types/types.utils";
 import { shiftsAPI } from "@/lib/utils";
 import { showErrorToast } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 
 const BranchShiftsPage = () => {
 	const [ordering, setOrdering] = useState("");
@@ -85,6 +86,7 @@ const BranchShiftsPage = () => {
 				`/institution/branch-working-days/?branch_id=${selectedBranch?.id}`,
 			);
 			const data = await response.data;
+
 			setBranchWorkingDays(data);
 		} catch (error) {
 			console.error("Error fetching branch working days:", error);
@@ -319,6 +321,7 @@ const BranchShiftsPage = () => {
 							if (!selectedBranch) {
 								throw new Error("No branch selected");
 							}
+
 							return await shiftsAPI.BRANCH.getAll({ branch_id: selectedBranch.id, ordering });
 						}}
 						fetchFromUrl={async (args: { url: string }) =>

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import type { IDepartment, IJobPosition } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
+import { Search, Users, ArrowLeft, Building2, UserPlus, Filter, RefreshCw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,25 +19,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-
-import {
-	Search,
-	Users,
-	ArrowLeft,
-	Building2,
-	UserPlus,
-	FileText,
-	MapPin,
-	Filter,
-	Briefcase,
-	UserCheck,
-	RefreshCw,
-} from "lucide-react";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getDepartment, showErrorToast } from "@/lib/utils";
-import type { IDepartment, IJobPosition } from "@/types/types.utils";
-
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { EmployeesTable } from "@/app/(main_app)/(dashboard)/employees/employee-list/employees-table";
 import { JobPositionsTable } from "@/components/common/tables/job-positions/job-positions-table";
@@ -67,11 +54,13 @@ export default function DepartmentDetailView() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (!departmentId) {
 			setError("Department ID is required");
+
 			return;
 		}
 
@@ -86,6 +75,7 @@ export default function DepartmentDetailView() {
 			setError("");
 
 			const department = await getDepartment({ departmentId });
+
 			setDepartment(department);
 		} catch (err) {
 			setError("Failed to fetch department data");

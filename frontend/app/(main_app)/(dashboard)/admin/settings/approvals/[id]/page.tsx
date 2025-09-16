@@ -1,15 +1,17 @@
 "use client";
 
+import type { ApprovalDocument } from "@/types/approvals.types";
+
 import { Fragment, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { ApprovalDocument, ApprovalDocumentLevel } from "@/types/approvals.types";
+import { ArrowLeft, FileText, Users, Shield, CheckCircle2, Edit } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
-import { ArrowLeft, FileText, Users, Shield, CheckCircle2, Edit, Calendar } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { APPROVAL_DOCUMENTS_API } from "@/lib/api/approvals/utils";
 
@@ -33,6 +35,7 @@ export default function ApprovalDetailsPage() {
 			const [documentRes] = await Promise.all([
 				APPROVAL_DOCUMENTS_API.fetchById({ id: Number.parseInt(approvalId) }),
 			]);
+
 			setApprovalDocument(documentRes);
 		} catch (e: any) {
 			showErrorToast({ error: e, defaultMessage: "Failed to load approval details" });

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,7 +24,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { IAsset, IAssetReturnFormData } from "@/types/types.utils";
-import { toast } from "sonner";
 import { apiRequest } from "@/lib/apiRequest";
 
 interface AssetReturnDialogProps {
@@ -46,6 +47,7 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 
 		if (!formData.return_reason.trim()) {
 			toast.error("Please provide a return reason");
+
 			return;
 		}
 

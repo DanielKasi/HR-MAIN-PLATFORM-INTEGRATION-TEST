@@ -10,8 +10,8 @@ import {
 	race,
 	cancel,
 	Effect,
-	SelectEffect,
 } from "redux-saga/effects";
+import { Task } from "redux-saga";
 
 import { ActionWithPayLoad, parseJwtLifetime } from "../storeUtils";
 import { clearEmployeeForm, toggleSideBarAction } from "../miscellaneous/actions";
@@ -53,7 +53,6 @@ import {
 	loginWithEmailAndPassword,
 } from "@/utils/auth-utils";
 import { IUser, IUserInstitution } from "@/types";
-import { Task } from "redux-saga";
 
 interface InactivityRaceResult {
 	timeout?: unknown;
@@ -75,6 +74,7 @@ function* login({
 		yield put(setRefreshToken(loginResponse.tokens.refresh));
 
 		const lifetime: number = parseJwtLifetime(loginResponse.tokens.access);
+
 		yield put(setInactivityTimeout(lifetime));
 		yield put(setCurrentUser(loginResponse.user));
 		yield put(userActivityDetected());
@@ -159,6 +159,7 @@ function* resetInactivityOnAccessRefreshed() {
 				refreshToken,
 			},
 		);
+
 		yield put(setAccessToken(response.tokens.access));
 		yield put(setRefreshToken(response.tokens.refresh));
 		const newLifetime: number = parseJwtLifetime(response.tokens.access);
@@ -174,8 +175,10 @@ function* resetInactivityOnAccessRefreshed() {
 
 function* inactivityWatcher() {
 	let timeoutTask: Task | null = null; // Track the timeout task
+
 	while (true) {
 		const user: IUser | null = yield select(selectUser);
+
 		if (!user) {
 			yield take(AUTH_ACTION_TYPES.SET_USER); // Wait for login
 			continue;
@@ -185,6 +188,7 @@ function* inactivityWatcher() {
 			yield cancel(timeoutTask); // Cancel previous timeout
 		}
 		const inactivityTimeout: number = yield select(selectInactivityTimeout);
+
 		if (inactivityTimeout <= 60000) continue; // Skip invalid timeouts
 		timeoutTask = yield fork(function* (): Generator<Effect, void, unknown> {
 			yield delay(inactivityTimeout - 60000); // Wait until 60s before expiry
@@ -197,9 +201,11 @@ function* inactivityWatcher() {
 				activity: take(AUTH_ACTION_TYPES.USER_ACTIVITY_DETECTED),
 			});
 			const { timeout, cancel, confirm, activity } = raceResult as InactivityRaceResult;
+
 			if (timeout) {
 				// console.log("\n\n Timeout set as : ", timeout)
 				const refreshInProgress = yield select(selectRefreshInProgress);
+
 				if (!refreshInProgress as unknown as boolean) {
 					yield put(logoutSuccess());
 				}

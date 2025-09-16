@@ -1,9 +1,10 @@
 "use client";
 
+import type { IJobPosition } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-
 import {
 	Briefcase,
 	ArrowLeft,
@@ -15,12 +16,12 @@ import {
 	Search,
 	User,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Table,
@@ -32,15 +33,8 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-
-import {
-	selectSelectedInstitution,
-	selectSelectedBranch,
-	selectUser,
-} from "@/store/auth/selectors";
+import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPosition } from "@/lib/utils";
-import type { IJobPosition } from "@/types/types.utils";
-import { toast } from "sonner";
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
@@ -62,12 +56,14 @@ export default function JobPositionDetailsPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (isNaN(jobPositionId)) {
 			toast.error("Invalid job position/title ID");
 			router.push("/job-positions");
+
 			return;
 		}
 
@@ -102,6 +98,7 @@ export default function JobPositionDetailsPage() {
 	const handleDownloadFile = (fileUrl: string, fileName: string) => {
 		// Create a temporary link to download the file
 		const link = document.createElement("a");
+
 		link.href = fileUrl;
 		link.download = fileName;
 		document.body.appendChild(link);
@@ -112,6 +109,7 @@ export default function JobPositionDetailsPage() {
 	// Helper for employee initials
 	const getInitials = (name: string) => {
 		if (!name) return "NA";
+
 		return name
 			.split(" ")
 			.map((n) => n[0])
@@ -124,6 +122,7 @@ export default function JobPositionDetailsPage() {
 	const employees = Array.isArray(jobPosition?.employees) ? jobPosition.employees : [];
 	const filteredEmployees = employees.filter((emp: any) => {
 		const fullName = emp.user?.fullname || emp.email || "";
+
 		return (
 			fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			(emp.email && emp.email.toLowerCase().includes(searchTerm.toLowerCase()))

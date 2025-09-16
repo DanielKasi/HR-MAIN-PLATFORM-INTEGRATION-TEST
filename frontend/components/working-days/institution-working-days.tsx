@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { WorkingDaysSkeleton } from "@/components/working-days-skeleton";
-import { WorkingDaysManager } from "@/components/working-days-manager";
-import { RotateCcw, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { institutionAPI, systemAPI } from "@/lib/utils";
 import type {
 	ISystemWorkingDay,
 	IInstitutionWorkingDays,
 	IWorkingDaysFormData,
 } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
+import { RotateCcw, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WorkingDaysSkeleton } from "@/components/working-days-skeleton";
+import { WorkingDaysManager } from "@/components/working-days-manager";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { institutionAPI, systemAPI } from "@/lib/utils";
 
 export default function InstitutionWorkingDays() {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
@@ -39,6 +41,7 @@ export default function InstitutionWorkingDays() {
 		if (institutionWorkingDays) {
 			const currentDayIds = institutionWorkingDays.days.map((day) => day.id).sort();
 			const selectedDayIds = [...selectedDays].sort();
+
 			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
 		} else {
 			setHasChanges(selectedDays.length > 0);
@@ -53,8 +56,10 @@ export default function InstitutionWorkingDays() {
 				systemAPI.getWorkingDays(),
 				institutionAPI.getWorkingDays(),
 			]);
+
 			setSystemWorkingDays(systemDays);
 			const currentWorkingDays = institutionDays.length > 0 ? institutionDays[0] : null;
+
 			setInstitutionWorkingDays(currentWorkingDays);
 			if (currentWorkingDays) {
 				setSelectedDays(currentWorkingDays.days.map((day) => day.id));
@@ -72,16 +77,19 @@ export default function InstitutionWorkingDays() {
 	const handleWorkingDaysUpdate = async (dayIds: number[]) => {
 		if (!selectedInstitution) {
 			toast.error("No institution selected");
+
 			return;
 		}
 		if (dayIds.length === 0) {
 			toast.error("Please select at least one working day");
+
 			return;
 		}
 		try {
 			setIsSaving(true);
 			const formData: IWorkingDaysFormData = { days: dayIds };
 			let updatedWorkingDays: IInstitutionWorkingDays;
+
 			if (institutionWorkingDays) {
 				updatedWorkingDays = await institutionAPI.updateWorkingDays({
 					workingDaysId: institutionWorkingDays.id,
@@ -95,6 +103,7 @@ export default function InstitutionWorkingDays() {
 			setHasChanges(false);
 		} catch (error: any) {
 			const errorMessage = error?.message || error?.detail || "Failed to save working days";
+
 			toast.error(errorMessage);
 			throw error;
 		} finally {

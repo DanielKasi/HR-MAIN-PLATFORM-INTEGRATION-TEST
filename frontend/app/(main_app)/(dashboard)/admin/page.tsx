@@ -1,32 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
-import { useEffect, useState } from "react";
 import type { Branch } from "@/types";
-import { Icon } from "@iconify/react";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
 import {
-	Users,
 	UserCog,
 	Mail,
-	Store,
-	Code,
 	FileText,
 	Database,
 	ShieldAlert,
 	ClipboardList,
 	Palette,
-	Package,
-	FolderTree,
-	Ruler,
-	UserPlus,
-	ShoppingCart,
 	GitBranch,
-	BookOpen,
-	LucideHouse,
 	BriefcaseBusinessIcon,
-	Cog,
 	Book,
 	BookAIcon,
 	Landmark,
@@ -34,6 +22,8 @@ import {
 	LampDesk,
 	Clock,
 } from "lucide-react";
+
+import { fetchAndSetData, fetchInstitutionBranchesFromAPI } from "@/lib/helpers";
 import { Separator } from "@/components/ui/separator";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";

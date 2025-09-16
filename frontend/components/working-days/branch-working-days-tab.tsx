@@ -1,20 +1,23 @@
 "use client";
 
+import type { ISystemWorkingDay, IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
+import { RotateCcw, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WorkingDaysSkeleton } from "@/components/working-days-skeleton";
 import { WorkingDaysManager } from "@/components/working-days-manager";
-import { RotateCcw, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { branchesAPI, showErrorToast, systemAPI } from "@/lib/utils";
-import type { ISystemWorkingDay, IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
 import { Branch } from "@/types";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 export default function BranchWorkingDaysTab() {
 	const [systemWorkingDays, setSystemWorkingDays] = useState<ISystemWorkingDay[]>([]);
@@ -31,12 +34,12 @@ export default function BranchWorkingDaysTab() {
 		if (selectedBranch) {
 			fetchData();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedBranch]);
 
 	const fetchSystemWorkingDays = async () => {
 		try {
 			const systemDays = await systemAPI.getWorkingDays();
+
 			setSystemWorkingDays(systemDays);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load system working days" });
@@ -47,6 +50,7 @@ export default function BranchWorkingDaysTab() {
 	const fetchBranchWorkingDays = async (branchId: number) => {
 		try {
 			const branchDays = await branchesAPI.WORKING_DAYS.getAll({ branchId });
+
 			setBranchWorkingDays(branchDays);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load branch working days" });
@@ -67,6 +71,7 @@ export default function BranchWorkingDaysTab() {
 	const handleBranchWorkingDaysUpdate = async (args: any) => {
 		if (!selectedBranch) {
 			toast.error("No branch selected");
+
 			return;
 		}
 
@@ -77,8 +82,10 @@ export default function BranchWorkingDaysTab() {
 
 			if (args.action === "add") {
 				const validDayId = systemWorkingDays.find((d) => d.id === args.dayId);
+
 				if (!validDayId) {
 					toast.error("Invalid day selected. Please refresh and try again.");
+
 					return;
 				}
 
@@ -98,6 +105,7 @@ export default function BranchWorkingDaysTab() {
 					const systemDay = systemWorkingDays.find(
 						(sd) => sd.day_name.toLowerCase() === d.day_name.toLowerCase(),
 					);
+
 					return {
 						day_id: systemDay?.id || d.id,
 						day_type: d.day_type,
@@ -106,8 +114,10 @@ export default function BranchWorkingDaysTab() {
 			} else if (args.action === "save") {
 				for (const day of args.days) {
 					const validDayId = systemWorkingDays.find((d) => d.id === day.day_id);
+
 					if (!validDayId) {
 						toast.error(`Invalid day ID ${day.day_id}. Please refresh and try again.`);
+
 						return;
 					}
 				}
@@ -119,15 +129,18 @@ export default function BranchWorkingDaysTab() {
 			const transformForAPI = (days: any[]) => {
 				return days.map((day) => {
 					const branchDay = currentDays.find((cd) => cd.id === day.day_id);
+
 					if (branchDay) {
 						const systemDay = systemWorkingDays.find(
 							(sd) => sd.day_name.toLowerCase() === branchDay.day_name.toLowerCase(),
 						);
+
 						return {
 							day_id: systemDay?.id || day.day_id,
 							day_type: day.day_type,
 						};
 					}
+
 					return {
 						day_id: day.day_id,
 						day_type: day.day_type,
@@ -141,6 +154,7 @@ export default function BranchWorkingDaysTab() {
 				const created = await branchesAPI.WORKING_DAYS.create({
 					branch_days: apiPayload,
 				});
+
 				if (created) {
 					setBranchWorkingDays(created);
 					toast.success("Branch working days created");
@@ -149,6 +163,7 @@ export default function BranchWorkingDaysTab() {
 				const updated = await branchesAPI.WORKING_DAYS.update(branchWorkingDays.id, {
 					branch_days: apiPayload,
 				});
+
 				if (updated) {
 					setBranchWorkingDays(updated);
 					toast.success("Branch working days updated");
@@ -164,6 +179,7 @@ export default function BranchWorkingDaysTab() {
 						if (dayError.day_id && Array.isArray(dayError.day_id)) {
 							return dayError.day_id.join(", ");
 						}
+
 						return JSON.stringify(dayError);
 					})
 					.filter(Boolean);
@@ -233,6 +249,7 @@ export default function BranchWorkingDaysTab() {
 								value={selectedBranch?.id.toString() || ""}
 								onValueChange={(val) => {
 									const branch = branches.find((b) => b.id === Number(val));
+
 									setSelectedBranch(branch || null);
 								}}
 							>

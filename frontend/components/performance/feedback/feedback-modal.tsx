@@ -1,8 +1,10 @@
 "use client";
 
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { FeedbackForm } from "./feedback-form";
 import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { FeedbackForm } from "./feedback-form";
 
 interface FeedbackModalProps {
 	isOpen: boolean;

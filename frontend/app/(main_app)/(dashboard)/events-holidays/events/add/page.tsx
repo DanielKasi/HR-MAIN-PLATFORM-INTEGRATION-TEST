@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Calendar, Users, MapPin, Video, Repeat, Clock } from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +17,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Calendar, Users, MapPin, Video, Repeat, Clock } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -178,6 +179,7 @@ export default function AddEventPage() {
 		setDepartmentsLoading(true);
 		try {
 			const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id });
+
 			setDepartments(fetchedDepartments);
 		} catch (error) {
 			console.error("Error fetching departments:", error);
@@ -201,6 +203,7 @@ export default function AddEventPage() {
 			const fetchedEmployees = await getPaginatedEmployees({
 				institutionId: selectedInstitution.id,
 			});
+
 			setEmployees(fetchedEmployees.results || []);
 		} catch (error) {
 			console.error("Error fetching employees:", error);
@@ -246,7 +249,7 @@ export default function AddEventPage() {
 			{loading && (
 				<div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-50">
 					<div className="text-center">
-						<div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+						<div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 						<p className="text-primary font-medium">Creating Event...</p>
 					</div>
 				</div>
@@ -267,7 +270,7 @@ export default function AddEventPage() {
 						<h1 className="text-[20px] text-[#232E3F]">Create New Event</h1>
 						{(departmentsLoading || employeesLoading) && (
 							<div className="flex items-center gap-2 text-sm text-slate-600">
-								<div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+								<div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
 								{departmentsLoading && employeesLoading
 									? "Loading data..."
 									: departmentsLoading
@@ -471,7 +474,7 @@ export default function AddEventPage() {
 														<SelectContent>
 															{departmentsLoading ? (
 																<div className="p-4 text-center text-slate-500">
-																	<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+																	<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
 																	Loading departments...
 																</div>
 															) : departments.length === 0 ? (
@@ -571,7 +574,7 @@ export default function AddEventPage() {
 													<div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
 														{employeesLoading ? (
 															<div className="text-center py-4 text-slate-500">
-																<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+																<div className="w-4 h-4 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
 																Loading employees...
 															</div>
 														) : employees.length === 0 ? (
@@ -648,6 +651,7 @@ export default function AddEventPage() {
 														},
 													].map((mode) => {
 														const Icon = mode.icon;
+
 														return (
 															<div
 																key={mode.value}
@@ -804,7 +808,7 @@ export default function AddEventPage() {
 												>
 													{loading ? (
 														<div className="flex items-center gap-2">
-															<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+															<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
 															Creating...
 														</div>
 													) : (

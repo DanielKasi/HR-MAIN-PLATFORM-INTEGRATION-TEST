@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, FileText, FileSpreadsheet } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -45,6 +46,7 @@ export function TaxExportMenu({ taxes, disabled = false }: TaxExportMenuProps) {
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 		const link = document.createElement("a");
 		const url = URL.createObjectURL(blob);
+
 		link.setAttribute("href", url);
 		link.setAttribute("download", `employee_taxes_${new Date().toISOString().split("T")[0]}.csv`);
 		link.style.visibility = "hidden";

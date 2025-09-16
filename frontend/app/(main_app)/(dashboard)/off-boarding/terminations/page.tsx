@@ -2,8 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Plus, FileText, Eye, Pencil, Trash2, MoreVertical, Search } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +18,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -29,17 +32,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	Plus,
-	FileText,
-	Eye,
-	MoreHorizontal,
-	Pencil,
-	Trash2,
-	MoreVertical,
-	Search,
-} from "lucide-react";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TerminationInitiationsAPI } from "@/lib/utils";
 import { ITermination } from "@/types/types.utils";
@@ -154,6 +146,7 @@ export default function TerminationInitiationsPage() {
 						<PaginatedTableWrapper<ITermination>
 							fetchFirstPage={async () => {
 								if (!selectedInstitution) throw new Error("No institution selected");
+
 								return await TerminationInitiationsAPI.getPaginated({
 									institutionId: selectedInstitution.id,
 									page: 1,

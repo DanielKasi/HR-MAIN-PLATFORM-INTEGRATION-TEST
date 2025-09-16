@@ -22,9 +22,11 @@ export const getDocumentTemplates = async ({
 		}
 
 		const data = await response.json();
+
 		return data;
 	} catch (error) {
 		console.error("Error fetching document templates:", error);
+
 		return [];
 	}
 };
@@ -84,6 +86,7 @@ export const generateDocument = async ({
 		}
 	} catch (error) {
 		console.error("Error generating document:", error);
+
 		return null;
 	}
 };

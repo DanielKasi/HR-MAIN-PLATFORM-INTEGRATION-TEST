@@ -1,17 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import {
 	PieChart,
 	Pie,
@@ -24,8 +13,19 @@ import {
 	Legend,
 	ResponsiveContainer,
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Loader2, Package, AlertCircle, Clock, CheckCircle, XCircle, Wrench } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getAssetDashboard } from "@/lib/utils";
 import { AssetsData } from "@/types/types.utils";
 
@@ -38,6 +38,7 @@ export default function AssetsDashboard() {
 		async function fetchData() {
 			try {
 				const dashboardData = await getAssetDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to fetch data");

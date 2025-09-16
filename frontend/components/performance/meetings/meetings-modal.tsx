@@ -1,8 +1,10 @@
 "use client";
 
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { MeetingForm } from "./meetings-form";
 import type { IMeeting, IMeetingFormData } from "@/types/types.utils";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { MeetingForm } from "./meetings-form";
 
 interface MeetingModalProps {
 	isOpen: boolean;

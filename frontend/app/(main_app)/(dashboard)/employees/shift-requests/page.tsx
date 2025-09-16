@@ -1,7 +1,18 @@
 "use client";
 
+import type {
+	IEmployeeShift,
+	IBranchShift,
+	IEmployee,
+	IPaginatedResponse,
+} from "@/types/types.utils";
+
 import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,22 +50,13 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import apiRequest from "@/lib/apiRequest";
-import type {
-	IEmployeeShift,
-	IBranchShift,
-	IEmployee,
-	IPaginatedResponse,
-} from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedBranch, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { showErrorToast } from "@/lib/utils";
-import { Icon } from "@iconify/react";
 
 interface IAllocationFormData {
 	employee_id: string;
@@ -90,6 +92,7 @@ const EmployeeShiftsPage = () => {
 				apiRequest.get(`employee/${currentInstitutionId}/employee`),
 				apiRequest.get(`institution/branch-shifts/${selectedBranch?.id}/`),
 			]);
+
 			setEmployees(employeesRes.data.results || []);
 			setShifts(shiftsRes.data.results || []);
 		} catch (error) {
@@ -100,6 +103,7 @@ const EmployeeShiftsPage = () => {
 	const handleAddAllocation = async () => {
 		if (!formData.employee_id || !formData.shift_id || !formData.date) {
 			console.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -129,6 +133,7 @@ const EmployeeShiftsPage = () => {
 	const handleEditAllocation = async () => {
 		if (!selectedShift || !formData.employee_id || !formData.shift_id || !formData.date) {
 			console.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -248,10 +253,12 @@ const EmployeeShiftsPage = () => {
 							const queryString = params ? `?${params}` : "";
 
 							const response = await apiRequest.get(`employee/employee-shifts/${queryString}`);
+
 							return response.data;
 						}}
 						fetchFromUrl={async ({ url }: { url: string }) => {
 							const response = await apiRequest.get(url);
+
 							return response.data;
 						}}
 						deps={[searchTerm, ordering]}

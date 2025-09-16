@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Icon } from "@iconify/react";
 import { FormattedNumberInput } from "@/components/common/inputs/formatted-number-input";
 
 interface SpotcheckConfigFormData {

@@ -14,8 +14,6 @@ import {
 	ChevronUp,
 	X,
 	Plus,
-	Save,
-	RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +22,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
 import { cn, showErrorToast } from "@/lib/utils";
 import apiRequest from "@/lib/apiRequest";
 import { IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
@@ -61,6 +58,7 @@ export default function BranchDetailPage() {
 		setIsLoading(true);
 		try {
 			const response = await apiRequest.get(`institution/branch/${branchId}/`);
+
 			if (response.status === 200) {
 				setBranch(response.data);
 			} else {
@@ -84,6 +82,7 @@ export default function BranchDetailPage() {
 			const response = await apiRequest.get(
 				`institution/branch-working-days/?branch_id=${branchId}`,
 			);
+
 			setBranchWorkingDays(response.data as IBranchWorkingDays);
 		} catch (error: any) {
 			showErrorToast({ error, defaultMessage: "Failed to load working days" });
@@ -96,11 +95,13 @@ export default function BranchDetailPage() {
 	const handleWorkingDaysUpdate = async (days: IBranchDay[]) => {
 		if (!branchId) {
 			toast.error("No branch ID available");
+
 			return;
 		}
 
 		if (days.length === 0) {
 			toast.error("Please select at least one working day");
+
 			return;
 		}
 
@@ -113,6 +114,7 @@ export default function BranchDetailPage() {
 			};
 
 			let response;
+
 			if (branchWorkingDays?.id) {
 				response = await apiRequest.patch(
 					`institution/branch-working-day-detail/${branchWorkingDays.id}/`,
@@ -157,6 +159,7 @@ export default function BranchDetailPage() {
 			Saturday: "bg-indigo-100 text-indigo-700 border-indigo-200",
 			Sunday: "bg-red-100 text-red-700 border-red-200",
 		};
+
 		return colors[dayName as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
 	};
 
@@ -170,14 +173,17 @@ export default function BranchDetailPage() {
 			Saturday: "S",
 			Sunday: "S",
 		};
+
 		return icons[dayName as keyof typeof icons] || dayName[0] || "?";
 	};
 
 	// Handle day click (add/remove)
 	const handleDayClick = async (dayId: number, dayType: "PHYSICAL" | "REMOTE" = "PHYSICAL") => {
 		const day = branchWorkingDays?.branch_days.find((d) => d.id === dayId);
+
 		if (!day || day.id === 0) {
 			toast.error("This day is not available for selection");
+
 			return;
 		}
 
@@ -188,6 +194,7 @@ export default function BranchDetailPage() {
 		}
 		setRemovingDayId(dayId);
 		const newSelectedDays = branchWorkingDays?.branch_days.filter((d) => d.day_id !== dayId);
+
 		try {
 			await handleWorkingDaysUpdate(newSelectedDays || []);
 		} catch (error) {
@@ -223,6 +230,7 @@ export default function BranchDetailPage() {
 
 	const sortedDays = branchWorkingDays?.branch_days.sort((a, b) => {
 		const order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
 		return order.indexOf(a.day_name) - order.indexOf(b.day_name);
 	});
 
@@ -388,6 +396,7 @@ export default function BranchDetailPage() {
 																	(d) => d.day_id === day.id,
 																);
 																const isSelectable = day.id !== 0;
+
 																return (
 																	<div key={day.day_name} className="relative">
 																		<div className="text-center transition-all duration-200 rounded-lg p-2">

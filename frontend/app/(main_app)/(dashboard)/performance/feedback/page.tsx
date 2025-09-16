@@ -1,17 +1,19 @@
 "use client";
 
+import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { MessageSquare, Star, Users, Eye, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { FEEDBACK_360_API } from "@/lib/utils";
-import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
 import { FeedbackTable } from "@/components/performance/feedback/feedback-table";
 import { FeedbackModal } from "@/components/performance/feedback/feedback-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { MessageSquare, Star, Users, Eye, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function FeedbackPage() {
@@ -31,6 +33,7 @@ export default function FeedbackPage() {
 		setLoading(true);
 		try {
 			const response = await FEEDBACK_360_API.getPaginated({});
+
 			setFeedback(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch feedback");

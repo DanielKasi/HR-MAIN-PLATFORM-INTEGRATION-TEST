@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+
+import { PerformanceForm, type FormField } from "../common/performance-form";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { PeriodSelect } from "@/components/selects/period-select";
@@ -47,6 +50,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			required: true,
 			validation: (value: string) => {
 				if (value.length < 10) return "Feedback must be at least 10 characters";
+
 				return null;
 			},
 		},
@@ -57,6 +61,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			placeholder: "What are this person's key strengths?",
 			validation: (value: string) => {
 				if (value && value.length < 5) return "Strengths must be at least 5 characters";
+
 				return null;
 			},
 		},
@@ -67,6 +72,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			placeholder: "What areas could be improved?",
 			validation: (value: string) => {
 				if (value && value.length < 5) return "Areas for improvement must be at least 5 characters";
+
 				return null;
 			},
 		},

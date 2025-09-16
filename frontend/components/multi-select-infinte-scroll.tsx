@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, Search, Check, X } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Search, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultiSelectInfiniteScrollProps<T> {
@@ -64,6 +65,7 @@ export function MultiSelectInfiniteScroll<T>({
 		observerRef.current = new IntersectionObserver(
 			(entries) => {
 				const target = entries[0];
+
 				if (target.isIntersecting && hasMore && !loading) {
 					onLoadMore();
 				}
@@ -175,6 +177,7 @@ export function MultiSelectInfiniteScroll<T>({
 								const isSelected = selectedItems.some(
 									(selected) => getItemId(selected) === getItemId(item),
 								);
+
 								return (
 									<Button
 										key={getItemId(item)}

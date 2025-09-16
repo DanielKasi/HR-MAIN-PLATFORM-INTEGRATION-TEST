@@ -1,28 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import type { UserProfile } from "@/types";
-import { PERMISSION_CODES } from "@/constants";
-import ProtectedComponent from "@/components/ProtectedComponent";
-import { apiGet } from "@/lib/apiRequest";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
+import { useRef, useState } from "react";
 import {
 	Plus,
 	Search,
-	Filter,
-	Calendar,
-	Users,
 	Target,
-	TrendingUp,
 	Clock,
 	CheckCircle2,
 	AlertCircle,
 	Pause,
 	XCircle,
-	MoreHorizontal,
 	Eye,
 	Edit,
 	Trash2,
@@ -30,6 +19,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+
+import { PERMISSION_CODES } from "@/constants";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	DropdownMenu,
@@ -37,12 +34,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Progress } from "@/components/ui/progress";
 import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-table";
-import { Icon } from "@iconify/react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { toast } from "sonner";
 
 interface IProjectTask {
 	id: number;
@@ -113,6 +107,7 @@ const getStatusColor = (status: string) => {
 const calculateProgress = (tasks: IProjectTask[]) => {
 	if (tasks.length === 0) return 0;
 	const completedTasks = tasks.filter((task) => task.task_status === "completed").length;
+
 	return Math.round((completedTasks / tasks.length) * 100);
 };
 
@@ -121,6 +116,7 @@ const getDaysRemaining = (endDate: string) => {
 	const end = new Date(endDate);
 	const diffTime = end.getTime() - today.getTime();
 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
 	return diffDays;
 };
 
@@ -276,10 +272,12 @@ export default function ProjectsPage() {
 	const handleDelete = async () => {
 		if (!currentInstitution) {
 			toast.error("No institution selected");
+
 			return;
 		}
 		if (!projectToDelete) {
 			toast.error("No employee to delete!");
+
 			return;
 		}
 		try {
@@ -336,6 +334,7 @@ export default function ProjectsPage() {
 						<PaginatedTable<IProject>
 							fetchFirstPage={async () => {
 								if (!currentInstitution) throw new Error("No institution selected");
+
 								return await PROJECTS_API.getPaginatedProjects({
 									institutionId: currentInstitution.id,
 									page: 1,

@@ -1,9 +1,10 @@
-import { IPermission, IUser, IUserInstitution, Permission } from "@/types";
+import axios from "axios";
+
+import { IPermission, IUser, IUserInstitution } from "@/types";
 import apiRequest from "@/lib/apiRequest";
 import { getInstitutionById } from "@/lib/helpers";
 import { store } from "@/store";
 import { clearTemporaryPermissions, setTemporaryPermissions } from "@/store/auth/actions";
-import axios from "axios";
 import { MAIN_DOMAIN_URL } from "@/constants";
 
 export type LoginResponse = {
@@ -68,6 +69,7 @@ export const AUTH_API = {
 				},
 			},
 		);
+
 		return response.data as LoginResponse;
 	},
 
@@ -85,12 +87,14 @@ export const AUTH_API = {
 			old_email,
 			new_email,
 		});
+
 		return response;
 	},
 	resendOtp: async ({ email, mode }: { email: string; mode: "otp" | "password_link" }) => {
 		const response = await apiRequest.post(`user/resend-otp/?mode=${mode}`, {
 			email,
 		});
+
 		return response;
 	},
 };

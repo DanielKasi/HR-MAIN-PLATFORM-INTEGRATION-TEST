@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import type { ILeaveType, ILeaveTypeFormData } from "@/types/types.utils";
+
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { Plus, MoreVertical, Edit, Trash2, Search, Filter, Settings, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,16 +44,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import type { ILeaveType, ILeaveTypeFormData } from "@/types/types.utils";
 import { LeaveTypesAPI } from "@/lib/utils";
-import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import type { IUserInstitution } from "@/types";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 import FormatNumberInput from "@/components/format-number-input";
 
 const LEAVE_CATEGORIES = [
@@ -159,11 +160,13 @@ const LeaveTypesPage = () => {
 	const handleAddLeaveType = async () => {
 		if (!formData.name || !formData.description || !formData.max_days_per_year) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
 		if (selectedInstitution?.id === undefined) {
 			toast.error("Institution is not selected");
+
 			return;
 		}
 
@@ -207,6 +210,7 @@ const LeaveTypesPage = () => {
 
 		if (!formData.name || !formData.description || !formData.max_days_per_year) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -609,6 +613,7 @@ const LeaveTypesPage = () => {
 					<PaginatedTableWrapper<ILeaveType>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await LeaveTypesAPI.getPaginated({
 								institutionId: selectedInstitution.id,
 								page: 1,

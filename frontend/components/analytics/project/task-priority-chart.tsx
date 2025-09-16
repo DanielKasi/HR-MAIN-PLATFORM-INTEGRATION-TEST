@@ -1,9 +1,11 @@
 "use client";
 
+import type { TasksAnalytics } from "@/types/types.utils";
+
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { TasksAnalytics } from "@/types/types.utils";
 
 interface TaskPriorityChartProps {
 	data: TasksAnalytics;
@@ -21,6 +23,7 @@ const priorityOrder = ["low", "medium", "high", "urgent"];
 export function TaskPriorityChart({ data }: TaskPriorityChartProps) {
 	const chartData = priorityOrder.map((priority) => {
 		const item = data.by_priority.find((p) => p.priority === priority);
+
 		return {
 			priority: priority.charAt(0).toUpperCase() + priority.slice(1),
 			count: item?.count || 0,

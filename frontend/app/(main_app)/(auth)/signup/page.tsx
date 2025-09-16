@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useDispatch } from "react-redux";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,6 @@ import apiRequest from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
 import { USER_GENDER } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import { useDispatch } from "react-redux";
 import { logoutStart } from "@/store/auth/actions";
 
 const GENDER_LABELS: Record<USER_GENDER, string> = {
@@ -83,6 +83,7 @@ export default function SignupPage() {
 		if (!passwordValidation.hasLowercase) return "At least one lowercase letter (a-z)";
 		if (!passwordValidation.hasDigit) return "At least one number (0-9)";
 		if (!passwordValidation.hasSpecialChar) return "At least one special character (!@#$%^&*)";
+
 		return null;
 	};
 
@@ -96,16 +97,19 @@ export default function SignupPage() {
 
 		if (!isPasswordValid) {
 			showErrorMessage("Please fix the password requirements");
+
 			return;
 		}
 
 		if (!passwordsMatch) {
 			showErrorMessage("Passwords do not match");
+
 			return;
 		}
 
 		if (!gender) {
 			showErrorMessage("Please choose a gender");
+
 			return;
 		}
 
@@ -121,6 +125,7 @@ export default function SignupPage() {
 
 			if (response.status === 201) {
 				const user_id = response.data.id;
+
 				router.push(`verify-otp?email=${encodeURIComponent(email)}`);
 			}
 		} catch (error: any) {

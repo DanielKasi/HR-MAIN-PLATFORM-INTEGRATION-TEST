@@ -1,9 +1,14 @@
 "use client";
 
 import type React from "react";
+import type { ISeparationType } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,10 +25,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import type { ISeparationType } from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
-import { Icon } from "@iconify/react";
 import FormatNumberInput from "@/components/format-number-input";
 
 interface FormData {
@@ -71,6 +73,7 @@ export default function AddSeparationPolicyPage() {
 	const fetchSeparationTypes = async () => {
 		try {
 			const response = await apiRequest.get("/on-boarding/separation-types");
+
 			if (response.status === 200) {
 				setSeparationTypes(response.data.results);
 			} else {
@@ -120,6 +123,7 @@ export default function AddSeparationPolicyPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 

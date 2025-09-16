@@ -1,8 +1,21 @@
 "use client";
 
 import type React from "react";
+
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import {
+	ArrowLeft,
+	Save,
+	Calendar,
+	Users,
+	MapPin,
+	Video,
+	AlertTriangle,
+	Clock,
+} from "lucide-react";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,17 +28,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	ArrowLeft,
-	Save,
-	Calendar,
-	Users,
-	MapPin,
-	Video,
-	AlertTriangle,
-	Clock,
-} from "lucide-react";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiGet, apiPatch } from "@/lib/apiRequest";
@@ -68,6 +70,7 @@ export default function EditEventPage() {
 				repeat_until: event.repeat_until ? event.repeat_until.split("T")[0] : "",
 				institution: event.institution,
 			};
+
 			setFormData(eventData);
 			setOriginalData(eventData);
 		} catch (error) {
@@ -86,6 +89,7 @@ export default function EditEventPage() {
 	useEffect(() => {
 		if (originalData) {
 			const changed = JSON.stringify(formData) !== JSON.stringify(originalData);
+
 			setHasChanges(changed);
 		}
 	}, [formData, originalData]);
@@ -511,7 +515,7 @@ export default function EditEventPage() {
 								<CardContent className="space-y-4">
 									<div className="space-y-3">
 										<div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-											<div className="w-3 h-3 bg-green-500 rounded-full"></div>
+											<div className="w-3 h-3 bg-green-500 rounded-full" />
 											<div className="flex-1">
 												<p className="text-sm font-medium text-green-800">Start Date</p>
 												<p className="text-xs text-green-700">
@@ -521,7 +525,7 @@ export default function EditEventPage() {
 										</div>
 
 										<div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
-											<div className="w-3 h-3 bg-red-500 rounded-full"></div>
+											<div className="w-3 h-3 bg-red-500 rounded-full" />
 											<div className="flex-1">
 												<p className="text-sm font-medium text-red-800">End Date</p>
 												<p className="text-xs text-red-700">

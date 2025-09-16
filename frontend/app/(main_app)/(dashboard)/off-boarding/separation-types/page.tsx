@@ -1,22 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, MoreVertical, Search } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import {
-	Plus,
-	Pencil,
-	Trash2,
-	CheckCircle2,
-	XCircle,
-	MoreHorizontal,
-	MoreVertical,
-	Search,
-} from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -57,19 +55,13 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { cn, OffboardingStagesAPI, SeparationPolicyTypesAPI } from "@/lib/utils";
-import { ISeparationType, IOffboardingStage, SeparationCategory } from "@/types/types.utils";
+import { ISeparationType, IOffboardingStage } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { Icon } from "@iconify/react";
-import { useRouter, useSearchParams } from "next/navigation";
 
 const SEPARATION_CATEGORIES = [
 	{ value: "resignation", label: "Resignation" },
@@ -117,6 +109,7 @@ export default function SeparationPolicyTypesPage() {
 		if (!selectedInstitution?.id) return;
 		try {
 			const data = await OffboardingStagesAPI.getAll({ institutionId: selectedInstitution.id });
+
 			setStages(data.results);
 		} catch (error) {
 			toast.error("Failed to fetch offboarding stages");
@@ -311,6 +304,7 @@ export default function SeparationPolicyTypesPage() {
 																	const currentValues = field.value || [];
 																	const numValue = parseInt(value);
 																	const index = currentValues.indexOf(numValue);
+
 																	if (index === -1) {
 																		field.onChange([...currentValues, numValue]);
 																	} else {
@@ -430,6 +424,7 @@ export default function SeparationPolicyTypesPage() {
 												const currentValues = field.value || [];
 												const numValue = parseInt(value);
 												const index = currentValues.indexOf(numValue);
+
 												if (index === -1) {
 													field.onChange([...currentValues, numValue]);
 												} else {
@@ -487,6 +482,7 @@ export default function SeparationPolicyTypesPage() {
 						<PaginatedTableWrapper<ISeparationType>
 							fetchFirstPage={async () => {
 								if (!selectedInstitution) throw new Error("No institution selected");
+
 								return await SeparationPolicyTypesAPI.getPaginated({
 									institutionId: selectedInstitution.id,
 									page: 1,

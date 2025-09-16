@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Search } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
 	getPaginatedEmployeeDeductions,
 	getPaginatedEmployeeDeductionsFromUrl,
@@ -41,9 +43,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ref } from "process";
 import { formatCurrency } from "@/lib/helpers";
-import { Icon } from "@iconify/react";
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
 	context?: "employee" | "department" | "job_position";
@@ -67,12 +67,14 @@ export default function EmployeeDeductionsPage() {
 			if (!selectedInstitution?.id) return;
 			try {
 				const types = await getDeductionTypes(selectedInstitution.id);
+
 				setDeductionTypes(types);
 			} catch (error) {
 				setDeductionTypes([]);
 				toast.error("Failed to load deduction types");
 			}
 		};
+
 		fetchDeductionTypes();
 	}, [selectedInstitution?.id]);
 
@@ -80,6 +82,7 @@ export default function EmployeeDeductionsPage() {
 		if (deduction.calculation_method === "percentage" && deduction.employee.salary) {
 			return (Number(deduction.employee.salary || 0) * parseFloat(deduction.percentage)) / 100;
 		}
+
 		return parseFloat(deduction.amount) || 0;
 	};
 
@@ -91,6 +94,7 @@ export default function EmployeeDeductionsPage() {
 	const handleDelete = async (id: number) => {
 		try {
 			const success = await deleteEmployeeDeduction(id);
+
 			if (success) {
 				toast.success("Deduction deleted successfully");
 			} else {
@@ -199,6 +203,7 @@ export default function EmployeeDeductionsPage() {
 					<PaginatedTableWrapper<IEmployeeDeduction>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedEmployeeDeductions({
 								institutionId: selectedInstitution.id,
 								page: 1,

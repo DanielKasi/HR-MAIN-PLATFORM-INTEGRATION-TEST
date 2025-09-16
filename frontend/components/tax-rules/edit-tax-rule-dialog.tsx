@@ -1,7 +1,11 @@
 "use client";
 
+import type { ITaxRule } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -20,11 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
-import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
-import type { ITaxRule } from "@/types/types.utils";
-import { formatCurrency } from "@/lib/helpers";
 
 interface EditTaxRuleDialogProps {
 	taxRule: ITaxRule;
@@ -68,16 +68,19 @@ export function EditTaxRuleDialog({ taxRule, isOpen, onClose, onSuccess }: EditT
 	const handleSubmit = async () => {
 		if (!formData.tax_rule_name.trim()) {
 			toast.error("Please enter a tax rule name");
+
 			return;
 		}
 
 		if (!formData.salary_from || !formData.salary_to) {
 			toast.error("Please enter salary range");
+
 			return;
 		}
 
 		if (formData.salary_from >= formData.salary_to) {
 			toast.error("Salary 'from' must be less than salary 'to'");
+
 			return;
 		}
 
@@ -86,6 +89,7 @@ export function EditTaxRuleDialog({ taxRule, isOpen, onClose, onSuccess }: EditT
 			(!formData.tax_rule_percentage || formData.tax_rule_percentage <= 0)
 		) {
 			toast.error("Please enter a valid percentage");
+
 			return;
 		}
 
@@ -94,6 +98,7 @@ export function EditTaxRuleDialog({ taxRule, isOpen, onClose, onSuccess }: EditT
 			(!formData.tax_rule_fixed_amount || formData.tax_rule_fixed_amount <= 0)
 		) {
 			toast.error("Please enter a valid fixed amount");
+
 			return;
 		}
 
@@ -118,6 +123,7 @@ export function EditTaxRuleDialog({ taxRule, isOpen, onClose, onSuccess }: EditT
 			};
 
 			const updatedTaxRule = await taxRulesAPI.update(taxRule.id, updateData);
+
 			onSuccess(updatedTaxRule);
 			toast.success("Tax rule updated successfully");
 			onClose();

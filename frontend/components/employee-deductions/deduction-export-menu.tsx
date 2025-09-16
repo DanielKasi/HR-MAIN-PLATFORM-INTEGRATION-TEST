@@ -1,6 +1,11 @@
 "use client";
 
+import type { IEmployeeDeduction } from "@/types/types.utils";
+
 import { Download, FileSpreadsheet } from "lucide-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -8,9 +13,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import type { IEmployeeDeduction } from "@/types/types.utils";
 
 interface DeductionExportMenuProps {
 	deductions: IEmployeeDeduction[];
@@ -54,6 +56,7 @@ export function DeductionExportMenu({
 		const blob = new Blob([csvContent], { type: "text/csv" });
 		const url = window.URL.createObjectURL(blob);
 		const a = document.createElement("a");
+
 		a.href = url;
 		a.download = "employee-deductions.csv";
 		a.click();
@@ -93,6 +96,7 @@ export function DeductionExportMenu({
 				htmlTable += "<tr>";
 				headers.forEach((header) => {
 					const value = row[header as keyof typeof row];
+
 					htmlTable += `<td>${value}</td>`;
 				});
 				htmlTable += "</tr>";
@@ -127,6 +131,7 @@ export function DeductionExportMenu({
 			const blob = new Blob([excelContent], { type: "application/vnd.ms-excel" });
 			const url = window.URL.createObjectURL(blob);
 			const a = document.createElement("a");
+
 			a.href = url;
 			a.download = `employee-deductions-${format(new Date(), "yyyy-MM-dd")}.xls`;
 			document.body.appendChild(a);

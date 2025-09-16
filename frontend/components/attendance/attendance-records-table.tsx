@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { AttendanceAPI, showErrorToast } from "@/lib/utils";
-
 import React, { useState, useRef, RefObject, useEffect } from "react";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
+
+import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { AttendanceAPI, showErrorToast } from "@/lib/utils";
 import {
 	Table,
 	TableBody,
@@ -15,9 +16,7 @@ import {
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
 import { IAttendance, IEmployee } from "@/types/types.utils";
-import { toast } from "sonner";
 import { CheckInModal } from "@/components/checkin-modal";
 import { CheckOutModal } from "@/components/checkout-modal";
 import { getCurrentUserLocation } from "@/lib/helpers";
@@ -90,6 +89,7 @@ export function AttendanceRecordsTable({
 		if (!selectedEmployee) return;
 		if (!currentUserlocation) {
 			toast.warning("You need to allow access to your location to be able to proceed !");
+
 			return;
 		}
 		try {
@@ -111,9 +111,11 @@ export function AttendanceRecordsTable({
 		if (!selectedAttendanceRecord) return;
 		const record = attendanceRecords.find((r) => r.id === selectedAttendanceRecord.id);
 		const checkInTime = record?.check_in_time || "";
+
 		await getCurrentUserLocation(handlePositionChange);
 		if (!currentUserlocation) {
 			toast.warning("You need to allow access to your location to be able to proceed !");
+
 			return;
 		}
 
@@ -144,6 +146,7 @@ export function AttendanceRecordsTable({
 						institutionId,
 					});
 				}
+
 				return AttendanceAPI.fetchAttendanceRecordsByEmployee({
 					employee_id: scope.employee.id,
 					date: selectedDate,
@@ -275,6 +278,7 @@ export function AttendanceRecordsTable({
 													const record = (attendanceData?.results || []).find(
 														(r) => r.employee.id === emp.id,
 													);
+
 													return (
 														<TableRow key={emp.id} className="hover:bg-gray-50">
 															<TableCell>{selectedDate}</TableCell>
@@ -286,7 +290,7 @@ export function AttendanceRecordsTable({
 																	>
 																		{emp.user?.fullname || "Unknown"}
 																	</Link>
-																	<span className="text-xs text-gray-400"></span>
+																	<span className="text-xs text-gray-400" />
 																</div>
 															</TableCell>
 															<TableCell>{emp.email || ""}</TableCell>
@@ -363,5 +367,6 @@ function isToday(dateString: string) {
 	const yyyy = today.getFullYear();
 	const mm = String(today.getMonth() + 1).padStart(2, "0");
 	const dd = String(today.getDate()).padStart(2, "0");
+
 	return dateString === `${yyyy}-${mm}-${dd}`;
 }

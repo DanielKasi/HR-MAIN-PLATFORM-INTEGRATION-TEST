@@ -1,17 +1,12 @@
 "use client";
 
+import type { IAsset } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-	ArrowLeft,
-	RefreshCw,
-	Package,
-	User,
-	History,
-	CheckCircle,
-	Clock,
-	ArrowDown,
-} from "lucide-react";
+import { ArrowLeft, RefreshCw, Package, User, History, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,13 +17,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset } from "@/types/types.utils";
 import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
 import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";
 import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog";
-import { Icon } from "@iconify/react";
 import {
 	Dialog,
 	DialogContent,
@@ -74,6 +66,7 @@ const formatDate = (dateString: string) => {
 
 	try {
 		const date = new Date(dateString);
+
 		return date.toLocaleDateString("en-US", {
 			year: "numeric",
 			month: "short",
@@ -108,6 +101,7 @@ const AssetDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getById(Number.parseInt(assetId));
+
 			setAsset(response);
 		} catch (error) {
 			console.warn("Error fetching asset details:", error);
@@ -151,6 +145,7 @@ const AssetDetailPage = () => {
 	const handleAssignAsset = () => {
 		if (!asset) {
 			toast.error("Asset not found");
+
 			return;
 		}
 		setIsAssignDialogOpen(true);
@@ -159,12 +154,14 @@ const AssetDetailPage = () => {
 	const handleReturnAsset = () => {
 		if (!asset) {
 			toast.error("Asset not found");
+
 			return;
 		}
 
 		// Check if asset is currently allocated
 		if (asset.status !== "allocated") {
 			toast.error("Only allocated assets can be returned");
+
 			return;
 		}
 
@@ -174,6 +171,7 @@ const AssetDetailPage = () => {
 	const confirmReturnAsset = async () => {
 		if (!asset) {
 			toast.error("Asset not found");
+
 			return;
 		}
 
@@ -203,6 +201,7 @@ const AssetDetailPage = () => {
 	const handleRetireAsset = () => {
 		if (!asset) {
 			toast.error("Asset not found");
+
 			return;
 		}
 		setIsRetireConfirmOpen(true);
@@ -211,6 +210,7 @@ const AssetDetailPage = () => {
 	const confirmRetireAsset = async () => {
 		if (!asset) {
 			toast.error("Asset not found");
+
 			return;
 		}
 
@@ -452,7 +452,7 @@ const AssetDetailPage = () => {
 																	</p>
 																</div>
 															</TableCell>
-															<TableCell className="text-sm text-gray-900 min-w-[100px]"></TableCell>
+															<TableCell className="text-sm text-gray-900 min-w-[100px]" />
 															<TableCell className="min-w-[100px]">
 																<Badge className={getStatusColor(item.event_type)}>
 																	{item.event_type}

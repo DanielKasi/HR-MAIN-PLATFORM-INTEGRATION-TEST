@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAssetRequest } from "@/types/types.utils";
+
 import { useState } from "react";
-import { Trash2, AlertTriangle, Package } from "lucide-react";
+import { Trash2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,9 +14,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest } from "@/types/types.utils";
 
 interface DeleteAssetRequestDialogProps {
 	request: IAssetRequest;
@@ -37,6 +39,7 @@ export const DeleteAssetRequestDialog = ({
 		} catch (error: any) {
 			console.error("Error deleting asset request:", error);
 			const errorMessage = error.response?.data?.message || "Failed to delete asset request";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsDeleting(false);

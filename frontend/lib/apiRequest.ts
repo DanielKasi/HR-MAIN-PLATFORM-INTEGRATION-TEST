@@ -67,6 +67,7 @@ axiosJsonInstance.interceptors.response.use(
 				if (typeof window !== "undefined") {
 					store.dispatch(logoutStart());
 				}
+
 				return Promise.reject(error);
 			}
 
@@ -158,6 +159,7 @@ export const apiRequest = async (
 			status: response.status,
 			custom_code: response.data?.custom_code || null,
 		};
+
 		if (endpoint.endsWith("employee/create/")) {
 			err = response.data;
 		}

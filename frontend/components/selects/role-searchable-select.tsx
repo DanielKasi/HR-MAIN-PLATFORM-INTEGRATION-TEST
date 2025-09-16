@@ -1,11 +1,12 @@
 "use client";
 
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useEffect, useState } from "react";
 import { Role } from "@/types";
 import { ROLES_API } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ export const RoleSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await ROLES_API.getPaginatedFirstPage({ institutionId: currentInstitution.id });
 	};
 

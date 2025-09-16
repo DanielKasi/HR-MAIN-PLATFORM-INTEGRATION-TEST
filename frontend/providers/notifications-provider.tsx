@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 import { selectAccessToken, selectUser } from "@/store/auth/selectors";
 import { receiveNotification } from "@/store/notifications/actions";
 import { selectNotifications } from "@/store/notifications/selectors";
@@ -70,16 +71,19 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 				while (true) {
 					const { done, value } = await reader.read();
+
 					if (done) break;
 
 					buffer += decoder.decode(value, { stream: true });
 					const lines = buffer.split("\n\n");
+
 					buffer = lines.pop() || "";
 
 					for (const line of lines) {
 						if (line.startsWith("data: ")) {
 							try {
 								const data: INotification = JSON.parse(line.slice(6));
+
 								if (data && data.id && !notifications.find((notif) => notif.id === data.id)) {
 									//   console.log("\n\n Notification received:", data, "And dispatched to notifications store", notifications);
 									dispatch(receiveNotification(data));
@@ -118,9 +122,11 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				error: new Error("Notifications not supported"),
 				defaultMessage: "Browser notifications are not supported",
 			});
+
 			return;
 		}
 		const permission = await Notification.requestPermission();
+
 		if (permission !== "granted") {
 			showErrorToast({
 				error: new Error("Notification permission denied"),
@@ -137,6 +143,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			!serviceWorkerRef.current
 		) {
 			console.warn("Notifications not supported or permission not granted");
+
 			return;
 		}
 
@@ -146,12 +153,15 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			notifications === prevNotificationsRef.current
 		) {
 			console.warn("No notifications to show");
+
 			return;
 		}
 
 		const lastNotification = notifications[notifications.length - 1];
+
 		if (lastNotification.message) {
 			const url = getNotificationPath(lastNotification);
+
 			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
 				body: `${lastNotification.type?.toUpperCase() || "Alert "}: Received at ${new Date(lastNotification.timestamp).toLocaleString()} `,
 				icon: "/icon.png", // Our app's icon

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { ChevronsUpDown, Check, X } from "lucide-react";
+
 import {
 	Command,
 	CommandEmpty,
@@ -11,10 +13,8 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IPaginatedResponse } from "@/types/types.utils";
-import { toast } from "sonner";
 
 // Generic item type for the select
 export type PaginatedSelectItem<T> = T;
@@ -100,6 +100,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 			!multiple && selectedItems.length > 0
 				? data?.results.find((item) => getItemId(item) === selectedItems[0])
 				: null;
+
 		if (itemMatch) {
 			setSelectedItem(itemMatch);
 		}
@@ -160,6 +161,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		const observer = new IntersectionObserver(
 			(entries) => {
 				const entry = entries[0];
+
 				if (!hasMore) {
 					return;
 				}
@@ -186,7 +188,9 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 				threshold: 0.1,
 			},
 		);
+
 		observer.observe(sentinelNode);
+
 		return () => {
 			observer.disconnect();
 		};
@@ -194,6 +198,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 
 	const handleSelect = (itemId: string | number) => {
 		const item = data?.results.find((i) => getItemId(i) === itemId);
+
 		// console.log("\n\n Item selected : ", item)
 		if (!item) return;
 		if (multiple && selectedItems.includes(itemId) && onRemove) {
@@ -219,6 +224,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 										const isSelected =
 											selectedItems.includes(getItemId(itemData)) ||
 											selectedItems.includes(String(getItemId(itemData)));
+
 										return (
 											<span
 												key={idx}
@@ -278,6 +284,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 									const isSelected =
 										selectedItems.includes(getItemId(item)) ||
 										selectedItems.includes(String(getItemId(item)));
+
 									return (
 										<CommandItem
 											key={getItemId(item)}

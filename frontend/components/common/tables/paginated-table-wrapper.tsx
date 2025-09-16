@@ -1,10 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DependencyList, ReactNode, useCallback, useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import { type IPaginatedResponse } from "@/types/types.utils";
 import { cn, showErrorToast } from "@/lib/utils";
-import { DependencyList, ReactNode, useCallback, useEffect, useState } from "react";
 import { forceUrlToHttps } from "@/lib/helpers";
 
 type FetchFromUrlFn<T> = (args: { url: string }) => Promise<IPaginatedResponse<T>> | undefined;
@@ -68,6 +69,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
 		setLoading(true);
 		try {
 			const res = await fetchFirstPage(query);
+
 			setData(res);
 		} catch (e) {
 			handleError(e);
@@ -81,6 +83,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
 		setLoading(true);
 		try {
 			const res = await fetchFromUrl({ url: forceUrlToHttps(data.previous) });
+
 			if (!res) {
 				return;
 			}
@@ -97,6 +100,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
 		setLoading(true);
 		try {
 			const res = await fetchFromUrl({ url: forceUrlToHttps(data.next) });
+
 			if (!res) {
 				return;
 			}
@@ -110,6 +114,7 @@ export function PaginatedTableWrapper<T, Q = unknown>({
 
 	useEffect(() => {
 		const timer = setTimeout(refresh, 1000);
+
 		return () => clearTimeout(timer);
 	}, [...deps]);
 

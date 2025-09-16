@@ -47,6 +47,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ source, type = "text" }) => {
 		if (type === "pdf" && source) {
 			// This effect is only for react-pdf to determine page count
 			const loadingTask = pdfjs.getDocument(source);
+
 			loadingTask.promise.then((pdf) => setNumPages(pdf.numPages)).catch(() => setNumPages(1));
 		}
 	}, [source, type]);
@@ -66,6 +67,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({ source, type = "text" }) => {
 
 		if (type === "html") {
 			const text = source.replace(/<\/?[^>]+(>|$)/g, ""); // Basic HTML to text
+
 			return (
 				<Document>
 					<Page size="A4" style={styles.page}>

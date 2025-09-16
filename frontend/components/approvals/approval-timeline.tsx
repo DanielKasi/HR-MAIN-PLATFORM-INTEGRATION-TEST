@@ -1,5 +1,6 @@
-import React from "react";
 import type { Approval } from "@/types/approvals.types";
+
+import React from "react";
 
 export type ApprovalTimelineProps = {
 	approval?: Approval;
@@ -24,7 +25,7 @@ export const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({
 					<ol className="relative border-s border-gray-200 ml-2">
 						{appr.tasks.map((t) => (
 							<li key={t.id} className="mb-4 ms-4">
-								<div className="absolute w-3 h-3 bg-gray-300 rounded-full mt-1.5 -start-1.5 border border-white"></div>
+								<div className="absolute w-3 h-3 bg-gray-300 rounded-full mt-1.5 -start-1.5 border border-white" />
 								<time className="mb-1 text-xs leading-none text-gray-500">
 									Level {t.level.level}
 								</time>

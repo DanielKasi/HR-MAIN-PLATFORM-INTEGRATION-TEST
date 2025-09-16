@@ -1,18 +1,3 @@
-import { handleDownload, getFileUrl, getFileName, formatDate } from "@/lib/helpers";
-import {
-	getContracts,
-	getPaginatedContractsFromUrl,
-	updateContract,
-	approveContract,
-} from "@/lib/utils";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { IContract } from "@/types/types.utils";
-import {
-	DropdownMenu,
-	DropdownMenuTrigger,
-	DropdownMenuContent,
-	DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import {
 	FileText,
 	CheckCircle2,
@@ -23,17 +8,34 @@ import {
 	MoreVertical,
 	Edit,
 } from "lucide-react";
-import { Badge } from "../ui/badge";
-import { Input } from "../ui/input";
 import { useState, useEffect } from "react";
-import { Button } from "../ui/button";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+
+import { Badge } from "../ui/badge";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 import { TableSkeleton } from "../common/table-skeleton";
 import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 import { Card, CardContent } from "../ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "../ui/table";
+
+import {
+	DropdownMenu,
+	DropdownMenuTrigger,
+	DropdownMenuContent,
+	DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { IContract } from "@/types/types.utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import {
+	getContracts,
+	getPaginatedContractsFromUrl,
+	updateContract,
+	approveContract,
+} from "@/lib/utils";
+import { handleDownload, getFileUrl, getFileName, formatDate } from "@/lib/helpers";
 
 interface ContractsTableProps {
 	searchTerm?: string;
@@ -62,6 +64,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 		if (contract.applicant) {
 			return contract.applicant.applicant_name || "—";
 		}
+
 		return "—";
 	};
 
@@ -77,6 +80,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 						employeeId: Number(scope.employeeId),
 					});
 				}
+
 				return await getContracts({
 					institutionId: Number(institutionId),
 					page: 1,
@@ -119,6 +123,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 					setApprovingId(contractId);
 					try {
 						const result = await approveContract({ contractId });
+
 						if (result) {
 							toast.success("Contract approved", {
 								description: "Contract has been approved and marked as active.",
@@ -263,6 +268,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 															className="hidden"
 															onChange={(e) => {
 																const file = e.target.files?.[0];
+
 																if (file) {
 																	handleFileUpload(contract.id, file);
 																}
@@ -280,6 +286,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 																	const input = document.getElementById(
 																		`file-upload-${contract.id}`,
 																	) as HTMLInputElement;
+
 																	input?.click();
 																}}
 															>

@@ -16,9 +16,10 @@ import {
 import { createWrapper, MakeStore, Context } from "next-redux-wrapper";
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 
+import { clearStateIfStructureChanged } from "./storeUtils";
+
 import rootReducer, { RootState } from "@/store/rootReducer";
 import rootSaga from "@/store/rootSaga";
-import { clearStateIfStructureChanged } from "./storeUtils";
 
 const createNoopStorage = () => {
 	return {
@@ -45,6 +46,7 @@ const persistConfig: PersistConfig<RootState> = {
 		if (!state || state._persist.version !== currentVersion) {
 			return undefined;
 		}
+
 		return state;
 	},
 };

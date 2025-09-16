@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Plus, Search, Filter, ArrowLeft } from "lucide-react";
@@ -14,9 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-
 import { type IJobPosition } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import { formatCurrency } from "@/lib/helpers";
@@ -56,6 +54,7 @@ export default function JobPositionsPage() {
 
 		while (start < maxSalary) {
 			const end = Math.min(start + rangeSize, maxSalary);
+
 			ranges.push({
 				id: `${start}-${end}`,
 				label: ` ${formatCurrency(start)} - ${formatCurrency(end)}`,
@@ -118,6 +117,7 @@ export default function JobPositionsPage() {
 								jobPositions.reduce((sum, pos) => {
 									const min = Number(pos.salary_min || 0);
 									const max = Number(pos.salary_max || 0);
+
 									return sum + (min + max) / 2; // Use average of min/max for budget calculation
 								}, 0),
 							)}
@@ -133,6 +133,7 @@ export default function JobPositionsPage() {
 									jobPositions.reduce((sum, pos) => {
 										const min = Number(pos.salary_min || 0);
 										const max = Number(pos.salary_max || 0);
+
 										return sum + (min + max) / 2;
 									}, 0) / jobPositions.length,
 								) || 0,

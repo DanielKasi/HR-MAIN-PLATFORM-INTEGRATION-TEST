@@ -1,24 +1,20 @@
 "use client";
 
 import type React from "react";
+import type { ICountry } from "@/types/types.utils";
+import type { IDepartment } from "@/types/types.utils";
+
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-	Store,
 	Building2,
 	Mail,
 	Check,
 	Edit,
 	ChevronLeft,
-	ChevronRight,
-	FileText,
 	MapPin,
-	Upload,
-	X,
 	Users,
-	Camera,
 	Image as ImageIcon,
-	Pen,
 	Plus,
 	MoreHorizontal,
 	Trash,
@@ -26,11 +22,13 @@ import {
 	ChevronUp,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Icon } from "@iconify/react";
 import { selectRefreshToken, selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import {
 	logoutStart,
@@ -41,14 +39,10 @@ import {
 	setSelectedInstitution,
 	setCurrentUser,
 } from "@/store/auth/actions";
-import { toast } from "sonner";
 import { AUTH_API, type LoginResponse } from "@/utils/auth-utils";
-
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { Textarea } from "@/components/ui/textarea";
 import PhoneNumberInput from "@/components/phone-number-input";
-import type { ICountry } from "@/types/types.utils";
-import type { IDepartment } from "@/types/types.utils";
 import { getDefaultData, institutionAPI, showErrorToast } from "@/lib/utils";
 import DepartmentEditorDialog from "@/components/common/dialogs/setup-department-edit-dialog";
 import JobEditorDialog from "@/components/common/dialogs/setup-job-edit-dialog";
@@ -156,6 +150,7 @@ export default function CreateOrganisationWizard() {
 		if (currentUser) {
 			try {
 				const user = currentUser;
+
 				setUserId(user.id);
 				if (user.email) {
 					setOrganizationFormData((prev) => ({ ...prev, institutionEmail: user.email }));
@@ -171,6 +166,7 @@ export default function CreateOrganisationWizard() {
 	useEffect(() => {
 		if (selectedInstitution) {
 			router.push("/dashboard");
+
 			return;
 		}
 		fetchDefaultDepartments();
@@ -182,6 +178,7 @@ export default function CreateOrganisationWizard() {
 		}
 		try {
 			const departments = await getDefaultData();
+
 			if (departments && organizationFormData.departments.length === 0) {
 				const mappedDepartments: IDepartment[] = departments.map((dept, idx) => ({
 					id: idx,
@@ -196,6 +193,7 @@ export default function CreateOrganisationWizard() {
 						department_id: 0,
 					})),
 				}));
+
 				setOrganizationFormData((prev) => ({ ...prev, departments: mappedDepartments }));
 			}
 		} catch (error) {
@@ -209,16 +207,19 @@ export default function CreateOrganisationWizard() {
 
 	const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
+
 		if (file) {
 			// Validate file type
 			if (!file.type.startsWith("image/")) {
 				toast.error("Please select a valid image file");
+
 				return;
 			}
 
 			// Validate file size (5MB limit)
 			if (file.size > 5 * 1024 * 1024) {
 				toast.error("File size must be less than 5MB");
+
 				return;
 			}
 
@@ -226,6 +227,7 @@ export default function CreateOrganisationWizard() {
 
 			// Create preview
 			const reader = new FileReader();
+
 			reader.onload = (e) => {
 				setLogoPreview(e.target?.result as string);
 			};
@@ -280,6 +282,7 @@ export default function CreateOrganisationWizard() {
 	}) => {
 		setOrganizationFormData((prev) => {
 			const departments = [...prev.departments];
+
 			if (
 				editingDepartmentIndex !== null &&
 				editingDepartmentIndex >= 0 &&
@@ -300,6 +303,7 @@ export default function CreateOrganisationWizard() {
 					job_positions: [],
 				} as any);
 			}
+
 			return { ...prev, departments };
 		});
 		setEditingDepartmentIndex(null);
@@ -320,9 +324,11 @@ export default function CreateOrganisationWizard() {
 			const deptIndex = editingJob
 				? editingJob.deptIndex
 				: (activeDeptForJob ?? departments.length - 1);
+
 			if (deptIndex < 0 || deptIndex >= departments.length) return prev;
 			const dept = { ...departments[deptIndex] };
 			const jobs = [...(dept.job_positions ?? [])];
+
 			if (editingJob) {
 				jobs[editingJob.jobIndex] = {
 					...jobs[editingJob.jobIndex],
@@ -339,6 +345,7 @@ export default function CreateOrganisationWizard() {
 			}
 			dept.job_positions = jobs;
 			departments[deptIndex] = dept;
+
 			return { ...prev, departments };
 		});
 		setEditingJob(null);
@@ -349,12 +356,15 @@ export default function CreateOrganisationWizard() {
 	const handleConfirmDelete = () => {
 		if (!deleteTarget) return;
 		const { type, deptIndex, jobIndex } = deleteTarget;
+
 		if (type === "dept") {
 			const name = organizationFormData.departments[deptIndex]?.name;
+
 			if (name) removeDepartment(name);
 		} else {
 			const dept = organizationFormData.departments[deptIndex];
 			const job = dept?.job_positions?.[jobIndex ?? 0];
+
 			if (dept && job) removeJobPosition(dept.name, job.name);
 		}
 		setDeleteTarget(null);
@@ -390,6 +400,7 @@ export default function CreateOrganisationWizard() {
 				if (!prev.find((step) => step === currentStep)) {
 					return [...prev, currentStep];
 				}
+
 				return prev;
 			});
 			setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
@@ -415,6 +426,7 @@ export default function CreateOrganisationWizard() {
 					institution.institution_name === organizationFormData.institutionName &&
 					institution.first_phone_number === organizationFormData.firstPhoneNumber,
 			);
+
 			dispatch(setAttachedInstitutions(loginResponse.institution_attached));
 			dispatch(
 				setSelectedInstitution(defaultSelectedInstitution || loginResponse.institution_attached[0]),
@@ -434,11 +446,13 @@ export default function CreateOrganisationWizard() {
 	const handleSubmit = async () => {
 		if (!userId) {
 			setErrorMessage("User information not available. Please log out and log in again.");
+
 			return;
 		}
 
 		if (!validateStep(3)) {
 			setErrorMessage("Please complete all required fields and documents.");
+
 			return;
 		}
 
@@ -484,6 +498,7 @@ export default function CreateOrganisationWizard() {
 			if (response) {
 				try {
 					const fetchedUserResponse = await AUTH_API.refreshTokens({ refreshToken });
+
 					handleUserRefresh(fetchedUserResponse);
 				} catch (refreshError) {
 					dispatch(logoutStart());
@@ -505,15 +520,18 @@ export default function CreateOrganisationWizard() {
 								return Object.entries(messages as Record<string, any>)
 									.map(([subField, subMessages]) => {
 										const messageArray = Array.isArray(subMessages) ? subMessages : [subMessages];
+
 										return `${field} ${subField}: ${messageArray.join(", ")}`;
 									})
 									.join("\n");
 							} else {
 								const messageArray = Array.isArray(messages) ? messages : [messages];
+
 								return `${field}: ${messageArray.join(", ")}`;
 							}
 						})
 						.join("\n");
+
 					setErrorMessage(`Validation errors:\n${errorMessages}`);
 				} else if (error?.detail) {
 					setErrorMessage(error.detail);
@@ -728,6 +746,7 @@ export default function CreateOrganisationWizard() {
 							job.name.toLowerCase().includes(query) ||
 							(job.description?.toLowerCase().includes(query) ?? false),
 					);
+
 					return matchesDepartment || matchesJobPosition;
 				});
 

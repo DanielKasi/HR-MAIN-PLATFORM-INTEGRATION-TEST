@@ -5,15 +5,14 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import apiRequest from "@/lib/apiRequest";
-import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
 import { AUTH_API } from "@/utils/auth-utils";
-import { maskEmail } from "@/lib/helpers";
 
 export default function VerifyOTPPage() {
 	const searchParams = useSearchParams();
@@ -33,6 +32,7 @@ export default function VerifyOTPPage() {
 			setErrorMessage("Oops something went wrong!");
 			toast.error("Missing user information. Redirecting to login page.");
 			router.push("/login");
+
 			return;
 		}
 		setEmailValue(decodeURIComponent(user_email));
@@ -61,6 +61,7 @@ export default function VerifyOTPPage() {
 		// Validate OTP is complete
 		if (otp.some((digit) => digit === "")) {
 			setErrorMessage("Please enter all 6 digits of the OTP");
+
 			return;
 		}
 
@@ -108,6 +109,7 @@ export default function VerifyOTPPage() {
 		e.stopPropagation();
 		if (!emailValue || !newEmail) {
 			setErrorMessage("Please enter a new email address");
+
 			return;
 		}
 
@@ -213,6 +215,7 @@ export default function VerifyOTPPage() {
 										value={digit}
 										onChange={(e) => {
 											const newOTP = [...otp];
+
 											newOTP[index] = e.target.value.replace(/[^0-9]/g, "");
 											setOTP(newOTP);
 											if (e.target.value && index < 5) {
@@ -223,8 +226,10 @@ export default function VerifyOTPPage() {
 										onPaste={(e) => {
 											e.preventDefault();
 											const pastedData = e.clipboardData.getData("text/plain").replace(/\D/g, "");
+
 											if (pastedData) {
 												const newOTP = [...otp];
+
 												for (let i = 0; i < Math.min(pastedData.length, 6); i++) {
 													newOTP[i] = pastedData[i];
 												}

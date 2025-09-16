@@ -1,11 +1,13 @@
-import { useState, useEffect, use } from "react";
-import { countryAPI } from "@/lib/helpers";
+import type { ICountry } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { CountryCode, isValidPhoneNumber } from "libphonenumber-js";
+import { toast } from "sonner";
+
+import { countryAPI } from "@/lib/helpers";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import CountrySelect from "@/components/common/country-select";
-import type { ICountry } from "@/types/types.utils";
 
 interface PhoneNumberInputProps {
 	label?: string;
@@ -55,11 +57,13 @@ export default function PhoneNumberInput({
 					setCountries(data);
 					if (passedDefaultCountryCode) {
 						const match = data.find((c) => c.idd?.root === passedDefaultCountryCode);
+
 						if (match) {
 							setSelectedCountry(match);
 						}
 					} else if (!selectedCountry) {
 						const ug = data.find((c) => c.cca2 === "UG" || c.name.common === "Uganda");
+
 						if (ug) setSelectedCountry(ug);
 					}
 				} else {
@@ -99,6 +103,7 @@ export default function PhoneNumberInput({
 	const getCountryCode = () => {
 		if (!selectedCountry?.idd?.root) return "";
 		const suffix = selectedCountry.idd.suffixes?.[0] || "";
+
 		return `${selectedCountry.idd.root}${suffix}`;
 	};
 
@@ -124,11 +129,13 @@ export default function PhoneNumberInput({
 		if (sanitizedValue.startsWith(countryCode)) {
 			sanitizedValue = sanitizedValue.slice(countryCode.length);
 		}
+
 		return sanitizedValue;
 	};
 
 	const handlePhoneChange = (value: string) => {
 		let sanitizedValue = cleanPhoneNUmber(value);
+
 		setPhoneNumber(sanitizedValue);
 
 		if (selectedCountry && sanitizedValue) {
@@ -137,6 +144,7 @@ export default function PhoneNumberInput({
 
 			try {
 				const isValid = isValidPhoneNumber(fullNumber, code);
+
 				setPhoneError(isValid ? null : "Invalid phone number for selected country");
 				onChange({
 					country: selectedCountry,

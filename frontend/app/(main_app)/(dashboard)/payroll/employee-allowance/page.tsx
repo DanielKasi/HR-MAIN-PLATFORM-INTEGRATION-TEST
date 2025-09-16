@@ -1,26 +1,26 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import {
 	getPaginatedEmployeeAllowances,
 	getPaginatedEmployeeAllowancesFromUrl,
 	deleteEmployeeAllowance,
 	getAllowanceTypes,
-	getPaginatedEmployees,
 } from "@/lib/utils";
-import { IEmployeeAllowance, IAllowanceType, IEmployee } from "@/types/types.utils";
+import { IEmployeeAllowance, IAllowanceType } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeAllowanceFormDialog } from "@/components/employee-allowances/employee-allowance-form-dialog";
-
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import {
 	Table,
@@ -44,7 +44,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/helpers";
-import { Icon } from "@iconify/react";
 
 export default function EmployeeAllowancesPage() {
 	const [allowanceTypes, setAllowanceTypes] = useState<IAllowanceType[]>([]);
@@ -67,6 +66,7 @@ export default function EmployeeAllowancesPage() {
 
 			try {
 				const types = await getAllowanceTypes(selectedInstitution.id);
+
 				setAllowanceTypes(types);
 			} catch (error) {
 				setAllowanceTypes([]);
@@ -98,6 +98,7 @@ export default function EmployeeAllowancesPage() {
 	const handleDelete = async (id: number) => {
 		try {
 			const success = await deleteEmployeeAllowance(id);
+
 			if (success) {
 				if (refreshFunctionRef.current) {
 					refreshFunctionRef.current();
@@ -194,6 +195,7 @@ export default function EmployeeAllowancesPage() {
 					<PaginatedTableWrapper<IEmployeeAllowance>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedEmployeeAllowances({
 								institutionId: selectedInstitution.id,
 								page: 1,

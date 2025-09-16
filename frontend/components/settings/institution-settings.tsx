@@ -1,18 +1,20 @@
 "use client";
 
+import type { IUserInstitutionFormData } from "@/types";
+
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { setSelectedInstitution, setAttachedInstitutions } from "@/store/auth/actions";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
-import type { IUserInstitutionFormData } from "@/types";
 
 interface InstitutionSettingsProps {
 	onSave?: () => void;
@@ -66,9 +68,11 @@ export const InstitutionSettings = ({ onSave }: InstitutionSettingsProps) => {
 
 	const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
+
 		if (file) {
 			if (file.size > 5 * 1024 * 1024) {
 				toast.error("Logo file size must be less than 5MB");
+
 				return;
 			}
 			setLogoFile(file);

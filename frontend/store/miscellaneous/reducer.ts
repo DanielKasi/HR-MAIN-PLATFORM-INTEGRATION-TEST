@@ -1,10 +1,11 @@
+import { MiscAction } from "./actions";
+import { MISC_ACTION_TYPES } from "./types";
+
 import {
 	ICreateEmployeeForm,
 	JobAdvertCompleteFormData,
 	JobApplicationCompleteFormData,
 } from "@/types/types.utils";
-import { MiscAction } from "./actions";
-import { MISC_ACTION_TYPES } from "./types";
 
 export type MiscState = {
 	sideBarOpened: boolean;

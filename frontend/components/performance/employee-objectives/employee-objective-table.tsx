@@ -1,9 +1,11 @@
 "use client";
 
+import type { IEmployeeObjective } from "@/types/types.utils";
+
+import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
+
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-import type { IEmployeeObjective } from "@/types/types.utils";
-import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
 
 interface EmployeeObjectivesTableProps {
 	employeeObjectives: IEmployeeObjective[];

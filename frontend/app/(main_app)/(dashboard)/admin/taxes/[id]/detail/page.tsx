@@ -1,23 +1,13 @@
 "use client";
 
+import type { ITax, ITaxRule } from "@/types/types.utils";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-	ArrowLeft,
-	Plus,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Search,
-	MoreVertical,
-	ChevronLeft,
-	ChevronRight,
-	ChevronsLeft,
-	ChevronsRight,
-	AlertTriangle,
-	Info,
-} from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Search, MoreVertical } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,14 +32,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateTaxRuleDialog } from "@/components/tax-rules/create-tax-rule-dialog";
 import { EditTaxRuleDialog } from "@/components/tax-rules/edit-tax-rule-dialog";
 import { DeleteTaxRuleDialog } from "@/components/tax-rules/delete-tax-rule-dialog";
 import { taxesAPI, taxRulesAPI } from "@/lib/utils";
-import type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/helpers";
 import { CardHeader } from "@/components/ui/card";
@@ -198,6 +186,7 @@ const TaxDetailComponent = () => {
 	const paginatedTaxRules = useMemo(() => {
 		const startIndex = (currentPage - 1) * pageSize;
 		const endIndex = startIndex + pageSize;
+
 		return filteredTaxRules.slice(startIndex, endIndex);
 	}, [filteredTaxRules, currentPage, pageSize]);
 
@@ -317,16 +306,16 @@ const TaxDetailComponent = () => {
 										<CardHeader className="border-b">
 											<div className="flex justify-between gap-8 items-center">
 												<div className="flex items-center justify-start gap-4">
-													<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+													<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 													<div className="space-y-2">
-														<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-														<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+														<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+														<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 													</div>
 												</div>
 												<div className="grid grid-cols-3">
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
 												</div>
 											</div>
 										</CardHeader>

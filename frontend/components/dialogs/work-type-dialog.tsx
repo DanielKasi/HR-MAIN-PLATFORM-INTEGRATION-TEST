@@ -1,16 +1,17 @@
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { IWorkType, IWorkTypeFormData } from "@/types/types.utils";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+
 import { createWorkType, updateWorkType } from "@/lib/utils";
-import { toast } from "sonner";
+import { IWorkType, IWorkTypeFormData } from "@/types/types.utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface WorkTypeModalProps {
 	isOpen: boolean;
@@ -74,6 +75,7 @@ export default function WorkTypeModal({
 		// }
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -89,6 +91,7 @@ export default function WorkTypeModal({
 
 		try {
 			let resultWorkType: IWorkType | null = null;
+
 			if (editingType) {
 				resultWorkType = await updateWorkType({
 					institutionId: selectedInstitution.id,

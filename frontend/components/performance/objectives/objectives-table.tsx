@@ -1,9 +1,11 @@
 "use client";
 
+import type { IObjective } from "@/types/types.utils";
+
+import { Edit, Trash2, Target, User, Clock } from "lucide-react";
+
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-import type { IObjective } from "@/types/types.utils";
-import { Edit, Trash2, Target, User, Clock } from "lucide-react";
 
 interface ObjectivesTableProps {
 	objectives: IObjective[];

@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Calendar } from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,15 +18,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
-import { ArrowLeft, Calendar } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { Badge } from "@/components/ui/badge";
 import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { UserProfileSearchableSelect } from "@/components/selects/user-profile-searchable-select";
-import { toast } from "sonner";
 import { IProjectFormData, IProjectStatus } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
 
@@ -36,6 +35,7 @@ export default function EditProjectPage() {
 
 	const MAX_DATE_TODAY = new Date().toISOString().split("T")[0];
 	const Date18YearsOld = new Date();
+
 	Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
 	const MAX_DATE_18 = Date18YearsOld.toISOString().split("T")[0];
 
@@ -65,6 +65,7 @@ export default function EditProjectPage() {
 		setFetching(true);
 		try {
 			const project = await PROJECTS_API.getByProjectById({ project_id: Number(project_id) });
+
 			setFormData({
 				project_name: project.project_name,
 				description: project.description,
@@ -91,6 +92,7 @@ export default function EditProjectPage() {
 
 		// Validate required fields
 		const newErrors: Record<string, string[]> = {};
+
 		if (formData.managers.length === 0) {
 			newErrors.managers = ["This field is required."];
 		}
@@ -100,6 +102,7 @@ export default function EditProjectPage() {
 
 		if (Object.keys(newErrors).length > 0) {
 			setErrors(newErrors);
+
 			return;
 		}
 

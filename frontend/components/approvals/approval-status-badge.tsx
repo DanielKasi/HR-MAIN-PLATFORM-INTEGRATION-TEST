@@ -1,5 +1,6 @@
-import React from "react";
 import type { ApprovableEntityStatus } from "@/types/approvals.types";
+
+import React from "react";
 
 export type ApprovalStatusBadgeProps = {
 	approval_status: ApprovableEntityStatus;

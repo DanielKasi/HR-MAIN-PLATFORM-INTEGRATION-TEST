@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+import { Upload, Check } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Upload, X, Check } from "lucide-react";
 import { IKYCDocument } from "@/types";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 
@@ -48,15 +49,19 @@ export function EditDocumentModal({
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
+
 		if (file) {
 			if (file.size > 10 * 1024 * 1024) {
 				toast.error("File size must be less than 10MB");
+
 				return;
 			}
 			const allowedTypes = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"];
 			const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
 			if (!fileExtension || !allowedTypes.includes(`.${fileExtension}`)) {
 				toast.error("File type not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG");
+
 				return;
 			}
 			setFormData((prev) => ({ ...prev, document_file: file }));
@@ -69,6 +74,7 @@ export function EditDocumentModal({
 
 		if (!formData.document_title.trim()) {
 			toast.error("Please provide a document title");
+
 			return;
 		}
 

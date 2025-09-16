@@ -5,6 +5,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AssetsLayout({ children }: { children: React.ReactNode }) {
 	const title = useDocumentTitle("ASSET MANAGEMENT");
+
 	return (
 		<>
 			{title}

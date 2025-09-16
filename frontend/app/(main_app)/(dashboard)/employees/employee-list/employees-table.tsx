@@ -2,6 +2,12 @@
 
 import { RefObject, useRef, useState } from "react";
 import { Eye, Edit, MoreVertical, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { type IEmployee } from "@/types/types.utils";
@@ -29,12 +35,7 @@ import {
 	AlertDialogCancel,
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import Link from "next/link";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useRouter } from "next/navigation";
-import { Icon } from "@iconify/react";
 import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
 
 interface EmployeesTableProps {
@@ -52,10 +53,12 @@ export function EmployeesTable({ refreshFunctionRef, searchTerm }: EmployeesTabl
 	const handleDelete = async () => {
 		if (!currentInstitution) {
 			toast.error("No institution selected");
+
 			return;
 		}
 		if (!employeeToDelete) {
 			toast.error("No employee to delete!");
+
 			return;
 		}
 		try {
@@ -202,6 +205,7 @@ export function EmployeesTable({ refreshFunctionRef, searchTerm }: EmployeesTabl
 			<PaginatedTable<IEmployee>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
+
 					return await getPaginatedEmployees({
 						institutionId: currentInstitution.id,
 						page: 1,

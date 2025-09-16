@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiGet, apiPatch } from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
-import { IPaginatedResponse } from "@/types/types.utils";
 
 interface PermissionsByCategory {
 	[categoryId: number]: {
@@ -140,13 +139,16 @@ export default function EditRolePage() {
 
 			// Organize permissions by category
 			const byCategory: PermissionsByCategory = {};
+
 			while (nextUrl) {
 				const response = await apiGet(nextUrl);
 				const responseData = response.data.results as Permission[];
+
 				setPermissions((prev) => [...prev, ...responseData]);
 
 				if (response.data.next) {
 					const url = new URL(response.data.next);
+
 					nextUrl = `user/permission/${url.search}`;
 				} else {
 					nextUrl = null;

@@ -5,6 +5,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
 	const title = useDocumentTitle("ADMIN");
+
 	return (
 		<>
 			{title}

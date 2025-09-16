@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { MoreVertical, Edit, Trash2, Search, Settings, X, Plus } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Search, Settings, Plus } from "lucide-react";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +38,6 @@ import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-a
 import { EditAllowanceTypeDialog } from "@/components/allowance-types/edit-allowance-type-dialog";
 import { DeleteAllowanceTypeDialog } from "@/components/allowance-types/delete-allowance-type-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -151,6 +152,7 @@ const AllowanceTypesComponent = () => {
 					<PaginatedTableWrapper<IAllowanceType>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedAllowanceTypes({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -196,6 +198,7 @@ const AllowanceTypesComponent = () => {
 									statusFilter === "all" ||
 									(statusFilter === "active" && allowanceType.is_active) ||
 									(statusFilter === "inactive" && !allowanceType.is_active);
+
 								return matchesStatus;
 							});
 

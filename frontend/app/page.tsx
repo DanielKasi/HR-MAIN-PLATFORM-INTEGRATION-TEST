@@ -1,8 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
 	ArrowRight,
 	CheckCircle,
@@ -18,6 +15,10 @@ import {
 import { Bricolage_Grotesque } from "next/font/google";
 import { useState } from "react";
 import Link from "next/link";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const bricolage = Bricolage_Grotesque({ subsets: ["latin"] });
 

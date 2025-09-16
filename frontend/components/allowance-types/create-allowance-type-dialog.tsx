@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import { Checkbox } from "../ui/checkbox";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -9,7 +14,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -22,13 +26,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { IAllowanceTypeFormData } from "@/types/types.utils";
 import { ALLOWANCE_FREQUENCIES } from "@/constants";
 import { createAllowanceType } from "@/lib/utils";
-import { Checkbox } from "../ui/checkbox";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
 
 interface CreateAllowanceTypeDialogProps {
 	onSuccess: (newAllowanceType: any) => void;
@@ -71,11 +72,13 @@ export function CreateAllowanceTypeDialog({
 		}
 		if (!formData.name || !formData.description) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
 		if (formData.is_recurring && !formData.frequency) {
 			toast.error("You must set a frequency!");
+
 			return;
 		}
 

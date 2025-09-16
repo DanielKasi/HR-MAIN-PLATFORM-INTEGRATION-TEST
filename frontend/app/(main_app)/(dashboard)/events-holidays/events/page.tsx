@@ -1,6 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+	Plus,
+	Search,
+	Calendar,
+	Users,
+	MapPin,
+	Video,
+	Eye,
+	Edit,
+	Trash2,
+	MoreVertical,
+} from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,21 +27,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Plus,
-	Search,
-	Calendar,
-	Users,
-	MapPin,
-	Video,
-	Eye,
-	Edit,
-	Trash2,
-	MoreHorizontal,
-	MoreVertical,
-} from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { apiGet } from "@/lib/apiRequest";
 import {
@@ -107,6 +107,7 @@ export default function EventsPage() {
 	const fetchEvents = async () => {
 		try {
 			const response = await apiGet("/calendar/events/");
+
 			setEvents(response.data.results || []);
 		} catch (error) {
 			console.error("Error fetching events:", error);
@@ -125,6 +126,7 @@ export default function EventsPage() {
 			event.description?.toLowerCase().includes(searchTerm.toLowerCase());
 		const matchesMode = filterMode === "all" || event.event_mode === filterMode;
 		const matchesAudience = filterAudience === "all" || event.target_audience === filterAudience;
+
 		return matchesSearch && matchesMode && matchesAudience;
 	});
 

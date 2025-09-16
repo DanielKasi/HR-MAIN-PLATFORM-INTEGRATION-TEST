@@ -1,5 +1,8 @@
 "use client";
 
+import type { IInterviewStageFormData } from "@/types/types.utils";
+import type { JobApplication, IInterviewStage, IInterviewFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -11,20 +14,19 @@ import {
 	Phone,
 	MapPin,
 	Edit,
-	Trash2,
 	FileText,
 	Download,
-	CheckCircle,
 	XCircle,
-	AlertCircle,
 	Building,
 	RefreshCw,
-	Clock,
 	Globe,
 	UserCheck,
 	Eye,
 	Users,
 } from "lucide-react";
+import { Plus, Check } from "lucide-react";
+import { toast } from "sonner";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,36 +42,23 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Check } from "lucide-react";
 import { createInterviewStage, showErrorToast } from "@/lib/utils";
-import type { IInterviewStageFormData } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
 	getJobApplicationById,
 	updateJobApplicationStatus,
 	getInterviewStages,
-	fetchEmployees,
 	createInterview,
 } from "@/lib/utils";
-import type {
-	JobApplication,
-	IInterviewStage,
-	IEmployee,
-	IInterviewFormData,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { downloadFile } from "@/lib/helpers";
 import { selectUser } from "@/store/auth/selectors";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
@@ -172,10 +161,12 @@ export default function ApplicationViewPage() {
 
 		if (!selectedInstitution || !application) {
 			toast.error("Missing organization or application information");
+
 			return;
 		}
 
 		const newStageErrors: any = {};
+
 		if (!stageFormData.name.trim()) {
 			newStageErrors.name = "Stage name is required";
 		}
@@ -185,6 +176,7 @@ export default function ApplicationViewPage() {
 
 		if (Object.keys(newStageErrors).length > 0) {
 			setStageErrors(newStageErrors);
+
 			return;
 		}
 
@@ -263,12 +255,14 @@ export default function ApplicationViewPage() {
 
 	const fetchInterviewData = async (app?: JobApplication) => {
 		const applicationToUse = app || application;
+
 		if (!selectedInstitution || !applicationToUse) return;
 
 		try {
 			const stagesResponse = await getInterviewStages({ institutionId: selectedInstitution.id });
 
 			let stagesArray: IInterviewStage[] = [];
+
 			if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
 				stagesArray = stagesResponse.results;
 			} else if (Array.isArray(stagesResponse)) {
@@ -279,10 +273,12 @@ export default function ApplicationViewPage() {
 			const filteredStages = stagesArray.filter(
 				(stage) => stage.job_position_advert === applicationToUse.job_position_advert,
 			);
+
 			setInterviewStages(filteredStages);
 
 			// Set default interview date to tomorrow at 10 AM
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 			setInterviewFormData((prev) => ({
@@ -299,6 +295,7 @@ export default function ApplicationViewPage() {
 
 		// Validate form
 		const errors: any = {};
+
 		if (!interviewFormData.interview_stage || interviewFormData.interview_stage === 0) {
 			errors.interview_stage = "Please select an interview stage";
 		}
@@ -307,6 +304,7 @@ export default function ApplicationViewPage() {
 		} else {
 			const interviewDate = new Date(interviewFormData.interview_date);
 			const now = new Date();
+
 			if (interviewDate <= now) {
 				errors.interview_date = "Interview date must be in the future";
 			}
@@ -317,11 +315,13 @@ export default function ApplicationViewPage() {
 
 		if (Object.keys(errors).length > 0) {
 			setInterviewErrors(errors);
+
 			return;
 		}
 
 		if (!currentUser?.id) {
 			toast.error("User information not available. Please refresh and try again.");
+
 			return;
 		}
 
@@ -329,10 +329,12 @@ export default function ApplicationViewPage() {
 
 		try {
 			let interviewTime = "";
+
 			if (interviewFormData.interview_date) {
 				const dateTime = new Date(interviewFormData.interview_date);
 				const hours = dateTime.getHours().toString().padStart(2, "0");
 				const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+
 				interviewTime = `${hours}:${minutes}`;
 			}
 
@@ -396,11 +398,13 @@ export default function ApplicationViewPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (!applicationId) {
 			router.push("/applications");
+
 			return;
 		}
 
@@ -412,6 +416,7 @@ export default function ApplicationViewPage() {
 			setIsLoading(true);
 			setError("");
 			const fetchedApplication = await getJobApplicationById({ applicationId });
+
 			await fetchInterviewData(fetchedApplication);
 			setApplication(fetchedApplication);
 		} catch (err) {
@@ -1103,6 +1108,7 @@ export default function ApplicationViewPage() {
 																? values.map((v) => Number(v))
 																: [Number(values)];
 															const uniqueValues = [...new Set(numberValues)];
+
 															updateStageFormData("interviewers", uniqueValues);
 														}}
 														disabled={isCreatingStage}

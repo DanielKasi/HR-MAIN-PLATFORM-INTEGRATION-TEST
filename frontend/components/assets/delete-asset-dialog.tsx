@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAsset } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,9 +15,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset } from "@/types/types.utils";
 
 interface DeleteAssetDialogProps {
 	asset: IAsset;

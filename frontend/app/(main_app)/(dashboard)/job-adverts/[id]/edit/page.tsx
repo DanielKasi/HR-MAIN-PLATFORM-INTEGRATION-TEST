@@ -1,18 +1,24 @@
 "use client";
 
 import type React from "react";
+import type {
+	JobPositionAdvertFormData,
+	IJobPosition,
+	JobAdvertStatus,
+	JobPositionAdvert,
+} from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Megaphone, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
 	getJobPositions,
@@ -20,13 +26,6 @@ import {
 	updateJobPositionAdvert,
 	getJobPosition,
 } from "@/lib/utils";
-import type {
-	JobPositionAdvertFormData,
-	IJobPosition,
-	JobAdvertStatus,
-	JobPositionAdvert,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { RichEditorField } from "@/components/common/rich-editor";
 
@@ -60,12 +59,14 @@ export default function EditJobAdvertPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (isNaN(jobAdvertId)) {
 			toast.error("Invalid job opening ID");
 			router.push("/job-adverts");
+
 			return;
 		}
 
@@ -84,6 +85,7 @@ export default function EditJobAdvertPage() {
 			if (!fetchedJobAdvert) {
 				toast.error("Job position not found");
 				router.push("/job-adverts");
+
 				return;
 			}
 
@@ -157,6 +159,7 @@ export default function EditJobAdvertPage() {
 		} else {
 			const expiryDate = new Date(formData.expiry_date);
 			const today = new Date();
+
 			today.setHours(0, 0, 0, 0);
 
 			if (expiryDate <= today) {
@@ -164,6 +167,7 @@ export default function EditJobAdvertPage() {
 			}
 
 			const maxDate = new Date();
+
 			maxDate.setFullYear(maxDate.getFullYear() + 2);
 			if (expiryDate > maxDate) {
 				newErrors.expiry_date = "Expiry date cannot be more than 2 years in the future";
@@ -202,6 +206,7 @@ export default function EditJobAdvertPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -210,11 +215,13 @@ export default function EditJobAdvertPage() {
 
 		if (!selectedInstitution || !selectedBranch || !jobAdvert) {
 			toast.error("Missing required information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
@@ -425,6 +432,7 @@ export default function EditJobAdvertPage() {
 										onChange={(e) => {
 											const value = e.target.value;
 											const numValue = value === "" ? undefined : Number(value);
+
 											updateFormData("number_of_employees_expected", numValue);
 										}}
 										className={errors.number_of_employees_expected ? "border-destructive" : ""}

@@ -1,8 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface EmployeeCountChartProps {
 	data?: Array<{ year: number; count: number }>;
@@ -18,17 +19,21 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 			(acc, curr) => {
 				const currentYear = curr.year;
 				let currentRecord = acc.find((rec) => rec.year === currentYear);
+
 				if (currentRecord) {
 					currentRecord.count += curr.count;
 				} else {
 					currentRecord = curr;
 				}
 				const newArray = acc.filter((rec) => rec.year !== currentRecord.year);
+
 				newArray.push(currentRecord);
+
 				return newArray;
 			},
 			[] as Array<{ year: number; count: number }>,
 		);
+
 		if (filtered) {
 			setFilteredData(filtered);
 		}
@@ -42,6 +47,7 @@ export function EmployeeCountChart({ data, onRefresh, loading }: EmployeeCountCh
 				</div>
 			);
 		}
+
 		return null;
 	};
 

@@ -1,11 +1,13 @@
 "use client";
 
+import type { IAssetAllocation } from "@/types/types.utils";
+
 import { useState } from "react";
 import { X, Trash2, Package, User, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation } from "@/types/types.utils";
 
 interface DeleteAssetAllocationDialogProps {
 	allocation: IAssetAllocation;
@@ -26,6 +28,7 @@ export const DeleteAssetAllocationDialog = ({
 		try {
 			setIsDeleting(true);
 			const success = await assetsAPI.deleteAssetAllocation(allocation.id);
+
 			if (success) {
 				onSuccess(allocation.id);
 			} else {

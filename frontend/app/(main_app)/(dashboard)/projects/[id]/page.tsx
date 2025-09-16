@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import type { UserProfile } from "@/types";
-import { apiGet } from "@/lib/apiRequest";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	ArrowLeft,
 	Edit,
@@ -20,14 +13,17 @@ import {
 	AlertTriangle,
 	Eye,
 	Trash2,
-	FileText,
 	TrendingUp,
 	Activity,
 	MoreVertical,
-	ClockAlert,
 	List,
 } from "lucide-react";
 import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -84,6 +80,7 @@ const getPriorityColor = (priority: string) => {
 const calculateProgress = (tasks: IProjectTask[]) => {
 	if (tasks.length === 0) return 0;
 	const completedTasks = tasks.filter((task) => task.task_status === "completed").length;
+
 	return Math.round((completedTasks / tasks.length) * 100);
 };
 
@@ -92,6 +89,7 @@ const getDaysRemaining = (endDate: string) => {
 	const end = new Date(endDate);
 	const diffTime = end.getTime() - today.getTime();
 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
 	return diffDays;
 };
 
@@ -103,6 +101,7 @@ export default function ProjectDetailsPage() {
 	const fetchProject = async () => {
 		try {
 			const project = await PROJECTS_API.getByProjectById({ project_id: Number(params.id) });
+
 			setProject(project);
 		} catch (error) {
 			console.error("Error fetching project:", error);
@@ -197,6 +196,7 @@ export default function ProjectDetailsPage() {
 			cell: (task: IProjectTask) => {
 				const taskDaysRemaining = getDaysRemaining(task.end_date);
 				const isTaskOverdue = taskDaysRemaining < 0 && task.task_status !== "completed";
+
 				return (
 					<div className="flex items-center gap-2 text-xs text-slate-600">
 						<Calendar className="h-3 w-3 flex-shrink-0" />

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
 import {
 	Select,
 	SelectContent,
@@ -10,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { QUESTION_TEMPLATES_API } from "@/lib/utils";
 import { IQuestionTemplate } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface QuestionTemplateSelectProps {

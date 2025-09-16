@@ -4,26 +4,24 @@ import * as React from "react";
 import { useState } from "react";
 import { Building2 } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
+import { RichEditorField } from "../common/rich-editor";
 
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { createDepartment } from "@/lib/utils";
 import { DepartmentFormData } from "@/types/types.utils";
-import { toast } from "sonner";
-import { RichEditorField } from "../common/rich-editor";
 
 interface CreateDepartmentDialogProps {
 	trigger?: React.ReactNode;
@@ -68,17 +66,20 @@ export function CreateDepartmentDialog({
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleSubmit = async () => {
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 

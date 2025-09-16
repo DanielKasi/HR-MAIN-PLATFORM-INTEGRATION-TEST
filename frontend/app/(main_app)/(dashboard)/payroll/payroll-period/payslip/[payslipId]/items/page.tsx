@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter, usePathname } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Coins, TrendingUp, TrendingDown, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { toast } from "sonner";
-
 import { getPayslip, getPayslipItems } from "@/lib/utils";
 import { IPayslip, IPayslipItem } from "@/types/types.utils";
 import { formatCurrency } from "@/lib/helpers";
@@ -38,6 +37,7 @@ export default function PayslipItems() {
 	const fetchPayslipItems = async () => {
 		if (!payslipId || payslipId === "undefined" || payslipId === "null") {
 			setError("No valid payslip ID provided");
+
 			return;
 		}
 
@@ -45,6 +45,7 @@ export default function PayslipItems() {
 			setError(null);
 			const response = await getPayslipItems(parseInt(payslipId));
 			const payslipData = await getPayslip(payslipId as unknown as number);
+
 			setItems(response);
 			setPayslipInfo(response[0]?.payslip);
 		} catch (error: any) {

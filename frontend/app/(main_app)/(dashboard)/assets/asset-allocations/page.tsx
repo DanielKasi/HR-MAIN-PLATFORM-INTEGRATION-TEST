@@ -1,5 +1,7 @@
 "use client";
 
+import type { IAssetAllocation } from "@/types/types.utils";
+
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -9,17 +11,17 @@ import {
 	Search,
 	Plus,
 	Eye,
-	Package,
-	User,
 	Clock,
 	CheckCircle,
 	XCircle,
 	AlertCircle,
-	FileText,
 	Users,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { PERMISSION_CODES } from "@/constants";
-import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,18 +46,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetAllocationDialog } from "@/components/asset-allocations/create-asset-allocation-dialog";
 import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
 import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
 import ProtectedPage from "@/components/ProtectedPage";
 
 const getStatusColor = (status: string) => {
@@ -223,6 +221,7 @@ const AssetAllocationsComponent = () => {
 					<PaginatedTableWrapper<IAssetAllocation>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await assetsAPI.getPaginatedAssetAllocations({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -257,6 +256,7 @@ const AssetAllocationsComponent = () => {
 							const filteredResults = data.results.filter((allocation) => {
 								const matchesStatus =
 									statusFilter === "all" || allocation.allocation_status === statusFilter;
+
 								return matchesStatus;
 							});
 

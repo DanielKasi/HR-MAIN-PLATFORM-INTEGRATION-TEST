@@ -1,8 +1,10 @@
 "use client";
 
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { KeyResultForm } from "./key-results-form";
 import type { IKeyResult, IKeyResultFormData } from "@/types/types.utils";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { KeyResultForm } from "./key-results-form";
 
 interface KeyResultModalProps {
 	isOpen: boolean;

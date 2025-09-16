@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { MoreVertical, Edit, Trash2, Search, Settings, X } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Search, Settings } from "lucide-react";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +39,6 @@ import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-d
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ALLOWANCE_FREQUENCIES, PERMISSION_CODES } from "@/constants";
 import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -148,6 +149,7 @@ const DeductionTypesComponent = () => {
 					<PaginatedTableWrapper<IDeductionType>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedDeductionTypes({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -195,6 +197,7 @@ const DeductionTypesComponent = () => {
 									statusFilter === "all" ||
 									(statusFilter === "active" && deductionType.is_active) ||
 									(statusFilter === "inactive" && !deductionType.is_active);
+
 								return matchesStatus;
 							});
 

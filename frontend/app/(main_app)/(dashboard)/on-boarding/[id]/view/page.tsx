@@ -1,5 +1,7 @@
 "use client";
 
+import type { IOnBoarding } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -19,17 +21,14 @@ import {
 	UserCheck,
 	UserX,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
 import { getOnBoardingById } from "@/lib/utils";
-import type { IOnBoarding } from "@/types/types.utils";
-import { toast } from "sonner";
 import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
@@ -106,10 +105,13 @@ export default function ViewOnboardingDetails() {
 	const getStatusIcon = (status: IOnBoarding["status"]) => {
 		if (!status) return <AlertTriangle className="h-5 w-5 text-gray-500" />;
 		const stage = ONBOARDING_STAGES.find((s) => s.value === status);
+
 		if (stage) {
 			const IconComponent = stage.icon;
+
 			return <IconComponent className={`h-5 w-5 ${stage.color}`} />;
 		}
+
 		return <AlertTriangle className="h-5 w-5 text-gray-500" />;
 	};
 
@@ -133,6 +135,7 @@ export default function ViewOnboardingDetails() {
 
 	const formatStatus = (status: IOnBoarding["status"]) => {
 		if (!status) return "Unknown Status";
+
 		return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 	};
 
@@ -153,6 +156,7 @@ export default function ViewOnboardingDetails() {
 
 	const getInitials = (name: string) => {
 		if (!name || name === "N/A") return "NA";
+
 		return name
 			.split(" ")
 			.map((n) => n[0])
@@ -252,7 +256,7 @@ export default function ViewOnboardingDetails() {
 							{formatStatus(onboarding.status)}
 						</Badge>
 					</div>
-					<div className="flex items-center gap-2"></div>
+					<div className="flex items-center gap-2" />
 				</div>
 			</div>
 

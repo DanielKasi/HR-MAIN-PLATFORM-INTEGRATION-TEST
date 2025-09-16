@@ -1,8 +1,25 @@
 "use client";
 
 import type React from "react";
+import type { IBankType, IBankTypeFormData } from "@/types/types.utils";
+
 import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
+import {
+	Search,
+	Plus,
+	Edit,
+	Trash2,
+	Loader2,
+	Eye,
+	ChevronLeft,
+	ChevronRight,
+	MoreVertical,
+	ArrowLeft,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,27 +38,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	Search,
-	Plus,
-	Edit,
-	Trash2,
-	Loader2,
-	Eye,
-	ChevronLeft,
-	ChevronRight,
-	MoreVertical,
-	ArrowLeft,
-} from "lucide-react";
-import { toast } from "sonner";
 import { bankTypesAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IBankType, IBankTypeFormData } from "@/types/types.utils";
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { BankTypeModal } from "@/components/bank-types/create-bank-type-modal";
 import { BankTypeDetailsModal } from "@/components/bank-types/bank-types-details-modal";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { useRouter } from "next/navigation";
 
 export default function BankTypeManagement() {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -97,8 +98,10 @@ export default function BankTypeManagement() {
 				setLoading(true);
 
 				let searchParams = "";
+
 				if (pageUrl) {
 					const url = new URL(pageUrl);
+
 					searchParams = url.search;
 				} else if (debouncedSearchTerm) {
 					searchParams = `?search=${encodeURIComponent(debouncedSearchTerm)}`;

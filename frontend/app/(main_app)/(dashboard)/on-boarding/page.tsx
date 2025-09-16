@@ -9,7 +9,6 @@ import {
 	Filter,
 	MoreVertical,
 	Trash2,
-	RefreshCw,
 	Calendar,
 	Eye,
 	Phone,
@@ -27,6 +26,7 @@ import {
 	ChevronDown,
 	Users2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -78,13 +78,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getOnBoardings, updateOnBoarding } from "@/lib/utils";
 import { IOnBoarding, IOnBoardingFormData } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { toast } from "sonner";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 
 // Constants matching your exact interface
@@ -169,6 +167,7 @@ export default function OnboardPage() {
 	// 2. Select by Status Function
 	const handleSelectByStatus = (statuses: IOnBoarding["status"][]) => {
 		const candidatesWithStatus = filteredOnboardings.filter((o) => statuses.includes(o.status));
+
 		setSelectedIds(new Set(candidatesWithStatus.map((o) => o.id)));
 	};
 
@@ -233,6 +232,7 @@ export default function OnboardPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 		fetchOnboardings();
@@ -294,10 +294,13 @@ export default function OnboardPage() {
 
 	const getStatusIcon = (status: IOnBoarding["status"]) => {
 		const stage = ONBOARDING_STAGES.find((s) => s.value === status);
+
 		if (stage) {
 			const IconComponent = stage.icon;
+
 			return <IconComponent className={`h-4 w-4 ${stage.color}`} />;
 		}
+
 		return <AlertTriangle className="h-4 w-4 text-gray-500" />;
 	};
 
@@ -333,6 +336,7 @@ export default function OnboardPage() {
 
 	const getInitials = (name: string) => {
 		if (!name || name === "N/A") return "NA";
+
 		return name
 			.split(" ")
 			.map((n) => n[0])
@@ -377,6 +381,7 @@ export default function OnboardPage() {
 
 	const handleSelectOne = (id: number) => {
 		const newSelected = new Set(selectedIds);
+
 		if (newSelected.has(id)) {
 			newSelected.delete(id);
 		} else {
@@ -445,6 +450,7 @@ export default function OnboardPage() {
 				);
 
 				const stageName = ONBOARDING_STAGES.find((s) => s.value === updateDialog.newStatus)?.label;
+
 				toast.success(`Successfully moved candidate to ${stageName} stage`);
 
 				setUpdateDialog({
@@ -479,6 +485,7 @@ export default function OnboardPage() {
 
 	const submitBulkUpdate = async () => {
 		const selectedOnboardings = getSelectedOnboardings();
+
 		if (selectedOnboardings.length === 0) return;
 
 		setBulkUpdateDialog((prev) => ({ ...prev, isSubmitting: true }));
@@ -496,6 +503,7 @@ export default function OnboardPage() {
 						onboardingId,
 						onboardingData: updateData,
 					});
+
 					return { id: onboardingId, success: true, data: result };
 				} catch (error) {
 					return { id: onboardingId, success: false, error };
@@ -518,9 +526,11 @@ export default function OnboardPage() {
 				setOnboardings((prev) =>
 					prev.map((onboarding) => {
 						const successfulUpdate = successful.find((s) => s.value.id === onboarding.id);
+
 						if (successfulUpdate && successfulUpdate.value.data) {
 							return successfulUpdate.value.data;
 						}
+
 						return onboarding;
 					}),
 				);
@@ -531,6 +541,7 @@ export default function OnboardPage() {
 				const stageName = ONBOARDING_STAGES.find(
 					(s) => s.value === bulkUpdateDialog.newStatus,
 				)?.label;
+
 				toast.success(
 					`Successfully moved ${successful.length} candidate${successful.length > 1 ? "s" : ""} to ${stageName} stage`,
 				);
@@ -614,16 +625,16 @@ export default function OnboardPage() {
 					<CardHeader className="border-b">
 						<div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-8 items-start sm:items-center">
 							<div className="flex items-center justify-start gap-4">
-								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 								<div className="space-y-2">
-									<div className="h-6 bg-gray-200 rounded w-48 sm:w-64 animate-pulse"></div>
-									<div className="h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse"></div>
+									<div className="h-6 bg-gray-200 rounded w-48 sm:w-64 animate-pulse" />
+									<div className="h-4 bg-gray-200 rounded w-32 sm:w-48 animate-pulse" />
 								</div>
 							</div>
 							<div className="flex gap-2 w-full sm:w-auto">
-								<div className="h-10 w-24 sm:w-32 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-28 sm:w-36 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-20 sm:w-28 bg-gray-200 rounded animate-pulse"></div>
+								<div className="h-10 w-24 sm:w-32 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-28 sm:w-36 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-20 sm:w-28 bg-gray-200 rounded animate-pulse" />
 							</div>
 						</div>
 					</CardHeader>
@@ -690,8 +701,10 @@ export default function OnboardPage() {
 											>
 												{commonNextStages.map((stageValue) => {
 													const stage = ONBOARDING_STAGES.find((s) => s.value === stageValue);
+
 													if (!stage) return null;
 													const IconComponent = stage.icon;
+
 													return (
 														<DropdownMenuItem
 															key={stageValue}
@@ -996,8 +1009,10 @@ export default function OnboardPage() {
 																			const stage = ONBOARDING_STAGES.find(
 																				(s) => s.value === stageValue,
 																			);
+
 																			if (!stage) return null;
 																			const IconComponent = stage.icon;
+
 																			return (
 																				<DropdownMenuItem
 																					key={stageValue}
@@ -1141,6 +1156,7 @@ export default function OnboardPage() {
 								<SelectContent>
 									{ONBOARDING_STAGES.map((stage) => {
 										const IconComponent = stage.icon;
+
 										return (
 											<SelectItem key={stage.value} value={stage.value}>
 												<div className="flex items-center gap-2">
@@ -1234,8 +1250,10 @@ export default function OnboardPage() {
 									const stage = ONBOARDING_STAGES.find(
 										(s) => s.value === bulkUpdateDialog.newStatus,
 									);
+
 									if (!stage) return null;
 									const IconComponent = stage.icon;
+
 									return (
 										<>
 											<IconComponent className={`h-5 w-5 ${stage.color}`} />

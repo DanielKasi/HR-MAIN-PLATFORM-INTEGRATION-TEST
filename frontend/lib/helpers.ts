@@ -1,14 +1,14 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 import apiRequest from "./apiRequest";
+import { showErrorToast } from "./utils";
 
 import { IPermission, Permission, Role } from "@/types";
 import { store } from "@/store";
-import { toast } from "sonner";
 import { ICountry } from "@/types/types.utils";
-import { showErrorToast } from "./utils";
 import { INotification } from "@/store/notifications/types";
 
 export function cn(...inputs: ClassValue[]) {
@@ -38,6 +38,7 @@ export const formatNumberByMagnitude = (value: number) => {
 	} else if (value >= 1000) {
 		return `${(value / 1000).toFixed(1)}K`;
 	}
+
 	return `${value}`;
 };
 
@@ -69,6 +70,7 @@ export function getCUrrentInstitution() {
 	if (typeof window !== "undefined") {
 		return store.getState().auth.selectedInstitution.value;
 	}
+
 	return null;
 }
 
@@ -133,6 +135,7 @@ export function formatCurrency(amount: number | string): string {
 export function formatTransactionDate(dateString: any) {
 	try {
 		const date = new Date(dateString);
+
 		return format(date, "MMMM dd, yyyy h:mm a");
 	} catch {
 		return dateString;
@@ -226,6 +229,7 @@ export const getFileUrl = (filePath: string) => {
 		return filePath;
 	}
 	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
 	return `${baseUrl}${filePath}`;
 };
 
@@ -236,11 +240,13 @@ export const getFileName = (filePath: string) => {
 export const handleDownload = async (fileUrl: string, fileName: string) => {
 	try {
 		const response = await fetch(fileUrl);
+
 		if (!response.ok) throw new Error("Network response was not ok");
 
 		const blob = await response.blob();
 		const url = window.URL.createObjectURL(blob);
 		const link = document.createElement("a");
+
 		link.href = url;
 		link.download = fileName;
 		link.target = "_blank";
@@ -264,7 +270,9 @@ export const countryAPI = {
 		const response = await fetch(
 			"https://restcountries.com/v3.1/all?fields=name,cca2,currencies,idd",
 		);
+
 		if (!response.ok) throw new Error("Failed to fetch countries");
+
 		return (await response.json()) as ICountry[];
 	},
 };
@@ -295,19 +303,23 @@ export function forceUrlToHttps(url: string) {
 	const FORCE_HTTPS = process.env.NEXT_PUBLIC_FORCE_HTTPS
 		? process.env.NEXT_PUBLIC_FORCE_HTTPS === "true"
 		: true;
+
 	if (!FORCE_HTTPS) {
 		return url;
 	}
+
 	return url.replace(/^http:\/\//i, "https://");
 }
 
 export const showBrowserNotification = ({ notification }: { notification: INotification }) => {
 	if (Notification.permission !== "granted") {
 		console.log("\n\n Notification permission not granted. Not showing notification. ");
+
 		return;
 	}
 	console.log("\n\n Showing browser notification for: ", notification);
 	const btn = document.createElement("button");
+
 	btn.style.display = "none";
 	btn.onclick = () => {
 		console.log("\n\n Click triggered for notification: ", notification);

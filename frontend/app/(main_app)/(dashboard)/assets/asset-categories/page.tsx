@@ -1,8 +1,14 @@
 "use client";
 
+import type { IAssetCategory, IAsset } from "@/types/types.utils";
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { MoreVertical, Edit, Trash2, Search, Plus, Eye, X } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Search, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { PERMISSION_CODES } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,26 +27,15 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetCategoryDialog } from "@/components/asset-categories/create-asset-category-dialog";
 import { EditAssetCategoryDialog } from "@/components/asset-categories/edit-asset-category-dialog";
 import { DeleteAssetCategoryDialog } from "@/components/asset-categories/delete-asset-category-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
-import type { IAssetCategory, IAsset } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import ProtectedPage from "@/components/ProtectedPage";
-import { Icon } from "@iconify/react";
 import AssetCategoryDetailsModal from "@/components/asset-categories/asset-categoy-details-dialog";
 
 const getStatusColor = (status: boolean) => {
@@ -80,6 +75,7 @@ const AssetCategoriesPage = () => {
 
 		try {
 			const data = await assetsAPI.getAll();
+
 			setAssets(data);
 		} catch (error) {
 			console.warn("Error fetching assets:", error);
@@ -171,6 +167,7 @@ const AssetCategoriesPage = () => {
 					<PaginatedTableWrapper<IAssetCategory>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await assetCategoriesAPI.getPaginated({
 								institutionId: selectedInstitution.id,
 								page: 1,

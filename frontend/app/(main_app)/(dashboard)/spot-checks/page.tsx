@@ -1,8 +1,12 @@
 "use client";
 
+import type { ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Clock, CheckCircle, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -12,10 +16,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useRouter } from "next/navigation";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
-import type { ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
-import { Icon } from "@iconify/react";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 
 const SpotchecksPage = () => {
@@ -36,6 +37,7 @@ const SpotchecksPage = () => {
 		const fetchStatuses = async () => {
 			try {
 				const statuses = await spotcheckAPI.getStatuses();
+
 				setSpotcheckStatuses(statuses);
 			} catch (error) {
 				showErrorToast({ error, defaultMessage: "Error fetching spotcheck statuses" });

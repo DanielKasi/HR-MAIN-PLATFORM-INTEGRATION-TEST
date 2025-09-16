@@ -1,7 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+	Loader2,
+	Calendar,
+	FileText,
+	Plus,
+	CheckCircle2,
+	XCircle,
+	AlertCircle,
+	Clock,
+	Info,
+	AlertTriangle,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,19 +44,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import {
-	Loader2,
-	Calendar,
-	FileText,
-	Eye,
-	Plus,
-	CheckCircle2,
-	XCircle,
-	AlertCircle,
-	Clock,
-	Info,
-	AlertTriangle,
-} from "lucide-react";
-import {
 	getLeaveApplications,
 	getLeaveTypes,
 	createLeaveApplication,
@@ -54,9 +54,7 @@ import {
 	ILeaveType,
 	ILeaveRequestFormData,
 	ILeavePolicy,
-	ILeaveBalance,
 } from "@/types/types.utils";
-import { toast } from "sonner";
 
 interface EmployeeLeaveApplicationsProps {
 	employeeId: string;
@@ -102,6 +100,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 			return leaveType.name;
 		}
 		const type = leaveTypes.find((type) => type.id === leaveType);
+
 		return type?.name || "Unknown Leave Type";
 	};
 
@@ -110,16 +109,19 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 			return leaveType.category;
 		}
 		const type = leaveTypes.find((type) => type.id === leaveType);
+
 		return type?.category || "annual";
 	};
 
 	const getSelectedLeaveType = () => {
 		if (!formData.leave_type) return null;
+
 		return leaveTypes.find((type) => type.id.toString() === formData.leave_type);
 	};
 
 	const getSelectedLeavePolicy = () => {
 		if (!formData.leave_type) return null;
+
 		return leavePolicies.find((policy) => policy.leave_type.toString() === formData.leave_type);
 	};
 
@@ -129,6 +131,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 		const end = new Date(endDate);
 		const diffTime = Math.abs(end.getTime() - start.getTime());
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
 		return diffDays;
 	};
 
@@ -161,6 +164,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 				const daysDifference = Math.ceil(
 					(startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
 				);
+
 				if (daysDifference < selectedPolicy.min_notice_days) {
 					validations.push({
 						type: "error",
@@ -193,9 +197,11 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 
 	const getApprovalInfo = () => {
 		const selectedPolicy = getSelectedLeavePolicy();
+
 		if (!selectedPolicy) return null;
 
 		const approvals = [];
+
 		if (selectedPolicy.requires_manager_approval) approvals.push("Manager");
 		if (selectedPolicy.requires_hr_approval) approvals.push("HR");
 
@@ -211,6 +217,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 	const handleAddApplication = async () => {
 		if (!institutionId) {
 			toast.error("Institution ID is required");
+
 			return;
 		}
 
@@ -219,10 +226,12 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 
 		if (errors.length > 0) {
 			toast.error(errors[0].message);
+
 			return;
 		}
 
 		const warnings = validations.filter((v) => v.type === "warning");
+
 		if (warnings.length > 0) {
 			warnings.forEach((warning) => toast.warning(warning.message));
 		}
@@ -263,6 +272,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 		} catch (error: any) {
 			let errorMessage =
 				error?.message || error?.detail || "An error occurred while creating the leave application";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);
@@ -288,6 +298,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 			rejected: "bg-red-50 text-red-700 border-red-200",
 			cancelled: "bg-gray-50 text-gray-700 border-gray-200",
 		};
+
 		return colors[status as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 
@@ -298,6 +309,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 			rejected: <XCircle className="h-3 w-3" />,
 			cancelled: <Clock className="h-3 w-3" />,
 		};
+
 		return icons[status as keyof typeof icons] || <Clock className="h-3 w-3" />;
 	};
 
@@ -310,6 +322,7 @@ const EmployeeLeaveApplications: React.FC<EmployeeLeaveApplicationsProps> = ({
 			study: "bg-purple-50 text-purple-700 border-purple-200",
 			compassionate: "bg-green-50 text-green-700 border-green-200",
 		};
+
 		return colors[category as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 

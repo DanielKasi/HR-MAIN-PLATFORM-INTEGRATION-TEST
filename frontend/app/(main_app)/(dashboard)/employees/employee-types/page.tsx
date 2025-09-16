@@ -1,9 +1,15 @@
 "use client";
 
+import type { IEmployeeType, IEmployeeTypeFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { AlertCircle, Search, Plus, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,9 +34,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, Search, Plus, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
-import { toast } from "sonner";
-
 import {
 	getEmployeeTypes,
 	createEmployeeType,
@@ -39,11 +42,9 @@ import {
 	getPaginatedEmployeeTypesFromUrl,
 } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IEmployeeType, IEmployeeTypeFormData } from "@/types/types.utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { Icon } from "@iconify/react";
 
 interface EmployeeTypeModalProps {
 	isOpen: boolean;
@@ -98,11 +99,13 @@ function EmployeeTypeModal({
 			(type) =>
 				type.name.toLowerCase() === formData.name?.toLowerCase() && type.id !== editingType?.id,
 		);
+
 		if (duplicateName) {
 			newErrors.name = "An employee type with this name already exists";
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 

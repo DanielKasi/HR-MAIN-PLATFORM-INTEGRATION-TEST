@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
 import {
 	Select,
 	SelectContent,
@@ -10,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { PERIODS_API } from "@/lib/utils";
 import { IPeriod } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface PeriodSelectProps {
@@ -39,6 +40,7 @@ export function PeriodSelect({
 			setLoading(true);
 			try {
 				const response = await PERIODS_API.getPaginated({});
+
 				setPeriods(response.results);
 			} catch (error) {
 				console.error("Failed to fetch periods:", error);

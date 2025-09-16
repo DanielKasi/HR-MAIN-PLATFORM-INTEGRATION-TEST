@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Calendar } from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,13 +18,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Calendar } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
 import { UserProfileSearchableSelect } from "@/components/selects/user-profile-searchable-select";
-import { toast } from "sonner";
 import { IProjectTaskFormData, IProjectTaskStatus } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
 
@@ -60,6 +61,7 @@ export default function EditTaskPage() {
 		setFetching(true);
 		try {
 			const task = await PROJECTS_TASKS_API.getByTaskId({ taskId: Number(task_id) });
+
 			setProjectId(task.project);
 			setFormData({
 				task_name: task.task_name,
@@ -88,6 +90,7 @@ export default function EditTaskPage() {
 
 		// Validate required fields
 		const newErrors: Record<string, string[]> = {};
+
 		if (!formData.task_name) {
 			newErrors.task_name = ["Task name is required."];
 		}
@@ -110,6 +113,7 @@ export default function EditTaskPage() {
 
 		if (Object.keys(newErrors).length > 0) {
 			setErrors(newErrors);
+
 			return;
 		}
 

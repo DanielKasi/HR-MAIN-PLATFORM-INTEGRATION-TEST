@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+
 import {
 	Dialog,
 	DialogContent,
@@ -9,7 +10,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PerformanceFormModalProps<T = any> {
@@ -44,6 +44,7 @@ export function PerformanceFormModal<T = any>({
 		console.log("Modal submit button clicked");
 		const modalContent = document.querySelector('[role="dialog"]');
 		const form = modalContent?.querySelector("form") as HTMLFormElement;
+
 		if (form) {
 			console.log("Found form, triggering submit");
 			form.requestSubmit();

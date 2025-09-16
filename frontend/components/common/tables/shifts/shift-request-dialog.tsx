@@ -1,6 +1,11 @@
 "use client";
 
+import type { IBranchShift } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
+import { Calendar, Clock } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -12,11 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Calendar, Clock } from "lucide-react";
-import { useSelector } from "react-redux";
 import { selectSelectedBranch } from "@/store/auth/selectors";
 import apiRequest from "@/lib/apiRequest";
-import type { IBranchShift } from "@/types/types.utils";
 
 interface ShiftRequestDialogProps {
 	isOpen: boolean;
@@ -64,6 +66,7 @@ export default function ShiftRequestDialog({
 		setIsLoadingShifts(true);
 		try {
 			const response = await apiRequest.get(`institution/branch-shifts/${selectedBranch.id}/`);
+
 			setShifts(response.data.results || []);
 			// console.log(shifts);
 		} catch (error) {
@@ -77,6 +80,7 @@ export default function ShiftRequestDialog({
 	const handleSubmitRequest = async () => {
 		if (!formData.shift || !formData.date) {
 			console.error("Please fill in all required fields");
+
 			return;
 		}
 

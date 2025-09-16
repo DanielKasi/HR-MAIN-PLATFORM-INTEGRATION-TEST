@@ -13,6 +13,7 @@ export const getCurrentDateTime = () => {
 	const now = new Date();
 	const date = now.toISOString().split("T")[0];
 	const time = now.toTimeString().slice(0, 5);
+
 	return { date, time };
 };
 
@@ -30,12 +31,14 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 
 	const handleConfirm = () => {
 		const checkInTime = `${selectedTime}:00`; // Add seconds
+
 		onConfirm(selectedDate, checkInTime);
 		onClose();
 	};
 
 	const handleUseCurrentTime = () => {
 		const { date, time } = getCurrentDateTime();
+
 		setSelectedDate(date);
 		setSelectedTime(time);
 	};

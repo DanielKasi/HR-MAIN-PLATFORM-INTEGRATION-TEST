@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import type {
 	ApprovalDocument,
 	ApprovalDocumentLevel,
@@ -12,7 +9,25 @@ import type {
 	ApproverGroup,
 	ApproverGroupFormData,
 } from "@/types/approvals.types";
+import type { Role, UserProfile } from "@/types";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSelector } from "react-redux";
+import {
+	ArrowLeft,
+	Plus,
+	CheckCircle2,
+	Users,
+	Shield,
+	FileText,
+	Trash2,
+	Save,
+	Edit,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	Dialog,
@@ -30,20 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelectPopover } from "@/components/common/multi-select-popover";
 import FixedLoader from "@/components/fixed-loader";
-import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils";
-import {
-	ArrowLeft,
-	Plus,
-	CheckCircle2,
-	Users,
-	Shield,
-	FileText,
-	Trash2,
-	Save,
-	Edit,
-} from "lucide-react";
-import type { Role, UserProfile } from "@/types";
-import { toast } from "sonner";
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
@@ -157,6 +159,7 @@ export default function ApprovalEditPage() {
 
 		if (selectedActionIds.length === 0) {
 			toast.error("Please select at least one action that requires approval");
+
 			return;
 		}
 
@@ -180,16 +183,19 @@ export default function ApprovalEditPage() {
 	const createNewApproverGroup = async () => {
 		if (!currentInstitution) {
 			toast.error("Missing institution");
+
 			return;
 		}
 
 		if (!newGroupName.trim()) {
 			toast.error("Group name is required");
+
 			return;
 		}
 
 		if (selectedGroupUserIds.length === 0 && selectedGroupRoleIds.length === 0) {
 			toast.error("Please select at least one user or role for the approver group");
+
 			return;
 		}
 
@@ -205,6 +211,7 @@ export default function ApprovalEditPage() {
 			};
 
 			const createdGroup = await APPROVER_GROUPS_API.create(groupData);
+
 			setApproverGroups((prev) => [...prev, createdGroup]);
 			resetApproverGroupDialog();
 			showSuccessToast("Approver group created successfully!");
@@ -243,16 +250,19 @@ export default function ApprovalEditPage() {
 	const saveLevel = async () => {
 		if (!approvalDocument) {
 			toast.error("No approval document found");
+
 			return;
 		}
 
 		if (!newLevelName.trim()) {
 			toast.error("Level name is required");
+
 			return;
 		}
 
 		if (selectedApproverGroupIds.length === 0) {
 			toast.error("Please select at least one approver group");
+
 			return;
 		}
 

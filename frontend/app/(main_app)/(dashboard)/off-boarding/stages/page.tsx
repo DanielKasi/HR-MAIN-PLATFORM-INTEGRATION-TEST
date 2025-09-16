@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { toast } from "sonner";
+import { Plus, Search } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import {
-	Plus,
-	Pencil,
-	Trash2,
-	CheckCircle2,
-	XCircle,
-	MoreHorizontal,
-	MoreVertical,
-	Search,
-} from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -26,12 +23,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
 	Table,
 	TableBody,
@@ -50,18 +41,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { cn, OffboardingStagesAPI } from "@/lib/utils";
+import { OffboardingStagesAPI } from "@/lib/utils";
 import { IOffboardingStage } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { Icon } from "@iconify/react";
 
 const formSchema = z.object({
 	stage_name: z.string().min(2, "Stage name must be at least 2 characters"),
@@ -254,6 +240,7 @@ export default function OffboardingStagesPage() {
 										next: null,
 										previous: null,
 									});
+
 								return await OffboardingStagesAPI.getPaginated({
 									institutionId: selectedInstitution.id,
 									page: 1,
@@ -285,6 +272,7 @@ export default function OffboardingStagesPage() {
 										</div>
 									);
 								}
+
 								return (
 									<div className="overflow-x-auto">
 										<Table className="min-w-[700px] [&_th]:border-0 [&_td]:border-0">

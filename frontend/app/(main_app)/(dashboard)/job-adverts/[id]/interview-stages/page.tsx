@@ -1,8 +1,41 @@
 "use client";
 
+import type {
+	JobPositionAdvert,
+	IInterviewStage,
+	IInterviewStageFormData,
+	IInterview,
+} from "@/types/types.utils";
+
 import React, { useState, useEffect, use } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import {
+	ArrowLeft,
+	Users,
+	Mail,
+	Phone,
+	MessageSquare,
+	Edit,
+	Save,
+	Search,
+	MapPin,
+	MoreVertical,
+	CheckCircle,
+	XCircle,
+	Clock,
+	Calendar,
+	Plus,
+	Eye,
+	UserCheck,
+	Code,
+	Check,
+	Briefcase,
+	Star,
+	History,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +52,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import {
 	Select,
 	SelectContent,
@@ -36,72 +68,19 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-	ArrowLeft,
-	Users,
-	Mail,
-	Phone,
-	MessageSquare,
-	Edit,
-	Save,
-	Search,
-	MapPin,
-	MoreVertical,
-	ArrowRight,
-	CheckCircle,
-	XCircle,
-	Clock,
-	Calendar,
-	Plus,
-	Eye,
-	Filter,
-	UserCheck,
-	Code,
-	Check,
-	X,
-	ChevronDown,
-	Briefcase,
-	Star,
-	FileText,
-	History,
-	TrendingUp,
-	Award,
-	ChevronRight,
-} from "lucide-react";
-import { toast } from "sonner";
-import type {
-	JobPositionAdvert,
-	IInterviewStage,
-	IInterviewStageFormData,
-	IEmployee,
-	IInterview,
-	IInterviewFormData,
-} from "@/types/types.utils";
 import {
 	getJobPositionAdvertById,
 	createInterviewStage,
-	fetchEmployees,
 	getInterviews,
 	updateInterview,
 	createInterview,
 	bulkCreateOnBoarding,
-	getOnBoardings,
 } from "@/lib/utils";
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
@@ -210,6 +189,7 @@ const recalculateStageCandidateCounts = (
 
 		originalCandidates.forEach((candidate: any) => {
 			const latestStage = candidateLatestStage.get(candidate.id);
+
 			if (!latestStage || latestStage === stage.id) {
 				currentStageCandidates.push(candidate);
 			}
@@ -218,10 +198,12 @@ const recalculateStageCandidateCounts = (
 		const candidatesInThisStage = interviews.filter((interview: IInterview) => {
 			const candidateId = interview.job_position_application;
 			const latestStage = candidateLatestStage.get(candidateId);
+
 			return latestStage === stage.id;
 		});
 
 		const uniqueCandidateIds = new Set();
+
 		currentStageCandidates.forEach((candidate: any) => {
 			uniqueCandidateIds.add(candidate.id);
 		});
@@ -231,6 +213,7 @@ const recalculateStageCandidateCounts = (
 		});
 
 		const totalCount = uniqueCandidateIds.size;
+
 		return {
 			...stage,
 			candidates_count: totalCount,
@@ -251,12 +234,14 @@ const buildCandidateHistory = (
 			.sort((a, b) => {
 				const stageA = stages.find((s) => s.id === a.interview_stage.toString());
 				const stageB = stages.find((s) => s.id === b.interview_stage.toString());
+
 				return (stageA?.level || 0) - (stageB?.level || 0);
 			});
 
 		// Build interview history entries
 		const interview_history = candidateInterviews.map((interview) => {
 			const stage = stages.find((s) => s.id === interview.interview_stage.toString());
+
 			return {
 				stage_id: interview.interview_stage,
 				stage_name: stage?.name || "Unknown Stage",
@@ -323,6 +308,7 @@ const getStageIcon = (stageName: string, index: number) => {
 	};
 
 	const lowerStageName = stageName.toLowerCase();
+
 	for (const [key, icon] of Object.entries(iconMap)) {
 		if (lowerStageName.includes(key)) {
 			return icon;
@@ -448,6 +434,7 @@ const CandidateHistoryDialog = ({
 		if (rating >= 8) return "text-green-600 bg-green-100";
 		if (rating >= 6) return "text-yellow-600 bg-yellow-100";
 		if (rating >= 4) return "text-myOrange bg-orange-100";
+
 		return "text-red-600 bg-red-100";
 	};
 
@@ -766,6 +753,7 @@ const FeedbackDialog = ({
 	const handleSave = async () => {
 		if (!feedback.trim() || !rating) {
 			toast.error("Please provide both feedback and rating");
+
 			return;
 		}
 
@@ -785,6 +773,7 @@ const FeedbackDialog = ({
 	const handleScheduleAndMove = async () => {
 		if (!feedback.trim() || !rating) {
 			toast.error("Please provide both feedback and rating before scheduling");
+
 			return;
 		}
 
@@ -807,6 +796,7 @@ const FeedbackDialog = ({
 	const handleReject = async () => {
 		if (!feedback.trim()) {
 			toast.error("Please provide feedback for rejection");
+
 			return;
 		}
 
@@ -942,6 +932,7 @@ const InterviewSchedulingDialog = ({
 	// Initialize with proper default values immediately
 	const [scheduleData, setScheduleData] = useState<InterviewScheduleData>(() => {
 		const tomorrow = new Date();
+
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		tomorrow.setHours(10, 0, 0, 0);
 
@@ -957,6 +948,7 @@ const InterviewSchedulingDialog = ({
 	useEffect(() => {
 		if (!scheduleData.interview_date) {
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 			setScheduleData((prev) => ({
@@ -969,6 +961,7 @@ const InterviewSchedulingDialog = ({
 	useEffect(() => {
 		if (isOpen) {
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 
@@ -996,6 +989,7 @@ const InterviewSchedulingDialog = ({
 		} else {
 			const interviewDate = new Date(scheduleData.interview_date);
 			const now = new Date();
+
 			if (interviewDate <= now) {
 				newErrors.interview_date = "Interview date must be in the future";
 			}
@@ -1013,12 +1007,14 @@ const InterviewSchedulingDialog = ({
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleSchedule = () => {
 		if (!validateScheduleForm()) {
 			toast.error("Please fix the form errors before scheduling");
+
 			return;
 		}
 
@@ -1028,6 +1024,7 @@ const InterviewSchedulingDialog = ({
 			location: scheduleData.location.trim() || "Conference Room",
 			interview_type: scheduleData.interview_type || "online",
 		};
+
 		onSchedule(finalScheduleData);
 	};
 
@@ -1244,6 +1241,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 		if (candidate.interview_status === "cancelled") {
 			return false;
 		}
+
 		// Can onboard if they have feedback, rating, and interview status is scheduled
 		return !!(
 			candidate.feedback &&
@@ -1315,6 +1313,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			setError(null);
 
 			const data = await getJobPositionAdvertById({ advertId: parseInt(resolvedParams.id) });
+
 			if (!data) {
 				throw new Error("No data returned from API");
 			}
@@ -1445,10 +1444,12 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 
 		const newStageErrors: any = {};
+
 		if (!stageFormData.name.trim()) {
 			newStageErrors.name = "Stage name is required";
 		}
@@ -1458,6 +1459,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
 		if (Object.keys(newStageErrors).length > 0) {
 			setStageErrors(newStageErrors);
+
 			return;
 		}
 
@@ -1496,6 +1498,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 		if (isCreateStageDialogOpen && processedStages.length > 0) {
 			const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
 			const nextLevel = maxLevel + 1;
+
 			setStageFormData((prev) => ({ ...prev, level: nextLevel }));
 		} else if (isCreateStageDialogOpen) {
 			setStageFormData((prev) => ({ ...prev, level: 1 }));
@@ -1511,6 +1514,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 		if (checked) {
 			if (!candidate) {
 				toast.error("Candidate not found");
+
 				return;
 			}
 
@@ -1519,12 +1523,14 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 				toast.error(
 					"This candidate already has feedback and rating. Use individual actions to onboard or move them.",
 				);
+
 				return;
 			}
 
 			// Check if candidate is already onboarded
 			if (isCandidateAlreadyOnboarded(candidate)) {
 				toast.error("This candidate is already onboarded.");
+
 				return;
 			}
 
@@ -1556,6 +1562,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 						"No candidates can be selected. All candidates have feedback/rating or are already onboarded.",
 					);
 				}
+
 				return;
 			}
 
@@ -1564,8 +1571,10 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
 			const totalCandidates =
 				viewMode === "current" ? filteredCandidates.length : filteredHistoryCandidates.length;
+
 			if (candidatesToSelect.length < totalCandidates) {
 				const skippedCount = totalCandidates - candidatesToSelect.length;
+
 				toast.info(
 					`Selected ${candidatesToSelect.length} candidates needing feedback. ${skippedCount} candidates skipped (already reviewed or onboarded).`,
 				);
@@ -1612,6 +1621,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			if (!result) {
 				throw new Error("Failed to reject candidate");
 			}
+
 			return { success: true, data: result };
 		} catch (error) {
 			throw error;
@@ -1671,10 +1681,12 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 				if (scheduleData.interview_date) {
 					try {
 						const dateTime = new Date(scheduleData.interview_date);
+
 						if (!isNaN(dateTime.getTime())) {
 							// Extract time for the interview_time field
 							const hours = dateTime.getHours().toString().padStart(2, "0");
 							const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+
 							interviewTime = `${hours}:${minutes}:00`;
 
 							// Format date for the interview_date field (might need different format)
@@ -1713,6 +1725,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 				};
 
 				const failed = Object.entries(validation).filter(([key, value]) => !value);
+
 				if (failed.length > 0) {
 					throw new Error(`Missing required fields: ${failed.map(([key]) => key).join(", ")}`);
 				}
@@ -1722,6 +1735,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 						institutionId: selectedInstitution.id,
 						interviewData: createData,
 					});
+
 					return result;
 				} catch (apiError) {
 					return null;
@@ -1783,12 +1797,14 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 							status: interview.status,
 						};
 					}
+
 					return interview;
 				}),
 			);
 
 			setSelectedCandidate((prev) => {
 				if (!prev || prev.interview_id !== interviewId) return prev;
+
 				return {
 					...prev,
 					feedback: result.feedback || undefined,
@@ -1839,6 +1855,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			toast.error(
 				"No candidates eligible for onboarding. Candidates need feedback and rating first.",
 			);
+
 			return;
 		}
 
@@ -1923,6 +1940,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 					}
 
 					await fetchData();
+
 					return { success: true };
 				} else {
 					return {
@@ -1972,17 +1990,20 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 	const handleBulkScheduleAndMove = () => {
 		if (candidatesEligibleForMoving.length === 0) {
 			toast.error("No candidates eligible for moving. Candidates need feedback and rating first.");
+
 			return;
 		}
 
 		if (!nextStageForActive) {
 			toast.error("No next stage available");
+
 			return;
 		}
 
 		const candidatesData = filteredCandidates.filter((c) =>
 			candidatesEligibleForMoving.map((ec) => ec.id).includes(c.id),
 		);
+
 		setCandidatesToSchedule(candidatesData);
 		setIsSchedulingDialogOpen(true);
 	};
@@ -2056,6 +2077,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 												? values.map((v) => Number(v))
 												: [Number(values)];
 											const uniqueValues = [...new Set(numberValues)];
+
 											updateStageFormData("interviewers", uniqueValues);
 										}}
 										disabled={isCreatingStage}
@@ -2297,6 +2319,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 																		? filteredCandidates
 																		: filteredHistoryCandidates
 																).find((c) => c.id === id);
+
 																return (
 																	candidate &&
 																	!(candidate.feedback && candidate.rating && candidate.rating > 0)
@@ -2325,6 +2348,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 																		const eligibleIds = candidatesEligibleForOnboarding.map(
 																			(c) => c.id,
 																		);
+
 																		setSelectedCandidates(eligibleIds);
 																		handleBulkOnboard();
 																	}}
@@ -2346,6 +2370,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 																			const eligibleIds = candidatesEligibleForMoving.map(
 																				(c) => c.id,
 																			);
+
 																			setSelectedCandidates(eligibleIds);
 																			handleBulkScheduleAndMove();
 																		}}

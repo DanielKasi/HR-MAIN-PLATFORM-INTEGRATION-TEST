@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3, PieChart, TrendingUp, Eye } from "lucide-react";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, PieChart, TrendingUp, Eye } from "lucide-react";
 
 interface InteractiveChartProps {
 	data: any;

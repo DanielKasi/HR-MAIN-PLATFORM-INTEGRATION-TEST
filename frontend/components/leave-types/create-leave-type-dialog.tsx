@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+import { Loader2 } from "lucide-react";
+
 import {
 	Dialog,
 	DialogContent,
@@ -7,15 +10,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
-import { Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select } from "../ui/select";
-import { GENDER_CHOICES, LEAVE_CATEGORIES } from "@/constants";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import ProtectedComponent from "../ProtectedComponent";
+
+import { GENDER_CHOICES, LEAVE_CATEGORIES } from "@/constants";
 import { PERMISSION_CODES } from "@/constants";
 
 interface CreateLeaveTypeDialogProps {

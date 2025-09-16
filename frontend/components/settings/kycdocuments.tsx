@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Upload, FileText, X, Check } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { DocumentsList } from "@/components/documents-list";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export const KYCDocuments = ({ documentsRefreshTrigger, onDocumentChange }: KYCD
 			file: null,
 			fileName: "",
 		};
+
 		setDocuments((prev) => [...prev, newDoc]);
 	};
 
@@ -50,6 +52,7 @@ export const KYCDocuments = ({ documentsRefreshTrigger, onDocumentChange }: KYCD
 			// Validate file size (10MB limit)
 			if (file.size > 10 * 1024 * 1024) {
 				toast.error("File size must be less than 10MB");
+
 				return;
 			}
 
@@ -65,6 +68,7 @@ export const KYCDocuments = ({ documentsRefreshTrigger, onDocumentChange }: KYCD
 
 			if (!allowedTypes.includes(file.type)) {
 				toast.error("Only PDF, DOC, DOCX, JPG, and PNG files are allowed");
+
 				return;
 			}
 
@@ -77,6 +81,7 @@ export const KYCDocuments = ({ documentsRefreshTrigger, onDocumentChange }: KYCD
 		setIsLoading(true);
 		try {
 			const validDocuments = documents.filter((doc) => doc.file && doc.title.trim());
+
 			if (validDocuments.length > 0) {
 				// Handle KYC document upload
 				const kycDocuments = validDocuments.map((doc) => ({
@@ -107,6 +112,7 @@ export const KYCDocuments = ({ documentsRefreshTrigger, onDocumentChange }: KYCD
 			// Validate KYC documents
 			if (invalidDocuments.length > 0) {
 				toast.error("Please provide titles for all uploaded documents");
+
 				return;
 			}
 

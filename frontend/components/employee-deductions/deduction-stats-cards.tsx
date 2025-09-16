@@ -1,7 +1,9 @@
 "use client";
 
-import { Users, Coins, Calendar, Percent } from "lucide-react";
 import type { IEmployeeDeduction } from "@/types/types.utils";
+
+import { Users, Coins, Calendar, Percent } from "lucide-react";
+
 import { formatCurrency } from "@/lib/helpers";
 
 interface DeductionStatsCardsProps {

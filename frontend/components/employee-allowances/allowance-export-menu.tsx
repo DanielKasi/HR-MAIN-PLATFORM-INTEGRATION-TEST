@@ -2,6 +2,8 @@
 
 import { Download, FileSpreadsheet } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,7 +11,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { IEmployeeAllowance } from "@/types/types.utils";
 
 interface AllowanceExportMenuProps {
@@ -54,6 +55,7 @@ export function AllowanceExportMenu({
 		const blob = new Blob([csvContent], { type: "text/csv" });
 		const url = window.URL.createObjectURL(blob);
 		const a = document.createElement("a");
+
 		a.href = url;
 		a.download = "employee-allowances.csv";
 		a.click();
@@ -95,6 +97,7 @@ export function AllowanceExportMenu({
 				htmlTable += "<tr>";
 				for (const header of headers) {
 					const value = row[header as keyof typeof row];
+
 					htmlTable += `<td>${value}</td>`;
 				}
 				htmlTable += "</tr>";
@@ -129,6 +132,7 @@ export function AllowanceExportMenu({
 			const blob = new Blob([excelContent], { type: "application/vnd.ms-excel" });
 			const url = window.URL.createObjectURL(blob);
 			const a = document.createElement("a");
+
 			a.href = url;
 			a.download = `employee-allowances-${format(new Date(), "yyyy-MM-dd")}.xls`;
 			document.body.appendChild(a);

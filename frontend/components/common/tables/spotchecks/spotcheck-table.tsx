@@ -1,7 +1,10 @@
 "use client";
 
+import type { IEmployee, ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
+
 import { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+
 import { Badge } from "@/components/ui/badge";
 import {
 	Table,
@@ -15,7 +18,6 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
-import type { IEmployee, ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
 
 const getStatusColor = (status: string) => {
 	switch (status) {
@@ -44,11 +46,13 @@ const formatDate = (dateString: string) => {
 
 const formatDuration = (duration: string) => {
 	const minutes = parseInt(duration);
+
 	if (minutes < 60) {
 		return `${minutes}m`;
 	}
 	const hours = Math.floor(minutes / 60);
 	const remainingMinutes = minutes % 60;
+
 	return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 };
 
@@ -76,6 +80,7 @@ export default function SpotchecksTable({
 		<PaginatedTableWrapper<ISpotCheck>
 			fetchFirstPage={async () => {
 				if (!selectedInstitution) throw new Error("No institution selected");
+
 				return await spotcheckAPI.getPaginated({
 					institutionId: selectedInstitution.id,
 					scope,
@@ -107,6 +112,7 @@ export default function SpotchecksTable({
 				const filteredResults = data.results.filter((spotcheck) => {
 					const matchesStatus =
 						statusFilter === null || spotcheck.status.code === statusFilter?.code;
+
 					return matchesStatus;
 				});
 

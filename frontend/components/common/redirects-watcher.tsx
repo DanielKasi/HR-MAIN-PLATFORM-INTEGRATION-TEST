@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+
 import { selectPendingRedirect } from "@/store/redirects/selectors";
 import { selectUser } from "@/store/auth/selectors";
-import { clearRedirect } from "@/store/redirects/actions";
 import { RedirectPayload } from "@/store/redirects/types";
 
 function buildPathFromRedirect(redirect: RedirectPayload) {
 	if (!redirect) return "/";
 	const { intent, intent_id } = redirect;
+
 	switch (intent) {
 		case "spot_check":
 			return `/spot-checks/${intent_id}`;
@@ -32,6 +33,7 @@ export default function RedirectsWatcher() {
 		if (!pending) return;
 		if (!user) return;
 		const path = buildPathFromRedirect(pending);
+
 		// console.log("\n\n Redirecting to", path);
 		router.push(path);
 		// window.location.replace(path);

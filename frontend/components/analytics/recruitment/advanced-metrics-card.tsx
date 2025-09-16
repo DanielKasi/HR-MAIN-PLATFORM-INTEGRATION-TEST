@@ -1,8 +1,10 @@
 "use client";
 
 import type React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { TrendingUp, TrendingDown } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface AdvancedMetricsCardProps {
@@ -59,7 +61,7 @@ export function AdvancedMetricsCard({
 					<p className="text-sm text-muted-foreground">{subtitle}</p>
 				</div>
 
-				<div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-accent/20 via-accent/40 to-accent/20 group-hover:from-accent/40 group-hover:via-accent group-hover:to-accent/40 transition-all duration-300"></div>
+				<div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-accent/20 via-accent/40 to-accent/20 group-hover:from-accent/40 group-hover:via-accent group-hover:to-accent/40 transition-all duration-300" />
 			</CardContent>
 		</Card>
 	);

@@ -1,7 +1,11 @@
 "use client";
 
+import type { IDepartment, IJobPosition, IEmployee } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { Users, Building, Briefcase, Loader2 } from "lucide-react";
+import { Users, Building, Briefcase } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -12,8 +16,6 @@ import {
 } from "@/components/ui/select";
 import { InfiniteScrollSelect } from "@/components/infinite-scroll-select";
 import { getDepartments, getJobPositions, getPaginatedEmployees } from "@/lib/utils";
-import type { IDepartment, IJobPosition, IEmployee } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 type ContextType = "employee" | "department" | "job_position";
@@ -68,6 +70,7 @@ export function ContextSelector({
 			switch (selectedContext) {
 				case "employee":
 					const employees = await getPaginatedEmployees({ institutionId: currentInstitution.id });
+
 					data = employees.results.map((emp: IEmployee) => ({
 						id: emp.id,
 						name: emp.user?.fullname || emp.email,
@@ -77,6 +80,7 @@ export function ContextSelector({
 
 				case "department":
 					const departments = await getDepartments({ institutionId: currentInstitution.id });
+
 					data = departments.map((dept: IDepartment) => ({
 						id: dept.id,
 						name: dept.name,
@@ -88,6 +92,7 @@ export function ContextSelector({
 
 				case "job_position":
 					const positions = await getJobPositions({ institutionId: currentInstitution.id });
+
 					data = positions.map((pos: IJobPosition) => ({
 						id: pos.id,
 						name: pos.name,

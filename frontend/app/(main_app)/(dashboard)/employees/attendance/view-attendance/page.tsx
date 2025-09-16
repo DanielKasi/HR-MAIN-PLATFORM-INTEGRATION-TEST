@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { Users, Building, Info, FileSpreadsheet, UserCheck } from "lucide-react";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +23,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Users, Building, Info, FileSpreadsheet, UserCheck } from "lucide-react";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { fetchAttendanceData } from "@/lib/utils";
 import {
@@ -29,11 +31,9 @@ import {
 	type IEmployee,
 	type IJobPosition,
 } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { PERMISSION_CODES } from "@/constants";
 import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selectors";
 import { getDepartments, getJobPositions, fetchEmployees } from "@/lib/utils";
-import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { MAIN_DOMAIN_URL } from "@/constants";
 
@@ -132,6 +132,7 @@ export default function AttendanceTable() {
 				setAllPositions(positions || []);
 
 				let employeesList = [];
+
 				if (Array.isArray(employees)) {
 					employeesList = employees;
 				} else if (employees && typeof employees === "object" && "results" in employees) {
@@ -162,6 +163,7 @@ export default function AttendanceTable() {
 			setLoading(true);
 			setError(null);
 			const attendance = await fetchAttendanceData(filters.startDate, filters.endDate);
+
 			setAttendanceData(attendance);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to load data");
@@ -172,6 +174,7 @@ export default function AttendanceTable() {
 
 	const dateRange = useMemo(() => {
 		const actualData = (attendanceData as any)?.data || attendanceData;
+
 		if (!actualData) return [];
 
 		const startDate = new Date(actualData.start_date);
@@ -247,6 +250,7 @@ export default function AttendanceTable() {
 		} else if (tempFilters.filterType === "position") {
 			return allPositions.map((pos) => ({ value: pos.name, label: pos.name, id: pos.id }));
 		}
+
 		return [];
 	};
 
@@ -263,27 +267,33 @@ export default function AttendanceTable() {
 			if (filters.filterType === "department" && filters.filterValue !== "all") {
 				// Find department ID by name
 				const department = allDepartments.find((dept) => dept.name === filters.filterValue);
+
 				if (department) {
 					payload.target_departments = [department.id];
 				} else {
 					toast.error("Selected department not found. Please refresh the page and try again.");
 					setDownloading(false);
+
 					return;
 				}
 			} else if (filters.filterType === "position" && filters.filterValue !== "all") {
 				const position = allPositions.find((pos) => pos.name === filters.filterValue);
+
 				if (position) {
 					payload.target_job_positions = [position.id];
 				} else {
 					toast.error("Selected position not found. Please refresh the page and try again.");
 					setDownloading(false);
+
 					return;
 				}
 			} else {
 				const employeeIds = filteredEmployees.map((emp: any) => emp.employee.id);
+
 				if (employeeIds.length === 0) {
 					toast.error("No employees found to download. Please apply filters and try again.");
 					setDownloading(false);
+
 					return;
 				}
 				payload.target_employees = employeeIds;
@@ -304,6 +314,7 @@ export default function AttendanceTable() {
 				const blob = await response.blob();
 				const url = window.URL.createObjectURL(blob);
 				const a = document.createElement("a");
+
 				a.href = url;
 				a.download = `attendance-report-${filters.startDate}-to-${filters.endDate}.xlsx`;
 				document.body.appendChild(a);
@@ -313,6 +324,7 @@ export default function AttendanceTable() {
 				toast.success("Attendance report downloaded successfully!");
 			} else {
 				const errorData = await response.json();
+
 				console.error("Download failed:", errorData);
 
 				if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
@@ -338,26 +350,26 @@ export default function AttendanceTable() {
 				<div className="bg-white rounded-lg shadow-md border p-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
-							<div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-							<div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+							<div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+							<div className="h-6 bg-gray-200 rounded w-32 animate-pulse" />
 						</div>
-						<div className="h-8 bg-gray-200 rounded w-24 animate-pulse"></div>
+						<div className="h-8 bg-gray-200 rounded w-24 animate-pulse" />
 					</div>
 				</div>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 					{Array.from({ length: 5 }).map((_, i) => (
 						<div key={i} className="space-y-2">
-							<div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-							<div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+							<div className="h-4 bg-gray-200 rounded w-20 animate-pulse" />
+							<div className="h-10 bg-gray-200 rounded animate-pulse" />
 						</div>
 					))}
 				</div>
 
 				<div className="bg-white rounded-lg shadow-md border">
 					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
-						<div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
-						<div className="h-10 bg-gray-200 rounded w-40 animate-pulse"></div>
+						<div className="h-6 bg-gray-200 rounded w-48 animate-pulse" />
+						<div className="h-10 bg-gray-200 rounded w-40 animate-pulse" />
 					</div>
 					<TableSkeleton rows={10} columns={12} />
 				</div>

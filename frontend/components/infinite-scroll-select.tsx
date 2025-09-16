@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, Search, Check } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InfiniteScrollSelectProps<T> {
@@ -62,6 +63,7 @@ export function InfiniteScrollSelect<T>({
 		observerRef.current = new IntersectionObserver(
 			(entries) => {
 				const target = entries[0];
+
 				if (target.isIntersecting && hasMore && !loading) {
 					onLoadMore();
 				}
@@ -121,6 +123,7 @@ export function InfiniteScrollSelect<T>({
 						<>
 							{items.map((item) => {
 								const isSelected = selectedItem && getItemId(selectedItem) === getItemId(item);
+
 								return (
 									<Button
 										key={getItemId(item)}

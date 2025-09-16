@@ -1,39 +1,36 @@
 "use client";
 
 import type React from "react";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Briefcase, ArrowLeft, Check, Upload, X, FileText, Plus } from "lucide-react";
+import { ArrowLeft, Check, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-
 import { CreateDepartmentDialog } from "@/components/dialogs/create-department-dialog";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getDepartments, getJobPositions, createJobPosition } from "@/lib/utils";
-import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
-
+import { SearchableSelect } from "@/components/searchable-select";
 import {
 	type JobPositionFormData,
 	type IDepartment,
 	type IJobPosition,
 	type CreateJobPositionData,
 } from "@/types/types.utils";
-
 import { PERMISSION_CODES } from "@/constants";
-import { toast } from "sonner";
-import RichTextDisplay from "@/components/common/rich-text-display";
 import { RichEditorField } from "@/components/common/rich-editor";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 function formatWithCommas(value: string) {
 	const num = value.replace(/,/g, "");
+
 	if (!num) return "";
+
 	return parseFloat(num).toLocaleString("en-US");
 }
 
@@ -79,6 +76,7 @@ export default function CreateJobPositionPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
@@ -169,6 +167,7 @@ export default function CreateJobPositionPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -177,11 +176,13 @@ export default function CreateJobPositionPage() {
 
 		if (!selectedInstitution || !selectedBranch) {
 			toast.error("Missing organization or branch information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 		setIsSubmitting(true);
@@ -222,6 +223,7 @@ export default function CreateJobPositionPage() {
 				error.response?.data?.job_position_status?.join(", ") ||
 				error.response?.data?.non_field_errors?.join(", ") ||
 				"Failed to create job position. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

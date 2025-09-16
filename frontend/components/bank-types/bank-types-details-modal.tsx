@@ -1,4 +1,7 @@
-import { IBankType } from "@/types/types.utils";
+import { Label } from "../ui/label";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+
 import {
 	Dialog,
 	DialogContent,
@@ -6,9 +9,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 } from "@/components/ui/dialog";
-import { Label } from "../ui/label";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+import { IBankType } from "@/types/types.utils";
 
 // Bank Type Details Modal
 interface BankTypeDetailsModalProps {

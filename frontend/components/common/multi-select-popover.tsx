@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Check, ChevronDown, X } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultiSelectItem {
@@ -36,6 +37,7 @@ export function MultiSelectPopover({
 		const newSelection = selectedIds.includes(id)
 			? selectedIds.filter((selectedId) => selectedId !== id)
 			: [...selectedIds, id];
+
 		onSelectionChange(newSelection);
 	};
 

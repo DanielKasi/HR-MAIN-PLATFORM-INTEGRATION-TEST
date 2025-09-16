@@ -1,5 +1,7 @@
 "use client";
 
+import type { IInterview } from "@/types/types.utils";
+
 import React from "react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -8,26 +10,21 @@ import {
 	Users,
 	Plus,
 	Search,
-	Filter,
 	MoreVertical,
 	Edit,
 	Trash2,
 	RefreshCw,
-	Calendar,
 	Eye,
 	Star,
 	Clock,
 	CheckCircle,
 	XCircle,
 	AlertCircle,
-	ChevronLeft,
-	ChevronRight,
 	ChevronDown,
-	ChevronsLeft,
-	ChevronsRight,
 	Briefcase,
 } from "lucide-react";
 import { Icon } from "@iconify/react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -39,7 +36,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -49,7 +45,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Select,
 	SelectContent,
@@ -57,7 +52,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
 	getInterviews,
@@ -65,9 +59,7 @@ import {
 	getPaginatedInterviews,
 	getPaginatedInterviewsFromUrl,
 } from "@/lib/utils";
-import type { IInterview } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
-import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { formatCurrency } from "@/lib/helpers";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -111,11 +103,13 @@ export default function InterviewsPage() {
 	// Get unique interviewers for filter
 	const interviewers = useMemo(() => {
 		const uniqueInterviewers = new Set<string>();
+
 		interviews.forEach((interview) => {
 			interview.interview_stage_details?.interviewers_details?.forEach((employee) => {
 				uniqueInterviewers.add(`${employee.first_name} ${employee.last_name}`);
 			});
 		});
+
 		return [
 			{ value: "all", label: "All Interviewers" },
 			...Array.from(uniqueInterviewers).map((name) => ({ value: name, label: name })),
@@ -125,13 +119,16 @@ export default function InterviewsPage() {
 	// Get unique job positions for filter
 	const jobPositions = useMemo(() => {
 		const uniquePositions = new Set<string>();
+
 		interviews.forEach((interview) => {
 			const positionName =
 				interview.job_position_application_details?.job_position_advert_job_details?.name;
+
 			if (positionName) {
 				uniquePositions.add(positionName);
 			}
 		});
+
 		return [
 			{ value: "all", label: "All Positions" },
 			...Array.from(uniquePositions).map((name) => ({ value: name, label: name })),
@@ -141,6 +138,7 @@ export default function InterviewsPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
@@ -230,6 +228,7 @@ export default function InterviewsPage() {
 				const interviewDate = new Date(interview.interview_date).getTime();
 				const fromDate = dateRange.from ? new Date(dateRange.from).getTime() : -Infinity;
 				const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+
 				return interviewDate >= fromDate && interviewDate <= toDate;
 			});
 		}
@@ -314,11 +313,13 @@ export default function InterviewsPage() {
 			const completedInterviews = filteredInterviews
 				.filter((interview) => interview.status === "completed")
 				.map((interview) => interview.id);
+
 			setSelectedInterviews((prev) => [...new Set([...prev, ...completedInterviews])]);
 		} else {
 			const completedInterviewIds = filteredInterviews
 				.filter((interview) => interview.status === "completed")
 				.map((interview) => interview.id);
+
 			setSelectedInterviews((prev) => prev.filter((id) => !completedInterviewIds.includes(id)));
 		}
 	};
@@ -342,12 +343,14 @@ export default function InterviewsPage() {
 
 		if (applicationIds.length === 0) {
 			toast.error("No valid applications found for selected interviews");
+
 			return;
 		}
 
 		setIsOnboarding(true);
 		try {
 			const result = await bulkCreateOnBoarding({ applicationIds });
+
 			if (result) {
 				toast.success(`Successfully onboarded ${applicationIds.length} candidates`);
 				setSelectedInterviews([]);
@@ -468,6 +471,7 @@ export default function InterviewsPage() {
 									ratedInterviews.reduce((sum, i) => sum + (i.rating || 0), 0) /
 										ratedInterviews.length || 0;
 								const roundedAverage = Math.round(averageRating);
+
 								return (
 									<>
 										<div className="text-2xl font-bold">{formatCurrency(roundedAverage)}</div>
@@ -571,16 +575,16 @@ export default function InterviewsPage() {
 							<CardHeader className="border-b">
 								<div className="flex justify-between gap-8 items-center">
 									<div className="flex items-center justify-start gap-4">
-										<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+										<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 										<div className="space-y-2">
-											<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-											<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+											<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+											<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 										</div>
 									</div>
 									<div className="flex gap-2">
-										<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-										<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-										<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+										<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+										<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+										<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 									</div>
 								</div>
 							</CardHeader>
@@ -593,6 +597,7 @@ export default function InterviewsPage() {
 							<PaginatedTableWrapper<IInterview>
 								fetchFirstPage={async () => {
 									if (!selectedInstitution) throw new Error("No institution selected");
+
 									return await getPaginatedInterviews({
 										institutionId: selectedInstitution.id,
 										page: 1,
@@ -633,6 +638,7 @@ export default function InterviewsPage() {
 
 									// Handle both array and paginated response formats
 									let interviews: IInterview[] = [];
+
 									if (Array.isArray(data)) {
 										// Direct array response
 										interviews = data;
@@ -668,6 +674,7 @@ export default function InterviewsPage() {
 										if (statusFilter !== "all") {
 											const interviewStatus = interview.status?.toLowerCase().trim();
 											const filterStatus = statusFilter.toLowerCase().trim();
+
 											if (interviewStatus !== filterStatus) {
 												return false;
 											}
@@ -680,6 +687,7 @@ export default function InterviewsPage() {
 													(employee: any) =>
 														`${employee.first_name} ${employee.last_name}` === interviewerFilter,
 												);
+
 											if (!hasInterviewer) return false;
 										}
 
@@ -688,6 +696,7 @@ export default function InterviewsPage() {
 											const positionName =
 												interview.job_position_application_details?.job_position_advert_job_details
 													?.name;
+
 											if (positionName !== jobPositionFilter) return false;
 										}
 
@@ -698,6 +707,7 @@ export default function InterviewsPage() {
 												? new Date(dateRange.from).getTime()
 												: -Infinity;
 											const toDate = dateRange.to ? new Date(dateRange.to).getTime() : Infinity;
+
 											if (interviewDate < fromDate || interviewDate > toDate) return false;
 										}
 
@@ -727,6 +737,7 @@ export default function InterviewsPage() {
 
 									// Fallback: If grouping fails, show raw data
 									let groupedInterviews: [string, { interviews: IInterview[]; contact: any }][];
+
 									try {
 										groupedInterviews = Object.entries(
 											filteredResults.reduce(
@@ -734,6 +745,7 @@ export default function InterviewsPage() {
 													const applicantName =
 														interview.job_position_application_details?.applicant_name ||
 														"Unknown Applicant";
+
 													if (!groups[applicantName]) {
 														groups[applicantName] = {
 															interviews: [],
@@ -746,6 +758,7 @@ export default function InterviewsPage() {
 														};
 													}
 													groups[applicantName].interviews.push(interview);
+
 													return groups;
 												},
 												{} as Record<string, { interviews: IInterview[]; contact: any }>,
@@ -753,6 +766,7 @@ export default function InterviewsPage() {
 										);
 									} catch (error) {
 										console.error("Error grouping interviews:", error);
+
 										// Fallback: show raw data without grouping
 										return (
 											<div className="space-y-4">
@@ -790,7 +804,7 @@ export default function InterviewsPage() {
 												<Table className="min-w-full [&_th]:border-0 [&_td]:border-0">
 													<TableHeader className="bg-gray-50/50">
 														<TableRow>
-															<TableHead className="w-[50px]"></TableHead>
+															<TableHead className="w-[50px]" />
 															<TableHead>
 																<div className="flex items-center gap-2">
 																	<span>Applicant</span>

@@ -1,6 +1,11 @@
 "use client";
 
+import type { IEmployeePenalty, IEmployee } from "@/types/types.utils";
+
 import React, { useRef } from "react";
+import { useSelector } from "react-redux";
+import { Edit, MoreHorizontal, Trash } from "lucide-react";
+
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import {
 	Table,
@@ -12,8 +17,6 @@ import {
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
-import type { IEmployeePenalty, IEmployee } from "@/types/types.utils";
 import { penaltiesAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +25,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, MoreHorizontal, Trash } from "lucide-react";
 import { PENALTY_TYPES } from "@/constants";
 import { formatCurrency } from "@/lib/helpers";
 
@@ -58,6 +60,7 @@ export default function PenaltiesTable({
 						search: searchTerm || undefined,
 					});
 				}
+
 				// default: fetch empty set
 				return { results: [], count: 0 } as any;
 			}}

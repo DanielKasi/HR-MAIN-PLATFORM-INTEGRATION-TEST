@@ -1,10 +1,13 @@
 "use client";
 
+import type { ApproverGroup, ApproverGroupFormData } from "@/types/approvals.types";
+
 import { useState, useRef } from "react";
 import { useSelector } from "react-redux";
+import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
-import type { ApproverGroup, ApproverGroupFormData } from "@/types/approvals.types";
+import { PaginatedTable } from "@/components/common/tables/paginated-table";
 import {
 	Dialog,
 	DialogContent,
@@ -17,9 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
-import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import {
 	DropdownMenu,
@@ -98,16 +99,19 @@ export default function ApproverGroupsPage() {
 	const handleSave = async () => {
 		if (!currentInstitution) {
 			showErrorToast({ error: null, defaultMessage: "Missing institution" });
+
 			return;
 		}
 
 		if (!groupName.trim()) {
 			showErrorToast({ error: null, defaultMessage: "Group name is required" });
+
 			return;
 		}
 
 		if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
 			showErrorToast({ error: null, defaultMessage: "Please select at least one user or role" });
+
 			return;
 		}
 
@@ -199,6 +203,7 @@ export default function ApproverGroupsPage() {
 			<PaginatedTable<ApproverGroup>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
+
 					return await APPROVER_GROUPS_API.fetchAll({
 						search: searchTerm || undefined,
 					});

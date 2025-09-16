@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAssetAllocation, IAssetAllocationFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { X, Package, User, FileText, Edit } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,9 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation, IAssetAllocationFormData } from "@/types/types.utils";
 
 interface EditAssetAllocationDialogProps {
 	allocation: IAssetAllocation;
@@ -44,12 +46,14 @@ export const EditAssetAllocationDialog = ({
 	const handleSubmit = async () => {
 		if (!formData.allocation_status) {
 			toast.error("Please select an allocation status");
+
 			return;
 		}
 
 		try {
 			setIsSubmitting(true);
 			const updatedAllocation = await assetsAPI.updateAssetAllocation(allocation.id, formData);
+
 			onSuccess(updatedAllocation);
 		} catch (error: any) {
 			console.error("Error updating asset allocation:", error);

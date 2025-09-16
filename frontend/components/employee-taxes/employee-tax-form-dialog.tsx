@@ -1,7 +1,13 @@
 "use client";
 
+import type { IEmployeeTax, ITax, IEmployeeTaxFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { Plus, Loader2, AlertTriangle, Info } from "lucide-react";
+import { Loader2, AlertTriangle, Info } from "lucide-react";
+import { toast } from "sonner";
+
+import { ContextSelector } from "../employee-allowances/context-selector";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -9,7 +15,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -21,13 +26,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
-import type { IEmployeeTax, ITax, IEmployeeTaxFormData } from "@/types/types.utils";
 import { taxAPI } from "@/lib/utils";
-import { formatCurrency } from "@/lib/helpers";
 import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
-import { ContextSelector } from "../employee-allowances/context-selector";
 
 interface ContextItem {
 	id: number;
@@ -114,6 +114,7 @@ export function EmployeeTaxFormDialog({
 		if (formData.effective_to && formData.effective_from) {
 			const fromDate = new Date(formData.effective_from);
 			const toDate = new Date(formData.effective_to);
+
 			if (toDate <= fromDate) {
 				errors.effective_to = ["Effective to date must be after effective from date"];
 			}
@@ -127,6 +128,7 @@ export function EmployeeTaxFormDialog({
 		}
 
 		setValidationErrors(errors);
+
 		return Object.keys(errors).length === 0;
 	};
 
@@ -141,6 +143,7 @@ export function EmployeeTaxFormDialog({
 				institution_tax: formData.institution_tax,
 				effective_from: formData.effective_from,
 			};
+
 			if (formData.effective_to) {
 				taxData["effective_to"] = formData.effective_to;
 			}
@@ -164,10 +167,12 @@ export function EmployeeTaxFormDialog({
 					data: taxData,
 					taxId: editingTax.id,
 				});
+
 				onSuccess(updatedTax as unknown as IEmployeeTax, true);
 				toast.success("Employee tax updated successfully");
 			} else {
 				const newTax = await taxAPI.createEmployeeTaxes({ data: taxData });
+
 				onSuccess(newTax as unknown as IEmployeeTax, false);
 				toast.success("Employee tax created successfully");
 			}

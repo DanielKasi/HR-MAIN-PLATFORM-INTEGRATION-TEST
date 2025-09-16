@@ -1,9 +1,11 @@
 "use client";
 
+import type { IMeeting } from "@/types/types.utils";
+
+import { Edit, Trash2, Calendar, Users, MapPin, Video, Repeat } from "lucide-react";
+
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-import type { IMeeting } from "@/types/types.utils";
-import { Edit, Trash2, Calendar, Users, MapPin, Video, Repeat } from "lucide-react";
 
 interface MeetingsTableProps {
 	meetings: IMeeting[];
@@ -152,6 +154,7 @@ export function MeetingsTable({
 				const end = new Date(meeting.end_time);
 
 				let status = "upcoming";
+
 				if (now >= start && now <= end) {
 					status = "ongoing";
 				} else if (now > end) {
@@ -171,6 +174,7 @@ export function MeetingsTable({
 			show: (meeting) => {
 				const now = new Date();
 				const start = new Date(meeting.start_time);
+
 				return start > now; // Only allow editing future meetings
 			},
 		},

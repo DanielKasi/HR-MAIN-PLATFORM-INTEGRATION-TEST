@@ -1,8 +1,33 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import {
+	Search,
+	Edit,
+	Trash2,
+	Check,
+	X,
+	Clock,
+	FileText,
+	Download,
+	Plus,
+	CheckCircle2,
+	XCircle,
+	AlertCircle,
+	Pause,
+	Eye,
+	Loader2,
+	Info,
+	AlertTriangle,
+	Calendar,
+	MoreVertical,
+	Settings,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -31,42 +56,12 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import {
-	Search,
-	Edit,
-	Trash2,
-	Check,
-	X,
-	Clock,
-	FileText,
-	Download,
-	Plus,
-	Filter,
-	CheckCircle2,
-	XCircle,
-	AlertCircle,
-	Pause,
-	Eye,
-	Loader2,
-	Info,
-	AlertTriangle,
-	Calendar,
-	MoreVertical,
-	ChevronDown,
-	Settings,
-} from "lucide-react";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import {
-	LeaveApplicationsAPI,
-	getLeaveTypes,
-	getPaginatedEmployees,
-	getLeavePolicies,
-} from "@/lib/utils";
+import { LeaveApplicationsAPI, getLeaveTypes, getLeavePolicies } from "@/lib/utils";
 import {
 	ILeaveRequest,
 	ILeaveRequestFormData,
@@ -75,8 +70,6 @@ import {
 	ILeaveBalance,
 } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-
-import { useSelector } from "react-redux";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { handleDownload, getFileUrl, getFileName } from "@/lib/helpers";
 import { TableSkeleton } from "@/components/common/table-skeleton";
@@ -178,6 +171,7 @@ const LeaveApplicationComponent = () => {
 		if (typeof employee === "object" && employee !== null) {
 			return (employee as any).user?.fullname || (employee as any).email || "Unknown Employee";
 		}
+
 		return "Unknown Employee";
 	};
 	const getLeaveTypeName = (leaveType: ILeaveRequest["leave_type"]): string => {
@@ -186,8 +180,10 @@ const LeaveApplicationComponent = () => {
 		}
 		if (typeof leaveType === "number" || typeof leaveType === "string") {
 			const found = leaveTypes.find((type) => type.id.toString() === leaveType.toString());
+
 			return found?.name || "Unknown Leave Type";
 		}
+
 		return "Unknown Leave Type";
 	};
 
@@ -200,6 +196,7 @@ const LeaveApplicationComponent = () => {
 
 		if (typeof document === "string") {
 			const filename = document.split("/").pop() || document;
+
 			return filename.split("?")[0];
 		} else if (document instanceof File) {
 			return document.name || "Document";
@@ -214,21 +211,25 @@ const LeaveApplicationComponent = () => {
 		const end = new Date(endDate);
 		const diffTime = Math.abs(end.getTime() - start.getTime());
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
 		return diffDays;
 	};
 
 	const getSelectedLeaveType = () => {
 		if (!formData.leave_type) return null;
+
 		return leaveTypes.find((type) => type.id.toString() === formData.leave_type);
 	};
 
 	const getSelectedLeavePolicy = () => {
 		if (!formData.leave_type) return null;
+
 		return leavePolicies.find((policy) => policy.leave_type.toString() === formData.leave_type);
 	};
 
 	const getSelectedLeaveBalance = () => {
 		if (!formData.employee || !formData.leave_type) return null;
+
 		return leaveBalances.find((balance) => balance.leave_type.toString() === formData.leave_type);
 	};
 
@@ -268,6 +269,7 @@ const LeaveApplicationComponent = () => {
 				const daysDifference = Math.ceil(
 					(startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
 				);
+
 				if (daysDifference < selectedPolicy.min_notice_days) {
 					validations.push({
 						type: "error",
@@ -318,9 +320,11 @@ const LeaveApplicationComponent = () => {
 
 	const getApprovalInfo = () => {
 		const selectedPolicy = getSelectedLeavePolicy();
+
 		if (!selectedPolicy) return null;
 
 		const approvals = [];
+
 		if (selectedPolicy.requires_manager_approval) approvals.push("Manager");
 		if (selectedPolicy.requires_hr_approval) approvals.push("HR");
 
@@ -346,6 +350,7 @@ const LeaveApplicationComponent = () => {
 				]);
 
 				const activeLeaveTypes = leaveTypesData?.filter((type) => type.is_active !== false) || [];
+
 				setLeaveTypes(activeLeaveTypes);
 				setLeavePolicies(policiesData || []);
 			} catch (error) {
@@ -361,6 +366,7 @@ const LeaveApplicationComponent = () => {
 	const handleAddApplication = async () => {
 		if (!selectedInstitution?.id) {
 			toast.error("Institution ID is required");
+
 			return;
 		}
 
@@ -369,10 +375,12 @@ const LeaveApplicationComponent = () => {
 
 		if (errors.length > 0) {
 			toast.error(errors[0].message);
+
 			return;
 		}
 
 		const warnings = validations.filter((v) => v.type === "warning");
+
 		if (warnings.length > 0) {
 			warnings.forEach((warning) => toast.warning(warning.message));
 		}
@@ -389,6 +397,7 @@ const LeaveApplicationComponent = () => {
 				handover_notes: formData.handover_notes,
 				status: "pending",
 			};
+
 			if (formData.supporting_document) {
 				applicationData.supporting_document = formData.supporting_document;
 			}
@@ -408,6 +417,7 @@ const LeaveApplicationComponent = () => {
 		} catch (error: any) {
 			let errorMessage =
 				error?.message || error?.detail || "An error occurred while creating the leave application";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);
@@ -419,6 +429,7 @@ const LeaveApplicationComponent = () => {
 
 		if (!selectedInstitution?.id) {
 			toast.error("Institution ID is required");
+
 			return;
 		}
 
@@ -427,6 +438,7 @@ const LeaveApplicationComponent = () => {
 
 		if (errors.length > 0) {
 			toast.error(errors[0].message);
+
 			return;
 		}
 
@@ -441,6 +453,7 @@ const LeaveApplicationComponent = () => {
 				reason: formData.reason,
 				handover_notes: formData.handover_notes,
 			};
+
 			if (formData.supporting_document) {
 				applicationData.supporting_document = formData.supporting_document;
 			}
@@ -472,6 +485,7 @@ const LeaveApplicationComponent = () => {
 	) => {
 		if (!selectedInstitution?.id) {
 			toast.error("Institution ID is required");
+
 			return;
 		}
 
@@ -509,12 +523,14 @@ const LeaveApplicationComponent = () => {
 	const handleDeleteApplication = async (id: string | number) => {
 		if (!selectedInstitution?.id) {
 			toast.error("Institution ID is required");
+
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
 			const success = await LeaveApplicationsAPI.delete(id);
+
 			if (success) {
 				handleDeleteSuccess();
 			} else {
@@ -569,6 +585,7 @@ const LeaveApplicationComponent = () => {
 		const formatDateForInput = (dateString: string) => {
 			if (!dateString) return "";
 			const date = new Date(dateString);
+
 			return date.toISOString().split("T")[0];
 		};
 
@@ -619,6 +636,7 @@ const LeaveApplicationComponent = () => {
 			rejected: "bg-red-50 text-red-700 border-red-200",
 			cancelled: "bg-gray-50 text-gray-700 border-gray-200",
 		};
+
 		return colors[status as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 
@@ -629,6 +647,7 @@ const LeaveApplicationComponent = () => {
 			rejected: <XCircle className="h-3 w-3" />,
 			cancelled: <Pause className="h-3 w-3" />,
 		};
+
 		return icons[status as keyof typeof icons] || <Clock className="h-3 w-3" />;
 	};
 
@@ -641,6 +660,7 @@ const LeaveApplicationComponent = () => {
 			study: "bg-purple-50 text-purple-700 border-purple-200",
 			compassionate: "bg-green-50 text-green-700 border-green-200",
 		};
+
 		return colors[category as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 
@@ -763,7 +783,7 @@ const LeaveApplicationComponent = () => {
 			<div className="min-h-screen bg-white flex items-center justify-center">
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="relative">
-						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
 						<Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
 					</div>
 					<div className="space-y-2">
@@ -1021,6 +1041,7 @@ const LeaveApplicationComponent = () => {
 									(typeof app.leave_type === "object" && app.leave_type !== null
 										? (app.leave_type as any).id?.toString() === leaveTypeFilter
 										: app.leave_type?.toString() === leaveTypeFilter);
+
 								return matchesStatus && matchesLeaveType;
 							});
 

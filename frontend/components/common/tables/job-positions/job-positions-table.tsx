@@ -3,9 +3,11 @@
 import { useState, useEffect, RefObject, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { Eye, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
 import {
 	Table,
 	TableBody,
@@ -14,7 +16,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	DropdownMenu,
@@ -22,8 +23,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreVertical, Edit, Trash2 } from "lucide-react";
-
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	getPaginatedJobPositionsFromUrl,
@@ -33,10 +32,8 @@ import {
 } from "@/lib/utils";
 import { type IJobPosition } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
-import { toast } from "sonner";
 import { formatCurrency } from "@/lib/helpers";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
@@ -93,6 +90,7 @@ export function JobPositionsTable({
 					if (!selectedInstitution) {
 						throw new Error("No institution found !");
 					}
+
 					return await getPaginatedJobPositions({
 						institutionId: selectedInstitution.id,
 						search: searchTerm,

@@ -1,7 +1,14 @@
 "use client";
 
+import type { IAsset, IAssetRequest, IAssetAllocationFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { X, Package, User, FileText, Search } from "lucide-react";
+import { X, Package, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import EmployeeSearchableSelect from "../selects/employee-searchable-select";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -12,12 +19,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { assetsAPI, getPaginatedEmployees } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IAsset, IAssetRequest, IAssetAllocationFormData } from "@/types/types.utils";
-import EmployeeSearchableSelect from "../selects/employee-searchable-select";
 
 interface CreateAssetAllocationDialogProps {
 	isOpen: boolean;
@@ -66,6 +69,7 @@ export const CreateAssetAllocationDialog = ({
 			`${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
 			"Unknown";
 		const employeeId = employee.employee_id || "";
+
 		return (
 			fullName.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
 			employeeId.toLowerCase().includes(employeeSearchTerm.toLowerCase())
@@ -92,6 +96,7 @@ export const CreateAssetAllocationDialog = ({
 				const preSelectedAssetExists = availableAssets.find(
 					(asset) => asset.id === preSelectedAsset.id,
 				);
+
 				if (!preSelectedAssetExists) {
 					availableAssets = [preSelectedAsset, ...availableAssets];
 				}
@@ -107,11 +112,13 @@ export const CreateAssetAllocationDialog = ({
 	const fetchEmployees = async () => {
 		if (!selectedInstitution) {
 			console.warn("No institution selected");
+
 			return;
 		}
 
 		try {
 			const data = await getPaginatedEmployees({ institutionId: selectedInstitution.id });
+
 			setEmployees(data.results || []);
 		} catch (error) {
 			console.error("Error fetching employees:", error);
@@ -126,6 +133,7 @@ export const CreateAssetAllocationDialog = ({
 			const approvedRequests = response.filter(
 				(request: IAssetRequest) => request.asset_request_status === "approved",
 			);
+
 			setAssetRequests(approvedRequests);
 		} catch (error) {
 			console.error("Error fetching asset requests:", error);
@@ -163,17 +171,20 @@ export const CreateAssetAllocationDialog = ({
 	const handleSubmit = async () => {
 		if (!formData.asset) {
 			toast.error("Please select an asset");
+
 			return;
 		}
 
 		if (!formData.allocated_to) {
 			toast.error("Please select an employee to allocate to");
+
 			return;
 		}
 
 		try {
 			setIsSubmitting(true);
 			const newAllocation = await assetsAPI.createAssetAllocation(formData);
+
 			onSuccess(newAllocation);
 		} catch (error: any) {
 			console.error("Error creating asset allocation:", error);

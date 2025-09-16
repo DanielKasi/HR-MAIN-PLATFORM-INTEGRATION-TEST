@@ -1,7 +1,36 @@
 "use client";
 
 import type React from "react";
+import type {
+	ICreateEmployeeForm,
+	IEmployeeFormData,
+	IWorkType,
+	IEmployeeType,
+	IWorkTypeFormData,
+	IEmployeeTypeFormData,
+	ICountry,
+	IChild,
+	INextOfKin,
+	IWorkExperience,
+	IGender,
+	IJobPosition,
+	IBankAccount,
+	IMaritalStatus,
+	IEmployee,
+	IEmployeeEducationFormData,
+	IQualificationAward,
+	IEmployeeBankAccountFormData,
+} from "@/types/types.utils";
+
 import { useState, useEffect, useRef } from "react";
+import { User, Loader2, Plus, MoreHorizontal, Edit, Trash2, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,28 +55,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
-	Upload,
-	User,
-	X,
-	Loader2,
-	Plus,
-	MoreHorizontal,
-	Edit,
-	Trash2,
-	ArrowLeft,
-} from "lucide-react";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
-	getDepartments,
 	createEmployeeType,
 	getWorkTypes,
 	getEmployeeTypes,
@@ -58,36 +72,12 @@ import {
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
-import type {
-	ICreateEmployeeForm,
-	IEmployeeFormData,
-	IWorkType,
-	IEmployeeType,
-	IWorkTypeFormData,
-	IEmployeeTypeFormData,
-	ICountry,
-	IChild,
-	INextOfKin,
-	IEducation,
-	IWorkExperience,
-	IGender,
-	IJobPosition,
-	IBankAccount,
-	IMaritalStatus,
-	IEmployee,
-	IEmployeeEducationFormData,
-	IQualificationAward,
-	IEmployeeBankAccountFormData,
-} from "@/types/types.utils";
-import { toast } from "sonner";
-import { useDispatch } from "react-redux";
 import { PERMISSION_CODES } from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import { Steps } from "@/components/generic/steps";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Icon } from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
 import { formatCurrency } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
@@ -130,6 +120,7 @@ export default function UpdateEmployeeForm() {
 	const employeeId = params.id as string;
 	const maxDateToDay = new Date().toISOString().split("T")[0];
 	const Date18YearsOld = new Date();
+
 	Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
 	const maxDate18 = Date18YearsOld.toISOString().split("T")[0];
 
@@ -326,6 +317,7 @@ export default function UpdateEmployeeForm() {
 				...childFormData,
 				id: generateId(),
 			};
+
 			setChildren((prev) => [...prev, newChild]);
 		}
 
@@ -362,6 +354,7 @@ export default function UpdateEmployeeForm() {
 				...nextOfKinFormData,
 				id: generateId(),
 			};
+
 			setNextOfKins((prev) => [...prev, newNextOfKin]);
 		}
 
@@ -399,6 +392,7 @@ export default function UpdateEmployeeForm() {
 				...educationFormData,
 				id: generateId(),
 			};
+
 			setEducations((prev) => [...prev, newEducation]);
 		}
 
@@ -438,6 +432,7 @@ export default function UpdateEmployeeForm() {
 				...workExperienceFormData,
 				id: generateId(),
 			};
+
 			setWorkExperiences((prev) => [...prev, newWorkExperience]);
 		}
 
@@ -475,6 +470,7 @@ export default function UpdateEmployeeForm() {
 		setLoadingData(true);
 		try {
 			const employee: IEmployee = await getEmployeeById({ employeeId: parseInt(employeeId) });
+
 			setThisEmployee(employee);
 			setFormData({
 				fullname: employee.user?.fullname || "",
@@ -569,6 +565,7 @@ export default function UpdateEmployeeForm() {
 			// Set emergencyContactPhoneInput for nextOfKins if needed
 		} catch (error: unknown) {
 			const errorMessage = error instanceof Error ? error.message : "Failed to load employee data";
+
 			toast.error(errorMessage);
 		} finally {
 			setLoadingData(false);
@@ -594,6 +591,7 @@ export default function UpdateEmployeeForm() {
 				error instanceof Error
 					? error.message
 					: "An unknown error occurred while loading form data.";
+
 			setSubmitError(errorMessage);
 		} finally {
 			setLoadingData(false);
@@ -611,6 +609,7 @@ export default function UpdateEmployeeForm() {
 				position: value as number,
 				department: positionMatch ? positionMatch.department : formData.department,
 			};
+
 			if (positionMatch) {
 				setSelectedJobPosition(positionMatch);
 			}
@@ -630,6 +629,7 @@ export default function UpdateEmployeeForm() {
 				...formData,
 				[field]: value,
 			};
+
 			setFormData(updatedFormData);
 		}
 	};
@@ -639,25 +639,32 @@ export default function UpdateEmployeeForm() {
 
 		// Also save the updated form data to Redux (without the profile picture)
 		const updatedFormData = { ...formData };
+
 		setFormData(updatedFormData);
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
+
 		if (!file) {
 			toast.error("No file selected");
+
 			return;
 		}
 
 		const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
 		if (!validImageTypes.includes(file.type)) {
 			toast.error("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+
 			return;
 		}
 
 		const maxSize = 10 * 1024 * 1024;
+
 		if (file.size > maxSize) {
 			toast.error("Image size exceeds 10MB limit");
+
 			return;
 		}
 
@@ -668,6 +675,7 @@ export default function UpdateEmployeeForm() {
 		try {
 			handleProflePictureChange(file);
 			const url = URL.createObjectURL(file);
+
 			setPreviewUrl(url);
 		} catch (error: unknown) {
 			showErrorToast({
@@ -684,12 +692,14 @@ export default function UpdateEmployeeForm() {
 		setPreviewUrl("");
 		handleProflePictureChange(null);
 		const fileInput = profilePicInputRef.current;
+
 		if (fileInput) {
 			fileInput.value = "";
 		}
 
 		// Save the updated form data to Redux after removing image
 		const updatedFormData = { ...formData };
+
 		setFormData(updatedFormData);
 	};
 
@@ -704,8 +714,10 @@ export default function UpdateEmployeeForm() {
 	const validateForm = () => {
 		if (!formData.fullname || !formData.email) {
 			setSubmitError("Please fill in all required fields");
+
 			return false;
 		}
+
 		return true;
 	};
 
@@ -714,6 +726,7 @@ export default function UpdateEmployeeForm() {
 			case 1:
 				const currentDate = new Date();
 				const DOB = new Date(formData.date_of_birth);
+
 				return !!(
 					formData.fullname &&
 					formData.email &&
@@ -800,6 +813,7 @@ export default function UpdateEmployeeForm() {
 		} catch (error: unknown) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create employee type";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsAddingEmployeeType(false);
@@ -831,6 +845,7 @@ export default function UpdateEmployeeForm() {
 				error: new Error("No institution selected"),
 				defaultMessage: "Please select an institution",
 			});
+
 			return;
 		}
 
@@ -894,6 +909,7 @@ export default function UpdateEmployeeForm() {
 				})),
 				bank_accounts: [bankAccountFormData],
 			};
+
 			if (formData.marital_status === "married") {
 				dataToSubmit["spouse"] = {
 					name: spouseFormData.name,

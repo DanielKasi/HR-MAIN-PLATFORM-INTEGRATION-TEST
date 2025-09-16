@@ -1,5 +1,6 @@
-import React, { useState } from "react";
 import type { ApprovalTask } from "@/types/approvals.types";
+
+import React, { useState } from "react";
 
 export type ApprovalActionBarProps = {
 	currentTask?: ApprovalTask;

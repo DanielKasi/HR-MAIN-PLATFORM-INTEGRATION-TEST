@@ -1,8 +1,37 @@
 "use client";
 
+import type { IInterviewStage, IInterviewStageFormData, IInterview } from "@/types/types.utils";
+
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import {
+	ArrowLeft,
+	Users,
+	Mail,
+	Phone,
+	MessageSquare,
+	Edit,
+	Save,
+	Search,
+	MapPin,
+	MoreVertical,
+	CheckCircle,
+	XCircle,
+	Clock,
+	Calendar,
+	Plus,
+	Eye,
+	UserCheck,
+	Code,
+	Check,
+	Briefcase,
+	Star,
+	History,
+	Building2,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,41 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-	ArrowLeft,
-	Users,
-	Mail,
-	Phone,
-	MessageSquare,
-	Edit,
-	Save,
-	Search,
-	MapPin,
-	MoreVertical,
-	CheckCircle,
-	XCircle,
-	Clock,
-	Calendar,
-	Plus,
-	Eye,
-	UserCheck,
-	Code,
-	Check,
-	X,
-	Briefcase,
-	Star,
-	History,
-	Building2,
-} from "lucide-react";
-import { toast } from "sonner";
-import type {
-	IInterviewStage,
-	IInterviewStageFormData,
-	IEmployee,
-	IInterview,
-} from "@/types/types.utils";
-import {
 	createInterviewStage,
-	fetchEmployees,
 	getInterviews,
 	getInterviewStages,
 	updateInterview,
@@ -174,6 +169,7 @@ const getStageIcon = (stageName: string, index: number) => {
 	};
 
 	const lowerStageName = stageName.toLowerCase();
+
 	for (const [key, icon] of Object.entries(iconMap)) {
 		if (lowerStageName.includes(key)) return icon;
 	}
@@ -199,6 +195,7 @@ const getStageColors = (index: number) => {
 		{ color: "text-green-600", bgColor: "bg-green-100" },
 		{ color: "text-emerald-600", bgColor: "bg-emerald-100" },
 	];
+
 	return colors[index % colors.length];
 };
 
@@ -213,12 +210,14 @@ const buildCandidateHistory = (
 			.sort((a, b) => {
 				const stageA = stages.find((s) => s.id === a.interview_stage.toString());
 				const stageB = stages.find((s) => s.id === b.interview_stage.toString());
+
 				return (stageA?.level || 0) - (stageB?.level || 0);
 			});
 
 		// Build interview history entries
 		const interview_history = candidateInterviews.map((interview) => {
 			const stage = stages.find((s) => s.id === interview.interview_stage.toString());
+
 			return {
 				stage_id: interview.interview_stage,
 				stage_name: stage?.name || "Unknown Stage",
@@ -405,6 +404,7 @@ const FeedbackDialog = ({
 	const handleSave = async () => {
 		if (!feedback.trim() || !rating) {
 			toast.error("Please provide both feedback and rating");
+
 			return;
 		}
 
@@ -424,6 +424,7 @@ const FeedbackDialog = ({
 	const handleScheduleAndMove = async () => {
 		if (!feedback.trim() || !rating) {
 			toast.error("Please provide both feedback and rating before scheduling");
+
 			return;
 		}
 
@@ -446,6 +447,7 @@ const FeedbackDialog = ({
 	const handleReject = async () => {
 		if (!feedback.trim()) {
 			toast.error("Please provide feedback for rejection");
+
 			return;
 		}
 
@@ -580,6 +582,7 @@ const InterviewSchedulingDialog = ({
 }) => {
 	const [scheduleData, setScheduleData] = useState<InterviewScheduleData>(() => {
 		const tomorrow = new Date();
+
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		tomorrow.setHours(10, 0, 0, 0);
 
@@ -607,6 +610,7 @@ const InterviewSchedulingDialog = ({
 		} else {
 			const interviewDate = new Date(scheduleData.interview_date);
 			const now = new Date();
+
 			if (interviewDate <= now) {
 				newErrors.interview_date = "Interview date must be in the future";
 			}
@@ -617,12 +621,14 @@ const InterviewSchedulingDialog = ({
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleSchedule = () => {
 		if (!validateScheduleForm()) {
 			toast.error("Please fix the form errors before scheduling");
+
 			return;
 		}
 
@@ -926,6 +932,7 @@ export default function JobSpecificInterviewPipeline() {
 			const positions = Array.from(jobPositionsMap.values()).sort((a, b) =>
 				a.name.localeCompare(b.name),
 			);
+
 			setAvailableJobPositions(positions);
 
 			// Auto-select the first job position/title if none selected
@@ -983,6 +990,7 @@ export default function JobSpecificInterviewPipeline() {
 	useEffect(() => {
 		if (interviewStages.length > 0 && selectedJobPosition) {
 			const stages = buildStagesForJob(interviewStages, interviews, selectedJobPosition.id);
+
 			setProcessedStages(stages);
 
 			// Set active stage to first stage if none selected
@@ -1014,15 +1022,18 @@ export default function JobSpecificInterviewPipeline() {
 
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 
 		if (!selectedJobPosition) {
 			toast.error("Please select a job position/title first");
+
 			return;
 		}
 
 		const newStageErrors: any = {};
+
 		if (!stageFormData.name.trim()) {
 			newStageErrors.name = "Stage name is required";
 		}
@@ -1032,6 +1043,7 @@ export default function JobSpecificInterviewPipeline() {
 
 		if (Object.keys(newStageErrors).length > 0) {
 			setStageErrors(newStageErrors);
+
 			return;
 		}
 
@@ -1075,6 +1087,7 @@ export default function JobSpecificInterviewPipeline() {
 		if (isCreateStageDialogOpen && processedStages.length > 0) {
 			const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
 			const nextLevel = maxLevel + 1;
+
 			setStageFormData((prev) => ({ ...prev, level: nextLevel }));
 		} else if (isCreateStageDialogOpen) {
 			setStageFormData((prev) => ({ ...prev, level: 1 }));
@@ -1092,12 +1105,14 @@ export default function JobSpecificInterviewPipeline() {
 		if (checked) {
 			if (!candidate) {
 				toast.error("Candidate not found");
+
 				return;
 			}
 
 			// Check if candidate is rejected
 			if (isCandidateRejected(candidate)) {
 				toast.error("Cannot select rejected or cancelled candidates");
+
 				return;
 			}
 
@@ -1106,12 +1121,14 @@ export default function JobSpecificInterviewPipeline() {
 				toast.error(
 					"This candidate already has feedback and rating. Use individual actions to onboard or move them.",
 				);
+
 				return;
 			}
 
 			// Only allow selection if candidate needs feedback
 			if (!canCandidateBeSelected(candidate)) {
 				toast.error("This candidate cannot be selected for bulk actions");
+
 				return;
 			}
 
@@ -1130,14 +1147,17 @@ export default function JobSpecificInterviewPipeline() {
 
 			if (candidatesNeedingFeedback.length === 0) {
 				toast.info("No candidates need feedback. All candidates have already been reviewed.");
+
 				return;
 			}
 
 			// Select only candidates who need feedback
 			const candidateIds = candidatesNeedingFeedback.map((candidate) => candidate.id);
+
 			setSelectedCandidates(candidateIds);
 
 			const alreadyReviewed = filteredCandidates.length - candidatesNeedingFeedback.length;
+
 			if (alreadyReviewed > 0) {
 				toast.info(
 					`Selected ${candidatesNeedingFeedback.length} candidates needing feedback. ${alreadyReviewed} candidates already reviewed.`,
@@ -1188,12 +1208,14 @@ export default function JobSpecificInterviewPipeline() {
 							status: interview.status,
 						};
 					}
+
 					return interview;
 				}),
 			);
 
 			setSelectedCandidate((prev) => {
 				if (!prev || prev.interview_id !== interviewId) return prev;
+
 				return {
 					...prev,
 					feedback: result.feedback || undefined,
@@ -1229,6 +1251,7 @@ export default function JobSpecificInterviewPipeline() {
 			if (!result) {
 				throw new Error("Failed to reject candidate");
 			}
+
 			return { success: true, data: result };
 		} catch (error) {
 			throw error;
@@ -1252,9 +1275,11 @@ export default function JobSpecificInterviewPipeline() {
 				if (scheduleData.interview_date) {
 					try {
 						const dateTime = new Date(scheduleData.interview_date);
+
 						if (!isNaN(dateTime.getTime())) {
 							const hours = dateTime.getHours().toString().padStart(2, "0");
 							const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+
 							interviewTime = `${hours}:${minutes}:00`;
 							interviewDate = dateTime.toISOString();
 						}
@@ -1284,9 +1309,11 @@ export default function JobSpecificInterviewPipeline() {
 						institutionId: selectedInstitution.id,
 						interviewData: createData,
 					});
+
 					return result;
 				} catch (apiError) {
 					console.error("Failed to create interview:", apiError);
+
 					return null;
 				}
 			});
@@ -1397,6 +1424,7 @@ export default function JobSpecificInterviewPipeline() {
 			toast.error(
 				"No candidates eligible for onboarding. Candidates need feedback and rating first.",
 			);
+
 			return;
 		}
 
@@ -1499,6 +1527,7 @@ export default function JobSpecificInterviewPipeline() {
 					}
 
 					await fetchData();
+
 					return { success: true };
 				} else if (skippedCount > 0) {
 					return {
@@ -1549,11 +1578,13 @@ export default function JobSpecificInterviewPipeline() {
 
 		if (eligibleCandidates.length === 0) {
 			toast.error("No candidates eligible for moving. Candidates need feedback and rating first.");
+
 			return;
 		}
 
 		if (!nextStageForActive) {
 			toast.error("No next stage available");
+
 			return;
 		}
 
@@ -1563,6 +1594,7 @@ export default function JobSpecificInterviewPipeline() {
 
 	const handleJobPositionChange = (jobPositionId: string) => {
 		const jobPosition = availableJobPositions.find((job) => job.id.toString() === jobPositionId);
+
 		setSelectedJobPosition(jobPosition || null);
 		setActiveStageId(null);
 		setSelectedCandidates([]);
@@ -1668,6 +1700,7 @@ export default function JobSpecificInterviewPipeline() {
 			if (rating >= 8) return "text-green-600 bg-green-100";
 			if (rating >= 6) return "text-yellow-600 bg-yellow-100";
 			if (rating >= 4) return "text-myOrange bg-orange-100";
+
 			return "text-red-600 bg-red-100";
 		};
 
@@ -2047,6 +2080,7 @@ export default function JobSpecificInterviewPipeline() {
 														? values.map((v) => Number(v))
 														: [Number(values)];
 													const uniqueValues = [...new Set(numberValues)];
+
 													updateStageFormData("interviewers", uniqueValues);
 												}}
 												disabled={isCreatingStage}
@@ -2328,6 +2362,7 @@ export default function JobSpecificInterviewPipeline() {
 																	{/* Show warning if selected candidates need feedback first */}
 																	{selectedCandidates.some((id) => {
 																		const candidate = filteredCandidates.find((c) => c.id === id);
+
 																		return (
 																			candidate &&
 																			!(
@@ -2360,6 +2395,7 @@ export default function JobSpecificInterviewPipeline() {
 																				const eligibleIds = candidatesEligibleForOnboarding.map(
 																					(c) => c.id,
 																				);
+
 																				setSelectedCandidates(eligibleIds);
 																				handleBulkOnboard();
 																			}}
@@ -2378,6 +2414,7 @@ export default function JobSpecificInterviewPipeline() {
 																				const eligibleIds = candidatesEligibleForMoving.map(
 																					(c) => c.id,
 																				);
+
 																				setSelectedCandidates(eligibleIds);
 																				handleBulkScheduleAndMove();
 																			}}
@@ -2424,6 +2461,7 @@ export default function JobSpecificInterviewPipeline() {
 																						filteredCandidates.filter((candidate) =>
 																							canCandidateBeSelected(candidate),
 																						);
+
 																					return (
 																						candidatesNeedingFeedback.length > 0 &&
 																						candidatesNeedingFeedback.every((c) =>

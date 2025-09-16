@@ -1,8 +1,14 @@
 "use client";
+import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/types/types.utils";
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Plus, CheckCircle, Loader2, Download, ArrowLeft, CreditCard, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -20,51 +26,16 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { TableSkeleton } from "@/components/common/table-skeleton";
 import { InfiniteScrollSelect } from "@/components/infinite-scroll-select";
 import {
-	Plus,
-	CheckCircle,
-	Clock,
-	Users,
-	Loader2,
-	ChevronLeft,
-	ChevronRight,
-	FileText,
-	MoreVertical,
-	Trash2,
-	Download,
-	ArrowLeft,
-	Edit,
-	CreditCard,
-	Search,
-} from "lucide-react";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
-import {
-	deletePayslip,
 	markPayslipAsPaid,
 	createBulkPayslips,
 	downloadPayrollDocument,
-	updatePayslip,
 	getPayrollPeriod,
 	getDepartments,
-	downloadSinglePayslip,
 	showErrorToast,
 } from "@/lib/utils";
-import type { IDepartment, IPayrollPeriod, IPayslip, IBankAccount } from "@/types/types.utils";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-
 import { formatDate } from "@/lib/helpers";
 import { bankAccountsAPI } from "@/lib/utils";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
@@ -136,6 +107,7 @@ export default function PayrollPeriodDetails() {
 		}
 		try {
 			const depts = await getDepartments({ institutionId: selectedInstitution.id });
+
 			setDepartments(depts);
 		} catch (error: any) {
 			handleErrorToast(error, "Failed to fetch departments");
@@ -148,6 +120,7 @@ export default function PayrollPeriodDetails() {
 		}
 		try {
 			const fetchedPeriod = await getPayrollPeriod({ payrollPeriodId });
+
 			setPayrollPeriod(fetchedPeriod);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load payroll period" });
@@ -160,6 +133,7 @@ export default function PayrollPeriodDetails() {
 			setBankAccountsLoading(true);
 
 			const searchParams = new URLSearchParams();
+
 			searchParams.append("page", page.toString());
 			searchParams.append("page_size", "20");
 			if (search) {
@@ -205,6 +179,7 @@ export default function PayrollPeriodDetails() {
 	const handleDownloadPayroll = async () => {
 		if (!selectedBankAccount) {
 			toast.error("Please select a bank account");
+
 			return;
 		}
 
@@ -242,6 +217,7 @@ export default function PayrollPeriodDetails() {
 
 		if (unpaidPayslips.length === 0) {
 			toast.info("No unpaid payslips found for the selected criteria");
+
 			return;
 		}
 
@@ -253,6 +229,7 @@ export default function PayrollPeriodDetails() {
 			for (const payslip of unpaidPayslips) {
 				try {
 					const success = await markPayslipAsPaid(payslip.id);
+
 					if (success) {
 						successCount++;
 					} else {
@@ -286,6 +263,7 @@ export default function PayrollPeriodDetails() {
 	const handleGeneratePayslips = async () => {
 		if (!selectedInstitution) {
 			toast.error("No institution found");
+
 			return;
 		}
 

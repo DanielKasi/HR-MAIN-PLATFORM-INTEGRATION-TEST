@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, FileText, ArrowLeft } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -34,8 +38,6 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, FileText, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { IDocumentType, IDocumentTypeFormData } from "@/types/types.utils";
 import {
@@ -44,11 +46,9 @@ import {
 	updateDocumentType,
 	deleteDocumentType,
 } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { useRouter } from "next/navigation";
 
 export default function DocumentTypesPage() {
 	const [documentTypes, setDocumentTypes] = useState<IDocumentType[]>([]);
@@ -72,6 +72,7 @@ export default function DocumentTypesPage() {
 		setLoading(true);
 		try {
 			const types = await getDocumentTypes({ institutionId: Number(institutionId) });
+
 			setDocumentTypes(types);
 		} catch (error) {
 			toast({
@@ -91,6 +92,7 @@ export default function DocumentTypesPage() {
 				description: "Document type name is required",
 				variant: "destructive",
 			});
+
 			return;
 		}
 
@@ -128,6 +130,7 @@ export default function DocumentTypesPage() {
 				description: "Document type name is required",
 				variant: "destructive",
 			});
+
 			return;
 		}
 
@@ -204,7 +207,7 @@ export default function DocumentTypesPage() {
 			<div className="container mx-auto py-8">
 				<div className="flex items-center justify-center h-64">
 					<div className="text-center">
-						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
 						<p className="text-muted-foreground">Loading document types...</p>
 					</div>
 				</div>

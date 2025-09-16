@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { Plus, MoreVertical, Edit, Trash2, Settings, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,7 +42,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { ILeavePolicyResponse, ILeavePolicyFormData, ILeaveType } from "@/types/types.utils";
 import { LeavePoliciesAPI, getLeaveTypes } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -47,7 +49,6 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 import FormatNumberInput from "@/components/format-number-input";
 
 type LeavePolicy = ILeavePolicyResponse & {
@@ -71,6 +72,7 @@ const getCategoryColor = (category: string) => {
 		compassionate: "bg-green-100 text-green-800 border-green-200",
 		unpaid: "bg-gray-100 text-gray-800 border-gray-200",
 	};
+
 	return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800 border-gray-200";
 };
 
@@ -145,12 +147,14 @@ const LeavePolicyComponent = () => {
 		const fetchLeaveTypes = async () => {
 			if (!selectedInstitution?.id) {
 				setLeaveTypes([]);
+
 				return;
 			}
 
 			try {
 				const leaveTypesData = await getLeaveTypes({ institutionId: selectedInstitution.id });
 				const activeLeaveTypes = leaveTypesData.filter((type) => type.is_active !== false);
+
 				setLeaveTypes(activeLeaveTypes);
 			} catch (error) {
 				console.error("Error fetching leave types:", error);
@@ -184,6 +188,7 @@ const LeavePolicyComponent = () => {
 			!formData.applicable_after_probation_months
 		) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -245,6 +250,7 @@ const LeavePolicyComponent = () => {
 			!formData.applicable_after_probation_months
 		) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -323,7 +329,7 @@ const LeavePolicyComponent = () => {
 			<div className="min-h-screen bg-white flex items-center justify-center">
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="relative">
-						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
 						<Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
 					</div>
 					<div className="space-y-2">
@@ -1098,6 +1104,7 @@ const LeavePolicyComponent = () => {
 																								(lt) => lt.id === policy.leave_type,
 																							) || ({} as ILeaveType),
 																					} as LeavePolicy;
+
 																					setEditingPolicy(policyWithLeaveType);
 																					setFormData({
 																						name: policy.name,
@@ -1132,6 +1139,7 @@ const LeavePolicyComponent = () => {
 																								(lt) => lt.id === policy.leave_type,
 																							) || ({} as ILeaveType),
 																					} as LeavePolicy;
+
 																					setDeletingPolicy(policyWithLeaveType);
 																					setIsDeleteDialogOpen(true);
 																				}}
@@ -1179,6 +1187,7 @@ const LeavePolicyComponent = () => {
 																					leaveTypes.find((lt) => lt.id === policy.leave_type) ||
 																					({} as ILeaveType),
 																			} as LeavePolicy;
+
 																			setEditingPolicy(policyWithLeaveType);
 																			setFormData({
 																				name: policy.name,
@@ -1211,6 +1220,7 @@ const LeavePolicyComponent = () => {
 																					leaveTypes.find((lt) => lt.id === policy.leave_type) ||
 																					({} as ILeaveType),
 																			} as LeavePolicy;
+
 																			setDeletingPolicy(policyWithLeaveType);
 																			setIsDeleteDialogOpen(true);
 																		}}

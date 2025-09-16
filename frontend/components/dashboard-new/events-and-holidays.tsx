@@ -1,10 +1,11 @@
 "use client";
 
+import { Calendar, Clock, Users, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { calendarAPI } from "@/lib/utils";
 import { ICalendar, IEvent } from "@/types/types.utils";
-import { Calendar, Clock, Users, MapPin } from "lucide-react";
-import { useState, useEffect } from "react";
 
 interface EventsAndHolidaysWidgetProps {
 	onRefresh?: () => void;
@@ -24,6 +25,7 @@ export function EventsAndHolidaysWidget({ onRefresh }: EventsAndHolidaysWidgetPr
 				calendarAPI.getInstitutionCalendar({ year: currentYear }),
 				calendarAPI.getEvents(),
 			]);
+
 			setCalendarData(calendarResponse);
 			setEvents(eventsResponse.results);
 		} catch (error) {
@@ -39,6 +41,7 @@ export function EventsAndHolidaysWidget({ onRefresh }: EventsAndHolidaysWidgetPr
 
 	const formatDate = (dateString: string) => {
 		const date = new Date(dateString);
+
 		return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 	};
 

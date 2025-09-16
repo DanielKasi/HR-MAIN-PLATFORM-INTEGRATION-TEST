@@ -1,33 +1,16 @@
 "use client";
 
+import type { UserProfile } from "@/types";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import type { UserProfile } from "@/types";
-import { apiGet } from "@/lib/apiRequest";
+import { ArrowLeft, Edit, Users, Calendar, Clock, AlertTriangle, Activity } from "lucide-react";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-	ArrowLeft,
-	Edit,
-	Users,
-	Calendar,
-	Target,
-	Clock,
-	CheckCircle2,
-	AlertTriangle,
-	FileText,
-	Activity,
-	MessageSquare,
-	Paperclip,
-	Plus,
-	TrendingUp,
-	List,
-} from "lucide-react";
-import Link from "next/link";
-import { Textarea } from "@/components/ui/textarea";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
@@ -87,6 +70,7 @@ const getDaysRemaining = (endDate: string) => {
 	const end = new Date(endDate);
 	const diffTime = end.getTime() - today.getTime();
 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
 	return diffDays;
 };
 
@@ -100,6 +84,7 @@ export default function TaskDetailsPage() {
 	const fetchTask = async () => {
 		try {
 			const response = await PROJECTS_TASKS_API.getByTaskId({ taskId: Number(params.id) });
+
 			setTask(response);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to fetch task details." });
@@ -135,6 +120,7 @@ export default function TaskDetailsPage() {
 		? new Date(task.task_time_sheet.end_time)
 		: null;
 	let totalHours = 0;
+
 	if (TimeSheetStartDate && TimeSheetEndDate) {
 		totalHours = (TimeSheetEndDate.getTime() - TimeSheetStartDate.getTime()) / (1000 * 60 * 60);
 	}

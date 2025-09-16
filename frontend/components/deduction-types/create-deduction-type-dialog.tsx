@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -23,10 +26,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
 import { createDeductionType } from "@/lib/utils";
 import { IDeductionTypeFormData } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { ALLOWANCE_FREQUENCIES } from "@/constants";
 
@@ -70,11 +71,13 @@ export function CreateDeductionTypeDialog({
 		}
 		if (!formData.name || !formData.description) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
 		if (formData.is_recurring && !formData.frequency) {
 			toast.error("You must set a frequency for recurring deductions!");
+
 			return;
 		}
 

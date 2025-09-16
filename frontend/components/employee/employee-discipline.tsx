@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Calendar, User, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
+
+import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,9 +17,6 @@ import {
 } from "@/components/ui/table";
 import { getDisciplinaryActions, getPaginatedDisciplinaryActionsFromUrl } from "@/lib/utils";
 import { IDisciplinaryAction } from "@/types/types.utils";
-import { Calendar, User, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
-import { toast } from "sonner";
-import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 
 interface EmployeeDisciplineProps {
 	employeeId: string;
@@ -27,6 +28,7 @@ export default function EmployeeDiscipline({ employeeId, institutionId }: Employ
 
 	const fetchDisciplinaryActionsFirstPage = async () => {
 		if (!employeeId || !institutionId) throw new Error("No employee or Institution Found !");
+
 		return await getDisciplinaryActions({
 			institutionId: institutionId,
 			employeeId: employeeId,
@@ -66,6 +68,7 @@ export default function EmployeeDiscipline({ employeeId, institutionId }: Employ
 
 	const getStatusIcon = (status: string) => {
 		const iconClasses = "h-4 w-4";
+
 		switch (status) {
 			case "completed":
 				return <CheckCircle className={iconClasses} />;
@@ -173,7 +176,7 @@ export default function EmployeeDiscipline({ employeeId, institutionId }: Employ
 											<TableRow>
 												<TableCell colSpan={6} className="text-center py-8">
 													<div className="flex items-center justify-center space-x-2">
-														<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da]"></div>
+														<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#4426da]" />
 														<span className="text-[#848496] text-xs md:text-sm">
 															Loading disciplinary actions...
 														</span>

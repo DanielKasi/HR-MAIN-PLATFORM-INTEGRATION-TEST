@@ -1,8 +1,8 @@
-import { takeLatest, put, all, fork } from "redux-saga/effects";
-import { INotification, NOTIFICATION_ACTION_TYPES } from "./types";
-import { receiveNotification, ReceiveNotificationAction } from "./actions";
+import { takeLatest, all, fork } from "redux-saga/effects";
 import { toast } from "sonner";
-import { showBrowserNotification } from "@/lib/helpers";
+
+import { INotification, NOTIFICATION_ACTION_TYPES } from "./types";
+import { ReceiveNotificationAction } from "./actions";
 
 function* handleReceiveNotification(action: ReceiveNotificationAction) {
 	if (action.payload && (action.payload as INotification).message) {

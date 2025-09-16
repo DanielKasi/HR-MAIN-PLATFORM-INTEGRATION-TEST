@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAsset, IAssetFormData, IAssetCategory } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,9 +26,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { assetsAPI, assetCategoriesAPI } from "@/lib/utils";
-import type { IAsset, IAssetFormData, IAssetCategory } from "@/types/types.utils";
 
 interface CreateAssetDialogProps {
 	onSuccess: (newAsset: IAsset) => void;
@@ -63,6 +65,7 @@ export function CreateAssetDialog({
 		try {
 			setIsLoadingCategories(true);
 			const data = await assetCategoriesAPI.getAll();
+
 			setCategories(data);
 		} catch (error) {
 			console.error("Error fetching categories:", error);
@@ -81,22 +84,26 @@ export function CreateAssetDialog({
 	const handleSubmit = async () => {
 		if (!formData.asset_name.trim()) {
 			toast.error("Please enter an asset name");
+
 			return;
 		}
 
 		if (!formData.serial_number.trim()) {
 			toast.error("Please enter a serial number");
+
 			return;
 		}
 
 		if (!formData.category) {
 			toast.error("Please select a category");
+
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
 			const newAsset = await assetsAPI.create(formData);
+
 			onSuccess(newAsset);
 			toast.success("Asset created successfully");
 			resetFormData();

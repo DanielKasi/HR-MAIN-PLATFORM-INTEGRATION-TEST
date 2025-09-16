@@ -1,5 +1,7 @@
 "use client";
 
+import type { IAssetRequest } from "@/types/types.utils";
+
 import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -15,6 +17,9 @@ import {
 	XCircle,
 	AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -39,16 +44,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetRequestDialog } from "@/components/asset-requests/create-asset-request-dialog";
 import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
 import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest } from "@/types/types.utils";
 
 interface AssetRequestsProps {
 	employeeId?: string;
@@ -206,6 +208,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
 				toast.error(
 					"This employee's profile is incomplete. Please contact an administrator to complete the profile setup.",
 				);
+
 				return {
 					results: [],
 					count: 0,
@@ -264,6 +267,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
 			return results.filter((request) => {
 				const matchesStatus =
 					statusFilter === "all" || request.asset_request_status === statusFilter;
+
 				return matchesStatus;
 			});
 		},

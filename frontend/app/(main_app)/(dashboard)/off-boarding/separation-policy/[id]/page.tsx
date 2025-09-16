@@ -1,4 +1,6 @@
 "use client";
+import type { ISeparationType, ISeparationPolicy } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -11,6 +13,8 @@ import {
 	Settings,
 	AlertTriangle,
 } from "lucide-react";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +31,6 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import Link from "next/link";
-import type { ISeparationType, ISeparationPolicy } from "@/types/types.utils";
 import apiRequest from "@/lib/apiRequest";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
@@ -52,6 +54,7 @@ export default function SeparationPolicyDetailsPage() {
 
 			if (response.status === 200) {
 				const policyData = response.data;
+
 				setPolicy(policyData);
 			} else {
 				throw new Error("Failed to fetch policy details");
@@ -110,6 +113,7 @@ export default function SeparationPolicyDetailsPage() {
 		if (minDays === maxDays) {
 			return `${minDays} day${minDays !== 1 ? "s" : ""}`;
 		}
+
 		return `${minDays} - ${maxDays} days`;
 	};
 

@@ -1,9 +1,11 @@
 "use client";
 
+import type { ProjectsAnalytics } from "@/types/types.utils";
+
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { ProjectsAnalytics } from "@/types/types.utils";
 
 interface ProjectStatusChartProps {
 	data: ProjectsAnalytics;

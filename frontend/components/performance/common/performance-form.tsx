@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, forwardRef, useCallback } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,12 +96,14 @@ const PerformanceFormInner = <T extends Record<string, any>>(
 			// Required field validation
 			if (field.required && (!value || (typeof value === "string" && !value.trim()))) {
 				newErrors[field.name] = `${field.label} is required`;
+
 				return;
 			}
 
 			// Custom validation
 			if (field.validation && value !== undefined && value !== null) {
 				const error = field.validation(value);
+
 				if (error) {
 					newErrors[field.name] = error;
 				}
@@ -108,6 +111,7 @@ const PerformanceFormInner = <T extends Record<string, any>>(
 		});
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 

@@ -1,4 +1,10 @@
-import { IBankType, IBankTypeFormData } from "@/types/types.utils";
+import { Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Button } from "../ui/button";
+
 import {
 	Dialog,
 	DialogContent,
@@ -6,11 +12,7 @@ import {
 	DialogDescription,
 	DialogHeader,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Button } from "../ui/button";
+import { IBankType, IBankTypeFormData } from "@/types/types.utils";
 
 interface BankTypeModalProps {
 	isOpen: boolean;
@@ -79,6 +81,7 @@ export function BankTypeModal({
 				type.bank_code.toLowerCase() === formData.bank_code?.toLowerCase() &&
 				type.id !== editingType?.id,
 		);
+
 		if (duplicateBankCode) {
 			newErrors.bank_code = "A bank type with this bank code already exists";
 		}
@@ -89,11 +92,13 @@ export function BankTypeModal({
 				type.br_code.toLowerCase() === formData.br_code?.toLowerCase() &&
 				type.id !== editingType?.id,
 		);
+
 		if (duplicateBrCode) {
 			newErrors.br_code = "A bank type with this BR code already exists";
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 

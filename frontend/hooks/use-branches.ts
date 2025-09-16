@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
 import { Branch } from "@/types";
 import { apiGet } from "@/lib/apiRequest";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 export function useBranches() {
@@ -19,6 +20,7 @@ export function useBranches() {
 	const fetchBranches = async () => {
 		if (!currentInstitution) {
 			setBranches([]);
+
 			return;
 		}
 		setLoading(true);
@@ -32,9 +34,11 @@ export function useBranches() {
 			}
 
 			const data = await response.data.results;
+
 			setBranches(Array.isArray(data) ? data : []);
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : "Failed to fetch branches";
+
 			setError(errorMessage);
 			setBranches([]);
 		} finally {

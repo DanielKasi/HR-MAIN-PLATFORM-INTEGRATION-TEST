@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAssetCategory, IAssetCategoryFormData } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -15,9 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { assetCategoriesAPI } from "@/lib/utils";
-import type { IAssetCategory, IAssetCategoryFormData } from "@/types/types.utils";
 
 interface CreateAssetCategoryDialogProps {
 	onSuccess: (newAssetCategory: IAssetCategory) => void;
@@ -47,12 +49,14 @@ export function CreateAssetCategoryDialog({
 	const handleSubmit = async () => {
 		if (!formData.category_name.trim()) {
 			toast.error("Please enter a category name");
+
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
 			const newAssetCategory = await assetCategoriesAPI.create(formData);
+
 			onSuccess(newAssetCategory);
 			toast.success("Asset category created successfully");
 			resetFormData();

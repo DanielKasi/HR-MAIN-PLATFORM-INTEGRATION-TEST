@@ -64,6 +64,7 @@ export function SearchableSelect({
 
 	const handleSelect = (itemId: number | string) => {
 		const isSelected = selectedItems.includes(itemId);
+
 		if (multiple) {
 			if (isSelected && onRemove) {
 				onRemove(itemId);
@@ -103,6 +104,7 @@ export function SearchableSelect({
 							<CommandList>
 								{items.map((item) => {
 									const isSelected = selectedItems.includes(item.id);
+
 									return (
 										<CommandItem
 											key={item.id}

@@ -2,11 +2,19 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Edit, MoreVertical, Plus, Search, Settings, Trash, X } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
 import {
 	Select,
 	SelectContent,
@@ -29,17 +37,8 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
-
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { CardHeader } from "@/components/ui/card";
-import { Icon } from "@iconify/react";
 
 const getStatusColor = (status: string) => {
 	switch (status) {
@@ -87,6 +86,7 @@ export default function EmployeeTaxesPage() {
 
 			try {
 				const types = await taxAPI.getAll();
+
 				setTaxTypes(types || []);
 			} catch (error) {
 				setTaxTypes([]);
@@ -111,6 +111,7 @@ export default function EmployeeTaxesPage() {
 			const fetchedEmployees = await getPaginatedEmployees({
 				institutionId: selectedInstitution.id,
 			});
+
 			setEmployees(fetchedEmployees.results || []);
 		} catch (error: any) {
 			setEmployees([]);
@@ -237,6 +238,7 @@ export default function EmployeeTaxesPage() {
 					<PaginatedTableWrapper<IEmployeeTax>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await taxAPI.getPaginatedEmployeeTaxes({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -277,6 +279,7 @@ export default function EmployeeTaxesPage() {
 								const effectiveTo = tax.effective_to ? new Date(tax.effective_to) : null;
 
 								let status = "Inactive";
+
 								if (effectiveFrom <= now && (!effectiveTo || effectiveTo >= now)) {
 									status = "Active";
 								} else if (effectiveFrom > now) {

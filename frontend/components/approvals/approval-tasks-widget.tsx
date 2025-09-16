@@ -1,5 +1,6 @@
-import React from "react";
 import type { ApprovalTask } from "@/types/approvals.types";
+
+import React from "react";
 
 export type ApprovalTasksWidgetProps = {
 	tasks: ApprovalTask[];

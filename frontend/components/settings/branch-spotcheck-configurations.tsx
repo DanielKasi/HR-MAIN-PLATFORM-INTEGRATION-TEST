@@ -1,16 +1,19 @@
 "use client";
 
+import type { IBranchSpotCheckSetting, IBranchSpotCheckSettingFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { useSelector } from "react-redux";
+
+import { ConfirmationDialog } from "../confirmation-dialog";
+
+import { SpotcheckConfigModal } from "./spotcheck-config-modal";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+
 import {
 	Table,
 	TableBody,
@@ -25,15 +28,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2, Settings } from "lucide-react";
 import { spotcheckAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import type { IBranchSpotCheckSetting, IBranchSpotCheckSettingFormData } from "@/types/types.utils";
-import { SpotcheckConfigModal } from "./spotcheck-config-modal";
-import { ConfirmationDialog } from "../confirmation-dialog";
+import { selectSelectedBranch } from "@/store/auth/selectors";
 
 export const BranchSpotcheckConfigurations = () => {
 	const selectedBranch = useSelector(selectSelectedBranch);
@@ -79,6 +75,7 @@ export const BranchSpotcheckConfigurations = () => {
 	const handleCreateBranchSpotcheckConfig = () => {
 		if (!selectedBranch?.id) {
 			toast.error("Please select a branch first");
+
 			return;
 		}
 		resetBranchSpotcheckForm();
@@ -131,6 +128,7 @@ export const BranchSpotcheckConfigurations = () => {
 			const setting = await spotcheckAPI.CONFIGS.BRANCH.getByBranch({
 				branchId: selectedBranch.id,
 			});
+
 			setBranchSpotcheckSettings(setting ? [setting] : []);
 		} catch (error) {
 			// Branch doesn't have a setting yet, set empty array

@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import {
 	Form,
 	FormControl,
@@ -16,9 +20,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { TerminationInitiationsAPI } from "@/lib/utils";
 import { ITermination } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
@@ -61,6 +62,7 @@ export default function EditTerminationPage() {
 		const fetchTermination = async () => {
 			try {
 				const data = await TerminationInitiationsAPI.getById(parseInt(terminationId));
+
 				setTermination(data);
 				form.reset({
 					comments: data?.comments,
@@ -72,6 +74,7 @@ export default function EditTerminationPage() {
 				router.push("/off-boarding/terminations");
 			}
 		};
+
 		fetchTermination();
 	}, [params.id, form]);
 
@@ -135,6 +138,7 @@ export default function EditTerminationPage() {
 												accept={ACCEPTED_FILE_TYPES.join(",")}
 												onChange={(e) => {
 													const file = e.target.files?.[0];
+
 													onChange(file);
 												}}
 												{...field}

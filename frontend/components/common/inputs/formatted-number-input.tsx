@@ -1,6 +1,7 @@
+import { InputHTMLAttributes, useEffect, useRef, useState } from "react";
+
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/helpers";
-import { InputHTMLAttributes, useEffect, useRef, useState } from "react";
 
 interface FormattedNumberInputProps
 	extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> {
@@ -27,11 +28,13 @@ export function FormattedNumberInput({
 	useEffect(() => {
 		const formatted =
 			value !== undefined && value !== null && String(value) !== "0" ? formatCurrency(value) : "";
+
 		setInputValue(formatted);
 	}, [value]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const v = e.target.value;
+
 		setInputValue(v);
 
 		// Remove commas and spaces
@@ -40,17 +43,21 @@ export function FormattedNumberInput({
 		// If the user cleared the input, allow that and send 0 to parent so the model can reset
 		if (raw === "") {
 			onValueChange(0);
+
 			return;
 		}
 
 		// Remove non-digit characters to ensure whole numbers only
 		const digits = raw.replace(/\D+/g, "");
+
 		if (digits === "") {
 			onValueChange(0);
+
 			return;
 		}
 
 		const parsed = parseInt(digits, 10);
+
 		if (!isNaN(parsed)) {
 			onValueChange(parsed);
 		}
@@ -60,6 +67,7 @@ export function FormattedNumberInput({
 		// Format the displayed value on blur based on the numeric prop
 		const formatted =
 			value !== undefined && value !== null && String(value) !== "0" ? formatCurrency(value) : "";
+
 		setInputValue(formatted);
 	};
 

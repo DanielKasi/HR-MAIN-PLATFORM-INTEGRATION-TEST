@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Blocks } from "lucide-react"; // Using Blocks icon for the dropdown trigger
+// Using Blocks icon for the dropdown trigger
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 

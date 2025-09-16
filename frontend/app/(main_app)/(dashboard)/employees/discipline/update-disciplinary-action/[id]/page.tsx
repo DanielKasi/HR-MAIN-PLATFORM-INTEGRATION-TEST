@@ -1,8 +1,14 @@
 "use client";
 
 import type React from "react";
+import type { DisciplinaryActionForm, IDisciplineTypeFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +22,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -31,16 +36,8 @@ import {
 	updateDisciplinaryAction,
 	createDisciplineType,
 	getDisciplineTypes,
-	getPaginatedEmployees,
 	getDisciplinaryActionById,
 } from "@/lib/utils";
-import type {
-	DisciplinaryActionForm,
-	IDisciplineTypeFormData,
-	IEmployee,
-} from "@/types/types.utils";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/types";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
@@ -104,18 +101,22 @@ export default function DisciplinaryUpdateForm() {
 			if (!disciplinaryActionId) {
 				toast.error("Invalid disciplinary action ID");
 				router.push("/employees/discipline");
+
 				return;
 			}
 			setIsLoadingDisciplinaryAction(true);
 			try {
 				const idAsNumber = parseInt(disciplinaryActionId, 10);
+
 				if (isNaN(idAsNumber)) {
 					throw new Error("Invalid disciplinary action ID: must be a number");
 				}
 				const existingAction = await getDisciplinaryActionById(idAsNumber);
+
 				if (!existingAction) {
 					toast.error("Disciplinary action not found");
 					router.push("/employees/discipline");
+
 					return;
 				}
 				const mappedAction = {
@@ -144,6 +145,7 @@ export default function DisciplinaryUpdateForm() {
 							: null,
 					notes: existingAction.notes || "",
 				};
+
 				setDisciplinaryAction(mappedAction);
 			} catch (error: any) {
 				toast.error("Failed to load disciplinary action");
@@ -152,6 +154,7 @@ export default function DisciplinaryUpdateForm() {
 				setIsLoadingDisciplinaryAction(false);
 			}
 		};
+
 		fetchDisciplinaryAction();
 	}, [disciplinaryActionId, router]);
 
@@ -169,6 +172,7 @@ export default function DisciplinaryUpdateForm() {
 						name: type.name,
 						severity: type.severity as "low" | "medium" | "high" | "critical",
 					}));
+
 					setDisciplineTypes(formattedTypes);
 				} else {
 					setDisciplineTypes([]);
@@ -210,31 +214,38 @@ export default function DisciplinaryUpdateForm() {
 		for (const { field, name } of requiredFields) {
 			if (!field || field.trim() === "" || field === "0") {
 				toast.error(`${name} is required`);
+
 				return false;
 			}
 		}
 
 		if (disciplinaryAction.description.length < 10) {
 			toast.error("Description must be at least 10 characters long");
+
 			return false;
 		}
 
 		const incidentDate = new Date(disciplinaryAction.incident_date);
 		const today = new Date();
+
 		if (incidentDate > today) {
 			toast.error("Incident date cannot be in the future");
+
 			return false;
 		}
 
 		if (disciplinaryAction.follow_up_required && !disciplinaryAction.follow_up_date) {
 			toast.error("Follow-up date is required when follow-up is checked");
+
 			return false;
 		}
 
 		if (disciplinaryAction.follow_up_required && disciplinaryAction.follow_up_date) {
 			const followUpDate = new Date(disciplinaryAction.follow_up_date);
+
 			if (followUpDate < incidentDate) {
 				toast.error("Follow-up date cannot be before the incident date");
+
 				return false;
 			}
 		}
@@ -245,11 +256,13 @@ export default function DisciplinaryUpdateForm() {
 	const validateDisciplineTypeForm = (): boolean => {
 		if (!disciplineType.name.trim()) {
 			toast.error("Name is required");
+
 			return false;
 		}
 
 		if (disciplineType.name.length > 100) {
 			toast.error("Name cannot exceed 100 characters");
+
 			return false;
 		}
 
@@ -267,6 +280,7 @@ export default function DisciplinaryUpdateForm() {
 			const result = await createDisciplineType({
 				disciplineTypeData: disciplineType,
 			});
+
 			if (result) {
 				toast.success("Discipline type created successfully!");
 
@@ -298,6 +312,7 @@ export default function DisciplinaryUpdateForm() {
 				error instanceof Error
 					? error.message
 					: "Failed to create discipline type. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsAddingDisciplineType(false);
@@ -330,6 +345,7 @@ export default function DisciplinaryUpdateForm() {
 				error instanceof Error
 					? error.message
 					: "Failed to update disciplinary action. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

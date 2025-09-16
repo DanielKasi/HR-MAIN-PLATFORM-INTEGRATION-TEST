@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { IProjectDashboard } from "@/types/types.utils";
+
+import { useEffect, useState } from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+
 import { getProjectDashboard } from "@/lib/utils";
 import { AnalyticsCards } from "@/components/analytics/project/analytics-cards";
 import { ProjectStatusChart } from "@/components/analytics/project/project-status-chart";
@@ -10,7 +13,6 @@ import { TaskPriorityChart } from "@/components/analytics/project/task-priority-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {

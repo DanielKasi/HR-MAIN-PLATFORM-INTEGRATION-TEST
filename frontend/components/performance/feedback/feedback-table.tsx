@@ -1,9 +1,12 @@
 "use client";
 
+import type { IFeedback360 } from "@/types/types.utils";
+
+import { Edit, Trash2, User, Star, Calendar, Eye, EyeOff } from "lucide-react";
+
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-import type { IFeedback360 } from "@/types/types.utils";
-import { Edit, Trash2, User, Star, Calendar, Eye, EyeOff } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 
 interface FeedbackTableProps {

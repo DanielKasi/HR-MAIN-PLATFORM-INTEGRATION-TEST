@@ -1,8 +1,10 @@
 "use client";
 
-import { FormField, PerformanceForm } from "../common/performance-form";
-import { IPeriod, IPeriodFormData } from "@/types/types.utils";
 import { useSelector } from "react-redux";
+
+import { FormField, PerformanceForm } from "../common/performance-form";
+
+import { IPeriod, IPeriodFormData } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface PeriodFormProps {
@@ -24,6 +26,7 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
 			required: true,
 			validation: (value: string) => {
 				if (value.length < 3) return "Period name must be at least 3 characters";
+
 				return null;
 			},
 		},

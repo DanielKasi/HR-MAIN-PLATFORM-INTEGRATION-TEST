@@ -1,4 +1,5 @@
 import type { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/types/types.utils";
+
 import apiRequest from "./apiRequest";
 
 export interface DocumentGenerationResponse {
@@ -20,9 +21,11 @@ export const getDocumentTemplates = async ({
 	try {
 		const response = await apiRequest.get(`documents/institution/${institutionId}/templates/`);
 		const data = response.data as IPaginatedResponse<IDocumentTemplate>;
+
 		return data.results;
 	} catch (error) {
 		console.error("Failed to fetch document templates:", error);
+
 		return [];
 	}
 };
@@ -39,9 +42,11 @@ export const getGeneratedDocumentTemplate = async (
 			context_id: contextId.toString(),
 		});
 		const response = await apiRequest.get(`${url}?${queryParams}`);
+
 		return response.data as IGeneratedDocumentTemplate;
 	} catch (error) {
 		console.error("Error fetching generated document template:", error);
+
 		return null;
 	}
 };
@@ -69,6 +74,7 @@ export const generateDocument = async (
 		return response.data as DocumentGenerationResponse;
 	} catch (error) {
 		console.error("Error generating document:", error);
+
 		return null;
 	}
 };
@@ -76,9 +82,11 @@ export const generateDocument = async (
 export const getDocumentPreview = async (documentId: number): Promise<string | null> => {
 	try {
 		const response = await apiRequest.get(`documents/preview-document-content/${documentId}/`);
+
 		return (response.data as DocumentPreviewResponse).preview;
 	} catch (error) {
 		console.error("Error fetching document preview:", error);
+
 		return null;
 	}
 };
@@ -102,9 +110,11 @@ export const sendDocuments = async ({
 			context,
 			context_id: contextId,
 		});
+
 		return (response.data as DocumentPreviewResponse).preview;
 	} catch (error) {
 		console.error("Error fetching document preview:", error);
+
 		return null;
 	}
 };

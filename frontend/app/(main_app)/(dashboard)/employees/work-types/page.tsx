@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import type { IWorkType } from "@/types/types.utils";
+
+import { useState } from "react";
 import { useSelector } from "react-redux";
+import { AlertCircle, Search, Plus, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Table,
 	TableBody,
@@ -28,22 +32,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertCircle, Search, Plus, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
-import { toast } from "sonner";
-
-import {
-	getWorkTypes,
-	getPaginatedWorkTypesFromUrl,
-	deleteWorkType,
-	createWorkType,
-} from "@/lib/utils";
+import { getWorkTypes, getPaginatedWorkTypesFromUrl, deleteWorkType } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IWorkType } from "@/types/types.utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
-import { Icon } from "@iconify/react";
 
 // Work Type Details Modal
 interface WorkTypeDetailsModalProps {
@@ -191,6 +185,7 @@ export default function WorkTypesPage() {
 					<PaginatedTableWrapper<IWorkType>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution?.id) throw new Error("No institution selected");
+
 							return await getWorkTypes({
 								institutionId: selectedInstitution.id,
 								page: 1,

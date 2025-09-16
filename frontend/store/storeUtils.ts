@@ -25,6 +25,7 @@ const getInitialState = () => rootReducer(undefined, { type: "@@redux/INIT" });
 const getStateHash = (): string => {
 	const initialState = getInitialState();
 	const stateString = JSON.stringify(initialState);
+
 	return createHash("sha1").update(stateString).digest("hex");
 };
 
@@ -49,6 +50,7 @@ export function parseJwtLifetime(token: string): number {
 	try {
 		const payload = JSON.parse(atob(token.split(".")[1]));
 		const lifetimeMinutes = payload.lifetime || 30;
+
 		return lifetimeMinutes * 60 * 1000;
 	} catch {
 		return 30 * 60 * 1000;

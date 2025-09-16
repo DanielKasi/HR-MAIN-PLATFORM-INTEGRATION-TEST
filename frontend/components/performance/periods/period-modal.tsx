@@ -1,8 +1,10 @@
 "use client";
 
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { PeriodForm } from "./period-form";
 import type { IPeriod, IPeriodFormData } from "@/types/types.utils";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { PeriodForm } from "./period-form";
 
 interface PeriodModalProps {
 	isOpen: boolean;

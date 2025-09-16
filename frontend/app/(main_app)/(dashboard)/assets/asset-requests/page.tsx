@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import type { IAssetRequest } from "@/types/types.utils";
+
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import {
 	MoreVertical,
@@ -10,15 +12,16 @@ import {
 	Plus,
 	Eye,
 	Package,
-	User,
 	Clock,
 	CheckCircle,
 	XCircle,
 	AlertCircle,
-	FileText,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { PERMISSION_CODES } from "@/constants";
-import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,19 +46,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetRequestDialog } from "@/components/asset-requests/create-asset-request-dialog";
 import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
 import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import ProtectedPage from "@/components/ProtectedPage";
-import { Icon } from "@iconify/react";
 
 const getStatusColor = (status: string) => {
 	switch (status) {
@@ -222,6 +221,7 @@ const AssetRequestsComponent = () => {
 					<PaginatedTableWrapper<IAssetRequest>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await assetsAPI.getPaginatedAssetRequests({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -258,6 +258,7 @@ const AssetRequestsComponent = () => {
 							const filteredResults = data.results.filter((request) => {
 								const matchesStatus =
 									statusFilter === "all" || request.asset_request_status === statusFilter;
+
 								return matchesStatus;
 							});
 

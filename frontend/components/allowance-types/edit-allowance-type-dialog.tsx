@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,7 +23,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { IAllowanceTypeFormData, IAllowanceType } from "@/types/types.utils";
 import { updateAllowanceType } from "@/lib/utils";
 import { ALLOWANCE_FREQUENCIES } from "@/constants";
@@ -77,11 +78,13 @@ export function EditAllowanceTypeDialog({
 
 		if (!formData.name || !formData.description) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
 		if (formData.is_recurring && !formData.frequency) {
 			toast.error("You must set a frequency!");
+
 			return;
 		}
 

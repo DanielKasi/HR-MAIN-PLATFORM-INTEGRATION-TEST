@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+
 import { IPayslip } from "@/types/types.utils";
 import { formatCurrency, getCUrrentInstitution } from "@/lib/helpers";
 

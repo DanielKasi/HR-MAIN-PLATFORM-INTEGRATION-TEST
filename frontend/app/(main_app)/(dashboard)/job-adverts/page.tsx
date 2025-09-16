@@ -1,27 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import type { JobPositionAdvert, JobAdvertStatus } from "@/types/types.utils";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useSelector } from "react-redux";
-import {
-	Megaphone,
-	Plus,
-	MoreVertical,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Eye,
-	Calendar,
-	Users,
-	Briefcase,
-	ChevronLeft,
-	ChevronRight,
-	ChevronsLeft,
-	ChevronsRight,
-	Search,
-	Filter,
-} from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, RefreshCw, Eye, Search } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +18,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Select,
 	SelectContent,
@@ -57,15 +42,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import {
 	updateJobPositionAdvert,
 	getPaginatedJobAdverts,
 	getPaginatedJobAdvertsFromUrl,
 } from "@/lib/utils";
-import type { JobPositionAdvert, JobAdvertStatus } from "@/types/types.utils";
-import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { useDocumentTitle } from "@/hooks/use-document-title";
@@ -73,7 +55,7 @@ import RichTextDisplay from "@/components/common/rich-text-display";
 import { formatCurrency } from "@/lib/helpers";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { Icon } from "@iconify/react";
+
 // Pagination constants
 const PAGE_SIZES = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
@@ -260,6 +242,7 @@ export default function JobAdvertsPage() {
 					<PaginatedTableWrapper<JobPositionAdvert>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedJobAdverts({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -293,6 +276,7 @@ export default function JobAdvertsPage() {
 							const filteredResults = data?.results.filter((advert) => {
 								const matchesStatus =
 									statusFilter === "all" || advert.job_position_advert_status === statusFilter;
+
 								return matchesStatus;
 							});
 

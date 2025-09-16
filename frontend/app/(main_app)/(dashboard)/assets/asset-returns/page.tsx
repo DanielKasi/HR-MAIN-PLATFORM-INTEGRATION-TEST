@@ -1,5 +1,7 @@
 "use client";
 
+import type { IAssetReturn } from "@/types/types.utils";
+
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -14,8 +16,11 @@ import {
 	AlertCircle,
 	Users,
 } from "lucide-react";
-import { PERMISSION_CODES } from "@/constants";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
 
+import { PERMISSION_CODES } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -40,18 +45,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetReturnDialog } from "@/components/asset-returns/create-asset-return-dialog";
 import { EditAssetReturnDialog } from "@/components/asset-returns/edit-asset-return-dialog";
 import { DeleteAssetReturnDialog } from "@/components/asset-returns/delete-asset-return-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetReturn } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
 import ProtectedPage from "@/components/ProtectedPage";
 
 const getConditionColor = (condition: string) => {
@@ -207,6 +208,7 @@ const AssetReturnsComponent = () => {
 					<PaginatedTableWrapper<IAssetReturn>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await assetsAPI.getPaginatedAssetReturns({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -243,6 +245,7 @@ const AssetReturnsComponent = () => {
 							const filteredResults = data.results.filter((returnItem) => {
 								const matchesCondition =
 									conditionFilter === "all" || returnItem.condition === conditionFilter;
+
 								return matchesCondition;
 							});
 

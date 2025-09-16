@@ -1,5 +1,6 @@
-import { RedirectPayload, REDIRECTS_ACTION_TYPES } from "./types";
 import { createAction, ActionWithPayLoad } from "../storeUtils";
+
+import { RedirectPayload, REDIRECTS_ACTION_TYPES } from "./types";
 
 type SetRedirect = ActionWithPayLoad<typeof REDIRECTS_ACTION_TYPES.SET_REDIRECT, RedirectPayload>;
 type ClearRedirect = { type: typeof REDIRECTS_ACTION_TYPES.CLEAR_REDIRECT };

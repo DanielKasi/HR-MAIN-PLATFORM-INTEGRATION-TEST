@@ -1,12 +1,12 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InstitutionWorkingDays from "@/components/working-days/institution-working-days";
 import BranchWorkingDaysTab from "@/components/working-days/branch-working-days-tab";
-import { ArrowLeft } from "lucide-react";
-import router from "next/router";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 
 export default function AllWorkingDaysPage() {
 	const router = useRouter();

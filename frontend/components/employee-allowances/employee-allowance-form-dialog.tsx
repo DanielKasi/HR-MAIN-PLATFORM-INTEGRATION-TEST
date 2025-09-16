@@ -1,7 +1,17 @@
 "use client";
 
+import type {
+	IEmployeeAllowanceFormData,
+	IAllowanceType,
+	IEmployeeAllowance,
+} from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Plus, Loader2, AlertTriangle, Info } from "lucide-react";
+import { toast } from "sonner";
+
+import { ContextSelector } from "./context-selector";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -9,7 +19,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -22,19 +31,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
-import type {
-	IEmployeeAllowanceFormData,
-	IEmployee,
-	IAllowanceType,
-	IDepartment,
-	IJobPosition,
-	IEmployeeAllowance,
-} from "@/types/types.utils";
 import { createEmployeeAllowance, updateEmployeeAllowance } from "@/lib/utils";
 import { formatCurrency } from "@/lib/helpers";
 import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-allowance-type-dialog";
-import { ContextSelector } from "./context-selector";
 
 interface ContextItem {
 	id: number;
@@ -135,11 +134,13 @@ export function EmployeeAllowanceFormDialog({
 			// Amount/percentage validation
 			if (formData.calculation_method === "fixed") {
 				const amount = Number.parseFloat(formData.amount);
+
 				if (formData.amount && (Number.isNaN(amount) || amount <= 0)) {
 					errors.amount = "Please enter a valid fixed amount";
 				}
 			} else {
 				const percentage = Number.parseFloat(formData.percentage);
+
 				if (
 					formData.percentage &&
 					(Number.isNaN(percentage) || percentage <= 0 || percentage > 100)
@@ -195,12 +196,14 @@ export function EmployeeAllowanceFormDialog({
 		}
 
 		const errorKeys = Object.keys(validationErrors).filter((key) => key !== "warning");
+
 		return errorKeys.length > 0;
 	};
 
 	const handleSubmit = async () => {
 		if (hasValidationErrors()) {
 			toast.error("Please fix the validation errors before submitting");
+
 			return;
 		}
 
@@ -225,6 +228,7 @@ export function EmployeeAllowanceFormDialog({
 				effective_to: formData.effective_to || null,
 				context: selectedContext,
 			};
+
 			if (formData.calculation_method === "percentage") {
 				formattedData.percentage = formData.percentage;
 			}
@@ -247,6 +251,7 @@ export function EmployeeAllowanceFormDialog({
 					id: editingAllowance.id,
 					employeeAllowanceData: formattedData,
 				});
+
 				if (updatedAllowance) {
 					onSuccess(updatedAllowance, true);
 					toast.success("Allowance updated successfully");
@@ -256,6 +261,7 @@ export function EmployeeAllowanceFormDialog({
 					institutionId,
 					employeeAllowanceData: formattedData,
 				});
+
 				if (newAllowance) {
 					onSuccess(newAllowance, false);
 					toast.success("Allowance created successfully");
@@ -406,6 +412,7 @@ export function EmployeeAllowanceFormDialog({
 										value={formData.amount ? formatCurrency(formData.amount) : ""}
 										onChange={(e) => {
 											const rawValue = e.target.value.replace(/[,$]/g, "");
+
 											if (
 												rawValue === "" ||
 												(!Number.isNaN(Number.parseFloat(rawValue)) &&

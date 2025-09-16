@@ -1,15 +1,15 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import EmployeeAttendance from "../../../../../components/attendance/employee-attendance";
 import { Eye } from "lucide-react";
-
 import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
 
+import EmployeeAttendance from "../../../../../components/attendance/employee-attendance";
+
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 
@@ -31,7 +31,7 @@ const AttendancePage = () => {
 		return (
 			<div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
 					<p className="mt-4 text-gray-600">Loading employees...</p>
 				</div>
 			</div>
@@ -61,16 +61,16 @@ const AttendancePage = () => {
 					<CardHeader className="border-b">
 						<div className="flex justify-between gap-8 items-center">
 							<div className="flex items-center justify-start gap-4">
-								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 								<div className="space-y-2">
-									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 								</div>
 							</div>
 							<div className="flex gap-2">
-								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 							</div>
 						</div>
 					</CardHeader>

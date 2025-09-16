@@ -1,5 +1,7 @@
 "use client";
 
+import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -14,17 +16,15 @@ import {
 	FileText,
 	X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } from "@/lib/utils";
-import type { JobPositionAdvert, IJobPosition, JobAdvertStatus } from "@/types/types.utils";
-import { toast } from "sonner";
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
@@ -75,12 +75,14 @@ export default function JobAdvertDetailsPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (isNaN(jobAdvertId)) {
 			toast.error("Invalid job opening ID");
 			router.push("/job-adverts");
+
 			return;
 		}
 
@@ -106,6 +108,7 @@ export default function JobAdvertDetailsPage() {
 			const fetchedJobPosition = await getJobPosition({
 				jobPositionId: fetchedJobAdvert.job_position,
 			});
+
 			if (fetchedJobPosition) {
 				setJobPosition(fetchedJobPosition);
 			} else {

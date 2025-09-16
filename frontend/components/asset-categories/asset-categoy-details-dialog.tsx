@@ -1,3 +1,5 @@
+import type { IAssetCategory } from "@/types/types.utils";
+
 import {
 	Dialog,
 	DialogContent,
@@ -8,7 +10,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { IAssetCategory } from "@/types/types.utils";
 
 interface AssetCategoryDetailsModalProps {
 	isOpen: boolean;

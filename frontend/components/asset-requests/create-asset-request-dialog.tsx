@@ -1,8 +1,12 @@
 "use client";
 
+import type { IAsset, IAssetRequest, IAssetRequestFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Package, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,10 +25,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset, IAssetRequest, IAssetRequestFormData } from "@/types/types.utils";
 
 interface CreateAssetRequestDialogProps {
 	isOpen: boolean;
@@ -66,6 +68,7 @@ export const CreateAssetRequestDialog = ({
 			const availableAssets = response.filter(
 				(asset) => asset.status === "available" && asset.is_active,
 			);
+
 			setAssets(availableAssets);
 		} catch (error) {
 			console.error("Error fetching assets:", error);
@@ -88,16 +91,19 @@ export const CreateAssetRequestDialog = ({
 	const handleSubmit = async () => {
 		if (!formData.asset_id) {
 			toast.error("Please select an asset");
+
 			return;
 		}
 
 		try {
 			setIsSubmitting(true);
 			const newRequest = await assetsAPI.createAssetRequest(formData);
+
 			onSuccess(newRequest);
 		} catch (error: any) {
 			console.error("Error creating asset request:", error);
 			const errorMessage = error.response?.data?.message || "Failed to create asset request";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

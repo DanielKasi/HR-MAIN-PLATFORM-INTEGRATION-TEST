@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { Search } from "lucide-react";
+
 import { CardHeader, CardTitle } from "@/components/ui/card";
-
 import { Input } from "@/components/ui/input";
-
 import ContractsTable from "@/components/contracts/contracts-table";
 
 export default function ContractsPage() {

@@ -1,9 +1,11 @@
 "use client";
 
+import type { ISystemWorkingDay } from "@/types/types.utils";
+
+import { X } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { ISystemWorkingDay } from "@/types/types.utils";
-import { X } from "lucide-react";
 
 interface DaySelectionCardProps {
 	day: ISystemWorkingDay;
@@ -28,6 +30,7 @@ export function DaySelectionCard({
 			SAT: "S",
 			SUN: "S",
 		};
+
 		return icons[dayCode as keyof typeof icons] || dayCode[0];
 	};
 
@@ -41,6 +44,7 @@ export function DaySelectionCard({
 			SAT: "bg-indigo-100 text-indigo-700 border-indigo-200",
 			SUN: "bg-red-100 text-red-700 border-red-200",
 		};
+
 		return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
 	};
 

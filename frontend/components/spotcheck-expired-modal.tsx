@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -8,7 +10,6 @@ import {
 	DialogTitle,
 	DialogDescription,
 } from "@/components/ui/dialog";
-import { AlertTriangle } from "lucide-react";
 
 interface SpotcheckExpiredModalProps {
 	isOpen: boolean;

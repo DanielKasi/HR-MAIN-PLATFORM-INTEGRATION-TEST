@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+
+import FormattedNumberInput from "../../inputs/formatted-number-input";
+
 import {
 	Dialog,
 	DialogContent,
@@ -19,7 +22,6 @@ import {
 } from "@/types/types.utils";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
-import FormattedNumberInput from "../../inputs/formatted-number-input";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PENALTY_TYPES, PERMISSION_CODES } from "@/constants";
 
@@ -62,6 +64,7 @@ export default function EmployeePenaltyDialog({
 				error: new Error("Penalty date cannot be in the future"),
 				defaultMessage: "Penalty date cannot be in the future",
 			});
+
 			return;
 		}
 

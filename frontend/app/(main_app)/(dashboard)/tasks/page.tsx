@@ -1,4 +1,6 @@
 "use client";
+import type { ApprovalTaskType, ApprovalTaskStatus, ApprovalTask } from "@/types/approvals.types";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
 	Filter,
@@ -20,12 +22,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-
 import { selectUser } from "@/store/auth/selectors";
 import { useDocumentTitle } from "@/hooks/use-document-title";
-import type { ApprovalTaskType, ApprovalTaskStatus, ApprovalTask } from "@/types/approvals.types";
 import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils";
-import { getDashboardTasksAnalytics, showErrorToast } from "@/lib/utils";
+import { showErrorToast } from "@/lib/utils";
 import { getApprovalTaskPath } from "@/utils/notifications-path-matcher";
 
 export default function TasksPage() {
@@ -149,6 +149,7 @@ export default function TasksPage() {
 		filtered.sort((a, b) => {
 			const timeA = new Date(a.updated_at).getTime();
 			const timeB = new Date(b.updated_at).getTime();
+
 			return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
 		});
 

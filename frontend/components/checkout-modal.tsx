@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { getCurrentDateTime } from "./checkin-modal";
 import { Clock, X } from "lucide-react";
+
+import { getCurrentDateTime } from "./checkin-modal";
 
 // Check-out Modal Component
 interface CheckOutModalProps {
@@ -27,12 +28,14 @@ export const CheckOutModal: React.FC<CheckOutModalProps> = ({
 	const handleConfirm = () => {
 		// Combine date and time to create the check-out time string
 		const checkOutTime = `${selectedTime}:00`; // Add seconds
+
 		onConfirm(selectedDate, checkOutTime);
 		onClose();
 	};
 
 	const handleUseCurrentTime = () => {
 		const { date, time } = getCurrentDateTime();
+
 		setSelectedDate(date);
 		setSelectedTime(time);
 	};

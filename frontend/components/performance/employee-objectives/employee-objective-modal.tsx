@@ -1,8 +1,10 @@
 "use client";
 
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { EmployeeObjectiveForm } from "./employee-objective-form";
 import type { IEmployeeObjective, IEmployeeObjectiveFormData } from "@/types/types.utils";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { EmployeeObjectiveForm } from "./employee-objective-form";
 
 interface EmployeeObjectiveModalProps {
 	isOpen: boolean;

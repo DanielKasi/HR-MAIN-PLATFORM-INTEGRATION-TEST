@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useSelector } from "react-redux";
+import { ArrowLeft } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import {
 	Form,
 	FormControl,
@@ -16,22 +22,10 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getPaginatedEmployees, TerminationInitiationsAPI } from "@/lib/utils";
 import { IEmployee } from "@/types/types.utils";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
-import { ArrowLeft } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["application/pdf", "image/png", "image/jpeg"];
@@ -74,11 +68,13 @@ export default function CreateTerminationInitiationPage() {
 			if (!institutionId) return;
 			try {
 				const data = await getPaginatedEmployees({ institutionId });
+
 				setEmployees(data.results || []);
 			} catch (error) {
 				toast.error("Failed to fetch employees");
 			}
 		};
+
 		fetchEmployees();
 	}, [institutionId]);
 
@@ -157,6 +153,7 @@ export default function CreateTerminationInitiationPage() {
 											onValueChange={(values) => {
 												const numberValues = values.map((v) => Number(v));
 												const uniqueValues = [...new Set(numberValues)];
+
 												// console.log("\n\n Values changed as : ", values);
 												form.setValue("employee_id", uniqueValues[0].toString());
 											}}
@@ -183,6 +180,7 @@ export default function CreateTerminationInitiationPage() {
 												accept={ACCEPTED_FILE_TYPES.join(",")}
 												onChange={(e) => {
 													const file = e.target.files?.[0];
+
 													onChange(file);
 												}}
 												{...field}

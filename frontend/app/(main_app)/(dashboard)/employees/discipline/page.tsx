@@ -1,9 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+	Plus,
+	Search,
+	Edit,
+	Trash2,
+	Eye,
+	Calendar,
+	User,
+	FileText,
+	CheckCircle,
+	Clock,
+	XCircle,
+	AlertCircle,
+	MoreVertical,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,35 +56,16 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-	Plus,
-	Search,
-	Edit,
-	Trash2,
-	Eye,
-	Calendar,
-	User,
-	FileText,
-	CheckCircle,
-	Clock,
-	XCircle,
-	AlertCircle,
-	Loader2,
-	MoreVertical,
-} from "lucide-react";
-import {
 	getDisciplinaryActions,
 	deleteDisciplinaryAction,
 	getPaginatedDisciplinaryActionsFromUrl,
 } from "@/lib/utils";
 import { IDisciplinaryAction } from "@/types/types.utils";
-import { toast } from "sonner";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 
 export default function DisciplinaryActionsPage() {
 	const router = useRouter();
@@ -203,6 +203,7 @@ export default function DisciplinaryActionsPage() {
 						search: searchTerm || undefined,
 						ordering,
 					});
+
 					return res;
 				}}
 				fetchFromUrl={async ({ url }) => await getPaginatedDisciplinaryActionsFromUrl({ url })}
@@ -219,6 +220,7 @@ export default function DisciplinaryActionsPage() {
 						const matchesStatus = statusFilter === "all" || action.status === statusFilter;
 						const matchesSeverity =
 							severityFilter === "all" || action.discipline_type?.severity === severityFilter;
+
 						return matchesSearch && matchesStatus && matchesSeverity;
 					});
 
@@ -226,6 +228,7 @@ export default function DisciplinaryActionsPage() {
 						if (!actionToDelete) return;
 						try {
 							const success = await deleteDisciplinaryAction(actionToDelete.id);
+
 							if (success) {
 								toast.success("Disciplinary action deleted successfully");
 								await refresh();
@@ -246,16 +249,16 @@ export default function DisciplinaryActionsPage() {
 								<CardHeader className="border-b">
 									<div className="flex justify-between gap-8 items-center">
 										<div className="flex items-center justify-start gap-4">
-											<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+											<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 											<div className="space-y-2">
-												<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-												<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+												<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+												<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 											</div>
 										</div>
 										<div className="flex gap-2">
-											<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-											<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-											<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+											<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+											<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+											<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 										</div>
 									</div>
 								</CardHeader>

@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAllowanceType } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,8 +15,6 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import type { IAllowanceType } from "@/types/types.utils";
 import { deleteAllowanceType } from "@/lib/utils";
 
 interface DeleteAllowanceTypeDialogProps {

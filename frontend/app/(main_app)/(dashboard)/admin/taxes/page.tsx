@@ -1,24 +1,14 @@
 "use client";
 
+import type { ITax } from "@/types/types.utils";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
-import {
-	MoreVertical,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Search,
-	Filter,
-	ChevronLeft,
-	ChevronRight,
-	ChevronsLeft,
-	ChevronsRight,
-	Plus,
-	Settings,
-	Eye,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MoreVertical, Edit, Trash2, Search, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,17 +32,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
 import { EditTaxDialog } from "@/components/taxes/edit-tax-dialog";
 import { DeleteTaxDialog } from "@/components/taxes/delete-tax-dialog";
-import { useRouter } from "next/navigation";
 import { taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { formatCurrency } from "@/lib/helpers";
 import { CardHeader } from "@/components/ui/card";
 
 // Use backend types
@@ -100,6 +86,7 @@ const TaxesComponent = () => {
 			try {
 				// Use actual API call
 				const data = await taxesAPI.getAll();
+
 				// console.log("data", data);
 				setTaxes(data);
 			} catch (error) {
@@ -178,6 +165,7 @@ const TaxesComponent = () => {
 	const paginatedTaxes = useMemo(() => {
 		const startIndex = (currentPage - 1) * pageSize;
 		const endIndex = startIndex + pageSize;
+
 		return filteredTaxes.slice(startIndex, endIndex);
 	}, [filteredTaxes, currentPage, pageSize]);
 
@@ -257,16 +245,16 @@ const TaxesComponent = () => {
 								<CardHeader className="border-b">
 									<div className="flex justify-between gap-8 items-center">
 										<div className="flex items-center justify-start gap-4">
-											<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+											<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 											<div className="space-y-2">
-												<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-												<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+												<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+												<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 											</div>
 										</div>
 										<div className="grid grid-cols-3">
-											<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-											<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-											<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+											<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+											<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+											<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
 										</div>
 									</div>
 								</CardHeader>

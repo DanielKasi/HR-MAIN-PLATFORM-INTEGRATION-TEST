@@ -1,7 +1,11 @@
 "use client";
 
+import type { ITax, ITaxFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -20,9 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
 
 interface EditTaxDialogProps {
 	tax: ITax;
@@ -50,6 +52,7 @@ export function EditTaxDialog({ tax, isOpen, onClose, onSuccess }: EditTaxDialog
 	const handleSubmit = async () => {
 		if (!formData.tax_name.trim()) {
 			toast.error("Please enter a tax name");
+
 			return;
 		}
 
@@ -57,6 +60,7 @@ export function EditTaxDialog({ tax, isOpen, onClose, onSuccess }: EditTaxDialog
 		try {
 			// Use actual API call
 			const updatedTax = await taxesAPI.update(tax.id, formData);
+
 			onSuccess(updatedTax);
 			toast.success("Tax updated successfully");
 			onClose();

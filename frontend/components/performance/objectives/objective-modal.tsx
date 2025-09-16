@@ -1,9 +1,12 @@
 "use client";
 
-import { useRef } from "react";
-import { PerformanceFormModal } from "../common/performance-form-modal";
-import { ObjectiveForm } from "./objective-form";
 import type { IObjective, IObjectiveFormData } from "@/types/types.utils";
+
+import { useRef } from "react";
+
+import { PerformanceFormModal } from "../common/performance-form-modal";
+
+import { ObjectiveForm } from "./objective-form";
 
 interface ObjectiveModalProps {
 	isOpen: boolean;

@@ -1,7 +1,10 @@
 "use client";
 
+import type { IEmployee, IEmployeeShift } from "@/types/types.utils";
+
 import React, { useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+
 import {
 	Table,
 	TableBody,
@@ -14,7 +17,6 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { showErrorToast, shiftsAPI } from "@/lib/utils";
-import type { IEmployee, IEmployeeShift } from "@/types/types.utils";
 
 interface ShiftsTableProps {
 	searchTerm?: string;
@@ -51,6 +53,7 @@ export default function ShiftsTable({ searchTerm, refreshTableRef, scope }: Shif
 				if (scope.type === "branch") {
 					return await shiftsAPI.BRANCH.getAll({ branch_id: scope.branch.id });
 				}
+
 				return { results: [], count: 0 } as any;
 			}}
 			onError={(error) => showErrorToast({ error, defaultMessage: "Failed to fetch shifts" })}

@@ -1,7 +1,11 @@
 "use client";
 
+import type { ITax, ITaxFormData } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,9 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { showErrorToast, taxesAPI } from "@/lib/utils";
-import type { ITax, ITaxFormData } from "@/types/types.utils";
 
 interface CreateTaxDialogProps {
 	institutionId: number;
@@ -55,12 +57,14 @@ export function CreateTaxDialog({
 	const handleSubmit = async () => {
 		if (!formData.tax_name.trim()) {
 			toast.error("Please enter a tax name");
+
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
 			const newTax = await taxesAPI.create(formData);
+
 			onSuccess(newTax);
 			toast.success("Tax created successfully");
 			resetFormData();

@@ -1,6 +1,11 @@
 "use client";
 
 import type React from "react";
+import type {
+	JobApplication,
+	JobApplicationFormData,
+	JobPositionAdvert,
+} from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -15,8 +20,8 @@ import {
 	FileText,
 	Upload,
 	AlertCircle,
-	CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +34,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 import {
 	selectSelectedInstitution,
 	selectSelectedBranch,
@@ -44,12 +47,6 @@ import {
 	getJobPositionAdverts,
 	showErrorToast,
 } from "@/lib/utils";
-import type {
-	JobApplication,
-	JobApplicationFormData,
-	JobPositionAdvert,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 const statusOptions = [
@@ -115,11 +112,13 @@ export default function EditApplicationPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (!applicationId) {
 			router.push("/applications");
+
 			return;
 		}
 
@@ -206,11 +205,13 @@ export default function EditApplicationPage() {
 
 		if (!selectedInstitution || !selectedBranch) {
 			setError("Missing organization or branch information");
+
 			return;
 		}
 
 		if (formData.job_position_advert === 0) {
 			setError("Please select a job position");
+
 			return;
 		}
 
@@ -243,6 +244,7 @@ export default function EditApplicationPage() {
 				applicationId,
 				applicationData: updateData,
 			});
+
 			toast.success("Application updated successfully");
 			router.push(`/applications/${updatedApplication.id}`);
 		} catch (err: any) {

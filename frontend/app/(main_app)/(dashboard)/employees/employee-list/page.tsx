@@ -1,8 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+import { UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { EmployeesTable } from "./employees-table";
+
+import { Button } from "@/components/ui/button";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,17 +18,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
-import { Plus, UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
-import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { Icon } from "@iconify/react";
 import { showErrorToast } from "@/lib/utils";
 
 export default function EmployeesPage() {
@@ -63,6 +65,7 @@ export default function EmployeesPage() {
 
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement("a");
+
 			link.href = url;
 			link.download = "employees.xlsx";
 			document.body.appendChild(link);
@@ -162,7 +165,7 @@ export default function EmployeesPage() {
 						</div>
 
 						{/* Add Employee Dropdown */}
-						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
+						<div className="flex-shrink-0 lg:flex-[0.2]" />
 					</div>
 				</CardHeader>
 				<EmployeesTable searchTerm={searchTerm} refreshFunctionRef={refreshFunctionRef} />

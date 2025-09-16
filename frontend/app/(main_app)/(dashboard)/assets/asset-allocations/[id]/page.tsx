@@ -1,38 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import type { IAssetAllocation } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-	ArrowLeft,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Package,
-	User,
-	Calendar,
-	Clock,
-	AlertCircle,
-	CheckCircle,
-	XCircle,
-	Wrench,
-	Archive,
-	History,
-	FileText,
-	MapPin,
-	Tag,
-	Users,
-	ArrowDown,
-	Activity,
-	MessageSquare,
-} from "lucide-react";
+import { ArrowLeft, RefreshCw, Package, User, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetAllocation } from "@/types/types.utils";
 import { EditAssetAllocationDialog } from "@/components/asset-allocations/edit-asset-allocation-dialog";
 import { DeleteAssetAllocationDialog } from "@/components/asset-allocations/delete-asset-allocation-dialog";
 
@@ -96,6 +75,7 @@ const AssetAllocationDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetAllocationById(parseInt(allocationId));
+
 			setAllocation(response);
 		} catch (error) {
 			console.error("Error fetching allocation details:", error);
@@ -295,7 +275,7 @@ const AssetAllocationDetailPage = () => {
 				</div>
 
 				{/* Vertical Separator Line - Hidden on mobile, visible on larger screens */}
-				<div className="hidden lg:block w-px bg-gray-200 mx-2"></div>
+				<div className="hidden lg:block w-px bg-gray-200 mx-2" />
 
 				{/* Sidebar */}
 				<div className="w-full lg:flex-[0.2]">
@@ -396,7 +376,7 @@ const AssetAllocationDetailPage = () => {
 														backgroundImage:
 															"repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)",
 													}}
-												></div>
+												/>
 											)}
 										</div>
 									))}

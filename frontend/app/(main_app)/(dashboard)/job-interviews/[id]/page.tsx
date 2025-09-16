@@ -1,30 +1,28 @@
 "use client";
 
+import type { IInterview } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import {
 	ArrowLeft,
 	Calendar,
-	Clock,
 	User,
 	Mail,
 	Phone,
-	MapPin,
 	Star,
 	Edit,
 	Trash2,
 	FileText,
 	Download,
-	CheckCircle,
-	XCircle,
 	AlertCircle,
 	Users,
-	Building,
 	MessageSquare,
 	Award,
 	RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +31,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getInterviewById } from "@/lib/utils";
-import type { IInterview } from "@/types/types.utils";
-import { toast } from "sonner";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function InterviewViewPage() {
@@ -55,11 +50,13 @@ export default function InterviewViewPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (!interviewId) {
 			router.push("/job-interviews");
+
 			return;
 		}
 

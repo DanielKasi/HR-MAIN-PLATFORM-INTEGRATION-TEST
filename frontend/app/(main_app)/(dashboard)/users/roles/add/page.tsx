@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import type { IPermission, Permission } from "@/types";
+import type { Permission } from "@/types";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -59,6 +59,7 @@ export default function AddRolePage() {
 					// Extract the path from the next URL if it exists
 					if (data.next) {
 						const url = new URL(data.next);
+
 						nextUrl = `user/permission/${url.search}`;
 					} else {
 						nextUrl = null;
@@ -102,6 +103,7 @@ export default function AddRolePage() {
 		if (!roleName.trim()) {
 			setError("Role name is required");
 			setIsLoading(false);
+
 			return;
 		}
 
@@ -137,11 +139,13 @@ export default function AddRolePage() {
 		if (checked) {
 			setSelectedPermissions((prev) => {
 				const newPermissions = [...prev];
+
 				categoryPermissionIds.forEach((id) => {
 					if (!newPermissions.includes(id)) {
 						newPermissions.push(id);
 					}
 				});
+
 				return newPermissions;
 			});
 		} else {
@@ -159,6 +163,7 @@ export default function AddRolePage() {
 
 	const isCategoryFullySelected = (categoryId: number) => {
 		const categoryPermissionIds = permissionsByCategory[categoryId].permissions.map((p) => p.id);
+
 		return categoryPermissionIds.every((id) => selectedPermissions.includes(id));
 	};
 

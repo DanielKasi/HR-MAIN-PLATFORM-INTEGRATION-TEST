@@ -1,13 +1,14 @@
 "use client";
 
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+
 import { IEmployee } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useEffect, useState } from "react";
 
 export interface EmployeeSearchableSelectProps {
 	value: (string | number)[];
@@ -47,6 +48,7 @@ export const EmployeeSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
 	};
 

@@ -1,7 +1,36 @@
 "use client";
 
 import type React from "react";
+import type {
+	ICreateEmployeeForm,
+	IEmployeeFormData,
+	IWorkType,
+	IEmployeeType,
+	IWorkTypeFormData,
+	IEmployeeTypeFormData,
+	ICountry,
+	IChild,
+	INextOfKin,
+	IEducation,
+	IWorkExperience,
+	IGender,
+	IJobPosition,
+	IBankAccount,
+	IEmployeeBankAccountFormData,
+	IMaritalStatus,
+	IEmployeeEducationFormData,
+	IQualificationAward,
+} from "@/types/types.utils";
+
 import { useState, useEffect, useRef } from "react";
+import { User, Loader2, Plus, MoreHorizontal, Edit, Trash2, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,28 +55,13 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
-	Upload,
-	User,
-	X,
-	Loader2,
-	Plus,
-	MoreHorizontal,
-	Edit,
-	Trash2,
-	ArrowLeft,
-} from "lucide-react";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
-	getDepartments,
 	createEmployeeType,
 	getWorkTypes,
 	getEmployeeTypes,
@@ -56,30 +70,7 @@ import {
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
-import type {
-	ICreateEmployeeForm,
-	IEmployeeFormData,
-	IWorkType,
-	IEmployeeType,
-	IWorkTypeFormData,
-	IEmployeeTypeFormData,
-	ICountry,
-	IChild,
-	INextOfKin,
-	IEducation,
-	IWorkExperience,
-	IGender,
-	IJobPosition,
-	IBankAccount,
-	IEmployeeBankAccountFormData,
-	IMaritalStatus,
-	IEmployeeDeductionFormData,
-	IEmployeeEducationFormData,
-	IQualificationAward,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { selectEmployeeCreationForm } from "@/store/miscellaneous/selectors";
-import { useDispatch } from "react-redux";
 import { clearEmployeeForm, saveEmployeeForm } from "@/store/miscellaneous/actions";
 import { PERMISSION_CODES } from "@/constants";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
@@ -88,7 +79,6 @@ import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import { Steps } from "@/components/generic/steps";
 import { createEmployee } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Icon } from "@iconify/react";
 import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
 import { formatCurrency } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
@@ -128,6 +118,7 @@ const steps = [
 export default function AddEmployeeForm() {
 	const maxDateToDay = new Date().toISOString().split("T")[0];
 	const Date18YearsOld = new Date();
+
 	Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
 	const maxDate18 = Date18YearsOld.toISOString().split("T")[0];
 
@@ -326,6 +317,7 @@ export default function AddEmployeeForm() {
 				...childFormData,
 				id: generateId(),
 			};
+
 			setChildren((prev) => [...prev, newChild]);
 		}
 
@@ -362,6 +354,7 @@ export default function AddEmployeeForm() {
 				...nextOfKinFormData,
 				id: generateId(),
 			};
+
 			setNextOfKins((prev) => [...prev, newNextOfKin]);
 		}
 
@@ -399,6 +392,7 @@ export default function AddEmployeeForm() {
 				...educationFormData,
 				id: generateId(),
 			};
+
 			setEducations((prev) => [...prev, newEducation]);
 		}
 
@@ -438,6 +432,7 @@ export default function AddEmployeeForm() {
 				...workExperienceFormData,
 				id: generateId(),
 			};
+
 			setWorkExperiences((prev) => [...prev, newWorkExperience]);
 		}
 
@@ -506,6 +501,7 @@ export default function AddEmployeeForm() {
 				error instanceof Error
 					? error.message
 					: "An unknown error occurred while loading form data.";
+
 			setSubmitError(errorMessage);
 		} finally {
 			setLoadingData(false);
@@ -578,6 +574,7 @@ export default function AddEmployeeForm() {
 				position: value as number,
 				department: positionMatch ? positionMatch.department : formData.department,
 			};
+
 			if (positionMatch) {
 				setSelectedJobPosition(positionMatch);
 			}
@@ -600,6 +597,7 @@ export default function AddEmployeeForm() {
 				...formData,
 				[field]: value,
 			};
+
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
 		}
@@ -610,26 +608,33 @@ export default function AddEmployeeForm() {
 
 		// Also save the updated form data to Redux (without the profile picture)
 		const updatedFormData = { ...formData };
+
 		setFormData(updatedFormData);
 		handleSaveLocalEmployeeCreateForm(updatedFormData);
 	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
+
 		if (!file) {
 			toast.error("No file selected");
+
 			return;
 		}
 
 		const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
 		if (!validImageTypes.includes(file.type)) {
 			toast.error("Please upload a valid image (JPEG, PNG, GIF, or WebP)");
+
 			return;
 		}
 
 		const maxSize = 10 * 1024 * 1024;
+
 		if (file.size > maxSize) {
 			toast.error("Image size exceeds 10MB limit");
+
 			return;
 		}
 
@@ -640,6 +645,7 @@ export default function AddEmployeeForm() {
 		try {
 			handleProflePictureChange(file);
 			const url = URL.createObjectURL(file);
+
 			setPreviewUrl(url);
 		} catch (error: unknown) {
 			showErrorToast({
@@ -656,12 +662,14 @@ export default function AddEmployeeForm() {
 		setPreviewUrl("");
 		handleProflePictureChange(null);
 		const fileInput = profilePicInputRef.current;
+
 		if (fileInput) {
 			fileInput.value = "";
 		}
 
 		// Save the updated form data to Redux after removing image
 		const updatedFormData = { ...formData };
+
 		setFormData(updatedFormData);
 		handleSaveLocalEmployeeCreateForm(updatedFormData);
 	};
@@ -677,8 +685,10 @@ export default function AddEmployeeForm() {
 	const validateForm = () => {
 		if (!formData.fullname || !formData.email) {
 			setSubmitError("Please fill in all required fields");
+
 			return false;
 		}
+
 		return true;
 	};
 
@@ -687,6 +697,7 @@ export default function AddEmployeeForm() {
 			case 1:
 				const currentDate = new Date();
 				const DOB = new Date(formData.date_of_birth);
+
 				return !!(
 					formData.fullname &&
 					formData.email &&
@@ -764,6 +775,7 @@ export default function AddEmployeeForm() {
 		} catch (error: unknown) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to create employee type";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsAddingEmployeeType(false);
@@ -796,6 +808,7 @@ export default function AddEmployeeForm() {
 				error: new Error("No institution selected"),
 				defaultMessage: "Please select an institution",
 			});
+
 			return;
 		}
 
@@ -1374,7 +1387,7 @@ export default function AddEmployeeForm() {
 										))}
 									</div>
 
-									<div className="flex items-center justify-center w-full"></div>
+									<div className="flex items-center justify-center w-full" />
 								</div>
 
 								{/* Education Section */}

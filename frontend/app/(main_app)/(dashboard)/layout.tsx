@@ -1,15 +1,18 @@
 "use client";
 
 import type React from "react";
+import type { IUserInstitution } from "../../../types";
+
 import { useState, useEffect, useRef } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, Settings, User, LogOut, Menu, X } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { ChevronDown, Settings, User, LogOut, Menu } from "lucide-react";
 import Image from "next/image";
 import { useSelector, useDispatch } from "react-redux";
 import { Icon } from "@iconify/react";
+import Link from "next/link";
 
-import type { IUserInstitution } from "../../../types";
-import { IEmployee } from "../../../types/types.utils";
+import CreateOrganisationWizard from "./create-organisation/page";
+
 import { PERMISSION_CODES } from "@/constants";
 import { selectAttachedInstitutions } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
@@ -31,7 +34,6 @@ import {
 import { useMobile } from "@/hooks/use-mobile";
 import { InstitutionBranchSelector } from "@/components/institution-branch-selector";
 // import {TaskNotification} from "@/components/task-notification";
-import Modules from "@/components/modules";
 import {
 	selectAccessToken,
 	selectSelectedInstitution,
@@ -49,13 +51,10 @@ import FixedLoader from "@/components/fixed-loader";
 import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
-import CreateOrganisationWizard from "./create-organisation/page";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
-import Link from "next/link";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
-import { employeeAPI, showErrorToast } from "@/lib/utils";
 import DashboardSideBar from "@/components/dashboard_components/dashboard-sidebar";
 
 export function hexToHSL(hex: string) {
@@ -72,6 +71,7 @@ export function hexToHSL(hex: string) {
 
 	if (max !== min) {
 		const d = max - min;
+
 		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 		switch (max) {
 			case r:
@@ -92,6 +92,7 @@ export function hexToHSL(hex: string) {
 	h = Math.round(h * 360);
 	s = Math.round(s * 100);
 	l = Math.round(l * 100);
+
 	return `${h} ${s}% ${l}%`;
 }
 
@@ -128,6 +129,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		};
 
 		appLayoutRef.current?.addEventListener("mousedown", handleActivity);
+
 		return () => {
 			appLayoutRef.current?.removeEventListener("mousedown", handleActivity);
 		};
@@ -157,8 +159,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			selectedInstitution.institution_owner_id
 		) {
 			let role = selectedInstitution.institution_owner_id === currentUser.id ? "Super User" : "";
+
 			if (!role && Array.isArray(currentUser.roles) && currentUser.roles.length > 0) {
 				const matchingRole = currentUser.roles.find((r: { name: string }) => !!r.name);
+
 				if (matchingRole)
 					role =
 						matchingRole.name.charAt(0).toUpperCase() + matchingRole.name.slice(1).toLowerCase();
@@ -183,14 +187,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		if (!hexColor) return;
 		try {
 			const hslValue = hexToHSL(hexColor);
+
 			if (!hslValue) return;
 			const [h, s, l] = hslValue.split(" ");
 			const hue = h;
 			const saturation = s.replace("%", "");
 			const lightness = l.replace("%", "");
+
 			document.documentElement.style.setProperty("--primary", hslValue);
 			document.documentElement.style.setProperty("--ring", hslValue);
 			const darkerL = Math.max(Number.parseInt(lightness) - 10, 0);
+
 			document.documentElement.style.setProperty(
 				"--primary-hover",
 				`${hue} ${saturation}% ${darkerL}%`,
@@ -198,6 +205,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			document.documentElement.style.setProperty("--sidebar-selected", hslValue);
 			const lighterL = Math.min(Number.parseInt(lightness) + 40, 90);
 			const lighterS = Math.max(Number.parseInt(saturation) - 15, 20);
+
 			document.documentElement.style.setProperty(
 				"--sidebar-hover",
 				`${hue} ${lighterS}% ${lighterL}%`,
@@ -205,6 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 			if (document.documentElement.classList.contains("dark")) {
 				document.documentElement.style.setProperty("--sidebar-background", "240 5.9% 10%");
 				const darkModeHoverL = Math.min(Number.parseInt(lightness) + 20, 60);
+
 				document.documentElement.style.setProperty(
 					"--sidebar-hover",
 					`${hue} ${saturation}% ${darkModeHoverL}%`,
@@ -220,13 +229,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	useEffect(() => {
 		const fallbackColor = "#078c24";
 		const themeColorToUse = selectedInstitution?.theme_color || fallbackColor;
+
 		updateThemeColors(themeColorToUse);
 	}, [selectedInstitution]);
 
 	useEffect(() => {
 		const token = accessToken;
+
 		if (!token) {
 			router.push("/login");
+
 			return;
 		}
 	}, [router, accessToken]);
@@ -260,8 +272,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		if (!InstitutionId) return;
 		try {
 			const formData = new FormData();
+
 			formData.append("Institution_setup", "true");
 			await apiRequest.patch(`institution/${InstitutionId}/`, formData);
+
 			return true;
 		} catch (error) {
 			return false;

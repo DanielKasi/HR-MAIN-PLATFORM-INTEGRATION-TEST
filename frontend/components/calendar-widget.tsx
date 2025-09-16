@@ -3,10 +3,11 @@
 import type React from "react";
 
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MapPin, Video, Users, Star } from "lucide-react";
 import { useSelector } from "react-redux";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { apiGet } from "@/lib/apiRequest";
 
@@ -98,6 +99,7 @@ export function SimpleCalendarWidget() {
 		try {
 			setLoading(true);
 			const response = await apiGet(`/calendar/institutions-calendar/?year=${year}`);
+
 			setCalendar(response.data);
 		} catch (error) {
 			console.error("Error fetching calendar:", error);
@@ -136,6 +138,7 @@ export function SimpleCalendarWidget() {
 			const utcDate = new Date(Date.UTC(year, month, day));
 			// Convert to local date for display
 			const localDate = new Date(utcDate.getTime());
+
 			days.push(localDate);
 		}
 
@@ -160,6 +163,7 @@ export function SimpleCalendarWidget() {
 
 	const navigateMonth = (direction: "prev" | "next") => {
 		const newDate = new Date(currentDate);
+
 		if (direction === "prev") {
 			newDate.setMonth(newDate.getMonth() - 1);
 		} else {
@@ -170,6 +174,7 @@ export function SimpleCalendarWidget() {
 
 	const isToday = (date: Date) => {
 		const today = new Date();
+
 		// Compare date components directly to avoid timezone issues
 		return (
 			date.getFullYear() === today.getFullYear() &&
@@ -272,7 +277,7 @@ export function SimpleCalendarWidget() {
 					<div className="grid grid-cols-7 gap-1">
 						{days.map((day, index) => {
 							if (!day) {
-								return <div key={index} className="h-10"></div>;
+								return <div key={index} className="h-10" />;
 							}
 
 							const { events, holidays } = getEventsForDate(day);
@@ -299,9 +304,7 @@ export function SimpleCalendarWidget() {
 									{/* Event indicators */}
 									{hasEvents && (
 										<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-											{holidays.length > 0 && (
-												<div className="w-1 h-1 bg-red-500 rounded-full"></div>
-											)}
+											{holidays.length > 0 && <div className="w-1 h-1 bg-red-500 rounded-full" />}
 											{events.slice(0, 2).map((event, idx) => (
 												<div
 													key={idx}
@@ -312,11 +315,9 @@ export function SimpleCalendarWidget() {
 																? "bg-green-500"
 																: "bg-purple-500"
 													}`}
-												></div>
+												/>
 											))}
-											{events.length > 2 && (
-												<div className="w-1 h-1 bg-slate-400 rounded-full"></div>
-											)}
+											{events.length > 2 && <div className="w-1 h-1 bg-slate-400 rounded-full" />}
 										</div>
 									)}
 
@@ -336,11 +337,11 @@ export function SimpleCalendarWidget() {
 												onMouseLeave={handleTooltipMouseLeave}
 											>
 												{/* Tooltip Arrow */}
-												<div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200"></div>
+												<div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200" />
 												<div
 													className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"
 													style={{ marginTop: "-1px" }}
-												></div>
+												/>
 
 												<div className="text-xs font-medium text-slate-900 mb-2">
 													{hoveredDay.toLocaleDateString("en-US", {

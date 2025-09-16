@@ -1,17 +1,19 @@
 "use client";
 
+import type { IPeriod, IPeriodFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Calendar, Clock, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERIODS_API } from "@/lib/utils";
-import type { IPeriod, IPeriodFormData } from "@/types/types.utils";
 import { PeriodsTable } from "@/components/performance/periods/periods-table";
 import { PeriodModal } from "@/components/performance/periods/period-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Calendar, Clock, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function PeriodsPage() {
@@ -33,6 +35,7 @@ export default function PeriodsPage() {
 			const response = await PERIODS_API.getPaginated({
 				search: searchQuery || undefined,
 			});
+
 			setPeriods(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch periods");
@@ -102,6 +105,7 @@ export default function PeriodsPage() {
 		const now = new Date();
 		const start = new Date(p.start_date);
 		const end = new Date(p.end_date);
+
 		return now >= start && now <= end && !p.is_closed;
 	}).length;
 

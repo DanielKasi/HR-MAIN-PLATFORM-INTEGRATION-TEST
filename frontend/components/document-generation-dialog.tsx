@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText } from "lucide-react";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import DocumentPreviewPDF from "./document-preview-pdf";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import RichTextDisplay from "./common/rich-text-display";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,7 +13,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -24,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import {
 	getDocumentTemplates,
 	generateDocument,
@@ -33,12 +33,7 @@ import {
 	sendDocuments,
 } from "@/lib/document-utils";
 import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/types/types.utils";
-
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { number } from "framer-motion";
-import RichTextDisplay from "./common/rich-text-display";
-import PdfPreview from "./common/pdf-preview";
 
 interface DocumentGenerationDialogProps {
 	open: boolean;
@@ -86,6 +81,7 @@ export function DocumentGenerationDialog({
 		setLoading(true);
 		try {
 			const data = await getDocumentTemplates({ institutionId: currentInstitution.id });
+
 			if (data) {
 				setTemplates(data);
 			}
@@ -105,6 +101,7 @@ export function DocumentGenerationDialog({
 			if (response?.placeholders) {
 				setGeneratedTemplate(response);
 				const initialPlaceholders: { [key: string]: string } = {};
+
 				Object.keys(response.placeholders).forEach((key) => {
 					if (response.placeholders && response.placeholders[key]) {
 						initialPlaceholders[key] = response.placeholders[key].value || "";
@@ -135,6 +132,7 @@ export function DocumentGenerationDialog({
 				setCanSendDocument(true);
 
 				const preview = await getDocumentPreview(response.document_id);
+
 				if (preview) {
 					setPreviewContent(preview);
 					toast.success("Document generated successfully");
@@ -153,6 +151,7 @@ export function DocumentGenerationDialog({
 	const handleSendDocument = async () => {
 		if (!generatedDocumentId) {
 			toast.error("No document generated to send");
+
 			return;
 		}
 		setLoading(true);

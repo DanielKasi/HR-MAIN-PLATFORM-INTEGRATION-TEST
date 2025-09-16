@@ -1,16 +1,22 @@
 "use client";
 
 import type React from "react";
+import type {
+	IInterviewFormData,
+	IInterview,
+	JobApplication,
+	IInterviewStage,
+} from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Users, ArrowLeft, Check, Loader2, User, Building } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -20,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import {
 	selectSelectedInstitution,
 	selectSelectedBranch,
@@ -32,13 +37,6 @@ import {
 	getJobApplications,
 	getInterviewStages,
 } from "@/lib/utils";
-import type {
-	IInterviewFormData,
-	IInterview,
-	JobApplication,
-	IInterviewStage,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 
 export default function EditInterviewPage() {
 	const [interview, setInterview] = useState<IInterview | null>(null);
@@ -74,12 +72,14 @@ export default function EditInterviewPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (isNaN(interviewId)) {
 			toast.error("Invalid interview ID");
 			router.push("/job-interviews");
+
 			return;
 		}
 
@@ -98,6 +98,7 @@ export default function EditInterviewPage() {
 			if (!fetchedInterview) {
 				toast.error("Interview not found");
 				router.push("/job-interviews");
+
 				return;
 			}
 
@@ -114,6 +115,7 @@ export default function EditInterviewPage() {
 				const currentApplication = (fetchedApplications.results || []).find(
 					(app) => app.id === fetchedInterview.job_position_application,
 				);
+
 				setSelectedApplication(currentApplication || null);
 			}
 
@@ -122,6 +124,7 @@ export default function EditInterviewPage() {
 				const currentStage = fetchedStages.find(
 					(stage) => stage.id === fetchedInterview.interview_stage,
 				);
+
 				setSelectedStage(currentStage || null);
 			}
 
@@ -157,12 +160,14 @@ export default function EditInterviewPage() {
 		// Update selected application when job_position_application changes
 		if (field === "job_position_application") {
 			const application = jobApplications.find((app) => app.id === Number(value));
+
 			setSelectedApplication(application || null);
 		}
 
 		// Update selected stage when interview_stage changes
 		if (field === "interview_stage") {
 			const stage = interviewStages.find((stage) => stage.id === Number(value));
+
 			setSelectedStage(stage || null);
 		}
 	};
@@ -186,6 +191,7 @@ export default function EditInterviewPage() {
 		} else {
 			const interviewDate = new Date(formData.interview_date);
 			const now = new Date();
+
 			// Only validate future date for scheduled interviews
 			if (formData.status === "scheduled" && interviewDate <= now) {
 				newErrors.interview_date = "Scheduled interview date must be in the future";
@@ -195,6 +201,7 @@ export default function EditInterviewPage() {
 		// Rating validation (if provided)
 		if (formData.rating !== undefined && formData.rating !== null) {
 			const rating = Number(formData.rating);
+
 			if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
 				newErrors.rating = "Rating must be a whole number between 1 and 10";
 			}
@@ -206,6 +213,7 @@ export default function EditInterviewPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -214,11 +222,13 @@ export default function EditInterviewPage() {
 
 		if (!selectedInstitution || !selectedBranch || !interview) {
 			toast.error("Missing required information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 

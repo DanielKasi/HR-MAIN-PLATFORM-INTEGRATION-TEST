@@ -1,10 +1,11 @@
 "use client";
 
 import type { IUser } from "@/types";
+import type { IAttendance, IEmployee } from "@/types/types.utils";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Check, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Check, Trash2 } from "lucide-react";
 
 import { AddBranchForm } from "./add-branch";
 import { EditUserRoles } from "./edit-user-roles";
@@ -18,7 +19,6 @@ import { capitalizeEachWord } from "@/lib/helpers";
 import apiRequest, { apiDelete } from "@/lib/apiRequest";
 import { AttendanceAPI, employeeAPI } from "@/lib/utils";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import type { IAttendance, IEmployee } from "@/types/types.utils";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function UserProfilePage() {

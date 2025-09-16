@@ -1,4 +1,5 @@
 import { ActionWithPayLoad, Action, createAction } from "../storeUtils";
+
 import { INotification, NOTIFICATION_ACTION_TYPES } from "./types";
 
 export type ReceiveNotificationAction = ActionWithPayLoad<

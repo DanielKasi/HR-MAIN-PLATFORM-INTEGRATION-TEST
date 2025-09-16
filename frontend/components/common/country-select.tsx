@@ -1,12 +1,14 @@
 "use client";
 
 import type React from "react";
+
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ICountry } from "@/types/types.utils";
 import { countryAPI } from "@/lib/helpers";
-import { ChevronDown } from "lucide-react";
 
 export default function CountrySelect({
 	countries: propCountries,
@@ -55,6 +57,7 @@ export default function CountrySelect({
 
 	const getFlag = (cca2?: string) => {
 		if (!cca2 || cca2.length !== 2) return ""; // return empty if invalid
+
 		return String.fromCodePoint(
 			...cca2
 				.toUpperCase()

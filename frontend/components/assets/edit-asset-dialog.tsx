@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAsset, IAssetFormData, IAssetCategory } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -21,9 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { assetsAPI, assetCategoriesAPI } from "@/lib/utils";
-import type { IAsset, IAssetFormData, IAssetCategory } from "@/types/types.utils";
 
 const getStatusDisplay = (status: string) => {
 	switch (status) {
@@ -67,6 +69,7 @@ export function EditAssetDialog({ asset, isOpen, onClose, onSuccess }: EditAsset
 					: typeof asset.category === "number"
 						? asset.category
 						: 0;
+
 			// console.log('Asset category:', asset.category);
 			// console.log('Extracted category ID:', categoryId);
 			setFormData({
@@ -82,6 +85,7 @@ export function EditAssetDialog({ asset, isOpen, onClose, onSuccess }: EditAsset
 		try {
 			setIsLoadingCategories(true);
 			const data = await assetCategoriesAPI.getAll();
+
 			setCategories(data);
 		} catch (error) {
 			console.error("Error fetching categories:", error);
@@ -100,22 +104,26 @@ export function EditAssetDialog({ asset, isOpen, onClose, onSuccess }: EditAsset
 	const handleSubmit = async () => {
 		if (!formData.asset_name.trim()) {
 			toast.error("Please enter an asset name");
+
 			return;
 		}
 
 		if (!formData.serial_number.trim()) {
 			toast.error("Please enter a serial number");
+
 			return;
 		}
 
 		if (!formData.category) {
 			toast.error("Please select a category");
+
 			return;
 		}
 
 		setIsSubmitting(true);
 		try {
 			const updatedAsset = await assetsAPI.update(asset.id, formData);
+
 			onSuccess(updatedAsset);
 			toast.success("Asset updated successfully");
 			onClose();

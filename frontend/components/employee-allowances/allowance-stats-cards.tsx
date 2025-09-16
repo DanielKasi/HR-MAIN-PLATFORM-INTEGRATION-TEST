@@ -1,12 +1,13 @@
 "use client";
 
-import { IEmployeeAllowance } from "@/types/types.utils";
 import {
 	Users,
 	CoinsIcon as Coins2,
 	CalendarPlus2Icon as CalendarIcon2,
 	Percent,
 } from "lucide-react";
+
+import { IEmployeeAllowance } from "@/types/types.utils";
 import { formatCurrency } from "@/lib/helpers";
 
 interface AllowanceStatsCardsProps {

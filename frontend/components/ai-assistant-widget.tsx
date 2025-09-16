@@ -1,13 +1,13 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
 import type React from "react";
+
+import { useState, useRef, useEffect } from "react";
+import { Menu, X, ArrowUp, Bot, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Menu, X, ArrowUp, Bot, Sparkles } from "lucide-react";
 import { apiPost, apiGet } from "@/lib/apiRequest";
-import { ExternalLink } from "lucide-react";
 
 interface ChatMessage {
 	role: "user" | "assistant";
@@ -56,15 +56,15 @@ const TypingIndicator = () => {
 					<div
 						className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
 						style={{ animationDelay: "0ms", animationDuration: "1.4s" }}
-					></div>
+					/>
 					<div
 						className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
 						style={{ animationDelay: "200ms", animationDuration: "1.4s" }}
-					></div>
+					/>
 					<div
 						className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"
 						style={{ animationDelay: "400ms", animationDuration: "1.4s" }}
-					></div>
+					/>
 				</div>
 			</div>
 		</div>
@@ -116,6 +116,7 @@ export default function AIAssistantWidget() {
 		try {
 			const response = await apiGet("/institution/user-chats/");
 			const userChats: UserChats = response.data;
+
 			setChatHistory(userChats.chats || []);
 		} catch (error) {
 			console.error("Error loading chat history:", error);
@@ -149,6 +150,7 @@ export default function AIAssistantWidget() {
 
 		setMessages((prev) => [...prev, userMessage]);
 		const currentQuestion = inputValue.trim();
+
 		setInputValue("");
 		setIsLoading(true);
 
@@ -211,6 +213,7 @@ export default function AIAssistantWidget() {
 		setCurrentChatId(chat.chat_id);
 
 		const displayMessages = convertChatMessagesToDisplay(chat.messages);
+
 		setMessages(displayMessages);
 
 		setShowHistory(false);
@@ -235,7 +238,9 @@ export default function AIAssistantWidget() {
 				setShowHistory(false);
 			}
 		};
+
 		document.addEventListener("mousedown", handleClickOutside);
+
 		return () => {
 			document.removeEventListener("mousedown", handleClickOutside);
 		};
@@ -247,6 +252,7 @@ export default function AIAssistantWidget() {
 		}
 
 		const firstUserMessage = chat.messages.find((msg) => msg.role === "user");
+
 		if (firstUserMessage) {
 			return firstUserMessage.message.length > 40
 				? firstUserMessage.message.substring(0, 40) + "..."
@@ -309,7 +315,7 @@ export default function AIAssistantWidget() {
 					<div className="absolute bottom-16 right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg animate-in fade-in duration-200 whitespace-nowrap">
 						AI Assistant
 						<div className="absolute bottom-0 right-6 transform translate-y-full">
-							<div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900"></div>
+							<div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900" />
 						</div>
 					</div>
 				)}
@@ -317,8 +323,8 @@ export default function AIAssistantWidget() {
 				{isOpen && (
 					<div className="absolute bottom-16 right-0 mb-1">
 						<div className="absolute bottom-0 right-6 transform translate-y-full z-20">
-							<div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[18px] border-l-transparent border-r-transparent border-t-white drop-shadow-2xl animate-in fade-in duration-300"></div>
-							<div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-3 bg-gradient-to-b from-white to-transparent opacity-80"></div>
+							<div className="w-0 h-0 border-l-[18px] border-r-[18px] border-t-[18px] border-l-transparent border-r-transparent border-t-white drop-shadow-2xl animate-in fade-in duration-300" />
+							<div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-3 bg-gradient-to-b from-white to-transparent opacity-80" />
 						</div>
 
 						<Card
@@ -390,7 +396,7 @@ export default function AIAssistantWidget() {
 												<div className="space-y-3 sm:space-y-4">
 													{isLoadingHistory ? (
 														<div className="text-center py-8">
-															<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-3"></div>
+															<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto mb-3" />
 															<p className="text-sm text-gray-500">Loading chats...</p>
 														</div>
 													) : chatHistory.length === 0 ? (
@@ -570,9 +576,9 @@ export default function AIAssistantWidget() {
 												>
 													{isLoading ? (
 														<div className="flex space-x-0.5">
-															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-1"></div>
-															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-2"></div>
-															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-3"></div>
+															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-1" />
+															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-2" />
+															<div className="w-1 h-1 bg-gray-400 rounded-full typing-dot-3" />
 														</div>
 													) : (
 														<ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -595,7 +601,7 @@ export default function AIAssistantWidget() {
 							onMouseLeave={() => setShowTooltip(false)}
 							className="relative bg-gradient-to-br from-red-600 via-orange-700 to-red-700 hover:from-red-700 hover:via-orange-800 hover:to-red-800 text-white rounded-full h-14 w-14 p-0 shadow-xl transition-all duration-300 hover:shadow-2xl transform hover:scale-110 group overflow-hidden"
 						>
-							<div className="absolute inset-0 bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+							<div className="absolute inset-0 bg-gradient-to-br from-red-400 via-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" />
 
 							<div className="relative z-10 flex items-center justify-center">
 								<div className="relative">
@@ -606,7 +612,7 @@ export default function AIAssistantWidget() {
 								</div>
 							</div>
 
-							<div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300"></div>
+							<div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 opacity-20 blur-xl group-hover:opacity-40 transition-opacity duration-300" />
 						</Button>
 					) : (
 						<Button

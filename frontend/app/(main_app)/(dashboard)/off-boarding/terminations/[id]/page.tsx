@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ArrowLeft, FileText } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { ArrowLeft, FileText } from "lucide-react";
 import { TerminationInitiationsAPI } from "@/lib/utils";
 import { ITermination } from "@/types/types.utils";
 import { MAIN_DOMAIN_URL } from "@/constants";
@@ -53,6 +54,7 @@ export default function TerminationInitiationDetailsPage() {
 	const fetchTermination = async () => {
 		try {
 			const data = await TerminationInitiationsAPI.getById(parseInt(terminationId));
+
 			setTermination(data);
 		} catch (error) {
 			toast.error("Failed to fetch termination details");

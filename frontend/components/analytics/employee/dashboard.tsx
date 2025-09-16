@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Users, Clock, TrendingUp, UserCheck } from "lucide-react";
 import {
 	PieChart,
@@ -15,6 +13,9 @@ import {
 	CartesianGrid,
 	ResponsiveContainer,
 } from "recharts";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEmployeeDashboard } from "@/lib/utils";
 import { IEmployeeDashboard } from "@/types/types.utils";
@@ -51,6 +52,7 @@ export default function EmployeeDashboard() {
 		async function fetchData() {
 			try {
 				const dashboardData = await getEmployeeDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to fetch data");

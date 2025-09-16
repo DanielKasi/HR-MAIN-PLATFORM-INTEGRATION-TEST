@@ -1,4 +1,7 @@
+import type { IUserInstitution } from "@/types/index";
+
 import React, { useState, useEffect } from "react";
+
 import {
 	Dialog,
 	DialogContent,
@@ -19,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { IProgressType, IKeyResult, IKeyResultFormData } from "@/types/types.utils";
-import type { IUserInstitution } from "@/types/index";
 
 interface KeyResultFormProps {
 	open: boolean;
@@ -32,6 +34,7 @@ interface KeyResultFormProps {
 }
 const validateDurationFormat = (duration: string): boolean => {
 	const timeRegex = /^(\d+\s)?\d{1,2}:\d{2}:\d{2}$/;
+
 	return timeRegex.test(duration);
 };
 
@@ -98,9 +101,11 @@ export const KeyResultForm: React.FC<KeyResultFormProps> = ({
 	const updateDuration = (part: "days" | "hours" | "minutes", value: string) => {
 		const numValue = parseInt(value) || 0;
 		const newParts = { ...durationParts, [part]: numValue };
+
 		setDurationParts(newParts);
 
 		const duration = `${newParts.days} ${String(newParts.hours).padStart(2, "0")}:${String(newParts.minutes).padStart(2, "0")}:00`;
+
 		setFormData((prev) => ({ ...prev, duration: duration.trim() }));
 	};
 
@@ -175,6 +180,7 @@ export const KeyResultForm: React.FC<KeyResultFormProps> = ({
 							value={formData.target_value || ""}
 							onChange={(e) => {
 								const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+
 								setFormData((prev) => ({ ...prev, target_value: value }));
 							}}
 							placeholder="Enter target value"

@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter, useParams } from "next/navigation";
+import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
 import {
 	Table,
 	TableBody,
@@ -15,17 +17,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { User, Calendar, Edit, ArrowLeft, Trash2 } from "lucide-react";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import {
-	getAllLeaveBalances,
-	updateLeaveBalance,
-	createLeaveBalance,
-	deleteLeaveBalance,
-} from "@/lib/utils";
+import { getAllLeaveBalances } from "@/lib/utils";
 import { getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
 import { IEmployee, ILeaveBalance, ILeaveType } from "@/types/types.utils";
-import { toast } from "sonner";
 
 const years = [2023, 2024, 2025, 2026];
 
@@ -60,14 +55,18 @@ export default function EmployeeLeaveBalanceDetails() {
 	const employeeIdNum = useMemo(() => {
 		if (!employeeId) {
 			setDebugInfo("No employeeId found in URL parameters");
+
 			return null;
 		}
 		const id = parseInt(employeeId);
+
 		if (isNaN(id)) {
 			setDebugInfo(`Invalid employeeId: "${employeeId}" - not a number`);
+
 			return null;
 		}
 		setDebugInfo(`Valid employeeId: ${id}`);
+
 		return id;
 	}, [employeeId]);
 
@@ -76,23 +75,27 @@ export default function EmployeeLeaveBalanceDetails() {
 			if (!selectedInstitution?.id) {
 				setDebugInfo("No institution selected");
 				setIsLoading(false);
+
 				return;
 			}
 
 			if (!employeeId) {
 				setDebugInfo("No employeeId in URL");
 				setIsLoading(false);
+
 				return;
 			}
 
 			if (!employeeIdNum) {
 				setDebugInfo(`Invalid employeeId: ${employeeId}`);
 				setIsLoading(false);
+
 				return;
 			}
 
 			if (dataFetched) {
 				setDebugInfo("Data already fetched");
+
 				return;
 			}
 
@@ -117,6 +120,7 @@ export default function EmployeeLeaveBalanceDetails() {
 					allBalances?.filter((balance) => {
 						const balanceEmployeeId =
 							typeof balance.employee === "object" ? balance.employee.id : balance.employee;
+
 						return balanceEmployeeId === employeeIdNum;
 					}) || [];
 
@@ -124,6 +128,7 @@ export default function EmployeeLeaveBalanceDetails() {
 
 				if (!foundEmployee && employeeBalances.length > 0) {
 					const firstBalance = employeeBalances[0];
+
 					if (typeof firstBalance.employee === "object") {
 						setEmployee(firstBalance.employee as any);
 						setDebugInfo("Employee found from balance data");
@@ -155,6 +160,7 @@ export default function EmployeeLeaveBalanceDetails() {
 			return employee.user.fullname;
 		}
 		const emp = employees.find((emp) => emp.id === employee);
+
 		return emp?.user?.fullname || "Unknown Employee";
 	};
 
@@ -171,11 +177,13 @@ export default function EmployeeLeaveBalanceDetails() {
 			return leaveType.name;
 		}
 		const type = leaveTypes.find((type) => type.id === leaveType);
+
 		return type ? type.name : "Unknown Leave Type";
 	};
 
 	const getStatusBadge = (available: string | number) => {
 		const availableNum = typeof available === "string" ? parseFloat(available) : available;
+
 		if (availableNum < 0) {
 			return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Overused</Badge>;
 		} else if (availableNum <= 3) {
@@ -187,8 +195,10 @@ export default function EmployeeLeaveBalanceDetails() {
 
 	const getStatusColor = (available: string | number) => {
 		const availableNum = typeof available === "string" ? parseFloat(available) : available;
+
 		if (availableNum < 0) return "text-red-600";
 		if (availableNum <= 3) return "text-yellow-600";
+
 		return "text-green-600";
 	};
 
@@ -197,6 +207,7 @@ export default function EmployeeLeaveBalanceDetails() {
 		const used = parseFloat(item.used_days) || 0;
 		const pending = parseFloat(item.pending_days) || 0;
 		const carriedForward = parseFloat(item.carried_forward_days) || 0;
+
 		return allocated + carriedForward - used - pending;
 	};
 
@@ -206,6 +217,7 @@ export default function EmployeeLeaveBalanceDetails() {
 				typeof balance.available_days === "string"
 					? parseFloat(balance.available_days)
 					: balance.available_days;
+
 			return total + (isNaN(available) ? 0 : available);
 		}, 0);
 	}, [employeeLeaveBalances]);

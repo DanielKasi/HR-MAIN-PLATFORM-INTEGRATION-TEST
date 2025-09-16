@@ -1,21 +1,21 @@
 "use client";
 
 import type React from "react";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Building2, ArrowLeft, Check } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { createDepartment } from "@/lib/utils";
 import { DepartmentFormData } from "@/types/types.utils";
-import { toast } from "sonner";
 
 export default function CreateDepartmentPage() {
 	const [formData, setFormData] = useState<DepartmentFormData>({
@@ -59,6 +59,7 @@ export default function CreateDepartmentPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -67,11 +68,13 @@ export default function CreateDepartmentPage() {
 
 		if (!selectedInstitution || !selectedBranch) {
 			toast.error("Missing organization or branch information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
@@ -160,7 +163,7 @@ export default function CreateDepartmentPage() {
 								</div>
 
 								{/* Empty div for spacing on large screens when description spans full width */}
-								<div className="hidden lg:block"></div>
+								<div className="hidden lg:block" />
 							</div>
 
 							{/* Department Description - Full Width */}

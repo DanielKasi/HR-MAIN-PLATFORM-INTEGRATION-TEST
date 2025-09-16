@@ -1,9 +1,11 @@
 "use client";
 
+import type { TasksAnalytics } from "@/types/types.utils";
+
 import { Pie, PieChart, ResponsiveContainer, Cell } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import type { TasksAnalytics } from "@/types/types.utils";
 
 interface TaskStatusChartProps {
 	data: TasksAnalytics;

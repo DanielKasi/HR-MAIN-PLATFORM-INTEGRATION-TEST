@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { useSelector } from "react-redux";
 import { selectAccessToken } from "@/store/auth/selectors";
 import { changePassword } from "@/lib/utils";
 import { ChangePasswordData } from "@/types/types.utils";
@@ -29,6 +30,7 @@ export default function ProfilePage() {
 				title: "Error",
 				description: "New passwords do not match.",
 			});
+
 			return;
 		}
 

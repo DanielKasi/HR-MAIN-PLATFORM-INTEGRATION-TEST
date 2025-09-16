@@ -1,11 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 import { useState } from "react";
+
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatNumberByMagnitude } from "@/lib/helpers";
 
 interface PayrollChartProps {
@@ -36,6 +36,7 @@ export function PayrollChart({
 				</div>
 			);
 		}
+
 		return null;
 	};
 
@@ -57,6 +58,7 @@ export function PayrollChart({
 						value={payrollYear.toString()}
 						onValueChange={(e) => {
 							const newTime = new Date();
+
 							newTime.setFullYear(Number(e));
 							setPayrollYear(newTime.getFullYear());
 							onRefresh(newTime.getFullYear());

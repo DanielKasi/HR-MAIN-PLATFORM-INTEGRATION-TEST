@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Trash2, Eye, User, Settings, Loader2, MoreVertical } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,7 +41,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { LeaveBalancesAPI, getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { ILeaveBalance, IEmployee, ILeaveType } from "@/types/types.utils";
@@ -46,7 +48,6 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 // Define grouped employee interface
@@ -114,6 +115,7 @@ export default function LeaveBalanceComponent() {
 		const used = parseFloat(item.used_days) || 0;
 		const pending = parseFloat(item.pending_days) || 0;
 		const carriedForward = parseFloat(item.carried_forward_days) || 0;
+
 		return allocated + carriedForward - used - pending;
 	};
 
@@ -139,6 +141,7 @@ export default function LeaveBalanceComponent() {
 			if (!selectedInstitution?.id) {
 				setEmployees([]);
 				setLeaveTypes([]);
+
 				return;
 			}
 
@@ -168,6 +171,7 @@ export default function LeaveBalanceComponent() {
 				return employee.user.fullname;
 			}
 			const emp = employees.find((emp) => emp.id === employee);
+
 			return emp?.user?.fullname || "Unknown Employee";
 		},
 		[employees],
@@ -179,6 +183,7 @@ export default function LeaveBalanceComponent() {
 				return employee.employee_id || "N/A"; // return here
 			}
 			const emp = employees.find((emp) => emp.id === employee);
+
 			return emp?.employee_id || "N/A"; // and here
 		},
 		[employees],
@@ -190,6 +195,7 @@ export default function LeaveBalanceComponent() {
 				return leaveType.name;
 			}
 			const type = leaveTypes.find((type) => type.id === leaveType);
+
 			return type ? type.name : "Unknown Leave Type";
 		},
 		[leaveTypes],
@@ -237,11 +243,13 @@ export default function LeaveBalanceComponent() {
 
 		if (!selectedInstitution?.id) {
 			toast.error("Institution not selected");
+
 			return;
 		}
 
 		if (!formData.employee || !formData.leave_type || !formData.year) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
@@ -263,6 +271,7 @@ export default function LeaveBalanceComponent() {
 					balanceId: editingItem.id,
 					leaveBalanceData,
 				});
+
 				if (updatedBalance) {
 					handleUpdateSuccess(updatedBalance);
 				} else {
@@ -273,6 +282,7 @@ export default function LeaveBalanceComponent() {
 					institutionId: selectedInstitution.id,
 					leaveBalanceData,
 				});
+
 				if (newBalance) {
 					handleCreateSuccess(newBalance);
 				} else {
@@ -309,6 +319,7 @@ export default function LeaveBalanceComponent() {
 	// Handle edit
 	const handleEdit = (group: GroupedEmployee) => {
 		const firstBalance = group.leaveBalances[0];
+
 		if (firstBalance) {
 			setEditingItem(firstBalance);
 			setFormData({
@@ -347,6 +358,7 @@ export default function LeaveBalanceComponent() {
 	// Get unique years and leave types from static data
 	const availableYears = useMemo(() => {
 		const currentYear = new Date().getFullYear();
+
 		return [currentYear, currentYear - 1, currentYear - 2, currentYear + 1];
 	}, []);
 
@@ -359,7 +371,7 @@ export default function LeaveBalanceComponent() {
 			<div className="min-h-screen bg-white flex items-center justify-center">
 				<div className="flex flex-col items-center space-y-4 text-center">
 					<div className="relative">
-						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+						<div className="w-16 h-16 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
 						<Settings className="w-6 h-6 text-orange-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
 					</div>
 					<div className="space-y-2">
@@ -661,6 +673,7 @@ export default function LeaveBalanceComponent() {
 								const leaveTypeName = getLeaveTypeName(balance.leave_type);
 								const matchesType = filterType === "all" || leaveTypeName === filterType;
 								const matchesYear = filterYear === "all" || balance.year.toString() === filterYear;
+
 								return matchesType && matchesYear;
 							});
 
@@ -668,6 +681,7 @@ export default function LeaveBalanceComponent() {
 							const groupedEmployees = filteredResults.reduce(
 								(acc, balance) => {
 									const employeeId = getEmployeeId(balance.employee);
+
 									if (!acc[employeeId]) {
 										acc[employeeId] = {
 											employeeId,
@@ -679,6 +693,7 @@ export default function LeaveBalanceComponent() {
 										};
 									}
 									acc[employeeId].leaveBalances.push(balance);
+
 									return acc;
 								},
 								{} as Record<number, GroupedEmployee>,
@@ -691,10 +706,12 @@ export default function LeaveBalanceComponent() {
 										typeof balance.available_days === "string"
 											? parseFloat(balance.available_days)
 											: balance.available_days || 0;
+
 									return sum + available;
 								}, 0);
 
 								let status: "good" | "low" | "overused" = "good";
+
 								if (totalAvailable < 0) {
 									status = "overused";
 								} else if (totalAvailable <= 5) {

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import PenaltiesTable from "@/components/common/tables/penalties/penalties-table";
 import { showErrorToast, penaltiesAPI } from "@/lib/utils";
-import { toast } from "sonner";
 import { type IEmployee, type IEmployeePenaltyFormData } from "@/types/types.utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import EmployeePenaltyDialog from "@/components/common/tables/penalties/employee-penalty-dialog";
@@ -24,6 +25,7 @@ export default function EmployeePenalties({ employee }: Props) {
 	const handleCreate = async (data: Partial<IEmployeePenaltyFormData>) => {
 		if (!data.penalty_type) {
 			toast.error("Please select a penalty type");
+
 			return;
 		}
 		setIsSending(true);

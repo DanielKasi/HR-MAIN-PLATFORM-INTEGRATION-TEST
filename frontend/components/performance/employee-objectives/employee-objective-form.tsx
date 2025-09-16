@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import type {
 	IEmployeeObjective,
 	IEmployeeObjectiveFormData,
 	IObjectiveStatus,
 } from "@/types/types.utils";
+import type { IKeyResult } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+
+import { PerformanceForm, type FormField } from "../common/performance-form";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { ObjectiveSelect } from "@/components/selects/objective-select";
 import { KEY_RESULTS_API } from "@/lib/utils";
-import type { IKeyResult } from "@/types/types.utils";
 
 interface EmployeeObjectiveFormProps {
 	initialData?: IEmployeeObjective;
@@ -37,6 +40,7 @@ export function EmployeeObjectiveForm({
 		const fetchKeyResults = async () => {
 			try {
 				const response = await KEY_RESULTS_API.getPaginated({});
+
 				setKeyResults(response.results);
 			} catch (error) {
 				console.error("Failed to fetch key results:", error);
@@ -81,12 +85,14 @@ export function EmployeeObjectiveForm({
 			validation: (value: string) => {
 				const startDate = new Date(value);
 				const today = new Date();
+
 				today.setHours(0, 0, 0, 0);
 
 				// Allow past dates for existing objectives
 				if (!initialData && startDate < today) {
 					return "Start date cannot be in the past";
 				}
+
 				return null;
 			},
 		},

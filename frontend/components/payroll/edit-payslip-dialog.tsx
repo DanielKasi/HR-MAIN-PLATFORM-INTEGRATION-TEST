@@ -1,6 +1,6 @@
-import { formatCurrency } from "@/lib/helpers";
-import { IPayslip, IPayslipFormData } from "@/types/types.utils";
 import { Loader2 } from "lucide-react";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 import {
 	Dialog,
@@ -10,12 +10,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import React, { useState } from "react";
-import { showErrorToast, updatePayslip } from "@/lib/utils";
-import { toast } from "sonner";
 import FormattedNumberInput from "../common/inputs/formatted-number-input";
+
+import { showErrorToast, updatePayslip } from "@/lib/utils";
+import { IPayslip, IPayslipFormData } from "@/types/types.utils";
+import { formatCurrency } from "@/lib/helpers";
 
 interface EditPayslipDialogProps {
 	isOpen: boolean;

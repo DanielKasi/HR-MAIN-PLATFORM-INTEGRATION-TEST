@@ -3,6 +3,11 @@
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { ArrowLeft, Upload, FileText, File, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useParams } from "next/navigation";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,13 +20,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, FileText, File, Plus, X, Loader2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
 import { getDocumentTemplates, getDocumentTypes, updateDocumentTemplate } from "@/lib/utils";
 import { IDocumentType, IDocumentTemplate, IDocumentTemplateFormData } from "@/types/types.utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 export default function EditTemplatePage() {
@@ -60,6 +60,7 @@ export default function EditTemplatePage() {
 
 			// Find the specific template
 			const currentTemplate = templates.find((t) => t.id === Number.parseInt(params.id as string));
+
 			if (currentTemplate) {
 				setTemplate(currentTemplate);
 				setFormData({
@@ -88,6 +89,7 @@ export default function EditTemplatePage() {
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0] || null;
+
 		setFormData((prev) => ({ ...prev, file }));
 	};
 

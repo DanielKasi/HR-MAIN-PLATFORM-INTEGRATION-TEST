@@ -1,8 +1,13 @@
 "use client";
 
 import type React from "react";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +21,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -27,17 +31,10 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	createDisciplinaryAction,
-	createDisciplineType,
-	getDisciplineTypes,
-	getPaginatedEmployees,
-} from "@/lib/utils";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { createDisciplinaryAction, createDisciplineType, getDisciplineTypes } from "@/lib/utils";
 import { selectSelectedInstitution, selectAttachedInstitutions } from "@/store/auth/selectors";
 import { IUserInstitution } from "@/types";
-import { IDisciplineTypeFormData, DisciplinaryActionForm, IEmployee } from "@/types/types.utils";
+import { IDisciplineTypeFormData, DisciplinaryActionForm } from "@/types/types.utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 
 interface IDisciplineType {
@@ -115,6 +112,7 @@ export default function DisciplinaryForm() {
 						name: type.name,
 						severity: type.severity as "low" | "medium" | "high" | "critical",
 					}));
+
 					setDisciplineTypes(formattedTypes);
 				} else {
 					setDisciplineTypes([]);
@@ -156,31 +154,38 @@ export default function DisciplinaryForm() {
 		for (const { field, name } of requiredFields) {
 			if (!field || field.trim() === "" || field === "0") {
 				toast.error(`${name} is required`);
+
 				return false;
 			}
 		}
 
 		if (disciplinaryAction.description.length < 10) {
 			toast.error("Description must be at least 10 characters long");
+
 			return false;
 		}
 
 		const incidentDate = new Date(disciplinaryAction.incident_date);
 		const today = new Date();
+
 		if (incidentDate > today) {
 			toast.error("Incident date cannot be in the future");
+
 			return false;
 		}
 
 		if (disciplinaryAction.follow_up_required && !disciplinaryAction.follow_up_date) {
 			toast.error("Follow-up date is required when follow-up is checked");
+
 			return false;
 		}
 
 		if (disciplinaryAction.follow_up_required && disciplinaryAction.follow_up_date) {
 			const followUpDate = new Date(disciplinaryAction.follow_up_date);
+
 			if (followUpDate < incidentDate) {
 				toast.error("Follow-up date cannot be before the incident date");
+
 				return false;
 			}
 		}
@@ -191,11 +196,13 @@ export default function DisciplinaryForm() {
 	const validateDisciplineTypeForm = (): boolean => {
 		if (!disciplineType.name.trim()) {
 			toast.error("Name is required");
+
 			return false;
 		}
 
 		if (disciplineType.name.length > 100) {
 			toast.error("Name cannot exceed 100 characters");
+
 			return false;
 		}
 
@@ -213,6 +220,7 @@ export default function DisciplinaryForm() {
 			const result = await createDisciplineType({
 				disciplineTypeData: disciplineType,
 			});
+
 			if (result) {
 				toast.success("Discipline type created successfully!");
 
@@ -244,6 +252,7 @@ export default function DisciplinaryForm() {
 				error instanceof Error
 					? error.message
 					: "Failed to create discipline type. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsAddingDisciplineType(false);
@@ -275,6 +284,7 @@ export default function DisciplinaryForm() {
 				error instanceof Error
 					? error.message
 					: "Failed to create disciplinary action. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

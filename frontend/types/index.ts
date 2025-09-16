@@ -1,5 +1,6 @@
 import { IBaseApprovable } from "./approvals.types";
 import { IInstitutionDocument } from "./types.utils";
+
 import { PERMISSION_CODES } from "@/constants";
 
 export interface IProductCategoryDetail {

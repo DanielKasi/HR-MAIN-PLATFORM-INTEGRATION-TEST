@@ -1,17 +1,19 @@
 "use client";
 
+import type { IObjective, IObjectiveFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Target, Users, CheckCircle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { OBJECTIVES_API } from "@/lib/utils";
-import type { IObjective, IObjectiveFormData } from "@/types/types.utils";
 import { ObjectivesTable } from "@/components/performance/objectives/objectives-table";
 import { ObjectiveModal } from "@/components/performance/objectives/objective-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Target, Users, CheckCircle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function ObjectivesPage() {
@@ -33,6 +35,7 @@ export default function ObjectivesPage() {
 			const response = await OBJECTIVES_API.getPaginated({
 				search: searchQuery || undefined,
 			});
+
 			setObjectives(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch objectives");

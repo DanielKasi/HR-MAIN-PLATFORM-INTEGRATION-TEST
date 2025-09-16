@@ -1,5 +1,9 @@
 "use client";
 
+import type { IBankAccount } from "@/types/types.utils";
+
+import { Search, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,8 +20,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Edit, Trash2, Loader2, Eye, MoreVertical } from "lucide-react";
-import type { IBankAccount } from "@/types/types.utils";
 
 interface BankAccountsTableProps {
 	bankAccounts: IBankAccount[];

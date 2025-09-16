@@ -4,22 +4,13 @@
 import type { Branch } from "@/types";
 
 import { useEffect, useState } from "react";
-import {
-	Edit,
-	MapPin,
-	Plus,
-	Search,
-	Trash,
-	Loader2,
-	Eye,
-	MoreVertical,
-	ArrowLeft,
-} from "lucide-react";
+import { Edit, MapPin, Plus, Search, Trash, Loader2, MoreVertical, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
 	Table,
@@ -53,7 +44,6 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { PERMISSION_CODES } from "@/constants";
 import { fetchUpToDateInstitution } from "@/store/auth/actions";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useRouter } from "next/navigation";
 
 export default function BranchesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -87,12 +77,14 @@ export default function BranchesPage() {
 		if (!selectedInstitution?.id) {
 			setBranches([]);
 			setIsLoading(false);
+
 			return;
 		}
 
 		setIsLoading(true);
 		try {
 			const response = await apiRequest.get(`institution/${selectedInstitution.id}/branch`);
+
 			if (response.data && typeof response.data === "object") {
 				if (Array.isArray(response.data)) {
 					setBranches(response.data);
@@ -133,6 +125,7 @@ export default function BranchesPage() {
 	const handleAddBranch = async () => {
 		if (!selectedInstitution?.id) {
 			toast.error("No institution selected");
+
 			return;
 		}
 

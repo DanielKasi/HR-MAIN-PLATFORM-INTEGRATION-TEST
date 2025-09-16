@@ -2,6 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Calendar } from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,14 +18,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save, Calendar } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import { toast } from "sonner";
-import { IProjectTaskFormData, IProjectTaskStatus } from "@/types/types.utils";
+import { IProjectTaskFormData } from "@/types/types.utils";
 
 export default function AddTaskPage() {
 	const router = useRouter();
@@ -60,6 +61,7 @@ export default function AddTaskPage() {
 		}
 
 		const newErrors: Partial<Record<keyof IProjectTaskFormData, string>> = {};
+
 		if (!formData.task_name) {
 			newErrors.task_name = "This field is required.";
 		}
@@ -78,6 +80,7 @@ export default function AddTaskPage() {
 
 		if (Object.keys(newErrors).length > 0) {
 			setErrors(newErrors);
+
 			return;
 		}
 

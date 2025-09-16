@@ -1,27 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import type { IAssetReturn } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-	ArrowLeft,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Package,
-	User,
-	ArrowDown,
-	Activity,
-	MessageSquare,
-	RotateCcw,
-} from "lucide-react";
+import { ArrowLeft, RefreshCw, Package, User, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetReturn } from "@/types/types.utils";
 import { EditAssetReturnDialog } from "@/components/asset-returns/edit-asset-return-dialog";
 import { DeleteAssetReturnDialog } from "@/components/asset-returns/delete-asset-return-dialog";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
@@ -82,6 +72,7 @@ const AssetReturnDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetReturnById(parseInt(returnId));
+
 			setAssetReturn(response);
 		} catch (error) {
 			console.error("Error fetching return details:", error);

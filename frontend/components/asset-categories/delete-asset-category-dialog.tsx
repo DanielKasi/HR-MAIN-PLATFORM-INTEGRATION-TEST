@@ -1,7 +1,11 @@
 "use client";
 
+import type { IAssetCategory } from "@/types/types.utils";
+
 import { useState } from "react";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,9 +15,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { assetCategoriesAPI } from "@/lib/utils";
-import type { IAssetCategory } from "@/types/types.utils";
 
 interface DeleteAssetCategoryDialogProps {
 	assetCategory: IAssetCategory;

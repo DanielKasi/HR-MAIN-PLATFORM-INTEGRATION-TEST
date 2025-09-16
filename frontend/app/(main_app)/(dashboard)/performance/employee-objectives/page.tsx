@@ -1,17 +1,19 @@
 "use client";
 
+import type { IEmployeeObjective, IEmployeeObjectiveFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Users, Target, TrendingUp, AlertTriangle, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EMPLOYEE_OBJECTIVES_API, showErrorToast } from "@/lib/utils";
-import type { IEmployeeObjective, IEmployeeObjectiveFormData } from "@/types/types.utils";
 import { EmployeeObjectivesTable } from "@/components/performance/employee-objectives/employee-objective-table";
 import { EmployeeObjectiveModal } from "@/components/performance/employee-objectives/employee-objective-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Users, Target, TrendingUp, AlertTriangle, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function EmployeeObjectivesPage() {
@@ -35,6 +37,7 @@ export default function EmployeeObjectivesPage() {
 			const response = await EMPLOYEE_OBJECTIVES_API.getPaginated({
 				search: searchQuery || undefined,
 			});
+
 			setEmployeeObjectives(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch employee objectives");

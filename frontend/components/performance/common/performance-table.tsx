@@ -3,6 +3,8 @@
 import type React from "react";
 
 import { useState } from "react";
+import { MoreHorizontal, Search, Plus } from "lucide-react";
+
 import {
 	Table,
 	TableBody,
@@ -14,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Search, Plus } from "lucide-react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -134,7 +135,7 @@ export function PerformanceTable<T extends { id: number | string }>({
 									{column.label}
 								</TableHead>
 							))}
-							{actions.length > 0 && <TableHead className="w-12"></TableHead>}
+							{actions.length > 0 && <TableHead className="w-12" />}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -145,7 +146,7 @@ export function PerformanceTable<T extends { id: number | string }>({
 									className="text-center py-8"
 								>
 									<div className="flex items-center justify-center">
-										<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+										<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
 										<span className="ml-2 text-slate-600">Loading...</span>
 									</div>
 								</TableCell>

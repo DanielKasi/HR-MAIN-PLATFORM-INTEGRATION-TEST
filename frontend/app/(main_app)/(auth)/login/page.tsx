@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ShoppingCart } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
+import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +25,6 @@ import { selectUser, selectAuthError, selectUserLoading } from "@/store/auth/sel
 import { clearAuthError, loginStart } from "@/store/auth/actions";
 import FixedLoader from "@/components/fixed-loader";
 import { showErrorToast } from "@/lib/utils";
-import { Icon } from "@iconify/react";
 import { AUTH_API } from "@/utils/auth-utils";
 
 export default function LoginPage() {

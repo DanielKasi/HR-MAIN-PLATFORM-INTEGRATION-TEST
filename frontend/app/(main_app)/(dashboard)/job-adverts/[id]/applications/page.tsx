@@ -1,11 +1,52 @@
 "use client";
 
-import { DialogTrigger } from "@/components/ui/dialog";
-
 import type React from "react";
+import type {
+	JobApplication,
+	JobApplicationFormData,
+	JobPositionAdvert,
+} from "@/types/types.utils";
+import type {
+	IInterviewStage,
+	IInterviewFormData,
+	IInterviewStageFormData,
+} from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import {
+	Plus,
+	Mail,
+	Phone,
+	MapPin,
+	Calendar,
+	User,
+	Upload,
+	FileText,
+	AlertCircle,
+	MoreVertical,
+	Edit,
+	Eye,
+	X,
+	Users,
+	Check,
+	ChevronUp,
+	ChevronDown,
+	ChevronLeft,
+	ChevronRight,
+	Filter,
+	Building,
+	Search,
+	CalendarDays,
+} from "lucide-react";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -33,31 +74,6 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Plus,
-	Mail,
-	Phone,
-	MapPin,
-	Calendar,
-	User,
-	Upload,
-	FileText,
-	AlertCircle,
-	MoreVertical,
-	Edit,
-	Eye,
-	X,
-	Users,
-	Check,
-	ChevronUp,
-	ChevronDown,
-	ChevronLeft,
-	ChevronRight,
-	Filter,
-	Building,
-	Search,
-	CalendarDays,
-} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
 	AlertDialog,
@@ -75,40 +91,15 @@ import {
 	getJobPositionAdverts,
 	updateJobApplicationStatus,
 } from "@/lib/utils";
-import type {
-	JobApplication,
-	JobApplicationFormData,
-	JobPositionAdvert,
-	IPaginatedResponse,
-} from "@/types/types.utils";
 import {
 	selectUser,
 	selectSelectedInstitution,
 	selectSelectedBranch,
 } from "@/store/auth/selectors";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
-import ProtectedComponent from "@/components/ProtectedComponent";
-import { PERMISSION_CODES } from "@/constants";
-import {
-	createInterviewStage,
-	getInterviewStages,
-	fetchEmployees,
-	createInterview,
-} from "@/lib/utils";
-import type {
-	IInterviewStage,
-	IEmployee,
-	IInterviewFormData,
-	IInterviewStageFormData,
-} from "@/types/types.utils";
+import { createInterviewStage, getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 
@@ -206,6 +197,7 @@ export default function ApplicationsPage() {
 			const stagesResponse = await getInterviewStages({ institutionId: selectedInstitution.id });
 
 			let stagesArray: IInterviewStage[] = [];
+
 			if (stagesResponse && "results" in stagesResponse && Array.isArray(stagesResponse.results)) {
 				stagesArray = stagesResponse.results;
 			} else if (Array.isArray(stagesResponse)) {
@@ -217,10 +209,12 @@ export default function ApplicationsPage() {
 				(stage) =>
 					stage.job_position_advert === selectedApplicationForInterview.job_position_advert,
 			);
+
 			setInterviewStages(filteredStages);
 
 			// Set default interview date to tomorrow at 10 AM
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 			setInterviewFormData((prev) => ({
@@ -238,10 +232,12 @@ export default function ApplicationsPage() {
 
 		if (!selectedInstitution || !selectedApplicationForInterview) {
 			toast.error("Missing organization or application information");
+
 			return;
 		}
 
 		const newStageErrors: any = {};
+
 		if (!stageFormData.name.trim()) {
 			newStageErrors.name = "Stage name is required";
 		}
@@ -251,6 +247,7 @@ export default function ApplicationsPage() {
 
 		if (Object.keys(newStageErrors).length > 0) {
 			setStageErrors(newStageErrors);
+
 			return;
 		}
 
@@ -295,6 +292,7 @@ export default function ApplicationsPage() {
 
 		// Validate form
 		const errors: any = {};
+
 		if (!interviewFormData.interview_stage || interviewFormData.interview_stage === 0) {
 			errors.interview_stage = "Please select an interview stage";
 		}
@@ -303,6 +301,7 @@ export default function ApplicationsPage() {
 		} else {
 			const interviewDate = new Date(interviewFormData.interview_date);
 			const now = new Date();
+
 			if (interviewDate <= now) {
 				errors.interview_date = "Interview date must be in the future";
 			}
@@ -313,11 +312,13 @@ export default function ApplicationsPage() {
 
 		if (Object.keys(errors).length > 0) {
 			setInterviewErrors(errors);
+
 			return;
 		}
 
 		if (!userData?.id) {
 			toast.error("User information not available. Please refresh and try again.");
+
 			return;
 		}
 
@@ -325,10 +326,12 @@ export default function ApplicationsPage() {
 
 		try {
 			let interviewTime = "";
+
 			if (interviewFormData.interview_date) {
 				const dateTime = new Date(interviewFormData.interview_date);
 				const hours = dateTime.getHours().toString().padStart(2, "0");
 				const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+
 				interviewTime = `${hours}:${minutes}`;
 			}
 
@@ -475,6 +478,7 @@ export default function ApplicationsPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
@@ -540,6 +544,7 @@ export default function ApplicationsPage() {
 			}
 
 			const comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
+
 			return sortDirection === "asc" ? comparison : -comparison;
 		});
 
@@ -674,46 +679,55 @@ export default function ApplicationsPage() {
 		// Simple validation checks
 		if (!formData.applicant_name.trim()) {
 			setError("Please enter the applicant's name");
+
 			return;
 		}
 
 		if (!formData.applicant_email.trim()) {
 			setError("Please enter the applicant's email");
+
 			return;
 		}
 
 		if (!formData.address.trim()) {
 			setError("Please enter the applicant's address");
+
 			return;
 		}
 
 		if (!formData.country.trim()) {
 			setError("Please enter the country");
+
 			return;
 		}
 
 		if (formData.job_position_advert === 0) {
 			setError("Please select a job position");
+
 			return;
 		}
 
 		if (formData.source === "head_hunt" && !formData.recommended_by) {
 			setError("Please select which employee head hunted this candidate");
+
 			return;
 		}
 
 		if (!formData.resume) {
 			setError("Please upload a resume");
+
 			return;
 		}
 
 		if (!selectedInstitution || !selectedBranch) {
 			setError("Missing organization or branch information");
+
 			return;
 		}
 
 		if (!userData?.id) {
 			setError("User information not available. Please refresh and try again.");
+
 			return;
 		}
 
@@ -742,6 +756,7 @@ export default function ApplicationsPage() {
 				// Maintain sorted order when adding new application
 				setApplications((prev) => {
 					const updated = [newApplication, ...prev];
+
 					return updated.sort(
 						(a, b) =>
 							new Date(b.application_date).getTime() - new Date(a.application_date).getTime(),
@@ -805,6 +820,7 @@ export default function ApplicationsPage() {
 				const statusCounts = currentApplications.reduce(
 					(acc, a) => {
 						acc[a.status] = (acc[a.status] || 0) + 1;
+
 						return acc;
 					},
 					{} as Record<string, number>,
@@ -839,6 +855,7 @@ export default function ApplicationsPage() {
 		applicationIds?: number[],
 	) => {
 		const idsToProcess = applicationIds || selectedApplications;
+
 		if (action === "shortlisted") {
 			setIsBulkShortlisting(true);
 		}
@@ -890,6 +907,7 @@ export default function ApplicationsPage() {
 	) => {
 		if (selectedApplications.length === 0) {
 			toast.error("Please select applications first");
+
 			return;
 		}
 
@@ -901,16 +919,19 @@ export default function ApplicationsPage() {
 
 			if (shortlistedApps.length === 0) {
 				toast.error("Please select shortlisted applications to schedule interviews");
+
 				return;
 			}
 
 			// Set default date to tomorrow at 10 AM
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 
 			await fetchInterviewData();
 			setShowBulkScheduleDialog(true);
+
 			return;
 		}
 
@@ -949,12 +970,14 @@ export default function ApplicationsPage() {
 			toast.error(
 				`No eligible applications selected. Only ${statusRequirement} applications can be ${actionText}.`,
 			);
+
 			return;
 		}
 
 		// Show different message if not all selected apps are eligible
 		if (eligibleApps.length < selectedApplications.length) {
 			const skippedCount = selectedApplications.length - eligibleApps.length;
+
 			toast.warning(
 				`${skippedCount} application(s) skipped - only eligible applications will be ${actionText}.`,
 			);
@@ -967,6 +990,7 @@ export default function ApplicationsPage() {
 				action,
 				count: eligibleApps.length, // Use eligible apps count, not total selected
 			});
+
 			return;
 		}
 
@@ -1021,6 +1045,7 @@ export default function ApplicationsPage() {
 	) => {
 		if (action === "shortlisted" || action === "rejected") {
 			const application = applications.find((app) => app.id === applicationId);
+
 			if (application) {
 				setConfirmAction({
 					isOpen: true,
@@ -1028,6 +1053,7 @@ export default function ApplicationsPage() {
 					applicantName: application.applicant_name,
 					action: action as "shortlisted" | "rejected",
 				});
+
 				return;
 			}
 		}
@@ -1112,16 +1138,16 @@ export default function ApplicationsPage() {
 					<CardHeader className="border-b">
 						<div className="flex justify-between gap-8 items-center">
 							<div className="flex items-center justify-start gap-4">
-								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 								<div className="space-y-2">
-									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 								</div>
 							</div>
 							<div className="flex gap-2">
-								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 							</div>
 						</div>
 					</CardHeader>
@@ -1295,6 +1321,7 @@ export default function ApplicationsPage() {
 								{/* Your existing review button */}
 								{selectedApplications.some((id) => {
 									const app = applications.find((a) => a.id === id);
+
 									return app?.status === "new";
 								}) && (
 									<Button
@@ -1311,6 +1338,7 @@ export default function ApplicationsPage() {
 								{/* Your existing shortlist button */}
 								{selectedApplications.some((id) => {
 									const app = applications.find((a) => a.id === id);
+
 									return app?.status === "reviewed";
 								}) && (
 									<Button
@@ -1337,6 +1365,7 @@ export default function ApplicationsPage() {
 								{/* UPDATED: Schedule Interview button - now works for multiple selections */}
 								{selectedApplications.some((id) => {
 									const app = applications.find((a) => a.id === id);
+
 									return app?.status === "shortlisted";
 								}) && (
 									<Button
@@ -1349,6 +1378,7 @@ export default function ApplicationsPage() {
 										Schedule Interview
 										{selectedApplications.filter((id) => {
 											const app = applications.find((a) => a.id === id);
+
 											return app?.status === "shortlisted";
 										}).length > 1
 											? "s"
@@ -1359,6 +1389,7 @@ export default function ApplicationsPage() {
 								{/* Your existing reject button */}
 								{selectedApplications.some((id) => {
 									const app = applications.find((a) => a.id === id);
+
 									return app?.status === "new" || app?.status === "reviewed";
 								}) && (
 									<Button
@@ -1440,6 +1471,7 @@ export default function ApplicationsPage() {
 															const statusCounts = currentApplications.reduce(
 																(acc, a) => {
 																	acc[a.status] = (acc[a.status] || 0) + 1;
+
 																	return acc;
 																},
 																{} as Record<string, number>,
@@ -1481,6 +1513,7 @@ export default function ApplicationsPage() {
 														const statusCounts = currentApplications.reduce(
 															(acc, a) => {
 																acc[a.status] = (acc[a.status] || 0) + 1;
+
 																return acc;
 															},
 															{} as Record<string, number>,
@@ -1497,6 +1530,7 @@ export default function ApplicationsPage() {
 														} else if (hasShortlisted && hasNewOrReviewed) {
 															return "Select new and reviewed applications (protecting shortlisted)";
 														}
+
 														return "Select applications";
 													})()}
 												/>
@@ -1740,6 +1774,7 @@ export default function ApplicationsPage() {
 								<div className="flex items-center gap-1">
 									{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
 										let pageNumber;
+
 										if (totalPages <= 5) {
 											pageNumber = i + 1;
 										} else if (currentPage <= 3) {
@@ -2022,6 +2057,7 @@ export default function ApplicationsPage() {
 												value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
 												onValueChange={(values) => {
 													const selectedValue = Array.isArray(values) ? values[0] : values;
+
 													handleInputChange(
 														"recommended_by",
 														selectedValue ? Number(selectedValue) : null,
@@ -2267,6 +2303,7 @@ export default function ApplicationsPage() {
 							{
 								selectedApplications.filter((id) => {
 									const app = applications.find((a) => a.id === id);
+
 									return app?.status === "shortlisted";
 								}).length
 							}{" "}
@@ -2298,11 +2335,13 @@ export default function ApplicationsPage() {
 
 							if (shortlistedApps.length === 0) {
 								toast.error("No shortlisted applications selected");
+
 								return;
 							}
 
 							// Validate form
 							const errors: any = {};
+
 							if (
 								!bulkInterviewFormData.interview_stage ||
 								bulkInterviewFormData.interview_stage === 0
@@ -2314,6 +2353,7 @@ export default function ApplicationsPage() {
 							} else {
 								const interviewDate = new Date(bulkInterviewFormData.interview_date);
 								const now = new Date();
+
 								if (interviewDate <= now) {
 									errors.interview_date = "Interview date must be in the future";
 								}
@@ -2324,11 +2364,13 @@ export default function ApplicationsPage() {
 
 							if (Object.keys(errors).length > 0) {
 								setInterviewErrors(errors);
+
 								return;
 							}
 
 							if (!userData?.id) {
 								toast.error("User information not available. Please refresh and try again.");
+
 								return;
 							}
 
@@ -2343,9 +2385,11 @@ export default function ApplicationsPage() {
 									);
 
 									let interviewTime = "";
+
 									if (bulkInterviewFormData.interview_date) {
 										const hours = interviewDateTime.getHours().toString().padStart(2, "0");
 										const minutes = interviewDateTime.getMinutes().toString().padStart(2, "0");
+
 										interviewTime = `${hours}:${minutes}`;
 									}
 
@@ -2559,6 +2603,7 @@ export default function ApplicationsPage() {
 									isBulkScheduling ||
 									selectedApplications.filter((id) => {
 										const app = applications.find((a) => a.id === id);
+
 										return app?.status === "shortlisted";
 									}).length === 0
 								}
@@ -2627,6 +2672,7 @@ export default function ApplicationsPage() {
 											? values.map((v) => Number(v))
 											: [Number(values)];
 										const uniqueValues = [...new Set(numberValues)];
+
 										if (uniqueValues.length !== numberValues.length) {
 											toast.info("Duplicate interviewers removed");
 										}

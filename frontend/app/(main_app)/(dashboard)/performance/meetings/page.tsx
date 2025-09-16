@@ -1,17 +1,19 @@
 "use client";
 
+import type { IMeeting, IMeetingFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Calendar, Video, MapPin, Users, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { MEETINGS_API, showErrorToast } from "@/lib/utils";
-import type { IMeeting, IMeetingFormData } from "@/types/types.utils";
 import { MeetingsTable } from "@/components/performance/meetings/meetings-table";
 import { MeetingModal } from "@/components/performance/meetings/meetings-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Calendar, Video, MapPin, Users, ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 export default function MeetingsPage() {
@@ -33,6 +35,7 @@ export default function MeetingsPage() {
 			const response = await MEETINGS_API.getPaginated({
 				search: searchQuery || undefined,
 			});
+
 			setMeetings(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch meetings");

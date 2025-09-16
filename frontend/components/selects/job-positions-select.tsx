@@ -1,11 +1,12 @@
 "use client";
 
+import { useSelector } from "react-redux";
+
 import { IJobPosition } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { getPaginatedJobPositions, getPaginatedJobPositionsFromUrl } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 export interface JobPositionSearchableSelectProps {
@@ -48,6 +49,7 @@ export const JobPositionSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await getPaginatedJobPositions({ institutionId: currentInstitution.id, ...query });
 	};
 

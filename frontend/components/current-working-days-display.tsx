@@ -1,10 +1,12 @@
 "use client";
 
+import type { IInstitutionWorkingDays } from "@/types/types.utils";
+
+import { Calendar, Clock } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { IInstitutionWorkingDays } from "@/types/types.utils";
 
 interface CurrentWorkingDaysDisplayProps {
 	workingDays: IInstitutionWorkingDays | null;
@@ -21,6 +23,7 @@ export function CurrentWorkingDaysDisplay({ workingDays }: CurrentWorkingDaysDis
 			SAT: "bg-indigo-100 text-indigo-700 border-indigo-200",
 			SUN: "bg-red-100 text-red-700 border-red-200",
 		};
+
 		return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
 	};
 

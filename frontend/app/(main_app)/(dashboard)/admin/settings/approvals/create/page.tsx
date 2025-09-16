@@ -1,9 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-
 import type {
 	Action,
 	ContentTypeLite,
@@ -13,7 +9,15 @@ import type {
 	ApproverGroup,
 	ApproverGroupFormData,
 } from "@/types/approvals.types";
+import type { Role, UserProfile } from "@/types";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useSelector } from "react-redux";
+import { ArrowLeft, Plus, CheckCircle2, Users, Shield, FileText, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	Dialog,
@@ -31,10 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MultiSelectPopover } from "@/components/common/multi-select-popover";
 import FixedLoader from "@/components/fixed-loader";
-import { getRoles, PROFILES_API, showErrorToast, showSuccessToast, usersAPI } from "@/lib/utils";
-import { ArrowLeft, Plus, CheckCircle2, Users, Shield, FileText, Trash2 } from "lucide-react";
-import type { Role, UserProfile } from "@/types";
-import { toast } from "sonner";
+import { getRoles, PROFILES_API, showErrorToast, showSuccessToast } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
@@ -103,6 +104,7 @@ export default function ApprovalCreatePage() {
 
 		try {
 			const response = await APPROVAL_DOCUMENTS_API.fetchById({ id: createdApprovalDocument.id });
+
 			setCreatedApprovalDocument(response);
 		} catch (error) {
 			// If there's an error or no existing document, continue with creation flow
@@ -162,15 +164,18 @@ export default function ApprovalCreatePage() {
 	const createApprovalDocumentWithLevels = async () => {
 		if (createdApprovalDocument) {
 			toast.error("Another approval already exists for this instance");
+
 			return;
 		}
 		if (!currentInstitution) {
 			setError("Missing institution");
+
 			return;
 		}
 
 		if (selectedActionIds.length === 0) {
 			setError("Please select at least one action that requires approval");
+
 			return;
 		}
 
@@ -185,6 +190,7 @@ export default function ApprovalCreatePage() {
 			};
 
 			const createdDoc = await APPROVAL_DOCUMENTS_API.create(documentData);
+
 			setCreatedApprovalDocument(createdDoc);
 			showSuccessToast("Approval document created successfully!");
 		} catch (e: any) {
@@ -198,16 +204,19 @@ export default function ApprovalCreatePage() {
 	const createNewApproverGroup = async () => {
 		if (!currentInstitution) {
 			toast.error("Missing institution");
+
 			return;
 		}
 
 		if (!newGroupName.trim()) {
 			toast.error("Group name is required");
+
 			return;
 		}
 
 		if (selectedGroupUserIds.length === 0 && selectedGroupRoleIds.length === 0) {
 			toast.error("Please select at least one user or role for the approver group");
+
 			return;
 		}
 
@@ -223,6 +232,7 @@ export default function ApprovalCreatePage() {
 			};
 
 			const createdGroup = await APPROVER_GROUPS_API.create(groupData);
+
 			setApproverGroups((prev) => [...prev, createdGroup]);
 			resetApproverGroupDialog();
 			showSuccessToast("Approver group created successfully!");
@@ -244,16 +254,19 @@ export default function ApprovalCreatePage() {
 	const addLevel = async () => {
 		if (!createdApprovalDocument) {
 			toast.error("No approval has been created yet !");
+
 			return;
 		}
 
 		if (!newLevelName.trim()) {
 			toast.error("Level name is required");
+
 			return;
 		}
 
 		if (selectedApproverGroupIds.length === 0) {
 			toast.error("Please select at least one approver group");
+
 			return;
 		}
 

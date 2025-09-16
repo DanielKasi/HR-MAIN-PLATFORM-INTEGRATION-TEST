@@ -1,10 +1,15 @@
 "use client";
 
+import type { IAsset, IAssetCategory } from "@/types/types.utils";
+
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { MoreVertical, Edit, Trash2, Eye, Package } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Icon } from "@iconify/react";
+
 import { PERMISSION_CODES } from "@/constants";
-import { hasPermission } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,18 +34,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateAssetDialog } from "@/components/assets/create-asset-dialog";
 import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
 import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { useRouter } from "next/navigation";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset, IAssetCategory } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
-import { Icon } from "@iconify/react";
 import ProtectedPage from "@/components/ProtectedPage";
 
 const getStatusColor = (status: string) => {
@@ -184,6 +185,7 @@ const AssetsComponent = () => {
 					<PaginatedTableWrapper<IAsset>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await assetsAPI.getPaginated({
 								institutionId: selectedInstitution.id,
 								page: 1,

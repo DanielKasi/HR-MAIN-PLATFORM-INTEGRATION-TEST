@@ -1,10 +1,12 @@
 "use client";
 
 import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useRef, useState } from "react";
+
+import { Button } from "../ui/button";
+
 import { selectLogoutWarningVisible } from "@/store/auth/selectors";
 import { cancelLogout, confirmLogout } from "@/store/auth/actions";
-import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
 
 const LogoutWarningPopup: React.FC = () => {
 	const [timer, setTimer] = useState<number>(60000);
@@ -26,6 +28,7 @@ const LogoutWarningPopup: React.FC = () => {
 				}
 			}, 1000);
 		}
+
 		return () => {
 			if (timerRef.current) {
 				clearInterval(timerRef.current);

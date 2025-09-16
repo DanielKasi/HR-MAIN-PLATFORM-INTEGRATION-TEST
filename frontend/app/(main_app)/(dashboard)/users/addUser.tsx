@@ -6,6 +6,7 @@ import type { Role, Branch } from "@/types";
 import { useEffect, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import apiRequest, { apiPost } from "@/lib/apiRequest";
 import {
@@ -24,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchInstitutionBranchesFromAPI, getDefaultInstitutionId } from "@/lib/helpers";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
 
 interface AddUserFormProps {
 	onAddSuccess?: () => void;
@@ -61,6 +61,7 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 	const fetchBranches = async () => {
 		try {
 			const response = await fetchInstitutionBranchesFromAPI();
+
 			setBranches(response.data.results as Branch[]);
 		} catch (error) {
 			console.error("Error fetching branches:", error);
@@ -113,16 +114,19 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 	const handleSubmit = async () => {
 		if (!fullName.trim()) {
 			toast.error("Please enter a full name");
+
 			return;
 		}
 
 		if (!email.trim()) {
 			toast.error("Please enter an email address");
+
 			return;
 		}
 
 		if (!selectedRoleId) {
 			toast.error("Please select a role for the user");
+
 			return;
 		}
 

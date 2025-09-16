@@ -1,6 +1,10 @@
 "use client";
 
+import type { IAssetReturn } from "@/types/types.utils";
+
 import { useState } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,9 +14,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetReturn } from "@/types/types.utils";
 
 interface DeleteAssetReturnDialogProps {
 	open: boolean;

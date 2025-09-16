@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import type { ApprovableEntityStatus, Approval, ApprovalTask } from "@/types/approvals.types";
+
+import { useState } from "react";
 import {
 	CheckCircle,
 	Clock,
@@ -17,11 +15,13 @@ import {
 	ChevronDown,
 	ChevronUp,
 } from "lucide-react";
-
-import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils";
-import type { ApprovableEntityStatus, Approval, ApprovalTask } from "@/types/approvals.types";
-
 import { useSelector } from "react-redux";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { APPROVAL_TASKS_API } from "@/lib/api/approvals/utils";
 import { selectUser } from "@/store/auth/selectors";
 import { formatTransactionDate } from "@/lib/helpers";
 
@@ -64,6 +64,7 @@ export function ApprovalWorkflow({
 		setIsProcessing(true);
 		try {
 			let updatedTask: ApprovalTask;
+
 			if (showCommentFor.action === "approve") {
 				updatedTask = await APPROVAL_TASKS_API.approve({
 					id: showCommentFor.taskId,

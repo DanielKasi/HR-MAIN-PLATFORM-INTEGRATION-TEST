@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, X, Loader2 } from "lucide-react";
+
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +97,7 @@ export function MultiSelectBranches({
 									onClick={(e) => {
 										e.stopPropagation();
 										const branch = branches.find((b) => b.branch_name === name);
+
 										if (branch) handleRemoveBranch(branch.id);
 									}}
 								>

@@ -1,16 +1,7 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+import type { OffboardingData } from "@/types/types.utils";
+
 import {
 	PieChart,
 	Pie,
@@ -22,10 +13,12 @@ import {
 	CartesianGrid,
 	ResponsiveContainer,
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Users, Clock, CheckCircle, Calendar } from "lucide-react";
-import type { OffboardingData } from "@/types/types.utils";
 import { useEffect, useState } from "react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getOffboardingDashboard } from "@/lib/utils";
 
 const statusColors = {
@@ -43,6 +36,7 @@ export default function OffboardingDashboard() {
 		async function fetchData() {
 			try {
 				const dashboardData = await getOffboardingDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to fetch data");
@@ -58,7 +52,7 @@ export default function OffboardingDashboard() {
 		return (
 			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
 					<p className="text-muted-foreground">Loading dashboard...</p>
 				</div>
 			</div>

@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
-
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Calendar, X, Save, RotateCcw, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import type {
 	IBranchDay,
 	IBranchWorkingDays,
 	IInstitutionWorkingDays,
 	ISystemWorkingDay,
 } from "@/types/types.utils";
+
+import React, { useState } from "react";
+import { Calendar, X, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface WorkingDaysManagerProps {
 	scope:
@@ -44,6 +45,7 @@ export function WorkingDaysManager({
 	React.useEffect(() => {
 		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
 			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+
 			setSelectedDays(dayIds);
 			setHasChanges(false);
 		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days) {
@@ -58,6 +60,7 @@ export function WorkingDaysManager({
 		if (scope.type === "institution" && scope.institutionWorkingDays?.days && !isAutoSaving) {
 			const currentDayIds = scope.institutionWorkingDays?.days.map((day) => day.id).sort();
 			const selectedDayIds = [...selectedDays].sort();
+
 			setHasChanges(JSON.stringify(currentDayIds) !== JSON.stringify(selectedDayIds));
 		} else if (scope.type === "branch" && scope.branchWorkingDays?.branch_days && !isAutoSaving) {
 			// Compare by day_id and day_type
@@ -65,6 +68,7 @@ export function WorkingDaysManager({
 				.map((d) => `${d.day_id}-${d.day_type}`)
 				.sort();
 			const selected = selectedBranchDays.map((d) => `${d.day_id}-${d.day_type}`).sort();
+
 			setHasChanges(JSON.stringify(current) !== JSON.stringify(selected));
 		}
 	}, [selectedDays, selectedBranchDays, scope, isAutoSaving]);
@@ -83,6 +87,7 @@ export function WorkingDaysManager({
 			SAT: "bg-indigo-100 text-indigo-700 border-indigo-200",
 			SUN: "bg-red-100 text-red-700 border-red-200",
 		};
+
 		return colors[dayCode as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200";
 	};
 
@@ -96,6 +101,7 @@ export function WorkingDaysManager({
 			SAT: "S",
 			SUN: "S",
 		};
+
 		return icons[dayCode as keyof typeof icons] || dayCode[0];
 	};
 
@@ -104,6 +110,7 @@ export function WorkingDaysManager({
 		setRemovingDayId(dayId);
 		setIsAutoSaving(true);
 		const newSelectedDays = selectedDays.filter((id) => id !== dayId);
+
 		setSelectedDays(newSelectedDays);
 		try {
 			await onUpdate(newSelectedDays);
@@ -120,6 +127,7 @@ export function WorkingDaysManager({
 		setAddingDayId(dayId);
 		setIsAutoSaving(true);
 		const newSelectedDays = [...selectedDays, dayId];
+
 		setSelectedDays(newSelectedDays);
 		try {
 			await onUpdate(newSelectedDays);
@@ -166,6 +174,7 @@ export function WorkingDaysManager({
 				day_type: dayType,
 			},
 		];
+
 		setSelectedBranchDays(newSelectedBranchDays);
 		try {
 			await onUpdate({ action: "add", dayId, dayType });
@@ -199,6 +208,7 @@ export function WorkingDaysManager({
 	const handleReset = () => {
 		if (scope.type === "institution" && scope.institutionWorkingDays?.days) {
 			const dayIds = scope.institutionWorkingDays.days.map((day) => day.id);
+
 			setSelectedDays(dayIds);
 		}
 	};
@@ -211,7 +221,7 @@ export function WorkingDaysManager({
 		return (
 			<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
 				<div className="p-6 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2"></h2>
+					<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
 				</div>
 				<div className="p-6">
 					<div className="text-center py-8">
@@ -233,7 +243,7 @@ export function WorkingDaysManager({
 	return (
 		<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
 			<div className="p-6 border-b border-gray-200">
-				<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2"></h2>
+				<h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2" />
 				<p className="text-sm text-gray-600 mt-1">
 					{scope.type === "institution"
 						? "Click the plus (+) button on unselected days to add them, or click the cross (×) to remove selected days instantly."
@@ -251,6 +261,7 @@ export function WorkingDaysManager({
 					{sortedDays.map((day) => {
 						if (scope.type === "institution") {
 							const isSelected = selectedDays.includes(day.id);
+
 							return (
 								<div key={day.id} className="relative">
 									<div className="text-center transition-all duration-200 rounded-lg p-2">
@@ -318,6 +329,7 @@ export function WorkingDaysManager({
 								(d) => d.day_name.toLowerCase() === day.day_name.toLowerCase(),
 							);
 							const isSelected = !!branchDay;
+
 							return (
 								<div key={day.id} className="relative">
 									<div className="text-center transition-all duration-200 rounded-lg p-2">

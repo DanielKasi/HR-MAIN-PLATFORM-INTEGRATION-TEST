@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect, forwardRef } from "react";
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import type {
 	IObjective,
 	IObjectiveFormData,
@@ -9,13 +7,18 @@ import type {
 	IKeyResult,
 	IKeyResultFormData,
 } from "@/types/types.utils";
+
+import { useState, useEffect, forwardRef } from "react";
 import { useSelector } from "react-redux";
+import { Plus } from "lucide-react";
+
+import { PerformanceForm, type FormField } from "../common/performance-form";
+import { KeyResultModal } from "../key-results/key-results-modal";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { KEY_RESULTS_API } from "@/lib/utils";
-import { KeyResultModal } from "../key-results/key-results-modal";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
 interface ObjectiveFormProps {
 	initialData?: IObjective;
@@ -35,6 +38,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 		const fetchKeyResults = async () => {
 			try {
 				const response = await KEY_RESULTS_API.getPaginated({});
+
 				setKeyResults(response.results);
 			} catch (error) {
 				console.error("Failed to fetch key results:", error);
@@ -88,6 +92,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				required: true,
 				validation: (value: string) => {
 					if (value.length < 5) return "Objective name must be at least 5 characters";
+
 					return null;
 				},
 			},
@@ -98,6 +103,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				required: true,
 				validation: (value: string) => {
 					if (value.length < 5) return "Objective name must be at least 5 characters";
+
 					return null;
 				},
 			},
@@ -109,6 +115,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				required: true,
 				validation: (value: string) => {
 					if (value.length < 10) return "Description must be at least 10 characters";
+
 					return null;
 				},
 			},
@@ -120,8 +127,10 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				required: true,
 				validation: (value: string) => {
 					const num = Number.parseInt(value);
+
 					if (num < 1) return "Duration must be at least 1";
 					if (num > 365) return "Duration cannot exceed 365";
+
 					return null;
 				},
 			},

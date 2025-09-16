@@ -1,9 +1,11 @@
 "use client";
 
+import type { IPeriod } from "@/types/types.utils";
+
+import { Edit, Trash2, Calendar } from "lucide-react";
+
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-import type { IPeriod } from "@/types/types.utils";
-import { Edit, Trash2, Calendar } from "lucide-react";
 
 interface PeriodsTableProps {
 	periods: IPeriod[];

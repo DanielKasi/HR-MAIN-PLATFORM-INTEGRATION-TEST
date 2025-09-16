@@ -1,8 +1,11 @@
 "use client";
 
+import type { ITax } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -13,9 +16,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 import { taxesAPI } from "@/lib/utils";
-import type { ITax } from "@/types/types.utils";
 
 interface DeleteTaxDialogProps {
 	tax: ITax;

@@ -1,17 +1,18 @@
 "use client";
 
+import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils";
+
 import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
+import { Search, Plus } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { bankAccountsAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils";
-import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { BankAccountFormModal } from "@/components/bank-accounts/create-bank-account-modal";
 import { BankAccountDetailsModal } from "@/components/bank-accounts/bank-account-details-modal";
 import { BankAccountsTable } from "@/components/bank-accounts/bank-accounts-table";
@@ -68,8 +69,10 @@ export default function BankAccountManagement() {
 				setLoading(true);
 
 				let searchParams = "";
+
 				if (pageUrl) {
 					const url = new URL(pageUrl);
+
 					searchParams = url.search;
 				} else if (debouncedSearchTerm) {
 					searchParams = `?search=${encodeURIComponent(debouncedSearchTerm)}`;

@@ -1,5 +1,28 @@
 import { RefObject, useEffect, useRef, useState } from "react";
-import { formatCurrency, formatDate, getInitials } from "@/lib/helpers";
+import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
+import { Users, CheckCircle, Clock, MoreVertical, FileText, Trash2, Download } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useSelector } from "react-redux";
+
+import { Badge } from "../ui/badge";
+
+import {
+	DropdownMenu,
+	DropdownMenuTrigger,
+	DropdownMenuContent,
+	DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
+import { TableSkeleton } from "../common/table-skeleton";
+import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
+import EditPayslipDialog from "../payroll/edit-payslip-dialog";
+import { CardHeader } from "../ui/card";
+import { DialogHeader, DialogFooter } from "../ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { IPayslip } from "@/types/types.utils";
 import {
 	deletePayslip,
 	downloadSinglePayslip,
@@ -7,38 +30,7 @@ import {
 	payrollAPI,
 	showErrorToast,
 } from "@/lib/utils";
-import { IPayslip } from "@/types/types.utils";
-import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import {
-	DropdownMenu,
-	DropdownMenuTrigger,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-	Users,
-	Plus,
-	CheckCircle,
-	Clock,
-	MoreVertical,
-	FileText,
-	Trash2,
-	Download,
-} from "lucide-react";
-import { Badge } from "../ui/badge";
-
-import { TableSkeleton } from "../common/table-skeleton";
-import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
-import EditPayslipDialog from "../payroll/edit-payslip-dialog";
-import { Card, CardHeader } from "../ui/card";
-import { DialogHeader, DialogFooter } from "../ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { Button } from "../ui/button";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { formatCurrency, formatDate, getInitials } from "@/lib/helpers";
 import { selectAccessToken } from "@/store/auth/selectors";
 
 interface EmployeePayrollTableProps {
@@ -98,6 +90,7 @@ export function EmployeePayrollTable({
 	const handleMarkAsPaid = async (payslip: IPayslip) => {
 		if (payslip.is_paid) {
 			toast.info("This payslip is already marked as paid");
+
 			return;
 		}
 
@@ -168,6 +161,7 @@ export function EmployeePayrollTable({
 						if (!scope.payrollPeriodId) {
 							throw new Error("Could not find payroll period, please check your scope !");
 						}
+
 						return await payrollAPI.getPayslipsByPayrollPeriod({
 							payrollId: scope.payrollPeriodId,
 							institutionId: institutionId,
@@ -199,16 +193,16 @@ export function EmployeePayrollTable({
 									<CardHeader className="border-b">
 										<div className="flex justify-between gap-8 items-center">
 											<div className="flex items-center justify-start gap-4">
-												<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+												<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 												<div className="space-y-2">
-													<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-													<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+													<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+													<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 												</div>
 											</div>
 											<div className="grid grid-cols-3">
-												<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-												<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-												<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
 											</div>
 										</div>
 									</CardHeader>

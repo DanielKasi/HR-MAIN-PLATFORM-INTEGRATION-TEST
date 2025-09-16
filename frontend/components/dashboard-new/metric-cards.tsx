@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Users, Building2, UserX } from "lucide-react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
+
+import { Card, CardContent } from "@/components/ui/card";
 import { IBasicDasboardDataCounts } from "@/types/types.utils";
 
 interface MetricCardsProps {
@@ -69,7 +69,7 @@ export function MetricCards({ data, onRefresh, loading }: MetricCardsProps) {
 						</CardContent>
 					</Card>
 					{index <= metrics.length - 2 && (
-						<div className="w-[2px] h-full bg-gray-200 rounded-full"></div>
+						<div className="w-[2px] h-full bg-gray-200 rounded-full" />
 					)}
 				</div>
 			))}

@@ -1,7 +1,11 @@
 "use client";
 
+import type { IDeductionType } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,9 +26,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
 import { updateDeductionType } from "@/lib/utils";
-import type { IDeductionType } from "@/types/types.utils";
 import { IDeductionTypeFormData } from "@/types/types.utils";
 import { ALLOWANCE_FREQUENCIES } from "@/constants";
 
@@ -68,11 +70,13 @@ export function EditDeductionTypeDialog({
 
 		if (!formData.name || !formData.description) {
 			toast.error("Please fill in all required fields");
+
 			return;
 		}
 
 		if (formData.is_recurring && !formData.frequency) {
 			toast.error("You must set a frequency for recurring deductions!");
+
 			return;
 		}
 

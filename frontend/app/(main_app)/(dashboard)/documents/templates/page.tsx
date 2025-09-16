@@ -1,6 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+	Plus,
+	Search,
+	MoreVertical,
+	Edit,
+	Download,
+	Trash2,
+	FileText,
+	File,
+	Loader2,
+	ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,24 +37,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-	Plus,
-	Search,
-	MoreVertical,
-	Edit,
-	Download,
-	Trash2,
-	FileText,
-	File,
-	Loader2,
-	ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils";
 import { IDocumentTemplate } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -66,6 +67,7 @@ export default function DocumentTemplatesPage() {
 		setIsLoading(true);
 		try {
 			const data = await getDocumentTemplates({ institutionId: Number(INSTITUTION_ID) });
+
 			setTemplates(data);
 		} catch (error) {
 			console.error("Failed to load templates:", error);
@@ -86,6 +88,7 @@ export default function DocumentTemplatesPage() {
 				institutionId: Number(INSTITUTION_ID),
 				documentTemplateId: template.id,
 			});
+
 			if (success) {
 				setTemplates((prev) => prev.filter((t) => t.id !== template.id));
 			}
@@ -102,6 +105,7 @@ export default function DocumentTemplatesPage() {
 			const blob = new Blob([template.content], { type: "text/plain" });
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
+
 			a.href = url;
 			a.download = `${template.name}.txt`;
 			document.body.appendChild(a);

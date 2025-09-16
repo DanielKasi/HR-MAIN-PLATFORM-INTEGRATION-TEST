@@ -1,12 +1,12 @@
 "use client";
 import type { Role } from "@/types";
 
-import { Search, Plus, Pen, Eye, Trash2, ArrowLeft, Edit, MoreVertical } from "lucide-react";
+import { Search, Plus, Eye, Trash2, ArrowLeft, Edit, MoreVertical } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
 	Table,

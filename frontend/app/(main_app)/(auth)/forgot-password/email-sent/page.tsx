@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useSearchParams } from "next/navigation";
-import { maskEmail } from "@/lib/helpers";
 
 export default function EmailSent() {
 	const search_params = useSearchParams();

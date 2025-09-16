@@ -1,9 +1,8 @@
 "use client";
 
+import type { IAttendanceDashboard } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
 	BarChart,
 	Bar,
@@ -17,10 +16,13 @@ import {
 	LineChart,
 	Line,
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Clock, AlertTriangle, CheckCircle, Calendar } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { formatCurrency } from "@/lib/helpers";
-import type { IAttendanceDashboard } from "@/types/types.utils";
 import { getAttendanceDashboard } from "@/lib/utils";
 
 const statusColors = {
@@ -39,6 +41,7 @@ const formatTime = (minutes: number): string => {
 	}
 	const hours = Math.floor(minutes / 60);
 	const remainingMinutes = minutes % 60;
+
 	return `${hours}h ${remainingMinutes.toFixed(0)}m`;
 };
 
@@ -55,6 +58,7 @@ export default function AttendanceDashboard() {
 		async function fetchData() {
 			try {
 				const dashboardData = await getAttendanceDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Failed to fetch data");

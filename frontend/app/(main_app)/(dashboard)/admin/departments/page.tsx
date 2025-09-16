@@ -15,6 +15,9 @@ import {
 	AlertTriangle,
 	ArrowLeft,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,12 +53,10 @@ import {
 } from "@/lib/utils";
 import { type IDepartment } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
-import { toast } from "sonner";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { Icon } from "@iconify/react";
 
 export default function DepartmentsPage() {
 	const [departments, setDepartments] = useState<IDepartment[]>([]);
@@ -189,6 +190,7 @@ export default function DepartmentsPage() {
 						if (!selectedInstitution) {
 							throw Error("No organization found !");
 						}
+
 						return await getPaginatedDepartments({
 							institutionId: selectedInstitution.id,
 							search: searchTerm,

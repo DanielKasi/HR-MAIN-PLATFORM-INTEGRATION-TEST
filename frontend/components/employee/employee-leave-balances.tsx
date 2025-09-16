@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+
+import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
+import { TableSkeleton } from "../common/table-skeleton";
+
 import { Badge } from "@/components/ui/badge";
 import {
 	Table,
@@ -11,19 +15,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Loader2, Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import {
-	getAllLeaveBalances,
-	getLeaveTypes,
-	getPaginatedLeaveBalances,
-	getPaginatedLeaveBalancesFromUrl,
-	showErrorToast,
-} from "@/lib/utils";
-import { ILeaveBalance, ILeaveType } from "@/types/types.utils";
-import { toast } from "sonner";
+import { getPaginatedLeaveBalances, getPaginatedLeaveBalancesFromUrl } from "@/lib/utils";
+import { ILeaveBalance } from "@/types/types.utils";
 import { formatCurrency } from "@/lib/helpers";
-import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "../common/table-skeleton";
 
 interface EmployeeLeaveBalancesProps {
 	employeeId: string;
@@ -45,13 +39,16 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
 			study: "bg-purple-50 text-purple-700 border-purple-200",
 			compassionate: "bg-green-50 text-green-700 border-green-200",
 		};
+
 		return colors[category as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 
 	const getBalanceStatus = (available: number, allocated: number) => {
 		const percentage = (available / allocated) * 100;
+
 		if (percentage > 50) return { status: "good", icon: TrendingUp, color: "text-green-600" };
 		if (percentage > 20) return { status: "medium", icon: Minus, color: "text-yellow-600" };
+
 		return { status: "low", icon: TrendingDown, color: "text-red-600" };
 	};
 
@@ -59,6 +56,7 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
 		if (!institutionId) {
 			throw new Error("No Institution found !");
 		}
+
 		return await getPaginatedLeaveBalances({ institutionId, employeeId });
 	};
 
@@ -101,6 +99,7 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
 			typeof balance.available_days === "string"
 				? parseFloat(balance.available_days)
 				: balance.available_days || 0;
+
 		return sum + available;
 	}, 0);
 
@@ -145,6 +144,7 @@ const EmployeeLeaveBalances: React.FC<EmployeeLeaveBalancesProps> = ({
 						if (loading) {
 							return <TableSkeleton rows={10} columns={10} />;
 						}
+
 						return (
 							<div className="overflow-x-auto">
 								<Table className="[&_th]:border-0 [&_td]:border-0">

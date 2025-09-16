@@ -1,10 +1,9 @@
 "use client";
 
 import type { UserProfile } from "@/types";
-import type { IPaginatedResponse } from "@/types/types.utils";
 
 import { useEffect, useState } from "react";
-import { Search, ChevronDown, Eye, Trash2, ArrowLeft, MoreVertical, Edit } from "lucide-react";
+import { ChevronDown, Eye, Trash2, MoreVertical, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -20,7 +19,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { capitalizeEachWord, getDefaultInstitutionId } from "@/lib/helpers";
 import {
@@ -48,6 +46,7 @@ export default function StaffPage() {
 		if (userProfile.user.roles && userProfile.user.roles.length > 0) {
 			return capitalizeEachWord(userProfile.user.roles[0].name);
 		}
+
 		return "No Role Assigned";
 	};
 
@@ -167,9 +166,11 @@ export default function StaffPage() {
 					<PaginatedTableWrapper<UserProfile>
 						fetchFirstPage={async () => {
 							const institutionId = getDefaultInstitutionId();
+
 							if (!institutionId) {
 								throw new Error("Institution ID is required");
 							}
+
 							return await PROFILES_API.getPaginatedUserProfiles({
 								page: 1,
 								search: searchQuery || undefined,

@@ -1,9 +1,10 @@
 "use client";
 
+import type { IBankType } from "@/types/types.utils";
+
 import { Label } from "@/components/ui/label";
 import { SearchableSelectInfinite } from "@/components/ui/scroll-searchable-select";
 import { bankTypesAPI } from "@/lib/utils";
-import type { IBankType } from "@/types/types.utils";
 
 interface BankTypeSelectProps {
 	value?: string | number;
@@ -22,8 +23,10 @@ export function BankTypeSelect({
 }: BankTypeSelectProps) {
 	const fetchBankTypes = async (searchTerm: string, pageUrl?: string | null) => {
 		let searchParams = "";
+
 		if (pageUrl) {
 			const url = new URL(pageUrl);
+
 			searchParams = url.search;
 		} else if (searchTerm) {
 			searchParams = `?search=${encodeURIComponent(searchTerm)}`;

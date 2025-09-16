@@ -1,14 +1,14 @@
 "use client";
 
 import type React from "react";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-
 import { Icon } from "@iconify/react";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { ArrowLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { KYCDocuments } from "@/components/settings/kycdocuments";
 import { InstitutionSettings } from "@/components/settings/institution-settings";
 import { PenaltyConfigurations } from "@/components/settings/penalty-configurations";

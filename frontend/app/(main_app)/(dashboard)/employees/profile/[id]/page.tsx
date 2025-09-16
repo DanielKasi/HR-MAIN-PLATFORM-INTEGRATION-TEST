@@ -1,29 +1,15 @@
 "use client";
 
+import type { IAttendance, IMaritalStatus } from "@/types/types.utils";
+import type {
+	IEmployee,
+	IEmployeeSpotCheckSetting,
+	IEmployeeSpotCheckSettingFormData,
+} from "@/types/types.utils";
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import type { IAttendance, IMaritalStatus } from "@/types/types.utils";
-import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
-import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
-import EmployeeDiscipline from "@/components/employee/employee-discipline";
-import AssetRequests from "@/components/employee/asset-request";
-import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
-import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import {
 	Mail,
 	Phone,
@@ -40,14 +26,30 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
+import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
+import EmployeeDiscipline from "@/components/employee/employee-discipline";
+import AssetRequests from "@/components/employee/asset-request";
+import EmployeeAssetAllocations from "@/components/employee/asset-allocation";
+import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type {
-	IEmployee,
-	IEmployeeSpotCheckSetting,
-	IEmployeeSpotCheckSettingFormData,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
@@ -114,6 +116,7 @@ export default function EmployeeProfile() {
 	// Memoized utility functions
 	const formatDate = useCallback((dateString: string | null) => {
 		if (!dateString) return null;
+
 		return new Date(dateString).toLocaleDateString("en-US", {
 			year: "numeric",
 			month: "long",
@@ -129,18 +132,21 @@ export default function EmployeeProfile() {
 			divorced: "Divorced",
 			widowed: "Widowed",
 		};
+
 		return statusMap[status] || status;
 	}, []);
 
 	const getEmployeeInitials = useCallback((employee: IEmployee) => {
 		if (employee.user?.fullname) {
 			const names = employee.user.fullname.split(" ").filter((name) => name.length > 0);
+
 			if (names.length >= 2) {
 				return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
 			} else if (names.length === 1) {
 				return names[0][0]?.toUpperCase() || "E";
 			}
 		}
+
 		return employee.email?.[0]?.toUpperCase() || "E";
 	}, []);
 
@@ -164,6 +170,7 @@ export default function EmployeeProfile() {
 		if (tabDataCache.attendance) {
 			setAttendanceRecords(tabDataCache.attendance.records);
 			setTotalAttendanceRecords(tabDataCache.attendance.total);
+
 			return;
 		}
 
@@ -188,6 +195,7 @@ export default function EmployeeProfile() {
 			}
 		} catch (error: any) {
 			let errorMessage = "Failed to fetch employee attendance records";
+
 			if (error?.message || error?.detail) {
 				errorMessage = error.message || error.detail;
 			}
@@ -205,9 +213,11 @@ export default function EmployeeProfile() {
 		setError(null);
 		try {
 			const fetchedEmployee = await getEmployeeById({ employeeId });
+
 			setEmployee(fetchedEmployee);
 		} catch (error: any) {
 			let errorMessage = "Failed to fetch employee";
+
 			if (error?.message || error?.detail) {
 				errorMessage = error.message || error.detail;
 			}
@@ -288,6 +298,7 @@ export default function EmployeeProfile() {
 			const setting = await spotcheckAPI.CONFIGS.EMPLOYEE.getByEmployee({
 				employeeId: employee.id,
 			});
+
 			setSpotcheckSetting(setting);
 			// Initialize form data with the fetched setting
 			setSpotcheckFormData({
@@ -370,7 +381,7 @@ export default function EmployeeProfile() {
 		return (
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4426da] mb-4"></div>
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4426da] mb-4" />
 					<p className="text-[#848496]">Loading employee profile...</p>
 				</div>
 			</div>
@@ -542,7 +553,7 @@ export default function EmployeeProfile() {
 										{/* Right side - Job info and badges - show below on mobile, beside on desktop */}
 										<div className="flex flex-col min-w-[16rem] items-center lg:items-start gap-4 mt-6 pt-6 border-t border-[#e8e8f2] lg:mt-0 lg:pt-0 lg:border-t-0 lg:flex-row lg:gap-4 lg:flex-shrink-0">
 											{/* Vertical divider line - only on desktop */}
-											<div className="hidden lg:block h-16 w-px bg-[#e8e8f2]"></div>
+											<div className="hidden lg:block h-16 w-px bg-[#e8e8f2]" />
 
 											<div className="flex flex-col items-center lg:items-start gap-3 ">
 												<div className="text-center lg:text-left">
@@ -1287,7 +1298,7 @@ export default function EmployeeProfile() {
 																			>
 																				{loadingSpotcheckConfig ? (
 																					<>
-																						<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+																						<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
 																						Saving...
 																					</>
 																				) : spotcheckSetting ? (
@@ -1334,7 +1345,7 @@ export default function EmployeeProfile() {
 																		>
 																			{loadingSpotcheckConfig ? (
 																				<>
-																					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+																					<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
 																					Deleting...
 																				</>
 																			) : (

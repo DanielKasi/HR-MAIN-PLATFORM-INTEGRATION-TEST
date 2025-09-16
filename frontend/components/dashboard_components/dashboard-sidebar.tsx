@@ -3,28 +3,30 @@
 import type React from "react";
 
 import { Icon } from "@iconify/react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { X } from "lucide-react";
+
+import { InstitutionBranchSelector } from "../institution-branch-selector";
+import { Button } from "../ui/button";
+
+import { NavItemComponent } from "./navigation/nav-item";
 
 import { PERMISSION_CODES } from "@/constants";
 import { employeeAPI, showErrorToast } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
 	selectAccessToken,
 	selectSelectedInstitution,
 	selectUser,
 	selectUserLoading,
 } from "@/store/auth/selectors";
-import { useRouter } from "next/navigation";
 import { hasPermission } from "@/lib/helpers";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { IEmployee } from "@/types/types.utils";
 import { NavItem } from "@/types";
-import { InstitutionBranchSelector } from "../institution-branch-selector";
-import { NavItemComponent } from "./navigation/nav-item";
-import Image from "next/image";
 import { useMobile } from "@/hooks/use-mobile";
-import { Button } from "../ui/button";
-import { X } from "lucide-react";
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 
 export default function DashboardSideBar() {
@@ -55,6 +57,7 @@ export default function DashboardSideBar() {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (mobileMenuOpen && isMobile) {
 				const target = event.target as HTMLElement;
+
 				if (!target.closest(".mobile-nav-drawer") && !target.closest(".mobile-menu-button")) {
 					onCloseSidebar();
 				}
@@ -62,6 +65,7 @@ export default function DashboardSideBar() {
 		};
 
 		document.addEventListener("mousedown", handleClickOutside);
+
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [mobileMenuOpen, isMobile]);
 
@@ -77,13 +81,16 @@ export default function DashboardSideBar() {
 					const filteredSubmenu = item.submenu.filter(
 						(subItem) => !subItem.requiredPermission || hasPermission(subItem.requiredPermission),
 					);
+
 					return { ...item, submenu: filteredSubmenu };
 				}
+
 				return item;
 			})
 			.filter((item) => {
 				return !item.requiredPermission || hasPermission(item.requiredPermission);
 			});
+
 		setFilteredNavItems(filtered);
 	}, [router, currentUser, selectedInstitution]);
 
@@ -106,6 +113,7 @@ export default function DashboardSideBar() {
 		}
 		try {
 			const employee = await employeeAPI.getByUserId({ user_id: currentUser.id });
+
 			setRelatedEmployee(employee);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to fetch related employee" });

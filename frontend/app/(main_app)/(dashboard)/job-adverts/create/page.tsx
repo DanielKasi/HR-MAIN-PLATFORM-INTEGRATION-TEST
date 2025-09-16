@@ -1,17 +1,18 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { Plus, Trash2, ArrowLeft, CalendarDays, X, Search, Loader2, Edit } from "lucide-react";
-import apiRequest from "@/lib/apiRequest";
+import { toast } from "sonner";
 
+import apiRequest from "@/lib/apiRequest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-
 import {
 	selectSelectedInstitution,
 	selectSelectedBranch,
@@ -19,18 +20,10 @@ import {
 } from "@/store/auth/selectors";
 import { selectJobAdvertForm } from "@/store/miscellaneous/selectors";
 import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/actions";
-
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog";
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
 import { RichEditorField } from "@/components/common/rich-editor";
-import {
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	Dialog,
-} from "@/components/ui/dialog";
 import InterviewStageEditorDialog from "@/components/common/dialogs/interview-stage-editor-dialog";
 import {
 	createInterviewStage,
@@ -40,7 +33,6 @@ import {
 	showErrorToast,
 	upddateInterviewStage,
 } from "@/lib/utils";
-import { toast } from "sonner";
 import {
 	IEmployee,
 	IInterviewStage,
@@ -219,6 +211,7 @@ export default function JobAdvertsPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 		fetchJobPositions();
@@ -236,6 +229,7 @@ export default function JobAdvertsPage() {
 			try {
 				setIsLoadingJobPositions(true);
 				const params = new URLSearchParams({ page: String(page) });
+
 				if (searchTerm.trim()) params.append("search", searchTerm.trim());
 				const res = await apiRequest.get(
 					`recruitment/institution/${selectedInstitution.id}/job-position/?${params.toString()}`,
@@ -243,6 +237,7 @@ export default function JobAdvertsPage() {
 				const results = Array.isArray(res.data?.results)
 					? (res.data.results as IJobPosition[])
 					: [];
+
 				if (reset || page === 1) {
 					setJobPositionOptions(results);
 				} else {
@@ -269,6 +264,7 @@ export default function JobAdvertsPage() {
 		jobPositionSearchTimeoutRef.current = setTimeout(() => {
 			fetchJobPositionsPaged(jpFilterText, 1, true);
 		}, 300);
+
 		return () => {
 			if (jobPositionSearchTimeoutRef.current) {
 				clearTimeout(jobPositionSearchTimeoutRef.current);
@@ -289,13 +285,16 @@ export default function JobAdvertsPage() {
 	useEffect(() => {
 		const handler = (e: MouseEvent) => {
 			const container = jobPositionContainerRef.current;
+
 			if (container && !container.contains(e.target as Node)) {
 				setJobPositionDropdownOpen(false);
 			}
 		};
+
 		if (jobPositionDropdownOpen) {
 			document.addEventListener("mousedown", handler);
 		}
+
 		return () => document.removeEventListener("mousedown", handler);
 	}, [jobPositionDropdownOpen]);
 
@@ -303,6 +302,7 @@ export default function JobAdvertsPage() {
 	const handleJobPositionDropdownScroll = useCallback(
 		(e: React.UIEvent<HTMLDivElement>) => {
 			const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
 			if (
 				scrollHeight - scrollTop <= clientHeight + 50 &&
 				hasMoreJobPositions &&
@@ -339,6 +339,7 @@ export default function JobAdvertsPage() {
 
 			// Handle employees data
 			let employeesArray: IEmployee[] = [];
+
 			if (
 				fetchedEmployees &&
 				"results" in fetchedEmployees &&
@@ -364,6 +365,7 @@ export default function JobAdvertsPage() {
 		value: any,
 	) => {
 		const updatedFormData = { ...formData, [field]: value };
+
 		setFormData(updatedFormData);
 
 		// Save complete form data to Redux including interview stages
@@ -409,6 +411,7 @@ export default function JobAdvertsPage() {
 		} else {
 			const expiryDate = new Date(formData.expiry_date);
 			const today = new Date();
+
 			today.setHours(0, 0, 0, 0);
 			if (expiryDate <= today) {
 				newErrors.expiry_date = "Expiry date must be in the future";
@@ -424,23 +427,27 @@ export default function JobAdvertsPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleSubmit = async () => {
 		if (!selectedInstitution || !selectedBranch) {
 			toast.error("Missing organization or branch information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
 		// If there are stages, we need to create them via "Add Stage" button
 		if (stages.length > 0) {
 			toast.error("Please use the 'Add Stage' button to create stages with the job opening");
+
 			return;
 		}
 
@@ -462,6 +469,7 @@ export default function JobAdvertsPage() {
 				institutionId: selectedInstitution.id,
 				advertData: createData,
 			});
+
 			setCreatedJobOpening(jobOpeningResponse);
 
 			toast.success("Job opening created successfully!");
@@ -511,19 +519,23 @@ export default function JobAdvertsPage() {
 	const handleAddStage = async () => {
 		if (newStageName.trim() === "") {
 			toast.error("Please enter a stage name");
+
 			return;
 		}
 		if (selectedInterviewers.length === 0) {
 			toast.error("Please select at least one interviewer");
+
 			return;
 		}
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 
 		if (!formData.job_position || formData.job_position === 0) {
 			toast.error("Please select a job position first before adding stages");
+
 			return;
 		}
 
@@ -557,6 +569,7 @@ export default function JobAdvertsPage() {
 				};
 
 				const updatedStages = [...stages, localStage];
+
 				setStages(updatedStages);
 				setNewStageName("");
 				setSelectedInterviewers([]);
@@ -580,6 +593,7 @@ export default function JobAdvertsPage() {
 		} catch (error: any) {
 			const errorMessage =
 				error?.detail || error?.message || "Failed to create job opening and stage";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsCreatingStage(false);
@@ -588,6 +602,7 @@ export default function JobAdvertsPage() {
 
 	const handleDeleteStage = (id: string) => {
 		const updatedStages = stages.filter((stage) => stage.id !== id);
+
 		setStages(updatedStages);
 
 		// Save to Redux
@@ -599,6 +614,7 @@ export default function JobAdvertsPage() {
 			newFeedbackFieldName,
 			newFeedbackFieldType,
 		};
+
 		dispatch(saveJobAdvertForm(completeFormData));
 
 		toast.success("Interview stage deleted");
@@ -642,6 +658,7 @@ export default function JobAdvertsPage() {
 
 	const handleSelectInterviewer = (interviewerId: string) => {
 		const employee = employees.find((emp) => emp.id.toString() === interviewerId);
+
 		if (employee && !selectedInterviewers.some((i) => i.id === interviewerId)) {
 			const interviewer: Interviewer = {
 				id: interviewerId,
@@ -649,6 +666,7 @@ export default function JobAdvertsPage() {
 				role: employee.user?.user_type || "Staff",
 			};
 			const updatedSelectedInterviewers = [...selectedInterviewers, interviewer];
+
 			setSelectedInterviewers(updatedSelectedInterviewers);
 
 			// Save to Redux
@@ -660,12 +678,14 @@ export default function JobAdvertsPage() {
 				newFeedbackFieldName,
 				newFeedbackFieldType,
 			};
+
 			dispatch(saveJobAdvertForm(completeFormData));
 		}
 	};
 
 	const handleRemoveSelectedInterviewer = (interviewerId: string) => {
 		const updatedSelectedInterviewers = selectedInterviewers.filter((i) => i.id !== interviewerId);
+
 		setSelectedInterviewers(updatedSelectedInterviewers);
 
 		// Save to Redux
@@ -677,6 +697,7 @@ export default function JobAdvertsPage() {
 			newFeedbackFieldName,
 			newFeedbackFieldType,
 		};
+
 		dispatch(saveJobAdvertForm(completeFormData));
 	};
 
@@ -759,6 +780,7 @@ export default function JobAdvertsPage() {
 	useEffect(() => {
 		if (!formData.expiry_date) {
 			const defaultExpiryDate = new Date();
+
 			defaultExpiryDate.setDate(defaultExpiryDate.getDate() + 30);
 			setFormData((prev) => ({
 				...prev,
@@ -982,16 +1004,16 @@ export default function JobAdvertsPage() {
 					<CardHeader className="border-b">
 						<div className="flex justify-between gap-8 items-center">
 							<div className="flex items-center justify-start gap-4">
-								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 								<div className="space-y-2">
-									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 								</div>
 							</div>
 							<div className="flex gap-2">
-								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 							</div>
 						</div>
 					</CardHeader>
@@ -1282,6 +1304,7 @@ export default function JobAdvertsPage() {
 										value={newStageName}
 										onChange={(e) => {
 											const value = e.target.value;
+
 											setNewStageName(value);
 
 											// Save to Redux
@@ -1293,6 +1316,7 @@ export default function JobAdvertsPage() {
 												newFeedbackFieldName,
 												newFeedbackFieldType,
 											};
+
 											dispatch(saveJobAdvertForm(completeFormData));
 										}}
 										className="bg-white border-gray-300 text-xs sm:text-sm"
@@ -1418,6 +1442,7 @@ export default function JobAdvertsPage() {
 													const stageMatch = interviewStages.find(
 														(s) => s.id.toString() === stage.id,
 													);
+
 													if (stageMatch) {
 														setEditingInterviewStage(stageMatch);
 														setIsStageEditorOpen(true);
@@ -1552,6 +1577,7 @@ export default function JobAdvertsPage() {
 									if (typeof it === "number") return it;
 									if (typeof it === "string") return Number(it);
 									if (it && (it as any).id) return Number((it as any).id);
+
 									return null;
 								})
 								.filter(Boolean) as number[];

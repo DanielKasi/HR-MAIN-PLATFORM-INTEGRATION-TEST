@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2, Download, Upload } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import {
 	Dialog,
 	DialogContent,
@@ -13,11 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Loader2, Download, Upload } from "lucide-react";
 import { downloadEmployeesTemplate, bulkCreateEmployees, showErrorToast } from "@/lib/utils";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
 import { BulkEmployeeUploadResult } from "@/types";
 
 interface BulkUploadEmployeesDialogProps {
@@ -58,6 +59,7 @@ export function BulkUploadEmployeesDialog({
 
 		const parseErrors = (errors: any, prefix: string = ""): string[] => {
 			const result: string[] = [];
+
 			Object.entries(errors).forEach(([key, value]) => {
 				if (key === "non_field_errors" || key === "error") {
 					if (Array.isArray(value)) {
@@ -72,6 +74,7 @@ export function BulkUploadEmployeesDialog({
 						value.forEach((sub: any) => {
 							Object.entries(sub).forEach(([subkey, subvalue]) => {
 								let formattedMessage: string;
+
 								if (Array.isArray(subvalue)) {
 									formattedMessage = `${prefix}${key}.${subkey}: ${subvalue.join(", ")}`;
 								} else {
@@ -88,6 +91,7 @@ export function BulkUploadEmployeesDialog({
 					result.push(`${prefix}${key}: ${value}`);
 				}
 			});
+
 			return result;
 		};
 
@@ -116,12 +120,14 @@ export function BulkUploadEmployeesDialog({
 
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
+
 		if (file) {
 			const allowedTypes = [".csv", ".xlsx", ".xls"];
 			const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
 
 			if (!allowedTypes.includes(fileExtension)) {
 				toast.error("Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
+
 				return;
 			}
 
@@ -133,6 +139,7 @@ export function BulkUploadEmployeesDialog({
 	const handleBulkUpload = async () => {
 		if (!uploadFile) {
 			toast.error("Please select a file to upload");
+
 			return;
 		}
 		if (!currentInstitution) {
@@ -150,6 +157,7 @@ export function BulkUploadEmployeesDialog({
 
 			const errorCount = results.errors?.length || 0;
 			const warningCount = results.warnings?.length || 0;
+
 			if (errorCount > 0 || warningCount > 0) {
 				toast.warning(
 					`Upload completed with ${errorCount} errors and ${warningCount} warnings. ` +

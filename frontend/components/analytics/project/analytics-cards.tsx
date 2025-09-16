@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { IProjectDashboard } from "@/types/types.utils";
+
 import { BarChart3, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AnalyticsCardsProps {
 	data: IProjectDashboard;

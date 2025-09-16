@@ -1,16 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import type {
+	IBranchLocationComparisonConfig,
+	IBranchLocationComparisonConfigFormData,
+} from "@/types/types.utils";
+
+import { useState, useRef } from "react";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { useSelector } from "react-redux";
+
+import { ConfirmationDialog } from "../confirmation-dialog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -26,19 +31,10 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { branchLocationComparisonConfigAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import type {
-	IBranchLocationComparisonConfig,
-	IBranchLocationComparisonConfigFormData,
-} from "@/types/types.utils";
-import { ConfirmationDialog } from "../confirmation-dialog";
 
 export const LocationComparisonConfigurations = () => {
 	const institution = useSelector(selectSelectedInstitution);
@@ -79,6 +75,7 @@ export const LocationComparisonConfigurations = () => {
 	const handleCreateLocationComparisonConfig = () => {
 		if (!selectedBranch?.id) {
 			toast.error("Please select a branch first");
+
 			return;
 		}
 		resetLocationComparisonForm();
@@ -191,6 +188,7 @@ export const LocationComparisonConfigurations = () => {
 					<PaginatedTableWrapper<IBranchLocationComparisonConfig>
 						fetchFirstPage={async () => {
 							if (!selectedBranch?.id) throw new Error("No branch selected");
+
 							return await branchLocationComparisonConfigAPI.getBranchLocationComparisonConfigs({
 								branchId: selectedBranch.id,
 								page: 1,

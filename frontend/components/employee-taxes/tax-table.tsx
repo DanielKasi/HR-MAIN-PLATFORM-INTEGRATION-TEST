@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical, Edit, Trash2, Eye, Calendar, User } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Calendar, User } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +20,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { IEmployeeTax } from "@/types/types.utils";
-import { formatCurrency } from "@/lib/helpers";
 
 interface TaxTableProps {
 	taxes: IEmployeeTax[];

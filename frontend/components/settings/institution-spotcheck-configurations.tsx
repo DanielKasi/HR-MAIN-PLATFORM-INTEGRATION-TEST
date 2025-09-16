@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2, Settings } from "lucide-react";
-import { spotcheckAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type {
 	IInstitutionSpotCheckSetting,
 	IInstitutionSpotCheckSettingFormData,
 } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
+import { toast } from "sonner";
+import { Plus } from "lucide-react";
+import { useSelector } from "react-redux";
+
 import { SpotcheckConfigModal } from "./spotcheck-config-modal";
+
+import { Button } from "@/components/ui/button";
+import { spotcheckAPI, showErrorToast } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 export const InstitutionSpotcheckConfigurations = () => {
 	const institution = useSelector(selectSelectedInstitution);
@@ -105,6 +106,7 @@ export const InstitutionSpotcheckConfigurations = () => {
 			const setting = await spotcheckAPI.CONFIGS.INSTITUTION.getByInstitution({
 				institutionId: institution.id,
 			});
+
 			setInstitutionSpotcheckSetting(setting);
 			// Initialize form data with the fetched setting
 			setInstitutionSpotcheckFormData({

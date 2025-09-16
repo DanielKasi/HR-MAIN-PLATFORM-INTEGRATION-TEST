@@ -1,6 +1,10 @@
 "use client";
 
+import type { IAsset, IAssetAllocation } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -19,9 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { assetsAPI } from "@/lib/utils";
-import type { IAsset, IAssetAllocation } from "@/types/types.utils";
 import { IAssetReturnFormData } from "@/types/types.utils";
 
 interface CreateAssetReturnDialogProps {
@@ -58,6 +60,7 @@ export function CreateAssetReturnDialog({
 	const fetchAssets = async () => {
 		try {
 			const data = await assetsAPI.getAll();
+
 			setAssets(data);
 		} catch (error) {
 			console.error("Error fetching assets:", error);
@@ -68,6 +71,7 @@ export function CreateAssetReturnDialog({
 	const fetchAllocations = async () => {
 		try {
 			const data = await assetsAPI.getAssetAllocations();
+
 			setAllocations(data);
 		} catch (error) {
 			console.error("Error fetching allocations:", error);
@@ -85,11 +89,13 @@ export function CreateAssetReturnDialog({
 
 		if (!selectedAssetId || !selectedAllocationId) {
 			toast.error("Please select both asset and allocation");
+
 			return;
 		}
 
 		if (!formData.condition) {
 			toast.error("Please select asset condition");
+
 			return;
 		}
 

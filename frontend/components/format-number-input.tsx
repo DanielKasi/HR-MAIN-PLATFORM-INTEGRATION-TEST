@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { InputHTMLAttributes } from "react";
+
+import { useState } from "react";
+
 import { Input } from "@/components/ui/input";
 
 interface FormatNumberInputProps
@@ -31,9 +33,11 @@ export default function FormatNumberInput({
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const rawValue = e.target.value;
 		const formatted = formatNumber(rawValue);
+
 		setInputValue(formatted);
 
 		const numericValue = Number(rawValue.replace(/,/g, ""));
+
 		if (onChange) {
 			onChange(formatted, numericValue);
 		}

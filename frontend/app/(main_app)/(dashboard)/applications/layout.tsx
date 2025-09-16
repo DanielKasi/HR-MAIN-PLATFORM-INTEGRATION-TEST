@@ -5,6 +5,7 @@ import { useDocumentTitle } from "@/hooks/use-document-title";
 
 export default function JobApplicationsLayout({ children }: { children: React.ReactNode }) {
 	const title = useDocumentTitle("JOB APPLICATIONS");
+
 	return (
 		<>
 			{title}

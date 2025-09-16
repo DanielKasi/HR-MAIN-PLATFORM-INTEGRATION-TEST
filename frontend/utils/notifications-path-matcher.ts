@@ -1,6 +1,5 @@
 import { INotification } from "@/store/notifications/types";
 import { ApprovalTask } from "@/types/approvals.types";
-import { group } from "console";
 
 // Map model_name to frontend route
 const PATH_MAP: { [key: string]: string } = {
@@ -93,8 +92,10 @@ export const getNotificationPath = (notification: INotification): string => {
 	// Ensure object_id is valid
 	if (!object_id || isNaN(object_id)) {
 		console.warn(`Invalid object_id for notification: ${model_name}, id: ${object_id}`);
+
 		return basePath;
 	}
+
 	// Construct the full URL
 	return `${basePath}/${object_id}`;
 };
@@ -107,8 +108,10 @@ export const getApprovalTaskPath = (task: ApprovalTask): string => {
 
 	if (!object_id || isNaN(object_id)) {
 		console.warn(`Invalid object_id for notification: ${model_name}, id: ${object_id}`);
+
 		return basePath;
 	}
+
 	// Construct the full URL
 	return `${basePath}/${object_id}`;
 };

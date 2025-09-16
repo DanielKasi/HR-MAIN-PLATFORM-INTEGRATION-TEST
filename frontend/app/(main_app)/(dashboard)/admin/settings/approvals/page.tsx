@@ -1,9 +1,12 @@
 "use client";
 
+import type { ApprovalDocument, ContentTypeLite } from "@/types/approvals.types";
+
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Check, ChevronsUpDown, MoreVertical } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import type { ApprovalDocument, ContentTypeLite } from "@/types/approvals.types";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -27,16 +30,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronsUpDown, MoreVertical } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { showErrorToast } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { APPROVABLE_MODELS_API, APPROVAL_DOCUMENTS_API } from "@/lib/api/approvals/utils";
@@ -80,13 +74,16 @@ export default function ApprovalsDocumentsPage() {
 			APPROVAL_DOCUMENTS_API.fetchAll(),
 			APPROVABLE_MODELS_API.fetchAll(),
 		]);
+
 		setDocs(docsRes?.results || []);
 		setModels(modelsRes || []);
 	};
 
 	useEffect(() => {
 		let mounted = true;
+
 		loadData();
+
 		return () => {
 			mounted = false;
 		};
@@ -107,6 +104,7 @@ export default function ApprovalsDocumentsPage() {
 	const filteredDocs = useMemo(() => {
 		if (!q) return docs;
 		const s = q.toLowerCase();
+
 		return docs.filter((d) =>
 			[d.description || "", String(d.content_type_name)].some((v) => v.toLowerCase().includes(s)),
 		);
@@ -190,6 +188,7 @@ export default function ApprovalsDocumentsPage() {
 															.map((item) => {
 																const isSelected =
 																	models.find((m) => m.id === selectedModelId)?.id === item.id;
+
 																return (
 																	<CommandItem
 																		key={item.id}

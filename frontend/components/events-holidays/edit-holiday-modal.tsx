@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+
 import { Button } from "@/components/ui/button";
 import { IPublicHoliday } from "@/types/types.utils";
 
@@ -53,11 +54,13 @@ export const EditHolidayModal: React.FC<EditHolidayModalProps> = ({
 		// Basic validation
 		if (!editFormData.title.trim()) {
 			setError("Title is required");
+
 			return;
 		}
 
 		if (!editFormData.date) {
 			setError("Date is required");
+
 			return;
 		}
 

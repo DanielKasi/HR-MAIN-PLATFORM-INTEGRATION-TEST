@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter, usePathname, useParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { employeeAPI, showErrorToast, spotcheckAPI } from "@/lib/utils";
+import { showErrorToast, spotcheckAPI } from "@/lib/utils";
 import { clearRedirect } from "@/store/redirects/actions";
-import { useDispatch } from "react-redux";
 import { ISpotCheck } from "@/types/types.utils";
 import { SpotcheckExpiredModal } from "@/components/spotcheck-expired-modal";
 
@@ -50,6 +51,7 @@ export default function SpotCheckCheckinPage() {
 	const fetchSpotCheck = async () => {
 		try {
 			const spotcheck = await spotcheckAPI.getById(Number(id));
+
 			// console.log(spotcheck)
 			SetSpotCheck(spotcheck);
 
@@ -65,6 +67,7 @@ export default function SpotCheckCheckinPage() {
 	const requestAndCheckIn = async () => {
 		if (!navigator || !navigator.geolocation) {
 			toast.error("Geolocation is not supported in this browser.");
+
 			return;
 		}
 
@@ -73,12 +76,14 @@ export default function SpotCheckCheckinPage() {
 			async (pos) => {
 				const latitude = pos.coords.latitude;
 				const longitude = pos.coords.longitude;
+
 				try {
 					// Post to backend - send spot check id and location object
 					const payload = {
 						spot_check_id: id,
 						location: { latitude, longitude },
 					};
+
 					await spotcheckAPI.checkin({ spotCheckId: Number(id), data: payload.location });
 					toast.success("Checked in successfully.");
 					router.push("/dashboard");

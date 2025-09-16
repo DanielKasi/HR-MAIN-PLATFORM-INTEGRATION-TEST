@@ -1,7 +1,14 @@
 "use client";
 
+import type { IEmployeeDeduction } from "@/types/types.utils";
+
 import { format } from "date-fns";
 import { Edit, Trash2, MoreVertical, Users } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { useState } from "react";
+
+import { DialogFooter, DialogHeader } from "../ui/dialog";
+
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -18,10 +25,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { IEmployeeDeduction } from "@/types/types.utils";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
-import { DialogFooter, DialogHeader } from "../ui/dialog";
-import { useState } from "react";
 import { formatCurrency } from "@/lib/helpers";
 
 interface DeductionTableProps {

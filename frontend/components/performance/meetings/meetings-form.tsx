@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import type { IMeeting, IMeetingFormData, IEventMode } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+
+import { PerformanceForm, type FormField } from "../common/performance-form";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
@@ -44,6 +47,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 			required: true,
 			validation: (value: string) => {
 				if (value.length < 5) return "Meeting title must be at least 5 characters";
+
 				return null;
 			},
 		},
@@ -54,6 +58,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 			placeholder: "Describe the meeting purpose and agenda...",
 			validation: (value: string) => {
 				if (value && value.length < 10) return "Description must be at least 10 characters";
+
 				return null;
 			},
 		},
@@ -65,9 +70,11 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 			validation: (value: string) => {
 				try {
 					const date = new Date(value);
+
 					if (isNaN(date.getTime())) return "Invalid date format";
 
 					const now = new Date();
+
 					if (date < now) return "Start time cannot be in the past";
 
 					return null;
@@ -84,14 +91,17 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 			validation: (value: string, formData?: Record<string, any>) => {
 				try {
 					const endDate = new Date(value);
+
 					if (isNaN(endDate.getTime())) return "Invalid date format";
 
 					if (formData?.start_time) {
 						const startDate = new Date(formData.start_time);
+
 						if (endDate <= startDate) return "End time must be after start time";
 
 						const diffMs = endDate.getTime() - startDate.getTime();
 						const diffMinutes = diffMs / (1000 * 60);
+
 						if (diffMinutes < 15) return "Meeting must be at least 15 minutes long";
 					}
 
@@ -117,6 +127,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 				if (formData?.mode === "physical" && !value) {
 					return "Location is required for physical meetings";
 				}
+
 				return null;
 			},
 		},
@@ -132,6 +143,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 				if (value && !value.startsWith("http")) {
 					return "Online link must be a valid URL";
 				}
+
 				return null;
 			},
 		},
@@ -156,6 +168,7 @@ export function MeetingForm({ initialData, onSubmit, onCancel, isLoading }: Meet
 				if (formData?.is_recurring && !value) {
 					return "Recurrence rule is required for recurring meetings";
 				}
+
 				return null;
 			},
 		},

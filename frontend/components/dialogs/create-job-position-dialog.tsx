@@ -1,9 +1,16 @@
 "use client";
 
+import type { JobPositionFormData, IDepartment, CreateJobPositionData } from "@/types/types.utils";
+
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { Briefcase, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
+import { RichEditorField } from "../common/rich-editor";
+
+import { CreateDepartmentDialog } from "./create-department-dialog";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -25,17 +31,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getDepartments, createJobPosition } from "@/lib/utils";
-import type { JobPositionFormData, IDepartment, CreateJobPositionData } from "@/types/types.utils";
-import { toast } from "sonner";
-import { CreateDepartmentDialog } from "./create-department-dialog";
-import { RichEditorField } from "../common/rich-editor";
 
 function formatWithCommas(value: string) {
 	const num = value.replace(/,/g, "");
+
 	if (!num) return "";
+
 	return parseFloat(num).toLocaleString("en-US");
 }
 
@@ -88,6 +91,7 @@ export function CreateJobPositionDialog({
 		try {
 			setIsLoading(true);
 			const fetchedDepartments = await getDepartments({ institutionId: selectedInstitution.id });
+
 			if (fetchedDepartments) {
 				setDepartments(fetchedDepartments);
 			}
@@ -131,6 +135,7 @@ export function CreateJobPositionDialog({
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -140,11 +145,13 @@ export function CreateJobPositionDialog({
 
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
@@ -186,6 +193,7 @@ export function CreateJobPositionDialog({
 				error.response?.data?.job_position_status?.join(", ") ||
 				error.response?.data?.non_field_errors?.join(", ") ||
 				"Failed to create job position. Please try again.";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

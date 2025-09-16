@@ -1,6 +1,14 @@
 "use client";
 
 import type React from "react";
+import type {
+	JobPositionFormData,
+	IDepartment,
+	IJobPosition,
+	CreateJobPositionData,
+	IEmployee,
+} from "@/types/types.utils";
+
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -8,30 +16,20 @@ import {
 	Briefcase,
 	ArrowLeft,
 	Check,
-	Upload,
-	X,
 	FileText,
 	Loader2,
 	Users,
-	Coins,
 	AlertCircle,
 	Search,
 	ChevronDown,
-	Info,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Dialog,
@@ -44,18 +42,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getDepartments, getJobPositions, getJobPosition, updateJobPosition } from "@/lib/utils";
-import type {
-	JobPositionFormData,
-	IDepartment,
-	IJobPosition,
-	CreateJobPositionData,
-	IEmployee,
-} from "@/types/types.utils";
-import { toast } from "sonner";
-import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
+import { SearchableSelect } from "@/components/searchable-select";
 import { apiGet } from "@/lib/apiRequest";
 
 const VirtualizedEmployeeList: React.FC<{
@@ -75,6 +64,7 @@ const VirtualizedEmployeeList: React.FC<{
 		if (!searchTerm.trim()) return employees;
 
 		const searchLower = searchTerm.toLowerCase();
+
 		return employees.filter(
 			(employee) =>
 				employee.user?.fullname.toLowerCase().includes(searchLower) ||
@@ -90,6 +80,7 @@ const VirtualizedEmployeeList: React.FC<{
 	const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
 		const scrollTop = e.currentTarget.scrollTop;
 		const newStartIndex = Math.floor(scrollTop / ITEM_HEIGHT);
+
 		setStartIndex(newStartIndex);
 	}, []);
 
@@ -178,6 +169,7 @@ const EmployeeSelectionModal: React.FC<{
 		if (!searchTerm.trim()) return employees;
 
 		const searchLower = searchTerm.toLowerCase();
+
 		return employees.filter(
 			(employee) =>
 				employee.user?.fullname.toLowerCase().includes(searchLower) ||
@@ -189,24 +181,29 @@ const EmployeeSelectionModal: React.FC<{
 	// Group employees by department for better organization
 	const employeesByDepartment = useMemo(() => {
 		const groups: Record<string, IEmployee[]> = {};
+
 		filteredEmployees.forEach((employee) => {
 			const deptName = employee.department.name;
+
 			if (!groups[deptName]) {
 				groups[deptName] = [];
 			}
 			groups[deptName].push(employee);
 		});
+
 		return groups;
 	}, [filteredEmployees]);
 
 	const handleEmployeeToggle = useCallback((employee: IEmployee, checked: boolean) => {
 		setSelectedEmployees((prev) => {
 			const newSet = new Set(prev);
+
 			if (checked) {
 				newSet.add(employee.id);
 			} else {
 				newSet.delete(employee.id);
 			}
+
 			return newSet;
 		});
 	}, []);
@@ -216,14 +213,18 @@ const EmployeeSelectionModal: React.FC<{
 			// Deselect all filtered employees
 			setSelectedEmployees((prev) => {
 				const newSet = new Set(prev);
+
 				filteredEmployees.forEach((emp) => newSet.delete(emp.id));
+
 				return newSet;
 			});
 		} else {
 			// Select all filtered employees
 			setSelectedEmployees((prev) => {
 				const newSet = new Set(prev);
+
 				filteredEmployees.forEach((emp) => newSet.add(emp.id));
+
 				return newSet;
 			});
 		}
@@ -233,6 +234,7 @@ const EmployeeSelectionModal: React.FC<{
 		(departmentEmployees: IEmployee[], select: boolean) => {
 			setSelectedEmployees((prev) => {
 				const newSet = new Set(prev);
+
 				departmentEmployees.forEach((emp) => {
 					if (select) {
 						newSet.add(emp.id);
@@ -240,6 +242,7 @@ const EmployeeSelectionModal: React.FC<{
 						newSet.delete(emp.id);
 					}
 				});
+
 				return newSet;
 			});
 		},
@@ -480,12 +483,14 @@ export default function EditJobPositionPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 
 		if (isNaN(jobPositionId)) {
 			toast.error("Invalid job position/title ID");
 			router.push("/job-positions");
+
 			return;
 		}
 
@@ -507,6 +512,7 @@ export default function EditJobPositionPage() {
 				setJobPosition(fetchedJobPosition);
 				const salaryMinValue = fetchedJobPosition.salary_min?.toString() || "0";
 				const salaryMaxValue = fetchedJobPosition.salary_max?.toString() || "0";
+
 				setOriginalSalary(salaryMinValue);
 				setFormData({
 					name: fetchedJobPosition.name,
@@ -521,6 +527,7 @@ export default function EditJobPositionPage() {
 			} else {
 				toast.error("Job position not found");
 				router.push("/job-positions");
+
 				return;
 			}
 
@@ -612,6 +619,7 @@ export default function EditJobPositionPage() {
 			const salaryChanged =
 				(newMin !== originalSalary || newMax !== originalSalary) &&
 				(newMin.trim() !== "" || newMax.trim() !== "");
+
 			setIsSalaryChanged(salaryChanged);
 
 			// Only auto-clear employee selection if reverting to original or empty
@@ -684,6 +692,7 @@ export default function EditJobPositionPage() {
 		// Removed mandatory employee selection validation - now optional
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -692,11 +701,13 @@ export default function EditJobPositionPage() {
 
 		if (!selectedInstitution || !selectedBranch || !jobPosition) {
 			toast.error("Missing required information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
@@ -943,6 +954,7 @@ export default function EditJobPositionPage() {
 												}
 												onChange={(e) => {
 													const rawValue = e.target.value.replace(/,/g, "");
+
 													if (/^\d*$/.test(rawValue)) {
 														updateFormData("salary_min", rawValue);
 													}
@@ -966,6 +978,7 @@ export default function EditJobPositionPage() {
 												}
 												onChange={(e) => {
 													const rawValue = e.target.value.replace(/,/g, "");
+
 													if (/^\d*$/.test(rawValue)) {
 														updateFormData("salary_max", rawValue);
 													}

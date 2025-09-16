@@ -1,18 +1,18 @@
 "use client";
 
 import type React from "react";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import { Save, Star } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { apiPost } from "@/lib/apiRequest";
-import { Icon } from "@iconify/react";
 
 export default function AddHolidayPage() {
 	const router = useRouter();

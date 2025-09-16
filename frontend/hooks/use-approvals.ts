@@ -1,16 +1,19 @@
-import { useMemo } from "react";
 import type { Approval, ApprovalTask } from "@/types/approvals.types";
+
+import { useMemo } from "react";
 
 export const useApprovalsForObject = (approvals?: Approval[]) => {
 	const currentApproval = useMemo(() => {
 		if (!approvals || approvals.length === 0) return undefined;
 		// Prefer ongoing approval else latest by updated task
 		const ongoing = approvals.find((a) => a.status === "ongoing");
+
 		return ongoing || approvals[0];
 	}, [approvals]);
 
 	const currentTask: ApprovalTask | undefined = useMemo(() => {
 		if (!currentApproval) return undefined;
+
 		return currentApproval.tasks.find((t) => t.status === "pending");
 	}, [currentApproval]);
 

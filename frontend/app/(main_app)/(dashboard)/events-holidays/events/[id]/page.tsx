@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	ArrowLeft,
 	Edit,
@@ -15,7 +11,6 @@ import {
 	Video,
 	Clock,
 	User,
-	Building,
 	Repeat,
 	Star,
 	Share2,
@@ -23,6 +18,11 @@ import {
 	Trash2,
 } from "lucide-react";
 import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiGet } from "@/lib/apiRequest";
 import FixedLoader from "@/components/fixed-loader";
 
@@ -93,6 +93,7 @@ export default function EventDetailsPage() {
 	const fetchEvent = async () => {
 		try {
 			const response = await apiGet(`/calendar/events/${params.id}/`);
+
 			setEvent(response.data);
 		} catch (error) {
 			console.error("Error fetching event:", error);
@@ -531,7 +532,7 @@ export default function EventDetailsPage() {
 														100 || 0,
 												)}%`,
 											}}
-										></div>
+										/>
 									</div>
 								</div>
 							</CardContent>

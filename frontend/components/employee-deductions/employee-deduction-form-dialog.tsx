@@ -1,7 +1,19 @@
 "use client";
 
+import type {
+	IEmployeeDeduction,
+	IDeductionType,
+	IEmployeeDeductionFormData,
+	ContextType,
+	ContextItem,
+} from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { Plus, Loader2, AlertTriangle, Info } from "lucide-react";
+import { Loader2, AlertTriangle, Info } from "lucide-react";
+import { toast } from "sonner";
+
+import { ContextSelector } from "../employee-allowances/context-selector";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -9,7 +21,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -22,18 +33,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
 import { createEmployeeDeduction, showErrorToast, updateEmployeeDeduction } from "@/lib/utils";
 import { formatCurrency } from "@/lib/helpers";
 import { CreateDeductionTypeDialog } from "@/components/deduction-types/create-deduction-type-dialog";
-import { ContextSelector } from "../employee-allowances/context-selector";
-import type {
-	IEmployeeDeduction,
-	IDeductionType,
-	IEmployeeDeductionFormData,
-	ContextType,
-	ContextItem,
-} from "@/types/types.utils";
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
 	context?: ContextType;
@@ -119,11 +121,13 @@ export function EmployeeDeductionFormDialog({
 
 			if (formData.calculation_method === "fixed") {
 				const amount = Number.parseFloat(formData.amount);
+
 				if (formData.amount && (Number.isNaN(amount) || amount <= 0)) {
 					errors.amount = "Please enter a valid fixed amount";
 				}
 			} else {
 				const percentage = Number.parseFloat(formData.percentage);
+
 				if (
 					formData.percentage &&
 					(Number.isNaN(percentage) || percentage <= 0 || percentage > 100)
@@ -178,12 +182,14 @@ export function EmployeeDeductionFormDialog({
 		}
 
 		const errorKeys = Object.keys(validationErrors).filter((key) => key !== "warning");
+
 		return errorKeys.length > 0;
 	};
 
 	const handleSubmit = async () => {
 		if (hasValidationErrors()) {
 			toast.error("Please fix the validation errors before submitting");
+
 			return;
 		}
 
@@ -232,6 +238,7 @@ export function EmployeeDeductionFormDialog({
 					id: editingDeduction.id,
 					employeeDeductionData: formattedData,
 				});
+
 				if (updatedDeduction) {
 					onSuccess(updatedDeduction, true);
 					toast.success("Deduction updated successfully");
@@ -241,6 +248,7 @@ export function EmployeeDeductionFormDialog({
 					institutionId,
 					employeeDeductionData: formattedData,
 				});
+
 				if (newDeduction) {
 					onSuccess(newDeduction, false);
 					toast.success("Deduction created successfully");
@@ -381,6 +389,7 @@ export function EmployeeDeductionFormDialog({
 									value={formData.amount ? formatCurrency(formData.amount) : ""}
 									onChange={(e) => {
 										const rawValue = e.target.value.replace(/[,$]/g, "");
+
 										if (
 											rawValue === "" ||
 											(!Number.isNaN(Number.parseFloat(rawValue)) &&

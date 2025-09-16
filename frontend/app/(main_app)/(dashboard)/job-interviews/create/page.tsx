@@ -1,23 +1,30 @@
 "use client";
 
 import type React from "react";
+import type {
+	JobApplication,
+	IInterviewStage,
+	IInterview,
+	IInterviewFormData,
+} from "@/types/types.utils";
+
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { Plus, Users, ArrowLeft, Check, User, X } from "lucide-react";
+import { toast } from "sonner";
+
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Users, ArrowLeft, Check, User, Building, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog";
 import {
 	Select,
 	SelectContent,
@@ -38,19 +45,10 @@ import {
 	getJobApplications,
 	getInterviewStages,
 	createInterviewStage,
-	fetchEmployees,
 	getInterviews,
 	getPaginatedJobAdverts,
 	getPaginatedJobAdvertsFromUrl,
 } from "@/lib/utils";
-import type {
-	JobApplication,
-	IInterviewStage,
-	IInterview,
-	IInterviewFormData,
-	IEmployee,
-} from "@/types/types.utils";
-import { toast } from "sonner";
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import PaginatedSearchableSelect from "@/components/generic/paginated-searchable-select";
@@ -130,6 +128,7 @@ export default function CreateInterviewPage() {
 				.filter((interview) => interview.status === "scheduled" || interview.status === "completed")
 				.map((interview) => interview.job_position_application),
 		);
+
 		return applications.filter((app) => !scheduledApplicationIds.has(app.id));
 	};
 
@@ -142,6 +141,7 @@ export default function CreateInterviewPage() {
 				acc[jobId] = { jobName, applications: [] };
 			}
 			acc[jobId].applications.push(app);
+
 			return acc;
 		},
 		{} as Record<number, { jobName: string; applications: JobApplication[] }>,
@@ -150,9 +150,11 @@ export default function CreateInterviewPage() {
 	const filteredGroupedApplications = Object.entries(groupedApplications).reduce(
 		(acc, [jobId, { jobName, applications }]) => {
 			const availableApplications = getAvailableApplications(applications);
+
 			if (availableApplications.length > 0) {
 				acc[Number(jobId)] = { jobName, applications: availableApplications };
 			}
+
 			return acc;
 		},
 		{} as Record<number, { jobName: string; applications: JobApplication[] }>,
@@ -161,6 +163,7 @@ export default function CreateInterviewPage() {
 	useEffect(() => {
 		if (!selectedInstitution || !selectedBranch) {
 			router.push("/dashboard");
+
 			return;
 		}
 		fetchInitialData();
@@ -169,13 +172,16 @@ export default function CreateInterviewPage() {
 	useEffect(() => {
 		if (selectedApplications.length > 0) {
 			const firstApp = selectedApplications[0];
+
 			setStageFormData((prev) => ({ ...prev, job_position_advert: firstApp.job_position_advert }));
 		}
 
 		if (isCreateStageDialogOpen && selectedJobPosition) {
 			const existingStages = filteredInterviewStages;
+
 			if (existingStages.length > 0) {
 				const maxLevel = Math.max(...existingStages.map((stage) => stage.level));
+
 				setStageFormData((prev) => ({ ...prev, level: maxLevel + 1 }));
 			} else {
 				setStageFormData((prev) => ({ ...prev, level: 1 }));
@@ -187,6 +193,7 @@ export default function CreateInterviewPage() {
 	useEffect(() => {
 		if (!formData.interview_date) {
 			const tomorrow = new Date();
+
 			tomorrow.setDate(tomorrow.getDate() + 1);
 			tomorrow.setHours(10, 0, 0, 0);
 			setFormData((prev) => ({
@@ -207,6 +214,7 @@ export default function CreateInterviewPage() {
 				]);
 
 			let applicationsArray: JobApplication[] = [];
+
 			if (
 				fetchedApplicationsResponse &&
 				"results" in fetchedApplicationsResponse &&
@@ -220,9 +228,11 @@ export default function CreateInterviewPage() {
 			const eligibleApplications = applicationsArray.filter(
 				(app) => app.status === "shortlisted" || app.status === "reviewed",
 			);
+
 			setJobApplications(eligibleApplications);
 
 			let stagesArray: IInterviewStage[] = [];
+
 			if (
 				fetchedStagesResponse &&
 				"results" in fetchedStagesResponse &&
@@ -235,6 +245,7 @@ export default function CreateInterviewPage() {
 			setInterviewStages(stagesArray);
 
 			let interviewsArray: IInterview[] = [];
+
 			if (
 				fetchedInterviewsResponse &&
 				"results" in fetchedInterviewsResponse &&
@@ -288,6 +299,7 @@ export default function CreateInterviewPage() {
 
 	const removeSelectedApplication = (applicationId: number) => {
 		const newSelectedApps = selectedApplications.filter((app) => app.id !== applicationId);
+
 		setSelectedApplications(newSelectedApps);
 		setFormData((prev) => ({
 			...prev,
@@ -305,6 +317,7 @@ export default function CreateInterviewPage() {
 
 		if (field === "interview_stage") {
 			const stage = interviewStages.find((stage) => stage.id === Number(value));
+
 			setSelectedStage(stage || null);
 		}
 	};
@@ -329,6 +342,7 @@ export default function CreateInterviewPage() {
 		} else {
 			const interviewDate = new Date(formData.interview_date);
 			const now = new Date();
+
 			if (interviewDate <= now) {
 				newErrors.interview_date = "Interview date must be in the future";
 			}
@@ -340,6 +354,7 @@ export default function CreateInterviewPage() {
 
 		if (formData.rating !== undefined && formData.rating !== null) {
 			const rating = Number(formData.rating);
+
 			if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
 				newErrors.rating = "Rating must be a whole number between 1 and 10";
 			}
@@ -350,6 +365,7 @@ export default function CreateInterviewPage() {
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -357,6 +373,7 @@ export default function CreateInterviewPage() {
 		if (!selectedInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await getPaginatedJobAdverts({ institutionId: selectedInstitution.id, ...query });
 	};
 
@@ -370,14 +387,17 @@ export default function CreateInterviewPage() {
 
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
+
 			return;
 		}
 		if (!selectedJobPosition) {
 			toast.error("Please select a job position/title first");
+
 			return;
 		}
 
 		const newStageErrors: any = {};
+
 		if (!stageFormData.name.trim()) {
 			newStageErrors.name = "Stage name is required";
 		}
@@ -390,6 +410,7 @@ export default function CreateInterviewPage() {
 
 		if (Object.keys(newStageErrors).length > 0) {
 			setStageErrors(newStageErrors);
+
 			return;
 		}
 
@@ -440,11 +461,13 @@ export default function CreateInterviewPage() {
 
 		if (!selectedInstitution || !selectedBranch) {
 			toast.error("Missing organization or branch information");
+
 			return;
 		}
 
 		if (!validateForm()) {
 			toast.error("Please fix the form errors before submitting");
+
 			return;
 		}
 
@@ -453,10 +476,12 @@ export default function CreateInterviewPage() {
 		try {
 			const interviewPromises = formData.selected_applications.map(async (applicationId, index) => {
 				let interviewTime = "";
+
 				if (formData.interview_date) {
 					const dateTime = new Date(formData.interview_date);
 					const hours = dateTime.getHours().toString().padStart(2, "0");
 					const minutes = dateTime.getMinutes().toString().padStart(2, "0");
+
 					interviewTime = `${hours}:${minutes}`;
 				}
 
@@ -478,6 +503,7 @@ export default function CreateInterviewPage() {
 						institutionId: selectedInstitution.id,
 						interviewData: createData,
 					});
+
 					return result;
 				} catch (individualError) {
 					return null;
@@ -819,6 +845,7 @@ export default function CreateInterviewPage() {
 																? values.map((v) => Number(v))
 																: [Number(values)];
 															const uniqueValues = [...new Set(numberValues)];
+
 															if (uniqueValues.length !== numberValues.length) {
 																toast.info("Duplicate interviewers removed");
 															}

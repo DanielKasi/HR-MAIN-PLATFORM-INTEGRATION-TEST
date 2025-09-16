@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Calendar, Target, Users, MessageSquare, Video, ArrowRight, BarChart3 } from "lucide-react";
+import Link from "next/link";
+
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERFORMANCE_ANALYTICS_API } from "@/lib/utils";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Calendar, Target, Users, MessageSquare, Video, ArrowRight, BarChart3 } from "lucide-react";
-import Link from "next/link";
 
 export default function PerformancePage() {
 	const [analytics, setAnalytics] = useState<any>(null);
@@ -23,6 +24,7 @@ export default function PerformancePage() {
 		setLoading(true);
 		try {
 			const data = await PERFORMANCE_ANALYTICS_API.get();
+
 			setAnalytics(data);
 		} catch (error) {
 			toast.error("Failed to fetch performance analytics");

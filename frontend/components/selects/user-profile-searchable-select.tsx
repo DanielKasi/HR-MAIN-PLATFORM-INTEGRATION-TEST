@@ -1,11 +1,12 @@
 "use client";
 
+import { useSelector } from "react-redux";
+import { useEffect, useState } from "react";
+
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useEffect, useState } from "react";
 import { UserProfile } from "@/types";
 import { PROFILES_API } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ export const UserProfileSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
+
 		return await PROFILES_API.getPaginatedUserProfiles({ ...query });
 	};
 

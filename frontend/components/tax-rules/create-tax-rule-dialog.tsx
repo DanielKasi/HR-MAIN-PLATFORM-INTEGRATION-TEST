@@ -1,7 +1,13 @@
 "use client";
 
+import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+import FormattedNumberInput from "../common/inputs/formatted-number-input";
+
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,19 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
-import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
-import FormattedNumberInput from "../common/inputs/formatted-number-input";
 
 interface CreateTaxRuleDialogProps {
 	taxId: number;
@@ -80,26 +75,31 @@ export function CreateTaxRuleDialog({
 	const handleSubmit = async () => {
 		if (!formData.tax_rule_name.trim()) {
 			toast.error("Please enter a tax rule name");
+
 			return;
 		}
 
 		if (!formData.salary_from || !formData.salary_to) {
 			toast.error("Please enter salary range");
+
 			return;
 		}
 
 		if (formData.salary_from >= formData.salary_to) {
 			toast.error("Salary 'from' must be less than salary 'to'");
+
 			return;
 		}
 
 		if (calculationType === "percentage" && !formData.tax_rule_percentage) {
 			toast.error("Please enter a percentage rate");
+
 			return;
 		}
 
 		if (calculationType === "fixed" && !formData.tax_rule_fixed_amount) {
 			toast.error("Please enter a fixed amount");
+
 			return;
 		}
 
@@ -122,6 +122,7 @@ export function CreateTaxRuleDialog({
 
 			// Use actual API call
 			const newTaxRule = await taxRulesAPI.create(createData);
+
 			onSuccess(newTaxRule);
 			toast.success("Tax rule created successfully");
 			resetFormData();

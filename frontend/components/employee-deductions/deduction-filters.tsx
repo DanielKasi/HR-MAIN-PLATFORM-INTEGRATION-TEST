@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import {
 	Select,
@@ -66,7 +67,7 @@ export function DeductionFilters({
 						</SelectContent>
 					</Select>
 
-					<div></div>
+					<div />
 
 					<Button
 						onClick={onClearFilters}

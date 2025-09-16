@@ -1,11 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { useMobile } from "@/hooks/use-mobile";
-import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
-import { NavItem } from "@/types";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
+
+import { Button } from "@/components/ui/button";
+import { useMobile } from "@/hooks/use-mobile";
+import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
+import { NavItem } from "@/types";
 
 export const NavItemComponent = ({
 	item,

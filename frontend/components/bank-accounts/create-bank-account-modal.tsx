@@ -1,7 +1,13 @@
 "use client";
 
 import type React from "react";
+import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+
+import { BankTypeSelect } from "../bank-types/bank-types-select";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +18,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
-import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils";
-import { BankTypeSelect } from "../bank-types/bank-types-select";
 
 interface BankAccountFormModalProps {
 	isOpen: boolean;
@@ -81,11 +84,13 @@ export function BankAccountFormModal({
 				account.account_number.toLowerCase() === formData.account_number?.toLowerCase() &&
 				account.id !== editingAccount?.id,
 		);
+
 		if (duplicateAccountNumber) {
 			newErrors.account_number = "A bank account with this account number already exists";
 		}
 
 		setErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 

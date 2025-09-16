@@ -1,26 +1,21 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Icon } from "@iconify/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
+import { useSelector } from "react-redux";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCards } from "@/components/dashboard-new/metric-cards";
 import { PayrollChart } from "@/components/dashboard-new/payroll-chart";
 import { DepartmentTreemap } from "@/components/dashboard-new/department-treemap";
 import { PayrollByDepartment } from "@/components/dashboard-new/payroll-by-department";
 import { EmployeeCountChart } from "@/components/dashboard-new/employee-count-chart";
 import { GenderDistribution } from "@/components/dashboard-new/gender-distribution";
-import { ProjectCards } from "@/components/dashboard-new/project-cards";
-import Link from "next/link";
-import { SimpleCalendarWidget } from "@/components/calendar-widget";
-import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-holidays";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { USER_GENDER } from "@/types";
 
 export default function Dashboard() {
 	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
@@ -35,6 +30,7 @@ export default function Dashboard() {
 	useEffect(() => {
 		const percentage =
 			pastYearTotal > 0 ? ((totalCurrentYear - pastYearTotal) / pastYearTotal) * 100 : 0;
+
 		setGrowthPercentage(percentage);
 	}, [pastYearTotal, totalCurrentYear]);
 
@@ -63,6 +59,7 @@ export default function Dashboard() {
 			const newData = await institutionAPI.getDasboardAnalytics({
 				institutionId: currentInstitution?.id,
 			});
+
 			setData(newData);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to fetch data !" });
@@ -76,10 +73,12 @@ export default function Dashboard() {
 
 	const capitalizeFirstLetter = (str: string) => {
 		if (!str) return "";
+
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	};
 
 	let greeting = "Hello";
+
 	if (hour >= 5 && hour < 12) {
 		greeting = "Good morning";
 	} else if (hour >= 12 && hour < 17) {
@@ -92,7 +91,7 @@ export default function Dashboard() {
 		<div className="min-h-screen bg-gray-50 p-6">
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="flex items-center justify-between"></div>
+				<div className="flex items-center justify-between" />
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					{/* Main Content */}

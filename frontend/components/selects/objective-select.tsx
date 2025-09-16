@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
 import {
 	Select,
 	SelectContent,
@@ -8,11 +10,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import { OBJECTIVES_API } from "@/lib/utils";
 import { IObjective } from "@/types/types.utils";
-
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 interface ObjectiveSelectProps {
@@ -41,6 +40,7 @@ export function ObjectiveSelect({
 			setLoading(true);
 			try {
 				const response = await OBJECTIVES_API.getPaginated({});
+
 				setObjectives(response.results);
 			} catch (error) {
 				console.error("Failed to fetch objectives:", error);

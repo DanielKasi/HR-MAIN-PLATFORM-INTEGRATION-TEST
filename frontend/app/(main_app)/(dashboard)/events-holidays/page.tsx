@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Calendar } from "lucide-react";
 import Link from "next/link";
-import { calendarAPI } from "@/lib/utils";
 import { Icon } from "@iconify/react";
+
+import { calendarAPI } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { EditEventModal } from "@/components/events-holidays/edit-event-modal";
 import { EditHolidayModal } from "@/components/events-holidays/edit-holiday-modal";
 import { ICalendar, IEvent, IPublicHoliday } from "@/types/types.utils";
@@ -89,6 +90,7 @@ export default function EventsCalendarPage() {
 		try {
 			setLoading(true);
 			const response = await calendarAPI.getInstitutionCalendar({ year });
+
 			if (response) {
 				setCalendar(response);
 				setPublicHolidays(response.public_holidays || []);
@@ -167,6 +169,7 @@ export default function EventsCalendarPage() {
 		try {
 			setLoading(true);
 			const response = await calendarAPI.getEvents();
+
 			setEvents(response.results || []);
 		} catch (error) {
 			console.error("Error fetching events:", error);
@@ -188,6 +191,7 @@ export default function EventsCalendarPage() {
 		const firstDay = new Date(year, month, 1);
 		const lastDay = new Date(year, month + 1, 0);
 		const startDate = new Date(firstDay);
+
 		startDate.setDate(startDate.getDate() - firstDay.getDay());
 
 		const days = [];
@@ -219,6 +223,7 @@ export default function EventsCalendarPage() {
 
 	const navigateMonth = (direction: "prev" | "next") => {
 		const newDate = new Date(currentDate);
+
 		if (direction === "prev") {
 			newDate.setMonth(newDate.getMonth() - 1);
 		} else {
@@ -229,6 +234,7 @@ export default function EventsCalendarPage() {
 
 	const navigateWeek = (direction: "prev" | "next") => {
 		const newDate = new Date(currentDate);
+
 		if (direction === "prev") {
 			newDate.setDate(newDate.getDate() - 7);
 		} else {
@@ -239,6 +245,7 @@ export default function EventsCalendarPage() {
 
 	const navigateDay = (direction: "prev" | "next") => {
 		const newDate = new Date(currentDate);
+
 		if (direction === "prev") {
 			newDate.setDate(newDate.getDate() - 1);
 		} else {
@@ -249,6 +256,7 @@ export default function EventsCalendarPage() {
 
 	const navigateYear = (direction: "prev" | "next") => {
 		const newDate = new Date(currentDate);
+
 		if (direction === "prev") {
 			newDate.setFullYear(newDate.getFullYear() - 1);
 		} else {
@@ -274,6 +282,7 @@ export default function EventsCalendarPage() {
 
 	const isToday = (date: Date) => {
 		const today = new Date();
+
 		return (
 			date.getDate() === today.getDate() &&
 			date.getMonth() === today.getMonth() &&
@@ -290,20 +299,25 @@ export default function EventsCalendarPage() {
 	const getWeekNumber = (date: Date) => {
 		const start = new Date(date.getFullYear(), 0, 1);
 		const days = Math.floor((date.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+
 		return Math.ceil((days + start.getDay() + 1) / 7);
 	};
 
 	const getDaysInWeek = (date: Date) => {
 		const startOfWeek = new Date(date);
 		const day = date.getDay();
+
 		startOfWeek.setDate(date.getDate() - day);
 
 		const days = [];
+
 		for (let i = 0; i < 7; i++) {
 			const newDate = new Date(startOfWeek);
+
 			newDate.setDate(startOfWeek.getDate() + i);
 			days.push(newDate);
 		}
+
 		return days;
 	};
 
@@ -315,6 +329,7 @@ export default function EventsCalendarPage() {
 		for (let year = startYear; year <= endYear; year++) {
 			years.push(year);
 		}
+
 		return years;
 	};
 
@@ -324,6 +339,7 @@ export default function EventsCalendarPage() {
 
 	const days = getDaysInMonth(currentDate);
 	const weeks = [];
+
 	for (let i = 0; i < days.length; i += 7) {
 		weeks.push(days.slice(i, i + 7));
 	}
@@ -511,6 +527,7 @@ export default function EventsCalendarPage() {
 											{/* Week Grid */}
 											{getDaysInWeek(currentDate).map((day) => {
 												const { events, holidays } = getEventsForDate(day);
+
 												return (
 													<div
 														key={day.toISOString()}
@@ -548,6 +565,7 @@ export default function EventsCalendarPage() {
 																	title={holiday.title}
 																	onClick={(e) => {
 																		const rect = e.currentTarget.getBoundingClientRect();
+
 																		setPopoverPosition({
 																			x: rect.left + rect.width / 2,
 																			y: rect.top,
@@ -641,6 +659,7 @@ export default function EventsCalendarPage() {
 																						title={holiday.title}
 																						onClick={(e) => {
 																							const rect = e.currentTarget.getBoundingClientRect();
+
 																							setPopoverPosition({
 																								x: rect.left + rect.width / 2,
 																								y: rect.top,
@@ -667,6 +686,7 @@ export default function EventsCalendarPage() {
 																						title={event.title}
 																						onClick={(e) => {
 																							const rect = e.currentTarget.getBoundingClientRect();
+
 																							setPopoverPosition({
 																								x: rect.left + rect.width / 2,
 																								y: rect.top,
@@ -830,6 +850,7 @@ export default function EventsCalendarPage() {
 											// Apply time filter
 											if (eventFilter === "recent") {
 												const thirtyDaysAgo = new Date();
+
 												thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 												filteredEvents = filteredEvents.filter(
 													(event) => new Date(event.date) >= thirtyDaysAgo,
@@ -952,6 +973,7 @@ export default function EventsCalendarPage() {
 											// Apply time filter
 											if (holidayFilter === "recent") {
 												const thirtyDaysAgo = new Date();
+
 												thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 												filteredHolidays = filteredHolidays.filter(
 													(holiday) => new Date(holiday.date) >= thirtyDaysAgo,

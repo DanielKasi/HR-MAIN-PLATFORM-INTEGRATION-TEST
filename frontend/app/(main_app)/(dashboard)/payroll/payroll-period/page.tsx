@@ -2,6 +2,25 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+import {
+	Plus,
+	Search,
+	Edit,
+	Trash2,
+	CheckCircle,
+	Clock,
+	Loader2,
+	Info,
+	AlertTriangle,
+	Eye,
+	Settings,
+	MoreVertical,
+	Download,
+} from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
+import { Icon } from "@iconify/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +37,6 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 	DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -37,24 +55,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-	Plus,
-	Search,
-	Edit,
-	Trash2,
-	CheckCircle,
-	Clock,
-	Loader2,
-	Info,
-	AlertTriangle,
-	Eye,
-	Settings,
-	MoreVertical,
-	X,
-	Download,
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import {
 	createPayrollPeriod,
 	updatePayrollPeriod,
 	deletePayrollPeriod,
@@ -65,14 +65,13 @@ import {
 	downloadPayrollPasslipsReport,
 	showErrorToast,
 } from "@/lib/utils";
-import { IPayrollPeriod, IPayrollPeriodFormData, IEmployee, IPayslip } from "@/types/types.utils";
+import { IPayrollPeriod, IPayrollPeriodFormData } from "@/types/types.utils";
 import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selectors";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { Card, CardHeader } from "@/components/ui/card";
-import { Icon } from "@iconify/react";
 
 interface ValidationResult {
 	name?: string;
@@ -138,6 +137,7 @@ export default function PayrollPeriods() {
 	useEffect(() => {
 		if (formData.start_date && formData.end_date && !editingPeriod) {
 			const generatedName = generatePeriodName(formData.start_date, formData.end_date);
+
 			if (
 				formData.name === "" ||
 				formData.name === generatePeriodName(formData.start_date, formData.end_date)
@@ -150,6 +150,7 @@ export default function PayrollPeriods() {
 	// Validate form
 	useEffect(() => {
 		const errors: ValidationResult = {};
+
 		if (isModalOpen) {
 			if (formData.name && formData.name.trim().length < 3) {
 				errors.name = "Period name must be at least 3 characters long";
@@ -169,6 +170,7 @@ export default function PayrollPeriods() {
 					(new Date(formData.end_date).getTime() - new Date(formData.start_date).getTime()) /
 						(1000 * 60 * 60 * 24),
 				);
+
 				if (duration > 365) {
 					errors.warning =
 						"This period is longer than a year. Please verify the dates are correct.";
@@ -185,6 +187,7 @@ export default function PayrollPeriods() {
 			return true;
 		}
 		const errorKeys = Object.keys(validationErrors).filter((key) => key !== "warning");
+
 		return errorKeys.length > 0;
 	};
 
@@ -217,10 +220,12 @@ export default function PayrollPeriods() {
 
 		if (!selectedInstitution?.id) {
 			toast.error("Institution not selected");
+
 			return;
 		}
 		if (hasValidationErrors()) {
 			toast.error("Please fix the validation errors before submitting");
+
 			return;
 		}
 		if (validationErrors.warning) {
@@ -234,9 +239,12 @@ export default function PayrollPeriods() {
 				endDate: formData.end_date,
 				excludeId: editingPeriod?.id,
 			});
+
 			if (overlapCheck.hasOverlap) {
 				const overlappingNames = overlapCheck.overlappingPeriods.map((p) => p.name).join(", ");
+
 				toast.error(`Period overlaps with existing periods: ${overlappingNames}`);
+
 				return;
 			}
 		} catch (error: any) {
@@ -253,11 +261,13 @@ export default function PayrollPeriods() {
 				pay_date: formData.pay_date,
 				is_processed: false,
 			};
+
 			if (editingPeriod) {
 				const updatedPeriod = await updatePayrollPeriod({
 					id: editingPeriod.id,
 					payrollPeriodData: formattedData,
 				});
+
 				if (updatedPeriod) {
 					toast.success("Payroll period updated successfully");
 					refreshTableRef.current?.();
@@ -267,6 +277,7 @@ export default function PayrollPeriods() {
 					institutionId: selectedInstitution.id,
 					payrollPeriodData: formattedData,
 				});
+
 				if (newPeriod) {
 					toast.success("Payroll period created successfully");
 					refreshTableRef.current?.();
@@ -317,6 +328,7 @@ export default function PayrollPeriods() {
 		const pay = new Date(payDate);
 		const diffTime = pay.getTime() - today.getTime();
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
 		return diffDays;
 	};
 
@@ -345,16 +357,16 @@ export default function PayrollPeriods() {
 					<CardHeader className="border-b">
 						<div className="flex justify-between gap-8 items-center">
 							<div className="flex items-center justify-start gap-4">
-								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+								<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 								<div className="space-y-2">
-									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+									<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+									<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 								</div>
 							</div>
 							<div className="flex gap-2">
-								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
-								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse"></div>
+								<div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-36 bg-gray-200 rounded animate-pulse" />
+								<div className="h-10 w-28 bg-gray-200 rounded animate-pulse" />
 							</div>
 						</div>
 					</CardHeader>
@@ -424,6 +436,7 @@ export default function PayrollPeriods() {
 					<PaginatedTableWrapper<IPayrollPeriod>
 						fetchFirstPage={async () => {
 							if (!selectedInstitution) throw new Error("No institution selected");
+
 							return await getPaginatedPayrollPeriods({
 								institutionId: selectedInstitution.id,
 								page: 1,
@@ -449,16 +462,16 @@ export default function PayrollPeriods() {
 											<CardHeader className="border-b">
 												<div className="flex justify-between gap-8 items-center">
 													<div className="flex items-center justify-start gap-4">
-														<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+														<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
 														<div className="space-y-2">
-															<div className="h-6 bg-gray-200 rounded w-64 animate-pulse"></div>
-															<div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
+															<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+															<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 														</div>
 													</div>
 													<div className="grid grid-cols-3">
-														<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-														<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
-														<div className="h-10 w-full bg-gray-200 rounded animate-pulse"></div>
+														<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+														<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+														<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
 													</div>
 												</div>
 											</CardHeader>
@@ -622,6 +635,7 @@ export default function PayrollPeriods() {
 																<div className="font-semibold text-gray-700">
 																	{(() => {
 																		const daysRemaining = getDaysRemaining(period.pay_date);
+
 																		return daysRemaining < 0
 																			? `${Math.abs(daysRemaining)} days ago`
 																			: daysRemaining === 0

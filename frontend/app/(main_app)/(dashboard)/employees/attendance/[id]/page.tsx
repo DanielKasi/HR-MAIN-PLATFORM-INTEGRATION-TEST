@@ -1,15 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lucide-react";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Filter, Upload, CalendarDays, Clock, User } from "lucide-react";
-
 import { AttendanceAPI, getEmployeeById } from "@/lib/utils";
-
-import Link from "next/link";
 import { IAttendance, IEmployee } from "@/types/types.utils";
 
 const EmployeeAttendanceHistory = () => {
@@ -24,10 +22,13 @@ const EmployeeAttendanceHistory = () => {
 	const [search, setSearch] = useState("");
 	const [startDate, setStartDate] = useState(() => {
 		const date = new Date();
+
 		date.setMonth(date.getMonth() - 1);
+
 		return date.toISOString().slice(0, 10);
 	});
 	const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+
 	// Fetch employee details
 	useEffect(() => {
 		loadEmployee();
@@ -39,6 +40,7 @@ const EmployeeAttendanceHistory = () => {
 		}
 		try {
 			const data = await getEmployeeById({ employeeId });
+
 			setEmployee(data);
 		} catch (err) {
 			setError("Failed to load employee details");
@@ -61,6 +63,7 @@ const EmployeeAttendanceHistory = () => {
 				startDate,
 				endDate,
 			);
+
 			setAttendanceRecords(response.results);
 			setError(null);
 		} catch (err) {
@@ -90,6 +93,7 @@ const EmployeeAttendanceHistory = () => {
 					const checkIn = new Date(`2000-01-01T${r.check_in_time}`);
 					const checkOut = new Date(`2000-01-01T${r.check_out_time}`);
 					const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+
 					return acc + hours;
 				}, 0) /
 			Math.max(attendanceRecords.filter((r) => r.check_in_time && r.check_out_time).length, 1),
@@ -97,6 +101,7 @@ const EmployeeAttendanceHistory = () => {
 
 	const formatTime = (timeString: string) => {
 		if (!timeString) return "N/A";
+
 		return timeString;
 	};
 
@@ -105,6 +110,7 @@ const EmployeeAttendanceHistory = () => {
 		const year = d.getFullYear();
 		const month = String(d.getMonth() + 1).padStart(2, "0");
 		const day = String(d.getDate()).padStart(2, "0");
+
 		return `${year}-${month}-${day}`;
 	};
 
@@ -115,6 +121,7 @@ const EmployeeAttendanceHistory = () => {
 		if (!record.check_out_time) {
 			return <Badge className="bg-yellow-100 text-yellow-800">Checked In</Badge>;
 		}
+
 		return <Badge className="bg-green-100 text-green-800">Complete</Badge>;
 	};
 
@@ -135,6 +142,7 @@ const EmployeeAttendanceHistory = () => {
 	// Helper to set both dates to today
 	const setToday = () => {
 		const today = new Date().toISOString().slice(0, 10);
+
 		setStartDate(today);
 		setEndDate(today);
 	};
@@ -144,6 +152,7 @@ const EmployeeAttendanceHistory = () => {
 		const h = Math.floor(seconds / 3600);
 		const m = Math.floor((seconds % 3600) / 60);
 		const s = Math.floor(seconds % 60);
+
 		return `${h > 0 ? h + "h " : ""}${m > 0 ? m + "m " : ""}${s}s`;
 	}
 
@@ -152,6 +161,7 @@ const EmployeeAttendanceHistory = () => {
 		if (!checkIn || !checkOut) return null;
 		const inTime = new Date(`2000-01-01T${checkIn}`);
 		const outTime = new Date(`2000-01-01T${checkOut}`);
+
 		return Math.max(0, Math.floor((outTime.getTime() - inTime.getTime()) / 1000));
 	}
 
@@ -164,9 +174,11 @@ const EmployeeAttendanceHistory = () => {
 		if (!checkOut || !branchClosingTime) return 0;
 		const checkOutDate = new Date(`${date}T${checkOut}`);
 		const closingDate = new Date(`${date}T${branchClosingTime}`);
+
 		if (checkOutDate > closingDate) {
 			return Math.floor((checkOutDate.getTime() - closingDate.getTime()) / 1000);
 		}
+
 		return 0;
 	}
 
@@ -174,7 +186,7 @@ const EmployeeAttendanceHistory = () => {
 		return (
 			<div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
 					<p className="mt-4 text-gray-600">Loading attendance records...</p>
 				</div>
 			</div>
@@ -392,6 +404,7 @@ const EmployeeAttendanceHistory = () => {
 														record.check_in_time,
 														record.check_out_time,
 													);
+
 													return secs !== null ? formatDuration(secs) : "N/A";
 												})()}
 											</div>
@@ -404,6 +417,7 @@ const EmployeeAttendanceHistory = () => {
 														branchClosingTime,
 														record.date,
 													);
+
 													return overtimeSecs > 0 ? formatDuration(overtimeSecs) : "—";
 												})()}
 											</div>

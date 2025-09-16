@@ -1,10 +1,13 @@
 "use client";
 
+import type { IAssetRequest, IAssetRequestFormData } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { X, Package, FileText, Edit } from "lucide-react";
+import { Package, Edit } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -14,17 +17,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest, IAssetRequestFormData } from "@/types/types.utils";
 
 interface EditAssetRequestDialogProps {
 	request: IAssetRequest;
@@ -58,16 +52,19 @@ export const EditAssetRequestDialog = ({
 	const handleSubmit = async () => {
 		if (!formData.asset_id) {
 			toast.error("Please select an asset");
+
 			return;
 		}
 
 		try {
 			setIsSubmitting(true);
 			const updatedRequest = await assetsAPI.updateAssetRequest(request.id, formData);
+
 			onSuccess(updatedRequest);
 		} catch (error: any) {
 			console.error("Error updating asset request:", error);
 			const errorMessage = error.response?.data?.message || "Failed to update asset request";
+
 			toast.error(errorMessage);
 		} finally {
 			setIsSubmitting(false);

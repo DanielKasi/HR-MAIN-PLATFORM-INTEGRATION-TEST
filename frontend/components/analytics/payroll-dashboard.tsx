@@ -1,8 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
 	BarChart,
 	Bar,
@@ -14,10 +11,14 @@ import {
 	LineChart,
 	Line,
 } from "recharts";
-import { formatCurrency } from "@/lib/helpers";
 import { Users, DollarSign, TrendingUp, AlertTriangle, Calendar, Building2 } from "lucide-react";
-import { getPayrollDashboard } from "@/lib/utils";
 import { useEffect, useState } from "react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { formatCurrency } from "@/lib/helpers";
+import { getPayrollDashboard } from "@/lib/utils";
 import { IPayrollDashboard } from "@/types/types.utils";
 
 const COLORS = [
@@ -37,6 +38,7 @@ export default function PayrollDashboard() {
 		const fetchData = async () => {
 			try {
 				const dashboardData = await getPayrollDashboard();
+
 				setData(dashboardData);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "An error occurred");
@@ -53,7 +55,7 @@ export default function PayrollDashboard() {
 		return (
 			<div className="min-h-screen bg-background p-6 flex items-center justify-center">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+					<div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary" />
 					<p className="mt-4 text-muted-foreground">Loading payroll data...</p>
 				</div>
 			</div>

@@ -1,5 +1,19 @@
-import { IOnBoarding } from "@/types/types.utils";
+import {
+	Briefcase,
+	Calendar,
+	Phone,
+	MapPin,
+	MoreVertical,
+	Eye,
+	Mail,
+	FileText,
+} from "lucide-react";
+import { useSelector } from "react-redux";
+
 import { PaginatedTableWrapper } from "../paginated-table-wrapper";
+import { TableSkeleton } from "../../table-skeleton";
+
+import { IOnBoarding } from "@/types/types.utils";
 import {
 	Table,
 	TableBody,
@@ -18,23 +32,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-
-import {
-	Briefcase,
-	CheckCircle,
-	XCircle,
-	Calendar,
-	Phone,
-	MapPin,
-	MoreVertical,
-	Eye,
-	Users,
-	Mail,
-	FileText,
-} from "lucide-react";
-import { TableSkeleton } from "../../table-skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useSelector } from "react-redux";
 import { getPaginatedOnBoardings, getPaginatedOnBoardingsFromUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -82,6 +80,7 @@ export function RecruitmentHistoryTable({ searchTerm }: RecruitmentHistoryTableP
 				if (!selectedInstitution) {
 					throw new Error("No organisation found !");
 				}
+
 				return await getPaginatedOnBoardings({
 					institutionId: selectedInstitution.id,
 					search: searchTerm,

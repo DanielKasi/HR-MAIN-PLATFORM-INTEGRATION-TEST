@@ -1,9 +1,8 @@
 "use client";
 
+import type { IRecruitmentDashboard } from "@/types/types.utils";
+
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
 	BarChart,
 	Bar,
@@ -28,9 +27,12 @@ import {
 	TrendingUp,
 	Target,
 } from "lucide-react";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { getRecruitmentDashboard } from "@/lib/utils";
 import { formatCurrency } from "@/lib/helpers";
-import type { IRecruitmentDashboard } from "@/types/types.utils";
 
 const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
@@ -42,6 +44,7 @@ export function RecruitmentDashboard() {
 		const fetchData = async () => {
 			try {
 				const result = await getRecruitmentDashboard();
+
 				setData(result);
 			} catch (error) {
 				console.error("Failed to fetch recruitment data:", error);
@@ -56,7 +59,7 @@ export function RecruitmentDashboard() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-[400px]">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600" />
 			</div>
 		);
 	}

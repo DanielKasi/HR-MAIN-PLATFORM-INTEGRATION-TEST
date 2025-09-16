@@ -1,5 +1,7 @@
 "use client";
 
+import type { IBankAccount } from "@/types/types.utils";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +12,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { IBankAccount } from "@/types/types.utils";
 
 interface BankAccountDetailsModalProps {
 	isOpen: boolean;

@@ -1,7 +1,8 @@
 "use client";
 
-import { IEmployeeTax } from "@/types/types.utils";
 import { Users, Calendar, TrendingUp, FileText } from "lucide-react";
+
+import { IEmployeeTax } from "@/types/types.utils";
 
 interface TaxStatsCardsProps {
 	taxes: IEmployeeTax[];
@@ -20,12 +21,14 @@ export function TaxStatsCards({ taxes }: TaxStatsCardsProps) {
 		if (!t.effective_to) return false;
 		const now = new Date();
 		const effectiveTo = new Date(t.effective_to);
+
 		return effectiveTo < now;
 	});
 
 	const upcomingTaxes = taxes.filter((t) => {
 		const now = new Date();
 		const effectiveFrom = new Date(t.effective_from);
+
 		return effectiveFrom > now;
 	});
 

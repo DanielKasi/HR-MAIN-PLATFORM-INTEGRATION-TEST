@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
+import { Icon } from "@iconify/react";
+import { formatDistanceToNow } from "date-fns";
+import { FileText, Download, Eye, Edit, Trash2 } from "lucide-react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Icon } from "@iconify/react";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { IKYCDocument } from "@/types";
-import { formatDistanceToNow } from "date-fns";
-import { FileText, Download, Eye, Edit, Trash2 } from "lucide-react";
 import { EditDocumentModal } from "@/components/edit-document-modal";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
@@ -39,10 +40,12 @@ export function DocumentsList({ className, refreshTrigger, onDocumentChange }: D
 	// Helper function to build full document URL
 	const buildDocumentUrl = (documentFile: string): string => {
 		let baseURL = process.env.NEXT_PUBLIC_API_URL;
+
 		// Remove 'api' from the URL if it exists
 		if (baseURL && baseURL.endsWith("/api")) {
 			baseURL = baseURL.replace("/api", "");
 		}
+
 		return documentFile.startsWith("http") ? documentFile : `${baseURL}${documentFile}`;
 	};
 
@@ -70,6 +73,7 @@ export function DocumentsList({ className, refreshTrigger, onDocumentChange }: D
 		setEditModal({ isOpen: false, document: null });
 		onDocumentChange?.(); // Trigger refresh
 	};
+
 	return (
 		<Card className={`rounded-2xl border-0 shadow-sm ${className}`}>
 			<CardContent className="p-4 sm:p-6 lg:p-8">
@@ -142,6 +146,7 @@ export function DocumentsList({ className, refreshTrigger, onDocumentChange }: D
 														size="sm"
 														onClick={() => {
 															const link = window.document.createElement("a");
+
 															link.href = buildDocumentUrl(document.document_file);
 															link.download = document.document_title;
 															link.click();

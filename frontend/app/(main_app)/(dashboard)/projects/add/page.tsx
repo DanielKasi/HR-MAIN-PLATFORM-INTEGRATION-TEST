@@ -2,22 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Calendar } from "lucide-react";
+import Link from "next/link";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-import { ArrowLeft, Save, Calendar, FileText, Settings, Users, Target, X } from "lucide-react";
-import Link from "next/link";
-import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-
-import { cn, PROJECTS_API, showErrorToast } from "@/lib/utils";
-
+import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { IProjectFormData } from "@/types/types.utils";
-
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import { toast } from "sonner";
 
 export default function AddProjectPage() {
 	const router = useRouter();
@@ -28,6 +25,7 @@ export default function AddProjectPage() {
 
 	const MAX_DATE_TODAY = new Date().toISOString().split("T")[0];
 	const Date18YearsOld = new Date();
+
 	Date18YearsOld.setFullYear(new Date().getFullYear() - 18);
 	const MAX_DATE_18 = Date18YearsOld.toISOString().split("T")[0];
 
@@ -55,6 +53,7 @@ export default function AddProjectPage() {
 		}
 
 		const newErrors: Partial<Record<keyof typeof formData, string>> = {};
+
 		if (formData.managers.length === 0) {
 			newErrors.managers = "This field is required.";
 		}
@@ -64,6 +63,7 @@ export default function AddProjectPage() {
 
 		if (Object.keys(newErrors).length > 0) {
 			setErrors(newErrors);
+
 			return;
 		}
 

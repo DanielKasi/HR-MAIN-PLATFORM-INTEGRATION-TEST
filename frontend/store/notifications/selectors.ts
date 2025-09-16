@@ -1,5 +1,7 @@
 import { createSelector } from "reselect";
+
 import { RootState } from "../rootReducer";
+
 import { INotification } from "./types";
 
 const notificationsSlice = (state: RootState) => state.notifications;

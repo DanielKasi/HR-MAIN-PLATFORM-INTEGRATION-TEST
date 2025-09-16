@@ -1,7 +1,11 @@
 "use client";
 
+import type { ITaxRule } from "@/types/types.utils";
+
 import { useState } from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -12,9 +16,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 import { taxRulesAPI } from "@/lib/utils";
-import type { ITaxRule } from "@/types/types.utils";
 
 interface DeleteTaxRuleDialogProps {
 	taxRule: ITaxRule;

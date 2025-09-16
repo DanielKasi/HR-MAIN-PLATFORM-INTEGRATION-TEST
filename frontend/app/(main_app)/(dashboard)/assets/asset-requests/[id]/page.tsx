@@ -1,38 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import type { IAssetRequest } from "@/types/types.utils";
+
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import {
-	ArrowLeft,
-	Edit,
-	Trash2,
-	RefreshCw,
-	Package,
-	User,
-	Calendar,
-	Clock,
-	AlertCircle,
-	CheckCircle,
-	XCircle,
-	Wrench,
-	Archive,
-	History,
-	FileText,
-	MapPin,
-	Tag,
-	Users,
-	ArrowDown,
-	Activity,
-	MessageSquare,
-} from "lucide-react";
+import { ArrowLeft, RefreshCw, Package, User, ArrowDown } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { assetsAPI } from "@/lib/utils";
-import type { IAssetRequest } from "@/types/types.utils";
 import { EditAssetRequestDialog } from "@/components/asset-requests/edit-asset-request-dialog";
 import { DeleteAssetRequestDialog } from "@/components/asset-requests/delete-asset-request-dialog";
 
@@ -96,6 +75,7 @@ const AssetRequestDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetRequestById(parseInt(requestId));
+
 			setRequest(response);
 		} catch (error) {
 			console.error("Error fetching request details:", error);
@@ -288,7 +268,7 @@ const AssetRequestDetailPage = () => {
 				</div>
 
 				{/* Vertical Separator Line - Hidden on mobile, visible on larger screens */}
-				<div className="hidden lg:block w-px bg-gray-200"></div>
+				<div className="hidden lg:block w-px bg-gray-200" />
 
 				{/* Sidebar */}
 				<div className="w-full lg:flex-[0.2]">
@@ -389,7 +369,7 @@ const AssetRequestDetailPage = () => {
 														backgroundImage:
 															"repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)",
 													}}
-												></div>
+												/>
 											)}
 										</div>
 									))}
