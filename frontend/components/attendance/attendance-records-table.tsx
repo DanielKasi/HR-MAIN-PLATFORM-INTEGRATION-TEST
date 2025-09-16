@@ -1,11 +1,17 @@
-
 import Link from "next/link";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { AttendanceAPI, showErrorToast } from "@/lib/utils";
 
 import React, { useState, useRef, RefObject, useEffect } from "react";
 import { Search } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,155 +22,183 @@ import { CheckInModal } from "@/components/checkin-modal";
 import { CheckOutModal } from "@/components/checkout-modal";
 import { getCurrentUserLocation } from "@/lib/helpers";
 
-
 interface AttendanceRecordsTableProps {
-  institutionId: number,
-  selectedDate?: string;
-  setSelectedDate?: (date: string) => void;
-  searchTerm?: string,
-  scope: { type: "default", employees: IEmployee[], employees_count: number } | { type: "employee", employee: IEmployee },
-  attendanceRefreshRef?: RefObject<(() => void | null)>;
-  employeesLoading: boolean,
-  showingOnDashboard?: boolean
+	institutionId: number;
+	selectedDate?: string;
+	setSelectedDate?: (date: string) => void;
+	searchTerm?: string;
+	scope:
+		| { type: "default"; employees: IEmployee[]; employees_count: number }
+		| { type: "employee"; employee: IEmployee };
+	attendanceRefreshRef?: RefObject<() => void | null>;
+	employeesLoading: boolean;
+	showingOnDashboard?: boolean;
 }
 
+export function AttendanceRecordsTable({
+	institutionId,
+	searchTerm,
+	scope,
+	attendanceRefreshRef: attendanceRef,
+	employeesLoading,
+	showingOnDashboard,
+}: AttendanceRecordsTableProps) {
+	const [search, setSearch] = useState(searchTerm);
+	const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+	const [checkOutModalOpen, setCheckOutModalOpen] = useState(false);
+	const [selectedEmployee, setSelectedEmployee] = useState<IEmployee | null>(null);
+	const [currentUserlocation, setCurrentUserLocation] = useState<GeolocationPosition | null>(null);
+	const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<IAttendance | null>(
+		null,
+	);
+	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
+	const [employees, setEmployees] = useState<IEmployee[]>([]);
+	const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-export function AttendanceRecordsTable({ institutionId, searchTerm, scope, attendanceRefreshRef: attendanceRef, employeesLoading, showingOnDashboard }: AttendanceRecordsTableProps) {
+	useEffect(() => {
+		setSearch(searchTerm);
+	}, [searchTerm]);
 
-  const [search, setSearch] = useState(searchTerm);
-  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
-  const [checkOutModalOpen, setCheckOutModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<IEmployee | null>(null);
-  const [currentUserlocation, setCurrentUserLocation] = useState<GeolocationPosition | null>(null);
-  const [selectedAttendanceRecord, setSelectedAttendanceRecord] = useState<IAttendance | null>(null);
-  const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
-  const [employees, setEmployees] = useState<IEmployee[]>([]);
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+	useEffect(() => {
+		if (scope.type === "default") {
+			setEmployees(scope.employees);
+		} else {
+			setEmployees([scope.employee]);
+		}
+	}, [scope]);
 
-  useEffect(() => {
-    setSearch(searchTerm)
-  }, [searchTerm])
+	const attendanceRefreshRef = attendanceRef || useRef<(() => Promise<void>) | null>(null);
 
-  useEffect(() => {
-    if (scope.type === "default") {
-      setEmployees(scope.employees)
-    } else {
-      setEmployees([scope.employee])
-    }
-  }, [scope])
+	const handlePositionChange = (position: GeolocationPosition) => {
+		setCurrentUserLocation(position);
+	};
 
+	const openCheckInModal = async (employee: IEmployee) => {
+		setSelectedEmployee(employee);
+		setCheckInModalOpen(true);
+		await getCurrentUserLocation(handlePositionChange);
+	};
 
-  const attendanceRefreshRef = attendanceRef || useRef<(() => Promise<void>) | null>(null);
+	const openCheckOutModal = async (attendanceRecord: IAttendance) => {
+		setSelectedEmployee(attendanceRecord.employee);
+		setSelectedAttendanceRecord(attendanceRecord);
+		setCheckOutModalOpen(true);
+		await getCurrentUserLocation(handlePositionChange);
+	};
 
-  const handlePositionChange = (position: GeolocationPosition) => {
-    setCurrentUserLocation(position);
-  };
+	const handleCheckIn = async (_date: string, checkInTime: string) => {
+		if (!selectedEmployee) return;
+		if (!currentUserlocation) {
+			toast.warning("You need to allow access to your location to be able to proceed !");
+			return;
+		}
+		try {
+			await AttendanceAPI.createAttendanceRecord({
+				employee: selectedEmployee.id,
+				check_in_time: checkInTime,
+				check_in_latitude: currentUserlocation.coords.latitude,
+				check_in_longitude: currentUserlocation.coords.longitude,
+				status: "approved",
+			});
 
-  const openCheckInModal = async (employee: IEmployee) => {
-    setSelectedEmployee(employee);
-    setCheckInModalOpen(true);
-    await getCurrentUserLocation(handlePositionChange);
-  };
+			await attendanceRefreshRef.current?.();
+		} catch (error: any) {
+			showErrorToast({ error, defaultMessage: "Failed to record check-in!" });
+		}
+	};
 
-  const openCheckOutModal = async (attendanceRecord: IAttendance) => {
-    setSelectedEmployee(attendanceRecord.employee);
-    setSelectedAttendanceRecord(attendanceRecord);
-    setCheckOutModalOpen(true);
-    await getCurrentUserLocation(handlePositionChange);
-  };
+	const handleCheckOut = async (_date: string, checkOutTime: string) => {
+		if (!selectedAttendanceRecord) return;
+		const record = attendanceRecords.find((r) => r.id === selectedAttendanceRecord.id);
+		const checkInTime = record?.check_in_time || "";
+		await getCurrentUserLocation(handlePositionChange);
+		if (!currentUserlocation) {
+			toast.warning("You need to allow access to your location to be able to proceed !");
+			return;
+		}
 
-  const handleCheckIn = async (_date: string, checkInTime: string) => {
-    if (!selectedEmployee) return;
-    if (!currentUserlocation) {
-      toast.warning("You need to allow access to your location to be able to proceed !");
-      return;
-    }
-    try {
-      await AttendanceAPI.createAttendanceRecord({
-        employee: selectedEmployee.id,
-        check_in_time: checkInTime,
-        check_in_latitude: currentUserlocation.coords.latitude,
-        check_in_longitude: currentUserlocation.coords.longitude,
-        status: "approved",
-      });
+		try {
+			await AttendanceAPI.updateAttendanceRecord(selectedAttendanceRecord.id, {
+				employee: selectedAttendanceRecord?.employee.id,
+				check_in_time: checkInTime,
+				check_out_time: checkOutTime,
+				check_out_latitude: currentUserlocation.coords.latitude,
+				check_out_longitude: currentUserlocation.coords.longitude,
+				status: "approved",
+			});
 
-      await attendanceRefreshRef.current?.();
-    } catch (error: any) {
-      showErrorToast({ error, defaultMessage: "Failed to record check-in!" });
-    }
-  };
+			await attendanceRefreshRef.current?.();
+		} catch (error: any) {
+			showErrorToast({ error, defaultMessage: "Failed to record check-in!" });
+		}
+	};
 
-  const handleCheckOut = async (_date: string, checkOutTime: string) => {
-    if (!selectedAttendanceRecord) return;
-    const record = attendanceRecords.find((r) => r.id === selectedAttendanceRecord.id);
-    const checkInTime = record?.check_in_time || "";
-    await getCurrentUserLocation(handlePositionChange);
-    if (!currentUserlocation) {
-      toast.warning("You need to allow access to your location to be able to proceed !");
-      return;
-    }
+	return (
+		<PaginatedTableWrapper<IAttendance>
+			fetchFirstPage={async () => {
+				if (scope.type === "default") {
+					return AttendanceAPI.fetchAttendanceRecords({
+						date: selectedDate,
+						search,
+						page: 1,
+						institutionId,
+					});
+				}
+				return AttendanceAPI.fetchAttendanceRecordsByEmployee({
+					employee_id: scope.employee.id,
+					date: selectedDate,
+					search,
+					page: 1,
+					institutionId,
+				});
+			}}
+			fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
+			deps={[selectedDate, search]}
+			className=""
+			paginated={scope.type === "default"}
+			footerClassName="hidden"
+		>
+			{({ data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance }) => {
+				attendanceRefreshRef.current = refreshAttendance;
 
-    try {
-      await AttendanceAPI.updateAttendanceRecord(selectedAttendanceRecord.id, {
-        employee: selectedAttendanceRecord?.employee.id,
-        check_in_time: checkInTime,
-        check_out_time: checkOutTime,
-        check_out_latitude: currentUserlocation.coords.latitude,
-        check_out_longitude: currentUserlocation.coords.longitude,
-        status: "approved",
-      });
+				useEffect(() => {
+					if (attendanceData?.results) {
+						setAttendanceRecords(attendanceData.results);
+					}
+				}, [attendanceData?.results]);
 
-      await attendanceRefreshRef.current?.();
-    } catch (error: any) {
-      showErrorToast({ error, defaultMessage: "Failed to record check-in!" });
-    }
-  };
+				const stats =
+					scope.type === "default"
+						? [
+								{ label: "Total Employees", value: scope.employees_count || 0, icon: null },
+								{
+									label: "Checked In",
+									value: attendanceRecords.filter((a) => a.check_in_time).length,
+									icon: null,
+								},
+								{
+									label: "Checked Out",
+									value: attendanceRecords.filter((a) => a.check_out_time).length,
+									icon: null,
+								},
+								{
+									label: "Absent",
+									value: employees.length - attendanceRecords.filter((a) => a.check_in_time).length,
+									icon: null,
+								},
+							]
+						: [];
 
-  return <PaginatedTableWrapper<IAttendance>
-    fetchFirstPage={async () => {
-      if (scope.type === "default") {
-        return AttendanceAPI.fetchAttendanceRecords({ date: selectedDate, search, page: 1, institutionId })
-      };
-      return AttendanceAPI.fetchAttendanceRecordsByEmployee({ employee_id: scope.employee.id, date: selectedDate, search, page: 1, institutionId })
-    }
-
-    }
-    fetchFromUrl={({ url }) => AttendanceAPI.fetchAttendanceRecordsFromUrl(url)}
-    deps={[selectedDate, search]}
-    className=""
-    paginated={scope.type === "default"}
-    footerClassName="hidden"
-  >
-    {({ data: attendanceData, loading: attendanceLoading, refresh: refreshAttendance }) => {
-      attendanceRefreshRef.current = refreshAttendance;
-
-      useEffect(() => {
-        if (attendanceData?.results) {
-          setAttendanceRecords(attendanceData.results)
-        }
-      }, [attendanceData?.results])
-
-
-      const stats =
-        scope.type === "default" ?
-          [
-            { label: "Total Employees", value: scope.employees_count || 0, icon: null },
-            { label: "Checked In", value: attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
-            { label: "Checked Out", value: attendanceRecords.filter((a) => a.check_out_time).length, icon: null },
-            { label: "Absent", value: employees.length - attendanceRecords.filter((a) => a.check_in_time).length, icon: null },
-          ] :
-          []
-
-      return (
-        <>
-          <div className="">
-            <CardHeader className="px-2 md:px-4">
-              {scope.type === "default" ?
-                <>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="mb-2">Attendance</span>
-                  </CardTitle>
-                  {/* {
+				return (
+					<>
+						<div className="">
+							<CardHeader className="px-2 md:px-4">
+								{scope.type === "default" ? (
+									<>
+										<CardTitle className="flex items-center justify-between">
+											<span className="mb-2">Attendance</span>
+										</CardTitle>
+										{/* {
                     !showingOnDashboard && (
                       <div className="grid grid-cols-1 md:flex flex-wrap gap-4 mb-16">
                         {stats.map((stat, idx) => (
@@ -182,141 +216,152 @@ export function AttendanceRecordsTable({ institutionId, searchTerm, scope, atten
                       </div>
                     )
                   } */}
-                </> :
-                <></>
+									</>
+								) : (
+									<></>
+								)}
 
-              }
+								<div className="flex flex-col gap-4 py-4">
+									<div className="grid grid-cols-1  md:flex flex-col md:flex-row gap-4 w-full items-center justify-start">
+										{scope.type === "default" && (
+											<div className="relative md:w-full md:max-w-lg lg:max-w-xl">
+												<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+												<Input
+													placeholder="Search employees..."
+													value={search || ""}
+													onChange={(e) => setSearch(e.target.value)}
+													className="pl-10  "
+												/>
+											</div>
+										)}
+										{!showingOnDashboard && (
+											<Input
+												type="date"
+												value={selectedDate}
+												onChange={(e) => setSelectedDate(e.target.value)}
+												className="rounded-lg px-3 py-2 text-gray-700 md:max-w-[8rem] w-full"
+												style={{ minWidth: 140 }}
+												max={new Date().toISOString().slice(0, 10)}
+												title="Filter by date"
+											/>
+										)}
+									</div>
+								</div>
+							</CardHeader>
 
-              <div className="flex flex-col gap-4 py-4">
-                <div className="grid grid-cols-1  md:flex flex-col md:flex-row gap-4 w-full items-center justify-start">
-                  {scope.type === "default" &&
-                    (
-                      <div className="relative md:w-full md:max-w-lg lg:max-w-xl">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          placeholder="Search employees..."
-                          value={search || ""}
-                          onChange={(e) => setSearch(e.target.value)}
-                          className="pl-10  " />
-                      </div>
-                    )
+							<CardContent>
+								{employeesLoading || attendanceLoading ? (
+									<TableSkeleton rows={10} columns={6} />
+								) : (
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Date</TableHead>
+												<TableHead>Name</TableHead>
+												<TableHead>Email</TableHead>
+												<TableHead>Check In</TableHead>
+												<TableHead>Check Out</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{employees.length === 0 ? (
+												<TableRow>
+													<TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+														No employees found matching your criteria
+													</TableCell>
+												</TableRow>
+											) : (
+												employees.map((emp) => {
+													const record = (attendanceData?.results || []).find(
+														(r) => r.employee.id === emp.id,
+													);
+													return (
+														<TableRow key={emp.id} className="hover:bg-gray-50">
+															<TableCell>{selectedDate}</TableCell>
+															<TableCell>
+																<div className="flex flex-col">
+																	<Link
+																		href={`/employees/attendance/${emp.id}`}
+																		className="font-semibold text-blue-600 hover:underline"
+																	>
+																		{emp.user?.fullname || "Unknown"}
+																	</Link>
+																	<span className="text-xs text-gray-400"></span>
+																</div>
+															</TableCell>
+															<TableCell>{emp.email || ""}</TableCell>
+															<TableCell className="min-w-[6rem]">
+																{record?.check_in_time ? (
+																	<span className="text-sm text-gray-700">
+																		{record.check_in_time}
+																	</span>
+																) : isToday(selectedDate) ? (
+																	<button
+																		onClick={() => openCheckInModal(emp)}
+																		className="text-sm text-blue-600"
+																	>
+																		Check In
+																	</button>
+																) : (
+																	<span className="text-sm text-gray-400">-</span>
+																)}
+															</TableCell>
+															<TableCell className="min-w-[6rem]">
+																{record ? (
+																	record?.check_out_time ? (
+																		<span className="text-sm text-gray-700">
+																			{record.check_out_time}
+																		</span>
+																	) : isToday(selectedDate) ? (
+																		<button
+																			onClick={() => openCheckOutModal(record)}
+																			className="text-sm text-blue-600"
+																		>
+																			Check Out
+																		</button>
+																	) : (
+																		<span className="text-sm text-gray-400">-</span>
+																	)
+																) : null}
+															</TableCell>
+														</TableRow>
+													);
+												})
+											)}
+										</TableBody>
+									</Table>
+								)}
+							</CardContent>
+						</div>
 
-                  }
-                  {!showingOnDashboard &&
-                    <Input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="rounded-lg px-3 py-2 text-gray-700 md:max-w-[8rem] w-full"
-                      style={{ minWidth: 140 }}
-                      max={new Date().toISOString().slice(0, 10)}
-                      title="Filter by date" />
-                  }
-                </div>
-              </div>
-            </CardHeader>
+						<CheckInModal
+							isOpen={checkInModalOpen}
+							onClose={() => setCheckInModalOpen(false)}
+							onConfirm={handleCheckIn}
+							employeeName={selectedEmployee?.user?.fullname || ""}
+						/>
 
-            <CardContent>
-              {(employeesLoading || attendanceLoading) ? (
-                <TableSkeleton rows={10} columns={6} />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Check In</TableHead>
-                      <TableHead>Check Out</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {employees.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          No employees found matching your criteria
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      employees.map((emp) => {
-                        const record = (attendanceData?.results || []).find((r) => r.employee.id === emp.id);
-                        return (
-                          <TableRow key={emp.id} className="hover:bg-gray-50">
-                            <TableCell>{selectedDate}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <Link
-                                  href={`/employees/attendance/${emp.id}`}
-                                  className="font-semibold text-blue-600 hover:underline"
-                                >
-                                  {emp.user?.fullname || "Unknown"}
-                                </Link>
-                                <span className="text-xs text-gray-400"></span>
-                              </div>
-                            </TableCell>
-                            <TableCell>{emp.email || ""}</TableCell>
-                            <TableCell className="min-w-[6rem]">
-                              {record?.check_in_time ? (
-                                <span className="text-sm text-gray-700">{record.check_in_time}</span>
-                              ) : isToday(selectedDate) ? (
-                                <button
-                                  onClick={() => openCheckInModal(emp)}
-                                  className="text-sm text-blue-600"
-                                >
-                                  Check In
-                                </button>
-                              ) : (
-                                <span className="text-sm text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="min-w-[6rem]">
-                              {record ? (
-                                record?.check_out_time ? (
-                                  <span className="text-sm text-gray-700">{record.check_out_time}</span>
-                                ) : isToday(selectedDate) ? (
-                                  <button
-                                    onClick={() => openCheckOutModal(record)}
-                                    className="text-sm text-blue-600"
-                                  >
-                                    Check Out
-                                  </button>
-                                ) : (
-                                  <span className="text-sm text-gray-400">-</span>
-                                )
-                              ) : null}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </div>
-
-          <CheckInModal
-            isOpen={checkInModalOpen}
-            onClose={() => setCheckInModalOpen(false)}
-            onConfirm={handleCheckIn}
-            employeeName={selectedEmployee?.user?.fullname || ""} />
-
-          <CheckOutModal
-            isOpen={checkOutModalOpen}
-            onClose={() => setCheckOutModalOpen(false)}
-            onConfirm={handleCheckOut}
-            employeeName={selectedEmployee?.user?.fullname || ""}
-            checkInTime={attendanceRecords.find((r) => r.employee.id === selectedEmployee?.id)?.check_in_time || null} />
-        </>
-      );
-    }}
-  </PaginatedTableWrapper>;
+						<CheckOutModal
+							isOpen={checkOutModalOpen}
+							onClose={() => setCheckOutModalOpen(false)}
+							onConfirm={handleCheckOut}
+							employeeName={selectedEmployee?.user?.fullname || ""}
+							checkInTime={
+								attendanceRecords.find((r) => r.employee.id === selectedEmployee?.id)
+									?.check_in_time || null
+							}
+						/>
+					</>
+				);
+			}}
+		</PaginatedTableWrapper>
+	);
 }
 
 function isToday(dateString: string) {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  return dateString === `${yyyy}-${mm}-${dd}`;
+	const today = new Date();
+	const yyyy = today.getFullYear();
+	const mm = String(today.getMonth() + 1).padStart(2, "0");
+	const dd = String(today.getDate()).padStart(2, "0");
+	return dateString === `${yyyy}-${mm}-${dd}`;
 }

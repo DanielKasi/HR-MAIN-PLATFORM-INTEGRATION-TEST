@@ -1,20 +1,15 @@
-import React from 'react';
-import DOMPurify from 'dompurify';
+import React from "react";
+import DOMPurify from "dompurify";
 
 interface RichTextDisplayProps {
-  htmlContent: string;
-  className?: string;
+	htmlContent: string;
+	className?: string;
 }
 
 const RichTextDisplay: React.FC<RichTextDisplayProps> = ({ htmlContent, className }) => {
-  const sanitizedContent = DOMPurify.sanitize(htmlContent);
+	const sanitizedContent = DOMPurify.sanitize(htmlContent);
 
-  return (
-    <div
-      className={className}
-      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-    />
-  );
+	return <div className={className} dangerouslySetInnerHTML={{ __html: sanitizedContent }} />;
 };
 
 export default RichTextDisplay;

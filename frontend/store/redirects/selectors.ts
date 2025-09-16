@@ -1,5 +1,5 @@
-import {createSelector} from "reselect";
-import {RootState} from "../rootReducer";
+import { createSelector } from "reselect";
+import { RootState } from "../rootReducer";
 
 const slice = (state: RootState) => state.redirects;
 
