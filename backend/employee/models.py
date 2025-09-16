@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from django.db import models
 from datetime import datetime
+from settings.models import EmailProviderConfig
 from institution.models import Branch, InstitutionBankType, UserBranch
 from datetime import date, datetime
 from django.core.exceptions import ValidationError
@@ -544,6 +545,43 @@ class Employee(BaseApprovableModel):
                 return True
 
         return False
+    
+class EmployeeCompanyEmail(BaseApprovableModel):
+    """
+    Model to store employee company email accounts.
+    """
+    class Meta:
+        verbose_name = "Employee Email"
+        verbose_name_plural = "Employee Emails"
+        unique_together = [['employee', 'email']]
+
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('pending', 'Pending'),
+        ('suspended', 'Suspended'),
+        ('deleted', 'Deleted'),
+    )
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='company_emails'
+    )
+    email = models.EmailField(unique=True)
+    provider = models.CharField(
+        max_length=20,
+        choices=EmailProviderConfig.PROVIDER_CHOICES,
+        help_text="Email provider (e.g., cPanel, Google Workspace)"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+
+    def __str__(self):
+        return f"{self.email} for {self.employee.user.fullname}"
+
 
 
 class EmployeeWorkingDays(BaseApprovableModel):

@@ -5,6 +5,7 @@ from .models import (
     Employee,
     EmployeeAttendance,
     EmployeeBankAccount,
+    EmployeeCompanyEmail,
     EmployeeType,
     NextOfKin,
     QualificationAward,
@@ -488,6 +489,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
         data.pop("department_details", None)
         data.pop("position_details", None)
         return data
+
+class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeCompanyEmail
+        fields = '__all__'        
 
 
 class EmployeeDaySerializer(BaseApprovableSerializer):

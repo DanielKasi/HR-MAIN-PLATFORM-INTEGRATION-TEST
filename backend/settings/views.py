@@ -5,13 +5,13 @@ from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
 from institution.models import Institution
 from utilities.sortable_api import SortableAPIMixin
-from .models import MeetingIntegration, SystemConfiguration, SystemDay
-from .serializers import MeetingIntegrationSerializer, SystemConfigurationSerializer, SystemDaySerializer
+from .models import EmailProviderConfig, MeetingIntegration, SystemConfiguration, SystemDay
+from .serializers import EmailProviderConfigSerializer, MeetingIntegrationSerializer, SystemConfigurationSerializer, SystemDaySerializer
 from utilities.pagination import CustomPageNumberPagination
 from slugify import slugify
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction, models
 
 class SystemDayListVIew(APIView):
     @extend_schema(
@@ -217,3 +217,118 @@ class MeetingIntegrationDetailView(APIView):
             integration.confirm_update()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+
+
+class EmailProviderConfigListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['provider', 'updated_at']  
+    default_ordering = ['-updated_at']
+
+    @extend_schema(
+        request=EmailProviderConfigSerializer,
+        responses={
+            201: OpenApiResponse(response=EmailProviderConfigSerializer, description="Email provider config created successfully."),
+            400: OpenApiResponse(description="Bad request, validation errors."),
+        },
+        tags=["Email Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        print(request.data)
+        serializer = EmailProviderConfigSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by provider or domain"},
+            {"name": "updated_at", "type": "date", "description": "Filter by update date"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'provider,-updated_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(response=EmailProviderConfigSerializer(many=True), description="List of email provider configs."),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Email Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        configs = EmailProviderConfig.objects.filter(institution=institution, deleted_at__isnull=True)
+        search_query = request.query_params.get("search", None)
+        updated_at = request.query_params.get("updated_at", None)
+
+        if search_query:
+            configs = configs.filter(
+                models.Q(provider__icontains=search_query) | models.Q(domain__icontains=search_query)
+            )
+        if updated_at:
+            configs = configs.filter(updated_at__date=updated_at)
+
+        try:
+            configs = self.apply_sorting(configs, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(configs, request)
+        serializer = EmailProviderConfigSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class EmailProviderConfigDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(response=EmailProviderConfigSerializer, description="Email provider config details."),
+            404: OpenApiResponse(description="Email provider config not found."),
+        },
+        tags=["Email Management"],
+    )
+    def get(self, request, pk):
+        config = get_object_or_404(EmailProviderConfig, pk=pk)
+        serializer = EmailProviderConfigSerializer(config)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(description="Email provider config marked for deletion and sent for approval."),
+            404: OpenApiResponse(description="Email provider config not found."),
+        },
+        tags=["Email Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        config = get_object_or_404(EmailProviderConfig, pk=pk)
+        config.approval_status = 'under_deletion'  
+        config.save(update_fields=['approval_status'])
+        config.confirm_delete() 
+        return Response({"message": "Email provider config submitted for deletion approval."}, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        request=EmailProviderConfigSerializer,
+        responses={
+            200: OpenApiResponse(response=EmailProviderConfigSerializer, description="Email provider config updated successfully."),
+            404: OpenApiResponse(description="Email provider config not found."),
+            400: OpenApiResponse(description="Bad request, validation errors."),
+        },
+        tags=["Email Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        config = get_object_or_404(EmailProviderConfig, pk=pk)
+        config.approval_status = 'under_update'  
+        serializer = EmailProviderConfigSerializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            config.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

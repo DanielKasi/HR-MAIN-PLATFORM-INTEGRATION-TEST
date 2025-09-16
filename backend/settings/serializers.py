@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import SystemConfiguration, SystemDay, MeetingIntegration
+from django.core.exceptions import ValidationError
+from .models import EmailProviderConfig, SystemConfiguration, SystemDay, MeetingIntegration
 
 
 class SystemConfigurationSerializer(serializers.ModelSerializer):
@@ -53,4 +54,35 @@ class MeetingIntegrationSerializer(serializers.ModelSerializer):
 
         instance = super().create(validated_data)
         return instance
-        
+    
+
+class EmailProviderConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailProviderConfig
+        fields = '__all__'
+        extra_kwargs = {
+            'api_password': {'write_only': True},
+            'api_token': {'write_only': True},
+            'api_username': {'write_only': True},
+            'api_client_id': {'write_only': True},
+            'api_client_secret': {'write_only': True},
+        }
+        read_only_fields = ['institution']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if not request or not request.user:
+            raise ValidationError("No authenticated user found in request context")
+
+        try:
+            institution = request.user.profile.institution
+            if not institution:
+                raise ValidationError("Institution not found for this user's profile")
+        except AttributeError:
+            raise ValidationError("User profile or institution is not configured")
+
+        validated_data['institution'] = institution
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)

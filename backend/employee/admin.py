@@ -15,6 +15,7 @@ NextOfKin,
 WorkExperience,
 Child,
 QualificationAward,
+EmployeeCompanyEmail,
 )
 
 admin.site.register(Employee)
@@ -33,4 +34,5 @@ admin.site.register(NextOfKin)
 admin.site.register(WorkExperience)
 admin.site.register(Child)
 admin.site.register(QualificationAward)
+admin.site.register(EmployeeCompanyEmail)
 
