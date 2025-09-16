@@ -149,7 +149,7 @@ class MeetingIntegrationListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        integrations = MeetingIntegration.objects.filter(institution=institution)
+        integrations = MeetingIntegration.objects.filter(institution=institution, deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         updated_at = request.query_params.get("updated_at", None)
 

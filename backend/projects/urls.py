@@ -20,7 +20,7 @@ urlpatterns = [
         name="project-detail",
     ),
     path(
-        "tasks/<int:project_id>/", TaskListCreateView.as_view(), name="task-list-create"
+        "tasks/", TaskListCreateView.as_view(), name="task-list-create"
     ),
     path("tasks/<int:task_id>/details/", TaskDetailView.as_view(), name="task-detail"),
     path(
