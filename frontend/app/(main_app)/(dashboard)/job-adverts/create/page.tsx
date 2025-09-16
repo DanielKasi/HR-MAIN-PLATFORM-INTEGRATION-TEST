@@ -1179,7 +1179,7 @@ export default function JobAdvertsPage() {
                   type="number"
                   min="1"
                   max="1000"
-                  value={formData.number_of_employees_expected || ""}
+                  value={formData.number_of_employees_expected?.toString() || ""}
                   onChange={(e) =>
                     updateFormData(
                       "number_of_employees_expected",
