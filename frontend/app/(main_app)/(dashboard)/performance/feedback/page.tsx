@@ -12,12 +12,14 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { MessageSquare, Star, Users, Eye, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
 export default function FeedbackPage() {
     const [feedback, setFeedback] = useState<IFeedback360[]>([])
     const [loading, setLoading] = useState(true)
     const [modalOpen, setModalOpen] = useState(false)
     const [editingFeedback, setEditingFeedback] = useState<IFeedback360 | undefined>()
+    const [feedbackToDelete, setFeedbackToDelete] = useState<IFeedback360|null>(null)
     const [submitting, setSubmitting] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
 
@@ -73,10 +75,7 @@ export default function FeedbackPage() {
     }
 
     const handleDelete = async (feedbackItem: IFeedback360) => {
-        const revieweeName = feedbackItem.reviewee.user?.fullname || "Unknown"
-        const reviewerName = feedbackItem.is_anonymous ? "Anonymous" : feedbackItem.reviewer.user?.fullname || "Unknown"
-
-        if (!confirm(`Are you sure you want to delete feedback from ${reviewerName} for ${revieweeName}?`)) return
+        if (!feedbackToDelete) return
 
         try {
             await FEEDBACK_360_API.delete({ feedbackId: feedbackItem.id })
@@ -97,7 +96,7 @@ export default function FeedbackPage() {
         feedback.length > 0
             ? feedback.reduce((sum, f) => sum + (f.rating || 0), 0) / feedback.filter((f) => f.rating).length
             : 0
-    const anonymousFeedback = feedback.filter((f) => f.is_anonymous).length
+    const anonymousFeedback = feedback.filter((f) => !f.given_by).length
     const withRatings = feedback.filter((f) => f.rating).length
 
     return (
@@ -166,6 +165,17 @@ export default function FeedbackPage() {
                     onSubmit={handleSubmit}
                     isLoading={submitting}
                 />
+                        {feedbackToDelete && (
+                          <ConfirmationDialog
+                            description="Are you sure you want to delete this feedback? This action cannot be undone."
+                            isOpen={!!feedbackToDelete}
+                            title={feedbackToDelete.given_by?.user?.fullname ? `Delete feedback from ${feedbackToDelete.given_by?.user?.fullname} ${feedbackToDelete.reviewer ? "for " + feedbackToDelete.reviewer?.user?.fullname : "Unknown"}?`: `Delete anonymous feedback ?`}
+                            onConfirm={() => handleDelete(feedbackToDelete)}
+                            onClose={() => {
+                              setFeedbackToDelete(null);
+                            }}
+                          />
+                        )}
             </div>
         </div>
     )

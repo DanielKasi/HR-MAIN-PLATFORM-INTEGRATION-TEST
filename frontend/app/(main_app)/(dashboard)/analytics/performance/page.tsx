@@ -93,41 +93,6 @@ export default function Dashboard() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          {/* <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-gray-900">
-            {greeting},{" "}
-            {currentUser?.gender === USER_GENDER.MALE
-              ? "Mr"
-              : currentUser?.gender === USER_GENDER.FEMALE
-                ? "Ms"
-                : ""}
-            . {capitalizeFirstLetter(currentUser?.fullname || "")}
-          </h1> */}
-          {/* <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link
-                href={"/employees/employee-list"}
-                className="flex items-center justify-start gap-3"
-              >
-                <Icon icon="hugeicons:user-add-02" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Add Employee</span>
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link href={"/job-adverts/create"} className="flex items-center justify-start gap-3">
-                <Icon icon="hugeicons:advertisiment" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Post Job Opening</span>
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" className="rounded-xl flex items-center">
-              <Link
-                href={"/events-holidays/events/add"}
-                className="flex items-center justify-start gap-3"
-              >
-                <Icon icon="hugeicons:calendar-add-01" className="!w-6 !h-6" />
-                <span className="hidden lg:inline">Add event</span>
-              </Link>
-            </Button>
-          </div> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

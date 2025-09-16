@@ -149,13 +149,13 @@ import {
   IProjectDashboard,
   IProjectTaskFormData,
   IProjectTask,
-  IEmployeeObjectives,
+  IEmployeeObjective,
   IBonusPointSettings,
   IBonusPointSettingsFormData,
   IDurationUnit,
   IEmployeeBonusPoint,
   IEmployeeBonusPointFormData,
-  IEmployeeObjectivesFormData,
+  IEmployeeObjectiveFormData,
   IEventMode,
   IFeedback360,
   IFeedback360FormData,
@@ -163,8 +163,8 @@ import {
   IKeyResultFormData,
   IMeeting,
   IMeetingFormData,
-  IObjectives,
-  IObjectivesFormData,
+  IObjective,
+  IObjectiveFormData,
   IObjectiveStatus,
   IPeriod,
   IPeriodFormData,
@@ -7377,22 +7377,22 @@ export const OBJECTIVES_API = {
     }
     const endpoint = `performance/objectives/?${params.toString()}`;
     const response = await apiRequest.get(endpoint);
-    return response.data as IPaginatedResponse<IObjectives>;
+    return response.data as IPaginatedResponse<IObjective>;
   },
 
   getPaginatedFromUrl: async ({ url }: { url: string }) => {
     const response = await apiRequest.get(url);
-    return response.data as IPaginatedResponse<IObjectives>;
+    return response.data as IPaginatedResponse<IObjective>;
   },
 
-  create: async ({ data }: { data: IObjectivesFormData }) => {
+  create: async ({ data }: { data: IObjectiveFormData }) => {
     const response = await apiRequest.post(`performance/objectives/`, data);
-    return response.data as IObjectives;
+    return response.data as IObjective;
   },
 
-  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectivesFormData> }) => {
+  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectiveFormData> }) => {
     const response = await apiRequest.patch(`performance/objectives/${objectiveId}/`, data);
-    return response.data as IObjectives;
+    return response.data as IObjective;
   },
 
   delete: async ({ objectiveId }: { objectiveId: number }) => {
@@ -7401,7 +7401,7 @@ export const OBJECTIVES_API = {
 
   getById: async ({ objectiveId }: { objectiveId: number }) => {
     const response = await apiRequest.get(`performance/objectives/${objectiveId}/`);
-    return response.data as IObjectives;
+    return response.data as IObjective;
   },
 };
 
@@ -7432,22 +7432,22 @@ export const EMPLOYEE_OBJECTIVES_API = {
     }
     const endpoint = `performance/employee-objectives/?${params.toString()}`;
     const response = await apiRequest.get(endpoint);
-    return response.data as IPaginatedResponse<IEmployeeObjectives>;
+    return response.data as IPaginatedResponse<IEmployeeObjective>;
   },
 
   getPaginatedFromUrl: async ({ url }: { url: string }) => {
     const response = await apiRequest.get(url);
-    return response.data as IPaginatedResponse<IEmployeeObjectives>;
+    return response.data as IPaginatedResponse<IEmployeeObjective>;
   },
 
-  create: async ({ data }: { data: IEmployeeObjectivesFormData }) => {
+  create: async ({ data }: { data: IEmployeeObjectiveFormData }) => {
     const response = await apiRequest.post(`performance/employee-objectives/`, data);
-    return response.data as IEmployeeObjectives;
+    return response.data as IEmployeeObjective;
   },
 
-  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IEmployeeObjectivesFormData> }) => {
+  update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IEmployeeObjectiveFormData> }) => {
     const response = await apiRequest.patch(`performance/employee-objectives/${objectiveId}/`, data);
-    return response.data as IEmployeeObjectives;
+    return response.data as IEmployeeObjective;
   },
 
   delete: async ({ objectiveId }: { objectiveId: number }) => {
@@ -7456,7 +7456,7 @@ export const EMPLOYEE_OBJECTIVES_API = {
 
   getById: async ({ objectiveId }: { objectiveId: number }) => {
     const response = await apiRequest.get(`performance/employee-objectives/${objectiveId}/`);
-    return response.data as IEmployeeObjectives;
+    return response.data as IEmployeeObjective;
   },
 };
 

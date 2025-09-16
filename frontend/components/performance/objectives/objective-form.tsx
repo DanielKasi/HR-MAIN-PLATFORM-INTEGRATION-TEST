@@ -3,8 +3,8 @@
 import { useState, useEffect, forwardRef } from "react"
 import { PerformanceForm, type FormField } from "../common/performance-form"
 import type {
-  IObjectives,
-  IObjectivesFormData,
+  IObjective,
+  IObjectiveFormData,
   IDurationUnit,
   IKeyResult,
   IKeyResultFormData,
@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 
 interface ObjectiveFormProps {
-  initialData?: IObjectives
-  onSubmit: (data: IObjectivesFormData) => void
+  initialData?: IObjective
+  onSubmit: (data: IObjectiveFormData) => void
   isLoading?: boolean
 }
 
@@ -49,7 +49,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
           setManagersValue([initialData.managers.id])
         }
         if (initialData.assignees) {
-          setAssigneesValue([initialData.assignees.id])
+          setAssigneesValue(initialData.assignees.map(assignee => assignee.id))
         }
       }
     }, [initialData])
@@ -85,6 +85,16 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         label: "Objective Name",
         type: "text",
         placeholder: "e.g., Increase team productivity",
+        required: true,
+        validation: (value: string) => {
+          if (value.length < 5) return "Objective name must be at least 5 characters"
+          return null
+        },
+      },
+            {
+        name: "creation_date",
+        label: "Creation Date",
+        type: "date",
         required: true,
         validation: (value: string) => {
           if (value.length < 5) return "Objective name must be at least 5 characters"
@@ -137,19 +147,20 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
       },
     ]
 
-    const handleSubmit = (formData: Record<string, any>) => {
+    const handleSubmit = (formData: IObjectiveFormData) => {
       if (!currentInstitution) return
 
-      const objectiveData: IObjectivesFormData = {
+      const objectiveData: IObjectiveFormData = {
         institution: currentInstitution.id,
         name: formData.name,
         description: formData.description,
         duration: formData.duration,
         duration_unit: formData.duration_unit as IDurationUnit,
         managers_id: managersValue.length > 0 ? Number(managersValue[0]) : undefined,
-        assignees_id: assigneesValue.length > 0 ? Number(assigneesValue[0]) : undefined,
+        assignees_id: assigneesValue.map(item => Number(item)),
         key_result: formData.key_result ? Number(formData.key_result) : undefined,
         self_employee_progress_update: formData.self_employee_progress_update || false,
+        creation_date:formData.creation_date
       }
 
       onSubmit(objectiveData)
@@ -170,7 +181,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 
     return (
       <div className="space-y-6 ">
-        <PerformanceForm
+        <PerformanceForm<IObjectiveFormData>
           ref={ref}
           fields={fields}
           initialData={getInitialFormData()}
@@ -204,7 +215,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
         <div className="border-t pt-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Assignment</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Manager (Optional)</label>
               <EmployeeSearchableSelect

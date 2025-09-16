@@ -49,7 +49,7 @@ interface IProjectTask {
   project: number;
   task_name: string;
   description: string;
-  leaders: UserProfile[];
+  managers: UserProfile[];
   assigned_to: UserProfile[];
   start_date: string;
   end_date: string;
@@ -61,8 +61,8 @@ interface IProject {
   id: number;
   institution: number;
   project_name: string;
-  leaders: UserProfile[];
-  members: UserProfile[];
+  managers: UserProfile[];
+  assignees: UserProfile[];
   description: string;
   start_date: string;
   end_date: string;
@@ -162,20 +162,20 @@ export default function ProjectsPage() {
         </div>
       ),
       cell: (project) => <Badge>
-        {project.leaders.length}
+        {project.managers.length}
       </Badge>
     },
     {
-      key: "members",
+      key: "assignees",
       header: (
         <div className="flex items-center justify-start gap-4">
           <span>Members</span>
           <Button
             onClick={() => {
-              setOrdering((prev) => (prev === "members" ? "" : "members"));
+              setOrdering((prev) => (prev === "assignees" ? "" : "assignees"));
             }}
             size="sm"
-            variant={ordering === "members" ? "default" : "outline"}
+            variant={ordering === "assignees" ? "default" : "outline"}
             type="button"
           >
             <Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
@@ -183,7 +183,7 @@ export default function ProjectsPage() {
         </div>
       ),
       cell: (project) => <Badge>
-        {project.members.length}
+        {project.assignees.length}
       </Badge>
     },
     {

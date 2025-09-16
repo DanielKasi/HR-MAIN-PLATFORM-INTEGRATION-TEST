@@ -19,7 +19,7 @@ export function KeyResultModal({ isOpen, onClose, keyResult, onSubmit, isLoading
             onClose={onClose}
             title={keyResult ? "Edit Key Result" : "Create New Key Result"}
             size="md"
-            onSubmit={onSubmit}
+            // onSubmit={onSubmit}
             isLoading={isLoading}
         >
             <KeyResultForm initialData={keyResult} onSubmit={onSubmit} isLoading={isLoading} />

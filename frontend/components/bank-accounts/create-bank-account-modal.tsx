@@ -168,11 +168,8 @@ export function BankAccountFormModal({
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-4 pt-4">
-                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                    <div className="flex items-center justify-start gap-4 pt-4">
+                        <Button className="w-full rounded-full" type="submit" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {isSubmitting ? "Saving..." : editingAccount ? "Update Bank Account" : "Create Bank Account"}
                         </Button>

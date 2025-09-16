@@ -1,45 +1,60 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Icon } from "@iconify/react";
-import { toast } from "sonner";
-import { Plus, Edit, Trash2, Settings } from "lucide-react";
-import { spotcheckAPI, showErrorToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
-import type { IBranchSpotCheckSetting, IBranchSpotCheckSettingFormData } from "@/types/types.utils";
-import { SpotcheckConfigModal } from "./spotcheck-config-modal";
+import {useState, useEffect} from "react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {Icon} from "@iconify/react";
+import {toast} from "sonner";
+import {Plus, Edit, Trash2, Settings} from "lucide-react";
+import {spotcheckAPI, showErrorToast} from "@/lib/utils";
+import {useSelector} from "react-redux";
+import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
+import type {IBranchSpotCheckSetting, IBranchSpotCheckSettingFormData} from "@/types/types.utils";
+import {SpotcheckConfigModal} from "./spotcheck-config-modal";
+import {ConfirmationDialog} from "../confirmation-dialog";
 
 export const BranchSpotcheckConfigurations = () => {
-  const institution = useSelector(selectSelectedInstitution);
   const selectedBranch = useSelector(selectSelectedBranch);
-  
-  const [branchSpotcheckSettings, setBranchSpotcheckSettings] = useState<IBranchSpotCheckSetting[]>([]);
-  const [branchSpotcheckFormData, setBranchSpotcheckFormData] = useState<IBranchSpotCheckSettingFormData>({
-    lower_threshold: 0,
-    upper_threshold: 0,
-    expires_after_minutes: 0,
-    late_starts_after_minutes: 0,
-    branch: 0,
-  });
-  const [isBranchSpotcheckFormOpen, setIsBranchSpotcheckFormOpen] = useState(false);
-  const [editingBranchSpotcheckSetting, setEditingBranchSpotcheckSetting] = useState<IBranchSpotCheckSetting | null>(null);
 
+  const [branchSpotcheckSettings, setBranchSpotcheckSettings] = useState<IBranchSpotCheckSetting[]>(
+    [],
+  );
+  const [branchSpotcheckFormData, setBranchSpotcheckFormData] =
+    useState<IBranchSpotCheckSettingFormData>({
+      lower_threshold: 0,
+      upper_threshold: 0,
+      expires_after_minutes: 0,
+      late_starts_after_minutes: 0,
+      branch: 0,
+    });
+  const [isBranchSpotcheckFormOpen, setIsBranchSpotcheckFormOpen] = useState(false);
+  const [editingBranchSpotcheckSetting, setEditingBranchSpotcheckSetting] =
+    useState<IBranchSpotCheckSetting | null>(null);
+  const [spotcheckConfigurationToDelete, setSpotcheckConfigurationToDelete] =
+    useState<IBranchSpotCheckSetting | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-
-
-
-
   // Branch Spotcheck Configuration helper functions
-  const handleBranchSpotcheckInputChange = (field: keyof IBranchSpotCheckSettingFormData, value: number) => {
-    setBranchSpotcheckFormData((prev) => ({ ...prev, [field]: value }));
+  const handleBranchSpotcheckInputChange = (
+    field: keyof IBranchSpotCheckSettingFormData,
+    value: number,
+  ) => {
+    setBranchSpotcheckFormData((prev) => ({...prev, [field]: value}));
   };
 
   const resetBranchSpotcheckForm = () => {
@@ -97,7 +112,7 @@ export const BranchSpotcheckConfigurations = () => {
       // Refresh branch spotcheck settings
       await fetchBranchSpotcheckSettings();
     } catch (error) {
-      showErrorToast({ error, defaultMessage: "Failed to save branch spotcheck configuration" });
+      showErrorToast({error, defaultMessage: "Failed to save branch spotcheck configuration"});
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +121,7 @@ export const BranchSpotcheckConfigurations = () => {
   const fetchBranchSpotcheckSettings = async () => {
     if (!selectedBranch?.id) return;
     try {
-      const setting = await spotcheckAPI.CONFIGS.BRANCH.getByBranch({ branchId: selectedBranch.id });
+      const setting = await spotcheckAPI.CONFIGS.BRANCH.getByBranch({branchId: selectedBranch.id});
       setBranchSpotcheckSettings(setting ? [setting] : []);
     } catch (error) {
       // Branch doesn't have a setting yet, set empty array
@@ -115,16 +130,15 @@ export const BranchSpotcheckConfigurations = () => {
   };
 
   const handleDeleteBranchSpotcheckConfig = async (setting: IBranchSpotCheckSetting) => {
-    if (confirm(`Are you sure you want to delete the spotcheck configuration for ${setting.branch.branch_name}? This action cannot be undone.`)) {
+    if (spotcheckConfigurationToDelete) {
       setIsLoading(true);
       try {
-        
         // If delete endpoint exists, uncomment the line below:
         // await spotcheckAPI.CONFIGS.BRANCH.delete(setting.branch.id);
-        setBranchSpotcheckSettings(prev => prev.filter(s => s.branch.id !== setting.branch.id));
+        setBranchSpotcheckSettings((prev) => prev.filter((s) => s.branch.id !== setting.branch.id));
         toast.success("Branch spotcheck configuration deleted successfully");
       } catch (error) {
-        showErrorToast({ error, defaultMessage: "Failed to delete branch spotcheck configuration" });
+        showErrorToast({error, defaultMessage: "Failed to delete branch spotcheck configuration"});
       } finally {
         setIsLoading(false);
       }
@@ -195,15 +209,20 @@ export const BranchSpotcheckConfigurations = () => {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
-                                <Icon icon="hugeicons:more-horizontal-square-01" className="!h-4 !w-4 text-dark" />
+                                <Icon
+                                  icon="hugeicons:more-horizontal-square-01"
+                                  className="!h-4 !w-4 text-dark"
+                                />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditBranchSpotcheckConfig(setting)}>
+                              <DropdownMenuItem
+                                onClick={() => handleEditBranchSpotcheckConfig(setting)}
+                              >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteBranchSpotcheckConfig(setting)}
                                 className="text-red-600"
                               >
@@ -218,7 +237,8 @@ export const BranchSpotcheckConfigurations = () => {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        No spotcheck configuration found for this branch. Click "Add Branch Configuration" to create one.
+                        No spotcheck configuration found for this branch. Click "Add Branch
+                        Configuration" to create one.
                       </TableCell>
                     </TableRow>
                   )}
@@ -238,8 +258,23 @@ export const BranchSpotcheckConfigurations = () => {
         onInputChange={handleBranchSpotcheckInputChange}
         isLoading={isLoading}
         isEditing={!!editingBranchSpotcheckSetting}
-        title={editingBranchSpotcheckSetting ? "Edit Branch Spotcheck Configuration" : "Add Branch Spotcheck Configuration"}
+        title={
+          editingBranchSpotcheckSetting
+            ? "Edit Branch Spotcheck Configuration"
+            : "Add Branch Spotcheck Configuration"
+        }
       />
+      {spotcheckConfigurationToDelete && (
+        <ConfirmationDialog
+          description="Are you sure you want to delete this branch spotcheck configuration ? This action cannot be undone."
+          isOpen={!!spotcheckConfigurationToDelete}
+          title={`Delete branch spotcheck configuration for branch ${spotcheckConfigurationToDelete.branch.branch_name}?`}
+          onConfirm={() => handleDeleteBranchSpotcheckConfig(spotcheckConfigurationToDelete)}
+          onClose={() => {
+            setSpotcheckConfigurationToDelete(null);
+          }}
+        />
+      )}
     </div>
   );
 };

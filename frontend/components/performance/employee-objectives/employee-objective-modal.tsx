@@ -2,13 +2,13 @@
 
 import { PerformanceFormModal } from "../common/performance-form-modal"
 import { EmployeeObjectiveForm } from "./employee-objective-form"
-import type { IEmployeeObjectives, IEmployeeObjectivesFormData } from "@/types/types.utils"
+import type { IEmployeeObjective, IEmployeeObjectiveFormData } from "@/types/types.utils"
 
 interface EmployeeObjectiveModalProps {
     isOpen: boolean
     onClose: () => void
-    employeeObjective?: IEmployeeObjectives
-    onSubmit: (data: IEmployeeObjectivesFormData) => void
+    employeeObjective?: IEmployeeObjective
+    onSubmit: (data: IEmployeeObjectiveFormData) => void
     isLoading?: boolean
 }
 

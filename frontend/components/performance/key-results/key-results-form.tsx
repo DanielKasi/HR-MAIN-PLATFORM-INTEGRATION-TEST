@@ -114,7 +114,7 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
                 isLoading={isLoading}
                 submitLabel={initialData ? "Update Key Result" : "Create Key Result"}
                 showCancel={false}
-                showSubmit={false}
+                showSubmit={true}
             />
         )
     },

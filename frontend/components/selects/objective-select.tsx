@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { OBJECTIVES_API } from "@/lib/utils"
-import { IObjectives } from "@/types/types.utils"
+import { IObjective } from "@/types/types.utils"
 
 import { useSelector } from "react-redux"
 import { selectSelectedInstitution } from "@/store/auth/selectors"
@@ -24,7 +24,7 @@ export function ObjectiveSelect({
     disabled = false,
     className,
 }: ObjectiveSelectProps) {
-    const [objectives, setObjectives] = useState<IObjectives[]>([])
+    const [objectives, setObjectives] = useState<IObjective[]>([])
     const [loading, setLoading] = useState(false)
     const currentInstitution = useSelector(selectSelectedInstitution)
 

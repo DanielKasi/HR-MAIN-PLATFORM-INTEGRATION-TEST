@@ -225,7 +225,7 @@ export default function TaskDetailsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium">Leaders</p>
-                        <p className="text-3xl font-bold">{task.leaders.length}</p>
+                        <p className="text-3xl font-bold">{task.managers.length}</p>
                       </div>
                       <Users className="h-8 w-8" />
                     </div>
@@ -309,7 +309,7 @@ export default function TaskDetailsPage() {
                       <div>
                         <h4 className="font-medium text-slate-900 mb-3">Task Leaders</h4>
                         <div className="space-y-2">
-                          {task.leaders.map((leader) => (
+                          {task.managers.map((leader) => (
                             <div
                               key={leader.id}
                               className="flex items-center gap-3 p-2 rounded-lg bg-slate-50"

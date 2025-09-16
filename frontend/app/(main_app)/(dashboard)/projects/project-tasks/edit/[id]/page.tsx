@@ -42,7 +42,7 @@ export default function EditTaskPage() {
     task_status: "not_started",
     priority: "medium",
     project: 0,
-    leaders: [],
+    managers: [],
     assigned_to: [],
   });
 
@@ -70,7 +70,7 @@ export default function EditTaskPage() {
         task_status: task.task_status,
         priority: task.priority,
         project: task.project,
-        leaders: task.leaders.map((leader) => leader.id),
+        managers: task.managers.map((leader) => leader.id),
         assigned_to: task.assigned_to.map((assignee) => assignee.id),
       });
     } catch (error) {
@@ -305,11 +305,11 @@ export default function EditTaskPage() {
                 <div className="space-y-3">
                   <Label className="text-base font-medium">Task Leaders (Optional)</Label>
                   <UserProfileSearchableSelect
-                    value={formData.leaders}
+                    value={formData.managers}
                     onValueChange={(values) => {
-                      handleInputChange("leaders", values.map((val) => Number(val)));
+                      handleInputChange("managers", values.map((val) => Number(val)));
                     }}
-                    placeholder="Select task leaders"
+                    placeholder="Select task managers"
                     showEmployeeId={false}
                     showDepartment={true}
                     multiple={true}
