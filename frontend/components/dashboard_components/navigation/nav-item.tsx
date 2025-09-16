@@ -18,7 +18,7 @@ export const NavItemComponent = ({
 	onToggle,
 }: {
 
-	item: NavItem;
+	item: NavIte;
 	expandedItems: { [key: string]: boolean };
 	isMobileView: boolean;
 	index: number;
@@ -90,10 +90,10 @@ export const NavItemComponent = ({
 								variant="ghost"
 								// disabled={!sub.href || sub.href.startsWith("#")}
 								className={`w-full !rounded-none !text-left flex items-center px-2 !py-4 text-sm text-gray-600 hover:bg-primary/80 ${!sub.href || sub.href.startsWith("#")
-										? " text-gray-500/80"
-										: pathname === sub.href
-											? "bg-primary/80  text-gray-100"
-											: "bg-gray-200/20  hover:bg-primary/60"
+									? " text-gray-500/80"
+									: pathname === sub.href
+										? "bg-primary/80  text-gray-100"
+										: "bg-gray-200/20  hover:bg-primary/60"
 									}`}
 								onClick={() => {
 									router.push(sub.href);
