@@ -21,17 +21,18 @@ import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-tab
 
 const SpotchecksPage = () => {
 	const router = useRouter();
+
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [spotcheckStatuses, setSpotcheckStatuses] = useState<Array<ISpotCheckStatus>>([]);
-	const [summaryData, setSummaryData] = useState({
-		totalSpotChecks: 0,
-		totalMissed: 0,
-		missedThisMonth: 0,
-		missedThisWeek: 0,
-		missedToday: 0,
-	});
-	const selectedInstitution = useSelector(selectSelectedInstitution);
+	// const [summaryData, setSummaryData] = useState({
+	// 	totalSpotChecks: 0,
+	// 	totalMissed: 0,
+	// 	missedThisMonth: 0,
+	// 	missedThisWeek: 0,
+	// 	missedToday: 0,
+	// });
+	// const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	useEffect(() => {
 		const fetchStatuses = async () => {
