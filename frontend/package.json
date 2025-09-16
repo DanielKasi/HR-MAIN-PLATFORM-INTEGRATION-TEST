@@ -9,6 +9,7 @@
 		"lint": "eslint . --ext .js,.jsx,.ts,.tsx",
 		"lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
 		"format": "prettier --write .",
+		"postinstall": "husky && node scripts/setup-hooks.js",
 		"prepare": "husky"
 	},
 	"dependencies": {
