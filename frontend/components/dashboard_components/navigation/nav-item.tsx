@@ -16,7 +16,7 @@ export const NavItemComponent = ({
 	onExpand,
 	onToggle,
 }: {
-	item: NavIte;
+	item: NavItem;
 	expandedItems: { [key: string]: boolean };
 	isMobileView: boolean;
 	index: number;
