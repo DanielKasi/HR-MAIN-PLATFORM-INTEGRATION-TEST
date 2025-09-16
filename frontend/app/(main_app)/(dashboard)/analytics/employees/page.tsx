@@ -1,5 +1,5 @@
-import EmployeeDashboard from "@/components/analytics/employee/dashboard"
+import EmployeeDashboard from "@/components/analytics/employee/dashboard";
 
 export default function EmployeesPage() {
-  return <EmployeeDashboard />
+	return <EmployeeDashboard />;
 }
