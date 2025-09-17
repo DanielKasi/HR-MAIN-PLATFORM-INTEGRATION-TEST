@@ -83,7 +83,7 @@
 #     comment = models.TextField(blank=True, null=True)
 #     approved_by = models.ForeignKey(
 #         "users.Profile",
-#         on_delete=models.PROTECT,
+#         on_delete=models.CASCADE,
 #         null=True,
 #         blank=True,
 #         related_name="approved_tasks",
