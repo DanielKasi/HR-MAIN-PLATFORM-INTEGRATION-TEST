@@ -5,13 +5,16 @@ import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
 import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 
-import { PerformanceForm, type FormField } from "../common/performance-form";
-
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { PeriodSelect } from "@/components/selects/period-select";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface FeedbackFormProps {
 	initialData?: IFeedback360;
@@ -26,6 +29,27 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 	const [reviewerValue, setReviewerValue] = useState<(string | number)[]>([]);
 	const [periodValue, setPeriodValue] = useState<string>("");
 	const [rating, setRating] = useState<number[]>([5]);
+	const [formData, setFormData] = useState<Record<string, any>>(() => {
+		if (!initialData) {
+			return {
+				feedback_text: "",
+				strengths: "",
+				areas_for_improvement: "",
+				is_anonymous: false,
+				submission_date: new Date().toISOString().split("T")[0],
+			};
+		}
+
+		return {
+			feedback_text: initialData.feedback_text || "",
+			strengths: initialData.strengths || "",
+			areas_for_improvement: initialData.areas_for_improvement || "",
+			is_anonymous: initialData.is_anonymous || false,
+			submission_date:
+				initialData.submission_date?.split("T")[0] || new Date().toISOString().split("T")[0],
+		};
+	});
+	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	useEffect(() => {
 		// Set initial values
@@ -41,73 +65,59 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 		}
 	}, [initialData]);
 
-	const fields: FormField[] = [
-		{
-			name: "feedback_text",
-			label: "Feedback",
-			type: "textarea",
-			placeholder: "Provide detailed feedback...",
-			required: true,
-			validation: (value: string) => {
-				if (value.length < 10) return "Feedback must be at least 10 characters";
-				return null;
-			},
-		},
-		{
-			name: "strengths",
-			label: "Strengths",
-			type: "textarea",
-			placeholder: "What are this person's key strengths?",
-			validation: (value: string) => {
-				if (value && value.length < 5) return "Strengths must be at least 5 characters";
-				return null;
-			},
-		},
-		{
-			name: "areas_for_improvement",
-			label: "Areas for Improvement",
-			type: "textarea",
-			placeholder: "What areas could be improved?",
-			validation: (value: string) => {
-				if (value && value.length < 5) return "Areas for improvement must be at least 5 characters";
-				return null;
-			},
-		},
-		{
-			name: "is_anonymous",
-			label: "Anonymous Feedback",
-			type: "switch",
-			description: "Submit this feedback anonymously",
-		},
-		{
-			name: "submission_date",
-			label: "Submission Date",
-			type: "date",
-			required: true,
-		},
-	];
+	const handleChange = (name: string, value: any) => {
+		setFormData((prev) => ({ ...prev, [name]: value }));
 
-	// Compute initial form data for PerformanceForm (handles defaults for new forms)
-	const getInitialFormData = useMemo(() => {
-		if (!initialData) {
-			return {
-				submission_date: new Date().toISOString().split("T")[0],
-				is_anonymous: false,
-			};
+		// Clear error when user starts typing
+		if (errors[name]) {
+			setErrors((prev) => ({ ...prev, [name]: "" }));
+		}
+	};
+
+	const validateForm = () => {
+		const newErrors: Record<string, string> = {};
+
+		// Feedback text validation
+		if (!formData.feedback_text || formData.feedback_text.length < 10) {
+			newErrors.feedback_text = "Feedback must be at least 10 characters";
 		}
 
-		return {
-			feedback_text: initialData.feedback_text,
-			strengths: initialData.strengths,
-			areas_for_improvement: initialData.areas_for_improvement,
-			is_anonymous: initialData.is_anonymous,
-			submission_date:
-				initialData.submission_date?.split("T")[0] || new Date().toISOString().split("T")[0],
-		};
-	}, [initialData]);
+		// Strengths validation
+		if (formData.strengths && formData.strengths.length < 5) {
+			newErrors.strengths = "Strengths must be at least 5 characters";
+		}
 
-	const handleSubmit = (formData: Record<string, any>) => {
-		if (!currentInstitution || revieweeValue.length === 0 || reviewerValue.length === 0) return;
+		// Areas for improvement validation
+		if (formData.areas_for_improvement && formData.areas_for_improvement.length < 5) {
+			newErrors.areas_for_improvement = "Areas for improvement must be at least 5 characters";
+		}
+
+		// Submission date validation
+		if (!formData.submission_date) {
+			newErrors.submission_date = "Submission date is required";
+		}
+
+		// Reviewee and reviewer validation
+		if (revieweeValue.length === 0) {
+			newErrors.reviewee = "Reviewee is required";
+		}
+		if (reviewerValue.length === 0) {
+			newErrors.reviewer = "Reviewer is required";
+		}
+
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (
+			!currentInstitution ||
+			!validateForm() ||
+			revieweeValue.length === 0 ||
+			reviewerValue.length === 0
+		)
+			return;
 
 		const feedbackData: IFeedback360FormData = {
 			reviewee_id: formData.is_anonymous ? Number(revieweeValue[0]) : null,
@@ -124,9 +134,8 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 		onSubmit(feedbackData);
 	};
 
-	// Render PerformanceForm directly (no useMemo wrapper to avoid JSX recreation loop)
 	return (
-		<div className="space-y-6">
+		<form onSubmit={handleSubmit} className="space-y-6">
 			{/* Employee Selection */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
 				<div className="space-y-2">
@@ -140,6 +149,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 						multiple={false}
 						disabled={isLoading || !!initialData}
 					/>
+					{errors.reviewee && <p className="text-sm text-red-600">{errors.reviewee}</p>}
 					{!!initialData && (
 						<p className="text-xs text-slate-500">Reviewee cannot be changed after creation</p>
 					)}
@@ -156,6 +166,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 						multiple={false}
 						disabled={isLoading || !!initialData}
 					/>
+					{errors.reviewer && <p className="text-sm text-red-600">{errors.reviewer}</p>}
 					{!!initialData && (
 						<p className="text-xs text-slate-500">Reviewer cannot be changed after creation</p>
 					)}
@@ -198,16 +209,111 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 				</div>
 			</div>
 
-			{/* Form Fields - Render directly, no useMemo */}
-			<PerformanceForm<IFeedback360>
-				fields={fields}
-				initialData={getInitialFormData} // Use computed initial data
-				onSubmit={handleSubmit}
-				onCancel={onCancel}
-				isLoading={isLoading}
-				submitLabel={initialData ? "Update Feedback" : "Submit Feedback"}
-				showCancel={false}
-			/>
-		</div>
+			{/* Form Fields */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+				{/* Feedback Text */}
+				<div className="space-y-2 md:col-span-2">
+					<Label htmlFor="feedback_text" className="text-sm font-medium text-slate-700">
+						Feedback <span className="text-red-500">*</span>
+					</Label>
+					<Textarea
+						id="feedback_text"
+						value={formData.feedback_text}
+						onChange={(e) => handleChange("feedback_text", e.target.value)}
+						placeholder="Provide detailed feedback..."
+						disabled={isLoading}
+						className={cn(
+							"min-h-[100px] rounded-xl resize-none",
+							errors.feedback_text && "border-red-500",
+						)}
+						rows={3}
+					/>
+					{errors.feedback_text && <p className="text-sm text-red-600">{errors.feedback_text}</p>}
+				</div>
+
+				{/* Strengths */}
+				<div className="space-y-2 md:col-span-2">
+					<Label htmlFor="strengths" className="text-sm font-medium text-slate-700">
+						Strengths
+					</Label>
+					<Textarea
+						id="strengths"
+						value={formData.strengths}
+						onChange={(e) => handleChange("strengths", e.target.value)}
+						placeholder="What are this person's key strengths?"
+						disabled={isLoading}
+						className={cn(
+							"min-h-[100px] rounded-xl resize-none",
+							errors.strengths && "border-red-500",
+						)}
+						rows={3}
+					/>
+					{errors.strengths && <p className="text-sm text-red-600">{errors.strengths}</p>}
+				</div>
+
+				{/* Areas for Improvement */}
+				<div className="space-y-2 md:col-span-2">
+					<Label htmlFor="areas_for_improvement" className="text-sm font-medium text-slate-700">
+						Areas for Improvement
+					</Label>
+					<Textarea
+						id="areas_for_improvement"
+						value={formData.areas_for_improvement}
+						onChange={(e) => handleChange("areas_for_improvement", e.target.value)}
+						placeholder="What areas could be improved?"
+						disabled={isLoading}
+						className={cn(
+							"min-h-[100px] rounded-xl resize-none",
+							errors.areas_for_improvement && "border-red-500",
+						)}
+						rows={3}
+					/>
+					{errors.areas_for_improvement && (
+						<p className="text-sm text-red-600">{errors.areas_for_improvement}</p>
+					)}
+				</div>
+
+				{/* Anonymous Feedback */}
+				<div className="space-y-2">
+					<Label htmlFor="is_anonymous" className="text-sm font-medium text-slate-700">
+						Anonymous Feedback
+					</Label>
+					<div className="flex items-center space-x-2">
+						<Switch
+							id="is_anonymous"
+							checked={formData.is_anonymous}
+							onCheckedChange={(checked) => handleChange("is_anonymous", checked)}
+							disabled={isLoading}
+						/>
+						<Label className="text-sm text-slate-600">Submit this feedback anonymously</Label>
+					</div>
+				</div>
+
+				{/* Submission Date */}
+				<div className="space-y-2">
+					<Label htmlFor="submission_date" className="text-sm font-medium text-slate-700">
+						Submission Date <span className="text-red-500">*</span>
+					</Label>
+					<Input
+						id="submission_date"
+						type="date"
+						value={formData.submission_date}
+						onChange={(e) => handleChange("submission_date", e.target.value)}
+						disabled={isLoading}
+						className={cn("rounded-xl", errors.submission_date && "border-red-500")}
+					/>
+					{errors.submission_date && (
+						<p className="text-sm text-red-600">{errors.submission_date}</p>
+					)}
+				</div>
+			</div>
+
+			{/* Form Actions */}
+			<div className="flex justify-end gap-3 pt-4 border-t">
+				<Button type="submit" disabled={isLoading} className="px-8 w-full rounded-full">
+					{isLoading ? "Saving..." : initialData ? "Update Feedback" : "Submit Feedback"}
+				</Button>
+			</div>
+		</form>
 	);
 }

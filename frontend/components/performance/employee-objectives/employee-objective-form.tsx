@@ -10,12 +10,21 @@ import type { IKeyResult } from "@/types/types.utils";
 import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 
-import { PerformanceForm, type FormField } from "../common/performance-form";
-
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { ObjectiveSelect } from "@/components/selects/objective-select";
 import { KEY_RESULTS_API } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface EmployeeObjectiveFormProps {
 	initialData?: IEmployeeObjective;
@@ -34,6 +43,24 @@ export function EmployeeObjectiveForm({
 	const [keyResults, setKeyResults] = useState<IKeyResult[]>([]);
 	const [employeeValue, setEmployeeValue] = useState<(string | number)[]>([]);
 	const [objectiveValue, setObjectiveValue] = useState<string>("");
+	const [formData, setFormData] = useState<Record<string, any>>(() => {
+		if (!initialData) {
+			return {
+				status: "not_started",
+				start_date: "",
+				end_date: "",
+				key_result: "",
+			};
+		}
+
+		return {
+			status: initialData.status || "not_started",
+			start_date: initialData.start_date || "",
+			end_date: initialData.end_date || "",
+			key_result: initialData.key_result?.id || "",
+		};
+	});
+	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	useEffect(() => {
 		// Fetch key results for selection
@@ -69,62 +96,57 @@ export function EmployeeObjectiveForm({
 		label: `${kr.title} (${kr.progress_type})`,
 	}));
 
-	const fields: FormField[] = [
-		{
-			name: "status",
-			label: "Status",
-			type: "select",
-			options: statusOptions,
-			required: true,
-		},
-		{
-			name: "start_date",
-			label: "Start Date",
-			type: "date",
-			required: true,
-			validation: (value: string) => {
-				const startDate = new Date(value);
-				const today = new Date();
+	const handleChange = (name: string, value: any) => {
+		setFormData((prev) => ({ ...prev, [name]: value }));
 
-				today.setHours(0, 0, 0, 0);
+		// Clear error when user starts typing
+		if (errors[name]) {
+			setErrors((prev) => ({ ...prev, [name]: "" }));
+		}
+	};
 
-				// Allow past dates for existing objectives
-				if (!initialData && startDate < today) {
-					return "Start date cannot be in the past";
-				}
+	const validateForm = () => {
+		const newErrors: Record<string, string> = {};
 
-				return null;
-			},
-		},
-		{
-			name: "end_date",
-			label: "End Date",
-			type: "date",
-			required: true,
-			validation: (value: string, formData?: Record<string, any>) => {
-				if (!formData?.start_date) return null;
+		// Status validation
+		if (!formData.status) {
+			newErrors.status = "Status is required";
+		}
 
-				const startDate = new Date(formData.start_date);
-				const endDate = new Date(value);
+		// Start date validation
+		if (!formData.start_date) {
+			newErrors.start_date = "Start date is required";
+		} else {
+			const startDate = new Date(formData.start_date);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
 
-				if (endDate <= startDate) {
-					return "End date must be after start date";
-				}
+			// Allow past dates for existing objectives
+			if (!initialData && startDate < today) {
+				newErrors.start_date = "Start date cannot be in the past";
+			}
+		}
 
-				return null;
-			},
-		},
-		{
-			name: "key_result",
-			label: "Key Result (Optional)",
-			type: "select",
-			options: keyResultOptions,
-			placeholder: "Select a key result",
-		},
-	];
+		// End date validation
+		if (!formData.end_date) {
+			newErrors.end_date = "End date is required";
+		} else if (formData.start_date) {
+			const startDate = new Date(formData.start_date);
+			const endDate = new Date(formData.end_date);
 
-	const handleSubmit = (formData: Record<string, any>) => {
-		if (!currentInstitution || employeeValue.length === 0 || !objectiveValue) return;
+			if (endDate <= startDate) {
+				newErrors.end_date = "End date must be after start date";
+			}
+		}
+
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!currentInstitution || employeeValue.length === 0 || !objectiveValue || !validateForm())
+			return;
 
 		const employeeObjectiveData: IEmployeeObjectiveFormData = {
 			employee: Number(employeeValue[0]),
@@ -138,26 +160,8 @@ export function EmployeeObjectiveForm({
 		onSubmit(employeeObjectiveData);
 	};
 
-	// const getInitialFormData = () => {
-	// 	if (!initialData) return { status: "not_started" };
-
-	// 	return {
-	// 		status: initialData.status,
-	// 		start_date: initialData.start_date,
-	// 		end_date: initialData.end_date,
-	// 		key_result: initialData.key_result?.id,
-	// 	};
-	// };
-
-	// const memoizedPerformanceForm = useMemo(
-	// 	() => (
-
-	// 	),
-	// 	[initialData, isLoading],
-	// );
-
 	return (
-		<div className="space-y-6">
+		<form onSubmit={handleSubmit} className="space-y-6">
 			{/* Employee and Objective Selection */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<div className="space-y-2">
@@ -193,17 +197,93 @@ export function EmployeeObjectiveForm({
 			</div>
 
 			{/* Form Fields */}
-			{
-				<PerformanceForm<IEmployeeObjective>
-					fields={fields}
-					initialData={initialData}
-					onSubmit={handleSubmit}
-					onCancel={onCancel}
-					isLoading={isLoading}
-					submitLabel={initialData ? "Update Assignment" : "Create Assignment"}
-					showCancel={false}
-				/>
-			}
-		</div>
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+				{/* Status */}
+				<div className="space-y-2">
+					<Label htmlFor="status" className="text-sm font-medium text-slate-700">
+						Status <span className="text-red-500">*</span>
+					</Label>
+					<Select
+						value={formData.status}
+						onValueChange={(value) => handleChange("status", value)}
+						disabled={isLoading}
+					>
+						<SelectTrigger className={cn("!rounded-2xl", errors.status && "border-red-500")}>
+							<SelectValue placeholder="Select status" />
+						</SelectTrigger>
+						<SelectContent>
+							{statusOptions.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
+				</div>
+
+				{/* Start Date */}
+				<div className="space-y-2">
+					<Label htmlFor="start_date" className="text-sm font-medium text-slate-700">
+						Start Date <span className="text-red-500">*</span>
+					</Label>
+					<Input
+						id="start_date"
+						type="date"
+						value={formData.start_date}
+						onChange={(e) => handleChange("start_date", e.target.value)}
+						disabled={isLoading}
+						className={cn("rounded-xl", errors.start_date && "border-red-500")}
+					/>
+					{errors.start_date && <p className="text-sm text-red-600">{errors.start_date}</p>}
+				</div>
+
+				{/* End Date */}
+				<div className="space-y-2">
+					<Label htmlFor="end_date" className="text-sm font-medium text-slate-700">
+						End Date <span className="text-red-500">*</span>
+					</Label>
+					<Input
+						id="end_date"
+						type="date"
+						value={formData.end_date}
+						onChange={(e) => handleChange("end_date", e.target.value)}
+						disabled={isLoading}
+						className={cn("rounded-xl", errors.end_date && "border-red-500")}
+					/>
+					{errors.end_date && <p className="text-sm text-red-600">{errors.end_date}</p>}
+				</div>
+
+				{/* Key Result */}
+				<div className="space-y-2">
+					<Label htmlFor="key_result" className="text-sm font-medium text-slate-700">
+						Key Result (Optional)
+					</Label>
+					<Select
+						value={formData.key_result}
+						onValueChange={(value) => handleChange("key_result", value)}
+						disabled={isLoading}
+					>
+						<SelectTrigger className="rounded-xl">
+							<SelectValue placeholder="Select a key result" />
+						</SelectTrigger>
+						<SelectContent>
+							{keyResultOptions.map((option) => (
+								<SelectItem key={option.value} value={String(option.value)}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+			</div>
+
+			{/* Form Actions */}
+			<div className="flex justify-end gap-3 pt-4 border-t">
+				<Button type="submit" disabled={isLoading} className="px-8 w-full rounded-full">
+					{isLoading ? "Saving..." : initialData ? "Update Assignment" : "Create Assignment"}
+				</Button>
+			</div>
+		</form>
 	);
 }
