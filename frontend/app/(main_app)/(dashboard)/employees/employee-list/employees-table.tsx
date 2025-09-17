@@ -41,9 +41,14 @@ import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-
 interface EmployeesTableProps {
 	refreshFunctionRef?: RefObject<(() => void) | null>;
 	searchTerm?: string;
+	positionSearchTerm?: string;
 }
 
-export function EmployeesTable({ refreshFunctionRef, searchTerm }: EmployeesTableProps) {
+export function EmployeesTable({
+	refreshFunctionRef,
+	searchTerm,
+	positionSearchTerm,
+}: EmployeesTableProps) {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const tableRefreshRef = refreshFunctionRef || useRef<(() => void) | null>(null);
 	const [employeeToDelete, setEmployeeToDelete] = useState<IEmployee | null>(null);
@@ -211,10 +216,11 @@ export function EmployeesTable({ refreshFunctionRef, searchTerm }: EmployeesTabl
 						page: 1,
 						ordering,
 						search: searchTerm || undefined,
+						positionSearch: positionSearchTerm || undefined,
 					});
 				}}
 				fetchFromUrl={getPaginatedEmployeesFromUrl}
-				deps={[currentInstitution?.id, searchTerm, ordering]}
+				deps={[currentInstitution?.id, searchTerm, positionSearchTerm, ordering]}
 				query={searchTerm}
 				onError={(err) =>
 					showErrorToast({ error: err, defaultMessage: "Failed to fetch employees" })

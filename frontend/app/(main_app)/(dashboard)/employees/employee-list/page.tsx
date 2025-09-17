@@ -1,15 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
-import { UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Icon } from "@iconify/react";
-
-import { EmployeesTable } from "./employees-table";
-
+import { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { EmployeesTable } from "./employees-table";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,13 +11,19 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
+import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { showErrorToast } from "@/lib/utils";
+import { select } from "redux-saga/effects";
+import { getJobPositions } from "@/lib/utils";
+import { IJobPosition } from "@/types/types.utils";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -34,19 +33,36 @@ export default function EmployeesPage() {
 	const router = useRouter();
 	const institutionId = useSelector(selectSelectedInstitution)?.id;
 	const accessToken = useSelector(selectAccessToken);
-	const [isExportingToExcel, setIsExportingToExcel] = useState(false);
-
+	const [positionSearchTerm, setPositionSearchTerm] = useState("");
+	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
 
 	const clearFilters = () => {
 		setSearchTerm("");
 		setDepartmentFilter("all");
 		setStatusFilter("all");
+		setPositionSearchTerm("");
 	};
+
+	useEffect(() => {
+		const fetchJobPositions = async () => {
+			if (!institutionId) return;
+
+			try {
+				const positions = await getJobPositions({
+					institutionId,
+				});
+				setJobPositions(positions);
+			} catch (error) {
+				console.error("Failed to fetch job positions:", error);
+			}
+		};
+
+		fetchJobPositions();
+	}, [institutionId, accessToken]);
 
 	const handleExportEmployees = async () => {
 		try {
-			setIsExportingToExcel(true);
 			const response = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/employee/export-employee-excel/${institutionId}/`,
 				{
@@ -65,7 +81,6 @@ export default function EmployeesPage() {
 
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement("a");
-
 			link.href = url;
 			link.download = "employees.xlsx";
 			document.body.appendChild(link);
@@ -74,9 +89,8 @@ export default function EmployeesPage() {
 
 			window.URL.revokeObjectURL(url);
 		} catch (error) {
-			showErrorToast({ error, defaultMessage: "Export failed. Please try again" });
-		} finally {
-			setIsExportingToExcel(false);
+			console.error("Export failed:", error);
+			alert("Export failed. Please try again.");
 		}
 	};
 
@@ -91,7 +105,8 @@ export default function EmployeesPage() {
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button className="rounded-xl">
+										<Button>
+											<Plus className="h-4 w-4 md:mr-2" />
 											<span className="hidden md:inline">Add Employee</span>
 											<UserPlus className="md:hidden" />
 											<ChevronDown className="h-4 w-4 ml-2" />
@@ -111,20 +126,7 @@ export default function EmployeesPage() {
 							</ProtectedComponent>
 
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EXPORT_EMPLOYEES}>
-								<Button
-									disabled={isExportingToExcel}
-									className="rounded-xl"
-									onClick={handleExportEmployees}
-								>
-									{isExportingToExcel ? (
-										<Loader />
-									) : (
-										<Icon icon="hugeicons:file-export" className="!w-5 !h-5" />
-									)}
-									<span className="text">
-										{isExportingToExcel ? "Exporting" : "Export to Excel"}
-									</span>
-								</Button>
+								<Button onClick={handleExportEmployees}>Export to Excel</Button>
 							</ProtectedComponent>
 						</div>
 					</CardTitle>
@@ -139,6 +141,18 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
+
+						{/* ADD POSITION SEARCH HERE - OUTSIDE THE CONSTRAINED CONTAINER */}
+						<div className="relative w-full md:max-w-lg lg:max-w-xl">
+							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+							<Input
+								placeholder="Search job positions..."
+								value={positionSearchTerm}
+								onChange={(e) => setPositionSearchTerm(e.target.value)}
+								className="pl-10 text-sm"
+							/>
+						</div>
+
 						<div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.4]">
 							<div className="flex flex-col sm:flex-row gap-3 flex-1">
 								<Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -153,7 +167,10 @@ export default function EmployeesPage() {
 								</Select>
 							</div>
 
-							{(searchTerm || departmentFilter !== "all" || statusFilter !== "all") && (
+							{/* {(searchTerm.trim() ||
+								positionSearchTerm.trim() ||
+								departmentFilter !== "all" ||
+								statusFilter !== "all") && (
 								<Button
 									variant="outline"
 									onClick={clearFilters}
@@ -161,14 +178,18 @@ export default function EmployeesPage() {
 								>
 									Clear Filters
 								</Button>
-							)}
+							)} */}
 						</div>
 
 						{/* Add Employee Dropdown */}
-						<div className="flex-shrink-0 lg:flex-[0.2]" />
+						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
 					</div>
 				</CardHeader>
-				<EmployeesTable searchTerm={searchTerm} refreshFunctionRef={refreshFunctionRef} />
+				<EmployeesTable
+					searchTerm={searchTerm}
+					refreshFunctionRef={refreshFunctionRef}
+					positionSearchTerm={positionSearchTerm}
+				/>
 
 				<BulkUploadEmployeesDialog
 					isOpen={isBulkUploadDialogOpen}

@@ -1429,15 +1429,21 @@ export const getPaginatedEmployees = async ({
 	page = 1,
 	search,
 	ordering,
+	positionSearch,
 }: {
 	institutionId: number;
 	page?: number;
 	search?: string;
 	ordering?: string;
+	positionSearch?: string; 
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
 	});
+
+	if (positionSearch) { 
+		params.append("position_search", positionSearch);
+	}
 
 	if (search) {
 		params.append("search", search);
