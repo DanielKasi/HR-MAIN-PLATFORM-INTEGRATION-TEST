@@ -75,8 +75,8 @@ export default function AttendanceDashboard() {
 	const onTimePercentage = totalRecords > 0 ? (attendanceRate / totalRecords) * 100 : 0;
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-			<div className="w-7xl space-y-8">
+		<div className="min-h-screen  p-6">
+			<div className="space-y-8">
 				{/* Header */}
 				<div className="space-y-4">
 					<h1 className="text-4xl font-bold text-slate-900 text-balance">
@@ -90,7 +90,7 @@ export default function AttendanceDashboard() {
 
 				{/* Key Metrics */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-slate-600">Total Records</CardTitle>
 							<Calendar className="h-4 w-4 text-emerald-600" />
@@ -103,7 +103,7 @@ export default function AttendanceDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-slate-600">On-Time Rate</CardTitle>
 							<CheckCircle className="h-4 w-4 text-emerald-600" />
@@ -116,7 +116,7 @@ export default function AttendanceDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-slate-600">Avg Overtime</CardTitle>
 							<Clock className="h-4 w-4 text-emerald-600" />
@@ -129,7 +129,7 @@ export default function AttendanceDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-slate-600">Spot Check Rate</CardTitle>
 							<AlertTriangle className="h-4 w-4 text-emerald-600" />
@@ -145,7 +145,7 @@ export default function AttendanceDashboard() {
 
 				{/* Time Metrics */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader>
 							<CardTitle className="text-lg font-semibold text-slate-900">
 								Average Late Time
@@ -159,7 +159,7 @@ export default function AttendanceDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader>
 							<CardTitle className="text-lg font-semibold text-slate-900">Early Checkout</CardTitle>
 							<CardDescription>Average early departure time</CardDescription>
@@ -171,7 +171,7 @@ export default function AttendanceDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader>
 							<CardTitle className="text-lg font-semibold text-slate-900">Overtime Hours</CardTitle>
 							<CardDescription>Average additional work time</CardDescription>
@@ -187,7 +187,7 @@ export default function AttendanceDashboard() {
 				{/* Charts Section */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{/* Attendance by Status */}
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader>
 							<CardTitle className="text-lg font-semibold text-slate-900">
 								Attendance by Status
@@ -235,7 +235,7 @@ export default function AttendanceDashboard() {
 					</Card>
 
 					{/* Spot Check Status */}
-					<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+					<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 						<CardHeader>
 							<CardTitle className="text-lg font-semibold text-slate-900">
 								Spot Check Status
@@ -267,7 +267,7 @@ export default function AttendanceDashboard() {
 				</div>
 
 				{/* Attendance Trend */}
-				<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+				<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold text-slate-900">
 							Attendance Over Time
@@ -298,7 +298,7 @@ export default function AttendanceDashboard() {
 				</Card>
 
 				{/* Status Summary */}
-				<Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+				<Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
 					<CardHeader>
 						<CardTitle className="text-lg font-semibold text-slate-900">
 							Attendance Summary
