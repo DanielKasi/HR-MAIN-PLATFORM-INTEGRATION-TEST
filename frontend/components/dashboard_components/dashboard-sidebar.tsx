@@ -157,72 +157,76 @@ export default function DashboardSideBar() {
 			icon: <Icon icon="hugeicons:user-multiple-02" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: relatedEmployee
 				? [
-					{
-						title: "Analytics",
-						href: "/analytics/employees",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{ title: "My Profile", href: `/employees/profile/${relatedEmployee.id}` },
-					{
-						title: "Employee Information",
-						href: "/employees/employee-list",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Document Requests",
-						href: "#",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Shifts",
-						href: "/employees/shift-requests",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Employee Types",
-						href: "/employees/employee-types",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Work Types",
-						href: "/employees/work-types",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Rotating Shift Assign",
-						href: "#",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Rotating Work Type Assign",
-						href: "#",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{
-						title: "Disciplinary Actions",
-						href: "/employees/discipline",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-					{ title: "Policies", href: "#", requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES },
-					{
-						title: "Organization Chart",
-						href: "#",
-						requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-					},
-				]
+						{
+							title: "Analytics",
+							href: "/analytics/employees",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{ title: "My Profile", href: `/employees/profile/${relatedEmployee.id}` },
+						{
+							title: "Employee Information",
+							href: "/employees/employee-list",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Document Requests",
+							href: "#",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Shifts",
+							href: "/employees/shift-requests",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Employee Types",
+							href: "/employees/employee-types",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Work Types",
+							href: "/employees/work-types",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Rotating Shift Assign",
+							href: "#",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Rotating Work Type Assign",
+							href: "#",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Disciplinary Actions",
+							href: "/employees/discipline",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Policies",
+							href: "#",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+						{
+							title: "Organization Chart",
+							href: "#",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						},
+					]
 				: [
-					{ title: "Analytics", href: "/analytics/employees" },
-					{ title: "Employee Information", href: "/employees/employee-list" },
-					{ title: "Document Requests", href: "#" },
-					{ title: "Shifts", href: "/employees/shift-requests" },
-					{ title: "Employee Types", href: "/employees/employee-types" },
-					{ title: "Work Types", href: "/employees/work-types" },
-					{ title: "Rotating Shift Assign", href: "#" },
-					{ title: "Rotating Work Type Assign", href: "#" },
-					{ title: "Disciplinary Actions", href: "/employees/discipline" },
-					{ title: "Policies", href: "#" },
-					{ title: "Organization Chart", href: "#" },
-				],
+						{ title: "Analytics", href: "/analytics/employees" },
+						{ title: "Employee Information", href: "/employees/employee-list" },
+						{ title: "Document Requests", href: "#" },
+						{ title: "Shifts", href: "/employees/shift-requests" },
+						{ title: "Employee Types", href: "/employees/employee-types" },
+						{ title: "Work Types", href: "/employees/work-types" },
+						{ title: "Rotating Shift Assign", href: "#" },
+						{ title: "Rotating Work Type Assign", href: "#" },
+						{ title: "Disciplinary Actions", href: "/employees/discipline" },
+						{ title: "Policies", href: "#" },
+						{ title: "Organization Chart", href: "#" },
+					],
 			// requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 		},
 		{
@@ -392,8 +396,9 @@ export default function DashboardSideBar() {
 			{/* Desktop Sidebar */}
 			{!isMobile && (
 				<div
-					className={`${isSideBarOpen ? "w-64" : "w-20"
-						} bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
+					className={`${
+						isSideBarOpen ? "w-64" : "w-20"
+					} bg-white border-r border-gray-100 fixed h-full transition-all duration-300 z-30`}
 				>
 					<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
 						<div className="flex items-center gap-3">
@@ -439,14 +444,15 @@ export default function DashboardSideBar() {
 					{mobileMenuOpen && (
 						<div
 							className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
-						// onClick={onCloseSidebar}
+							// onClick={onCloseSidebar}
 						/>
 					)}
 
 					{/* Drawer */}
 					<div
-						className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-							}`}
+						className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
+							mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+						}`}
 					>
 						{/* Drawer Header */}
 						<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center justify-between">

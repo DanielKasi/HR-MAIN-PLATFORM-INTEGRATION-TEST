@@ -92,14 +92,8 @@ export default function PerformancePage() {
 								Performance Management
 							</h1>
 							<p className="text-slate-600 text-lg mt-2">
-								Comprehensive OKR and 360-degree feedback system with gamification
+								Comprehensive OKR and 360-degree feedback system
 							</p>
-						</div>
-						<div className="flex items-center gap-2">
-							<BarChart3 className="h-5 w-5 text-slate-400" />
-							<span className="text-sm text-slate-500">
-								{currentInstitution?.institution_name || "Institution"}
-							</span>
 						</div>
 					</div>
 				</div>

@@ -126,15 +126,15 @@ export default function UpdateEmployeeForm() {
 
 	const [thisEmployee, setThisEmployee] = useState<IEmployee | null>(null);
 
-	const [currentStep, setCurrentStep] = useState(1);
-	const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-	const selectedInstitution = useSelector(selectSelectedInstitution);
-	const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
-
-	const [children, setChildren] = useState<Child[]>([]);
-	const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
-	const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
-	const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const selectedInstitution = useSelector(selectSelectedInstitution);
+  const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
+  const [selectedPayrollBranch, setSelectedPayrollBranch] = useState<number | null>(null);
+  const [children, setChildren] = useState<Child[]>([]);
+  const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
+  const [educations, setEducations] = useState<IEmployeeEducationFormData[]>([]);
+  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([]);
 
 	const [isChildDialogOpen, setIsChildDialogOpen] = useState(false);
 	const [isNextOfKinDialogOpen, setIsNextOfKinDialogOpen] = useState(false);
@@ -466,74 +466,74 @@ export default function UpdateEmployeeForm() {
 		setFormData((prev) => ({ ...prev, selected_branches: branches.map((br) => br.id) }));
 	}, [branches]);
 
-	const loadEmployee = async () => {
-		setLoadingData(true);
-		try {
-			const employee: IEmployee = await getEmployeeById({ employeeId: parseInt(employeeId) });
+  const loadEmployee = async () => {
+    setLoadingData(true);
+    try {
+      const employee: IEmployee = await getEmployeeById({employeeId: parseInt(employeeId)});
+      setThisEmployee(employee);
+      setFormData({
+        fullname: employee.user?.fullname || "",
+        email: employee.email,
+        phone_number: employee.phone_number,
+        position: employee.position.id,
+        department: employee.department.id,
+        work_type: employee.work_type.id,
+        employee_type: employee.employee_type.id,
+        date_of_birth: employee.date_of_birth,
+        date_of_joining: employee.date_of_joining,
+        address: employee.address,
+        country: employee.country,
+        nin: employee.nin,
+        tin: employee.tin,
+        nssf_no: employee.nssf_no,
+        salary: parseFloat(employee.salary),
+        is_active: employee.is_active,
+        skills: employee.skills,
+        has_children: employee.has_children,
+        selected_branches:
+          employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
+            ? [employee?.payroll_branch?.id as unknown as number]
+            : [],
+        marital_status: employee.marital_status,
+        gender: employee.gender,
+        children: employee.children,
+        next_of_kin: employee.next_of_kin,
+        educations: employee.educations,
+        bank_accounts: employee.bank_accounts.map((acc) => ({
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        })),
+        work_experiences: employee.work_experiences,
+      });
 
-			setThisEmployee(employee);
-			setFormData({
-				fullname: employee.user?.fullname || "",
-				email: employee.email,
-				phone_number: employee.phone_number,
-				position: employee.position.id,
-				department: employee.department.id,
-				work_type: employee.work_type.id,
-				employee_type: employee.employee_type.id,
-				date_of_birth: employee.date_of_birth,
-				date_of_joining: employee.date_of_joining,
-				address: employee.address,
-				country: employee.country,
-				nin: employee.nin,
-				tin: employee.tin,
-				nssf_no: employee.nssf_no,
-				salary: parseFloat(employee.salary),
-				is_active: employee.is_active,
-				skills: employee.skills,
-				has_children: employee.has_children,
-				selected_branches:
-					employee.user?.branches.map((b) => b.id) || employee?.payroll_branch?.id
-						? [employee?.payroll_branch?.id as unknown as number]
-						: [],
-				marital_status: employee.marital_status,
-				gender: employee.gender,
-				children: employee.children,
-				next_of_kin: employee.next_of_kin,
-				educations: employee.educations,
-				bank_accounts: employee.bank_accounts.map((acc) => ({
-					bank_id: Number(employee.bank_accounts[0].bank.id),
-					account_number: employee.bank_accounts[0].account_number,
-					account_name: employee.bank_accounts[0].account_name,
-				})),
-				work_experiences: employee.work_experiences,
-			});
-
-			setChildren(employee.children);
-			setHasChildren(employee.has_children);
-			setNextOfKins(employee.next_of_kin);
-			setEducations(
-				employee.educations.map((ed) => ({
-					name: ed.name,
-					qualification_id: ed.qualification?.id || 0,
-					year: ed.year,
-					institution: ed.institution,
-					id: ed.id,
-				})),
-			);
-			setWorkExperiences(employee.work_experiences);
-			if (employee.bank_accounts.length) {
-				console.log("\n\n Setting bank account form data to : ", {
-					bank_id: Number(employee.bank_accounts[0].bank.id),
-					account_number: employee.bank_accounts[0].account_number,
-					account_name: employee.bank_accounts[0].account_name,
-				});
-				setBankAccountFormData((prev) => ({
-					...prev,
-					bank_id: Number(employee.bank_accounts[0].bank.id),
-					account_number: employee.bank_accounts[0].account_number,
-					account_name: employee.bank_accounts[0].account_name,
-				}));
-			}
+      setChildren(employee.children);
+      setHasChildren(employee.has_children);
+      setNextOfKins(employee.next_of_kin);
+      setSelectedPayrollBranch(employee.payroll_branch?.id || null);
+      setEducations(
+        employee.educations.map((ed) => ({
+          name: ed.name,
+          qualification_id: ed.qualification.id,
+          year: ed.year,
+          institution: ed.institution,
+          id: ed.id,
+        })),
+      );
+      setWorkExperiences(employee.work_experiences);
+      if (employee.bank_accounts.length) {
+        console.log("\n\n Setting bank account form data to : ", {
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        });
+        setBankAccountFormData((prev) => ({
+          ...prev,
+          bank_id: Number(employee.bank_accounts[0].bank.id),
+          account_number: employee.bank_accounts[0].account_number,
+          account_name: employee.bank_accounts[0].account_name,
+        }));
+      }
 
 			if (employee.spouse) {
 				setSpouseFormData({
@@ -721,53 +721,53 @@ export default function UpdateEmployeeForm() {
 		return true;
 	};
 
-	const isCurrentStepValid = () => {
-		switch (currentStep) {
-			case 1:
-				const currentDate = new Date();
-				const DOB = new Date(formData.date_of_birth);
-
-				return !!(
-					formData.fullname &&
-					formData.email &&
-					formData.country &&
-					formData.marital_status &&
-					formData.address &&
-					formData.date_of_birth &&
-					formData.nin &&
-					formData.phone_number &&
-					currentDate.getFullYear() - DOB.getFullYear() >= 18
-				);
-			case 2:
-				return !!(
-					formData.department &&
-					formData.position &&
-					formData.date_of_joining &&
-					formData.employee_type &&
-					formData.employee_type
-				);
-			case 3:
-				return !!(
-					// bankAccountFormData.account_name.trim() &&
-					// bankAccountFormData.account_number &&
-					// bankAccountFormData.account_number.trim() &&
-					// bankAccountFormData.account_number.length <= 20 &&
-					// bankAccountFormData.bank_id &&
-					(
-						formData.tin &&
-						formData.tin.trim() &&
-						formData.tin.length <= 12 &&
-						formData.nssf_no &&
-						formData.nssf_no.trim() &&
-						formData.nssf_no.length <= 12 &&
-						formData.salary &&
-						formData.salary > 0
-					)
-				);
-			default:
-				return false;
-		}
-	};
+  const isCurrentStepValid = () => {
+    switch (currentStep) {
+      case 1:
+        const currentDate = new Date();
+        const DOB = new Date(formData.date_of_birth);
+        return !!(
+          formData.fullname &&
+          formData.email &&
+          formData.country &&
+          formData.marital_status &&
+          formData.address &&
+          formData.date_of_birth &&
+          formData.nin &&
+          formData.phone_number &&
+          currentDate.getFullYear() - DOB.getFullYear() >= 18
+        );
+      case 2:
+        return !!(
+          formData.department &&
+          formData.position &&
+          formData.date_of_joining &&
+          formData.employee_type &&
+          formData.employee_type &&
+          selectedPayrollBranch
+        );
+      case 3:
+        return !!(
+          // bankAccountFormData.account_name.trim() &&
+          // bankAccountFormData.account_number &&
+          // bankAccountFormData.account_number.trim() &&
+          // bankAccountFormData.account_number.length <= 20 &&
+          // bankAccountFormData.bank_id &&
+          (
+            formData.tin &&
+            formData.tin.trim() &&
+            formData.tin.length <= 12 &&
+            formData.nssf_no &&
+            formData.nssf_no.trim() &&
+            formData.nssf_no.length <= 12 &&
+            formData.salary &&
+            formData.salary > 0
+          )
+        );
+      default:
+        return false;
+    }
+  };
 
 	const nextStep = () => {
 		if (isCurrentStepValid() && currentStep < steps.length) {
@@ -852,71 +852,71 @@ export default function UpdateEmployeeForm() {
 		setIsSubmitting(true);
 		setSubmitError(null);
 
-		try {
-			const dataToSubmit: IEmployeeFormData = {
-				user: {
-					fullname: formData.fullname,
-					email: formData.email,
-				},
-				email: formData.email,
-				phone_number: formData.phone_number,
-				phone_number_country_code: phoneCountryCode,
-				gender: formData.gender || "male",
-				date_of_birth: formData.date_of_birth,
-				date_of_joining: formData.date_of_joining,
-				address: formData.address,
-				country: formData.country,
-				nin: formData.nin,
-				tin: formData.tin,
-				nssf_no: formData.nssf_no,
-				salary: formData.salary,
-				is_active: formData.is_active,
-				skills: formData.skills,
-				marital_status: formData.marital_status,
-				employee_profile_picture: employeeProfilePicture,
-				selected_branches: formData.selected_branches,
-				work_type: formData.work_type,
-				employee_type: formData.employee_type,
-				position: formData.position,
-				department: formData.department,
-				has_children: hasChildren,
-				children: children.map((child, idx) => ({
-					id: String(idx),
-					name: child.name,
-					gender: child.gender,
-					date_of_birth: child.date_of_birth,
-				})),
-				next_of_kin: nextOfKins.map((nok, idx) => ({
-					id: String(idx),
-					name: nok.name,
-					relationship: nok.relationship,
-					phone_number: nok.phone_number,
-					address: nok.address,
-				})),
-				educations: educations.map((edu, idx) => ({
-					id: String(idx),
-					qualification_id: edu.qualification_id,
-					institution: edu.institution,
-					year: edu.year,
-					name: edu.name,
-				})),
-				work_experiences: workExperiences.map((exp, idx) => ({
-					id: String(idx),
-					company: exp.company,
-					position: exp.position,
-					duration: exp.duration,
-					reason_of_leave: exp.reason_of_leave,
-				})),
-				bank_accounts: [bankAccountFormData],
-			};
-
-			if (formData.marital_status === "married") {
-				dataToSubmit["spouse"] = {
-					name: spouseFormData.name,
-					phone_number: spouseFormData.phone_number,
-					date_of_birth: spouseFormData.dateOfBirth,
-				};
-			}
+    try {
+      const dataToSubmit: IEmployeeFormData = {
+        user: {
+          fullname: formData.fullname,
+          email: formData.email,
+        },
+        email: formData.email,
+        phone_number: formData.phone_number,
+        phone_number_country_code: phoneCountryCode,
+        gender: formData.gender || "male",
+        date_of_birth: formData.date_of_birth,
+        date_of_joining: formData.date_of_joining,
+        address: formData.address,
+        country: formData.country,
+        nin: formData.nin,
+        tin: formData.tin,
+        nssf_no: formData.nssf_no,
+        salary: formData.salary,
+        is_active: formData.is_active,
+        skills: formData.skills,
+        marital_status: formData.marital_status,
+        employee_profile_picture: employeeProfilePicture,
+        selected_branches: formData.selected_branches,
+        work_type: formData.work_type,
+        employee_type: formData.employee_type,
+        position: formData.position,
+        department: formData.department,
+        has_children: hasChildren,
+        payroll_branch: selectedPayrollBranch,
+        children: children.map((child, idx) => ({
+          id: String(idx),
+          name: child.name,
+          gender: child.gender,
+          date_of_birth: child.date_of_birth,
+        })),
+        next_of_kin: nextOfKins.map((nok, idx) => ({
+          id: String(idx),
+          name: nok.name,
+          relationship: nok.relationship,
+          phone_number: nok.phone_number,
+          address: nok.address,
+        })),
+        educations: educations.map((edu, idx) => ({
+          id: String(idx),
+          qualification_id: edu.qualification_id,
+          institution: edu.institution,
+          year: edu.year,
+          name: edu.name,
+        })),
+        work_experiences: workExperiences.map((exp, idx) => ({
+          id: String(idx),
+          company: exp.company,
+          position: exp.position,
+          duration: exp.duration,
+          reason_of_leave: exp.reason_of_leave,
+        })),
+        bank_accounts: [bankAccountFormData],
+      };
+      if (formData.marital_status === "married") {
+        dataToSubmit["spouse"] = {
+          name: spouseFormData.name,
+          phone_number: spouseFormData.phone_number,
+          date_of_birth: spouseFormData.dateOfBirth,
+        };
+      }
 
 			await updateEmployee({
 				employeeId: parseInt(employeeId),
@@ -1294,31 +1294,31 @@ export default function UpdateEmployeeForm() {
 									</div>
 								</div>
 
-								<RadioGroup
-									defaultValue={hasChildren ? "Yes" : "No"}
-									className="flex items-center justify-start gap-12"
-								>
-									<div className="flex items-center space-x-2">
-										<RadioGroupItem
-											value={"Yes"}
-											id="has_children"
-											onClick={() => setHasChildren(true)}
-										/>
-										<Label htmlFor="has_children" className="text-lg">
-											Has Children
-										</Label>
-									</div>
-									<div className="flex items-center space-x-2">
-										<RadioGroupItem
-											value={"No"}
-											id="has_no_children"
-											onClick={() => setHasChildren(false)}
-										/>
-										<Label htmlFor="has_no_children" className="text-lg">
-											No Children
-										</Label>
-									</div>
-								</RadioGroup>
+                <RadioGroup
+                  defaultValue={hasChildren ? "Yes" : "No"}
+                  className="flex items-center justify-start gap-12"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"Yes"}
+                      id="has_children"
+                      onClick={() => setHasChildren(true)}
+                    />
+                    <Label htmlFor="has_children" className="text-lg">
+                      Has Children
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem
+                      value={"No"}
+                      id="has_no_children"
+                      onClick={() => setHasChildren(false)}
+                    />
+                    <Label htmlFor="has_no_children" className="text-lg">
+                      No Children
+                    </Label>
+                  </div>
+                </RadioGroup>
 
 								{/* Children Section */}
 								{hasChildren && (
@@ -1684,21 +1684,30 @@ export default function UpdateEmployeeForm() {
 							</div>
 						</div>
 
-						{/* Employee Branches */}
-						<div className="space-y-4">
-							<MultiSelectBranches
-								className="!rounded-2xl !h-12"
-								branches={branches}
-								selectedBranches={formData.selected_branches}
-								onSelectionChange={(selectedIds) =>
-									handleInputChange("selected_branches", selectedIds)
-								}
-								loading={branchesLoading}
-								error={branchesError}
-								placeholder="Select branches for this employee"
-								label="Employee Branches"
-							/>
-						</div>
+            {/* Employee Branches */}
+            <div className="space-y-4">
+              <MultiSelectBranches
+                className="!rounded-2xl !h-12"
+                branches={branches}
+                selectedBranches={formData.selected_branches}
+                onSelectionChange={(selectedIds) =>
+                  handleInputChange("selected_branches", selectedIds)
+                }
+                loading={branchesLoading}
+                error={branchesError}
+                placeholder="Select branches for this employee"
+                label="Employee Branches"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-black-700">Payroll Branch</Label>
+              <Input
+                value={thisEmployee?.payroll_branch?.branch_name || ""}
+                disabled
+                className="h-12 rounded-2xl text-gray-900 disabled:text-gray-900 disabled:opacity-100"
+              />
+            </div>
 
 						{/* Work Experience Section */}
 						<div className="space-y-4">
@@ -1824,75 +1833,75 @@ export default function UpdateEmployeeForm() {
 								{/* {!bankAccountFormData.account_number && (
                   <p className="text-red-400 text-xs">A bank account number is required</p>
                 )} */}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
-									National Social Security Fund
-								</Label>
-								<Input
-									id="nssf_no"
-									value={formData.nssf_no || ""}
-									onChange={(e) => handleInputChange("nssf_no", e.target.value)}
-									placeholder="Enter NSSF"
-									className="h-12 rounded-2xl"
-								/>
-								{!formData.nssf_no && (
-									<p className="text-red-400 text-xs">
-										A National Social Security Fund number is required
-									</p>
-								)}
-								{formData.nssf_no.length >= 13 && (
-									<p className="text-red-400 text-xs">
-										National Social Security Fund number can not exceed 12 characters
-									</p>
-								)}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="tin" className="text-sm font-medium text-gray-700">
-									Tax Identification Number (TIN)
-								</Label>
-								<Input
-									id="tin"
-									value={formData.tin || ""}
-									onChange={(e) => handleInputChange("tin", e.target.value)}
-									placeholder="Enter TIN"
-									className="h-12 rounded-2xl"
-									max={12}
-								/>
-								{!formData.tin && (
-									<p className="text-red-400 text-xs">
-										A Tax Identification Number number is required
-									</p>
-								)}
-								{formData.tin.length > 12 && (
-									<p className="text-red-400 text-xs">
-										Tax Identification Number number cannot exceed 12 characters
-									</p>
-								)}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="tin" className="text-sm font-medium text-gray-700">
-									Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
-									{formatCurrency(selectedJobPositon?.salary_max || "0")})
-								</Label>
-								<FormattedNumberInput
-									id="salary"
-									value={formData.salary}
-									onValueChange={(val) => handleInputChange("salary", val)}
-									placeholder="Salary"
-									className="h-12 rounded-2xl"
-								/>
-								{!formData.salary && (
-									<p className="text-red-400 text-xs">Employee Salary is required</p>
-								)}
-							</div>
-						</div>
-					</div>
-				);
-			default:
-				return null;
-		}
-	};
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nssf_no" className="text-sm font-medium text-gray-700">
+                  National Social Security Fund
+                </Label>
+                <Input
+                  id="nssf_no"
+                  value={formData.nssf_no || ""}
+                  onChange={(e) => handleInputChange("nssf_no", e.target.value)}
+                  placeholder="Enter NSSF"
+                  className="h-12 rounded-2xl"
+                />
+                {!formData.nssf_no && (
+                  <p className="text-red-400 text-xs">
+                    A National Social Security Fund number is required
+                  </p>
+                )}
+                {formData.nssf_no?.length >= 13 && (
+                  <p className="text-red-400 text-xs">
+                    National Social Security Fund number can not exceed 12 characters
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
+                  Tax Identification Number (TIN)
+                </Label>
+                <Input
+                  id="tin"
+                  value={formData.tin || ""}
+                  onChange={(e) => handleInputChange("tin", e.target.value)}
+                  placeholder="Enter TIN"
+                  className="h-12 rounded-2xl"
+                  max={12}
+                />
+                {!formData.tin && (
+                  <p className="text-red-400 text-xs">
+                    A Tax Identification Number number is required
+                  </p>
+                )}
+                {formData.tin?.length > 12 && (
+                  <p className="text-red-400 text-xs">
+                    Tax Identification Number number cannot exceed 12 characters
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tin" className="text-sm font-medium text-gray-700">
+                  Salary ({formatCurrency(selectedJobPositon?.salary_min || "0")} -{" "}
+                  {formatCurrency(selectedJobPositon?.salary_max || "0")})
+                </Label>
+                <FormattedNumberInput
+                  id="salary"
+                  value={formData.salary}
+                  onValueChange={(val) => handleInputChange("salary", val)}
+                  placeholder="Salary"
+                  className="h-12 rounded-2xl"
+                />
+                {!formData.salary && (
+                  <p className="text-red-400 text-xs">Employee Salary is required</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
 	return (
 		<div className="min-h-screen bg-white p-4 rounded-xl">
