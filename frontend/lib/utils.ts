@@ -8143,13 +8143,24 @@ export const EMPLOYEE_BONUS_POINTS_API = {
 };
 
 export const QUESTION_TEMPLATES_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/question-templates/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);

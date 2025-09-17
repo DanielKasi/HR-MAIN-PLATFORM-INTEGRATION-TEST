@@ -66,7 +66,7 @@ export function TaskSummary() {
 
 			{/* Open Tasks */}
 			<Card className="overflow-hidden rounded-lg flex">
-				<div className="bg-purple-700 w-1/4 flex items-center justify-center">
+				<div className=" w-1/4 flex items-center justify-center">
 					<ClipboardList className="h-10 w-10 text-white" />
 				</div>
 				<div className="bg-purple-600 w-3/4 p-4 text-white">

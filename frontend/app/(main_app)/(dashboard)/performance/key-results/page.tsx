@@ -172,7 +172,7 @@ export default function KeyResultsPage() {
 						placeholder="Search key results..."
 						value={searchQuery}
 						onChange={(e) => handleSearch(e.target.value)}
-						className="max-w-xs rounded-xl"
+						className="max-w-sm md:max-w-lg lg:max-w-xl rounded-xl"
 					/>
 				</div>
 

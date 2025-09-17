@@ -2586,20 +2586,6 @@ export interface IBonusPointSettingsFormData {
 	condition_value: "end_date";
 }
 
-export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general";
-
-export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
-
-export interface CustomField {
-	id: string;
-	name: string;
-	description: string;
-	type: CustomFieldType;
-	value?: any;
-	is_required?: boolean;
-	options?: string[]; // Add this for select and checkbox fields
-}
-
 export type CustomFieldType =
 	| "text"
 	| "date"
@@ -2609,21 +2595,25 @@ export type CustomFieldType =
 	| "textarea"
 	| "file";
 
-export interface CustomFieldFormData {
-	title: string;
-	description: string;
-	fieldType: CustomFieldType;
-	options?: string[]; // Add this for select and checkbox fields
-}
+export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general";
+
+export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
 
 export interface CustomField {
 	id: string;
 	name: string;
 	description: string;
-	type: CustomFieldType;
+	type: IQuestionType;
 	value?: any;
 	is_required?: boolean;
-	options?: string[]; // Add this for select and checkbox fields
+	options?: string[]; // For multiple_choice
+}
+
+export interface CustomFieldFormData {
+	title: string;
+	description: string;
+	question_type: IQuestionType;
+	options?: string[]; // For multiple_choice
 }
 
 export interface IQuestionTemplate {

@@ -295,7 +295,7 @@ export default function DashboardSideBar() {
 				{ title: "Key Results", href: "/performance/key-results" },
 				{ title: "Employee Objectives", href: "/performance/employee-objectives" },
 				{ title: "Period", href: "/performance/periods" },
-				{ title: "Question Template", href: "#" },
+				{ title: "Question Template", href: "/performance/question-templates" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_PERFORMANCE_REPORTS,
 		},
@@ -402,7 +402,7 @@ export default function DashboardSideBar() {
 				>
 					<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center">
 						<div className="flex items-center gap-3">
-							<div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+							<div className="!w-10 !h-10 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
 								{InstitutionLogo ? (
 									<Image
 										alt="Institution Logo"
@@ -457,7 +457,7 @@ export default function DashboardSideBar() {
 						{/* Drawer Header */}
 						<div className="p-4 border-b border-gray-100 min-h-16 h-20 max-h-20 flex items-center justify-between">
 							<div className="flex items-center gap-3">
-								<div className="!w-12 !h-12 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
+								<div className="!w-10 !h-10 !aspect-square bg-[var(--sidebar-primary)] text-[var(--sidebar-primary-foreground)] rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden relative">
 									{InstitutionLogo ? (
 										<Image
 											alt="Institution Logo"
