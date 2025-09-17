@@ -21,7 +21,7 @@ from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from institution.models import Branch, InstitutionBankType, UserBranch
 from employee.models import EmployeeContract
 from django.core.mail import EmailMessage

@@ -8,6 +8,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
+from calendar2.models import EventOccurrence
+from django.utils import timezone
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -211,3 +213,23 @@ def send_welcome_email_from_view(
         company_name=company_name,
         site_id=site.id,
     )
+
+
+@shared_task
+def send_birthday_notifications():
+    today = timezone.now().date()
+    birthday_occurrences = EventOccurrence.objects.filter(
+        event__is_birthday=True,
+        date=today
+    ).select_related('event__specific_employees__user')
+    for occurrence in birthday_occurrences:
+        event = occurrence.event
+        profile = event.specific_employees.first()
+        if profile and profile.user.email:
+            send_mail(
+                subject=f"Happy Birthday, {profile.user.fullname}!",
+                message=f"Wishing you a fantastic birthday, {profile.user.fullname}!",
+                from_email='hr@example.com',
+                recipient_list=[profile.user.email],
+                fail_silently=True,
+            )
