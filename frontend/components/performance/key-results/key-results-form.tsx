@@ -1,13 +1,11 @@
 "use client";
 
-import type { IKeyResult, IKeyResultFormData, IProgressType } from "@/types/types.utils";
-
 import { forwardRef } from "react";
-import { useSelector } from "react-redux";
-
 import { PerformanceForm, type FormField } from "../common/performance-form";
-
+import type { IKeyResult, IKeyResultFormData, IProgressType } from "@/types/types.utils";
+import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { da } from "date-fns/locale";
 
 interface KeyResultFormProps {
 	initialData?: IKeyResult;
@@ -33,7 +31,6 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
 				required: true,
 				validation: (value: string) => {
 					if (value.length < 5) return "Title must be at least 5 characters";
-
 					return null;
 				},
 			},
@@ -52,7 +49,6 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
 				required: true,
 				validation: (value: string) => {
 					if (value.length < 10) return "Description must be at least 10 characters";
-
 					return null;
 				},
 			},
@@ -65,10 +61,8 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
 				required: true,
 				validation: (value: string) => {
 					const num = Number.parseFloat(value);
-
 					if (isNaN(num)) return "Target value must be a valid number";
 					if (num <= 0) return "Target value must be greater than 0";
-
 					return null;
 				},
 			},
@@ -80,7 +74,6 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
 				validation: (value: string) => {
 					if (value && isNaN(Number.parseFloat(value)))
 						return "Current value must be a valid number";
-
 					return null;
 				},
 			},

@@ -7,7 +7,7 @@ import type {
 } from "@/types/types.utils";
 import type { IKeyResult } from "@/types/types.utils";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 
 import { PerformanceForm, type FormField } from "../common/performance-form";
@@ -138,16 +138,23 @@ export function EmployeeObjectiveForm({
 		onSubmit(employeeObjectiveData);
 	};
 
-	const getInitialFormData = () => {
-		if (!initialData) return { status: "not_started" };
+	// const getInitialFormData = () => {
+	// 	if (!initialData) return { status: "not_started" };
 
-		return {
-			status: initialData.status,
-			start_date: initialData.start_date,
-			end_date: initialData.end_date,
-			key_result: initialData.key_result?.id,
-		};
-	};
+	// 	return {
+	// 		status: initialData.status,
+	// 		start_date: initialData.start_date,
+	// 		end_date: initialData.end_date,
+	// 		key_result: initialData.key_result?.id,
+	// 	};
+	// };
+
+	// const memoizedPerformanceForm = useMemo(
+	// 	() => (
+
+	// 	),
+	// 	[initialData, isLoading],
+	// );
 
 	return (
 		<div className="space-y-6">
@@ -186,15 +193,17 @@ export function EmployeeObjectiveForm({
 			</div>
 
 			{/* Form Fields */}
-			<PerformanceForm
-				fields={fields}
-				initialData={getInitialFormData()}
-				onSubmit={handleSubmit}
-				onCancel={onCancel}
-				isLoading={isLoading}
-				submitLabel={initialData ? "Update Assignment" : "Create Assignment"}
-				showCancel={false}
-			/>
+			{
+				<PerformanceForm<IEmployeeObjective>
+					fields={fields}
+					initialData={initialData}
+					onSubmit={handleSubmit}
+					onCancel={onCancel}
+					isLoading={isLoading}
+					submitLabel={initialData ? "Update Assignment" : "Create Assignment"}
+					showCancel={false}
+				/>
+			}
 		</div>
 	);
 }

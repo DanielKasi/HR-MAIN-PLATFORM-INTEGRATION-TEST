@@ -183,6 +183,39 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 			};
 		};
 
+		const memoizedManagersSearchableSelect = useMemo(
+			() => (
+				<EmployeeSearchableSelect
+					value={managersValue}
+					onValueChange={setManagersValue}
+					placeholder="Select manager"
+					multiple={false}
+					disabled={isLoading}
+				/>
+			),
+			[managersValue, isLoading],
+		);
+
+		const memoizedAssigneeSearchableSelect = useMemo(
+			() => (
+				<EmployeeSearchableSelect
+					value={assigneesValue}
+					onValueChange={setAssigneesValue}
+					placeholder="Select assignee"
+					multiple={false}
+					disabled={isLoading}
+				/>
+			),
+			[assigneesValue, isLoading],
+		);
+
+		// const memoizedPerformanceForm = useMemo(
+		// 	() => (
+
+		// 	),
+		// 	[initialData, isLoading, ref],
+		// );
+
 		return (
 			<div className="space-y-6 ">
 				<PerformanceForm<IObjectiveFormData>
@@ -222,25 +255,13 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
 						<div className="space-y-2">
 							<label className="text-sm font-medium text-slate-700">Manager (Optional)</label>
-							<EmployeeSearchableSelect
-								value={managersValue}
-								onValueChange={setManagersValue}
-								placeholder="Select manager"
-								multiple={false}
-								disabled={isLoading}
-							/>
+							{memoizedManagersSearchableSelect}
 							<p className="text-xs text-slate-500">Manager responsible for this objective</p>
 						</div>
 
 						<div className="space-y-2">
 							<label className="text-sm font-medium text-slate-700">Assignee (Optional)</label>
-							<EmployeeSearchableSelect
-								value={assigneesValue}
-								onValueChange={setAssigneesValue}
-								placeholder="Select assignee"
-								multiple={false}
-								disabled={isLoading}
-							/>
+							{memoizedAssigneeSearchableSelect}
 							<p className="text-xs text-slate-500">Employee assigned to achieve this objective</p>
 						</div>
 					</div>

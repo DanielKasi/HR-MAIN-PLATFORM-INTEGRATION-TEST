@@ -1,14 +1,14 @@
 "use client";
 
 import type React from "react";
-
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
 import { Icon } from "@iconify/react";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { ArrowLeft } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { KYCDocuments } from "@/components/settings/kycdocuments";
 import { InstitutionSettings } from "@/components/settings/institution-settings";
 import { PenaltyConfigurations } from "@/components/settings/penalty-configurations";
@@ -27,6 +27,7 @@ export default function SettingsPage() {
 		| "location_comparison"
 		| "institution_spotcheck"
 		| "branch_spotcheck"
+		| "bonus_point_settings"
 	>("institution");
 	const [confirmationDialog, setConfirmationDialog] = useState({
 		isOpen: false,
@@ -283,6 +284,36 @@ export default function SettingsPage() {
 										}`}
 									>
 										Manage branch-specific spotcheck settings
+									</div>
+								</div>
+							</button>
+
+							<button
+								onClick={() => setActiveTab("bonus_point_settings")}
+								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+									activeTab === "bonus_point_settings"
+										? "bg-red-50 border border-red-200"
+										: "hover:bg-gray-50"
+								}`}
+							>
+								<Icon
+									icon="hugeicons:award-02"
+									className={`w-5 h-5 ${activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-500"}`}
+								/>
+								<div className="whitespace-nowrap lg:whitespace-normal">
+									<div
+										className={`font-medium text-sm lg:text-base ${
+											activeTab === "bonus_point_settings" ? "text-primary" : "text-gray-900"
+										}`}
+									>
+										Bonus Point Settings
+									</div>
+									<div
+										className={`text-xs lg:text-sm hidden lg:block ${
+											activeTab === "bonus_point_settings" ? "text-[#6B7280]" : "text-[#6B7280]"
+										}`}
+									>
+										Manage institution-level bonus point settings
 									</div>
 								</div>
 							</button>

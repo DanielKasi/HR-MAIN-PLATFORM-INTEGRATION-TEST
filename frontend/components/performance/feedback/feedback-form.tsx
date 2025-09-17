@@ -2,7 +2,7 @@
 
 import type { IFeedback360, IFeedback360FormData } from "@/types/types.utils";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 
 import { PerformanceForm, type FormField } from "../common/performance-form";
@@ -50,7 +50,6 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			required: true,
 			validation: (value: string) => {
 				if (value.length < 10) return "Feedback must be at least 10 characters";
-
 				return null;
 			},
 		},
@@ -61,7 +60,6 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			placeholder: "What are this person's key strengths?",
 			validation: (value: string) => {
 				if (value && value.length < 5) return "Strengths must be at least 5 characters";
-
 				return null;
 			},
 		},
@@ -72,7 +70,6 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			placeholder: "What areas could be improved?",
 			validation: (value: string) => {
 				if (value && value.length < 5) return "Areas for improvement must be at least 5 characters";
-
 				return null;
 			},
 		},
@@ -89,6 +86,25 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 			required: true,
 		},
 	];
+
+	// Compute initial form data for PerformanceForm (handles defaults for new forms)
+	const getInitialFormData = useMemo(() => {
+		if (!initialData) {
+			return {
+				submission_date: new Date().toISOString().split("T")[0],
+				is_anonymous: false,
+			};
+		}
+
+		return {
+			feedback_text: initialData.feedback_text,
+			strengths: initialData.strengths,
+			areas_for_improvement: initialData.areas_for_improvement,
+			is_anonymous: initialData.is_anonymous,
+			submission_date:
+				initialData.submission_date?.split("T")[0] || new Date().toISOString().split("T")[0],
+		};
+	}, [initialData]);
 
 	const handleSubmit = (formData: Record<string, any>) => {
 		if (!currentInstitution || revieweeValue.length === 0 || reviewerValue.length === 0) return;
@@ -108,23 +124,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 		onSubmit(feedbackData);
 	};
 
-	const getInitialFormData = () => {
-		if (!initialData) {
-			return {
-				submission_date: new Date().toISOString().split("T")[0],
-				is_anonymous: false,
-			};
-		}
-
-		return {
-			feedback_text: initialData.feedback_text,
-			strengths: initialData.strengths,
-			areas_for_improvement: initialData.areas_for_improvement,
-			is_anonymous: initialData.is_anonymous,
-			submission_date: initialData.submission_date.split("T")[0],
-		};
-	};
-
+	// Render PerformanceForm directly (no useMemo wrapper to avoid JSX recreation loop)
 	return (
 		<div className="space-y-6">
 			{/* Employee Selection */}
@@ -181,6 +181,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 				<Label className="text-sm font-medium text-slate-700">Overall Rating: {rating[0]}/10</Label>
 				<div className="px-3">
 					<Slider
+						key="rating-slider" // Stabilizes React key for re-mounts
 						value={rating}
 						onValueChange={setRating}
 						max={10}
@@ -197,10 +198,10 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 				</div>
 			</div>
 
-			{/* Form Fields */}
-			<PerformanceForm
+			{/* Form Fields - Render directly, no useMemo */}
+			<PerformanceForm<IFeedback360>
 				fields={fields}
-				initialData={getInitialFormData()}
+				initialData={getInitialFormData} // Use computed initial data
 				onSubmit={handleSubmit}
 				onCancel={onCancel}
 				isLoading={isLoading}

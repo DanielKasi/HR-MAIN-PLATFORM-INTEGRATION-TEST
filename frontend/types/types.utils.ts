@@ -700,13 +700,13 @@ export interface IEmployeeFormData {
 	bank_accounts: IEmployeeBankAccountFormData[];
 	spouse?: ISpouse;
 
-  // Legacy fields for backward compatibility
-  emergency_contact_name?: string
-  emergency_contact_phone?: string
-  emergency_contact_relationship?: string
-  bank?: string
-  bank_account_number?: string
-  payroll_branch?: number | null;
+	// Legacy fields for backward compatibility
+	emergency_contact_name?: string;
+	emergency_contact_phone?: string;
+	emergency_contact_relationship?: string;
+	bank?: string;
+	bank_account_number?: string;
+	payroll_branch?: number | null;
 }
 
 // Interface for local form state management
@@ -2552,7 +2552,7 @@ export interface IEmployeeBonusPoint {
 }
 
 export interface IEmployeeBonusPointFormData {
-	employee: number;
+	employee_id: number;
 	bonus_point_setting?: number;
 	reason: string;
 	date?: string;
@@ -2590,13 +2590,49 @@ export type IQuestionCategory = "interview" | "performance_review" | "360_feedba
 
 export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
 
+export interface CustomField {
+	id: string;
+	name: string;
+	description: string;
+	type: CustomFieldType;
+	value?: any;
+	is_required?: boolean;
+	options?: string[]; // Add this for select and checkbox fields
+}
+
+export type CustomFieldType =
+	| "text"
+	| "date"
+	| "select"
+	| "checkbox"
+	| "number"
+	| "textarea"
+	| "file";
+
+export interface CustomFieldFormData {
+	title: string;
+	description: string;
+	fieldType: CustomFieldType;
+	options?: string[]; // Add this for select and checkbox fields
+}
+
+export interface CustomField {
+	id: string;
+	name: string;
+	description: string;
+	type: CustomFieldType;
+	value?: any;
+	is_required?: boolean;
+	options?: string[]; // Add this for select and checkbox fields
+}
+
 export interface IQuestionTemplate {
 	id: number;
 	institution: IUserInstitution;
 	name: string;
 	description?: string | null;
 	category: IQuestionCategory;
-	questions: any[];
+	questions: CustomField[];
 }
 
 export interface IQuestionTemplateFormData {
@@ -2604,7 +2640,7 @@ export interface IQuestionTemplateFormData {
 	name: string;
 	description?: string;
 	category: IQuestionCategory;
-	questions: any[];
+	questions: CustomField[];
 }
 
 export type IApplicableFor = "managers" | "assignees";
@@ -2643,7 +2679,7 @@ export interface IMeetingFormData {
 	mode: IEventMode;
 	location?: string;
 	participant_ids: number[];
-	organizer?: number;
+	organizer_id?: number;
 	agenda?: string;
 	minutes?: string;
 	is_recurring?: boolean;

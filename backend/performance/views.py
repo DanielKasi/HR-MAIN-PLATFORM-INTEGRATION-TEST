@@ -971,8 +971,8 @@ class MeetingListCreateView(APIView, SortableAPIMixin):
         serializer = MeetingSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save(
-                institution=request.user.profile.institution,
-                organizer=request.user.profile
+                institution=request.user.profile.institution
+                # organizer=request.user.profile
             )
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)

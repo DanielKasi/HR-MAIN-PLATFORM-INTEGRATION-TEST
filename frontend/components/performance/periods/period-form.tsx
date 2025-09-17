@@ -6,6 +6,7 @@ import { FormField, PerformanceForm } from "../common/performance-form";
 
 import { IPeriod, IPeriodFormData } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useMemo } from "react";
 
 interface PeriodFormProps {
 	initialData?: IPeriod;
@@ -93,25 +94,34 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
 		onSubmit(periodData);
 	};
 
-	const getInitialFormData = () => {
-		if (!initialData) return {};
+	// const getInitialFormData = () => {
+	// 	if (!initialData) return {};
 
-		return {
-			name: initialData.name,
-			start_date: initialData.start_date,
-			end_date: initialData.end_date,
-			is_closed: initialData.is_closed,
-		};
-	};
+	// 	return {
+	// 		name: initialData.name,
+	// 		start_date: initialData.start_date,
+	// 		end_date: initialData.end_date,
+	// 		is_closed: initialData.is_closed,
+	// 	};
+	// };
+
+	// const memoizedPerformanceForm = useMemo(
+	// 	() => (
+
+	// 	),
+	// 	[initialData, isLoading],
+	// );
 
 	return (
-		<PerformanceForm
-			fields={fields}
-			initialData={getInitialFormData()}
-			onSubmit={handleSubmit}
-			onCancel={onCancel}
-			isLoading={isLoading}
-			submitLabel={initialData ? "Update Period" : "Create Period"}
-		/>
+		<>
+			<PerformanceForm<IPeriod>
+				fields={fields}
+				initialData={initialData}
+				onSubmit={handleSubmit}
+				onCancel={onCancel}
+				isLoading={isLoading}
+				submitLabel={initialData ? "Update Period" : "Create Period"}
+			/>
+		</>
 	);
 }
