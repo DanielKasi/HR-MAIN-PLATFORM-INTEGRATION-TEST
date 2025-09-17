@@ -334,7 +334,7 @@ export default function PayrollDashboard() {
 								{data.penalty_breakdown.map((penalty, index) => (
 									<div
 										key={index}
-										className="flex items-center justify-between rounded-lg border p-4"
+										className="flex items-center justify-between rounded-lg bg-gray-100 p-4"
 									>
 										<div>
 											<p className="font-medium">{penalty.penalty_type}</p>
