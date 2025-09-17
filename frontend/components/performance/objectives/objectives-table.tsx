@@ -4,8 +4,12 @@ import type { IObjective } from "@/types/types.utils";
 
 import { Edit, Trash2, Target, User, Clock } from "lucide-react";
 
-import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
-import { StatusBadge } from "../common/status-badge";
+import { hasPermission } from "@/lib/helpers"
+import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table"
+import { StatusBadge } from "../common/status-badge"
+import type { IObjectives } from "@/types/types.utils"
+import { Edit, Trash2, Target, User, Clock } from "lucide-react"
+import { PERMISSION_CODES } from "@/constants"
 
 interface ObjectivesTableProps {
 	objectives: IObjective[];
@@ -126,17 +130,17 @@ export function ObjectivesTable({
 		},
 	];
 
-	return (
-		<PerformanceTable
-			data={objectives}
-			columns={columns}
-			actions={actions}
-			onAdd={onAdd}
-			addLabel="Create Objective"
-			searchPlaceholder="Search objectives..."
-			onSearch={onSearch}
-			isLoading={isLoading}
-			emptyMessage="No objectives found"
-		/>
-	);
+    return (
+        <PerformanceTable
+            data={objectives}
+            columns={columns}
+            actions={actions}
+            onAdd={hasPermission(PERMISSION_CODES.CAN_CREATE_OBJECTIVES) ? onAdd : undefined}
+            addLabel="Create Objective"
+            searchPlaceholder="Search objectives..."
+            onSearch={onSearch}
+            isLoading={isLoading}
+            emptyMessage="No objectives found"
+        />
+    )
 }
