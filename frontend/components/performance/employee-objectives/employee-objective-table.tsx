@@ -3,12 +3,9 @@
 import type { IEmployeeObjective } from "@/types/types.utils";
 
 import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
-
 import {hasPermission} from "@/lib/helpers";
 import {PerformanceTable, type TableColumn, type TableAction} from "../common/performance-table";
 import {StatusBadge} from "../common/status-badge";
-import type {IEmployeeObjectives} from "@/types/types.utils";
-import {Edit, Trash2, User, Target, Calendar, CheckCircle} from "lucide-react";
 import {PERMISSION_CODES} from "@/constants";
 
 interface EmployeeObjectivesTableProps {

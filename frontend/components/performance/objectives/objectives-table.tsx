@@ -7,8 +7,6 @@ import { Edit, Trash2, Target, User, Clock } from "lucide-react";
 import { hasPermission } from "@/lib/helpers"
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table"
 import { StatusBadge } from "../common/status-badge"
-import type { IObjectives } from "@/types/types.utils"
-import { Edit, Trash2, Target, User, Clock } from "lucide-react"
 import { PERMISSION_CODES } from "@/constants"
 
 interface ObjectivesTableProps {
