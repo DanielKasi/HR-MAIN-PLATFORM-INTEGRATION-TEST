@@ -10,7 +10,7 @@ from django.utils import timezone
 class InstitutionSpotCheckSetting(BaseApprovableModel):
     institution = models.OneToOneField(
         "institution.Institution",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
     )
     lower_threshold = models.IntegerField(default=0)
     upper_threshold = models.IntegerField(default=3)
@@ -27,7 +27,7 @@ class InstitutionSpotCheckSetting(BaseApprovableModel):
 class BranchSpotCheckSetting(BaseApprovableModel):
     branch = models.OneToOneField(
         "institution.Branch",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
     )
     lower_threshold = models.IntegerField(default=0)
     upper_threshold = models.IntegerField(default=3)
@@ -44,7 +44,7 @@ class BranchSpotCheckSetting(BaseApprovableModel):
 class EmployeeSpotCheckSetting(BaseApprovableModel):
     employee = models.OneToOneField(
         "employee.Employee",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
     )
     lower_threshold = models.IntegerField(default=0)
     upper_threshold = models.IntegerField(default=3)
@@ -69,14 +69,14 @@ class SpotCheckStatus(TimeStampedModel):
 class EmployeeSpotCheck(TimeStampedModel):
     employee = models.ForeignKey(
         "employee.Employee",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="spot_checks",
     )
     spotcheck_time = models.DateTimeField()
     responded_at = models.DateTimeField(null=True, blank=True)
     status = models.ForeignKey(
         SpotCheckStatus,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="employee_spot_checks",
     )
     latitude = models.FloatField(null=True, blank=True)

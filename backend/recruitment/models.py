@@ -44,7 +44,7 @@ class JobPosition(BaseApprovableModel):
     # TODO: Make department non-nullable in future
     department = models.ForeignKey(
         "institution.Department",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="job_positions",
         null=True,
     )
@@ -184,7 +184,7 @@ class JobPositionAdvert(BaseApprovableModel):
         ("inactive", "Inactive"),
     ]
     job_position = models.ForeignKey(
-        JobPosition, on_delete=models.PROTECT, related_name="adverts"
+        JobPosition, on_delete=models.CASCADE, related_name="adverts"
     )
     job_position_advert_status = models.CharField(
         max_length=20, choices=status_choices, default="pending_approval"
@@ -305,7 +305,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
         ("other", "Other"),
     ]
     job_position_advert = models.ForeignKey(
-        JobPositionAdvert, on_delete=models.PROTECT, related_name="applications"
+        JobPositionAdvert, on_delete=models.CASCADE, related_name="applications"
     )
     applicant_name = models.CharField(max_length=255)
     applicant_email = models.EmailField()
@@ -434,7 +434,7 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
 
 class InterviewStage(BaseApprovableModel):
     job_position_advert = models.ForeignKey(
-        JobPositionAdvert, on_delete=models.PROTECT, related_name="interview_stages"
+        JobPositionAdvert, on_delete=models.CASCADE, related_name="interview_stages"
     )
     name = models.CharField(max_length=255)
     level = models.PositiveIntegerField(default=1)
@@ -475,12 +475,12 @@ class JobInterview(BaseApprovableModel):
 
     job_position_application = models.ForeignKey(
         JobAdvertApplication,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="interviews",
     )
     interview_stage = models.ForeignKey(
         InterviewStage,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="interviews",
     )
     interview_type = models.CharField(max_length=20, choices=interview_type_choices)

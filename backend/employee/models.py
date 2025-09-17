@@ -58,7 +58,7 @@ class EmployeeBankAccount(SoftDeletableTimeStampedModel):
     )
     bank = models.ForeignKey(
         InstitutionBankType,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="employee_bank_accounts",
     )
     account_name = models.CharField(max_length=50)
@@ -176,7 +176,7 @@ class Employee(BaseApprovableModel):
 
     user = models.OneToOneField(
         "users.CustomUser",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         unique=True,
         blank=True,
         null=True,
@@ -190,7 +190,7 @@ class Employee(BaseApprovableModel):
     # TODO: Make position non-nullable in future. There is no way to track employee's institution without position or department
     position = models.ForeignKey(
         "recruitment.JobPosition",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="employees",
         null=True,
         blank=True,
@@ -586,7 +586,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
 
 class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
-        Employee, on_delete=models.PROTECT, related_name="custom_working_days"
+        Employee, on_delete=models.CASCADE, related_name="custom_working_days"
     )
 
     days = models.ManyToManyField(
@@ -605,9 +605,9 @@ class EmployeeWorkingDays(BaseApprovableModel):
 
 class EmployeeDay(BaseApprovableModel):
     employee_working_days = models.ForeignKey(
-        "EmployeeWorkingDays", on_delete=models.PROTECT, related_name="employee_days"
+        "EmployeeWorkingDays", on_delete=models.CASCADE, related_name="employee_days"
     )
-    day = models.ForeignKey("settings.SystemDay", on_delete=models.PROTECT)
+    day = models.ForeignKey("settings.SystemDay", on_delete=models.CASCADE)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
 
@@ -636,7 +636,7 @@ class EmployeeShift(BaseApprovableModel):
     ]
 
     employee = models.ForeignKey(
-        Employee, on_delete=models.PROTECT, related_name="employee_shift"
+        Employee, on_delete=models.CASCADE, related_name="employee_shift"
     )
     shift = models.ForeignKey(
         "institution.BranchShift",
@@ -690,7 +690,7 @@ class EmployeeMonthlyHourAccount(models.Model):
 
 class EmployeeAttendance(BaseApprovableModel):
     employee = models.ForeignKey(
-        Employee, on_delete=models.PROTECT, related_name="attendance_records"
+        Employee, on_delete=models.CASCADE, related_name="attendance_records"
     )
     date = models.DateField(auto_now_add=True)
     check_in_time = models.TimeField(null=True, blank=True)

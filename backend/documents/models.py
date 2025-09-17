@@ -64,7 +64,7 @@ class DocumentTemplate(BaseApprovableModel):
 
 
 class Document(BaseApprovableModel):
-    document_template = models.ForeignKey(DocumentTemplate, on_delete=models.PROTECT)
+    document_template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE)
     placeholder_values = models.JSONField(
         default=dict,
         help_text="Values for the placeholders defined in the template, e.g. {'employee_name': 'John Doe', 'date': '2023-10-01'}",
