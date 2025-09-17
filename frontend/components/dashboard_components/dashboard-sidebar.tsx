@@ -292,7 +292,7 @@ export default function DashboardSideBar() {
 				{ title: "Objectives", href: "/performance/objectives" },
 				{ title: "360 Feedback", href: "/performance/feedback" },
 				{ title: "Meetings", href: "/performance/meetings" },
-				{ title: "Key Results", href: "#" },
+				{ title: "Key Results", href: "/performance/key-results" },
 				{ title: "Employee Objectives", href: "/performance/employee-objectives" },
 				{ title: "Period", href: "/performance/periods" },
 				{ title: "Question Template", href: "#" },

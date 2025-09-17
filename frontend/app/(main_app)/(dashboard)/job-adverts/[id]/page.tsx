@@ -16,6 +16,7 @@ import {
 	FileText,
 	X,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -319,7 +320,7 @@ export default function JobAdvertDetailsPage() {
 				</div>
 
 				<div
-					className={` gap-6 ${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+					className={`gap-6 ${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
 				>
 					{jobAdvert?.approvals && jobAdvert.approvals.length > 0 && (
 						<div className="order-1 lg:order-2">
@@ -366,13 +367,13 @@ export default function JobAdvertDetailsPage() {
 											</div>
 										</>
 									)}
-									{/* <div className="text-right">
-                    <div className="flex items-center gap-1 text-lg font-bold">
-                      <Calendar className="h-4 w-4" />
-                      {formatDate(jobAdvert.expiry_date)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Expiry Date</p>
-                  </div> */}
+									<div className="text-right">
+										<div className="flex items-center gap-1 text-lg font-bold">
+											<Calendar className="h-4 w-4" />
+											{formatDate(jobAdvert.expiry_date)}
+										</div>
+										<p className="text-sm text-muted-foreground">Expiry Date</p>
+									</div>
 								</div>
 							</CardHeader>
 

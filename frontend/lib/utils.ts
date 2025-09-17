@@ -1435,13 +1435,13 @@ export const getPaginatedEmployees = async ({
 	page?: number;
 	search?: string;
 	ordering?: string;
-	positionSearch?: string; 
+	positionSearch?: string;
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
 	});
 
-	if (positionSearch) { 
+	if (positionSearch) {
 		params.append("position_search", positionSearch);
 	}
 
@@ -7982,13 +7982,24 @@ export const EMPLOYEE_OBJECTIVES_API = {
 };
 
 export const KEY_RESULTS_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/key-results/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
