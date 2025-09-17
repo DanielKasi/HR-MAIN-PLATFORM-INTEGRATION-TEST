@@ -163,7 +163,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			const url = getNotificationPath(lastNotification);
 
 			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
-				body: `${lastNotification.type?.toUpperCase() || "Alert "}: Received at ${new Date(lastNotification.timestamp).toLocaleString()} `,
+				body: `${lastNotification.type?.toUpperCase() || "Alert "}`,
 				icon: "/icon.png", // Our app's icon
 				tag: lastNotification.id || (notifications.length - 1).toString(), // Prevents duplicates
 				data: { url }, // Navigate to approval page

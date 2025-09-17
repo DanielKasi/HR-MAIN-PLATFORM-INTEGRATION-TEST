@@ -1,21 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-	Plus,
-	Search,
-	MoreVertical,
-	Edit,
-	Download,
-	Trash2,
-	FileText,
-	File,
-	Loader2,
-	ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,57 +23,57 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Plus,
-  Search,
-  MoreVertical,
-  Edit,
-  Download,
-  Trash2,
-  FileText,
-  File,
-  Loader2,
-  ArrowLeft,
+	Plus,
+	Search,
+	MoreVertical,
+	Edit,
+	Download,
+	Trash2,
+	FileText,
+	File,
+	Loader2,
+	ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
-import {useRouter, useSearchParams} from "next/navigation";
-import {getDocumentTemplates, deleteDocumentTemplate} from "@/lib/utils";
-import {IDocumentTemplate} from "@/types/types.utils";
-import {PERMISSION_CODES} from "@/constants";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils";
+import { IDocumentTemplate } from "@/types/types.utils";
+import { PERMISSION_CODES } from "@/constants";
+import { useSelector } from "react-redux";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 export default function DocumentTemplatesPage() {
-  const [templates, setTemplates] = useState<IDocumentTemplate[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    template: IDocumentTemplate | null;
-  }>({
-    open: false,
-    template: null,
-  });
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [showSuccess, setShowSuccess] = useState(false);
-  const selectedInstitution = useSelector(selectSelectedInstitution);
-  const INSTITUTION_ID = selectedInstitution?.id;
-  const [hasShownToast, setHasShownToast] = useState(false);
+	const [templates, setTemplates] = useState<IDocumentTemplate[]>([]);
+	const [searchTerm, setSearchTerm] = useState("");
+	const [isLoading, setIsLoading] = useState(true);
+	const [deleteDialog, setDeleteDialog] = useState<{
+		open: boolean;
+		template: IDocumentTemplate | null;
+	}>({
+		open: false,
+		template: null,
+	});
+	const router = useRouter();
+	const searchParams = useSearchParams();
+	const [showSuccess, setShowSuccess] = useState(false);
+	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const INSTITUTION_ID = selectedInstitution?.id;
+	const [hasShownToast, setHasShownToast] = useState(false);
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
+	useEffect(() => {
+		loadTemplates();
+	}, []);
 
-  useEffect(() => {
-    if (searchParams.get("success") === "true" && !hasShownToast) {
-      toast.success("Template updated successfully!");
-      setHasShownToast(true);
-      window.history.replaceState({}, "", "/documents/templates");
-    }
-  }, [searchParams, hasShownToast]);
+	useEffect(() => {
+		if (searchParams.get("success") === "true" && !hasShownToast) {
+			toast.success("Template updated successfully!");
+			setHasShownToast(true);
+			window.history.replaceState({}, "", "/documents/templates");
+		}
+	}, [searchParams, hasShownToast]);
 
 	const loadTemplates = async () => {
 		setIsLoading(true);
@@ -210,80 +195,80 @@ export default function DocumentTemplatesPage() {
 				</ProtectedComponent>
 			</div>
 
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search templates..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-      <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTemplates.map((template) => (
-            <Card key={template.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {getTemplateIcon(template.template_type)}
-                    <CardTitle className="text-lg">{template.name}</CardTitle>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <ProtectedComponent
-                        permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TEMPLATES}
-                      >
-                        <DropdownMenuItem
-                          onClick={() => router.push(`templates/${template.id}/edit`)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent
-                        permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}
-                      >
-                        <DropdownMenuItem onClick={() => handleDownload(template)}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                      <ProtectedComponent
-                        permissionCode={PERMISSION_CODES.CAN_DELETE_DOCUMENT_TEMPLATES}
-                      >
-                        <DropdownMenuItem
-                          onClick={() => setDeleteDialog({open: true, template})}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </ProtectedComponent>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardDescription>
-                  {typeof template.document_type === "object"
-                    ? template.document_type.name
-                    : "Unknown Type"}{" "}
-                  Created {new Date(template.created_at).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Badge className={getTypeColor(template.template_type)}>
-                      {template.template_type.toUpperCase()}
-                    </Badge>
-                  </div>
+			<div className="mb-6">
+				<div className="relative max-w-md">
+					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+					<Input
+						placeholder="Search templates..."
+						value={searchTerm}
+						onChange={(e) => setSearchTerm(e.target.value)}
+						className="pl-10"
+					/>
+				</div>
+			</div>
+			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}>
+				<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+					{filteredTemplates.map((template) => (
+						<Card key={template.id} className="hover:shadow-md transition-shadow">
+							<CardHeader className="pb-3">
+								<div className="flex items-start justify-between">
+									<div className="flex items-center gap-2">
+										{getTemplateIcon(template.template_type)}
+										<CardTitle className="text-lg">{template.name}</CardTitle>
+									</div>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button variant="ghost" size="sm">
+												<MoreVertical className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<ProtectedComponent
+												permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TEMPLATES}
+											>
+												<DropdownMenuItem
+													onClick={() => router.push(`templates/${template.id}/edit`)}
+												>
+													<Edit className="h-4 w-4 mr-2" />
+													Edit
+												</DropdownMenuItem>
+											</ProtectedComponent>
+											<ProtectedComponent
+												permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TEMPLATES}
+											>
+												<DropdownMenuItem onClick={() => handleDownload(template)}>
+													<Download className="h-4 w-4 mr-2" />
+													Download
+												</DropdownMenuItem>
+											</ProtectedComponent>
+											<ProtectedComponent
+												permissionCode={PERMISSION_CODES.CAN_DELETE_DOCUMENT_TEMPLATES}
+											>
+												<DropdownMenuItem
+													onClick={() => setDeleteDialog({ open: true, template })}
+													className="text-red-600"
+												>
+													<Trash2 className="h-4 w-4 mr-2" />
+													Delete
+												</DropdownMenuItem>
+											</ProtectedComponent>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+								<CardDescription>
+									{typeof template.document_type === "object"
+										? template.document_type.name
+										: "Unknown Type"}{" "}
+									Created {new Date(template.created_at).toLocaleDateString()}
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-3">
+									<div className="flex items-center gap-2">
+										<Badge className={getTypeColor(template.template_type)}>
+											{template.template_type.toUpperCase()}
+										</Badge>
+									</div>
 
 									{template.content && (
 										<div>
