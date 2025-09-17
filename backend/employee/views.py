@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.shortcuts import render
 
+from settings.models import EmailProviderConfig
 from utilities.sortable_api import SortableAPIMixin
 from spotcheck.models import EmployeeSpotCheck
 from institution.serializers import UserBranchSerializer
@@ -15,6 +16,7 @@ from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
     Employee,
     EmployeeAttendance,
+    EmployeeCompanyEmail,
     EmployeeType,
     NextOfKin,
     WorkType,
@@ -25,6 +27,7 @@ from .models import (
 )
 from .serializers import (
     EmployeeAttendanceSerializer,
+    EmployeeCompanyEmailSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
     QualificationAwardSerializer,
@@ -90,7 +93,7 @@ import string
 import secrets
 from django.db.models import Count, F, ExpressionWrapper, FloatField, Avg
 import json
-from .utilities import generate_employee_excel
+from .utilities import create_company_email, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
 
@@ -3914,3 +3917,102 @@ class AttendanceDashboardAPIView(APIView):
         }
 
         return Response(data)
+
+
+class EmployeeEmailCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=EmployeeCompanyEmailSerializer,
+        responses={
+            201: OpenApiResponse(response=EmployeeCompanyEmailSerializer, description="Employee email created successfully."),
+            400: OpenApiResponse(description="Bad request or creation failed."),
+            404: OpenApiResponse(description="Employee or config not found."),
+        },
+        tags=["Employee Management"],
+    )
+    @transaction.atomic
+    def post(self, request, employee_id):
+        
+        employee = get_object_or_404(Employee, id=employee_id)
+        
+        institution = employee.get_institution()
+        
+        try:
+            config = institution.email_config
+        except EmailProviderConfig.DoesNotExist:
+            return Response({"detail": "No email provider config found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if EmployeeCompanyEmail.objects.filter(employee=employee, status__in=['active', 'pending']).exists():
+            return Response({"detail": "Employee already has an active or pending company email."}, status=status.HTTP_400_BAD_REQUEST)
+
+        password = request.data.get('password')
+        email_account = create_company_email(employee, password)
+        serializer = EmployeeCompanyEmailSerializer(email_account)
+        response_data = serializer.data
+        if password:
+            response_data["password"] = password
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class EmployeeEmailDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(description="Employee email deleted successfully."),
+            400: OpenApiResponse(description="Bad request or deletion failed."),
+            404: OpenApiResponse(description="Employee or email not found."),
+        },
+        tags=["Employee Management"],
+    )
+    @transaction.atomic
+    def delete(self, request, employee_id):
+        employee = get_object_or_404(Employee, id=employee_id)
+        try:
+            employee_email = EmployeeCompanyEmail.objects.get(employee=employee, status__in=['active', 'pending'])
+        except EmployeeCompanyEmail.DoesNotExist:
+            return Response({"detail": "No active or pending company email found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            delete_company_email(employee)  # Utility function deletes email
+            employee_email.status = 'deleted'
+            employee_email.approval_status = 'under_deletion'
+            employee_email.save(update_fields=['status', 'approval_status'])
+            employee_email.confirm_delete()  # Assumes BaseApprovableModel defines this
+            return Response({"message": "Employee email deleted successfully."}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class EmployeeEmailResetPasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=EmployeeCompanyEmailSerializer,
+        responses={
+            200: OpenApiResponse(description="Employee email password reset successfully."),
+            400: OpenApiResponse(description="Bad request or reset failed."),
+            404: OpenApiResponse(description="Employee or email not found."),
+        },
+        tags=["Employee Management"],
+    )
+    @transaction.atomic
+    def post(self, request, employee_id):
+        employee = get_object_or_404(Employee, id=employee_id)
+        try:
+            employee_email = EmployeeCompanyEmail.objects.get(employee=employee, status__in=['active', 'pending'])
+        except EmployeeCompanyEmail.DoesNotExist:
+            return Response({"detail": "No active or pending company email found."}, status=status.HTTP_404_NOT_FOUND)
+
+        password = request.data.get('password')
+        try:
+            reset_email_password(employee, password)
+            employee_email.approval_status = 'under_update'
+            employee_email.save(update_fields=['approval_status'])
+            employee_email.confirm_update()  
+            response_data = {"email": employee_email.email}
+            if password:
+                response_data["password"] = password
+            return Response(response_data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     

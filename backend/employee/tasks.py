@@ -37,7 +37,6 @@ def send_employee_welcome_email(
         Exception: Re-raises email sending exceptions after retries
     """
 
-    print(f"\n\n\n\n{domain}\n\n\n\n")
     try:
         # Validate inputs
         if not all([email, fullname, password]):

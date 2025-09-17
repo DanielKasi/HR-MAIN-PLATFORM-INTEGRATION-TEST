@@ -26,7 +26,10 @@ from .views import (
     AttendanceDashboardAPIView,
     EmployeeExportView,
     QualificationAwardListCreateAPIView,
-    QualificationAwardDetailAPIView
+    QualificationAwardDetailAPIView,
+    EmployeeEmailCreateView,
+    EmployeeEmailDeleteView,
+    EmployeeEmailResetPasswordView,
 )
 
 urlpatterns = [
@@ -143,5 +146,20 @@ urlpatterns = [
         "export-employee-excel/<int:institution_id>/",
         EmployeeExportView.as_view(),
         name="export-excel",
+    ),
+    path(
+        "employee-company-emails/<int:employee_id>/",
+        EmployeeEmailCreateView.as_view(),
+        name="employee-email-create",
+    ),
+    path(
+        "employee-company-emails/<int:pk>/",
+        EmployeeEmailDeleteView.as_view(),
+        name="employee-email-delete",
+    ),
+    path(
+        "employee-company-emails/reset-password/<int:employee_id>/",
+        EmployeeEmailResetPasswordView.as_view(),
+        name="employee-email-reset-password",
     ),
 ]
