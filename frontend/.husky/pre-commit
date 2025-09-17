@@ -3,30 +3,8 @@
 # Get git root
 GIT_ROOT=$(git rev-parse --show-toplevel)
 
-# Check if any frontend files are staged
-FRONTEND_FILES_CHANGED=$(git diff --cached --name-only | grep "^frontend/" | wc -l)
-
-if [ "$FRONTEND_FILES_CHANGED" -eq 0 ]; then
-  echo "ℹ️  No frontend files changed, skipping frontend hooks."
-  exit 0
-fi
-
-echo "🔍 Running frontend pre-commit checks..."
-
 # Navigate to frontend directory
 cd "$GIT_ROOT/frontend"
 
 # Run lint-staged (formatting and linting)
 npx lint-staged
-
-# Check if any TypeScript files were changed before running type-check
-TS_FILES_CHANGED=$(git diff --cached --name-only --relative=frontend | grep -E '\.(ts|tsx)$' | grep -v -E '^\.next/' | wc -l)
-
-if [ "$TS_FILES_CHANGED" -gt 0 ]; then
-  echo "🔍 Running TypeScript check on source files..."
-  npm run type-check
-else
-  echo "ℹ️  No TypeScript files changed, skipping type check."
-fi
-
-echo "✅ Frontend pre-commit checks passed!"
