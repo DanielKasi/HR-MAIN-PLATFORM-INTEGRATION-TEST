@@ -30,7 +30,8 @@ export interface FormField {
 		| "datetime-local";
 	placeholder?: string;
 	required?: boolean;
-	options?: { value: string | number; label: string }[];
+	optio
+	ns?: { value: string | number; label: string }[];
 	validation?: (value: any) => string | null;
 	disabled?: boolean;
 	description?: string;
@@ -44,7 +45,8 @@ export interface FormField {
 
 interface PerformanceFormProps<T extends Record<string, any>> {
 	fields: FormField[];
-	initialData?: Partial<T>;
+	initi
+	alData?: Partial<T>;
 	onSubmit: (data: T) => void;
 	onCancel?: () => void;
 	isLoading?: boolean;
