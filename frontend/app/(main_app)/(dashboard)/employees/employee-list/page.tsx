@@ -6,15 +6,15 @@ import { EmployeesTable } from "./employees-table";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import FormatNumberInput from "@/components/format-number-input";
 import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -22,8 +22,20 @@ import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
 import { select } from "redux-saga/effects";
-import { getJobPositions } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PaginatedSearchableFilterSelect } from "@/components/searchable-filter-select";
+import {
+	getPaginatedJobPositions,
+	getPaginatedJobPositionsFromUrl,
+	getPaginatedDepartments,
+	getPaginatedDepartmentsFromUrl,
+} from "@/lib/utils";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -33,33 +45,20 @@ export default function EmployeesPage() {
 	const router = useRouter();
 	const institutionId = useSelector(selectSelectedInstitution)?.id;
 	const accessToken = useSelector(selectAccessToken);
-	const [positionSearchTerm, setPositionSearchTerm] = useState("");
+	const [positionSearchTerm, setPositionSearchTerm] = useState("all");
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
+	const [minSalary, setMinSalary] = useState<string>("");
+	const [maxSalary, setMaxSalary] = useState<string>("");
 
 	const clearFilters = () => {
 		setSearchTerm("");
 		setDepartmentFilter("all");
 		setStatusFilter("all");
-		setPositionSearchTerm("");
+		setPositionSearchTerm("all");
+		setMinSalary("");
+		setMaxSalary("");
 	};
-
-	useEffect(() => {
-		const fetchJobPositions = async () => {
-			if (!institutionId) return;
-
-			try {
-				const positions = await getJobPositions({
-					institutionId,
-				});
-				setJobPositions(positions);
-			} catch (error) {
-				console.error("Failed to fetch job positions:", error);
-			}
-		};
-
-		fetchJobPositions();
-	}, [institutionId, accessToken]);
 
 	const handleExportEmployees = async () => {
 		try {
@@ -141,46 +140,64 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
-
-						{/* ADD POSITION SEARCH HERE - OUTSIDE THE CONSTRAINED CONTAINER */}
-						<div className="relative w-full md:max-w-lg lg:max-w-xl">
-							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-							<Input
-								placeholder="Search job positions..."
-								value={positionSearchTerm}
-								onChange={(e) => setPositionSearchTerm(e.target.value)}
-								className="pl-10 text-sm"
+						<PaginatedSearchableFilterSelect
+							value={positionSearchTerm}
+							onValueChange={setPositionSearchTerm}
+							placeholder="Search job positions..."
+							allLabel="All Job Positions"
+							allValue="all"
+							className="md:max-w-lg lg:max-w-xl"
+							fetchFirstPage={async (query) => {
+								if (!institutionId) throw new Error("No institution selected");
+								return await getPaginatedJobPositions({
+									institutionId,
+									search: query?.search,
+									page: query?.page || 1,
+								});
+							}}
+							fetchFromUrl={async ({ url }) => {
+								return await getPaginatedJobPositionsFromUrl(url);
+							}}
+							getItemId={(position) => position.id}
+							getItemLabel={(position) => position.name}
+						/>
+						<PaginatedSearchableFilterSelect
+							value={departmentFilter}
+							onValueChange={setDepartmentFilter}
+							placeholder="Search departments..."
+							allLabel="All Departments"
+							allValue="all"
+							className="md:max-w-lg lg:max-w-xl"
+							fetchFirstPage={async (query) => {
+								if (!institutionId) throw new Error("No institution selected");
+								return await getPaginatedDepartments({
+									institutionId,
+									search: query?.search,
+									page: query?.page || 1,
+								});
+							}}
+							fetchFromUrl={async ({ url }) => {
+								return await getPaginatedDepartmentsFromUrl({ url }); 
+							}}
+							getItemId={(department) => department.id}
+							getItemLabel={(department) => department.name}
+						/>
+						{/* Salary Range Inputs */}
+						<div className="flex gap-2 items-center">
+							<FormatNumberInput
+								placeholder="Min salary"
+								value={minSalary}
+								onChange={(formatted, numericValue) => setMinSalary(formatted)}
+								className="w-32 text-sm border-gray-300 rounded-md focus:border-black focus:ring-0"
+							/>
+							<span className="text-gray-400">-</span>
+							<FormatNumberInput
+								placeholder="Max salary"
+								value={maxSalary}
+								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
+								className="w-32 text-sm border-gray-300 rounded-md focus:border-black focus:ring-0"
 							/>
 						</div>
-
-						<div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.4]">
-							<div className="flex flex-col sm:flex-row gap-3 flex-1">
-								<Select value={statusFilter} onValueChange={setStatusFilter}>
-									<SelectTrigger className="w-full sm:w-[140px] lg:w-[160px] text-xs sm:text-sm">
-										<SelectValue placeholder="Status" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="all">All Statuses</SelectItem>
-										<SelectItem value="active">Active</SelectItem>
-										<SelectItem value="inactive">Inactive</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							{/* {(searchTerm.trim() ||
-								positionSearchTerm.trim() ||
-								departmentFilter !== "all" ||
-								statusFilter !== "all") && (
-								<Button
-									variant="outline"
-									onClick={clearFilters}
-									className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm bg-transparent"
-								>
-									Clear Filters
-								</Button>
-							)} */}
-						</div>
-
 						{/* Add Employee Dropdown */}
 						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
 					</div>
@@ -189,6 +206,9 @@ export default function EmployeesPage() {
 					searchTerm={searchTerm}
 					refreshFunctionRef={refreshFunctionRef}
 					positionSearchTerm={positionSearchTerm}
+					departmentFilter={departmentFilter}
+					minSalary={minSalary}
+					maxSalary={maxSalary}
 				/>
 
 				<BulkUploadEmployeesDialog

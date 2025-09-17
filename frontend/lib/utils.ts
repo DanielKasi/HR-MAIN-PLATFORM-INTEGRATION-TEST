@@ -1430,12 +1430,18 @@ export const getPaginatedEmployees = async ({
 	search,
 	ordering,
 	positionSearch,
+	departmentSearch,
+	minSalary, 
+	maxSalary,
 }: {
 	institutionId: number;
 	page?: number;
 	search?: string;
 	ordering?: string;
-	positionSearch?: string;
+	positionSearch?: string; 
+	departmentSearch?: string; 
+	minSalary?: string;
+	maxSalary?: string;
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
@@ -1443,6 +1449,17 @@ export const getPaginatedEmployees = async ({
 
 	if (positionSearch) {
 		params.append("position_search", positionSearch);
+	}
+
+	if (departmentSearch) { 
+		params.append("department_search", departmentSearch);
+	}
+	if (minSalary) { 
+		params.append("min_salary", minSalary);
+	}
+
+	if (maxSalary) { 
+		params.append("max_salary", maxSalary);
 	}
 
 	if (search) {
