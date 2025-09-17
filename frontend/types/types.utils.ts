@@ -700,12 +700,13 @@ export interface IEmployeeFormData {
 	bank_accounts: IEmployeeBankAccountFormData[];
 	spouse?: ISpouse;
 
-	// Legacy fields for backward compatibility
-	emergency_contact_name?: string;
-	emergency_contact_phone?: string;
-	emergency_contact_relationship?: string;
-	bank?: string;
-	bank_account_number?: string;
+  // Legacy fields for backward compatibility
+  emergency_contact_name?: string
+  emergency_contact_phone?: string
+  emergency_contact_relationship?: string
+  bank?: string
+  bank_account_number?: string
+  payroll_branch?: number | null;
 }
 
 // Interface for local form state management

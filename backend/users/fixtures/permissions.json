@@ -1282,5 +1282,107 @@
       "name": "Can Delete Retirement Requests",
       "description": "Allows deleting retirement requests"
     }
+  ],
+   "Perfomance Management": [
+    {
+      "code": "can_create_objectives",
+      "name": "Can Create Objectives",
+      "description": "Allows creating objectives"
+    },
+    {
+      "code": "can_edit_objectives",
+      "name": "Can Edit Objectives",
+      "description": "Allows editing objectives"
+    },
+    {
+      "code": "can_view_objectives",
+      "name": "Can View Objectives",
+      "description": "Allows viewing objectives"
+    },
+    {
+      "code": "can_delete_objectives",
+      "name": "Can Delete Objectives",
+      "description": "Allows deleting objectives"
+    },
+    {
+      "code": "can_give_feedback",
+      "name": "Can Give FeedBack",
+      "description": "Allows giving feedback"
+    },
+    {
+      "code": "can_edit_feedback",
+      "name": "Can Edit Feedback",
+      "description": "Allows editing feedback"
+    },
+    {
+      "code": "can_view_feedback",
+      "name": "Can View Feedback",
+      "description": "Allows viewing feedback"
+    },
+    {
+      "code": "can_delete_feedback",
+      "name": "Can Delete feedback",
+      "description": "Allows deleting feedback"
+    }, 
+    {
+      "code": "can_schedule_meeting",
+      "name": "Can Schedule Meeting",
+      "description": "Allows scheduling meeting"
+    },
+    {
+      "code": "can_view_scheduled_meeting",
+      "name": "Can View Scheduled Meeting",
+      "description": "Allows viewing scheduled meeting"
+    },
+      {
+      "code": "can_edit_scheduled_meeting",
+      "name": "Can Edit Scheduled Meeting",
+      "description": "Allows editing scheduled meeting"
+    },
+    {
+      "code": "can_delete_scheduled_meeting",
+      "name": "Can Delete Scheduled Meeting",
+      "description": "Allows deleting scheduled meeting"
+    },
+    {
+      "code": "can_assign_objective",
+      "name": "Can Assign Objective",
+      "description": "Allows assigning objective"
+    },
+    {
+      "code": "can_edit_assigned_objective",
+      "name": "Can Edit Assigned Objective",
+      "description": "Allows editing assigned objective"
+    },
+     {
+      "code": "can_view_assigned_objective",
+      "name": "Can View Assigned Objective",
+      "description": "Allows viewing assigned objective"
+    },
+    {
+      "code": "can_delete_assigned_objective",
+      "name": "Can Deleting Assigned Objective",
+      "description": "Allows deleting assigned objective"
+    },
+    {
+      "code": "can_create_period",
+      "name": "Can Create Period",
+      "description": "Allows creating period"
+    }, 
+    {
+      "code": "can_view_period",
+      "name": "Can View Period",
+      "description": "Allows viewing period"
+    },
+      {
+      "code": "can_edit_period",
+      "name": "Can Edit Period",
+      "description": "Allows editing period"
+    },
+      {
+      "code": "can_delete_period",
+      "name": "Can Delete Period",
+      "description": "Allows deleting period"
+    }
   ]
 }

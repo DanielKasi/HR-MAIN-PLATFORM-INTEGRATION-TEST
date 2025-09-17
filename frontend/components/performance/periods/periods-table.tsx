@@ -1,11 +1,12 @@
 "use client";
+"use client";
 
-import type { IPeriod } from "@/types/types.utils";
-
-import { Edit, Trash2, Calendar } from "lucide-react";
-
-import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
-import { StatusBadge } from "../common/status-badge";
+import {hasPermission} from "@/lib/helpers";
+import {PerformanceTable, type TableColumn, type TableAction} from "../common/performance-table";
+import {StatusBadge} from "../common/status-badge";
+import type {IPeriod} from "@/types/types.utils";
+import {Edit, Trash2, Calendar} from "lucide-react";
+import {PERMISSION_CODES} from "@/constants";
 
 interface PeriodsTableProps {
 	periods: IPeriod[];
@@ -85,17 +86,17 @@ export function PeriodsTable({
 		},
 	];
 
-	return (
-		<PerformanceTable
-			data={periods}
-			columns={columns}
-			actions={actions}
-			onAdd={onAdd}
-			addLabel="Create Period"
-			searchPlaceholder="Search periods..."
-			onSearch={onSearch}
-			isLoading={isLoading}
-			emptyMessage="No performance periods found"
-		/>
-	);
+  return (
+    <PerformanceTable
+      data={periods}
+      columns={columns}
+      actions={actions}
+      onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
+      addLabel="Create Period"
+      searchPlaceholder="Search periods..."
+      onSearch={onSearch}
+      isLoading={isLoading}
+      emptyMessage="No performance periods found"
+    />
+  );
 }
