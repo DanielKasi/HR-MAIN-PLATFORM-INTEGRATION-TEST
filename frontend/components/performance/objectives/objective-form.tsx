@@ -55,7 +55,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 					duration_unit: "months",
 					key_result: "",
 					self_employee_progress_update: false,
-					creation_date: today,
+					date: today,
 				};
 			}
 
@@ -66,7 +66,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				duration_unit: initialData.duration_unit || "months",
 				key_result: initialData.key_result?.id || "",
 				self_employee_progress_update: initialData.self_employee_progress_update || false,
-				creation_date: initialData.creation_date?.split("T")[0] || today,
+				date: initialData.date?.split("T")[0] || today,
 			};
 		});
 		const [errors, setErrors] = useState<Record<string, string>>({});
@@ -122,17 +122,17 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 			}
 
 			// Creation date validation
-			if (!formData.creation_date) {
-				newErrors.creation_date = "Creation date is required";
+			if (!formData.date) {
+				newErrors.date = "Creation date is required";
 			} else {
-				const creationDate = new Date(formData.creation_date);
+				const creationDate = new Date(formData.date);
 				const today = new Date();
 				today.setHours(0, 0, 0, 0);
 
 				if (isNaN(creationDate.getTime())) {
-					newErrors.creation_date = "Invalid date format";
+					newErrors.date = "Invalid date format";
 				} else if (creationDate > today) {
-					newErrors.creation_date = "Creation date cannot be in the future";
+					newErrors.date = "Creation date cannot be in the future";
 				}
 			}
 
@@ -154,7 +154,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				self_employee_progress_update: formData.self_employee_progress_update || false,
 				managers_id: managersValue.length > 0 ? Number(managersValue[0]) : undefined,
 				assignees_id: assigneesValue.map((id) => Number(id)),
-				creation_date: formData.creation_date,
+				date: formData.date,
 			};
 
 			onSubmit(objectiveData);
@@ -269,18 +269,18 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 
 					{/* Creation Date */}
 					<div className="space-y-2">
-						<Label htmlFor="creation_date" className="text-sm font-medium text-slate-700">
+						<Label htmlFor="date" className="text-sm font-medium text-slate-700">
 							Creation Date <span className="text-red-500">*</span>
 						</Label>
 						<Input
-							id="creation_date"
+							id="date"
 							type="date"
-							value={formData.creation_date}
-							onChange={(e) => handleChange("creation_date", e.target.value)}
+							value={formData.date}
+							onChange={(e) => handleChange("date", e.target.value)}
 							disabled={isLoading}
-							className={cn("rounded-xl", errors.creation_date && "border-red-500")}
+							className={cn("rounded-xl", errors.date && "border-red-500")}
 						/>
-						{errors.creation_date && <p className="text-sm text-red-600">{errors.creation_date}</p>}
+						{errors.date && <p className="text-sm text-red-600">{errors.date}</p>}
 					</div>
 
 					{/* Key Result */}
@@ -316,27 +316,6 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 								))}
 							</SelectContent>
 						</Select>
-					</div>
-
-					{/* Self Employee Progress Update */}
-					<div className="space-y-2">
-						<Label
-							htmlFor="self_employee_progress_update"
-							className="text-sm font-medium text-slate-700"
-						>
-							Self Employee Progress Update
-						</Label>
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="self_employee_progress_update"
-								checked={formData.self_employee_progress_update}
-								onCheckedChange={(checked) =>
-									handleChange("self_employee_progress_update", checked)
-								}
-								disabled={isLoading}
-							/>
-							<Label className="text-sm text-slate-600">Allow self progress updates</Label>
-						</div>
 					</div>
 				</div>
 

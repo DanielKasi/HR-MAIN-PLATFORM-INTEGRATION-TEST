@@ -2457,7 +2457,7 @@ export interface IObjective {
 	managers?: IEmployee | null;
 	duration_unit: IDurationUnit;
 	duration: string;
-	creation_date: string;
+	date: string;
 	key_result?: IKeyResult | null;
 	assignees?: IEmployee[];
 	self_employee_progress_update: boolean;
@@ -2472,7 +2472,7 @@ export interface IObjectiveFormData {
 	duration: string;
 	key_result?: number;
 	assignees_id?: number[];
-	creation_date: string;
+	date: string;
 	self_employee_progress_update?: boolean;
 }
 

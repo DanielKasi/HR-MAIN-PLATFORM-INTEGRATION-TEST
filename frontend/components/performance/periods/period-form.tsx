@@ -157,24 +157,6 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
 					/>
 					{errors.end_date && <p className="text-sm text-red-600">{errors.end_date}</p>}
 				</div>
-
-				{/* Is Closed */}
-				<div className="space-y-2">
-					<Label htmlFor="is_closed" className="text-sm font-medium text-slate-700">
-						Period Status
-					</Label>
-					<div className="flex items-center space-x-2">
-						<Switch
-							id="is_closed"
-							checked={formData.is_closed}
-							onCheckedChange={(checked) => handleChange("is_closed", checked)}
-							disabled={isLoading}
-						/>
-						<Label className="text-sm text-slate-600">
-							Mark as closed to prevent further modifications
-						</Label>
-					</div>
-				</div>
 			</div>
 
 			{/* Form Actions */}
