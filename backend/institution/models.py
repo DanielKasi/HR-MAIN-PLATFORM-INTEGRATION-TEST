@@ -35,7 +35,7 @@ class Institution(SoftDeletableTimeStampedModel):
         upload_to="institutions/images/", blank=True, null=True
     )
     system = models.ForeignKey(
-        "users.System", on_delete=models.PROTECT, blank=True, null=True
+        "users.System", on_delete=models.CASCADE, blank=True, null=True
     )
     theme_color = models.CharField(max_length=400, blank=True, null=True)
     default_employee_role = models.ForeignKey(
@@ -66,7 +66,7 @@ class Institution(SoftDeletableTimeStampedModel):
     approved_by = models.ForeignKey(
         "users.CustomUser",
         related_name="approved_institutions",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
     )
@@ -606,12 +606,12 @@ class Department(BaseApprovableModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     institution = models.ForeignKey(
-        Institution, related_name="departments", on_delete=models.PROTECT
+        Institution, related_name="departments", on_delete=models.CASCADE
     )
     # head_of_department = models.OneToOneField(
     #     "employee.Employee",
     #     related_name="department_head",
-    #     on_delete=models.PROTECT,
+    #     on_delete=models.CASCADE,
     #     null=True,
     #     blank=True,
     # )

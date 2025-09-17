@@ -1,46 +1,50 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {Branch} from "@/types";
-import {apiGet} from "@/lib/apiRequest";
-import {useSelector} from "react-redux";
-import {selectSelectedInstitution} from "@/store/auth/selectors";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+
+import { Branch } from "@/types";
+import { apiGet } from "@/lib/apiRequest";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
 
 export function useBranches() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const currentInstitution = useSelector(selectSelectedInstitution);
+	const [branches, setBranches] = useState<Branch[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const currentInstitution = useSelector(selectSelectedInstitution);
 
-  useEffect(() => {
-    fetchBranches();
-  }, [currentInstitution]);
+	useEffect(() => {
+		fetchBranches();
+	}, [currentInstitution]);
 
-  const fetchBranches = async () => {
-    if (!currentInstitution) {
-      setBranches([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+	const fetchBranches = async () => {
+		if (!currentInstitution) {
+			setBranches([]);
 
-    try {
-      const response = await apiGet(`/institution/${currentInstitution.id}/branch`);
+			return;
+		}
+		setLoading(true);
+		setError(null);
 
-      if (response.status !== 200) {
-        throw new Error("Failed to fetch branches");
-      }
+		try {
+			const response = await apiGet(`/institution/${currentInstitution.id}/branch`);
 
-      const data = await response.data.results;
-      setBranches(Array.isArray(data) ? data : []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to fetch branches";
-      setError(errorMessage);
-      setBranches([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+			if (response.status !== 200) {
+				throw new Error("Failed to fetch branches");
+			}
 
-  return {branches, loading, error};
+			const data = await response.data.results;
+
+			setBranches(Array.isArray(data) ? data : []);
+		} catch (err) {
+			const errorMessage = err instanceof Error ? err.message : "Failed to fetch branches";
+
+			setError(errorMessage);
+			setBranches([]);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return { branches, loading, error };
 }

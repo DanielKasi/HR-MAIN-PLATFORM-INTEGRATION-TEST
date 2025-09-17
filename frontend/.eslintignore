@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+*.min.js
+.env.local
+.env.production.local
+.env.development.local
+coverage/
+.nyc_output/

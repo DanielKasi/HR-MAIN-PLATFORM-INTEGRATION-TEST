@@ -1,5 +1,5 @@
-import AssetsDashboard from "@/components/analytics/assets-dashboard"
+import AssetsDashboard from "@/components/analytics/assets-dashboard";
 
 export default function Home() {
-  return <AssetsDashboard />
+	return <AssetsDashboard />;
 }
