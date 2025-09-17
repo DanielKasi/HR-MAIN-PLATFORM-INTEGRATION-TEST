@@ -98,4 +98,7 @@ class EmailProviderConfig(BaseApprovableModel):
 
     def __str__(self):
         return f"Email Config for {self.institution} ({self.provider})"
+    
+    def get_institution(self):
+        return self.institution 
 

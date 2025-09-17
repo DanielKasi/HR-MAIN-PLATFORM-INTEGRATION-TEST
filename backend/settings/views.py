@@ -232,15 +232,18 @@ class EmailProviderConfigListCreateView(APIView, SortableAPIMixin):
         },
         tags=["Email Management"],
     )
+    
     @transaction.atomic()
     def post(self, request):
-        print(request.data)
         serializer = EmailProviderConfigSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
-            instance = serializer.save()
-            instance.confirm_create()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                instance = serializer.save()
+                instance.confirm_create()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({"error": "Failed to create config", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Validation failed", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
         parameters=[

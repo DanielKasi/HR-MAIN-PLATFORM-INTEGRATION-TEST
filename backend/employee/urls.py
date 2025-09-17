@@ -148,7 +148,7 @@ urlpatterns = [
         name="export-excel",
     ),
     path(
-        "employee-company-emails/",
+        "employee-company-emails/<int:employee_id>/",
         EmployeeEmailCreateView.as_view(),
         name="employee-email-create",
     ),

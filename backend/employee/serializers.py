@@ -1,4 +1,5 @@
 from approval.serializers import BaseApprovableSerializer
+from employee.utilities import generate_email
 from .models import (
     Child,
     Education,
@@ -41,7 +42,7 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from settings.serializers import SystemDaySerializer
-from settings.models import SystemDay
+from settings.models import EmailProviderConfig, SystemDay
 from .models import EmployeeWorkingDays
 from institution.models import Department, BranchShift
 from recruitment.models import JobPosition
@@ -493,7 +494,20 @@ class EmployeeSerializer(BaseApprovableSerializer):
 class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeCompanyEmail
-        fields = '__all__'        
+        fields = ['id', 'employee', 'email', 'provider', 'status']
+        read_only_fields = ['email', 'provider', 'status']
+
+    def create(self, validated_data):
+        employee = validated_data['employee']
+        institution = employee.get_institution()
+        try:
+            config = institution.email_config
+        except EmailProviderConfig.DoesNotExist:
+            raise serializers.ValidationError("No email provider config found.")
+
+        validated_data['email'] = generate_email(employee)
+        validated_data['provider'] = config.provider
+        return super().create(validated_data)    
 
 
 class EmployeeDaySerializer(BaseApprovableSerializer):

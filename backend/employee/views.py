@@ -3933,8 +3933,11 @@ class EmployeeEmailCreateView(APIView):
     )
     @transaction.atomic
     def post(self, request, employee_id):
+        
         employee = get_object_or_404(Employee, id=employee_id)
+        
         institution = employee.get_institution()
+        
         try:
             config = institution.email_config
         except EmailProviderConfig.DoesNotExist:
@@ -3944,18 +3947,13 @@ class EmployeeEmailCreateView(APIView):
             return Response({"detail": "Employee already has an active or pending company email."}, status=status.HTTP_400_BAD_REQUEST)
 
         password = request.data.get('password')
-        try:
-            email_account = create_company_email(employee, password)  # Utility function creates and saves email
-            email_account.approval_status = 'under_creation'  # Assumes BaseApprovableModel defines this
-            email_account.save(update_fields=['approval_status'])
-            email_account.confirm_create()  # Assumes BaseApprovableModel defines this
-            serializer = EmployeeCompanyEmailSerializer(email_account)
-            response_data = serializer.data
-            if password:
-                response_data["password"] = password
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        except ValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        email_account = create_company_email(employee, password)
+        serializer = EmployeeCompanyEmailSerializer(email_account)
+        response_data = serializer.data
+        if password:
+            response_data["password"] = password
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
 
 class EmployeeEmailDeleteView(APIView):
     permission_classes = [IsAuthenticated]

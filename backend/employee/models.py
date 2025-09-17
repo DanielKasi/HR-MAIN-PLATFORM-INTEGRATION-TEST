@@ -581,6 +581,9 @@ class EmployeeCompanyEmail(BaseApprovableModel):
 
     def __str__(self):
         return f"{self.email} for {self.employee.user.fullname}"
+    
+    def get_institution(self):
+        return self.employee.department.institution
 
 
 
