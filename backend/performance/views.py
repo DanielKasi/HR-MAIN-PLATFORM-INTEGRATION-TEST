@@ -326,7 +326,7 @@ class EmployeeObjectivesDetailView(APIView):
         tags=["Performance Management"],
     )
     def get(self, request, pk):
-        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__institution=request.user.profile.institution)
+        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
         serializer = EmployeeObjectivesSerializer(objective)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -339,7 +339,7 @@ class EmployeeObjectivesDetailView(APIView):
     )
     @transaction.atomic()
     def delete(self, request, pk):
-        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__institution=request.user.profile.institution)
+        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
         objective.approval_status = 'under_deletion'
         objective.save(update_fields=['approval_status'])
         objective.confirm_delete()
@@ -356,7 +356,7 @@ class EmployeeObjectivesDetailView(APIView):
     )
     @transaction.atomic()
     def patch(self, request, pk):
-        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__institution=request.user.profile.institution)
+        objective = get_object_or_404(EmployeeObjectives, pk=pk, employee__payroll_branch__institution=request.user.profile.institution)
         objective.approval_status = 'under_update'
         serializer = EmployeeObjectivesSerializer(objective, data=request.data, partial=True)
         if serializer.is_valid():
@@ -1178,7 +1178,7 @@ class AnalyticsView(APIView):
         tags=["Performance Management"],
     )
     def get(self, request):
-        user = request.user.employee
+        user = request.user.profile
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1196,11 +1196,11 @@ class AnalyticsView(APIView):
         objectives = Objectives.objects.filter(institution=institution)
         objectives_analytics = {
             "total": objectives.count(),
-            "average_duration_days": objectives.aggregate(avg=Avg('duration'))['avg'].days if objectives.exists() else 0,
+            "average_duration_days": int(objectives.aggregate(avg=Avg('duration'))['avg']) if objectives.exists() else 0,
         }
 
         # EmployeeObjectives Analytics
-        employee_objectives = EmployeeObjectives.objects.filter(employee__institution=institution)
+        employee_objectives = EmployeeObjectives.objects.filter(employee__payroll_branch__institution=institution)
         employee_objectives_analytics = {
             "total": employee_objectives.count(),
             "status_distribution": employee_objectives.values('status').annotate(count=Count('status')),
