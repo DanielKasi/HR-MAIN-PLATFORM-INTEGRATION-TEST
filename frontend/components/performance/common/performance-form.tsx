@@ -28,7 +28,8 @@ export interface FormField {
 		| "switch"
 		| "multiselect"
 		| "datetime-local";
-	placeholder?: string;
+	placeh
+	?: string;
 	required?: boolean;
 	options?: { value: string | number; label: string }[];
 	validation?: (value: any) => string | null;
@@ -48,7 +49,8 @@ interface PerformanceFormProps<T extends Record<string, any>> {
 	onSubmit: (data: T) => void;
 	onCancel?: () => void;
 	isLoading?: boolean;
-	submitLabel?: string;
+	submitLab
+	el?: string;
 	showCancel?: boolean;
 	showSubmit?: boolean;
 	className?: string;
