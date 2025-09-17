@@ -55,7 +55,7 @@ interface PerformanceFormProps<T extends Record<string, any>> {
 }
 
 // Inner component function with generic
-const PerformanceFormInner = <T extends Record<string, any>>(
+const PerformanceFormInnerComponent = <T extends Record<string, any>>(
 	{
 		fields,
 		initialData = {} as Partial<T>,
@@ -253,11 +253,14 @@ const PerformanceFormInner = <T extends Record<string, any>>(
 };
 
 // Properly typed forwardRef with generic support
-const PerformanceForm = forwardRef(PerformanceFormInner) as <T extends Record<string, any>>(
+const PerformanceFormInner = forwardRef(PerformanceFormInnerComponent) as <
+	T extends Record<string, any>,
+>(
 	props: PerformanceFormProps<T> & { ref?: React.Ref<HTMLFormElement> },
-) => ReturnType<typeof PerformanceFormInner>;
+) => ReturnType<typeof PerformanceFormInnerComponent>;
 
-// // Add displayName as a static property
-// PerformanceForm.displayName = "PerformanceForm";
+// Memoize the component to prevent re-renders from stable props
+const MemoizedPerformanceForm = React.memo(PerformanceFormInner) as typeof PerformanceFormInner;
 
-export { PerformanceForm };
+// Export the memoized version
+export { MemoizedPerformanceForm as PerformanceForm };

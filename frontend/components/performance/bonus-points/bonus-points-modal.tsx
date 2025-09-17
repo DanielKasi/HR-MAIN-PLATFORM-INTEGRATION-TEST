@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -39,26 +39,27 @@ export function BonusPointsModal({
 	onSubmit,
 }: BonusPointsModalProps) {
 	const [formData, setFormData] = useState<IEmployeeBonusPointFormData>({
-		employee: employee.id,
+		employee_id: employee.id,
 		reason: "",
 		date: new Date().toISOString().split("T")[0],
 		redeemed: false,
-		bonus_point_setting: undefined,
+		bonus_point_setting: bonusPoint?.bonus_point_setting?.id || 0,
 	});
 	const [submitting, setSubmitting] = useState(false);
 
-	useEffect(() => {
-		if (bonusPoint) {
-			setFormData({
-				employee: bonusPoint.employee.id,
-				reason: bonusPoint.reason,
-				date: bonusPoint.date,
-				redeemed: bonusPoint.redeemed,
-				bonus_point_setting: bonusPoint.bonus_point_setting?.id,
-				period: bonusPoint.period?.id,
-			});
-		}
-	}, [bonusPoint]);
+	console.log("BonusPointsModal render", { bonusPoint, formData });
+
+	const memoizedBonusPointSettingsSelect = useMemo(
+		() => (
+			<BonusPointSettingsSelect
+				value={formData.bonus_point_setting ? [formData.bonus_point_setting] : []}
+				onValueChange={(values) => handleInputChange("bonus_point_setting", values[0] || 0)}
+				disabled={submitting}
+				placeholder="Select bonus point setting"
+			/>
+		),
+		[formData.bonus_point_setting],
+	);
 
 	const handleInputChange = (
 		field: keyof IEmployeeBonusPointFormData,
@@ -114,12 +115,7 @@ export function BonusPointsModal({
 						<Label htmlFor="bonus_point_setting" className="text-sm font-medium">
 							Bonus Point Setting *
 						</Label>
-						<BonusPointSettingsSelect
-							value={formData.bonus_point_setting ? [formData.bonus_point_setting] : []}
-							onValueChange={(values) => handleInputChange("bonus_point_setting", values[0] || 0)}
-							disabled={submitting}
-							placeholder="Select bonus point setting"
-						/>
+						{memoizedBonusPointSettingsSelect}
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="reason" className="text-sm font-medium">

@@ -22,6 +22,7 @@ export interface EmployeeSearchableSelectProps {
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
+	id?: string;
 }
 
 export const EmployeeSearchableSelect = ({
@@ -36,6 +37,7 @@ export const EmployeeSearchableSelect = ({
 	triggerClassName,
 	multiple = false,
 	hideSelectedFromList = false,
+	id,
 }: EmployeeSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -75,6 +77,7 @@ export const EmployeeSearchableSelect = ({
 	return (
 		<div className={className}>
 			<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+				id={id}
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
