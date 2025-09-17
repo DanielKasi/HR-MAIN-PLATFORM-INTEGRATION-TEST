@@ -36,11 +36,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
 	Dialog,
-	DialogCon
-  tent,
+	DialogContent,
 	DialogDescription,
-	Dialo
-  gFooter,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";

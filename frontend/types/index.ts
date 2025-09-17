@@ -87,6 +87,20 @@ export interface Branch {
 	is_active: boolean;
 }
 
+export interface BranchFormData {
+	institution: number;
+	paying_bank_account: number;
+	branch_name: string;
+	branch_phone_number?: string;
+	branch_location: string;
+	branch_longitude: string;
+	branch_latitude: string;
+	branch_email?: string;
+	branch_opening_time?: string;
+	branch_closing_time?: string;
+	is_active?: boolean;
+}
+
 export enum USER_GENDER {
 	MALE = "male",
 	FEMALE = "female",
@@ -201,12 +215,6 @@ export interface BulkEmployeeUploadResult {
 	updated_count: number;
 	errors?: BulkEmployeeUploadRowError[];
 	warnings?: any[];
-}
-
-export interface Permission {
-	permission_code: PERMISSION_CODES;
-	name: string;
-	description: string;
 }
 
 export interface ITill {
