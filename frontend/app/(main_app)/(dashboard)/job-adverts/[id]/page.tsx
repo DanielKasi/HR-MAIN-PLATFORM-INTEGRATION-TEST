@@ -17,18 +17,6 @@ import {
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
-
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
-import {Skeleton} from "@/components/ui/skeleton";
-import {Separator} from "@/components/ui/separator";
-
-import {selectSelectedInstitution, selectSelectedBranch} from "@/store/auth/selectors";
-import {getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert} from "@/lib/utils";
-import type {JobPositionAdvert, IJobPosition, JobAdvertStatus} from "@/types/types.utils";
-import {toast} from "sonner";
-import {formatCurrency} from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +26,7 @@ import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/se
 import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } from "@/lib/utils";
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";
-import {ApprovalWorkflow} from "@/components/approvals/approval-workflow";
+import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 const getStatusColor = (status: JobAdvertStatus) => {
 	switch (status) {
@@ -343,50 +331,6 @@ export default function JobAdvertDetailsPage() {
 						</div>
 					)}
 
-          <div
-            className={`${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-          >
-            {/* Main Details Card */}
-            <Card className="bg-transparent shadow-none border-0">
-              <CardHeader className="py-1 my-0">
-                <div className="flex items-start justify-between">
-                  {jobPosition && (
-                    <>
-                      <div className="">
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          <Briefcase className="h-5 w-5" />
-                          Job Opening Details
-                        </h3>
-                        <div className="bg-muted/50 py-1 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            {jobPosition.salary_max || jobPosition.salary_min ? (
-                              <p className="flex items-center gap-1 text-lg font-bold text-green-600">
-                                {formatCurrency(jobPosition.salary_min || 0)} -{" "}
-                                {formatCurrency(jobPosition.salary_max || 0)}
-                              </p>
-                            ) : (
-                              <> </>
-                            )}
-                          </div>
-                          {jobPosition.description && (
-                            <RichTextDisplay
-                              className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
-                              htmlContent={jobPosition.description}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {/* <div className="text-right">
-                    <div className="flex items-center gap-1 text-lg font-bold">
-                      <Calendar className="h-4 w-4" />
-                      {formatDate(jobAdvert.expiry_date)}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Expiry Date</p>
-                  </div> */}
-                </div>
-              </CardHeader>
 					<div
 						className={`${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
 					>
@@ -422,13 +366,13 @@ export default function JobAdvertDetailsPage() {
 											</div>
 										</>
 									)}
-									<div className="text-right">
-										<div className="flex items-center gap-1 text-lg font-bold">
-											<Calendar className="h-4 w-4" />
-											{formatDate(jobAdvert.expiry_date)}
-										</div>
-										<p className="text-sm text-muted-foreground">Expiry Date</p>
-									</div>
+									{/* <div className="text-right">
+                    <div className="flex items-center gap-1 text-lg font-bold">
+                      <Calendar className="h-4 w-4" />
+                      {formatDate(jobAdvert.expiry_date)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Expiry Date</p>
+                  </div> */}
 								</div>
 							</CardHeader>
 
