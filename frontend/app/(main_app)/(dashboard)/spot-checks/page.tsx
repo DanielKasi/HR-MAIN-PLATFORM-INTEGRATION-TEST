@@ -3,7 +3,7 @@
 import type { ISpotCheck, ISpotCheckStatus } from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -15,23 +15,24 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+// import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { showErrorToast, spotcheckAPI } from "@/lib/utils";
 import SpotchecksTable from "@/components/common/tables/spotchecks/spotcheck-table";
 
 const SpotchecksPage = () => {
 	const router = useRouter();
+
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [spotcheckStatuses, setSpotcheckStatuses] = useState<Array<ISpotCheckStatus>>([]);
-	const [summaryData, setSummaryData] = useState({
-		totalSpotChecks: 0,
-		totalMissed: 0,
-		missedThisMonth: 0,
-		missedThisWeek: 0,
-		missedToday: 0,
-	});
-	const selectedInstitution = useSelector(selectSelectedInstitution);
+	// const [summaryData, setSummaryData] = useState({
+	// 	totalSpotChecks: 0,
+	// 	totalMissed: 0,
+	// 	missedThisMonth: 0,
+	// 	missedThisWeek: 0,
+	// 	missedToday: 0,
+	// });
+	// const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	useEffect(() => {
 		const fetchStatuses = async () => {
