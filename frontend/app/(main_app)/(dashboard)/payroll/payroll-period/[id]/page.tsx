@@ -424,12 +424,7 @@ export default function PayrollPeriodDetails() {
 							<Button
 								onClick={handleGeneratePayslips}
 								className="bg-green-600 hover:bg-green-700 shadow-md disabled:bg-gray-400 w-full sm:w-auto"
-								disabled={
-									payrollPeriod.is_processed ||
-									!selectedInstitution ||
-									!payrollPeriodId ||
-									isGenerating
-								}
+								disabled={!selectedInstitution || !payrollPeriodId || isGenerating}
 							>
 								{isGenerating ? (
 									<Loader2 className="w-4 h-4 mr-2 animate-spin" />
