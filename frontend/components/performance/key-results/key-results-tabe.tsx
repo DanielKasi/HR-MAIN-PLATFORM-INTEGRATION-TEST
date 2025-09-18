@@ -78,11 +78,6 @@ export function KeyResultsTable({
 
 	return (
 		<>
-			<div className="flex justify-end mb-4">
-				<Button onClick={onAdd} className="rounded-full">
-					<Plus className="h-4 w-4 mr-2" /> Add Key Result
-				</Button>
-			</div>
 			<PaginatedTable<IKeyResult>
 				fetchFirstPage={async () =>
 					await KEY_RESULTS_API.getPaginated({ page: 1, search: searchTerm })
