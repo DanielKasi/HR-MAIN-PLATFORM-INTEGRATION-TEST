@@ -1010,6 +1010,8 @@ class ResetPasswordAPIView(APIView):
             # Set new password
             user = token_obj.user
             user.set_password(new_password)
+            user.is_password_verified = True
+            user.is_email_verified = True
             user.save()
 
             # Mark token as used

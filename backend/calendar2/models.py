@@ -121,6 +121,7 @@ class Event(BaseApprovableModel):
     frequency = models.CharField(
         max_length=20, choices=EVENT_FREQUENCY_CHOICES, default="once"
     )
+    is_birthday = models.BooleanField(default=False)
 
     repeat_until = models.DateField(
         blank=True,

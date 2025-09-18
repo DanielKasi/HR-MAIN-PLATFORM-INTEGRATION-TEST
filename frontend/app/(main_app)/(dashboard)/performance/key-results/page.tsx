@@ -5,7 +5,7 @@ import type { IKeyResult, IKeyResultFormData } from "@/types/types.utils";
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
-import { Target, Percent, TrendingUp, CheckCircle, ArrowLeft } from "lucide-react";
+import { Target, Percent, TrendingUp, CheckCircle, ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
@@ -118,7 +118,7 @@ export default function KeyResultsPage() {
 		<div className="min-h-screen p-6 bg-white">
 			<div className="">
 				{/* Header */}
-				<div className="mb-8">
+				<div className="mb-8 flex items-center justify-between gap-6">
 					<div className="flex items-center gap-4 mb-4">
 						<Link href="/performance">
 							<Button
@@ -136,10 +136,16 @@ export default function KeyResultsPage() {
 							<p className="text-slate-600 text-lg">Track and manage performance key results</p>
 						</div>
 					</div>
+					<div className="flex justify-end mb-4">
+						<Button onClick={handleCreate} className="rounded-xl">
+							<Plus className="h-4 w-4 md:mr-2" />
+							<span className="hidden md:inline-block">Add Key Result</span>
+						</Button>
+					</div>
 				</div>
 
 				{/* Stats Cards */}
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 					<PerformanceStatsCard
 						title="Total Key Results"
 						value={totalKeyResults}

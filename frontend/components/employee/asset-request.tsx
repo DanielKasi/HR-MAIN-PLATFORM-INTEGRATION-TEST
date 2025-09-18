@@ -280,9 +280,9 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
 			{showHeader && isEmployeeView && (
 				<div className="flex justify-between items-center w-full mb-4">
 					<h3 className="text-lg font-semibold text-gray-800">Asset Requests</h3>
-					<Button onClick={() => setIsCreateDialogOpen(true)}>
-						<Plus className="h-4 w-4 mr-2" />
-						New Request
+					<Button className="rounded-full" onClick={() => setIsCreateDialogOpen(true)}>
+						<Plus className="h-4 w-4 md:mr-2" />
+						<span className="hidden md:inline-block">New Request</span>
 					</Button>
 				</div>
 			)}
