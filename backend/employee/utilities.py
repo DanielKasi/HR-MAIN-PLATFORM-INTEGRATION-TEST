@@ -1,28 +1,25 @@
-from datetime import datetime, time
+from datetime import time
 from django.contrib.auth import get_user_model
 from employee.tasks import send_email_task
-from .models import Employee, EmployeeCompanyEmail, EmployeeDay
+from .models import Employee, EmployeeCompanyEmail
 from settings.models import SystemDay
 import openpyxl
 from django.http import HttpResponse
 import re
-import random
 from django.core.exceptions import ValidationError
 import string
 import requests
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from django.db import transaction
+
 # from msgraph import GraphClientService
 from azure.identity import ClientSecretCredential
 from typing import Dict
 from urllib.parse import urlencode
 import secrets
 import json
-from django.core.mail import send_mail
-from django.urls import reverse
 from django.conf import settings
-from django.template.loader import render_to_string
 
 
 def get_employee_working_days_obj(employee: Employee):
@@ -248,7 +245,6 @@ class CPanelClient:
             raise ValidationError(f"cPanel API error: {errors[0]}")
         return result.get("data", {})
 
-
     def create_email_account(self, email: str, password: str, quota: int) -> None:
         """Create a new email account with specified quota"""
         parts = email.split("@")
@@ -316,6 +312,7 @@ def generate_random_password(length=12):
     charset = string.ascii_letters + string.digits + "!@#$%^&*"
     return "".join(secrets.choice(charset) for _ in range(length))
 
+
 @transaction.atomic()
 def create_company_email(employee, password=None):
     """
@@ -325,16 +322,14 @@ def create_company_email(employee, password=None):
     password = password or generate_random_password()
     email = generate_email(employee)
 
-    if config.provider == "cpanel":
-        from urllib.parse import urlparse
-
-        parsed_url = urlparse(config.api_url)
-        cpanel_host = parsed_url.hostname
-        _create_cpanel_email(employee, config, password, config.quota, email)
-    elif config.provider == "google_workspace":
-        _create_google_email(employee, config, password)
-    else:
-        raise ValidationError(f"Unsupported provider: {config.provider}")
+    print(f">>>>>>>>>>>>>>>>>>>>> Checking environment >>>>>>>>>>>>>>>>>>>>>>> {settings.ENVIRONMENT}")
+    if settings.ENVIRONMENT == "production":
+        if config.provider == "cpanel":
+            _create_cpanel_email(employee, config, password, config.quota, email)
+        elif config.provider == "google_workspace":
+            _create_google_email(employee, config, password)
+        else:
+            raise ValidationError(f"Unsupported provider: {config.provider}")
 
     # Create EmployeeCompanyEmail instance
     email_account = EmployeeCompanyEmail.objects.create(
@@ -346,7 +341,7 @@ def create_company_email(employee, password=None):
         email=email,
         password=password,
         config_id=config.id,
-        is_welcome_email=False
+        is_welcome_email=False,
     )
 
     send_email_task.delay(
@@ -354,17 +349,10 @@ def create_company_email(employee, password=None):
         email=email,
         password=None,
         config_id=config.id,
-        is_welcome_email=True
+        is_welcome_email=True,
     )
 
-    User = get_user_model()
-    user = User.objects.get(id=employee.user.id)
-    user.email = email
-    user.save()
-
     return email_account
-
-
 
 
 def reset_email_password(employee, new_password=None):
