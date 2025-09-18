@@ -38,9 +38,6 @@ urlpatterns = [
     ),
     path('change-email-and-resend-otp/', ChangeEmailAndResendOTPAPIView.as_view(), name='change-email-and-resend-otp'),
     path("verify-otp/", VerifyOTPAPIView.as_view(), name="verify-otp"),
-    path(
-        "reset-password/", VerifyPasswordResetAPIView.as_view(), name="reset-password"
-    ),
     path("resend-otp/", ResendOTPAPIView.as_view(), name="resend-otp"),
     path("login/", LoginView.as_view(), name="user-login"),
     path("token/refresh/", CustomTokenRefreshView.as_view(), name="token-refresh"),
@@ -65,14 +62,11 @@ urlpatterns = [
     ),
     path("forgot-password", ForgotPasswordAPIView.as_view(), name="forgot-password"),
     # path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
-    path("reset-password", ResetPasswordAPIView.as_view(), name="reset-password"),
     # Continue with Google URLs
     path("auth/google/url/", GoogleAuthURLView.as_view(), name="google_auth_url"),
-    path("forgot-password", ForgotPasswordAPIView.as_view(), name="forgot-password"),
     path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
     path("reset-password", ResetPasswordAPIView.as_view(), name="reset-password"),
     # Continue with Google URLs
-    path("auth/google/url/", GoogleAuthURLView.as_view(), name="google_auth_url"),
     path(
         "auth/google/callback/",
         GoogleAuthCallbackView.as_view(),
