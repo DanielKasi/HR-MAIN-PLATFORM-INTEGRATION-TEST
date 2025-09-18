@@ -704,12 +704,7 @@ class JobInterview(BaseApprovableModel):
             description=event_description,
             date=event_date,
             event_mode=event_mode,
-            target_audience="specific_employees",
-            created_by=(
-                self.created_by.profile
-                if self.created_by and hasattr(self.created_by, "profile")
-                else None
-            ),
+            target_audience="specific_employees"
         )
 
         interviewers = self.interview_stage.interviewers.select_related("user").all()

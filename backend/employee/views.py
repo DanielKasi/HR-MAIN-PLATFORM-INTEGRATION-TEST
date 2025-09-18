@@ -485,6 +485,9 @@ class EmployeeDetailAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+
+class EmployeeCreateAPIView(APIView):
     def parse_nested_multipart(self, query_dict):
         """Parse multipart/form-data into a nested structure."""
         final_data = defaultdict(list)
@@ -672,7 +675,7 @@ class EmployeeDetailAPIView(APIView):
                         if field == "salary"
                         else int(final_data[field])
                     )
-                    final_data[field] = None
+                    # final_data[field] = None
 
         if "is_active" in final_data:
             final_data["is_active"] = str(final_data["is_active"]).lower() == "true"
@@ -682,8 +685,6 @@ class EmployeeDetailAPIView(APIView):
 
         print(f"Final parsed data: {final_data}")
         return final_data
-
-class EmployeeCreateAPIView(APIView):
 
     @extend_schema(
         operation_id="create_employee",
@@ -1088,6 +1089,8 @@ class EmployeeCreateAPIView(APIView):
                                 "email": email,
                                 "password": new_password,
                                 "welcome_email_sent": True,
+                                "is_password_verified": True,
+                                "is_email_verified": True,
                             }
                             # Set employee name from user.fullname if not provided
                             if "name" not in employee_data:
