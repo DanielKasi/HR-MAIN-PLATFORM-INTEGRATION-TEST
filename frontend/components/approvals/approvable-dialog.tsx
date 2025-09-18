@@ -37,7 +37,7 @@ export function ApprovableDialog({
 	return (
 		<Dialog open={isOpen} onOpenChange={onOpenChange}>
 			<DialogContent
-				className={`sm:max-w-[900px] w-[95vw] sm:w-full rounded-2xl border-0 shadow-2xl overflow-y-auto max-h-[90vh] ${className}`}
+				className={`sm:max-w-[900px] w-[95vw] sm:w-full rounded-2xl border-0 shadow-2xl ${className}`}
 			>
 				<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
 					<DialogTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
@@ -50,7 +50,7 @@ export function ApprovableDialog({
 					)}
 				</DialogHeader>
 
-				<div className="flex flex-col gap-6 py-4 sm:py-6">
+				<div className="flex flex-col gap-6 py-4 sm:py-6 overflow-y-auto max-h-[70vh]">
 					{/* Main content */}
 					<div className="space-y-6">{children}</div>
 

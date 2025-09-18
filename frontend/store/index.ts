@@ -1,4 +1,3 @@
-// src/store/index.ts
 import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware, { Task } from "redux-saga";
 import { Store } from "@reduxjs/toolkit";

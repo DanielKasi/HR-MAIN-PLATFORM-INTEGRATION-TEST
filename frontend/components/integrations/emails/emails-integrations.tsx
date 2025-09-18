@@ -64,6 +64,7 @@ export const EmailsIntegrations: React.FC = () => {
 		api_client_id: "",
 		api_client_secret: "",
 		api_token: "",
+		webmail_url: "",
 	});
 
 	useEffect(() => {
@@ -139,6 +140,7 @@ export const EmailsIntegrations: React.FC = () => {
 			api_client_id: config.api_client_id || "",
 			api_client_secret: config.api_client_secret || "",
 			api_token: config.api_token || "",
+			webmail_url: config.webmail_url || "",
 		});
 		setShowForm(true);
 	};
@@ -168,6 +170,7 @@ export const EmailsIntegrations: React.FC = () => {
 			api_client_id: "",
 			api_client_secret: "",
 			api_token: "",
+			webmail_url: "",
 		});
 		setShowForm(false);
 	};
@@ -247,12 +250,11 @@ export const EmailsIntegrations: React.FC = () => {
 						</div>
 
 						<div>
-							<Label htmlFor="api_password">API Password</Label>
-							<PasswordInput
-								id="api_password"
-								label=""
-								value={formData.api_password || ""}
-								onChange={(val) => handleInputChange("api_password", val)}
+							<Label htmlFor="api_username">API Username</Label>
+							<Input
+								id="api_username"
+								value={formData.api_username || ""}
+								onChange={(e) => handleInputChange("api_username", e.target.value)}
 							/>
 						</div>
 
@@ -396,7 +398,19 @@ export const EmailsIntegrations: React.FC = () => {
 						<Separator />
 
 						{/* Form Fields */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">{renderEmailFields()}</div>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							{renderEmailFields()}
+							<div>
+								<Label htmlFor="api_url">WEB MAIL URL</Label>
+								<Input
+									id="webmail_url"
+									type="url"
+									placeholder="https://yourserver.com:2083"
+									value={formData.webmail_url || ""}
+									onChange={(e) => handleInputChange("webmail_url", e.target.value)}
+								/>
+							</div>
+						</div>
 
 						<div className="flex justify-end">
 							<Button

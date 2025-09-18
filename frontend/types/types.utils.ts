@@ -282,6 +282,14 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 	newFeedbackFieldType: string;
 }
 
+export interface ICompanyEmail {
+	id: number;
+	employee: number;
+	email: string;
+	provider: string;
+	status: string;
+}
+
 export interface IEmployee {
 	id: number;
 	date_of_birth: string;
@@ -295,6 +303,7 @@ export interface IEmployee {
 	work_experiences: IWorkExperience[];
 	next_of_kin: INextOfKin[];
 	children: IChild[];
+	company_email: ICompanyEmail | null;
 	spouse: {
 		name: string;
 		phone_number: string;
@@ -2692,6 +2701,7 @@ export interface IMeetingIntegration {
 export interface IEmailProviderConfigFormData {
 	provider: "cpanel" | "google_workspace" | "microsoft_365";
 	domain: string;
+	webmail_url?: string;
 	format_template?: string;
 	quota?: number;
 	port?: string;
@@ -2709,6 +2719,7 @@ export interface IEmailProviderConfig {
 	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	provider: "cpanel" | "google_workspace" | "microsoft_365";
 	domain: string;
+	webmail_url: string | null;
 	format_template: string;
 	quota: number;
 	port: string;

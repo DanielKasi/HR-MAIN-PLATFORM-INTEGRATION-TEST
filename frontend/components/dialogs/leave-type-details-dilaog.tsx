@@ -166,11 +166,6 @@ export function LeaveTypeDetailsDialog({
 					</div>
 				</div>
 			</div>
-			<div className="space-y-3 md:col-span-2">
-				<Badge className={getStatusColor(leaveType.is_active)}>
-					Status: {leaveType.is_active ? "Active" : "Inactive"}
-				</Badge>
-			</div>
 		</div>
 	);
 
