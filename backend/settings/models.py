@@ -95,6 +95,11 @@ class EmailProviderConfig(BaseApprovableModel):
     api_client_id = EncryptedCharField(max_length=255, blank=True, null=True)
     api_client_secret = EncryptedCharField(max_length=255, blank=True, null=True)
     api_token = EncryptedCharField(max_length=255, blank=True, null=True)
+    webmail_url = models.URLField(
+        blank=True,
+        null=True,
+        help_text="Webmail login URL (e.g., https://mail.yourdomain.com for cPanel or https://mail.google.com for Google Workspace)"
+    )
 
     def __str__(self):
         return f"Email Config for {self.institution} ({self.provider})"

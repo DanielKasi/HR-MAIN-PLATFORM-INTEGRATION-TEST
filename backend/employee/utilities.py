@@ -1,4 +1,6 @@
 from datetime import datetime, time
+from django.contrib.auth import get_user_model
+from employee.tasks import send_email_task
 from .models import Employee, EmployeeCompanyEmail, EmployeeDay
 from settings.models import SystemDay
 import openpyxl
@@ -17,6 +19,10 @@ from typing import Dict
 from urllib.parse import urlencode
 import secrets
 import json
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.conf import settings
+from django.template.loader import render_to_string
 
 
 def get_employee_working_days_obj(employee: Employee):
@@ -335,7 +341,30 @@ def create_company_email(employee, password=None):
         employee=employee, email=email, provider=config.provider, status="pending"
     )
 
-    # TODO: Send email to employee with password
+    send_email_task.delay(
+        employee_id=employee.id,
+        email=email,
+        password=password,
+        config_id=config.id,
+        is_welcome_email=False
+    )
+
+    send_email_task.delay(
+        employee_id=employee.id,
+        email=email,
+        password=None,
+        config_id=config.id,
+        is_welcome_email=True
+    )
+
+    User = get_user_model()
+    user = User.objects.get(id=employee.user.id)
+    user.email = email
+    user.save()
+
+    return email_account
+
+
 
 
 def reset_email_password(employee, new_password=None):

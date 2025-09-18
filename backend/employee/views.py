@@ -3054,6 +3054,7 @@ class EmployeeContractDetailAPIView(APIView):
         tags=["Employee Contract"],
     )
     def patch(self, request, pk):
+        print("Request", request.data)
         contract = self.get_object(pk)
         contract.approval_status = "under_update"
         serializer = EmployeeContractSerializer(
@@ -3086,6 +3087,7 @@ class EmployeeContractApprovalAPIView(APIView):
         tags=["Employee Contract"],
     )
     def post(self, request, pk):
+        print("Request", request.data)
         contract = get_object_or_404(EmployeeContract, pk=pk)
 
         # Check if contract is already active
