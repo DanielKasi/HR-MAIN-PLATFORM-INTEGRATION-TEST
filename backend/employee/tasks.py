@@ -8,8 +8,11 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
+from employee.models import Employee
+from settings.models import EmailProviderConfig
 from calendar2.models import EventOccurrence
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -233,3 +236,58 @@ def send_birthday_notifications():
                 recipient_list=[profile.user.email],
                 fail_silently=True,
             )
+
+@shared_task
+def send_email_task(employee_id, email, password, config_id, is_welcome_email):
+    """
+    Celery task to send emails asynchronously.
+    """
+
+    employee = Employee.objects.get(id=employee_id)
+    config = EmailProviderConfig.objects.get(id=config_id)
+
+    if is_welcome_email:
+        # Welcome email to company email with frontend system login link
+        system_login_url = f"{settings.FRONTEND_URL.rstrip('/')}{settings.LOGIN_URL}"
+        subject = "Welcome to Our System"
+        template = "emails/welcom_email.html"
+        context = {
+            "employee": employee,
+            "system_login_url": system_login_url,
+        }
+        recipient_list = [email]
+    else:
+        # Email to employee's personal email with email, password, and webmail login link
+        webmail_url = config.webmail_url or config.api_url
+        subject = "Your Company Email Account"
+        template = "emails/email_account_created.html"
+        context = {
+            "employee": employee,
+            "email": email,
+            "password": password,
+            "webmail_url": webmail_url,
+        }
+        recipient_list = [employee.user.email]  # Employee's personal email
+
+    try:
+        message = render_to_string(template, context)
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipient_list,
+            html_message=message,
+            fail_silently=False,
+        )
+    except Exception as e:
+        # Log the error (you can use Django's logging or your audit app)
+        from django.contrib.admin.models import LogEntry
+        LogEntry.objects.log_action(
+            user_id=employee.user.id,
+            content_type_id=None,
+            object_id=None,
+            object_repr="Email sending failed",
+            action_flag=2,  # Change
+            change_message=f"Failed to send {'welcome' if is_welcome_email else 'account creation'} email: {str(e)}",
+        )
+        raise ValidationError(f"Failed to send email: {str(e)}")            
