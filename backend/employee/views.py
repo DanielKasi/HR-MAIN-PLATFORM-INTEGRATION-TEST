@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.shortcuts import render
-
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.conf import settings
+from django.contrib.admin.models import LogEntry
+from django.shortcuts import redirect
 from settings.models import EmailProviderConfig
 from utilities.sortable_api import SortableAPIMixin
 from spotcheck.models import EmployeeSpotCheck
@@ -3939,6 +3942,7 @@ class EmployeeEmailCreateView(APIView):
         institution = employee.get_institution()
         
         try:
+            # checking if config is there because it will be used later
             config = institution.email_config
         except EmailProviderConfig.DoesNotExist:
             return Response({"detail": "No email provider config found."}, status=status.HTTP_404_NOT_FOUND)
@@ -4016,3 +4020,40 @@ class EmployeeEmailResetPasswordView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)     
+
+
+def verify_email_and_redirect(request):
+    """
+    Verify the signed token, update the user's email, and redirect to the system login page.
+    """
+    token = request.GET.get('token')
+    if not token:
+        return HttpResponse("Invalid or missing token", status=400)
+
+    signer = TimestampSigner()
+    try:
+        # Verify the token, set to expire after 24 hours (86400 seconds)
+        value = signer.unsign(token, max_age=86400)
+        employee_id, email = value.split(':')
+        employee = Employee.objects.get(id=employee_id)
+        User = get_user_model()
+        user = employee.user
+        user.email = email
+        user.save()
+
+        # Log the successful email update
+        LogEntry.objects.log_action(
+            user_id=user.id,
+            content_type_id=None,
+            object_id=None,
+            object_repr="Email updated",
+            action_flag=2,  # Change
+            change_message=f"User email updated to {email} via welcome email link",
+        )
+
+        # Redirect to the system login page
+        return redirect(f"{settings.FRONTEND_URL.rstrip('/')}{settings.LOGIN_URL}")
+    except (BadSignature, SignatureExpired):
+        return HttpResponse("Invalid or expired token", status=400)
+    except Employee.DoesNotExist:
+        return HttpResponse("Invalid employee", status=400)            

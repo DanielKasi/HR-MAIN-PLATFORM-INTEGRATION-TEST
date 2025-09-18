@@ -30,6 +30,7 @@ from .views import (
     EmployeeEmailCreateView,
     EmployeeEmailDeleteView,
     EmployeeEmailResetPasswordView,
+    verify_email_and_redirect,
 )
 
 urlpatterns = [
@@ -161,5 +162,10 @@ urlpatterns = [
         "employee-company-emails/reset-password/<int:employee_id>/",
         EmployeeEmailResetPasswordView.as_view(),
         name="employee-email-reset-password",
+    ),
+    path(
+        "verify-email/",
+        verify_email_and_redirect,
+        name="verify-email",
     ),
 ]
