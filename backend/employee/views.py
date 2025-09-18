@@ -1088,6 +1088,8 @@ class EmployeeCreateAPIView(APIView):
                                 "email": email,
                                 "password": new_password,
                                 "welcome_email_sent": True,
+                                "is_password_verified": True,
+                                "is_email_verified": True,
                             }
                             # Set employee name from user.fullname if not provided
                             if "name" not in employee_data:
