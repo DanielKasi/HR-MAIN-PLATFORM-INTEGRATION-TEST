@@ -369,52 +369,6 @@ class VerifyOTPAPIView(APIView):
 
 
 
-class VerifyPasswordResetAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    @extend_schema(
-        request=UserPasswordResetSerializer,
-        responses={200: {"detail": "string"}},
-        description="Reset password using secure token (no user_id exposed).",
-        tags=["User Management"],
-    )
-    def post(self, request):
-        serializer = UserPasswordResetSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        token = serializer.validated_data["token"]
-        new_password = serializer.validated_data["new_password"]
-
-        try:
-            otp_record = OTPModel.objects.get(value=token, purpose="registration")
-
-            if otp_record.is_expired():
-                return Response(
-                    {"detail": "Token has expired."}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-            user = otp_record.user
-            user.is_active = True
-            user.is_email_verified = True
-            user.is_password_verified = True
-            user.set_password(new_password)
-            user.save()
-
-            otp_record.delete()  # optionally remove used token
-            return Response(
-                {"detail": "Password set successfully. Account activated."},
-                status=status.HTTP_200_OK,
-            )
-
-        except OTPModel.DoesNotExist:
-            return Response(
-                {"detail": "Invalid or expired token."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
 
 class ResendOTPAPIView(APIView):
     permission_classes = [permissions.AllowAny]

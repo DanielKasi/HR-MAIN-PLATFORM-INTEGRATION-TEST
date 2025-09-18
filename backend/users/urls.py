@@ -7,7 +7,6 @@ from .views import (
     UserListAPIView,
     VerifyOTPAPIView,
     ResendOTPAPIView,
-    VerifyPasswordResetAPIView,
     RoleListAPIView,
     RoleDetailAPIView,
     PermissionCategoryListAPIView,
@@ -24,7 +23,6 @@ from .views import (
     CountryListAPIView,
     ChangeEmailAndResendOTPAPIView,
     LogoutView,
-
 )
 
 
@@ -36,7 +34,11 @@ urlpatterns = [
         UserInstitutionsListAPIView.as_view(),
         name="user-attached-institutions",
     ),
-    path('change-email-and-resend-otp/', ChangeEmailAndResendOTPAPIView.as_view(), name='change-email-and-resend-otp'),
+    path(
+        "change-email-and-resend-otp/",
+        ChangeEmailAndResendOTPAPIView.as_view(),
+        name="change-email-and-resend-otp",
+    ),
     path("verify-otp/", VerifyOTPAPIView.as_view(), name="verify-otp"),
     path("resend-otp/", ResendOTPAPIView.as_view(), name="resend-otp"),
     path("login/", LoginView.as_view(), name="user-login"),
@@ -61,12 +63,10 @@ urlpatterns = [
         name="permission-detail",
     ),
     path("forgot-password", ForgotPasswordAPIView.as_view(), name="forgot-password"),
-    # path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
-    # Continue with Google URLs
-    path("auth/google/url/", GoogleAuthURLView.as_view(), name="google_auth_url"),
     path("verify-token", VerifyTokenAPIView.as_view(), name="verify-token"),
     path("reset-password", ResetPasswordAPIView.as_view(), name="reset-password"),
     # Continue with Google URLs
+    path("auth/google/url/", GoogleAuthURLView.as_view(), name="google_auth_url"),
     path(
         "auth/google/callback/",
         GoogleAuthCallbackView.as_view(),
@@ -74,5 +74,5 @@ urlpatterns = [
     ),
     path("details/", UserDetailsWithInstitutions.as_view(), name="user-dets"),
     path("countries/", CountryListAPIView.as_view(), name="country-list"),
-    path('change-password/', ChangePasswordAPIView.as_view(), name='change-password'),
+    path("change-password/", ChangePasswordAPIView.as_view(), name="change-password"),
 ]

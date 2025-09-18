@@ -187,7 +187,25 @@ class BankAccountSerializer(serializers.ModelSerializer):
     #     if errors:
     #         raise serializers.ValidationError(errors)
     #     return data
-    
+
+class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeCompanyEmail
+        fields = ['id', 'email', 'provider', 'status']
+        read_only_fields = ['email', 'provider', 'status']
+
+    def create(self, validated_data):
+        employee = validated_data['employee']
+        institution = employee.get_institution()
+        try:
+            config = institution.email_config
+        except EmailProviderConfig.DoesNotExist:
+            raise serializers.ValidationError("No email provider config found.")
+
+        validated_data['email'] = generate_email(employee)
+        validated_data['provider'] = config.provider
+        return super().create(validated_data)  
+        
 class EmployeeSerializer(BaseApprovableSerializer):
     date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     user = CustomUserSerializer()
@@ -207,6 +225,13 @@ class EmployeeSerializer(BaseApprovableSerializer):
     work_experiences = WorkExperienceSerializer(many=True, required=False)
     children = ChildSerializer(many=True, required=False)
     spouse = SpouseSerializer(required=False, allow_null=True)
+    company_email = serializers.SerializerMethodField()  
+
+    def get_company_email(self, obj):
+        email = obj.company_emails.first()  
+        if email:
+            return EmployeeCompanyEmailSerializer(email).data
+        return None
 
     class Meta:
         model = Employee
@@ -217,7 +242,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
             'created_at', 'updated_at', 'deleted_at', 'is_active', 'approval_status', 'employee_id',
             'email', 'phone_number', 'gender', 'date_of_joining', 'address', 'country', 'nin',
             'nssf_no', 'tin', 'skills', 'marital_status', 'has_children', 'employee_profile_picture',
-            'salary', 'position', 'department', 'payroll_branch'
+            'salary', 'position', 'department', 'payroll_branch', 'company_email'
         ]
 
     def get_department_details(self, obj):
@@ -475,23 +500,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
         data.pop("position_details", None)
         return data
 
-class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EmployeeCompanyEmail
-        fields = ['id', 'employee', 'email', 'provider', 'status']
-        read_only_fields = ['email', 'provider', 'status']
-
-    def create(self, validated_data):
-        employee = validated_data['employee']
-        institution = employee.get_institution()
-        try:
-            config = institution.email_config
-        except EmailProviderConfig.DoesNotExist:
-            raise serializers.ValidationError("No email provider config found.")
-
-        validated_data['email'] = generate_email(employee)
-        validated_data['provider'] = config.provider
-        return super().create(validated_data)    
+  
 
 
 class EmployeeDaySerializer(BaseApprovableSerializer):
@@ -819,9 +828,7 @@ class EmployeeContractSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError(
                     {"error": f"Failed to read signed_contract: {str(e)}"}
                 )
-                raise serializers.ValidationError(
-                    {"error": f"Failed to read signed_contract: {str(e)}"}
-                )
+
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -849,15 +856,7 @@ class EmployeeContractSerializer(BaseApprovableSerializer):
             EmployeeSerializer(instance.employee).data if instance.employee else None
         )
         return rep
-        rep["applicant"] = (
-            JobAdvertApplicationSerializer(instance.applicant).data
-            if instance.applicant
-            else None
-        )
-        rep["employee"] = (
-            EmployeeSerializer(instance.employee).data if instance.employee else None
-        )
-        return rep
+
 
     # def validate(self, data):
     #     # Ensure either applicant or employee is provided, not both

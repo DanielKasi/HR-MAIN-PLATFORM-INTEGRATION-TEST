@@ -77,22 +77,6 @@ export function ApprovalWorkflow({
 			}
 			onRefresh?.();
 
-			// if (onApprovalUpdate) {
-			//     // Find the approval that contains this task and update it
-			//     const updatedApprovals = approvals.map((approval) => ({
-			//         ...approval,
-			//         tasks: approval.tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)),
-			//     }));
-
-			//     const updatedApproval = updatedApprovals.find((approval) =>
-			//         approval.tasks.some((task) => task.id === updatedTask.id),
-			//     );
-
-			//     if (updatedApproval) {
-			//         onApprovalUpdate(updatedApproval);
-			//     }
-			// }
-
 			setShowCommentFor(null);
 			setComment("");
 		} catch (error) {

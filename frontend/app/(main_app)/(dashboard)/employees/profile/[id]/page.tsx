@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { IAttendance, IMaritalStatus } from "@/types/types.utils";
+import type { IAttendance, ICompanyEmail, IMaritalStatus } from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
 import EmployeeDiscipline from "@/components/employee/employee-discipline";
@@ -40,7 +40,7 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
+import { AttendanceAPI, employeeAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type {
 	IEmployee,
@@ -79,6 +79,7 @@ export default function EmployeeProfile() {
 		| "penalties"
 		| "general_info"
 		| "performance"
+		| "company_email"
 	>("general_info");
 	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
 	const [attendancePage, setAttendancePage] = useState(1);
@@ -103,6 +104,15 @@ export default function EmployeeProfile() {
 	const [isSpotcheckFormOpen, setIsSpotcheckFormOpen] = useState(false);
 	const [loadingSpotcheckConfig, setLoadingSpotcheckConfig] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [generatingEmail, setGeneratingEmail] = useState(false);
+	// Company Email state
+	const [companyEmail, setCompanyEmail] = useState<{
+		id: number;
+		employee: number;
+		email: string;
+		provider: string;
+		status: string;
+	} | null>(null);
 
 	// Cache for tab data to prevent re-fetching
 	const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
@@ -369,6 +379,26 @@ export default function EmployeeProfile() {
 		[tabDataCache],
 	);
 
+	const handleGenerateCompanyEmail = useCallback(async () => {
+		if (!employeeId || generatingEmail) return;
+		setGeneratingEmail(true);
+		try {
+			const company_email = await employeeAPI.generateCompanyEmail({
+				employee_id: Number(employeeId),
+			});
+			setEmployee((prev) => ({ ...prev, company_email: company_email }) as IEmployee);
+			toast.success("Company email generated successfully!");
+		} catch (error: any) {
+			let errorMessage = "Failed to generate company email";
+			if (error?.message || error?.detail) {
+				errorMessage = error.message || error.detail;
+			}
+			toast.error(`${errorMessage}`);
+		} finally {
+			setGeneratingEmail(false);
+		}
+	}, [employeeId, generatingEmail]);
+
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center">
@@ -615,6 +645,28 @@ export default function EmployeeProfile() {
 											{activeTab === "general_info" && (
 												<Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
 													<CardContent className="p-4 md:p-6 space-y-6">
+														<div className="space-y-6 !flex !items-center ">
+															<div className="flex items-center gap-8">
+																<p className="flex items-center font-semibold gap-2">
+																	<Mail className="w-5 h-5" />
+																	Company Email
+																</p>
+																<p className="text-sm font-semibold text-gray-900">
+																	{employee.company_email?.email || "Not set"}
+																</p>
+																{!employee.company_email?.email && (
+																	<Button
+																		onClick={handleGenerateCompanyEmail}
+																		disabled={generatingEmail}
+																		size={"sm"}
+																		className="rounded-full"
+																	>
+																		{generatingEmail ? "Generating..." : "Generate"}
+																	</Button>
+																)}
+															</div>
+															<div className="!flex !items-center justify-start"></div>
+														</div>
 														<div>
 															<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 																{employee.salary && (
@@ -1359,6 +1411,10 @@ export default function EmployeeProfile() {
 											{activeTab === "performance" && (
 												<EmployeeBonusPointsTable employee={employee} />
 											)}
+
+											{/* {activeTab === "company_email" && employee && (
+
+											)} */}
 										</CardContent>
 									</Card>
 								</div>

@@ -19,6 +19,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	const [isInitialized, setIsInitialized] = useState(false);
 	const prevNotificationsRef = useRef(notifications);
 	const serviceWorkerRef = useRef<ServiceWorkerRegistration | null>(null);
+	const retryCountRef = useRef(0);
+	const maxRetries = 3;
+	const retryInterval = 10000; // 10 seconds
 
 	// Register Service Worker
 	useEffect(() => {
@@ -30,12 +33,12 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 					console.log("Service Worker registered");
 				})
 				.catch((error) => {
-					console.error("Service Worker registration failed:", error);
+					console.warn("Service Worker registration failed:", error);
 				});
 		}
 	}, []);
 
-	// Handle SSE connection
+	// Handle SSE connection with retry mechanism
 	useEffect(() => {
 		if (!currentUser || !accessToken || isInitialized) {
 			return;
@@ -47,7 +50,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				: process.env.NEXT_PUBLIC_API_URL
 			: MAIN_DOMAIN_URL;
 
-		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH} `;
+		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
 		const controller = new AbortController();
 
 		async function streamNotifications() {
@@ -55,7 +58,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				const response = await fetch(url, {
 					method: "GET",
 					headers: {
-						Authorization: `Bearer ${accessToken} `,
+						Authorization: `Bearer ${accessToken}`,
 						Accept: "text/event-stream",
 					},
 					signal: controller.signal,
@@ -64,6 +67,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				if (!response.body) {
 					throw new Error("No response body");
 				}
+
+				retryCountRef.current = 0; // Reset retry count on successful connection
+				setIsInitialized(true);
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -85,28 +91,38 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 								const data: INotification = JSON.parse(line.slice(6));
 
 								if (data && data.id && !notifications.find((notif) => notif.id === data.id)) {
-									//   console.log("\n\n Notification received:", data, "And dispatched to notifications store", notifications);
 									dispatch(receiveNotification(data));
 								}
 							} catch (error) {
-								showErrorToast({ error, defaultMessage: "Error parsing notification" });
+								console.warn("Error parsing notification:", error);
 							}
 						}
 					}
 				}
 			} catch (error) {
 				if (error instanceof Error && error.name !== "AbortError") {
-					console.error("Failed to connect to notification stream:", error);
-					showErrorToast({ error, defaultMessage: "Failed to connect to notification stream" });
+					console.warn("Failed to connect to notification stream:", error);
+
+					if (retryCountRef.current < maxRetries) {
+						retryCountRef.current += 1;
+						console.warn(`Retrying connection (${retryCountRef.current}/${maxRetries})...`);
+						setTimeout(() => {
+							streamNotifications();
+						}, retryInterval);
+					} else {
+						console.warn(
+							`Maximum retry attempts (${maxRetries}) reached. No further retries will be attempted.`,
+						);
+						setIsInitialized(true); // Prevent further attempts
+					}
 				}
 			}
 		}
 
 		streamNotifications();
-		setIsInitialized(true);
 
 		return () => {
-			// controller.abort();
+			controller.abort();
 		};
 	}, [dispatch, currentUser, accessToken, isInitialized]);
 
@@ -162,11 +178,13 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		if (lastNotification.message) {
 			const url = getNotificationPath(lastNotification);
 
-			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
-				body: `${lastNotification.type?.toUpperCase() || "Alert "}`,
-				icon: "/icon.png", // Our app's icon
-				tag: lastNotification.id || (notifications.length - 1).toString(), // Prevents duplicates
-				data: { url }, // Navigate to approval page
+			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message}`, {
+				body: `${lastNotification.type?.toUpperCase() || "Alert"}: Received at ${new Date(
+					lastNotification.timestamp,
+				).toLocaleString()}`,
+				icon: "/icon.png",
+				tag: lastNotification.id || (notifications.length - 1).toString(),
+				data: { url },
 			});
 		}
 

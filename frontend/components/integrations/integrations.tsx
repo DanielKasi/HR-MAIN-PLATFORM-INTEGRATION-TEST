@@ -2,21 +2,22 @@
 
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
-import { MeetingsIntegrations } from "../performance/meetings/meetings-integrations";
+import { MeetingsIntegrations } from "./meetings/meetings-integrations";
+import { EmailsIntegrations } from "./emails/emails-integrations";
 
 const subTabs = [
 	{
 		id: "meetings",
 		label: "Meetings",
-		icon: "hugeicons:video-call",
+		icon: "hugeicons:computer-video-call",
 		description: "Configure video conferencing integrations",
 	},
-	{
-		id: "documents",
-		label: "Documents",
-		icon: "hugeicons:document-05",
-		description: "Configure document collaboration tools",
-	},
+	// {
+	// 	id: "documents",
+	// 	label: "Documents",
+	// 	icon: "hugeicons:document-05",
+	// 	description: "Configure document collaboration tools",
+	// },
 	{
 		id: "emails",
 		label: "Emails",
@@ -34,11 +35,7 @@ export const Integrations: React.FC = () => {
 			<p>Documents integration coming soon</p>
 		</div>
 	);
-	const renderEmails = () => (
-		<div className="text-center py-8 text-muted-foreground">
-			<p>Emails integration coming soon</p>
-		</div>
-	);
+	const renderEmails = () => <EmailsIntegrations />;
 
 	const renderContent = () => {
 		switch (activeSubTab) {
@@ -57,7 +54,7 @@ export const Integrations: React.FC = () => {
 		<div className="space-y-6">
 			{/* Top Sub-navigation Tabs */}
 			<div className="bg-white border-b border-gray-200">
-				<div className="flex space-x-4 overflow-x-auto px-4 md:px-6 pb-2">
+				<div className="flex space-x-4 overflow-x-auto px-4 md:px-6 py-2">
 					{subTabs.map((tab) => (
 						<button
 							key={tab.id}
@@ -74,7 +71,7 @@ export const Integrations: React.FC = () => {
 							/>
 							<span>{tab.label}</span>
 							{activeSubTab === tab.id && (
-								<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+								<div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#162032] rounded-full" />
 							)}
 						</button>
 					))}
