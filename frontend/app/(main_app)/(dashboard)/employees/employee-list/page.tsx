@@ -6,15 +6,14 @@ import { EmployeesTable } from "./employees-table";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -25,6 +24,7 @@ import { IJobPosition } from "@/types/types.utils";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
 import FormatNumberInput from "@/components/format-number-input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -167,35 +167,6 @@ export default function EmployeesPage() {
 								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
 							/>
 						</div>
-
-						<div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.4]">
-							<div className="flex flex-col sm:flex-row gap-3 flex-1">
-								<Select value={statusFilter} onValueChange={setStatusFilter}>
-									<SelectTrigger className="w-full sm:w-[140px] lg:w-[160px] text-xs sm:text-sm">
-										<SelectValue placeholder="Status" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="all">All Statuses</SelectItem>
-										<SelectItem value="active">Active</SelectItem>
-										<SelectItem value="inactive">Inactive</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							{/* {(searchTerm.trim() ||
-								positionSearchTerm.trim() ||
-								departmentFilter !== "all" ||
-								statusFilter !== "all") && (
-								<Button
-									variant="outline"
-									onClick={clearFilters}
-									className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm bg-transparent"
-								>
-									Clear Filters
-								</Button>
-							)} */}
-						</div>
-
 						{/* Add Employee Dropdown */}
 						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
 					</div>
