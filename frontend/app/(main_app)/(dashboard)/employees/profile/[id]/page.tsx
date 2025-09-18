@@ -415,7 +415,7 @@ export default function EmployeeProfile() {
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center px-4">
 				<div className="text-center max-w-md w-full">
 					<p className="text-[#e21732] mb-4">{error || "Employee not found"}</p>
-					<div className="space-y-2">
+					<div className="space-y-2 space-x-8">
 						<Link href="/employees/employee-list">
 							<Button className="text-white w-full md:w-auto">Back to Employees</Button>
 						</Link>

@@ -184,7 +184,7 @@ export default function ProjectDetailsPage() {
 			cell: (task: IProjectTask) => (
 				<div className="flex items-center justify-center gap-1 text-xs text-slate-600">
 					<Users className="h-3 w-3" />
-					{task.assigned_to.length}
+					{task.assignees.length}
 				</div>
 			),
 		},
@@ -454,7 +454,7 @@ export default function ProjectDetailsPage() {
 														<Avatar className="h-8 w-8">
 															<AvatarImage src={`/placeholder.svg?height=32&width=32`} />
 															<AvatarFallback className="text-xs">
-																{leader.user.fullname
+																{leader.user?.fullname
 																	.split(" ")
 																	.map((n) => n[0])
 																	.join("")}
@@ -462,7 +462,7 @@ export default function ProjectDetailsPage() {
 														</Avatar>
 														<div className="flex-1 min-w-0">
 															<p className="text-sm font-medium text-slate-900 truncate">
-																{leader.user.fullname}
+																{leader.user?.fullname}
 															</p>
 															<p className="text-xs text-slate-600">Leader</p>
 														</div>
@@ -482,7 +482,7 @@ export default function ProjectDetailsPage() {
 														<Avatar className="h-8 w-8">
 															<AvatarImage src={`/placeholder.svg?height=32&width=32`} />
 															<AvatarFallback className="text-xs">
-																{member.user.fullname
+																{member.user?.fullname
 																	.split(" ")
 																	.map((n) => n[0])
 																	.join("")}
@@ -490,7 +490,7 @@ export default function ProjectDetailsPage() {
 														</Avatar>
 														<div className="flex-1 min-w-0">
 															<p className="text-sm font-medium text-slate-900 truncate">
-																{member.user.fullname}
+																{member.user?.fullname}
 															</p>
 															<p className="text-xs text-slate-600">Member</p>
 														</div>
