@@ -354,7 +354,7 @@ export default function EmployeeProfile() {
 	// Tab configuration with lazy loading indicators
 	const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
 		() => [
-			{ id: "general_info", label: "Genarl Information", hasData: true }, // Component handles own loading
+			{ id: "general_info", label: "General Information", hasData: true }, // Component handles own loading
 			{ id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
 			{ id: "discipline", label: "Discipline", hasData: true }, // Component handles own loading
 			{ id: "leave", label: "Leave", hasData: true }, // Component handles own loading
@@ -406,18 +406,14 @@ export default function EmployeeProfile() {
 	}
 
 	return (
-		<div className="w-full h-full bg-gray-50 rounded-lg">
+		<div className="w-full h-full rounded-lg">
 			{employee && (
 				<div className="w-full md:px-4 md:pb-8">
 					{/* Header section with back arrow, name, and action buttons */}
 					<div className="flex flex-row md:flex-row md:items-center justify-between py-4 my-6 gap-4">
-						<div className="flex items-center">
+						<div className="flex items-center justify-start gap-4">
 							<Link href="/employees/employee-list">
-								<Button
-									variant="ghost"
-									size="sm"
-									className="text-[#848496] hover:text-gray-800 rounded-full p-2"
-								>
+								<Button variant="outline" className="!h-10 !w-10 !rounded-full !aspect-square">
 									<ArrowLeft className="w-5 h-5" />
 								</Button>
 							</Link>
@@ -434,7 +430,7 @@ export default function EmployeeProfile() {
 								<Button
 									variant="outline"
 									size={isMobile ? "sm" : "default"}
-									className="text-gray-500 hover:text-gray-600 flex items-center gap-2 bg-transparent"
+									className=" flex items-center gap-2"
 								>
 									<Edit className="w-4 h-4" />
 									<span className="hidden md:inline">Edit</span>
@@ -443,7 +439,7 @@ export default function EmployeeProfile() {
 							<Button
 								variant="outline"
 								size={isMobile ? "sm" : "default"}
-								className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2 bg-transparent"
+								className="flex items-center gap-2"
 							>
 								<Trash2 className="w-4 h-4" />
 								<span className="hidden md:inline">Delete</span>

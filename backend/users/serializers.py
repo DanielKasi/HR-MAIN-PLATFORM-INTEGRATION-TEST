@@ -99,6 +99,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     branches = serializers.SerializerMethodField()
 
     email = serializers.EmailField(required=True, validators=[])
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = CustomUser

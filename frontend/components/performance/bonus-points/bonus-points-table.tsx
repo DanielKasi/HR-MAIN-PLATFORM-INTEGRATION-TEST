@@ -116,7 +116,8 @@ export function EmployeeBonusPointsTable({
 		<>
 			<div className="flex justify-end mb-4">
 				<Button onClick={handleCreate} className="rounded-full">
-					<Plus className="h-4 w-4 mr-2" /> Add Bonus Point
+					<Plus className="h-4 w-4 md:mr-2" />
+					<span className=" hidden md:inline-block">Add Bonus Point</span>
 				</Button>
 			</div>
 			<PaginatedTable<IEmployeeBonusPoint>
