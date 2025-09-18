@@ -21,23 +21,10 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { select } from "redux-saga/effects";
-import { getJobPositions } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
-import {
-	getPaginatedJobPositions,
-	getPaginatedJobPositionsFromUrl,
-	getPaginatedDepartments,
-	getPaginatedDepartmentsFromUrl,
-} from "@/lib/utils";
+import FormatNumberInput from "@/components/format-number-input";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);

@@ -51,12 +51,21 @@ export function EmployeesTable({
 	refreshFunctionRef,
 	searchTerm,
 	positionSearchTerm,
+	departmentFilter,
+	minSalary,
+	maxSalary,
 }: EmployeesTableProps) {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const tableRefreshRef = refreshFunctionRef || useRef<(() => void) | null>(null);
 	const [employeeToDelete, setEmployeeToDelete] = useState<IEmployee | null>(null);
 	const [ordering, setOrdering] = useState("");
+	const removeCommas = (value: string) => value.replace(/,/g, "");
 	const router = useRouter();
+
+	const departmentSearchTerm =
+		departmentFilter !== "all" && departmentFilter
+			? departmentFilter.split(",").map((id) => id.trim())
+			: [];
 
 	const handleDelete = async () => {
 		if (!currentInstitution) {
@@ -221,15 +230,26 @@ export function EmployeesTable({
 						search: searchTerm || undefined,
 						positionSearch:
 							positionSearchTerm && positionSearchTerm.length > 0
-								? positionSearchTerm.join(",") 
+								? positionSearchTerm.join(",")
 								: undefined,
-						departmentSearch: departmentFilter !== "all" ? departmentFilter : undefined,
+						departmentSearch:
+							departmentSearchTerm && departmentSearchTerm.length > 0
+								? departmentSearchTerm.join(",")
+								: undefined,
 						minSalary: minSalary ? removeCommas(minSalary) : undefined,
 						maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
 					});
 				}}
 				fetchFromUrl={getPaginatedEmployeesFromUrl}
-				deps={[currentInstitution?.id, searchTerm, positionSearchTerm, ordering]}
+				deps={[
+					currentInstitution?.id,
+					searchTerm,
+					positionSearchTerm,
+					departmentFilter,
+					minSalary,
+					maxSalary,
+					ordering,
+				]}
 				query={searchTerm}
 				onError={(err) =>
 					showErrorToast({ error: err, defaultMessage: "Failed to fetch employees" })
