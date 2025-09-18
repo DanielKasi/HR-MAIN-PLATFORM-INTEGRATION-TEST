@@ -17,6 +17,7 @@ import { InstitutionSpotcheckConfigurations } from "@/components/settings/instit
 import { BranchSpotcheckConfigurations } from "@/components/settings/branch-spotcheck-configurations";
 import { LocationComparisonConfigurations } from "@/components/settings/location-comparison-configurations";
 import { InstitutionBonusPointSettingsTable } from "@/components/performance/bonus-points/institution-bonus-points-settings-table";
+import { Integrations } from "@/components/integrations/integrations";
 
 export default function SettingsPage() {
 	const [activeTab, setActiveTab] = useState<
@@ -28,6 +29,7 @@ export default function SettingsPage() {
 		| "institution_spotcheck"
 		| "branch_spotcheck"
 		| "bonus_point_settings"
+		| "integrations"
 	>("institution");
 	const [confirmationDialog, setConfirmationDialog] = useState({
 		isOpen: false,
@@ -59,6 +61,8 @@ export default function SettingsPage() {
 	const renderLocationComparisonConfigurations = () => <LocationComparisonConfigurations />;
 
 	const renderBonusPointSettings = () => <InstitutionBonusPointSettingsTable />;
+
+	const renderIntegrations = () => <Integrations />;
 
 	return (
 		<div className="min-h-screen bg-gray-50 rounded-lg">
@@ -317,12 +321,41 @@ export default function SettingsPage() {
 									</div>
 								</div>
 							</button>
+
+							<button
+								onClick={() => setActiveTab("integrations")}
+								className={`flex-shrink-0 lg:w-full flex items-center space-x-3 p-3 lg:p-4 rounded-lg text-left transition-colors ${
+									activeTab === "integrations"
+										? "bg-red-50 border border-red-200"
+										: "hover:bg-gray-50"
+								}`}
+							>
+								<Icon
+									icon="hugeicons:plug-01"
+									className={`w-5 h-5 ${activeTab === "integrations" ? "text-primary" : "text-gray-500"}`}
+								/>
+								<div className="whitespace-nowrap lg:whitespace-normal">
+									<div
+										className={`font-medium text-sm lg:text-base ${
+											activeTab === "integrations" ? "text-primary" : "text-gray-900"
+										}`}
+									>
+										Integrations
+									</div>
+									<div
+										className={`text-xs lg:text-sm hidden lg:block ${
+											activeTab === "integrations" ? "text-[#6B7280]" : "text-[#6B7280]"
+										}`}
+									>
+										Configure third-party service integrations
+									</div>
+								</div>
+							</button>
 						</div>
 					</div>
 				</div>
 
-				{/* Right Content Panel */}
-				<div className="lg:flex-[7.0] p-4 md:p-6">
+				<div className="lg:flex-[7.0] p-4 md:p-6 bg-white">
 					{activeTab === "institution"
 						? renderInstitutionSettings()
 						: activeTab === "kyc"
@@ -337,7 +370,11 @@ export default function SettingsPage() {
 											? renderInstitutionSpotcheckConfigurations()
 											: activeTab === "branch_spotcheck"
 												? renderBranchSpotcheckConfigurations()
-												: renderBonusPointSettings()}
+												: activeTab === "bonus_point_settings"
+													? renderBonusPointSettings()
+													: activeTab === "integrations"
+														? renderIntegrations()
+														: renderBonusPointSettings()}
 				</div>
 			</div>
 

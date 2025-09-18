@@ -61,11 +61,11 @@ class EmployeeObjectivesSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class Feedback360Serializer(serializers.ModelSerializer):
-    reviewee = EmployeeSerializer(read_only=True)
+    given_by = EmployeeSerializer(read_only=True)
     reviewer = EmployeeSerializer(read_only=True)
     period = PeriodSerializer(read_only=True)
-    reviewee_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='reviewee', write_only=True
+    given_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), source='given_by', write_only=True
     )
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='reviewer', write_only=True

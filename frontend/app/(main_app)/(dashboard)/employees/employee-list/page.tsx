@@ -12,7 +12,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
-import { Plus, UserPlus, ChevronDown, Upload, Search } from "lucide-react";
+import { Plus, UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
@@ -21,9 +21,9 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { select } from "redux-saga/effects";
-import { getJobPositions } from "@/lib/utils";
+import { getJobPositions, showErrorToast } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
+import { Icon } from "@iconify/react";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -36,6 +36,8 @@ export default function EmployeesPage() {
 	const [positionSearchTerm, setPositionSearchTerm] = useState("");
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
+
+	const [isExportingToExcel, setIsExportingToExcel] = useState(false);
 
 	const clearFilters = () => {
 		setSearchTerm("");
@@ -63,6 +65,7 @@ export default function EmployeesPage() {
 
 	const handleExportEmployees = async () => {
 		try {
+			setIsExportingToExcel(true);
 			const response = await fetch(
 				`${process.env.NEXT_PUBLIC_API_URL}/employee/export-employee-excel/${institutionId}/`,
 				{
@@ -81,6 +84,7 @@ export default function EmployeesPage() {
 
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement("a");
+
 			link.href = url;
 			link.download = "employees.xlsx";
 			document.body.appendChild(link);
@@ -89,8 +93,9 @@ export default function EmployeesPage() {
 
 			window.URL.revokeObjectURL(url);
 		} catch (error) {
-			console.error("Export failed:", error);
-			alert("Export failed. Please try again.");
+			showErrorToast({ error, defaultMessage: "Export failed. Please try again" });
+		} finally {
+			setIsExportingToExcel(false);
 		}
 	};
 
@@ -126,7 +131,20 @@ export default function EmployeesPage() {
 							</ProtectedComponent>
 
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EXPORT_EMPLOYEES}>
-								<Button onClick={handleExportEmployees}>Export to Excel</Button>
+								<Button
+									disabled={isExportingToExcel}
+									className="rounded-xl"
+									onClick={handleExportEmployees}
+								>
+									{isExportingToExcel ? (
+										<Loader />
+									) : (
+										<Icon icon="hugeicons:file-export" className="!w-5 !h-5" />
+									)}
+									<span className="text">
+										{isExportingToExcel ? "Exporting" : "Export to Excel"}
+									</span>
+								</Button>
 							</ProtectedComponent>
 						</div>
 					</CardTitle>

@@ -1,3 +1,4 @@
+
 import json
 import os
 from django.core.management.base import BaseCommand
@@ -57,163 +58,162 @@ class Command(BaseCommand):
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
-        self.create_default_awards()
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         
         # Run deletion logic
-        self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+    #     self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    def delete_inactive_employees(self, dry_run, no_confirm):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
-        )
-        
-        # Find inactive employees that are not soft-deleted
-        inactive_employees = Employee.objects.filter(
-            is_active=False, deleted_at__isnull=False
-        ).select_related('user')
-        
-        employee_count = inactive_employees.count()
-        user_count = sum(1 for emp in inactive_employees if emp.user)
-        
-        if employee_count == 0:
-            self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
-            return
-
-        if dry_run:
-            self.stdout.write('Dry run mode: No records will be deleted.')
-            self.stdout.write(f'Found {employee_count} inactive employee(s):')
-            for employee in inactive_employees:
-                self.stdout.write(f'- Employee: {employee}, User: {employee.user}')
-            return
-
-        # Confirmation prompt unless --no-confirm is provided
-        if not no_confirm:
-            self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
-            confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
-            if confirm.lower() != 'yes':
-                self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
-                return
-
-        try:
-            with transaction.atomic():
-                deleted_employees = []
-                deleted_users = []
-                for employee in inactive_employees:
-                    self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee}'))
-                    # Delete Employee first to satisfy PROTECT constraint
-                    Employee._base_manager.filter(id=employee.id).delete()
-                    deleted_employees.append(str(employee))
-                    
-                    if employee.user:
-                        self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user}'))
-                        # Delete CustomUser after Employee
-                        CustomUser._base_manager.filter(id=employee.user.id).delete()
-                        deleted_users.append(str(employee.user))
-
-                # Verify deletions
-                remaining = Employee.objects.filter(
-                    is_active=False, deleted_at__isnull=True
-                ).count()
-                if remaining > 0:
-                    self.stdout.write(
-                        self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
-                    )
-
-                self.stdout.write(self.style.SUCCESS(
-                    f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
-                ))
-                self.stdout.write('Deleted Employees:')
-                for emp in deleted_employees:
-                    self.stdout.write(f'- {emp}')
-                self.stdout.write('Deleted Users:')
-                for user in deleted_users:
-                    self.stdout.write(f'- {user}')
-
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
-            raise
-
-    # def resend_welcome_emails(self, reset_password, employee_ids=None):
+    # def delete_inactive_employees(self, dry_run, no_confirm):
     #     self.stdout.write(
-    #         self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
+    #         self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
     #     )
-
-    #     # Determine which employees to process
-    #     if employee_ids:
-    #         try:
-    #             employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
-    #             employees = Employee.objects.filter(id__in=employee_ids)
-    #         except ValueError:
-    #             self.stdout.write(
-    #                 self.style.ERROR(
-    #                     "Invalid employee IDs provided. Use comma-separated integers."
-    #                 )
-    #             )
-    #             return
-    #     else:
-    #         employees = Employee.objects.filter(
-    #             Q(user__welcome_email_sent=False)
-    #             | Q(user__welcome_email_sent__isnull=True)
-    #         )
-
-    #     if not employees.exists():
-    #         self.stdout.write(
-    #             self.style.NOTICE("No employees found to resend welcome emails.")
-    #         )
+        
+    #     # Find inactive employees that are not soft-deleted
+    #     inactive_employees = Employee.objects.filter(
+    #         is_active=False, deleted_at__isnull=False
+    #     ).select_related('user')
+        
+    #     employee_count = inactive_employees.count()
+    #     user_count = sum(1 for emp in inactive_employees if emp.user)
+        
+    #     if employee_count == 0:
+    #         self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
     #         return
 
-    #     success_count = 0
-    #     error_count = 0
-    #     skip_count = 0
+    #     if dry_run:
+    #         self.stdout.write('Dry run mode: No records will be deleted.')
+    #         self.stdout.write(f'Found {employee_count} inactive employee(s):')
+    #         for employee in inactive_employees:
+    #             self.stdout.write(f'- Employee: {employee.name or "Unnamed"}, User: {employee.user.fullname if employee.user else "No User"}')
+    #         return
 
-    #     for employee in employees:
-    #         if not employee.user or not employee.user.email:
-    #             self.stdout.write(
-    #                 self.style.WARNING(
-    #                     f"Skipping employee {employee.id}: No user or email"
+    #     # Confirmation prompt unless --no-confirm is provided
+    #     if not no_confirm:
+    #         self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
+    #         confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
+    #         if confirm.lower() != 'yes':
+    #             self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
+    #             return
+
+    #     try:
+    #         with transaction.atomic():
+    #             deleted_employees = []
+    #             deleted_users = []
+    #             for employee in inactive_employees:
+    #                 self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee.name or "Unnamed"}'))
+    #                 # Delete Employee first to satisfy PROTECT constraint
+    #                 Employee._base_manager.filter(id=employee.id).delete()
+    #                 deleted_employees.append(str(employee))
+                    
+    #                 if employee.user:
+    #                     self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user.fullname}'))
+    #                     # Delete CustomUser after Employee
+    #                     CustomUser._base_manager.filter(id=employee.user.id).delete()
+    #                     deleted_users.append(str(employee.user))
+
+    #             # Verify deletions
+    #             remaining = Employee.objects.filter(
+    #                 is_active=False, deleted_at__isnull=True
+    #             ).count()
+    #             if remaining > 0:
+    #                 self.stdout.write(
+    #                     self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
     #                 )
-    #             )
-    #             skip_count += 1
-    #             continue
 
-    #         try:
-    #             password = None
-    #             if reset_password:
-    #                 password = generate_compliant_password()
-    #                 employee.user.set_password(password)
-    #                 employee.user.is_password_verified = True
-    #                 employee.user.welcome_email_sent = False
-    #                 employee.user.save()
+    #             self.stdout.write(self.style.SUCCESS(
+    #                 f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
+    #             ))
+    #             self.stdout.write('Deleted Employees:')
+    #             for emp in deleted_employees:
+    #                 self.stdout.write(f'- {emp}')
+    #             self.stdout.write('Deleted Users:')
+    #             for user in deleted_users:
+    #                 self.stdout.write(f'- {user}')
 
-    #             send_employee_welcome_email.delay_on_commit(
-    #                 employee.user.email,
-    #                 employee.user.fullname,
-    #                 password,
-    #             )
-    #             employee.user.welcome_email_sent = True
-    #             employee.user.save()
-    #             self.stdout.write(
-    #                 self.style.SUCCESS(f"Welcome email resent to {employee.user.email}")
-    #             )
-    #             success_count += 1
-    #         except Exception as e:
-    #             self.stdout.write(
-    #                 self.style.ERROR(
-    #                     f"Failed to resend email to {employee.user.email}: {str(e)}"
-    #                 )
-    #             )
-    #             error_count += 1
+    #     except Exception as e:
+    #         self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
+    #         raise
 
-    #     self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
-    #     self.stdout.write(
-    #         self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
-    #     )
-    #     self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-    #     self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-    #     self.stdout.write(
-    #         self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
-    #     )
+    def resend_welcome_emails(self, reset_password, employee_ids=None):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
+        )
+
+        # Determine which employees to process
+        if employee_ids:
+            try:
+                employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
+                employees = Employee.objects.filter(id__in=employee_ids)
+            except ValueError:
+                self.stdout.write(
+                    self.style.ERROR(
+                        "Invalid employee IDs provided. Use comma-separated integers."
+                    )
+                )
+                return
+        else:
+            employees = Employee.objects.filter(
+                Q(user__welcome_email_sent=False)
+                | Q(user__welcome_email_sent__isnull=True)
+            )
+
+        if not employees.exists():
+            self.stdout.write(
+                self.style.NOTICE("No employees found to resend welcome emails.")
+            )
+            return
+
+        success_count = 0
+        error_count = 0
+        skip_count = 0
+
+        for employee in employees:
+            if not employee.user or not employee.user.email:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"Skipping employee {employee.name or 'Unnamed'}: No user or email"
+                    )
+                )
+                skip_count += 1
+                continue
+
+            try:
+                password = None
+                if reset_password:
+                    password = generate_compliant_password()
+                    employee.user.set_password(password)
+                    employee.user.is_password_verified = True
+                    employee.user.welcome_email_sent = False
+                    employee.user.save()
+
+                send_employee_welcome_email.delay_on_commit(
+                    employee.user.email,
+                    employee.name or employee.user.fullname,  # Fallback to user.fullname
+                    password,
+                )
+                employee.user.welcome_email_sent = True
+                employee.user.save()
+                self.stdout.write(
+                    self.style.SUCCESS(f"Welcome email resent to {employee.user.email} for employee '{employee.name or 'Unnamed'}'")
+                )
+                success_count += 1
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"Failed to resend email to {employee.user.email} for employee '{employee.name or 'Unnamed'}': {str(e)}"
+                    )
+                )
+                error_count += 1
+
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
+        self.stdout.write(
+            self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
+        )
+        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
+        self.stdout.write(
+            self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
+        )
 
     def create_default_awards(self):
         self.stdout.write(
@@ -556,6 +556,10 @@ class Command(BaseCommand):
                 )
 
     def create_default_bank_info(self):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Creating default bank info and updating employees...\n")
+        )
+
         default_bank_data = {
             "bank_fullname": "Centenary Bank",
             "bank_code": "0001",
@@ -566,6 +570,7 @@ class Command(BaseCommand):
 
         institutions = Institution.objects.all()
         for institution in institutions:
+            self.stdout.write(f"Processing {institution.institution_name}")
             bank_type, created = InstitutionBankType.objects.get_or_create(
                 institution=institution,
                 bank_fullname=default_bank_data["bank_fullname"],
@@ -575,11 +580,11 @@ class Command(BaseCommand):
             )
             if created:
                 self.stdout.write(
-                    f"Created default bank type for {institution.institution_name}"
+                    self.style.SUCCESS(f"  ✅ Created default bank type for {institution.institution_name}")
                 )
             else:
                 self.stdout.write(
-                    f"Default bank type already exists for {institution.institution_name}"
+                    self.style.NOTICE(f"  ♻️ Default bank type already exists for {institution.institution_name}")
                 )
 
             account, acc_created = InstitutionBankAccount.objects.get_or_create(
@@ -591,6 +596,14 @@ class Command(BaseCommand):
                     "updated_by": None,
                 },
             )
+            if acc_created:
+                self.stdout.write(
+                    self.style.SUCCESS(f"  ✅ Created default bank account for {institution.institution_name}")
+                )
+            else:
+                self.stdout.write(
+                    self.style.NOTICE(f"  ♻️ Default bank account already exists for {institution.institution_name}")
+                )
 
             branches = Branch.objects.filter(institution=institution)
             for branch in branches:
@@ -598,7 +611,9 @@ class Command(BaseCommand):
                     branch.paying_bank_account = account
                     branch.save()
                     self.stdout.write(
-                        f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
+                        self.style.SUCCESS(
+                            f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
+                        )
                     )
 
                 branch_working_days, created = BranchWorkingDays.objects.get_or_create(
@@ -606,35 +621,65 @@ class Command(BaseCommand):
                 )
                 if created:
                     self.stdout.write(
-                        f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"
+                        self.style.SUCCESS(
+                            f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"
+                        )
                     )
                 else:
                     self.stdout.write(
-                        f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"
+                        self.style.NOTICE(
+                            f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"
+                        )
                     )
 
-            employees = Employee.objects.filter(department__institution=institution)
+            employees = Employee.objects.filter(department__institution=institution).select_related('user')
+            if not employees.exists():
+                self.stdout.write(
+                    self.style.NOTICE(f"    └─ No employees found for {institution.institution_name}")
+                )
             for employee in employees:
+                update_fields = []
                 if employee.payroll_branch is None:
                     default_branch = institution.branches.first()
                     if default_branch:
                         employee.payroll_branch = default_branch
-                        employee.save()
+                        update_fields.append("payroll_branch")
                         self.stdout.write(
-                            f"    └─ Updated employee '{employee.user.fullname}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
+                            self.style.SUCCESS(
+                                f"    └─ Updated employee '{employee.name or employee.user.fullname if employee.user else 'Unnamed'}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
+                            )
                         )
-
-            if acc_created:
-                self.stdout.write(
-                    f"  └─ Created default bank account for {institution.institution_name}"
-                )
-            else:
-                self.stdout.write(
-                    f"  └─ Default bank account already exists for {institution.institution_name}"
-                )
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"    └─ No default branch available for employee '{employee.name or employee.user.fullname if employee.user else 'Unnamed'}'"
+                            )
+                        )
+                if not employee.name and employee.user:
+                    employee.name = employee.user.fullname
+                    update_fields.append("name")
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"    └─ Set name for employee '{employee.name}' (ID: {employee.id}) from user '{employee.user.fullname}'"
+                        )
+                    )
+                elif employee.name:
+                    self.stdout.write(
+                        self.style.NOTICE(
+                            f"    └─ Employee '{employee.name}' (ID: {employee.id}) already has name set"
+                        )
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"    └─ Employee (ID: {employee.id}) has no name and no associated user"
+                        )
+                    )
+                if update_fields:
+                    employee.save(update_fields=update_fields)
 
             self.stdout.write(
-                f"\n\nProcessing Working Days for {institution.institution_name}"
+                f"\nProcessing Working Days for {institution.institution_name}"
             )
             working_days, created = InstitutionWorkingDays.objects.get_or_create(
                 institution=institution
@@ -642,11 +687,15 @@ class Command(BaseCommand):
             if created:
                 working_days.days.set(SystemDay.objects.all())
                 self.stdout.write(
-                    f"   └─ Created default working days for {institution.institution_name}"
+                    self.style.SUCCESS(
+                        f"   └─ Created default working days for {institution.institution_name}"
+                    )
                 )
             else:
                 self.stdout.write(
-                    f"   └─ Default working days already exist for {institution.institution_name}"
+                    self.style.NOTICE(
+                        f"   └─ Default working days already exist for {institution.institution_name}"
+                    )
                 )
 
             # Creating employee instance for institution owners that didn't have them
@@ -656,11 +705,40 @@ class Command(BaseCommand):
             ).first()
 
             if not owner_employee:
-                create_owner_employee(institution)
-                self.stdout.write(
-                    f"  └─ Created employee for owner user {owner_user.email}"
-                )
+                owner_employee = create_owner_employee(institution)
+                if owner_employee:
+                    if not owner_employee.name and owner_user:
+                        owner_employee.name = owner_user.fullname
+                        owner_employee.save(update_fields=["name"])
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"  └─ Created employee for owner user {owner_user.email} with name '{owner_employee.name}'"
+                            )
+                        )
+                    else:
+                        self.stdout.write(
+                            self.style.SUCCESS(
+                                f"  └─ Created employee for owner user {owner_user.email} with name '{owner_employee.name}'"
+                            )
+                        )
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  └─ Failed to create employee for owner user {owner_user.email}"
+                        )
+                    )
             else:
-                self.stdout.write(
-                    f"  └─ Employee already exists for owner user {owner_user.email}"
-                )
+                if not owner_employee.name and owner_user:
+                    owner_employee.name = owner_user.fullname
+                    owner_employee.save(update_fields=["name"])
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"  └─ Updated employee for owner user {owner_user.email} with name '{owner_employee.name}'"
+                        )
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.NOTICE(
+                            f"  └─ Employee already exists for owner user {owner_user.email} with name '{owner_employee.name or "Unnamed"}'"
+                        )
+                    )

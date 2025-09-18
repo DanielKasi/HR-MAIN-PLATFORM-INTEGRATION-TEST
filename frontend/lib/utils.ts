@@ -169,6 +169,10 @@ import {
 	IPeriodFormData,
 	IQuestionTemplate,
 	IQuestionTemplateFormData,
+	IMeetingIntegration,
+	IMeetingIntegrationFormData,
+	IEmailProviderConfig,
+	IEmailProviderConfigFormData,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -6616,6 +6620,19 @@ export const employeeAPI = {
 
 		return response.data as IQualificationAward[];
 	},
+
+	generateCompanyEmail: async ({ employee_id }: { employee_id: number }) => {
+		const response = await apiRequest.post(`/employee/employee-company-emails/${employee_id}/`, {
+			employee: employee_id,
+		});
+		return response as {
+			id: number;
+			employee: number;
+			email: string;
+			provider: string;
+			status: string;
+		};
+	},
 };
 
 // Calendar API functions
@@ -8318,6 +8335,128 @@ export const MEETINGS_API = {
 		const response = await apiRequest.get(`performance/meetings/${meetingId}/`);
 
 		return response.data as IMeeting;
+	},
+};
+
+export const MEETINGS_INTEGRATION_API = {
+	getPaginated: async ({
+		page = 1,
+		search,
+		ordering,
+	}: {
+		page?: number;
+		search?: string;
+		ordering?: string;
+	}) => {
+		const params = new URLSearchParams({
+			page: page.toString(),
+		});
+
+		if (search) {
+			params.append("search", search);
+		}
+		if (ordering) {
+			params.append("ordering", ordering);
+		}
+		const endpoint = `settings/meeting-integration/?${params.toString()}`;
+		const response = await apiRequest.get(endpoint);
+
+		return response.data as IPaginatedResponse<IMeetingIntegration>;
+	},
+
+	getPaginatedFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+
+		return response.data as IPaginatedResponse<IMeetingIntegration>;
+	},
+
+	create: async ({ data }: { data: IMeetingIntegrationFormData }) => {
+		const response = await apiRequest.post(`settings/meeting-integration/`, data);
+
+		return response.data as IMeetingIntegration;
+	},
+
+	update: async ({
+		integrationId,
+		data,
+	}: {
+		integrationId: number;
+		data: Partial<IMeetingIntegrationFormData>;
+	}) => {
+		const response = await apiRequest.patch(`settings/meeting-integration/${integrationId}/`, data);
+
+		return response.data as IMeetingIntegration;
+	},
+
+	delete: async ({ integrationId }: { integrationId: number }) => {
+		await apiRequest.delete(`settings/meeting-integration/${integrationId}/`);
+	},
+
+	getById: async ({ integrationId }: { integrationId: number }) => {
+		const response = await apiRequest.get(`settings/meeting-integration/${integrationId}/`);
+
+		return response.data as IMeetingIntegration;
+	},
+};
+
+export const EMAIL_PROVIDER_CONFIG_API = {
+	getPaginated: async ({
+		page = 1,
+		search,
+		ordering,
+	}: {
+		page?: number;
+		search?: string;
+		ordering?: string;
+	}) => {
+		const params = new URLSearchParams({
+			page: page.toString(),
+		});
+
+		if (search) {
+			params.append("search", search);
+		}
+		if (ordering) {
+			params.append("ordering", ordering);
+		}
+		const endpoint = `settings/email-provider-config/?${params.toString()}`;
+		const response = await apiRequest.get(endpoint);
+
+		return response.data as IPaginatedResponse<IEmailProviderConfig>;
+	},
+
+	getPaginatedFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+
+		return response.data as IPaginatedResponse<IEmailProviderConfig>;
+	},
+
+	create: async ({ data }: { data: IEmailProviderConfigFormData }) => {
+		const response = await apiRequest.post(`settings/email-provider-config/`, data);
+
+		return response.data as IEmailProviderConfig;
+	},
+
+	update: async ({
+		configId,
+		data,
+	}: {
+		configId: number;
+		data: Partial<IEmailProviderConfigFormData>;
+	}) => {
+		const response = await apiRequest.patch(`settings/email-provider-config/${configId}/`, data);
+
+		return response.data as IEmailProviderConfig;
+	},
+
+	delete: async ({ configId }: { configId: number }) => {
+		await apiRequest.delete(`settings/email-provider-config/${configId}/`);
+	},
+
+	getById: async ({ configId }: { configId: number }) => {
+		const response = await apiRequest.get(`settings/email-provider-config/${configId}/`);
+
+		return response.data as IEmailProviderConfig;
 	},
 };
 

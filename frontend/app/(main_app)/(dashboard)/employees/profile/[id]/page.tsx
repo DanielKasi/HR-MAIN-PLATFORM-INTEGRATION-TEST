@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useSelector } from "react-redux";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { AttendanceAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
+import { AttendanceAPI, employeeAPI, getEmployeeById, spotcheckAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type {
 	IEmployee,
@@ -79,6 +79,7 @@ export default function EmployeeProfile() {
 		| "penalties"
 		| "general_info"
 		| "performance"
+		| "company_email"
 	>("general_info");
 	const [attendanceRecords, setAttendanceRecords] = useState<IAttendance[]>([]);
 	const [attendancePage, setAttendancePage] = useState(1);
@@ -103,6 +104,15 @@ export default function EmployeeProfile() {
 	const [isSpotcheckFormOpen, setIsSpotcheckFormOpen] = useState(false);
 	const [loadingSpotcheckConfig, setLoadingSpotcheckConfig] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+	const [generatingEmail, setGeneratingEmail] = useState(false);
+	// Company Email state
+	const [companyEmail, setCompanyEmail] = useState<{
+		id: number;
+		employee: number;
+		email: string;
+		provider: string;
+		status: string;
+	} | null>(null);
 
 	// Cache for tab data to prevent re-fetching
 	const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
@@ -354,7 +364,7 @@ export default function EmployeeProfile() {
 	// Tab configuration with lazy loading indicators
 	const tabConfig: Array<{ id: typeof activeTab; label: string; hasData: boolean }> = useMemo(
 		() => [
-			{ id: "general_info", label: "Genarl Information", hasData: true }, // Component handles own loading
+			{ id: "general_info", label: "General Information", hasData: true }, // Component handles own loading
 			{ id: "attendance", label: "Attendance", hasData: !!tabDataCache.attendance },
 			{ id: "discipline", label: "Discipline", hasData: true }, // Component handles own loading
 			{ id: "leave", label: "Leave", hasData: true }, // Component handles own loading
@@ -368,6 +378,24 @@ export default function EmployeeProfile() {
 		],
 		[tabDataCache],
 	);
+
+	const handleGenerateCompanyEmail = useCallback(async () => {
+		if (!employeeId || generatingEmail) return;
+		setGeneratingEmail(true);
+		try {
+			const response = await employeeAPI.generateCompanyEmail({ employee_id: Number(employeeId) });
+			setCompanyEmail(response);
+			toast.success("Company email generated successfully!");
+		} catch (error: any) {
+			let errorMessage = "Failed to generate company email";
+			if (error?.message || error?.detail) {
+				errorMessage = error.message || error.detail;
+			}
+			toast.error(`${errorMessage}`);
+		} finally {
+			setGeneratingEmail(false);
+		}
+	}, [employeeId, generatingEmail]);
 
 	if (loading) {
 		return (
@@ -406,18 +434,14 @@ export default function EmployeeProfile() {
 	}
 
 	return (
-		<div className="w-full h-full bg-gray-50 rounded-lg">
+		<div className="w-full h-full rounded-lg">
 			{employee && (
 				<div className="w-full md:px-4 md:pb-8">
 					{/* Header section with back arrow, name, and action buttons */}
 					<div className="flex flex-row md:flex-row md:items-center justify-between py-4 my-6 gap-4">
-						<div className="flex items-center">
+						<div className="flex items-center justify-start gap-4">
 							<Link href="/employees/employee-list">
-								<Button
-									variant="ghost"
-									size="sm"
-									className="text-[#848496] hover:text-gray-800 rounded-full p-2"
-								>
+								<Button variant="outline" className="!h-10 !w-10 !rounded-full !aspect-square">
 									<ArrowLeft className="w-5 h-5" />
 								</Button>
 							</Link>
@@ -434,7 +458,7 @@ export default function EmployeeProfile() {
 								<Button
 									variant="outline"
 									size={isMobile ? "sm" : "default"}
-									className="text-gray-500 hover:text-gray-600 flex items-center gap-2 bg-transparent"
+									className=" flex items-center gap-2"
 								>
 									<Edit className="w-4 h-4" />
 									<span className="hidden md:inline">Edit</span>
@@ -443,7 +467,7 @@ export default function EmployeeProfile() {
 							<Button
 								variant="outline"
 								size={isMobile ? "sm" : "default"}
-								className="text-[#e21732] hover:text-[#e21732]/90 flex items-center gap-2 bg-transparent"
+								className="flex items-center gap-2"
 							>
 								<Trash2 className="w-4 h-4" />
 								<span className="hidden md:inline">Delete</span>
@@ -619,6 +643,28 @@ export default function EmployeeProfile() {
 											{activeTab === "general_info" && (
 												<Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
 													<CardContent className="p-4 md:p-6 space-y-6">
+														<div className="space-y-6 !flex !items-center ">
+															<div className="flex items-start gap-8">
+																<h2 className="flex items-center font-semibold gap-2">
+																	<Mail className="w-5 h-5" />
+																	Company Email
+																</h2>
+																<p className="text-sm font-semibold text-gray-900">
+																	{companyEmail?.email || employee.email}
+																</p>
+															</div>
+															<div className="!flex !items-start justify-start">
+																{!companyEmail && (
+																	<Button
+																		onClick={handleGenerateCompanyEmail}
+																		disabled={generatingEmail}
+																		className="rounded-full"
+																	>
+																		{generatingEmail ? "Generating..." : "Generate Company Email"}
+																	</Button>
+																)}
+															</div>
+														</div>
 														<div>
 															<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 																{employee.salary && (
@@ -1363,6 +1409,10 @@ export default function EmployeeProfile() {
 											{activeTab === "performance" && (
 												<EmployeeBonusPointsTable employee={employee} />
 											)}
+
+											{/* {activeTab === "company_email" && employee && (
+
+											)} */}
 										</CardContent>
 									</Card>
 								</div>

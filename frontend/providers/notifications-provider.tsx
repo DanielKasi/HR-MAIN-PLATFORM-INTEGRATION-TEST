@@ -19,6 +19,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	const [isInitialized, setIsInitialized] = useState(false);
 	const prevNotificationsRef = useRef(notifications);
 	const serviceWorkerRef = useRef<ServiceWorkerRegistration | null>(null);
+	const retryCountRef = useRef(0);
+	const maxRetries = 3;
+	const retryDelay = 10000; // 10 seconds
 
 	// Register Service Worker
 	useEffect(() => {
@@ -35,7 +38,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		}
 	}, []);
 
-	// Handle SSE connection
+	// Handle SSE connection with retry logic
 	useEffect(() => {
 		if (!currentUser || !accessToken || isInitialized) {
 			return;
@@ -47,15 +50,15 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				: process.env.NEXT_PUBLIC_API_URL
 			: MAIN_DOMAIN_URL;
 
-		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH} `;
+		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
 		const controller = new AbortController();
 
-		async function streamNotifications() {
+		async function streamNotifications(attemptNumber = 1) {
 			try {
 				const response = await fetch(url, {
 					method: "GET",
 					headers: {
-						Authorization: `Bearer ${accessToken} `,
+						Authorization: `Bearer ${accessToken}`,
 						Accept: "text/event-stream",
 					},
 					signal: controller.signal,
@@ -64,6 +67,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				if (!response.body) {
 					throw new Error("No response body");
 				}
+
+				// Reset retry count on successful connection
+				retryCountRef.current = 0;
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -85,19 +91,40 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 								const data: INotification = JSON.parse(line.slice(6));
 
 								if (data && data.id && !notifications.find((notif) => notif.id === data.id)) {
-									//   console.log("\n\n Notification received:", data, "And dispatched to notifications store", notifications);
 									dispatch(receiveNotification(data));
 								}
 							} catch (error) {
-								showErrorToast({ error, defaultMessage: "Error parsing notification" });
+								console.warn("Error parsing notification:", error);
+								// showErrorToast({ error, defaultMessage: "Error parsing notification" });
 							}
 						}
 					}
 				}
 			} catch (error) {
-				if (error instanceof Error && error.name !== "AbortError") {
-					console.error("Failed to connect to notification stream:", error);
-					showErrorToast({ error, defaultMessage: "Failed to connect to notification stream" });
+				if (error instanceof Error && error.name === "AbortError") {
+					console.warn("Notification stream connection aborted");
+					return;
+				}
+
+				console.warn(
+					`Failed to connect to notification stream (attempt ${attemptNumber}/${maxRetries}):`,
+					error,
+				);
+
+				if (attemptNumber < maxRetries) {
+					retryCountRef.current = attemptNumber;
+					console.log(`Retrying in ${retryDelay / 1000} seconds...`);
+
+					setTimeout(() => {
+						if (!controller.signal.aborted) {
+							streamNotifications(attemptNumber + 1);
+						}
+					}, retryDelay);
+				} else {
+					console.warn(
+						"Max retry attempts reached. No longer attempting to connect to notification stream.",
+					);
+					// showErrorToast({ error, defaultMessage: "Failed to connect to notification stream" });
 				}
 			}
 		}
@@ -106,9 +133,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		setIsInitialized(true);
 
 		return () => {
-			// controller.abort();
+			controller.abort();
 		};
-	}, [dispatch, currentUser, accessToken, isInitialized]);
+	}, [dispatch, currentUser, accessToken, isInitialized, notifications]);
 
 	// Watch notifications and show browser notifications
 	useEffect(() => {
@@ -118,11 +145,11 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	// Request Notification permission
 	const requestNotificationPermission = async () => {
 		if (typeof Notification === "undefined") {
-			showErrorToast({
-				error: new Error("Notifications not supported"),
-				defaultMessage: "Browser notifications are not supported",
-			});
-
+			console.warn("Browser notifications are not supported");
+			// showErrorToast({
+			// 	error: new Error("Notifications not supported"),
+			// 	defaultMessage: "Browser notifications are not supported",
+			// });
 			return;
 		}
 		const permission = await Notification.requestPermission();
@@ -143,7 +170,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			!serviceWorkerRef.current
 		) {
 			console.warn("Notifications not supported or permission not granted");
-
 			return;
 		}
 
@@ -153,7 +179,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			notifications === prevNotificationsRef.current
 		) {
 			console.warn("No notifications to show");
-
 			return;
 		}
 
@@ -162,8 +187,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		if (lastNotification.message) {
 			const url = getNotificationPath(lastNotification);
 
-			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message} `, {
-				body: `${lastNotification.type?.toUpperCase() || "Alert "}`,
+			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message}`, {
+				body: `${lastNotification.type?.toUpperCase() || "Alert"}`,
 				icon: "/icon.png", // Our app's icon
 				tag: lastNotification.id || (notifications.length - 1).toString(), // Prevents duplicates
 				data: { url }, // Navigate to approval page
@@ -173,7 +198,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		prevNotificationsRef.current = notifications;
 	};
 
-	// Monitor new notifications and show permission button if needed
+	// Monitor new notifications
 	useEffect(() => {
 		if (
 			typeof Notification !== "undefined" &&

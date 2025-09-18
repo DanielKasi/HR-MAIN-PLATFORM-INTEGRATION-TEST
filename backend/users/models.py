@@ -152,6 +152,13 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.email}"
+    
+class ProfileInstitution(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE)    
+    institution = models.ForeignKey("institution.Institution", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.profile.user.email} - {self.institution.institution_name}"
 
 
 class PermissionCategory(SoftDeletableTimeStampedModel):

@@ -21,8 +21,8 @@ from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from django.db import transaction
-from institution.models import Branch, InstitutionBankType, UserBranch
+from django.db import IntegrityError, transaction
+from institution.models import Branch, Institution, InstitutionBankType, UserBranch
 from employee.models import EmployeeContract
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -47,7 +47,7 @@ from .models import EmployeeWorkingDays
 from institution.models import Department, BranchShift
 from recruitment.models import JobPosition
 from datetime import date, timedelta, datetime
-from users.models import CustomUser
+from users.models import CustomUser, Profile, UserRole
 from institution.serializers import BranchSerializer
 
 
@@ -194,14 +194,13 @@ class EmployeeSerializer(BaseApprovableSerializer):
     department_details = serializers.SerializerMethodField()
     position_details = serializers.SerializerMethodField()
     roles = serializers.SerializerMethodField()
+    name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     selected_branches = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
     )
     employee_working_days = serializers.SerializerMethodField()
     work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all())
-    employee_type = serializers.PrimaryKeyRelatedField(
-        queryset=EmployeeType.objects.all()
-    )
+    employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all())
     bank_accounts = BankAccountSerializer(many=True, required=False)
     next_of_kin = NextOfKinSerializer(many=True, required=False)
     educations = EducationSerializer(many=True, required=False)
@@ -212,7 +211,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
     class Meta:
         model = Employee
         fields = [
-            'id', 'approvals', 'date_of_birth', 'user', 'department_details', 'position_details',
+            'id', 'approvals', 'date_of_birth', 'user', 'name', 'department_details', 'position_details',
             'roles', 'selected_branches', 'employee_working_days', 'work_type', 'employee_type',
             'bank_accounts', 'next_of_kin', 'educations', 'work_experiences', 'children', 'spouse',
             'created_at', 'updated_at', 'deleted_at', 'is_active', 'approval_status', 'employee_id',
@@ -221,24 +220,32 @@ class EmployeeSerializer(BaseApprovableSerializer):
             'salary', 'position', 'department', 'payroll_branch'
         ]
 
-    def validate_date_of_birth(self, value):
-        if value:
-            today = date.today()
-            msgs = []
-            if value > today:
-                msgs.append("Date of birth cannot be in the future.")
-            age = relativedelta(today, value).years
-            if age < 18:
-                msgs.append(
-                    f"Employee must be at least 18 years old. Current age: {age}."
-                )
-            if msgs:
-                raise serializers.ValidationError({"error": " ".join(msgs)})
-        return value
+    def get_department_details(self, obj):
+        return {"id": obj.department.id, "name": obj.department.name, "institution_id": obj.department.institution.id} if obj.department else None
+
+    def get_position_details(self, obj):
+        return {"id": obj.position.id, "name": obj.position.name, "department_id": obj.position.department.id if obj.position.department else None} if obj.position else None
+
+    def get_roles(self, obj):
+        if obj.user:
+            try:
+                user_roles = UserRole.objects.filter(user=obj.user).select_related("role")
+                return [{"id": user_role.role.id, "name": user_role.role.name} for user_role in user_roles]
+            except:
+                return []
+        return []
+
+    def get_employee_working_days(self, obj):
+        try:
+            working_days = EmployeeWorkingDays.objects.filter(employee=obj).first()
+            return EmployeeWorkingDaysSerializer(working_days).data if working_days else None
+        except EmployeeWorkingDays.DoesNotExist:
+            return None
 
     @transaction.atomic
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)
+        name = validated_data.pop("name", None)  # Extract name
         selected_branches = validated_data.pop("selected_branches", [])
         bank_accounts_data = validated_data.pop("bank_accounts", [])
         next_of_kin_data = validated_data.pop("next_of_kin", [])
@@ -247,12 +254,34 @@ class EmployeeSerializer(BaseApprovableSerializer):
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
 
-
+        user = None
         if user_data:
-            user_serializer = CustomUserSerializer(data=user_data)
-            user_serializer.is_valid(raise_exception=True)
-            user = user_serializer.save()
+            email = user_data.get("email")
+            user_id = user_data.get("id")
+            print(f"User data: id={user_id}, email={email}")
+
+            # Check for existing user by email
+            if email:
+                existing_user = CustomUser.objects.filter(email=email).first()
+                if existing_user:
+                    if user_id and user_id != existing_user.id:
+                        raise serializers.ValidationError(
+                            {"user.id": f"Provided user id {user_id} does not match existing user with email {email}."}
+                        )
+                    user = existing_user
+                    print(f"Using existing user: {user.id}, {user.email}")
+                else:
+                    user_data["fullname"] = name or user_data.get("fullname")  # Set fullname from name if provided
+                    user_serializer = CustomUserSerializer(data=user_data)
+                    user_serializer.is_valid(raise_exception=True)
+                    user = user_serializer.save()
+                    print(f"Created new user: {user.id}, {user.email}")
+            else:
+                raise serializers.ValidationError({"user.email": "This field is required."})
+
             validated_data["user"] = user
+            validated_data["email"] = user.email
+            validated_data["name"] = name or user_data.get("fullname")  # Set employee name
 
             request = self.context.get("request")
             if not request:
@@ -262,13 +291,14 @@ class EmployeeSerializer(BaseApprovableSerializer):
             institution_id = getattr(institution, "id", None) if institution else None
 
             if institution_id:
-                from institution.models import Institution
                 try:
                     institution = Institution.objects.get(id=institution_id)
                     role = get_or_create_default_role_with_permissions(institution)
-                    from users.models import UserRole, Profile
                     UserRole.objects.get_or_create(user=user, role=role)
-                    Profile.objects.create(user=user, institution=institution, bio="")
+                    Profile.objects.get_or_create(
+                        user=user,
+                        defaults={"institution": institution, "bio": ""}
+                    )
                     if not institution.default_employee_role:
                         institution.default_employee_role = role
                         institution.save()
@@ -277,38 +307,36 @@ class EmployeeSerializer(BaseApprovableSerializer):
                         {"error": f"Institution does not exist for the provided user."}
                     )
 
-        employee = Employee.objects.create(**validated_data)
+        # Check for existing employees
+        existing_employees = Employee.objects.filter(user=user)
+        print(f"Existing employees for user {user.id}: {existing_employees.count()}")
+        if existing_employees.exists():
+            print(f"Found employees: {[emp.id for emp in existing_employees]}")
 
-        # Create BankAccount instances
+        employee = Employee.objects.create(**validated_data)
+        print(f"Created employee: {employee.id}, user: {employee.user.email}")
+
         for bank_data in bank_accounts_data:
             bank_type = bank_data.pop('bank', None)
             if bank_type:
                 EmployeeBankAccount.objects.create(employee=employee, bank=bank_type, **bank_data)
-            else:
-                continue
-        # Create NextOfKin instances
+
         for kin_data in next_of_kin_data:
             if kin_data.get("name"):
                 NextOfKin.objects.create(employee=employee, **kin_data)
-            else:
-                continue
 
-        # Create Education instances
         for edu_data in educations_data:
             qualification = edu_data.pop('qualification', None)
             if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
                 Education.objects.create(employee=employee, qualification=qualification, **edu_data)
 
-        # Create WorkExperience instances
         for exp_data in work_experiences_data:
             WorkExperience.objects.create(employee=employee, **exp_data)
 
-        # Create Child instances
         for child_data in children_data:
             if child_data.get("name"):
                 Child.objects.create(employee=employee, **child_data)
 
-        # Create Spouse instance if provided
         if spouse_data and spouse_data.get("name"):
             Spouse.objects.create(employee=employee, **spouse_data)
 
@@ -329,8 +357,8 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-
         user_data = validated_data.pop("user", None)
+        name = validated_data.pop("name", None)  # Extract name
         selected_branches = validated_data.pop("selected_branches", None)
         bank_accounts_data = validated_data.pop("bank_accounts", [])
         next_of_kin_data = validated_data.pop("next_of_kin", [])
@@ -340,12 +368,15 @@ class EmployeeSerializer(BaseApprovableSerializer):
         spouse_data = validated_data.pop("spouse", None)
 
         # Update scalar fields
+        if name is not None:
+            validated_data["name"] = name  # Update employee name
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Update user data
+        # Update user data (excluding fullname)
         if user_data:
+            user_data.pop("fullname", None)  # Do not update fullname
             user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
@@ -359,8 +390,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 bank_type = bank_data.pop('bank', None)
                 if bank_type:
                     EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
-                else:
-                    continue
 
         # Update next of kin
         if next_of_kin_data:
@@ -391,18 +420,16 @@ class EmployeeSerializer(BaseApprovableSerializer):
                     Child.objects.create(employee=instance, **child_data)
 
         # Update or create spouse
-        if spouse_data is not None and spouse_data:  # Only process if spouse_data is non-empty
+        if spouse_data is not None and spouse_data:
             spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
             try:
                 spouse_serializer.is_valid(raise_exception=True)
                 existing_spouse = Spouse.objects.filter(employee=instance).first()
                 if existing_spouse:
-                    # Update existing spouse
                     for attr, value in spouse_serializer.validated_data.items():
                         setattr(existing_spouse, attr, value)
                     existing_spouse.save()
                 else:
-                    # Create new spouse
                     Spouse.objects.create(employee=instance, **spouse_serializer.validated_data)
             except serializers.ValidationError as ve:
                 raise serializers.ValidationError({"spouse": ve.detail})
@@ -410,14 +437,11 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 raise serializers.ValidationError({"spouse": "A spouse already exists for this employee."})
             except Exception as e:
                 raise serializers.ValidationError({"spouse": f"Error updating/creating spouse: {str(e)}"})
-        elif spouse_data == {}:  # Explicitly handle empty spouse data
+        elif spouse_data == {}:
             existing_spouse = Spouse.objects.filter(employee=instance).first()
             if existing_spouse:
                 existing_spouse.delete()
-            else:
-                pass
-        else:
-            pass
+
         # Update selected branches
         if selected_branches is not None:
             instance.user.attached_branches.all().delete()
@@ -435,46 +459,6 @@ class EmployeeSerializer(BaseApprovableSerializer):
                     )
 
         return instance
-
-    def get_roles(self, obj):
-        if obj.user:
-            try:
-                from .models import UserRole
-                user_roles = UserRole.objects.filter(user=obj.user).select_related("role")
-                return [
-                    {"id": user_role.role.id, "name": user_role.role.name}
-                    for user_role in user_roles
-                ]
-            except:
-                return []
-        return []
-
-    def get_department_details(self, obj):
-        if obj.department:
-            return {
-                "id": obj.department.id,
-                "name": obj.department.name,
-                "institution_id": obj.department.institution.id,
-            }
-        return None
-
-    def get_position_details(self, obj):
-        if obj.position:
-            return {
-                "id": obj.position.id,
-                "name": obj.position.name,
-                "department_id": (
-                    obj.position.department.id if obj.position.department else None
-                ),
-            }
-        return None
-
-    def get_employee_working_days(self, obj):
-        try:
-            working_days = EmployeeWorkingDays.objects.get(employee=obj)
-            return EmployeeWorkingDaysSerializer(working_days).data
-        except EmployeeWorkingDays.DoesNotExist:
-            return None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

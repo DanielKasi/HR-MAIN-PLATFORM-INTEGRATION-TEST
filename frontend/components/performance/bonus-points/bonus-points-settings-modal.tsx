@@ -204,14 +204,14 @@ export function BonusPointSettingsModal({
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="object_id" className="text-sm font-medium">
-							Content Object *
+							Item *
 						</Label>
 						<ContentObjectSelect
 							value={formData.object_id ? [formData.object_id] : []}
 							onValueChange={(values) => handleInputChange("object_id", values[0] || 0)}
 							contentType={formData.content_type}
 							disabled={submitting || !formData.content_type}
-							placeholder="Select content object"
+							placeholder="Select item"
 						/>
 					</div>
 					<div className="space-y-2">
