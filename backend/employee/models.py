@@ -345,42 +345,6 @@ class Employee(BaseApprovableModel):
             super().save(*args, **kwargs)  # Save without creating events
             return
 
-        # Handle birthday event if date_of_birth and user.profile exist
-        # if self.date_of_birth and self.user and hasattr(self.user, 'profile'):
-        #     current_year = timezone.now().date().year
-        #     institution = self.get_institution()
-        #     if not institution:
-        #         raise ValidationError("Cannot create birthday event: Institution not found.")
-
-        #     calendar, _ = Calendar.objects.get_or_create(
-        #         institution=institution,
-        #         year=current_year
-        #     )
-        #     birthday_date = self.date_of_birth.replace(year=current_year)
-        #     if birthday_date < timezone.now().date():
-        #         birthday_date = birthday_date.replace(year=current_year + 1)
-
-        #     # Check if date_of_birth changed or is new
-        #     if is_new or (old_instance and old_instance.date_of_birth != self.date_of_birth):
-        #         # Delete old birthday event and occurrences
-        #         Event.objects.filter(
-        #             is_birthday=True,
-        #             specific_employees=self.user.profile
-        #         ).delete()
-        #         # Create new birthday event
-        #         event = Event.objects.create(
-        #             title=f"{self.user.fullname}'s Birthday",
-        #             date=birthday_date,
-        #             institution=institution,
-        #             is_birthday=True,
-        #             target_audience="individual",
-        #             frequency="yearly",
-        #             repeat_until=None,
-        #             event_mode="physical",
-        #         )
-        #         event.specific_employees.add(self.user.profile)
-        #         event._add_event_to_calendar()
-        #         calendar.events.add(event)
 
         # Existing save logic
         is_new_employee = self.pk is None
@@ -422,6 +386,53 @@ class Employee(BaseApprovableModel):
 
         # if is_new_employee and self.is_active:
         #     self.sync_employee_working_days()
+
+    def create_birthday_event(employee):
+        """
+        Create or update a recurring birthday event for an employee.
+        """
+        if not employee.date_of_birth or not employee.department or not employee.is_active:
+            return
+
+        institution = employee.get_institution()
+        if not institution:
+            return
+
+        # Create or get the calendar for the current year
+        current_year = date.today().year
+        calendar, _ = Calendar.objects.get_or_create(
+            institution=institution,
+            year=current_year,
+        )
+
+        # Create a recurring yearly birthday event
+        birthday_date = employee.date_of_birth.replace(year=current_year)
+        if birthday_date < date.today():
+            birthday_date = birthday_date.replace(year=current_year + 1)
+
+        event, created = Event.objects.get_or_create(
+            institution=institution,
+            title=f"{employee.name}'s Birthday",
+            date=birthday_date,
+            is_birthday=True,
+            defaults={
+                'description': f"Birthday celebration for {employee.name}",
+                'target_audience': 'all',
+                'event_mode': 'physical',
+                'department': employee.department,
+                'frequency': 'yearly',
+                'repeat_until': birthday_date + relativedelta(years=20),  # Extended to 20 years
+            }
+        )
+
+        if not created:
+            # Update existing event if needed
+            event.date = birthday_date
+            event.department = employee.department
+            event.save()
+
+        # Rely on Event._add_event_to_calendar to create occurrences
+        event._add_event_to_calendar()    
 
     def sync_employee_working_days(self):
         department = self.department
