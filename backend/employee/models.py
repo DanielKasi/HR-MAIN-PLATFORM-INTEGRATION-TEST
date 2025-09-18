@@ -174,14 +174,14 @@ class Employee(BaseApprovableModel):
         ("widowed", "Widowed"),
     )
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         "users.CustomUser",
         on_delete=models.CASCADE,
-        unique=True,
         blank=True,
         null=True,
         related_name="employees",
     )
+    name = models.CharField(max_length=255, blank=True, null=True)
     employee_id = models.CharField(
         max_length=10, unique=False, editable=False, blank=True
     )
@@ -346,41 +346,41 @@ class Employee(BaseApprovableModel):
             return
 
         # Handle birthday event if date_of_birth and user.profile exist
-        if self.date_of_birth and self.user and hasattr(self.user, 'profile'):
-            current_year = timezone.now().date().year
-            institution = self.get_institution()
-            if not institution:
-                raise ValidationError("Cannot create birthday event: Institution not found.")
+        # if self.date_of_birth and self.user and hasattr(self.user, 'profile'):
+        #     current_year = timezone.now().date().year
+        #     institution = self.get_institution()
+        #     if not institution:
+        #         raise ValidationError("Cannot create birthday event: Institution not found.")
 
-            calendar, _ = Calendar.objects.get_or_create(
-                institution=institution,
-                year=current_year
-            )
-            birthday_date = self.date_of_birth.replace(year=current_year)
-            if birthday_date < timezone.now().date():
-                birthday_date = birthday_date.replace(year=current_year + 1)
+        #     calendar, _ = Calendar.objects.get_or_create(
+        #         institution=institution,
+        #         year=current_year
+        #     )
+        #     birthday_date = self.date_of_birth.replace(year=current_year)
+        #     if birthday_date < timezone.now().date():
+        #         birthday_date = birthday_date.replace(year=current_year + 1)
 
-            # Check if date_of_birth changed or is new
-            if is_new or (old_instance and old_instance.date_of_birth != self.date_of_birth):
-                # Delete old birthday event and occurrences
-                Event.objects.filter(
-                    is_birthday=True,
-                    specific_employees=self.user.profile
-                ).delete()
-                # Create new birthday event
-                event = Event.objects.create(
-                    title=f"{self.user.fullname}'s Birthday",
-                    date=birthday_date,
-                    institution=institution,
-                    is_birthday=True,
-                    target_audience="individual",
-                    frequency="yearly",
-                    repeat_until=None,
-                    event_mode="physical",
-                )
-                event.specific_employees.add(self.user.profile)
-                event._add_event_to_calendar()
-                calendar.events.add(event)
+        #     # Check if date_of_birth changed or is new
+        #     if is_new or (old_instance and old_instance.date_of_birth != self.date_of_birth):
+        #         # Delete old birthday event and occurrences
+        #         Event.objects.filter(
+        #             is_birthday=True,
+        #             specific_employees=self.user.profile
+        #         ).delete()
+        #         # Create new birthday event
+        #         event = Event.objects.create(
+        #             title=f"{self.user.fullname}'s Birthday",
+        #             date=birthday_date,
+        #             institution=institution,
+        #             is_birthday=True,
+        #             target_audience="individual",
+        #             frequency="yearly",
+        #             repeat_until=None,
+        #             event_mode="physical",
+        #         )
+        #         event.specific_employees.add(self.user.profile)
+        #         event._add_event_to_calendar()
+        #         calendar.events.add(event)
 
         # Existing save logic
         is_new_employee = self.pk is None

@@ -592,14 +592,13 @@ class UserBranch(SoftDeletableTimeStampedModel):
             from employee.models import Employee
 
             try:
-                employee = Employee.objects.get(user=self.user)
-                employee.payroll_branch = self.branch
-                employee.save(update_fields=["payroll_branch"])
+                # Get the most recent employee for the user
+                employee = Employee.objects.filter(user=self.user).order_by('-created_at').first()
+                if employee:
+                    employee.payroll_branch = self.branch
+                    employee.save(update_fields=["payroll_branch"])
             except Employee.DoesNotExist:
                 pass
-
-    def __str__(self):
-        return self.user.email + " - " + self.branch.branch_location
 
 
 class Department(BaseApprovableModel):

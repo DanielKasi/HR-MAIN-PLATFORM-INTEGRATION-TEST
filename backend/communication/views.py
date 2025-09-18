@@ -171,7 +171,7 @@ async def sse_notifications(request):
                     yield f'data: {{"unread_count": {unread_count}}}\n\n'
                     last_heartbeat = current_time
 
-                await asyncio.sleep(50)
+                await asyncio.sleep(500)
 
         response = StreamingHttpResponse(
             event_stream(),
