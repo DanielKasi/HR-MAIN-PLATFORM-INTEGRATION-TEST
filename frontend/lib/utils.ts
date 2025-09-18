@@ -169,6 +169,8 @@ import {
 	IPeriodFormData,
 	IQuestionTemplate,
 	IQuestionTemplateFormData,
+	IMeetingIntegration,
+	IMeetingIntegrationFormData,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -1435,13 +1437,13 @@ export const getPaginatedEmployees = async ({
 	page?: number;
 	search?: string;
 	ordering?: string;
-	positionSearch?: string; 
+	positionSearch?: string;
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
 	});
 
-	if (positionSearch) { 
+	if (positionSearch) {
 		params.append("position_search", positionSearch);
 	}
 
@@ -7982,13 +7984,24 @@ export const EMPLOYEE_OBJECTIVES_API = {
 };
 
 export const KEY_RESULTS_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/key-results/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
@@ -8132,13 +8145,24 @@ export const EMPLOYEE_BONUS_POINTS_API = {
 };
 
 export const QUESTION_TEMPLATES_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/question-templates/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
@@ -8296,6 +8320,67 @@ export const MEETINGS_API = {
 		const response = await apiRequest.get(`performance/meetings/${meetingId}/`);
 
 		return response.data as IMeeting;
+	},
+};
+
+export const MEETINGS_INTEGRATION_API = {
+	getPaginated: async ({
+		page = 1,
+		search,
+		ordering,
+	}: {
+		page?: number;
+		search?: string;
+		ordering?: string;
+	}) => {
+		const params = new URLSearchParams({
+			page: page.toString(),
+		});
+
+		if (search) {
+			params.append("search", search);
+		}
+		if (ordering) {
+			params.append("ordering", ordering);
+		}
+		const endpoint = `settings/meeting-integration/?${params.toString()}`;
+		const response = await apiRequest.get(endpoint);
+
+		return response.data as IPaginatedResponse<IMeetingIntegration>;
+	},
+
+	getPaginatedFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+
+		return response.data as IPaginatedResponse<IMeetingIntegration>;
+	},
+
+	create: async ({ data }: { data: IMeetingIntegrationFormData }) => {
+		const response = await apiRequest.post(`settings/meeting-integration/`, data);
+
+		return response.data as IMeetingIntegration;
+	},
+
+	update: async ({
+		integrationId,
+		data,
+	}: {
+		integrationId: number;
+		data: Partial<IMeetingIntegrationFormData>;
+	}) => {
+		const response = await apiRequest.patch(`settings/meeting-integration/${integrationId}/`, data);
+
+		return response.data as IMeetingIntegration;
+	},
+
+	delete: async ({ integrationId }: { integrationId: number }) => {
+		await apiRequest.delete(`settings/meeting-integration/${integrationId}/`);
+	},
+
+	getById: async ({ integrationId }: { integrationId: number }) => {
+		const response = await apiRequest.get(`settings/meeting-integration/${integrationId}/`);
+
+		return response.data as IMeetingIntegration;
 	},
 };
 

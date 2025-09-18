@@ -1893,19 +1893,6 @@ export interface IAssetAllocation {
 	updated_at: string;
 }
 
-// export interface IAssetReturn {
-//   id: number;
-//   asset: IAsset;
-//   returned_by: IEmployee;
-//   returned_to: IEmployee;
-//   return_date: string;
-//   return_reason: string | null;
-//   asset_condition: "good" | "fair" | "poor" | "damaged";
-//   notes: string | null;
-//   created_at: string;
-//   updated_at: string;
-// }
-
 export interface IAssetReturn {
 	id: number;
 	asset: IAsset;
@@ -2586,20 +2573,6 @@ export interface IBonusPointSettingsFormData {
 	condition_value: "end_date";
 }
 
-export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general";
-
-export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
-
-export interface CustomField {
-	id: string;
-	name: string;
-	description: string;
-	type: CustomFieldType;
-	value?: any;
-	is_required?: boolean;
-	options?: string[]; // Add this for select and checkbox fields
-}
-
 export type CustomFieldType =
 	| "text"
 	| "date"
@@ -2609,21 +2582,25 @@ export type CustomFieldType =
 	| "textarea"
 	| "file";
 
-export interface CustomFieldFormData {
-	title: string;
-	description: string;
-	fieldType: CustomFieldType;
-	options?: string[]; // Add this for select and checkbox fields
-}
+export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general";
+
+export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
 
 export interface CustomField {
 	id: string;
 	name: string;
 	description: string;
-	type: CustomFieldType;
+	type: IQuestionType;
 	value?: any;
 	is_required?: boolean;
-	options?: string[]; // Add this for select and checkbox fields
+	options?: string[]; // For multiple_choice
+}
+
+export interface CustomFieldFormData {
+	title: string;
+	description: string;
+	question_type: IQuestionType;
+	options?: string[]; // For multiple_choice
 }
 
 export interface IQuestionTemplate {
@@ -2685,6 +2662,30 @@ export interface IMeetingFormData {
 	is_recurring?: boolean;
 	recurrence_rule?: string;
 	online_link?: string | null;
+}
+
+export interface IMeetingIntegrationFormData {
+	is_active: boolean;
+	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
+	api_key?: string;
+	api_secret?: string;
+	oauth_token?: string;
+	oauth_refresh_token?: string;
+	tenant_id?: string;
+}
+
+export interface IMeetingIntegration {
+	id: number;
+	is_active: boolean;
+	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
+	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
+	api_key: string | null;
+	api_secret: string | null;
+	oauth_token: string | null;
+	oauth_refresh_token: string | null;
+	tenant_id: string | null;
+	updated_at: string;
+	institution: number;
 }
 
 // Apply approvals to existing READ interfaces via declaration merging

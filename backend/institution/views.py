@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from rest_framework.permissions import AllowAny
+from django.conf import settings
+from django.http import HttpResponseRedirect
 from utilities.helpers import (
     build_password_link,
     send_password_link_to_user,
@@ -92,6 +94,10 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
+def home(request):
+    return HttpResponseRedirect(f"{settings.FRONTEND_URL}")
+
+
 class UserChatsView(APIView):
 
     @extend_schema(
@@ -162,7 +168,6 @@ class AIAssistantView(APIView):
                 {"detail": "User profile not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
 
         if not chat_id:
             chat_id = str(uuid.uuid4())
@@ -1702,15 +1707,14 @@ class UserProfileListAPIView(APIView):
             profile = user.profile
             if profile.institution.id != institution.id:
                 return Response({"detail": "Access denied."}, status=403)
-      
 
         profiles = Profile.objects.filter(institution=institution)
 
         if search_query:
             profiles = profiles.filter(
-                Q(user__fullname__icontains=search_query) |
-                Q(user__email__icontains=search_query)
-            )  
+                Q(user__fullname__icontains=search_query)
+                | Q(user__email__icontains=search_query)
+            )
         paginator = CustomPageNumberPagination()
         paginator_qs = paginator.paginate_queryset(profiles, request)
         serializer = ProfileSerializer(
