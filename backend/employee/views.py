@@ -838,10 +838,16 @@ class EmployeeCreateAPIView(APIView):
         
     @transaction.atomic
     def handle_bulk_upload(self, request):
-        site = get_current_site(request)
+        import logging
+        import pandas as pd
+        from datetime import date, datetime
 
+        logger = logging.getLogger(__name__)
+        
+        site = get_current_site(request)
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
+            print("No institution associated with the requesting user.")
             return Response(
                 {
                     "detail": "No institution associated with the requesting user.",
@@ -857,6 +863,7 @@ class EmployeeCreateAPIView(APIView):
         file_extension = file.name.split(".")[-1].lower()
 
         if file_extension not in ["csv", "xlsx"]:
+            print(f"Invalid file format: {file_extension}. Only CSV or Excel files are supported.")
             return Response(
                 {
                     "detail": "Invalid file format. Only CSV or Excel files are supported.",
@@ -868,27 +875,111 @@ class EmployeeCreateAPIView(APIView):
             )
 
         try:
-            dtype_dict = {
-                "employee_id": str,
-                "phone_number": str,
-                "nin": str,
-                "nssf_no": str,
-                "tin": str,
-                "bank_account_number": str,
-                "emergency_contact_phone": str,
-                "spouse_phone_number": str,
-                "account_name": str,
-                "education_year": str,
-                "name": str,  # Added name field
-            }
+            # Expanded na_values to catch all possible null-like values
+            na_values = [
+                "", "NaN", "nan", "NULL", "null", "None", "N/A", "n/a", "-", " ", "missing",
+                "unknown", "Unknown", "MISSING", "NA", "na", ".", "..", "...", "nil", "NIL"
+            ]
+
+            # First, read the file without dtype to inspect raw data
+            print("Reading file without dtype enforcement to inspect raw data")
             if file_extension == "csv":
-                df = pd.read_csv(file, dtype=dtype_dict)
+                df_raw = pd.read_csv(
+                    file,
+                    keep_default_na=True,
+                    na_values=na_values,
+                    engine="python"
+                )
             else:
-                df = pd.read_excel(file, dtype=dtype_dict)
+                df_raw = pd.read_excel(
+                    file,
+                    keep_default_na=True,
+                    na_values=na_values
+                )
+
+            # Log raw data details
+            print(f"Raw file loaded with {len(df_raw)} rows and columns: {list(df_raw.columns)}")
+            print(f"Raw column dtypes:\n{df_raw.dtypes.to_dict()}")
+            print(f"Raw null counts:\n{df_raw.isna().sum().to_dict()}")
+            print(f"Raw first 5 rows:\n{df_raw.head(5).to_dict(orient='records')}")
+
+            # Define dtype for all possible string columns
+            dtype_dict = {
+                "employee_id": pd.StringDtype(),
+                "phone_number": pd.StringDtype(),
+                "nin": pd.StringDtype(),
+                "nssf_no": pd.StringDtype(),
+                "tin": pd.StringDtype(),
+                "bank_account_number": pd.StringDtype(),
+                "emergency_contact_phone": pd.StringDtype(),
+                "spouse_phone_number": pd.StringDtype(),
+                "account_name": pd.StringDtype(),
+                "education_year": pd.StringDtype(),
+                "name": pd.StringDtype(),
+                "user.fullname": pd.StringDtype(),
+                "user.email": pd.StringDtype(),
+                "department": pd.StringDtype(),
+                "work_type": pd.StringDtype(),
+                "employee_type": pd.StringDtype(),
+                "payroll_branch": pd.StringDtype(),
+                "bank": pd.StringDtype(),
+                "qualification": pd.StringDtype(),
+                "position": pd.StringDtype(),
+                "emergency_contact_name": pd.StringDtype(),
+                "emergency_contact_relationship": pd.StringDtype(),
+                "spouse_name": pd.StringDtype(),
+                "child_name": pd.StringDtype(),
+                "child_gender": pd.StringDtype(),
+                "education_institution": pd.StringDtype(),
+                "education_name": pd.StringDtype(),
+                "work_company": pd.StringDtype(),
+                "work_position": pd.StringDtype(),
+                "work_duration": pd.StringDtype(),
+                "work_reason_of_leaving": pd.StringDtype(),
+                "gender": pd.StringDtype(),
+                "marital_status": pd.StringDtype(),
+                "address": pd.StringDtype(),
+                "country": pd.StringDtype(),
+                "skills": pd.StringDtype(),
+                "date_of_birth": pd.StringDtype(),  # Treat as string to avoid datetime issues
+                "date_of_joining": pd.StringDtype(),
+                "spouse_date_of_birth": pd.StringDtype(),
+                "child_date_of_birth": pd.StringDtype(),
+            }
+
+            # Read file again with dtype enforcement
+            print("Reading file with dtype enforcement")
+            if file_extension == "csv":
+                df = pd.read_csv(
+                    file,
+                    dtype=dtype_dict,
+                    keep_default_na=True,
+                    na_values=na_values,
+                    engine="python"
+                )
+            else:
+                df = pd.read_excel(
+                    file,
+                    dtype=dtype_dict,
+                    keep_default_na=True,
+                    na_values=na_values
+                )
+
+            # Log processed data details
+            print(f"Processed file loaded with {len(df)} rows and columns: {list(df.columns)}")
+            print(f"Processed column dtypes:\n{df.dtypes.to_dict()}")
+            print(f"Processed null counts:\n{df.isna().sum().to_dict()}")
+            print(f"Processed first 5 rows:\n{df.head(5).to_dict(orient='records')}")
+
+            # Replace NaN with empty strings for string columns
+            for col in dtype_dict.keys():
+                if col in df.columns:
+                    df[col] = df[col].fillna("")
 
             required_columns = ["user.fullname", "user.email"]
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
+                print(f"Missing required columns: {', '.join(missing_columns)}")
                 return Response(
                     {
                         "detail": f"Missing required columns: {', '.join(missing_columns)}",
@@ -899,18 +990,20 @@ class EmployeeCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Check for duplicate employee_id
+            # Check for duplicate employee_id, ignoring empty strings
             if "employee_id" in df.columns:
-                employee_ids = df["employee_id"].str.strip().dropna().tolist()
+                employee_ids = df["employee_id"].str.strip()
+                valid_employee_ids = employee_ids[employee_ids != ""].dropna().tolist()
                 duplicate_employee_ids = [
                     eid
-                    for eid, count in pd.Series(employee_ids).value_counts().items()
+                    for eid, count in pd.Series(valid_employee_ids).value_counts().items()
                     if count > 1
                 ]
                 if duplicate_employee_ids:
                     duplicate_rows = df[df["employee_id"].isin(duplicate_employee_ids)][
                         ["employee_id"]
                     ].index.tolist()
+                    print(f"Duplicate employee IDs found: {duplicate_employee_ids}")
                     return Response(
                         {
                             "detail": "Duplicate employee IDs found in the uploaded file",
@@ -957,34 +1050,62 @@ class EmployeeCreateAPIView(APIView):
                         filter_kwargs = {f"{lookup_field}__in": unique_values}
                         if field != "qualification":
                             filter_kwargs["institution"] = institution
-                        existing = model.objects.filter(**filter_kwargs)
-                        for item in existing:
-                            instance_mappings[field][
-                                str(getattr(item, lookup_field)).lower()
-                            ] = item
-                        missing = [
-                            v
-                            for v in unique_values
-                            if v.lower()
-                            not in [
-                                str(getattr(item, lookup_field)).lower()
-                                for item in existing
+                        try:
+                            existing = model.objects.filter(**filter_kwargs)
+                            for item in existing:
+                                instance_mappings[field][
+                                    str(getattr(item, lookup_field)).lower()
+                                ] = item
+                            missing = [
+                                v
+                                for v in unique_values
+                                if v.lower()
+                                not in [
+                                    str(getattr(item, lookup_field)).lower()
+                                    for item in existing
+                                ]
                             ]
-                        ]
-                        for value in missing:
-                            kwargs = {lookup_field: value}
-                            if field != "qualification":
-                                kwargs["institution"] = institution
-                                if field == "department":
+                            for value in missing:
+                                kwargs = {lookup_field: value}
+                                if field != "qualification":
+                                    kwargs["institution"] = institution
+                                    if field == "department":
+                                        kwargs["description"] = (
+                                            "Auto-created during bulk upload"
+                                        )
+                                elif field == "qualification":
                                     kwargs["description"] = (
                                         "Auto-created during bulk upload"
                                     )
-                            elif field == "qualification":
-                                kwargs["description"] = (
-                                    "Auto-created during bulk upload"
-                                )
-                            instance = model.objects.create(**kwargs)
-                            instance_mappings[field][value.lower()] = instance
+                                try:
+                                    instance = model.objects.create(**kwargs)
+                                    instance_mappings[field][value.lower()] = instance
+                                    print(f"Created {field}: {value}")
+                                except Exception as e:
+                                    print(f"Failed to create {field} '{value}': {str(e)}")
+                                    errors.append({
+                                        "row": None,
+                                        "errors": {field: {"error": f"Failed to create {field} '{value}': {str(e)}"}}
+                                    })
+                        except Exception as e:
+                            print(f"Error fetching {field} objects: {str(e)}")
+                            errors.append({
+                                "row": None,
+                                "errors": {field: {"error": f"Error fetching {field} objects: {str(e)}"}}
+                            })
+
+            if errors:
+                print(f"Failed to create or fetch related objects: {errors}")
+                return Response(
+                    {
+                        "detail": "Failed to create or fetch related objects",
+                        "created_count": 0,
+                        "updated_count": 0,
+                        "warnings": [],
+                        "errors": errors,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             position_mappings = {}
             if "position" in df.columns:
@@ -1015,57 +1136,84 @@ class EmployeeCreateAPIView(APIView):
                             filter_kwargs["department"] = dept_instance
                         else:
                             filter_kwargs["department__isnull"] = True
-                        existing_pos = JobPosition.objects.filter(
-                            **filter_kwargs
-                        ).first()
-                        if existing_pos:
-                            position_mappings[(dept_lower, pos_lower)] = existing_pos
-                        else:
-                            new_pos = JobPosition.objects.create(
-                                name=pos_name,
-                                description="Auto-created during bulk upload",
-                                department=dept_instance,
-                            )
-                            position_mappings[(dept_lower, pos_lower)] = new_pos
+                        try:
+                            existing_pos = JobPosition.objects.filter(
+                                **filter_kwargs
+                            ).first()
+                            if existing_pos:
+                                position_mappings[(dept_lower, pos_lower)] = existing_pos
+                            else:
+                                new_pos = JobPosition.objects.create(
+                                    name=pos_name,
+                                    description="Auto-created during bulk upload",
+                                    department=dept_instance,
+                                )
+                                position_mappings[(dept_lower, pos_lower)] = new_pos
+                                print(f"Created JobPosition: {pos_name}")
+                        except Exception as e:
+                            print(f"Failed to create JobPosition '{pos_name}': {str(e)}")
+                            errors.append({
+                                "row": None,
+                                "errors": {"position": {"error": f"Failed to create position '{pos_name}': {str(e)}"}}
+                            })
 
-            # Group rows by employee_id
-            grouped = (
-                df.groupby("employee_id")
-                if "employee_id" in df.columns
-                else [(None, df)]
-            )
-            with transaction.atomic():
-                for employee_id, group in grouped:
-                    row_errors = {}
-                    row_warnings = []
-                    first_row = group.iloc[0]
-                    employee_data = {
-                        "selected_branches": [],
-                        "bank_accounts": [],
-                        "next_of_kin": [],
-                        "educations": [],
-                        "work_experiences": [],
-                        "children": [],
-                        "spouse": None,
-                        "email": (
-                            str(first_row["user.email"]).strip()
-                            if pd.notna(first_row["user.email"])
-                            else ""
-                        ),
-                        "approval_status": "under_creation",  
-                    }
+            if errors:
+                print(f"Failed to create or fetch positions: {errors}")
+                return Response(
+                    {
+                        "detail": "Failed to create or fetch positions",
+                        "created_count": 0,
+                        "updated_count": 0,
+                        "warnings": [],
+                        "errors": errors,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-                    if employee_id:
-                        employee_data["employee_id"] = employee_id
+            # Handle grouping: group by employee_id only if present and not empty
+            if "employee_id" in df.columns and df["employee_id"].str.strip().notna().any():
+                grouped = df.groupby(df["employee_id"].str.strip().replace("", pd.NA), dropna=False)
+            else:
+                grouped = {f"row_{i}": df.iloc[[i]] for i in range(len(df))}
 
-                    # Handle name field
-                    if "name" in group.columns and pd.notna(first_row["name"]):
-                        employee_data["name"] = str(first_row["name"]).strip()
-                    elif pd.notna(first_row["user.fullname"]):
-                        employee_data["name"] = str(first_row["user.fullname"]).strip()
+            print(f"Processing {len(grouped)} groups")
 
-                    # Check for existing user
-                    email = employee_data["email"]
+            for group_key, group in grouped:
+                row_errors = {}
+                row_warnings = []
+                first_row = group.iloc[0]
+                employee_id = group_key if pd.notna(group_key) and str(group_key).strip() else None
+                employee_data = {
+                    "selected_branches": [],
+                    "bank_accounts": [],
+                    "next_of_kin": [],
+                    "educations": [],
+                    "work_experiences": [],
+                    "children": [],
+                    "spouse": None,
+                    "email": (
+                        str(first_row["user.email"]).strip()
+                        if pd.notna(first_row["user.email"])
+                        else ""
+                    ),
+                    "approval_status": "under_creation",
+                }
+
+                if employee_id:
+                    employee_data["employee_id"] = employee_id
+                    print(f"Processing employee_id: {employee_id}")
+
+                # Handle name field
+                if "name" in group.columns and pd.notna(first_row["name"]) and str(first_row["name"]).strip():
+                    employee_data["name"] = str(first_row["name"]).strip()
+                elif pd.notna(first_row["user.fullname"]):
+                    employee_data["name"] = str(first_row["user.fullname"]).strip()
+
+                # Check for existing user
+                email = employee_data["email"]
+                if not email:
+                    row_errors["user.email"] = {"error": "Email cannot be empty."}
+                else:
                     existing_user = CustomUser.objects.filter(email=email).first()
                     if existing_user:
                         employee_data["user"] = {
@@ -1077,529 +1225,438 @@ class EmployeeCreateAPIView(APIView):
                         employee_data["email"] = existing_user.email
                         print(f"Existing user found: {employee_data['user']}")
                     else:
-                        if not pd.notna(first_row["user.fullname"]):
+                        if not pd.notna(first_row["user.fullname"]) or not str(first_row["user.fullname"]).strip():
                             row_errors["user.fullname"] = {
                                 "error": "This field is required."
                             }
                         else:
                             new_password = generate_compliant_password()
                             employee_data["user"] = {
-                                "fullname": (
-                                    str(first_row["user.fullname"]).strip()
-                                    if pd.notna(first_row["user.fullname"])
-                                    else ""
-                                ),
+                                "fullname": str(first_row["user.fullname"]).strip(),
                                 "email": email,
                                 "password": new_password,
                                 "welcome_email_sent": True,
                                 "is_password_verified": True,
                                 "is_email_verified": True,
                             }
-                            # Set employee name from user.fullname if not provided
                             if "name" not in employee_data:
                                 employee_data["name"] = employee_data["user"]["fullname"]
                             print(f"New user data: {employee_data['user']}")
 
-                    if row_errors:
-                        errors.append({"row": group.index[0] + 2, "errors": row_errors})
-                        if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
-                            )
-                        continue
+                if row_errors:
+                    print(f"Row {group.index[0] + 2} errors: {row_errors}")
+                    errors.append({"row": group.index[0] + 2, "errors": row_errors})
+                    if row_warnings:
+                        warnings.append(
+                            {"row": group.index[0] + 2, "warnings": row_warnings}
+                        )
+                    continue
 
-                    # Map scalar fields
-                    scalar_fields = [
-                        "department",
-                        "work_type",
-                        "employee_type",
-                        "payroll_branch",
-                        "gender",
-                        "marital_status",
-                        "is_active",
-                        "date_of_birth",
-                        "date_of_joining",
-                        "phone_number",
-                        "address",
-                        "country",
-                        "nin",
-                        "nssf_no",
-                        "tin",
-                        "skills",
-                        "salary",
-                        "selected_branches",  # Added to handle branch names or IDs
-                    ]
-                    gender_map = {"male": "male", "female": "female", "other": "other"}
-                    marital_status_map = {
-                        "single": "single",
-                        "married": "married",
-                        "divorced": "divorced",
-                        "widowed": "widowed",
-                    }
+                # Map scalar fields
+                scalar_fields = [
+                    "department",
+                    "work_type",
+                    "employee_type",
+                    "payroll_branch",
+                    "gender",
+                    "marital_status",
+                    "is_active",
+                    "date_of_birth",
+                    "date_of_joining",
+                    "phone_number",
+                    "address",
+                    "country",
+                    "nin",
+                    "nssf_no",
+                    "tin",
+                    "skills",
+                    "salary",
+                    "selected_branches",
+                ]
+                gender_map = {"male": "male", "female": "female", "other": "other"}
+                marital_status_map = {
+                    "single": "single",
+                    "married": "married",
+                    "divorced": "divorced",
+                    "widowed": "widowed",
+                }
 
-                    for field in scalar_fields:
-                        if field in group.columns and pd.notna(first_row[field]):
-                            value = str(first_row[field]).strip()
-                            if not value:
-                                continue
-                            if field in field_mappings:
-                                instance = instance_mappings[field].get(value.lower())
-                                if instance:
-                                    employee_data[field] = instance.id
-                                else:
-                                    row_errors[field] = {
-                                        "error": f"Invalid {field}: {value}"
-                                    }
-                            elif field == "gender":
-                                mapped = gender_map.get(value.lower())
-                                if mapped:
-                                    employee_data[field] = mapped
-                                else:
-                                    row_errors[field] = {
-                                        "error": f'"{value}" is not a valid choice.'
-                                    }
-                            elif field == "marital_status":
-                                mapped = marital_status_map.get(value.lower())
-                                if mapped:
-                                    employee_data[field] = mapped
-                                else:
-                                    row_errors[field] = {
-                                        "error": f'"{value}" is not a valid choice.'
-                                    }
-                            elif field == "is_active":
-                                employee_data[field] = value.lower() == "true"
-                            elif field in ["date_of_birth", "date_of_joining"]:
-                                try:
-                                    dob = custom_parse_date(value)
-                                    if dob:
-                                        if field == "date_of_birth":
-                                            if dob > date.today():
-                                                row_errors[field] = {
-                                                    "error": "Date of birth cannot be in the future."
-                                                }
-                                            age = (date.today() - dob).days // 365
-                                            if age < 18:
-                                                row_errors[field] = {
-                                                    "error": f"Employee must be at least 18 years old. Current age: {age}."
-                                                }
-                                            else:
-                                                employee_data[field] = dob
+                for field in scalar_fields:
+                    if field in group.columns and pd.notna(first_row[field]) and str(first_row[field]).strip():
+                        value = str(first_row[field]).strip()
+                        if field in field_mappings:
+                            instance = instance_mappings[field].get(value.lower())
+                            if instance:
+                                employee_data[field] = instance.id
+                            else:
+                                row_errors[field] = {
+                                    "error": f"Invalid {field}: {value}"
+                                }
+                        elif field == "gender":
+                            mapped = gender_map.get(value.lower())
+                            if mapped:
+                                employee_data[field] = mapped
+                            else:
+                                row_errors[field] = {
+                                    "error": f'"{value}" is not a valid choice.'
+                                }
+                        elif field == "marital_status":
+                            mapped = marital_status_map.get(value.lower())
+                            if mapped:
+                                employee_data[field] = mapped
+                            else:
+                                row_errors[field] = {
+                                    "error": f'"{value}" is not a valid choice.'
+                                }
+                        elif field == "is_active":
+                            employee_data[field] = value.lower() == "true"
+                        elif field in ["date_of_birth", "date_of_joining"]:
+                            try:
+                                dob = custom_parse_date(value)
+                                if dob:
+                                    if field == "date_of_birth":
+                                        if dob > date.today():
+                                            row_errors[field] = {
+                                                "error": "Date of birth cannot be in the future."
+                                            }
+                                        age = (date.today() - dob).days // 365
+                                        if age < 18:
+                                            row_errors[field] = {
+                                                "error": f"Employee must be at least 18 years old. Current age: {age}."
+                                            }
                                         else:
                                             employee_data[field] = dob
-                                except ValueError as e:
-                                    row_errors[field] = {"error": str(e)}
-                            elif field == "salary":
-                                try:
-                                    employee_data[field] = float(value)
-                                except ValueError:
-                                    row_errors[field] = {
-                                        "error": f"Invalid salary format: {value}"
-                                    }
-                            elif field == "selected_branches":
-                                try:
-                                    # Handle branch IDs or names
-                                    branch_values = [int(x) for x in value.split(",") if x.strip()] if "," in value else [int(value)]
-                                    employee_data["selected_branches"] = branch_values
-                                except (ValueError, TypeError):
-                                    row_errors[field] = {
-                                        "error": f"Invalid branch ID(s): {value}"
-                                    }
-                            else:
-                                employee_data[field] = (
-                                    value[:100] if field == "address" else value
-                                )
-
-                    # Map position
-                    if "position" in group.columns and pd.notna(first_row["position"]):
-                        pos_name = str(first_row["position"]).strip()
-                        dept_name = (
-                            str(first_row.get("department", "")).strip()
-                            if pd.notna(first_row.get("department"))
-                            else None
-                        )
-                        dept_lower = dept_name.lower() if dept_name else None
-                        pos_lower = pos_name.lower()
-                        position_instance = position_mappings.get(
-                            (dept_lower, pos_lower)
-                        )
-                        if position_instance:
-                            employee_data["position"] = position_instance.id
-                        else:
-                            row_errors["position"] = {
-                                "error": f"Invalid position: {pos_name}"
-                            }
-
-                    # Map bank details
-                    bank_data = {}
-                    if "bank" in group.columns and pd.notna(first_row["bank"]):
-                        bank_name = str(first_row["bank"]).strip()
-                        if bank_name:
-                            bank_instance = instance_mappings["bank"].get(
-                                bank_name.lower()
-                            )
-                            if not bank_instance:
-                                try:
-                                    bank_instance = InstitutionBankType.objects.create(
-                                        bank_fullname=bank_name, institution=institution
-                                    )
-                                    instance_mappings["bank"][
-                                        bank_name.lower()
-                                    ] = bank_instance
-                                except Exception as e:
-                                    row_errors["bank"] = {
-                                        "error": f"Failed to create bank '{bank_name}': {str(e)}"
-                                    }
-                            if bank_instance:
-                                bank_data["bank_id"] = bank_instance.id
-                        else:
-                            row_warnings.append(
-                                {
-                                    "field": "bank",
-                                    "message": "Bank name is empty or invalid.",
+                                    else:
+                                        employee_data[field] = dob
+                            except ValueError as e:
+                                row_errors[field] = {"error": str(e)}
+                        elif field == "salary":
+                            try:
+                                employee_data[field] = float(value)
+                            except ValueError:
+                                row_errors[field] = {
+                                    "error": f"Invalid salary format: {value}"
                                 }
-                            )
-
-                    if "account_name" in group.columns and pd.notna(
-                        first_row["account_name"]
-                    ):
-                        account_name = str(first_row["account_name"]).strip()
-                        if account_name:
-                            bank_data["account_name"] = account_name
+                        elif field == "selected_branches":
+                            try:
+                                branch_values = [int(x.strip()) for x in value.split(",") if x.strip()] if "," in value else [int(value)]
+                                employee_data["selected_branches"] = branch_values
+                            except (ValueError, TypeError):
+                                row_errors[field] = {
+                                    "error": f"Invalid branch ID(s): {value}"
+                                }
                         else:
-                            bank_data["account_name"] = (
-                                employee_data["user"]["fullname"]
-                                if isinstance(employee_data["user"], dict)
-                                else employee_data["user"].fullname
-                            )
+                            employee_data[field] = value
+
+                # Map position
+                if "position" in group.columns and pd.notna(first_row["position"]) and str(first_row["position"]).strip():
+                    pos_name = str(first_row["position"]).strip()
+                    dept_name = (
+                        str(first_row.get("department", "")).strip()
+                        if pd.notna(first_row.get("department"))
+                        else None
+                    )
+                    dept_lower = dept_name.lower() if dept_name else None
+                    pos_lower = pos_name.lower()
+                    position_instance = position_mappings.get(
+                        (dept_lower, pos_lower)
+                    )
+                    if position_instance:
+                        employee_data["position"] = position_instance.id
                     else:
-                        bank_data["account_name"] = (
-                            employee_data["user"]["fullname"]
-                            if isinstance(employee_data["user"], dict)
-                            else employee_data["user"].fullname
-                        )
+                        row_errors["position"] = {
+                            "error": f"Invalid position: {pos_name}"
+                        }
 
-                    if "bank_account_number" in group.columns and pd.notna(
-                        first_row["bank_account_number"]
-                    ):
-                        account_number = str(first_row["bank_account_number"]).strip()
-                        if account_number:
-                            bank_data["account_number"] = account_number
-
-                    if bank_data.get("bank_id") and bank_data.get("account_number"):
-                        employee_data["bank_accounts"].append(bank_data)
-                    elif any(bank_data.values()):
+                # Map bank details
+                bank_data = {}
+                if "bank" in group.columns and pd.notna(first_row["bank"]) and str(first_row["bank"]).strip():
+                    bank_name = str(first_row["bank"]).strip()
+                    bank_instance = instance_mappings["bank"].get(bank_name.lower())
+                    if bank_instance:
+                        bank_data["bank_id"] = bank_instance.id
+                    else:
                         row_warnings.append(
                             {
-                                "field": "bank_id/account_name/bank_account_number",
-                                "message": "Incomplete bank details; bank_id and bank_account_number are required.",
+                                "field": "bank",
+                                "message": f"Bank '{bank_name}' not found after creation attempt.",
                             }
                         )
 
-                    # Map next of kin
-                    for _, row in group.iterrows():
-                        next_of_kin_data = {}
-                        if "emergency_contact_phone" in row and pd.notna(
-                            row["emergency_contact_phone"]
-                        ):
-                            phone = str(row["emergency_contact_phone"]).strip()
-                            if phone:
-                                next_of_kin_data["phone_number"] = phone
+                if "account_name" in group.columns and pd.notna(first_row["account_name"]) and str(first_row["account_name"]).strip():
+                    bank_data["account_name"] = str(first_row["account_name"]).strip()
+                else:
+                    bank_data["account_name"] = (
+                        employee_data["user"]["fullname"]
+                        if isinstance(employee_data["user"], dict)
+                        else employee_data["user"].fullname
+                    )
 
-                        if "emergency_contact_name" in row and pd.notna(
-                            row["emergency_contact_name"]
-                        ):
-                            name = str(row["emergency_contact_name"]).strip()
-                            if name:
-                                next_of_kin_data["name"] = name
-                        if not next_of_kin_data.get("name") and next_of_kin_data.get(
-                            "phone_number"
-                        ):
-                            next_of_kin_data["name"] = "Primary Contact"
+                if "bank_account_number" in group.columns and pd.notna(first_row["bank_account_number"]) and str(first_row["bank_account_number"]).strip():
+                    bank_data["account_number"] = str(first_row["bank_account_number"]).strip()
 
-                        if "emergency_contact_relationship" in row and pd.notna(
-                            row["emergency_contact_relationship"]
-                        ):
-                            relationship = (
-                                str(row["emergency_contact_relationship"]).strip().lower()
-                            )
-                            valid_relationships = [
-                                choice[0] for choice in NextOfKin.RELATIONSHIP_CHOICES
-                            ]
-                            if relationship in valid_relationships:
-                                next_of_kin_data["relationship"] = relationship
-                            else:
-                                row_warnings.append(
-                                    {
-                                        "field": "emergency_contact_relationship",
-                                        "message": f"Invalid relationship '{relationship}' mapped to 'other'",
-                                    }
-                                )
-                                next_of_kin_data["relationship"] = "other"
+                if bank_data.get("bank_id") and bank_data.get("account_number"):
+                    employee_data["bank_accounts"].append(bank_data)
+                elif any(bank_data.values()):
+                    row_warnings.append(
+                        {
+                            "field": "bank/account_name/bank_account_number",
+                            "message": "Incomplete bank details; bank_id and account_number are required.",
+                        }
+                    )
+
+                # Map next of kin
+                for _, row in group.iterrows():
+                    next_of_kin_data = {}
+                    if "emergency_contact_phone" in row and pd.notna(row["emergency_contact_phone"]) and str(row["emergency_contact_phone"]).strip():
+                        next_of_kin_data["phone_number"] = str(row["emergency_contact_phone"]).strip()
+
+                    if "emergency_contact_name" in row and pd.notna(row["emergency_contact_name"]) and str(row["emergency_contact_name"]).strip():
+                        next_of_kin_data["name"] = str(row["emergency_contact_name"]).strip()
+                    if not next_of_kin_data.get("name") and next_of_kin_data.get("phone_number"):
+                        next_of_kin_data["name"] = "Primary Contact"
+
+                    if "emergency_contact_relationship" in row and pd.notna(row["emergency_contact_relationship"]) and str(row["emergency_contact_relationship"]).strip():
+                        relationship = str(row["emergency_contact_relationship"]).strip().lower()
+                        valid_relationships = [
+                            choice[0] for choice in NextOfKin.RELATIONSHIP_CHOICES
+                        ]
+                        if relationship in valid_relationships:
+                            next_of_kin_data["relationship"] = relationship
                         else:
-                            next_of_kin_data["relationship"] = "other"
-
-                        if "address" in employee_data:
-                            address = (
-                                employee_data["address"][:100]
-                                if employee_data["address"]
-                                else ""
-                            )
-                            if len(address) > 100:
-                                row_warnings.append(
-                                    {
-                                        "field": "emergency_contact_address",
-                                        "message": f"Address truncated to 100 characters: {address}",
-                                    }
-                                )
-                                address = address[:100]
-                            next_of_kin_data["address"] = address
-
-                        if next_of_kin_data.get("name") and next_of_kin_data.get(
-                            "phone_number"
-                        ):
-                            employee_data["next_of_kin"].append(next_of_kin_data)
-                        elif any(next_of_kin_data.values()):
                             row_warnings.append(
                                 {
-                                    "field": "emergency_contact_name/emergency_contact_phone",
-                                    "message": "Incomplete next of kin details; name and phone_number are required.",
+                                    "field": "emergency_contact_relationship",
+                                    "message": f"Invalid relationship '{relationship}' mapped to 'other'",
                                 }
                             )
+                            next_of_kin_data["relationship"] = "other"
+                    else:
+                        next_of_kin_data["relationship"] = "other"
 
-                    # Map spouse
-                    spouse_data = {}
-                    if "spouse_name" in group.columns and pd.notna(
-                        first_row["spouse_name"]
-                    ):
-                        name = str(first_row["spouse_name"]).strip()
-                        if name and name != "Unknown Spouse":
-                            spouse_data["name"] = name
-                    if "spouse_date_of_birth" in group.columns and pd.notna(
-                        first_row["spouse_date_of_birth"]
-                    ):
-                        try:
-                            dob = custom_parse_date(
-                                str(first_row["spouse_date_of_birth"]).strip()
+                    if "address" in employee_data:
+                        address = employee_data.get("address", "")
+                        if len(address) > 100:
+                            row_warnings.append(
+                                {
+                                    "field": "emergency_contact_address",
+                                    "message": f"Address truncated to 100 characters: {address[:100]}",
+                                }
                             )
+                            address = address[:100]
+                        next_of_kin_data["address"] = address
+
+                    if next_of_kin_data.get("name") and next_of_kin_data.get("phone_number"):
+                        employee_data["next_of_kin"].append(next_of_kin_data)
+                    elif any(next_of_kin_data.values()):
+                        row_warnings.append(
+                            {
+                                "field": "emergency_contact_name/emergency_contact_phone",
+                                "message": "Incomplete next of kin details; name and phone_number are required.",
+                            }
+                        )
+
+                # Map spouse
+                spouse_data = {}
+                if "spouse_name" in group.columns and pd.notna(first_row["spouse_name"]) and str(first_row["spouse_name"]).strip():
+                    name = str(first_row["spouse_name"]).strip()
+                    if name != "Unknown Spouse":
+                        spouse_data["name"] = name
+                if "spouse_date_of_birth" in group.columns and pd.notna(first_row["spouse_date_of_birth"]) and str(first_row["spouse_date_of_birth"]).strip():
+                    try:
+                        dob = custom_parse_date(str(first_row["spouse_date_of_birth"]).strip())
+                        if dob:
+                            spouse_data["date_of_birth"] = dob
+                        else:
+                            row_errors["spouse_date_of_birth"] = {
+                                "error": "Invalid date format."
+                            }
+                    except ValueError as e:
+                        row_errors["spouse_date_of_birth"] = {"error": str(e)}
+                if "spouse_phone_number" in group.columns and pd.notna(first_row["spouse_phone_number"]) and str(first_row["spouse_phone_number"]).strip():
+                    spouse_data["phone_number"] = str(first_row["spouse_phone_number"]).strip()
+                if spouse_data.get("name"):
+                    employee_data["spouse"] = spouse_data
+
+                # Map children
+                for _, row in group.iterrows():
+                    child_data = {}
+                    if "child_name" in row and pd.notna(row["child_name"]) and str(row["child_name"]).strip():
+                        child_data["name"] = str(row["child_name"]).strip()
+                    if "child_date_of_birth" in row and pd.notna(row["child_date_of_birth"]) and str(row["child_date_of_birth"]).strip():
+                        try:
+                            dob = custom_parse_date(str(row["child_date_of_birth"]).strip())
                             if dob:
-                                spouse_data["date_of_birth"] = dob
+                                child_data["date_of_birth"] = dob
                             else:
-                                row_errors["spouse_date_of_birth"] = {
+                                row_errors["child_date_of_birth"] = {
                                     "error": "Invalid date format."
                                 }
                         except ValueError as e:
-                            row_errors["spouse_date_of_birth"] = {"error": str(e)}
-                    if "spouse_phone_number" in group.columns and pd.notna(
-                        first_row["spouse_phone_number"]
-                    ):
-                        phone = str(first_row["spouse_phone_number"]).strip()
-                        if phone:
-                            spouse_data["phone_number"] = phone
-                    if spouse_data.get("name"):
-                        employee_data["spouse"] = spouse_data
-
-                    # Map children
-                    for _, row in group.iterrows():
-                        child_data = {}
-                        if "child_name" in row and pd.notna(row["child_name"]):
-                            name = str(row["child_name"]).strip()
-                            if name:
-                                child_data["name"] = name
-                        if "child_date_of_birth" in row and pd.notna(
-                            row["child_date_of_birth"]
-                        ):
-                            try:
-                                dob = custom_parse_date(
-                                    str(row["child_date_of_birth"]).strip()
-                                )
-                                if dob:
-                                    child_data["date_of_birth"] = dob
-                                else:
-                                    row_errors["child_date_of_birth"] = {
-                                        "error": "Invalid date format."
-                                    }
-                            except ValueError as e:
-                                row_errors["child_date_of_birth"] = {"error": str(e)}
-                        if "child_gender" in row and pd.notna(row["child_gender"]):
-                            gender = str(row["child_gender"]).strip().lower()
-                            valid_genders = ["male", "female", "other"]
-                            if gender in valid_genders:
-                                child_data["gender"] = gender
-                            else:
-                                row_errors["child_gender"] = {
-                                    "error": f'"{gender}" is not a valid choice.'
-                                }
-                        if child_data.get("name") and child_data.get("date_of_birth"):
-                            employee_data["children"].append(child_data)
-
-                    # Map education
-                    edu_data = {}
-                    if "education_institution" in group.columns and pd.notna(
-                        first_row["education_institution"]
-                    ):
-                        inst = str(first_row["education_institution"]).strip()
-                        if inst:
-                            edu_data["institution"] = inst
-                    else:
-                        edu_data["institution"] = "Unknown Institution"
-                    if "education_name" in group.columns and pd.notna(
-                        first_row["education_name"]
-                    ):
-                        name = str(first_row["education_name"]).strip()
-                        if name:
-                            edu_data["name"] = name
-                    if "education_year" in group.columns and pd.notna(
-                        first_row["education_year"]
-                    ):
-                        try:
-                            year = int(str(first_row["education_year"]).strip())
-                            edu_data["year"] = year
-                        except ValueError:
-                            row_errors["education_year"] = {
-                                "error": "Invalid year format."
-                            }
-                    else:
-                        edu_data["year"] = date.today().year
-                    if "qualification" in group.columns and pd.notna(
-                        first_row["qualification"]
-                    ):
-                        qualification_name = str(first_row["qualification"]).strip()
-                        if qualification_name:
-                            qualification_instance = instance_mappings[
-                                "qualification"
-                            ].get(qualification_name.lower())
-                            if not qualification_instance:
-                                try:
-                                    qualification_instance = QualificationAward.objects.create(
-                                        name=qualification_name,
-                                        description="Auto-created during bulk upload",
-                                    )
-                                    instance_mappings["qualification"][
-                                        qualification_name.lower()
-                                    ] = qualification_instance
-                                except Exception as e:
-                                    row_errors["qualification"] = {
-                                        "error": f"Failed to create qualification '{qualification_name}': {str(e)}"
-                                    }
-                            if qualification_instance:
-                                edu_data["qualification_id"] = (
-                                    qualification_instance.id
-                                )
-                    if (
-                        edu_data.get("institution")
-                        and edu_data.get("name")
-                        and edu_data.get("year")
-                    ):
-                        employee_data["educations"].append(edu_data)
-
-                    # Map work experience
-                    exp_data = {}
-                    if "work_company" in group.columns and pd.notna(
-                        first_row["work_company"]
-                    ):
-                        company = str(first_row["work_company"]).strip()
-                        if company:
-                            exp_data["company"] = company
-                    if "work_position" in group.columns and pd.notna(
-                        first_row["work_position"]
-                    ):
-                        pos = str(first_row["work_position"]).strip()
-                        if pos:
-                            exp_data["position"] = pos
-                    if "work_duration" in group.columns and pd.notna(
-                        first_row["work_duration"]
-                    ):
-                        dur = str(first_row["work_duration"]).strip()
-                        if dur:
-                            exp_data["duration"] = dur
-                    if "work_reason_of_leaving" in group.columns and pd.notna(
-                        first_row["work_reason_of_leaving"]
-                    ):
-                        reason = str(first_row["work_reason_of_leaving"]).strip()
-                        if reason:
-                            exp_data["reason_of_leaving"] = reason
-                    if (
-                        exp_data.get("company")
-                        and exp_data.get("position")
-                        and exp_data.get("duration")
-                    ):
-                        employee_data["work_experiences"].append(exp_data)
-
-                    employee_data["has_children"] = bool(employee_data["children"])
-
-                    if row_errors:
-                        errors.append({"row": group.index[0] + 2, "errors": row_errors})
-                        if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
-                            )
-                        continue
-
-                    # Validate with EmployeeSerializer
-                    serializer_context = {"request": request}
-                    existing_employee = (
-                        Employee.objects.filter(employee_id=employee_id).first()
-                        if employee_id
-                        else None
-                    )
-                    if existing_employee:
-                        # For updates, remove user.fullname to prevent updating CustomUser
-                        if isinstance(employee_data["user"], dict):
-                            employee_data["user"].pop("fullname", None)
-                        serializer = EmployeeSerializer(
-                            instance=existing_employee,
-                            data=employee_data,
-                            context=serializer_context,
-                            partial=True,
-                        )
-                    else:
-                        serializer = EmployeeSerializer(
-                            data=employee_data, context=serializer_context
-                        )
-
-                    if not serializer.is_valid():
-                        errors.append(
-                            {"row": group.index[0] + 2, "errors": serializer.errors}
-                        )
-                        if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
-                            )
-                        continue
-
-                    try:
-                        employee = serializer.save()
-                        employees.append(employee)
-                        if existing_employee:
-                            updated_count += 1
+                            row_errors["child_date_of_birth"] = {"error": str(e)}
+                    if "child_gender" in row and pd.notna(row["child_gender"]) and str(row["child_gender"]).strip():
+                        gender = str(row["child_gender"]).strip().lower()
+                        valid_genders = ["male", "female", "other"]
+                        if gender in valid_genders:
+                            child_data["gender"] = gender
                         else:
-                            created_count += 1
-                            if isinstance(employee_data["user"], dict) and employee_data["user"].get("password"):
-                                send_employee_welcome_email.delay_on_commit(
-                                    request.get_host(),
-                                    employee.user.email,
-                                    employee.user.fullname,
-                                    employee_data["user"]["password"],
-                                    company_name=institution.institution_name,
-                                )
-                        if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
-                            )
-                        employee.confirm_create()
-                    except Exception as e:
-                        errors.append(
+                            row_errors["child_gender"] = {
+                                "error": f'"{gender}" is not a valid choice.'
+                            }
+                    if child_data.get("name") and child_data.get("date_of_birth"):
+                        employee_data["children"].append(child_data)
+
+                # Map education
+                edu_data = {}
+                if "education_institution" in group.columns and pd.notna(first_row["education_institution"]) and str(first_row["education_institution"]).strip():
+                    edu_data["institution"] = str(first_row["education_institution"]).strip()
+                else:
+                    edu_data["institution"] = "Unknown Institution"
+                if "education_name" in group.columns and pd.notna(first_row["education_name"]) and str(first_row["education_name"]).strip():
+                    edu_data["name"] = str(first_row["education_name"]).strip()
+                if "education_year" in group.columns and pd.notna(first_row["education_year"]) and str(first_row["education_year"]).strip():
+                    try:
+                        year = int(str(first_row["education_year"]).strip())
+                        edu_data["year"] = year
+                    except ValueError:
+                        row_errors["education_year"] = {
+                            "error": "Invalid year format."
+                        }
+                else:
+                    edu_data["year"] = date.today().year
+                if "qualification" in group.columns and pd.notna(first_row["qualification"]) and str(first_row["qualification"]).strip():
+                    qualification_name = str(first_row["qualification"]).strip()
+                    qualification_instance = instance_mappings["qualification"].get(qualification_name.lower())
+                    if qualification_instance:
+                        edu_data["qualification_id"] = qualification_instance.id
+                    else:
+                        row_warnings.append(
                             {
-                                "row": group.index[0] + 2,
-                                "errors": {"non_field_errors": str(e)},
+                                "field": "qualification",
+                                "message": f"Qualification '{qualification_name}' not found after creation attempt.",
                             }
                         )
-                        if row_warnings:
-                            warnings.append(
-                                {"row": group.index[0] + 2, "warnings": row_warnings}
+                if (
+                    edu_data.get("institution")
+                    and edu_data.get("name")
+                    and edu_data.get("year")
+                    and edu_data.get("qualification_id")
+                ):
+                    employee_data["educations"].append(edu_data)
+                elif any(edu_data.values()):
+                    row_warnings.append(
+                        {
+                            "field": "education_institution/education_name/education_year/qualification",
+                            "message": "Incomplete education details; institution, name, year, and qualification_id are required.",
+                        }
+                    )
+
+                # Map work experience
+                exp_data = {}
+                if "work_company" in group.columns and pd.notna(first_row["work_company"]) and str(first_row["work_company"]).strip():
+                    exp_data["company"] = str(first_row["work_company"]).strip()
+                if "work_position" in group.columns and pd.notna(first_row["work_position"]) and str(first_row["work_position"]).strip():
+                    exp_data["position"] = str(first_row["work_position"]).strip()
+                if "work_duration" in group.columns and pd.notna(first_row["work_duration"]) and str(first_row["work_duration"]).strip():
+                    exp_data["duration"] = str(first_row["work_duration"]).strip()
+                if "work_reason_of_leaving" in group.columns and pd.notna(first_row["work_reason_of_leaving"]) and str(first_row["work_reason_of_leaving"]).strip():
+                    exp_data["reason_of_leaving"] = str(first_row["work_reason_of_leaving"]).strip()
+                if (
+                    exp_data.get("company")
+                    and exp_data.get("position")
+                    and exp_data.get("duration")
+                ):
+                    employee_data["work_experiences"].append(exp_data)
+
+                employee_data["has_children"] = bool(employee_data["children"])
+
+                if row_errors:
+                    print(f"Row {group.index[0] + 2} errors: {row_errors}")
+                    errors.append({"row": group.index[0] + 2, "errors": row_errors})
+                    if row_warnings:
+                        warnings.append(
+                            {"row": group.index[0] + 2, "warnings": row_warnings}
+                        )
+                    continue
+
+                # Log the employee data before serialization
+                print(f"Row {group.index[0] + 2} employee_data: {employee_data}")
+
+                # Validate with EmployeeSerializer
+                serializer_context = {"request": request}
+                existing_employee = (
+                    Employee.objects.filter(employee_id=employee_data.get("employee_id")).first()
+                    if employee_data.get("employee_id")
+                    else None
+                )
+                if existing_employee:
+                    print(f"Updating existing employee with ID: {employee_data.get('employee_id')}")
+                    if isinstance(employee_data["user"], dict):
+                        employee_data["user"].pop("fullname", None)
+                        employee_data["user"].pop("password", None)
+                        employee_data["user"].pop("welcome_email_sent", None)
+                        employee_data["user"].pop("is_password_verified", None)
+                        employee_data["user"].pop("is_email_verified", None)
+                    serializer = EmployeeSerializer(
+                        instance=existing_employee,
+                        data=employee_data,
+                        context=serializer_context,
+                        partial=True,
+                    )
+                else:
+                    print(f"Creating new employee for email: {employee_data['email']}")
+                    serializer = EmployeeSerializer(
+                        data=employee_data, context=serializer_context
+                    )
+
+                if not serializer.is_valid():
+                    print(f"Row {group.index[0] + 2} serializer errors: {serializer.errors}")
+                    errors.append(
+                        {"row": group.index[0] + 2, "errors": serializer.errors}
+                    )
+                    if row_warnings:
+                        warnings.append(
+                            {"row": group.index[0] + 2, "warnings": row_warnings}
+                        )
+                    continue
+
+                try:
+                    employee = serializer.save()
+                    employees.append(employee)
+                    if existing_employee:
+                        updated_count += 1
+                        print(f"Updated employee: {employee.id}, employee_id: {employee.employee_id}, user: {employee.user.email}")
+                    else:
+                        created_count += 1
+                        print(f"Created employee: {employee.id}, employee_id: {employee.employee_id}, user: {employee.user.email}")
+                        if isinstance(employee_data["user"], dict) and employee_data["user"].get("password"):
+                            send_employee_welcome_email.delay_on_commit(
+                                request.get_host(),
+                                employee.user.email,
+                                employee.user.fullname,
+                                employee_data["user"]["password"],
+                                company_name=institution.institution_name,
                             )
+                    if row_warnings:
+                        warnings.append(
+                            {"row": group.index[0] + 2, "warnings": row_warnings}
+                        )
+                    employee.confirm_create()
+                except Exception as e:
+                    print(f"Row {group.index[0] + 2} save error: {str(e)}")
+                    errors.append(
+                        {
+                            "row": group.index[0] + 2,
+                            "errors": {"non_field_errors": str(e)},
+                        }
+                    )
+                    if row_warnings:
+                        warnings.append(
+                            {"row": group.index[0] + 2, "warnings": row_warnings}
+                        )
 
             if errors:
+                print(f"Processing completed with errors: {errors}")
                 return Response(
                     {
                         "detail": "Some rows failed validation or processing",
@@ -1615,6 +1672,7 @@ class EmployeeCreateAPIView(APIView):
                 institution.default_employee_role = role
                 institution.save()
 
+            print(f"Processing completed: {created_count} created, {updated_count} updated")
             return Response(
                 {
                     "detail": "Employees processed successfully",
@@ -1629,6 +1687,7 @@ class EmployeeCreateAPIView(APIView):
             )
 
         except Exception as e:
+            print(f"Error processing file: {str(e)}")
             return Response(
                 {
                     "detail": f"Error processing file: {str(e)}",
