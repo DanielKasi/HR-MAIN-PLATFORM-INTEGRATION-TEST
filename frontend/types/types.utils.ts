@@ -306,6 +306,7 @@ export interface IEmployee {
 	is_active: boolean;
 	employee_id: string;
 	email: string;
+	name: string | null;
 	phone_number: string;
 	gender: IGender;
 	date_of_joining: string;
@@ -2665,7 +2666,7 @@ export interface IMeetingFormData {
 }
 
 export interface IMeetingIntegrationFormData {
-	is_active: boolean;
+	is_active?: boolean;
 	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
 	api_key?: string;
 	api_secret?: string;
@@ -2676,7 +2677,7 @@ export interface IMeetingIntegrationFormData {
 
 export interface IMeetingIntegration {
 	id: number;
-	is_active: boolean;
+	is_active?: boolean;
 	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
 	api_key: string | null;
@@ -2684,6 +2685,40 @@ export interface IMeetingIntegration {
 	oauth_token: string | null;
 	oauth_refresh_token: string | null;
 	tenant_id: string | null;
+	updated_at: string;
+	institution: number;
+}
+
+export interface IEmailProviderConfigFormData {
+	provider: "cpanel" | "google_workspace" | "microsoft_365";
+	domain: string;
+	format_template?: string;
+	quota?: number;
+	port?: string;
+	admin_email?: string;
+	api_url?: string;
+	api_username?: string;
+	api_password?: string;
+	api_client_id?: string;
+	api_client_secret?: string;
+	api_token?: string;
+}
+
+export interface IEmailProviderConfig {
+	id: number;
+	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
+	provider: "cpanel" | "google_workspace" | "microsoft_365";
+	domain: string;
+	format_template: string;
+	quota: number;
+	port: string;
+	admin_email: string | null;
+	api_url: string | null;
+	api_username: string | null;
+	api_password: string | null;
+	api_client_id: string | null;
+	api_client_secret: string | null;
+	api_token: string | null;
 	updated_at: string;
 	institution: number;
 }

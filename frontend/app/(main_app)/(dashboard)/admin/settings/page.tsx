@@ -17,7 +17,7 @@ import { InstitutionSpotcheckConfigurations } from "@/components/settings/instit
 import { BranchSpotcheckConfigurations } from "@/components/settings/branch-spotcheck-configurations";
 import { LocationComparisonConfigurations } from "@/components/settings/location-comparison-configurations";
 import { InstitutionBonusPointSettingsTable } from "@/components/performance/bonus-points/institution-bonus-points-settings-table";
-import { Integrations } from "@/components/settings/integrations";
+import { Integrations } from "@/components/integrations/integrations";
 
 export default function SettingsPage() {
 	const [activeTab, setActiveTab] = useState<
@@ -355,7 +355,7 @@ export default function SettingsPage() {
 					</div>
 				</div>
 
-				<div className="lg:flex-[7.0] p-4 md:p-6">
+				<div className="lg:flex-[7.0] p-4 md:p-6 bg-white">
 					{activeTab === "institution"
 						? renderInstitutionSettings()
 						: activeTab === "kyc"

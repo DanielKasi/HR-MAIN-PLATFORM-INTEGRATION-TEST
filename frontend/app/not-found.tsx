@@ -28,7 +28,7 @@ export default function NotFound() {
 			</p>
 
 			{/* Back to Home Button */}
-			<Link href="/">
+			<Link href="/dashboard">
 				<Button className="rounded-xl hover:bg-primary/90">Go Back Home</Button>
 			</Link>
 		</div>
