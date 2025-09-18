@@ -58,25 +58,27 @@ export default function EditTemplatePage() {
 
 			setDocumentTypes(types);
 
-			// Find the specific template
-			const currentTemplate = templates.find((t) => t.id === Number.parseInt(params.id as string));
-
-			if (currentTemplate) {
-				setTemplate(currentTemplate);
-				setFormData({
-					document_type: currentTemplate.document_type.id,
-					name: currentTemplate.name,
-					template_type: currentTemplate.template_type,
-					content: currentTemplate.content,
-					placeholders: currentTemplate.placeholders || [],
-				});
-			}
-		} catch (error) {
-			console.error("Failed to load data:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	};
+      // Find the specific template
+      const currentTemplate = templates.find((t) => t.id === Number.parseInt(params.id as string));
+      if (currentTemplate) {
+        setTemplate(currentTemplate);
+        setFormData({
+          document_type:
+            typeof currentTemplate.document_type === "number"
+              ? currentTemplate.document_type
+              : currentTemplate.document_type.id,
+          name: currentTemplate.name,
+          template_type: currentTemplate.template_type,
+          content: currentTemplate.content,
+          placeholders: currentTemplate.placeholders || [],
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 	const handleTemplateTypeChange = (type: "pdf" | "word" | "text") => {
 		setFormData((prev) => ({
@@ -121,17 +123,18 @@ export default function EditTemplatePage() {
 				documentTemplateData: formData,
 			});
 
-			if (result) {
-				router.push("/document-templates");
-			} else {
-				console.error("Failed to update template");
-			}
-		} catch (error) {
-			console.error("Failed to update template:", error);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
+      if (result) {
+        
+        router.push("/documents/templates?success=true");;
+      } else {
+        console.error("Failed to update template");
+      }
+    } catch (error) {
+      console.error("Failed to update template:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
 	const isFormValid =
 		formData.name &&
@@ -199,28 +202,28 @@ export default function EditTemplatePage() {
 							/>
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="document_type">Document Type</Label>
-							<Select
-								value={formData.document_type?.toString() ?? ""}
-								onValueChange={(value) =>
-									setFormData((prev) => ({ ...prev, document_type: Number.parseInt(value) }))
-								}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select document type" />
-								</SelectTrigger>
-								<SelectContent>
-									{documentTypes.map((type) => (
-										<SelectItem key={type.id} value={type.id.toString()}>
-											{type.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					</CardContent>
-				</Card>
+            <div className="space-y-2">
+              <Label htmlFor="document_type">Document Type</Label>
+              <Select
+                value={formData.document_type ? formData.document_type.toString() : ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({...prev, document_type: Number.parseInt(value)}))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
 
 				{/* Rest of the form remains the same as create page */}
 				<Card>

@@ -6,8 +6,9 @@ import { Edit, Trash2, User, Star, Calendar, Eye, EyeOff } from "lucide-react";
 
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
-
 import { Badge } from "@/components/ui/badge";
+import { hasPermission } from "@/lib/helpers";
+import { PERMISSION_CODES } from "@/constants";
 
 interface FeedbackTableProps {
 	feedback: IFeedback360[];
@@ -181,9 +182,9 @@ export function FeedbackTable({
 			data={feedback}
 			columns={columns}
 			actions={actions}
-			onAdd={onAdd}
+			onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
 			addLabel="Give Feedback"
-			searchPlaceholder="Search by given_by or reviewer..."
+			searchPlaceholder="Search by reviewee or reviewer..."
 			onSearch={onSearch}
 			isLoading={isLoading}
 			emptyMessage="No feedback found"

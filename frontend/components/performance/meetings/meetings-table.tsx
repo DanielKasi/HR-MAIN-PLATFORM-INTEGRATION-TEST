@@ -1,11 +1,12 @@
 "use client";
+"use client";
 
-import type { IMeeting } from "@/types/types.utils";
-
-import { Edit, Trash2, Calendar, Users, MapPin, Video, Repeat } from "lucide-react";
-
-import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
-import { StatusBadge } from "../common/status-badge";
+import {hasPermission} from "@/lib/helpers";
+import {PerformanceTable, type TableColumn, type TableAction} from "../common/performance-table";
+import {StatusBadge} from "../common/status-badge";
+import type {IMeeting} from "@/types/types.utils";
+import {Edit, Trash2, Calendar, Users, MapPin, Video, Repeat} from "lucide-react";
+import {PERMISSION_CODES} from "@/constants";
 
 interface MeetingsTableProps {
 	meetings: IMeeting[];
@@ -186,17 +187,17 @@ export function MeetingsTable({
 		},
 	];
 
-	return (
-		<PerformanceTable
-			data={meetings}
-			columns={columns}
-			actions={actions}
-			onAdd={onAdd}
-			addLabel="Schedule Meeting"
-			searchPlaceholder="Search meetings..."
-			onSearch={onSearch}
-			isLoading={isLoading}
-			emptyMessage="No meetings found"
-		/>
-	);
+  return (
+    <PerformanceTable
+      data={meetings}
+      columns={columns}
+      actions={actions}
+      onAdd={hasPermission(PERMISSION_CODES.CAN_SCHEDULE_MEETING) ? onAdd : undefined}
+      addLabel="Schedule Meeting"
+      searchPlaceholder="Search meetings..."
+      onSearch={onSearch}
+      isLoading={isLoading}
+      emptyMessage="No meetings found"
+    />
+  );
 }

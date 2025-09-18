@@ -5,6 +5,8 @@ from .views import (
     SystemConfigurationListCreateAPIView,
     SystemConfigurationRetrieveUpdateDeleteAPIView,
     SystemDayListVIew,
+    EmailProviderConfigListCreateView,
+    EmailProviderConfigDetailView
 )
 
 urlpatterns = [
@@ -20,5 +22,8 @@ urlpatterns = [
         name="system-configuration-retrieve-update-delete",
     ),
     path("meeting-integration/", MeetingIntegrationListCreateView.as_view(), name="meeting-integration"),
-    path("meeting-integration/<int:pk>/", MeetingIntegrationDetailView.as_view())
+    path("meeting-integration/<int:pk>/", MeetingIntegrationDetailView.as_view()),
+
+    path("email-provider-config/", EmailProviderConfigListCreateView.as_view(), name="email-provider-config"),
+    path("email-provider-config/<int:pk>/", EmailProviderConfigDetailView.as_view()),
 ]

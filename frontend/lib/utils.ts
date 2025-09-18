@@ -550,7 +550,7 @@ export const updateJobPosition = async ({
 		if ((error as any).response?.data?.apply_salary_to_employees) {
 			toast.error(
 				(error as any)?.response?.data?.apply_salary_to_employees.join(", ") ||
-				"Failed to update job position/title ",
+					"Failed to update job position/title ",
 			);
 		} else {
 			toast.error("Failed to update job position/title. Please try again.");
@@ -1429,15 +1429,21 @@ export const getPaginatedEmployees = async ({
 	page = 1,
 	search,
 	ordering,
+	positionSearch,
 }: {
 	institutionId: number;
 	page?: number;
 	search?: string;
 	ordering?: string;
+	positionSearch?: string;
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
 	});
+
+	if (positionSearch) {
+		params.append("position_search", positionSearch);
+	}
 
 	if (search) {
 		params.append("search", search);
@@ -1536,9 +1542,9 @@ export const createEmployee = async ({
 	} catch (error: any) {
 		throw new Error(
 			error.response?.data?.detail ||
-			error.response?.data?.message ||
-			error.message ||
-			"Failed to create employee",
+				error.response?.data?.message ||
+				error.message ||
+				"Failed to create employee",
 		);
 	}
 };
@@ -1634,9 +1640,9 @@ export const getEmployeeById = async ({ employeeId }: { employeeId: number | str
 	} catch (error: any) {
 		throw new Error(
 			error.response?.data?.detail ||
-			error.response?.data?.message ||
-			error.message ||
-			"Failed to fetch employee",
+				error.response?.data?.message ||
+				error.message ||
+				"Failed to fetch employee",
 		);
 	}
 };
@@ -2172,7 +2178,7 @@ export const updateDisciplinaryAction = async ({
 	try {
 		const dataToSend =
 			"discipline_type" in disciplinaryActionData &&
-				typeof disciplinaryActionData.discipline_type === "string"
+			typeof disciplinaryActionData.discipline_type === "string"
 				? convertFormToApiRequest(disciplinaryActionData as DisciplinaryActionForm)
 				: disciplinaryActionData;
 
@@ -2718,9 +2724,9 @@ export const updateLeaveApplication = async ({
 	} catch (error: any) {
 		throw new Error(
 			error.response?.data?.detail ||
-			error.response?.data?.message ||
-			error.message ||
-			"Failed to update leave application",
+				error.response?.data?.message ||
+				error.message ||
+				"Failed to update leave application",
 		);
 	}
 };
@@ -5908,10 +5914,10 @@ export const taxAPI = {
 			const response = await apiRequest.get("/institution/tax");
 
 			return response.data as Itax[];
-		} catch (error) { }
+		} catch (error) {}
 	},
 
-	getAllEmployeeTaxes: async ({ }) => {
+	getAllEmployeeTaxes: async ({}) => {
 		const response = await apiRequest.get("/payroll/employee-taxes");
 
 		return response.data as IPaginatedResponse<Itax>;
@@ -7785,8 +7791,6 @@ export const PROJECTS_TASKS_API = {
 	},
 };
 
-
-
 export const PERIODS_API = {
 	getPaginated: async ({
 		page = 1,
@@ -7847,8 +7851,6 @@ export const PERIODS_API = {
 	},
 };
 
-
-
 export const OBJECTIVES_API = {
 	getPaginated: async ({
 		page = 1,
@@ -7889,7 +7891,13 @@ export const OBJECTIVES_API = {
 		return response.data as IObjective;
 	},
 
-	update: async ({ objectiveId, data }: { objectiveId: number; data: Partial<IObjectiveFormData> }) => {
+	update: async ({
+		objectiveId,
+		data,
+	}: {
+		objectiveId: number;
+		data: Partial<IObjectiveFormData>;
+	}) => {
 		const response = await apiRequest.patch(`performance/objectives/${objectiveId}/`, data);
 		return response.data as IObjective;
 	},
@@ -7903,8 +7911,6 @@ export const OBJECTIVES_API = {
 		return response.data as IObjective;
 	},
 };
-
-
 
 export const EMPLOYEE_OBJECTIVES_API = {
 	getPaginated: async ({
@@ -7976,13 +7982,24 @@ export const EMPLOYEE_OBJECTIVES_API = {
 };
 
 export const KEY_RESULTS_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/key-results/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
@@ -8126,13 +8143,24 @@ export const EMPLOYEE_BONUS_POINTS_API = {
 };
 
 export const QUESTION_TEMPLATES_API = {
-	getPaginated: async ({ page = 1, ordering }: { page?: number; ordering?: string }) => {
+	getPaginated: async ({
+		page = 1,
+		ordering,
+		search,
+	}: {
+		page?: number;
+		ordering?: string;
+		search?: string;
+	}) => {
 		const params = new URLSearchParams({
 			page: page.toString(),
 		});
 
 		if (ordering) {
 			params.append("ordering", ordering);
+		}
+		if (search) {
+			params.append("search", search);
 		}
 		const endpoint = `performance/question-templates/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);

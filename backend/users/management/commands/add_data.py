@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.db import transaction
 from employee.service import create_owner_employee
 from recruitment.models import JobPosition
-from users.models import Permission, PermissionCategory, SystemType, System
+from users.models import Permission, PermissionCategory, SystemType, System, CustomUser
 from approval.models import Action
 from discipline.models import DisciplineType
 from institution.models import (
@@ -58,7 +58,7 @@ class Command(BaseCommand):
         self.create_default_system_days()
         self.create_default_bank_info()
         self.create_default_awards()
-        self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
+        # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         
         # Run deletion logic
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
@@ -68,8 +68,10 @@ class Command(BaseCommand):
             self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
         )
         
-        # Find inactive employees
-        inactive_employees = Employee.objects.filter(is_active=False).select_related('user')
+        # Find inactive employees that are not soft-deleted
+        inactive_employees = Employee.objects.filter(
+            is_active=False, deleted_at__isnull=False
+        ).select_related('user')
         
         employee_count = inactive_employees.count()
         user_count = sum(1 for emp in inactive_employees if emp.user)
@@ -87,7 +89,7 @@ class Command(BaseCommand):
 
         # Confirmation prompt unless --no-confirm is provided
         if not no_confirm:
-            self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to delete.')
+            self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
             confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
             if confirm.lower() != 'yes':
                 self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
@@ -98,14 +100,28 @@ class Command(BaseCommand):
                 deleted_employees = []
                 deleted_users = []
                 for employee in inactive_employees:
+                    self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee}'))
+                    # Delete Employee first to satisfy PROTECT constraint
+                    Employee._base_manager.filter(id=employee.id).delete()
                     deleted_employees.append(str(employee))
+                    
                     if employee.user:
+                        self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user}'))
+                        # Delete CustomUser after Employee
+                        CustomUser._base_manager.filter(id=employee.user.id).delete()
                         deleted_users.append(str(employee.user))
-                        employee.user.delete()  # Delete the related CustomUser
-                    employee.delete()  # Delete the Employee
+
+                # Verify deletions
+                remaining = Employee.objects.filter(
+                    is_active=False, deleted_at__isnull=True
+                ).count()
+                if remaining > 0:
+                    self.stdout.write(
+                        self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
+                    )
 
                 self.stdout.write(self.style.SUCCESS(
-                    f'Successfully deleted {employee_count} inactive employee(s) and {len(deleted_users)} related user(s):'
+                    f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
                 ))
                 self.stdout.write('Deleted Employees:')
                 for emp in deleted_employees:
@@ -118,86 +134,86 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
             raise
 
-    def resend_welcome_emails(self, reset_password, employee_ids=None):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
-        )
+    # def resend_welcome_emails(self, reset_password, employee_ids=None):
+    #     self.stdout.write(
+    #         self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
+    #     )
 
-        # Determine which employees to process
-        if employee_ids:
-            try:
-                employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
-                employees = Employee.objects.filter(id__in=employee_ids)
-            except ValueError:
-                self.stdout.write(
-                    self.style.ERROR(
-                        "Invalid employee IDs provided. Use comma-separated integers."
-                    )
-                )
-                return
-        else:
-            employees = Employee.objects.filter(
-                Q(user__welcome_email_sent=False)
-                | Q(user__welcome_email_sent__isnull=True)
-            )
+    #     # Determine which employees to process
+    #     if employee_ids:
+    #         try:
+    #             employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
+    #             employees = Employee.objects.filter(id__in=employee_ids)
+    #         except ValueError:
+    #             self.stdout.write(
+    #                 self.style.ERROR(
+    #                     "Invalid employee IDs provided. Use comma-separated integers."
+    #                 )
+    #             )
+    #             return
+    #     else:
+    #         employees = Employee.objects.filter(
+    #             Q(user__welcome_email_sent=False)
+    #             | Q(user__welcome_email_sent__isnull=True)
+    #         )
 
-        if not employees.exists():
-            self.stdout.write(
-                self.style.NOTICE("No employees found to resend welcome emails.")
-            )
-            return
+    #     if not employees.exists():
+    #         self.stdout.write(
+    #             self.style.NOTICE("No employees found to resend welcome emails.")
+    #         )
+    #         return
 
-        success_count = 0
-        error_count = 0
-        skip_count = 0
+    #     success_count = 0
+    #     error_count = 0
+    #     skip_count = 0
 
-        for employee in employees:
-            if not employee.user or not employee.user.email:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Skipping employee {employee.id}: No user or email"
-                    )
-                )
-                skip_count += 1
-                continue
+    #     for employee in employees:
+    #         if not employee.user or not employee.user.email:
+    #             self.stdout.write(
+    #                 self.style.WARNING(
+    #                     f"Skipping employee {employee.id}: No user or email"
+    #                 )
+    #             )
+    #             skip_count += 1
+    #             continue
 
-            try:
-                password = None
-                if reset_password:
-                    password = generate_compliant_password()
-                    employee.user.set_password(password)
-                    employee.user.is_password_verified = True
-                    employee.user.welcome_email_sent = False
-                    employee.user.save()
+    #         try:
+    #             password = None
+    #             if reset_password:
+    #                 password = generate_compliant_password()
+    #                 employee.user.set_password(password)
+    #                 employee.user.is_password_verified = True
+    #                 employee.user.welcome_email_sent = False
+    #                 employee.user.save()
 
-                send_employee_welcome_email.delay_on_commit(
-                    employee.user.email,
-                    employee.user.fullname,
-                    password,
-                )
-                employee.user.welcome_email_sent = True
-                employee.user.save()
-                self.stdout.write(
-                    self.style.SUCCESS(f"Welcome email resent to {employee.user.email}")
-                )
-                success_count += 1
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"Failed to resend email to {employee.user.email}: {str(e)}"
-                    )
-                )
-                error_count += 1
+    #             send_employee_welcome_email.delay_on_commit(
+    #                 employee.user.email,
+    #                 employee.user.fullname,
+    #                 password,
+    #             )
+    #             employee.user.welcome_email_sent = True
+    #             employee.user.save()
+    #             self.stdout.write(
+    #                 self.style.SUCCESS(f"Welcome email resent to {employee.user.email}")
+    #             )
+    #             success_count += 1
+    #         except Exception as e:
+    #             self.stdout.write(
+    #                 self.style.ERROR(
+    #                     f"Failed to resend email to {employee.user.email}: {str(e)}"
+    #                 )
+    #             )
+    #             error_count += 1
 
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
-        )
-        self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
-        )
+    #     self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
+    #     self.stdout.write(
+    #         self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
+    #     )
+    #     self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
+    #     self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
+    #     self.stdout.write(
+    #         self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
+    #     )
 
     def create_default_awards(self):
         self.stdout.write(

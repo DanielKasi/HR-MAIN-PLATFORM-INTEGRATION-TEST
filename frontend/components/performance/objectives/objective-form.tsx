@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, forwardRef, useMemo } from "react";
-import { PerformanceForm, type FormField } from "../common/performance-form";
 import type {
 	IObjective,
 	IObjectiveFormData,
@@ -19,6 +18,18 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 import { KEY_RESULTS_API } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface ObjectiveFormProps {
 	initialData?: IObjective;
@@ -34,6 +45,31 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 		const [assigneesValue, setAssigneesValue] = useState<(string | number)[]>([]);
 		const [isKeyResultModalOpen, setIsKeyResultModalOpen] = useState(false);
 		const [isCreatingKeyResult, setIsCreatingKeyResult] = useState(false);
+		const [formData, setFormData] = useState<Record<string, any>>(() => {
+			const today = new Date().toISOString().split("T")[0]; // Current date in YYYY-MM-DD
+			if (!initialData) {
+				return {
+					name: "",
+					description: "",
+					duration: "",
+					duration_unit: "months",
+					key_result: "",
+					self_employee_progress_update: false,
+					date: today,
+				};
+			}
+
+			return {
+				name: initialData.name || "",
+				description: initialData.description || "",
+				duration: initialData.duration || "",
+				duration_unit: initialData.duration_unit || "months",
+				key_result: initialData.key_result?.id || "",
+				self_employee_progress_update: initialData.self_employee_progress_update || false,
+				date: initialData.date?.split("T")[0] || today,
+			};
+		});
+		const [errors, setErrors] = useState<Record<string, string>>({});
 
 		const fetchKeyResults = async () => {
 			try {
@@ -57,6 +93,72 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 				}
 			}
 		}, [initialData]);
+
+		const handleChange = (name: string, value: any) => {
+			setFormData((prev) => ({ ...prev, [name]: value }));
+
+			// Clear error when user starts typing
+			if (errors[name]) {
+				setErrors((prev) => ({ ...prev, [name]: "" }));
+			}
+		};
+
+		const validateForm = () => {
+			const newErrors: Record<string, string> = {};
+
+			// Name validation
+			if (!formData.name || formData.name.length < 5) {
+				newErrors.name = "Objective name must be at least 5 characters";
+			}
+
+			// Duration validation
+			if (!formData.duration || Number(formData.duration) <= 0) {
+				newErrors.duration = "Duration must be greater than 0";
+			}
+
+			// Description validation
+			if (formData.description && formData.description.length < 10) {
+				newErrors.description = "Description must be at least 10 characters";
+			}
+
+			// Creation date validation
+			if (!formData.date) {
+				newErrors.date = "Creation date is required";
+			} else {
+				const creationDate = new Date(formData.date);
+				const today = new Date();
+				today.setHours(0, 0, 0, 0);
+
+				if (isNaN(creationDate.getTime())) {
+					newErrors.date = "Invalid date format";
+				} else if (creationDate > today) {
+					newErrors.date = "Creation date cannot be in the future";
+				}
+			}
+
+			setErrors(newErrors);
+			return Object.keys(newErrors).length === 0;
+		};
+
+		const handleSubmit = (e: React.FormEvent) => {
+			e.preventDefault();
+			if (!currentInstitution || !validateForm()) return;
+
+			const objectiveData: IObjectiveFormData = {
+				institution: currentInstitution.id,
+				name: formData.name,
+				description: formData.description || undefined,
+				duration: formData.duration,
+				duration_unit: formData.duration_unit as IDurationUnit,
+				key_result: formData.key_result ? Number(formData.key_result) : undefined,
+				self_employee_progress_update: formData.self_employee_progress_update || false,
+				managers_id: managersValue.length > 0 ? Number(managersValue[0]) : undefined,
+				assignees_id: assigneesValue.map((id) => Number(id)),
+				date: formData.date,
+			};
+
+			onSubmit(objectiveData);
+		};
 
 		const handleCreateKeyResult = async (data: IKeyResultFormData) => {
 			console.log("Creating key result with data:", data);
@@ -83,137 +185,158 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 			label: `${kr.title} (${kr.progress_type})`,
 		}));
 
-		const fields: FormField[] = [
-			{
-				name: "name",
-				label: "Objective Name",
-				type: "text",
-				placeholder: "e.g., Increase team productivity",
-				required: true,
-				validation: (value: string) => {
-					if (value.length < 5) return "Objective name must be at least 5 characters";
-					return null;
-				},
-			},
-			{
-				name: "creation_date",
-				label: "Creation Date",
-				type: "date",
-				required: true,
-				validation: (value: string) => {
-					if (value.length < 5) return "Objective name must be at least 5 characters";
-					return null;
-				},
-			},
-			{
-				name: "description",
-				label: "Description",
-				type: "textarea",
-				placeholder: "Describe the objective in detail...",
-				required: true,
-				validation: (value: string) => {
-					if (value.length < 10) return "Description must be at least 10 characters";
-					return null;
-				},
-			},
-			{
-				name: "duration",
-				label: "Duration",
-				type: "number",
-				placeholder: "e.g., 3",
-				required: true,
-				validation: (value: string) => {
-					const num = Number.parseInt(value);
-					if (num < 1) return "Duration must be at least 1";
-					if (num > 365) return "Duration cannot exceed 365";
-					return null;
-				},
-			},
-			{
-				name: "duration_unit",
-				label: "Duration Unit",
-				type: "select",
-				options: durationUnitOptions,
-				required: true,
-			},
-			{
-				name: "key_result",
-				label: "Key Result (Optional)",
-				type: "select",
-				options: keyResultOptions,
-				placeholder: "Select a key result",
-			},
-			{
-				name: "self_employee_progress_update",
-				label: "Self Progress Updates",
-				type: "switch",
-				description: "Allow employees to update their own progress",
-			},
-		];
+		const memoizedManagersSearchableSelect = useMemo(
+			() => (
+				<EmployeeSearchableSelect
+					value={managersValue}
+					onValueChange={setManagersValue}
+					placeholder="Select manager"
+					multiple={false}
+					disabled={isLoading}
+				/>
+			),
+			[managersValue, isLoading],
+		);
 
-		const handleSubmit = (formData: IObjectiveFormData) => {
-			if (!currentInstitution) return;
-
-			const objectiveData: IObjectiveFormData = {
-				institution: currentInstitution.id,
-				name: formData.name,
-				description: formData.description,
-				duration: formData.duration,
-				duration_unit: formData.duration_unit as IDurationUnit,
-				managers_id: managersValue.length > 0 ? Number(managersValue[0]) : undefined,
-				assignees_id: assigneesValue.map((item) => Number(item)),
-				key_result: formData.key_result ? Number(formData.key_result) : undefined,
-				self_employee_progress_update: formData.self_employee_progress_update || false,
-				creation_date: formData.creation_date,
-			};
-
-			onSubmit(objectiveData);
-		};
-
-		const getInitialFormData = () => {
-			if (!initialData) return {};
-
-			return {
-				name: initialData.name,
-				description: initialData.description,
-				duration: initialData.duration,
-				duration_unit: initialData.duration_unit,
-				key_result: initialData.key_result?.id,
-				self_employee_progress_update: initialData.self_employee_progress_update,
-			};
-		};
+		const memoizedAssigneeSearchableSelect = useMemo(
+			() => (
+				<EmployeeSearchableSelect
+					value={assigneesValue}
+					onValueChange={setAssigneesValue}
+					placeholder="Select assignee"
+					multiple={false}
+					disabled={isLoading}
+				/>
+			),
+			[assigneesValue, isLoading],
+		);
 
 		return (
-			<div className="space-y-6 ">
-				<PerformanceForm<IObjectiveFormData>
-					ref={ref}
-					fields={fields}
-					initialData={getInitialFormData()}
-					onSubmit={handleSubmit}
-					isLoading={isLoading}
-					submitLabel={initialData ? "Update Objective" : "Create Objective"}
-					showCancel={false}
-					showSubmit={false}
-				/>
-
-				<div className="border-t pt-6">
-					<div className="flex items-center justify-between mb-4">
-						<h3 className="text-lg font-semibold text-slate-900">Key Result</h3>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => setIsKeyResultModalOpen(true)}
+			<form ref={ref} onSubmit={handleSubmit} className="space-y-6">
+				{/* Objective Fields */}
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+					{/* Name */}
+					<div className="space-y-2">
+						<Label htmlFor="name" className="text-sm font-medium text-slate-700">
+							Objective Name <span className="text-red-500">*</span>
+						</Label>
+						<Input
+							id="name"
+							type="text"
+							value={formData.name}
+							onChange={(e) => handleChange("name", e.target.value)}
+							placeholder="e.g., Increase team productivity"
 							disabled={isLoading}
-							className="flex items-center gap-2"
-						>
-							<Plus className="h-4 w-4" />
-							Add Key Result
-						</Button>
+							className={cn("rounded-xl", errors.name && "border-red-500")}
+						/>
+						{errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
 					</div>
-					<p className="text-sm text-slate-600 mb-4">
-						You can select an existing key result or create a new one to link with this objective.
-					</p>
+
+					{/* Duration */}
+					<div className="space-y-2">
+						<Label htmlFor="duration" className="text-sm font-medium text-slate-700">
+							Duration <span className="text-red-500">*</span>
+						</Label>
+						<div className="flex gap-2">
+							<Input
+								id="duration"
+								type="number"
+								value={formData.duration}
+								onChange={(e) => handleChange("duration", e.target.value)}
+								placeholder="e.g., 6"
+								disabled={isLoading}
+								className={cn("rounded-xl", errors.duration && "border-red-500")}
+							/>
+							<Select
+								value={formData.duration_unit}
+								onValueChange={(value) => handleChange("duration_unit", value)}
+								disabled={isLoading}
+							>
+								<SelectTrigger className="rounded-xl">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{durationUnitOptions.map((option) => (
+										<SelectItem key={option.value} value={option.value}>
+											{option.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+						{errors.duration && <p className="text-sm text-red-600">{errors.duration}</p>}
+					</div>
+
+					{/* Creation Date */}
+					<div className="space-y-2">
+						<Label htmlFor="date" className="text-sm font-medium text-slate-700">
+							Creation Date <span className="text-red-500">*</span>
+						</Label>
+						<Input
+							id="date"
+							type="date"
+							value={formData.date}
+							onChange={(e) => handleChange("date", e.target.value)}
+							disabled={isLoading}
+							className={cn("rounded-xl", errors.date && "border-red-500")}
+						/>
+						{errors.date && <p className="text-sm text-red-600">{errors.date}</p>}
+					</div>
+
+					{/* Key Result */}
+					<div className="space-y-2">
+						<div className="flex items-center justify-between gap-8">
+							<Label htmlFor="key_result" className="text-sm font-medium text-slate-700">
+								Key Result (Optional)
+							</Label>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setIsKeyResultModalOpen(true)}
+								disabled={isLoading}
+								className="flex items-center gap-2 rounded-xl"
+							>
+								<Plus className="h-4 w-4" />
+							</Button>
+						</div>
+						<Select
+							value={formData.key_result}
+							onValueChange={(value) => handleChange("key_result", value)}
+							disabled={isLoading}
+						>
+							<SelectTrigger className="rounded-xl">
+								<SelectValue placeholder="Select a key result" />
+							</SelectTrigger>
+							<SelectContent>
+								{keyResultOptions.map((option) => (
+									<SelectItem key={option.value} value={String(option.value)}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				</div>
+
+				{/* Description */}
+				<div className="space-y-2 md:col-span-2">
+					<Label htmlFor="description" className="text-sm font-medium text-slate-700">
+						Description
+					</Label>
+					<Textarea
+						id="description"
+						value={formData.description}
+						onChange={(e) => handleChange("description", e.target.value)}
+						placeholder="Describe the objective in detail..."
+						disabled={isLoading}
+						className={cn(
+							"min-h-[100px] rounded-xl resize-none",
+							errors.description && "border-red-500",
+						)}
+						rows={3}
+					/>
+					{errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
 				</div>
 
 				<div className="border-t pt-6">
@@ -222,29 +345,24 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
 						<div className="space-y-2">
 							<label className="text-sm font-medium text-slate-700">Manager (Optional)</label>
-							<EmployeeSearchableSelect
-								value={managersValue}
-								onValueChange={setManagersValue}
-								placeholder="Select manager"
-								multiple={false}
-								disabled={isLoading}
-							/>
+							{memoizedManagersSearchableSelect}
 							<p className="text-xs text-slate-500">Manager responsible for this objective</p>
 						</div>
 
 						<div className="space-y-2">
 							<label className="text-sm font-medium text-slate-700">Assignee (Optional)</label>
-							<EmployeeSearchableSelect
-								value={assigneesValue}
-								onValueChange={setAssigneesValue}
-								placeholder="Select assignee"
-								multiple={false}
-								disabled={isLoading}
-							/>
+							{memoizedAssigneeSearchableSelect}
 							<p className="text-xs text-slate-500">Employee assigned to achieve this objective</p>
 						</div>
 					</div>
 				</div>
+
+				{/* Form Actions */}
+				{/* <div className="flex justify-end gap-3 pt-4 border-t">
+					<Button type="submit" disabled={isLoading} className="px-8 w-full rounded-full">
+						{isLoading ? "Saving..." : initialData ? "Update Objective" : "Create Objective"}
+					</Button>
+				</div> */}
 
 				<KeyResultModal
 					isOpen={isKeyResultModalOpen}
@@ -252,7 +370,7 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 					onSubmit={handleCreateKeyResult}
 					isLoading={isCreatingKeyResult}
 				/>
-			</div>
+			</form>
 		);
 	},
 );

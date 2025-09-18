@@ -49,6 +49,7 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
 	searchPlaceholder?: string;
 	hideSelectedFromList?: boolean;
 	setParentItems?: (items: PaginatedSelectItem<T>[]) => void;
+	id?: string;
 }
 
 export function PaginatedSearchableSelect<T, Q = unknown>({
@@ -76,6 +77,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	emptyMessage = "No items found.",
 	searchPlaceholder = "Search items...",
 	hideSelectedFromList = false,
+	id,
 	setParentItems,
 }: PaginatedSearchableSelectProps<T, Q>) {
 	const [open, setOpen] = React.useState(false);
@@ -229,7 +231,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent className={cn("w-full p-0", popoverClassName)}>
+				<PopoverContent id={id || ""} className={cn("w-full p-0", popoverClassName)}>
 					<Command shouldFilter={false}>
 						<CommandInput
 							placeholder={searchPlaceholder}

@@ -1,21 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-	Plus,
-	Search,
-	MoreVertical,
-	Edit,
-	Download,
-	Trash2,
-	FileText,
-	File,
-	Loader2,
-	ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +22,28 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+	Plus,
+	Search,
+	MoreVertical,
+	Edit,
+	Download,
+	Trash2,
+	FileText,
+	File,
+	Loader2,
+	ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getDocumentTemplates, deleteDocumentTemplate } from "@/lib/utils";
 import { IDocumentTemplate } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
+import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import ProtectedComponent from "@/components/ProtectedComponent";
+import { toast } from "sonner";
 
 export default function DocumentTemplatesPage() {
 	const [templates, setTemplates] = useState<IDocumentTemplate[]>([]);
@@ -56,12 +57,23 @@ export default function DocumentTemplatesPage() {
 		template: null,
 	});
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const [showSuccess, setShowSuccess] = useState(false);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const INSTITUTION_ID = selectedInstitution?.id;
+	const [hasShownToast, setHasShownToast] = useState(false);
 
 	useEffect(() => {
 		loadTemplates();
 	}, []);
+
+	useEffect(() => {
+		if (searchParams.get("success") === "true" && !hasShownToast) {
+			toast.success("Template updated successfully!");
+			setHasShownToast(true);
+			window.history.replaceState({}, "", "/documents/templates");
+		}
+	}, [searchParams, hasShownToast]);
 
 	const loadTemplates = async () => {
 		setIsLoading(true);
@@ -244,8 +256,10 @@ export default function DocumentTemplatesPage() {
 									</DropdownMenu>
 								</div>
 								<CardDescription>
-									{template.document_type.name} • Created{" "}
-									{new Date(template.created_at).toLocaleDateString()}
+									{typeof template.document_type === "object"
+										? template.document_type.name
+										: "Unknown Type"}{" "}
+									Created {new Date(template.created_at).toLocaleDateString()}
 								</CardDescription>
 							</CardHeader>
 							<CardContent>

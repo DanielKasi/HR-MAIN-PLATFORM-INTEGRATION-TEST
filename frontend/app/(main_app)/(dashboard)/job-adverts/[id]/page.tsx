@@ -16,8 +16,8 @@ import {
 	FileText,
 	X,
 } from "lucide-react";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -320,7 +320,7 @@ export default function JobAdvertDetailsPage() {
 				</div>
 
 				<div
-					className={` gap-6 ${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+					className={`gap-6 ${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
 				>
 					{jobAdvert?.approvals && jobAdvert.approvals.length > 0 && (
 						<div className="order-1 lg:order-2">

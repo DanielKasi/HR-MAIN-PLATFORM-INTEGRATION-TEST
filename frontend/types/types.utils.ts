@@ -706,6 +706,7 @@ export interface IEmployeeFormData {
 	emergency_contact_relationship?: string;
 	bank?: string;
 	bank_account_number?: string;
+	payroll_branch?: number | null;
 }
 
 // Interface for local form state management
@@ -2456,7 +2457,7 @@ export interface IObjective {
 	managers?: IEmployee | null;
 	duration_unit: IDurationUnit;
 	duration: string;
-	creation_date: string;
+	date: string;
 	key_result?: IKeyResult | null;
 	assignees?: IEmployee[];
 	self_employee_progress_update: boolean;
@@ -2471,7 +2472,7 @@ export interface IObjectiveFormData {
 	duration: string;
 	key_result?: number;
 	assignees_id?: number[];
-	creation_date: string;
+	date: string;
 	self_employee_progress_update?: boolean;
 }
 
@@ -2551,7 +2552,7 @@ export interface IEmployeeBonusPoint {
 }
 
 export interface IEmployeeBonusPointFormData {
-	employee: number;
+	employee_id: number;
 	bonus_point_setting?: number;
 	reason: string;
 	date?: string;
@@ -2585,9 +2586,35 @@ export interface IBonusPointSettingsFormData {
 	condition_value: "end_date";
 }
 
+export type CustomFieldType =
+	| "text"
+	| "date"
+	| "select"
+	| "checkbox"
+	| "number"
+	| "textarea"
+	| "file";
+
 export type IQuestionCategory = "interview" | "performance_review" | "360_feedback" | "general";
 
 export type IQuestionType = "text" | "rating" | "multiple_choice" | "yes_no";
+
+export interface CustomField {
+	id: string;
+	name: string;
+	description: string;
+	type: IQuestionType;
+	value?: any;
+	is_required?: boolean;
+	options?: string[]; // For multiple_choice
+}
+
+export interface CustomFieldFormData {
+	title: string;
+	description: string;
+	question_type: IQuestionType;
+	options?: string[]; // For multiple_choice
+}
 
 export interface IQuestionTemplate {
 	id: number;
@@ -2595,7 +2622,7 @@ export interface IQuestionTemplate {
 	name: string;
 	description?: string | null;
 	category: IQuestionCategory;
-	questions: any[];
+	questions: CustomField[];
 }
 
 export interface IQuestionTemplateFormData {
@@ -2603,7 +2630,7 @@ export interface IQuestionTemplateFormData {
 	name: string;
 	description?: string;
 	category: IQuestionCategory;
-	questions: any[];
+	questions: CustomField[];
 }
 
 export type IApplicableFor = "managers" | "assignees";
@@ -2642,7 +2669,7 @@ export interface IMeetingFormData {
 	mode: IEventMode;
 	location?: string;
 	participant_ids: number[];
-	organizer?: number;
+	organizer_id?: number;
 	agenda?: string;
 	minutes?: string;
 	is_recurring?: boolean;
