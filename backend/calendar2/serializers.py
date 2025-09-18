@@ -34,11 +34,18 @@ class EventSerializer(BaseApprovableSerializer):
 
 class EventOccurrenceSerializer(serializers.ModelSerializer):
     event = EventSerializer(read_only=True)
+    is_birthday = serializers.BooleanField(source='event.is_birthday')
+    employee_name = serializers.SerializerMethodField()
 
     class Meta:
         model = EventOccurrence
-        fields = ["id", "event", "date"]
+        fields = ["id", "event", "date", "is_birthday", "employee_name"]
         read_only_fields = ["id"]
+
+    def get_employee_name(self, obj):
+        if obj.event.is_birthday and obj.event.specific_employees.exists():
+            return obj.event.specific_employees.first().user.fullname
+        return None    
 
 
 class CalendarSerializer(serializers.ModelSerializer):
