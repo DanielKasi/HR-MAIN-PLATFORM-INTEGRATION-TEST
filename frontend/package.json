@@ -89,6 +89,7 @@
 		"react-dom": "^19.1.0",
 		"react-hook-form": "^7.54.1",
 		"react-idle-timer": "^5.7.2",
+		"react-intersection-observer": "^9.16.0",
 		"react-leaflet": "^5.0.0",
 		"react-pdf": "^10.0.1",
 		"react-quill-new": "^3.6.0",
