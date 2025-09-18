@@ -24,6 +24,20 @@ import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selec
 import { select } from "redux-saga/effects";
 import { getJobPositions } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
+import {
+	getPaginatedJobPositions,
+	getPaginatedJobPositionsFromUrl,
+	getPaginatedDepartments,
+	getPaginatedDepartmentsFromUrl,
+} from "@/lib/utils";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -33,33 +47,25 @@ export default function EmployeesPage() {
 	const router = useRouter();
 	const institutionId = useSelector(selectSelectedInstitution)?.id;
 	const accessToken = useSelector(selectAccessToken);
-	const [positionSearchTerm, setPositionSearchTerm] = useState("");
+	const [positionSearchTerm, setPositionSearchTerm] = useState<(string | number)[]>([]);
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
+	const [minSalary, setMinSalary] = useState<string>("");
+	const [maxSalary, setMaxSalary] = useState<string>("");
+	const [departmentSearchTerm, setDepartmentSearchTerm] = useState<(string | number)[]>([]);
+
+	const clearJobPosition = () => {
+		setPositionSearchTerm([]);
+	};
 
 	const clearFilters = () => {
 		setSearchTerm("");
-		setDepartmentFilter("all");
+		setDepartmentSearchTerm([]);
 		setStatusFilter("all");
-		setPositionSearchTerm("");
+		setPositionSearchTerm([]);
+		setMinSalary("");
+		setMaxSalary("");
 	};
-
-	useEffect(() => {
-		const fetchJobPositions = async () => {
-			if (!institutionId) return;
-
-			try {
-				const positions = await getJobPositions({
-					institutionId,
-				});
-				setJobPositions(positions);
-			} catch (error) {
-				console.error("Failed to fetch job positions:", error);
-			}
-		};
-
-		fetchJobPositions();
-	}, [institutionId, accessToken]);
 
 	const handleExportEmployees = async () => {
 		try {
@@ -131,7 +137,7 @@ export default function EmployeesPage() {
 						</div>
 					</CardTitle>
 
-					<div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-12">
+					<div className="flex flex-col md:grid md:grid-cols-3 lg:flex lg:flex-row gap-4 items-start lg:items-center mt-12 overflow-visible">
 						<div className="relative w-full md:max-w-lg lg:max-w-xl ">
 							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
@@ -141,15 +147,37 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
-
-						{/* ADD POSITION SEARCH HERE - OUTSIDE THE CONSTRAINED CONTAINER */}
-						<div className="relative w-full md:max-w-lg lg:max-w-xl">
-							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-							<Input
-								placeholder="Search job positions..."
+						<div className="flex gap-1 sm:gap-2 w-full overflow-visible md:contents">
+							<JobPositionSearchableSelect
 								value={positionSearchTerm}
-								onChange={(e) => setPositionSearchTerm(e.target.value)}
-								className="pl-10 text-sm"
+								onValueChange={setPositionSearchTerm}
+								placeholder="Job positions..."
+								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+								multiple={false}
+								showSelectedItems={true}
+							/>
+							<DepartmentSearchableSelect
+								value={departmentSearchTerm}
+								onValueChange={setDepartmentSearchTerm}
+								placeholder="Departments..."
+								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+								multiple={false}
+								showSelectedItems={true}
+							/>
+						</div>
+
+						{/* Salary Range Inputs */}
+						<div className="flex gap-2 items-center">
+							<FormatNumberInput
+								placeholder="Min salary"
+								value={minSalary}
+								onChange={(formatted, numericValue) => setMinSalary(formatted)}
+							/>
+							<span className="text-gray-400">-</span>
+							<FormatNumberInput
+								placeholder="Max salary"
+								value={maxSalary}
+								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
 							/>
 						</div>
 
@@ -189,8 +217,12 @@ export default function EmployeesPage() {
 					searchTerm={searchTerm}
 					refreshFunctionRef={refreshFunctionRef}
 					positionSearchTerm={positionSearchTerm}
+					departmentFilter={
+						departmentSearchTerm.length > 0 ? departmentSearchTerm.join(",") : "all"
+					}
+					minSalary={minSalary}
+					maxSalary={maxSalary}
 				/>
-
 				<BulkUploadEmployeesDialog
 					isOpen={isBulkUploadDialogOpen}
 					onClose={() => setIsBulkUploadDialogOpen(false)}

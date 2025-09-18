@@ -41,7 +41,10 @@ import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-
 interface EmployeesTableProps {
 	refreshFunctionRef?: RefObject<(() => void) | null>;
 	searchTerm?: string;
-	positionSearchTerm?: string;
+	positionSearchTerm?: (string | number)[];
+	departmentFilter?: string;
+	minSalary?: string;
+	maxSalary?: string;
 }
 
 export function EmployeesTable({
@@ -216,7 +219,13 @@ export function EmployeesTable({
 						page: 1,
 						ordering,
 						search: searchTerm || undefined,
-						positionSearch: positionSearchTerm || undefined,
+						positionSearch:
+							positionSearchTerm && positionSearchTerm.length > 0
+								? positionSearchTerm.join(",") 
+								: undefined,
+						departmentSearch: departmentFilter !== "all" ? departmentFilter : undefined,
+						minSalary: minSalary ? removeCommas(minSalary) : undefined,
+						maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
 					});
 				}}
 				fetchFromUrl={getPaginatedEmployeesFromUrl}

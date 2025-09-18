@@ -67,9 +67,7 @@ export const JobPositionSearchableSelect = ({
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
-		if (multiple) {
-			onValueChange(value.filter((id) => String(id) !== String(itemId)));
-		}
+		onValueChange(value.filter((id) => String(id) !== String(itemId)));
 	};
 
 	return (
