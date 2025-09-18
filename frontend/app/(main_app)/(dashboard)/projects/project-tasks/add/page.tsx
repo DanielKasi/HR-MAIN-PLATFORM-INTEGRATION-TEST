@@ -22,6 +22,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 import { IProjectTaskFormData } from "@/types/types.utils";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 export default function AddTaskPage() {
 	const router = useRouter();
@@ -244,7 +245,7 @@ export default function AddTaskPage() {
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 							<div className="space-y-3">
 								<Label className="text-base font-medium">Task Leaders (Optional)</Label>
-								<UserProfileSearchableSelect
+								<EmployeeSearchableSelect
 									value={formData.managers}
 									onValueChange={(values) => {
 										handleInputChange(
@@ -260,7 +261,7 @@ export default function AddTaskPage() {
 							</div>
 							<div className="space-y-3">
 								<Label className="text-base font-medium">Assign To (Optional)</Label>
-								<UserProfileSearchableSelect
+								<EmployeeSearchableSelect
 									value={formData.assigned_to}
 									onValueChange={(values) => {
 										handleInputChange(

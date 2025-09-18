@@ -37,38 +37,7 @@ import {
 import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-table";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-
-interface IProjectTask {
-	id: number;
-	project: number;
-	task_name: string;
-	description: string;
-	managers: UserProfile[];
-	assigned_to: UserProfile[];
-	start_date: string;
-	end_date: string;
-	task_status: "not_started" | "in_progress" | "completed" | "on_hold";
-	priority: "low" | "medium" | "high" | "urgent";
-}
-
-interface IProject {
-	id: number;
-	institution: number;
-	project_name: string;
-	managers: UserProfile[];
-	assignees: UserProfile[];
-	description: string;
-	start_date: string;
-	end_date: string;
-	project_status:
-		| "not_started"
-		| "in_progress"
-		| "planning"
-		| "on_hold"
-		| "cancelled"
-		| "completed";
-	project_tasks: IProjectTask[];
-}
+import { IProject, IProjectTask } from "@/types/types.utils";
 
 const getStatusIcon = (status: string) => {
 	switch (status) {

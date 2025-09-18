@@ -23,6 +23,7 @@ import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
 import { UserProfileSearchableSelect } from "@/components/selects/user-profile-searchable-select";
 import { IProjectTaskFormData, IProjectTaskStatus } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 export default function EditTaskPage() {
 	const router = useRouter();
@@ -72,7 +73,7 @@ export default function EditTaskPage() {
 				priority: task.priority,
 				project: task.project,
 				managers: task.managers.map((leader) => leader.id),
-				assigned_to: task.assigned_to.map((assignee) => assignee.id),
+				assigned_to: task.assignees.map((assignee) => assignee.id),
 			});
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Error fetching task details" });
@@ -309,7 +310,7 @@ export default function EditTaskPage() {
 								{/* Leaders Selection */}
 								<div className="space-y-3">
 									<Label className="text-base font-medium">Task Leaders (Optional)</Label>
-									<UserProfileSearchableSelect
+									<EmployeeSearchableSelect
 										value={formData.managers}
 										onValueChange={(values) => {
 											handleInputChange(
@@ -327,7 +328,7 @@ export default function EditTaskPage() {
 								{/* Assignees Selection */}
 								<div className="space-y-3">
 									<Label className="text-base font-medium">Assign To (Optional)</Label>
-									<UserProfileSearchableSelect
+									<EmployeeSearchableSelect
 										value={formData.assigned_to}
 										onValueChange={(values) => {
 											handleInputChange(

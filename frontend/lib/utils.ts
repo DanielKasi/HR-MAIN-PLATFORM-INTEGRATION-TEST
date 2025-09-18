@@ -5437,6 +5437,10 @@ export const bankTypesAPI = {
 			throw error;
 		}
 	},
+	getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IBankType>> => {
+		const response = await apiRequest.get(forceUrlToHttps(url));
+		return response.data as IPaginatedResponse<IBankType>;
+	},
 	getById: async ({ bankTypeId }: { bankTypeId: string }) => {
 		try {
 			const response = await apiRequest.get(`/institution/bank-type/${bankTypeId}`);
@@ -7722,7 +7726,6 @@ export const PROJECTS_API = {
 
 	getPaginatedProjectsFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
-
 		return response.data as IPaginatedResponse<IProject>;
 	},
 
@@ -7768,7 +7771,7 @@ export const PROJECTS_TASKS_API = {
 			params.append("search", search);
 		}
 		ordering && params.append("ordering", ordering);
-		const endpoint = `projects/tasks/${projectId}/?${params.toString()}`;
+		const endpoint = `projects/tasks/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
 
 		return response.data as IPaginatedResponse<IProjectTask>;
@@ -7781,7 +7784,7 @@ export const PROJECTS_TASKS_API = {
 	},
 
 	create: async ({ projectId, data }: { projectId: number; data: IProjectTaskFormData }) => {
-		const response = await apiRequest.post(`projects/tasks/${projectId}/`, data);
+		const response = await apiRequest.post(`projects/tasks/`, data);
 
 		return response.data as IProjectTask;
 	},
