@@ -173,6 +173,7 @@ import {
 	IMeetingIntegrationFormData,
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
+	ICompanyEmail,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -6625,13 +6626,7 @@ export const employeeAPI = {
 		const response = await apiRequest.post(`/employee/employee-company-emails/${employee_id}/`, {
 			employee: employee_id,
 		});
-		return response as {
-			id: number;
-			employee: number;
-			email: string;
-			provider: string;
-			status: string;
-		};
+		return response as ICompanyEmail;
 	},
 };
 

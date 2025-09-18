@@ -4,7 +4,7 @@ import type { ILeaveType, ILeaveTypeFormData } from "@/types/types.utils";
 
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { Plus, MoreVertical, Edit, Trash2, Search, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Search, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
 
@@ -51,6 +51,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import FormatNumberInput from "@/components/format-number-input";
+import { LeaveTypeDetailsDialog } from "@/components/dialogs/leave-type-details-dilaog";
 
 const LEAVE_CATEGORIES = [
 	{ value: "annual", label: "Annual Leave" },
@@ -106,7 +107,8 @@ const LeaveTypesPage = () => {
 	const [categoryFilter, setCategoryFilter] = useState<string>("all");
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const [ordering, setOrdering] = useState("");
-
+	const [viewingLeaveType, setViewingLeaveType] = useState<ILeaveType | null>(null);
+	const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	const [formData, setFormData] = useState<{
@@ -203,6 +205,11 @@ const LeaveTypesPage = () => {
 		} finally {
 			setIsSubmitting(false);
 		}
+	};
+
+	const handleViewLeaveType = (type: ILeaveType) => {
+		setIsViewDialogOpen(true);
+		setViewingLeaveType(type);
 	};
 
 	const handleUpdateLeaveType = async () => {
@@ -815,6 +822,13 @@ const LeaveTypesPage = () => {
 																</DropdownMenuTrigger>
 																<DropdownMenuContent align="end">
 																	<DropdownMenuItem
+																		onClick={() => handleViewLeaveType(leaveType)}
+																		className="text-xs sm:text-sm"
+																	>
+																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+																		View Details
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
 																		onClick={() => handleEditLeaveType(leaveType)}
 																		className="text-xs sm:text-sm"
 																	>
@@ -845,6 +859,23 @@ const LeaveTypesPage = () => {
 					</PaginatedTableWrapper>
 				</CardContent>
 			</div>
+
+			{/* View Dialog */}
+			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
+				<LeaveTypeDetailsDialog
+					isOpen={isViewDialogOpen}
+					onOpenChange={(open) => {
+						setIsViewDialogOpen(open);
+						if (!open) {
+							setViewingLeaveType(null);
+						}
+					}}
+					leaveType={viewingLeaveType}
+					approvals={viewingLeaveType?.approvals}
+					instanceApprovalStatus={viewingLeaveType?.approval_status}
+					onRefresh={() => refreshTableRef.current?.()}
+				/>
+			</ProtectedComponent>
 
 			{/* Edit Dialog */}
 			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_MANAGE_LEAVE_TYPES}>
