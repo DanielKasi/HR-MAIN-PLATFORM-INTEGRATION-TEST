@@ -619,10 +619,12 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         ('deleted', 'Deleted'),
     )
 
-    employee = models.ForeignKey(
+    employee = models.OneToOneField(
         Employee,
         on_delete=models.CASCADE,
-        related_name='company_emails'
+        related_name='company_email',
+        null=True,
+        blank=True
     )
     email = models.EmailField(unique=True)
     provider = models.CharField(

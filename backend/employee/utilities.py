@@ -127,7 +127,7 @@ def generate_employee_excel(employees):
             emp.employee_id,
             emp.user.fullname if emp.user else "",
             emp.user.email if emp.user else "",
-            emp.company_email.email if emp.company_email else "",
+            emp.company_emails.email if emp.company_emails else "",
             emp.phone_number or "",
             emp.position.name if emp.position else "",
             emp.gender or "",
