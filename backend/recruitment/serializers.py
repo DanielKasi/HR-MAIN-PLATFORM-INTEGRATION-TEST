@@ -260,8 +260,7 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
     def get_interview_stages(self, obj):
         interview_stages = InterviewStage.objects.filter(job_position_advert=obj)
         return InterviewStageSerializer(
-            interview_stages, many=True, context=self.context
-        ).data
+            interview_stages, many=True, context=self.context).data
 
     def get_job_position_details(self, obj):
         return {

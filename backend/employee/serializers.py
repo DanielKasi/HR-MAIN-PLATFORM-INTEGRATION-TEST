@@ -193,7 +193,7 @@ class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmployeeCompanyEmail
-        fields = ['email', 'provider', 'status']
+        fields = ['email', 'provider', 'status', 'employee']
         extra_kwargs = {
             'email': {'required': True},
             'provider': {'required': False, 'allow_null': True, 'allow_blank': True},
