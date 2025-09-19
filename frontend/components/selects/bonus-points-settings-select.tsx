@@ -35,9 +35,9 @@ export const BonusPointSettingsSelect = ({
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	useEffect(() => {
-		setSelectedItems(value);
-	}, [value]);
+	// useEffect(() => {
+	// 	setSelectedItems(value);
+	// }, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {

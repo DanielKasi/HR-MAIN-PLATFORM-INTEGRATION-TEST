@@ -68,10 +68,9 @@ export const EmployeeSearchableSelect = ({
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-		// console.log("\n\n Removing item  : ", itemId)
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (
