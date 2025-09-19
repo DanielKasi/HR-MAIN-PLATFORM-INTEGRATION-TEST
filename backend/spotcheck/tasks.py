@@ -11,7 +11,6 @@ from django.db import IntegrityError
 def initiate_next_spotcheck_for_an_employee(employee_id):
 
     from spotcheck.utilities import (
-        get_employee_spotchecks_expires_after_minutes,
         send_spotcheck_email,
     )
 
