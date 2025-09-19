@@ -6,15 +6,14 @@ import { EmployeesTable } from "./employees-table";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from "@radix-ui/react-select";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Plus, UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -23,7 +22,11 @@ import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
 import { getJobPositions, showErrorToast } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
-import { Icon } from "@iconify/react";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
+import FormatNumberInput from "@/components/format-number-input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Icon } from '@iconify/react';
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -33,35 +36,27 @@ export default function EmployeesPage() {
 	const router = useRouter();
 	const institutionId = useSelector(selectSelectedInstitution)?.id;
 	const accessToken = useSelector(selectAccessToken);
-	const [positionSearchTerm, setPositionSearchTerm] = useState("");
+	const [positionSearchTerm, setPositionSearchTerm] = useState<(string | number)[]>([]);
 	const [jobPositions, setJobPositions] = useState<IJobPosition[]>([]);
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
+	const [minSalary, setMinSalary] = useState<string>("");
+	const [maxSalary, setMaxSalary] = useState<string>("");
+	const [departmentSearchTerm, setDepartmentSearchTerm] = useState<(string | number)[]>([]);
+
+	const clearJobPosition = () => {
+		setPositionSearchTerm([]);
+	};
 
 	const [isExportingToExcel, setIsExportingToExcel] = useState(false);
 
 	const clearFilters = () => {
 		setSearchTerm("");
-		setDepartmentFilter("all");
+		setDepartmentSearchTerm([]);
 		setStatusFilter("all");
-		setPositionSearchTerm("");
+		setPositionSearchTerm([]);
+		setMinSalary("");
+		setMaxSalary("");
 	};
-
-	useEffect(() => {
-		const fetchJobPositions = async () => {
-			if (!institutionId) return;
-
-			try {
-				const positions = await getJobPositions({
-					institutionId,
-				});
-				setJobPositions(positions);
-			} catch (error) {
-				console.error("Failed to fetch job positions:", error);
-			}
-		};
-
-		fetchJobPositions();
-	}, [institutionId, accessToken]);
 
 	const handleExportEmployees = async () => {
 		try {
@@ -149,7 +144,7 @@ export default function EmployeesPage() {
 						</div>
 					</CardTitle>
 
-					<div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center mt-12">
+					<div className="flex flex-col md:grid md:grid-cols-3 lg:flex lg:flex-row gap-4 items-start lg:items-center mt-12 overflow-visible">
 						<div className="relative w-full md:max-w-lg lg:max-w-xl ">
 							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
@@ -159,46 +154,39 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
-
-						{/* ADD POSITION SEARCH HERE - OUTSIDE THE CONSTRAINED CONTAINER */}
-						<div className="relative w-full md:max-w-lg lg:max-w-xl">
-							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-							<Input
-								placeholder="Search job positions..."
+						<div className="flex gap-1 sm:gap-2 w-full overflow-visible md:contents">
+							<JobPositionSearchableSelect
 								value={positionSearchTerm}
-								onChange={(e) => setPositionSearchTerm(e.target.value)}
-								className="pl-10 text-sm"
+								onValueChange={setPositionSearchTerm}
+								placeholder="Job positions..."
+								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+								multiple={false}
+								showSelectedItems={true}
+							/>
+							<DepartmentSearchableSelect
+								value={departmentSearchTerm}
+								onValueChange={setDepartmentSearchTerm}
+								placeholder="Departments..."
+								className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+								multiple={false}
+								showSelectedItems={true}
 							/>
 						</div>
 
-						<div className="flex flex-col sm:flex-row gap-3 flex-1 lg:flex-[0.4]">
-							<div className="flex flex-col sm:flex-row gap-3 flex-1">
-								<Select value={statusFilter} onValueChange={setStatusFilter}>
-									<SelectTrigger className="w-full sm:w-[140px] lg:w-[160px] text-xs sm:text-sm">
-										<SelectValue placeholder="Status" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="all">All Statuses</SelectItem>
-										<SelectItem value="active">Active</SelectItem>
-										<SelectItem value="inactive">Inactive</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-
-							{/* {(searchTerm.trim() ||
-								positionSearchTerm.trim() ||
-								departmentFilter !== "all" ||
-								statusFilter !== "all") && (
-								<Button
-									variant="outline"
-									onClick={clearFilters}
-									className="flex items-center gap-2 w-full sm:w-auto text-xs sm:text-sm bg-transparent"
-								>
-									Clear Filters
-								</Button>
-							)} */}
+						{/* Salary Range Inputs */}
+						<div className="flex gap-2 items-center">
+							<FormatNumberInput
+								placeholder="Min salary"
+								value={minSalary}
+								onChange={(formatted, numericValue) => setMinSalary(formatted)}
+							/>
+							<span className="text-gray-400">-</span>
+							<FormatNumberInput
+								placeholder="Max salary"
+								value={maxSalary}
+								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
+							/>
 						</div>
-
 						{/* Add Employee Dropdown */}
 						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
 					</div>
@@ -207,8 +195,12 @@ export default function EmployeesPage() {
 					searchTerm={searchTerm}
 					refreshFunctionRef={refreshFunctionRef}
 					positionSearchTerm={positionSearchTerm}
+					departmentFilter={
+						departmentSearchTerm.length > 0 ? departmentSearchTerm.join(",") : "all"
+					}
+					minSalary={minSalary}
+					maxSalary={maxSalary}
 				/>
-
 				<BulkUploadEmployeesDialog
 					isOpen={isBulkUploadDialogOpen}
 					onClose={() => setIsBulkUploadDialogOpen(false)}
