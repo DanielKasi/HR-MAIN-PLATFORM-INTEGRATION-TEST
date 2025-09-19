@@ -61,78 +61,78 @@ class Command(BaseCommand):
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         
         # Run deletion logic
-    #     self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+        self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    # def delete_inactive_employees(self, dry_run, no_confirm):
-    #     self.stdout.write(
-    #         self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
-    #     )
+    def delete_inactive_employees(self, dry_run, no_confirm):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
+        )
         
-    #     # Find inactive employees that are not soft-deleted
-    #     inactive_employees = Employee.objects.filter(
-    #         is_active=False, deleted_at__isnull=False
-    #     ).select_related('user')
+        # Find inactive employees that are not soft-deleted
+        inactive_employees = Employee.objects.filter(
+            is_active=False, deleted_at__isnull=False
+        ).select_related('user')
         
-    #     employee_count = inactive_employees.count()
-    #     user_count = sum(1 for emp in inactive_employees if emp.user)
+        employee_count = inactive_employees.count()
+        user_count = sum(1 for emp in inactive_employees if emp.user)
         
-    #     if employee_count == 0:
-    #         self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
-    #         return
+        if employee_count == 0:
+            self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
+            return
 
-    #     if dry_run:
-    #         self.stdout.write('Dry run mode: No records will be deleted.')
-    #         self.stdout.write(f'Found {employee_count} inactive employee(s):')
-    #         for employee in inactive_employees:
-    #             self.stdout.write(f'- Employee: {employee.name or "Unnamed"}, User: {employee.user.fullname if employee.user else "No User"}')
-    #         return
+        if dry_run:
+            self.stdout.write('Dry run mode: No records will be deleted.')
+            self.stdout.write(f'Found {employee_count} inactive employee(s):')
+            for employee in inactive_employees:
+                self.stdout.write(f'- Employee: {employee.name or "Unnamed"}, User: {employee.user.fullname if employee.user else "No User"}')
+            return
 
-    #     # Confirmation prompt unless --no-confirm is provided
-    #     if not no_confirm:
-    #         self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
-    #         confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
-    #         if confirm.lower() != 'yes':
-    #             self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
-    #             return
+        # Confirmation prompt unless --no-confirm is provided
+        if not no_confirm:
+            self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
+            confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
+            if confirm.lower() != 'yes':
+                self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
+                return
 
-    #     try:
-    #         with transaction.atomic():
-    #             deleted_employees = []
-    #             deleted_users = []
-    #             for employee in inactive_employees:
-    #                 self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee.name or "Unnamed"}'))
-    #                 # Delete Employee first to satisfy PROTECT constraint
-    #                 Employee._base_manager.filter(id=employee.id).delete()
-    #                 deleted_employees.append(str(employee))
+        try:
+            with transaction.atomic():
+                deleted_employees = []
+                deleted_users = []
+                for employee in inactive_employees:
+                    self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee.name or "Unnamed"}'))
+                    # Delete Employee first to satisfy PROTECT constraint
+                    Employee._base_manager.filter(id=employee.id).delete()
+                    deleted_employees.append(str(employee))
                     
-    #                 if employee.user:
-    #                     self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user.fullname}'))
-    #                     # Delete CustomUser after Employee
-    #                     CustomUser._base_manager.filter(id=employee.user.id).delete()
-    #                     deleted_users.append(str(employee.user))
+                    if employee.user:
+                        self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user.fullname}'))
+                        # Delete CustomUser after Employee
+                        CustomUser._base_manager.filter(id=employee.user.id).delete()
+                        deleted_users.append(str(employee.user))
 
-    #             # Verify deletions
-    #             remaining = Employee.objects.filter(
-    #                 is_active=False, deleted_at__isnull=True
-    #             ).count()
-    #             if remaining > 0:
-    #                 self.stdout.write(
-    #                     self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
-    #                 )
+                # Verify deletions
+                remaining = Employee.objects.filter(
+                    is_active=False, deleted_at__isnull=True
+                ).count()
+                if remaining > 0:
+                    self.stdout.write(
+                        self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
+                    )
 
-    #             self.stdout.write(self.style.SUCCESS(
-    #                 f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
-    #             ))
-    #             self.stdout.write('Deleted Employees:')
-    #             for emp in deleted_employees:
-    #                 self.stdout.write(f'- {emp}')
-    #             self.stdout.write('Deleted Users:')
-    #             for user in deleted_users:
-    #                 self.stdout.write(f'- {user}')
+                self.stdout.write(self.style.SUCCESS(
+                    f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
+                ))
+                self.stdout.write('Deleted Employees:')
+                for emp in deleted_employees:
+                    self.stdout.write(f'- {emp}')
+                self.stdout.write('Deleted Users:')
+                for user in deleted_users:
+                    self.stdout.write(f'- {user}')
 
-    #     except Exception as e:
-    #         self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
-    #         raise
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
+            raise
 
     def resend_welcome_emails(self, reset_password, employee_ids=None):
         self.stdout.write(
@@ -739,6 +739,6 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(
                         self.style.NOTICE(
-                            f"  └─ Employee already exists for owner user {owner_user.email} with name '{owner_employee.name or "Unnamed"}'"
+                            f"  └─ Employee already exists for owner user {owner_user.email} with name '{owner_employee.name or 'Unnamed'}'"
                         )
                     )
