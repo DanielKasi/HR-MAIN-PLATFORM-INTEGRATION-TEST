@@ -106,24 +106,28 @@ export default function PerformancePage() {
 							value={analytics.periods?.active || 0}
 							icon={<Calendar className="h-5 w-5" />}
 							description="Current review cycles"
+							link={""}
 						/>
 						<PerformanceStatsCard
 							title="Total Objectives"
 							value={analytics.objectives?.total || 0}
 							icon={<Target className="h-5 w-5" />}
 							description="Defined goals"
+							link={""}
 						/>
 						<PerformanceStatsCard
 							title="Employee Assignments"
 							value={analytics.employee_objectives?.total || 0}
 							icon={<Users className="h-5 w-5" />}
 							description="Active assignments"
+							link={""}
 						/>
 						<PerformanceStatsCard
 							title="Feedback Entries"
 							value={analytics.feedback?.total || 0}
 							icon={<MessageSquare className="h-5 w-5" />}
 							description="360° feedback"
+							link={""}
 						/>
 					</div>
 				)}
