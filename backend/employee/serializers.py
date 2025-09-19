@@ -402,25 +402,28 @@ class EmployeeSerializer(BaseApprovableSerializer):
             Spouse.objects.create(employee=employee, **spouse_data)
 
         if company_email_data and company_email_data.get("email"):
-            # print(f"Processing company_email_data for create: {company_email_data}")
-            try:
-                company_email_data_with_employee = {
-                    "employee": employee,
-                    "email": company_email_data["email"],
-                    "provider": company_email_data.get("provider"),
-                    "status": company_email_data.get("status", "pending")
-                }
-                # print(f"Prepared company_email_data_with_employee: {company_email_data_with_employee}")
-                company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data_with_employee)
-                company_email_serializer.is_valid(raise_exception=True)
-                company_email_serializer.save()
-                # print(f"Saved company email for employee {employee.id}: {company_email_data['email']}")
-            except serializers.ValidationError as e:
-                # print(f"Failed to save company email for employee {employee.id}: {e}")
-                raise
-            except Exception as e:
-                # print(f"Unexpected error saving company email for employee {employee.id}: {e}")
-                raise serializers.ValidationError({"company_email": f"Error saving company email: {str(e)}"})
+            EmployeeCompanyEmail.objects.create(employee=employee, **company_email_data)    
+
+        # if company_email_data and company_email_data.get("email"):
+        #     # print(f"Processing company_email_data for create: {company_email_data}")
+        #     try:
+        #         company_email_data_with_employee = {
+        #             "employee": employee,
+        #             "email": company_email_data["email"],
+        #             "provider": company_email_data.get("provider"),
+        #             "status": company_email_data.get("status", "pending")
+        #         }
+        #         # print(f"Prepared company_email_data_with_employee: {company_email_data_with_employee}")
+        #         company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data_with_employee)
+        #         company_email_serializer.is_valid(raise_exception=True)
+        #         company_email_serializer.save()
+        #         # print(f"Saved company email for employee {employee.id}: {company_email_data['email']}")
+        #     except serializers.ValidationError as e:
+        #         # print(f"Failed to save company email for employee {employee.id}: {e}")
+        #         raise
+        #     except Exception as e:
+        #         # print(f"Unexpected error saving company email for employee {employee.id}: {e}")
+        #         raise serializers.ValidationError({"company_email": f"Error saving company email: {str(e)}"})
 
         for i, branch_id in enumerate(selected_branches or []):
             try:
@@ -517,44 +520,28 @@ class EmployeeSerializer(BaseApprovableSerializer):
             if existing_spouse:
                 existing_spouse.delete()
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+        if company_email_data is not None and company_email_data:
+            company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data, context=self.context)
+            try:
+                company_email_serializer.is_valid(raise_exception=True)
+                existing_company_email = EmployeeCompanyEmail.objects.filter(employee=instance).first()
+                if existing_company_email:
+                    for attr, value in company_email_serializer.validated_data.items():
+                        setattr(existing_company_email, attr, value)
+                    existing_company_email.save()
+                else:
+                    EmployeeCompanyEmail.objects.create(employee=instance, **company_email_serializer.validated_data)
+            except serializers.ValidationError as ve:
+                raise serializers.ValidationError({"company_email": ve.detail})
+            except IntegrityError as ie:
+                raise serializers.ValidationError({"company_email": "A company email already exists for this employee."})
+            except Exception as e:
+                raise serializers.ValidationError({"company_email": f"Error updating/creating company email: {str(e)}"})
+        elif company_email_data == {}:
+            existing_company_email = EmployeeCompanyEmail.objects.filter(employee=instance).first()
+            if existing_company_email:
+                existing_company_email.delete()        
 
-        if company_email_data is not None:
-            # print(f"Processing company_email_data for update: {company_email_data}")
-            existing_company_email = instance.company_emails.first()
-            if company_email_data and company_email_data.get("email"):
-                try:
-                    # Create a new dictionary to avoid mutating the original
-                    company_email_data_with_employee = {
-                        "employee": instance.id,  # Use employee ID for PrimaryKeyRelatedField
-                        "email": company_email_data["email"],
-                        "provider": company_email_data.get("provider"),
-                        "status": company_email_data.get("status", "pending")
-                    }
-                    # print(f"Prepared company_email_data_with_employee: {company_email_data_with_employee}")
-                    company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data_with_employee)
-                    company_email_serializer.is_valid(raise_exception=True)
-                    if existing_company_email:
-                        # Update existing company email
-                        for attr, value in company_email_serializer.validated_data.items():
-                            setattr(existing_company_email, attr, value)
-                        existing_company_email.save()
-                        # print(f"Updated company email for employee {instance.id}: {company_email_data['email']}")
-                    else:
-                        # Create new company email
-                        company_email_serializer.save()
-                        # print(f"Created company email for employee {instance.id}: {company_email_data['email']}")
-                except serializers.ValidationError as e:
-                    # print(f"Failed to save company email for employee {instance.id}: {e}")
-                    raise
-                except Exception as e:
-                    # print(f"Unexpected error saving company email for employee {instance.id}: {e}")
-                    raise serializers.ValidationError({"company_email": f"Error saving company email: {str(e)}"})
-            elif existing_company_email:
-                existing_company_email.delete()
-                # print(f"Deleted company email for employee {instance.id}")
 
         if selected_branches is not None:
             instance.user.attached_branches.all().delete()
