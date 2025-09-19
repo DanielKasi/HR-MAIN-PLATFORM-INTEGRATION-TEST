@@ -2,14 +2,14 @@
 
 import { useSelector } from "react-redux";
 
-import { IJobPosition } from "@/types/types.utils";
+import { IDepartment } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { getPaginatedJobPositions, getPaginatedJobPositionsFromUrl } from "@/lib/utils";
+import { getPaginatedDepartments, getPaginatedDepartmentsFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 
-export interface JobPositionSearchableSelectProps {
+export interface DepartmentSearchableSelectProps {
 	value: (string | number)[];
 	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
@@ -20,44 +20,37 @@ export interface JobPositionSearchableSelectProps {
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
-	setPositions?: (positions: IJobPosition[]) => void;
+	setDepartments?: (departments: IDepartment[]) => void;
 }
 
-export const JobPositionSearchableSelect = ({
+export const DepartmentSearchableSelect = ({
 	value,
 	defaultLabel,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
-	placeholder = "Select Position(s)",
+	placeholder = "Select Department(s)",
 	className,
 	triggerClassName,
 	multiple = false,
 	hideSelectedFromList = false,
-	setPositions,
-}: JobPositionSearchableSelectProps) => {
-	// console.log("\n\n The passed in position values are : ", value)
-
+	setDepartments,
+}: DepartmentSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
-
-	// useEffect(() => {
-	//   setSelectedItems(value);
-	// }, [value])
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
 
-		return await getPaginatedJobPositions({ institutionId: currentInstitution.id, ...query });
+		return await getPaginatedDepartments({ institutionId: currentInstitution.id, ...query });
 	};
 
 	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await getPaginatedJobPositionsFromUrl(url);
+		return await getPaginatedDepartmentsFromUrl({ url });
 	};
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
+	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
 		if (!value.includes(itemId)) {
 			if (multiple) {
 				onValueChange([...value, itemId]);
@@ -66,19 +59,19 @@ export const JobPositionSearchableSelect = ({
 			}
 		}
 	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
+
+	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
 		onValueChange(value.filter((id) => String(id) !== String(itemId)));
 	};
-
 	return (
 		<div className={className}>
-			<PaginatedSearchableSelect<IJobPosition, { search?: string; page?: number }>
+			<PaginatedSearchableSelect<IDepartment, { search?: string; page?: number }>
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
-				getItemId={(position) => position.id}
-				getItemLabel={(position) => position.name || ""}
-				getItemValue={(position) => position.id.toString()}
+				getItemId={(department) => department.id}
+				getItemLabel={(department) => department.name || ""}
+				getItemValue={(department) => department.id.toString()}
 				selectedItems={value}
 				onSelect={handleSelect}
 				onRemove={handleRemove}
@@ -86,15 +79,15 @@ export const JobPositionSearchableSelect = ({
 				multiple={multiple}
 				disabled={disabled}
 				placeholder={placeholder}
-				searchPlaceholder="Search job positions by name..."
+				searchPlaceholder="Search departments by name..."
 				triggerClassName={`w-full justify-between focus:ring-primary  ${triggerClassName || ""}`}
 				popoverClassName="w-full"
 				hideSelectedFromList={hideSelectedFromList}
-				setParentItems={setPositions}
+				setParentItems={setDepartments}
 				defaultLabel={defaultLabel}
 			/>
 		</div>
 	);
 };
 
-export default JobPositionSearchableSelect;
+export default DepartmentSearchableSelect;

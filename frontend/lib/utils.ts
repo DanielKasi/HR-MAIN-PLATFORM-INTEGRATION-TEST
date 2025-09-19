@@ -1429,18 +1429,24 @@ export const bulkCreateEmployees = async ({
 	return response.data;
 };
 
-export const getPaginatedEmployees = async ({
-	institutionId,
-	page = 1,
-	search,
-	ordering,
-	positionSearch,
-}: {
-	institutionId: number;
-	page?: number;
-	search?: string;
-	ordering?: string;
-	positionSearch?: string;
+export const getPaginatedEmployees = async ({ 
+    institutionId, 
+    page = 1, 
+    search, 
+    ordering, 
+    positionSearch, 
+    departmentSearch,  
+    minSalary,  
+    maxSalary, 
+}: { 
+    institutionId: number; 
+    page?: number; 
+    search?: string; 
+    ordering?: string; 
+    positionSearch?: string;  
+    departmentSearch?: string; 
+    minSalary?: string; 
+    maxSalary?: string; 
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
@@ -1449,7 +1455,16 @@ export const getPaginatedEmployees = async ({
 	if (positionSearch) {
 		params.append("position_search", positionSearch);
 	}
+	if (departmentSearch) { 
+		params.append("department_search", departmentSearch); 
+	}
+		if (minSalary) {  
+		params.append("min_salary", minSalary); 
+	}  
 
+	if (maxSalary) {  
+		params.append("max_salary", maxSalary); 
+	}
 	if (search) {
 		params.append("search", search);
 	}
@@ -5437,6 +5452,10 @@ export const bankTypesAPI = {
 			throw error;
 		}
 	},
+	getPaginatedFromUrl: async ({ url }: { url: string }): Promise<IPaginatedResponse<IBankType>> => {
+		const response = await apiRequest.get(forceUrlToHttps(url));
+		return response.data as IPaginatedResponse<IBankType>;
+	},
 	getById: async ({ bankTypeId }: { bankTypeId: string }) => {
 		try {
 			const response = await apiRequest.get(`/institution/bank-type/${bankTypeId}`);
@@ -7722,7 +7741,6 @@ export const PROJECTS_API = {
 
 	getPaginatedProjectsFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
-
 		return response.data as IPaginatedResponse<IProject>;
 	},
 
@@ -7768,7 +7786,7 @@ export const PROJECTS_TASKS_API = {
 			params.append("search", search);
 		}
 		ordering && params.append("ordering", ordering);
-		const endpoint = `projects/tasks/${projectId}/?${params.toString()}`;
+		const endpoint = `projects/tasks/?${params.toString()}`;
 		const response = await apiRequest.get(endpoint);
 
 		return response.data as IPaginatedResponse<IProjectTask>;
@@ -7781,7 +7799,7 @@ export const PROJECTS_TASKS_API = {
 	},
 
 	create: async ({ projectId, data }: { projectId: number; data: IProjectTaskFormData }) => {
-		const response = await apiRequest.post(`projects/tasks/${projectId}/`, data);
+		const response = await apiRequest.post(`projects/tasks/`, data);
 
 		return response.data as IProjectTask;
 	},

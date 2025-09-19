@@ -8,6 +8,7 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { bankAccountsAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useMemo } from "react";
 
 export interface BankAccountSearchableSelectProps {
 	selectedItems: (string | number)[];
@@ -100,5 +101,3 @@ export const BankAccountSearchableSelect = ({
 		</div>
 	);
 };
-
-export default BankAccountSearchableSelect;

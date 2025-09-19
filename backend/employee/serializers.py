@@ -24,16 +24,8 @@ from dateutil.relativedelta import relativedelta
 from django.db import IntegrityError, transaction
 from institution.models import Branch, Institution, InstitutionBankType, UserBranch
 from employee.models import EmployeeContract
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-import os
 from django.conf import settings
 from recruitment.models import JobAdvertApplication
-from django.template.loader import render_to_string
-from weasyprint import HTML
-from django.utils.text import slugify
-from docx import Document
-from weasyprint import HTML
 from utilities.helpers import get_or_create_default_role_with_permissions
 from django.core.validators import FileExtensionValidator
 import PyPDF2
@@ -189,22 +181,72 @@ class BankAccountSerializer(serializers.ModelSerializer):
     #     return data
 
 class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), required=False)
+
     class Meta:
         model = EmployeeCompanyEmail
-        fields = ['id', 'email', 'provider', 'status']
-        read_only_fields = ['email', 'provider', 'status']
+        fields = ['employee', 'email', 'provider', 'status']
+        extra_kwargs = {
+            'email': {'required': True},
+            'provider': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'status': {'required': False, 'default': 'pending'},
+            'employee': {'required': False}
+        }
+
+    # def validate_employee(self, value):
+    #     """Validate that the employee exists and is valid."""
+    #     if not value:
+    #         print("Employee field is empty or invalid.")
+    #         raise serializers.ValidationError("Employee is required.")
+    #     print(f"Validated employee: {value.id}")
+    #     return value
+
+    def validate_email(self, value):
+        """Validate company email uniqueness."""
+        if EmployeeCompanyEmail.objects.filter(email=value).exists():
+            # print(f"Company email '{value}' already exists.")
+            raise serializers.ValidationError(f"Company email '{value}' already exists.")
+        return value
 
     def create(self, validated_data):
-        employee = validated_data['employee']
+        # print(f"EmployeeCompanyEmailSerializer.create validated_data: {validated_data}")
+        employee = validated_data.get('employee')
+        if not employee:
+            # print("No employee provided in validated_data for EmployeeCompanyEmail.")
+            raise serializers.ValidationError("Employee is required!!!")
+
         institution = employee.get_institution()
         try:
             config = institution.email_config
         except EmailProviderConfig.DoesNotExist:
-            raise serializers.ValidationError("No email provider config found.")
+            # print(f"No email provider config found for institution {institution.id}.")
+            config = None
 
-        validated_data['email'] = generate_email(employee)
-        validated_data['provider'] = config.provider
-        return super().create(validated_data)  
+        email = validated_data.get('email')
+        if not email:
+            try:
+                email = generate_email(employee)
+                # print(f"Generated company email for employee {employee.id}: {email}")
+            except Exception as e:
+                # print(f"Failed to generate company email for employee {employee.id}: {str(e)}")
+                raise serializers.ValidationError(f"Failed to generate company email: {str(e)}")
+        validated_data['email'] = email
+
+        provider = validated_data.get('provider')
+        if provider is None and config:
+            validated_data['provider'] = config.provider
+            # print(f"Set provider to {config.provider} from institution config for employee {employee.id}")
+        else:
+            validated_data['provider'] = provider
+            # print(f"Using provided or null provider: {provider} for employee {employee.id}")
+
+        try:
+            company_email = super().create(validated_data)
+            # print(f"Created company email for employee {employee.id}: {company_email.email}")
+            return company_email
+        except Exception as e:
+            # print(f"Failed to create company email for employee {employee.id}: {str(e)}")
+            raise serializers.ValidationError(f"Error creating company email: {str(e)}")
         
 class EmployeeSerializer(BaseApprovableSerializer):
     date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
@@ -225,13 +267,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
     work_experiences = WorkExperienceSerializer(many=True, required=False)
     children = ChildSerializer(many=True, required=False)
     spouse = SpouseSerializer(required=False, allow_null=True)
-    company_email = serializers.SerializerMethodField()  
-
-    def get_company_email(self, obj):
-        email = obj.company_emails.first()  
-        if email:
-            return EmployeeCompanyEmailSerializer(email).data
-        return None
+    company_email = EmployeeCompanyEmailSerializer(required=False, allow_null=True)
 
     class Meta:
         model = Employee
@@ -247,6 +283,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     def get_department_details(self, obj):
         return {"id": obj.department.id, "name": obj.department.name, "institution_id": obj.department.institution.id} if obj.department else None
+
 
     def get_position_details(self, obj):
         return {"id": obj.position.id, "name": obj.position.name, "department_id": obj.position.department.id if obj.position.department else None} if obj.position else None
@@ -270,7 +307,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
     @transaction.atomic
     def create(self, validated_data):
         user_data = validated_data.pop("user", None)
-        name = validated_data.pop("name", None)  # Extract name
+        name = validated_data.pop("name", None)
         selected_branches = validated_data.pop("selected_branches", [])
         bank_accounts_data = validated_data.pop("bank_accounts", [])
         next_of_kin_data = validated_data.pop("next_of_kin", [])
@@ -278,14 +315,14 @@ class EmployeeSerializer(BaseApprovableSerializer):
         work_experiences_data = validated_data.pop("work_experiences", [])
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
+        company_email_data = validated_data.pop("company_email", None)
 
         user = None
         if user_data:
             email = user_data.get("email")
             user_id = user_data.get("id")
-            print(f"User data: id={user_id}, email={email}")
+            # print(f"User data: id={user_id}, email={email}")
 
-            # Check for existing user by email
             if email:
                 existing_user = CustomUser.objects.filter(email=email).first()
                 if existing_user:
@@ -294,19 +331,19 @@ class EmployeeSerializer(BaseApprovableSerializer):
                             {"user.id": f"Provided user id {user_id} does not match existing user with email {email}."}
                         )
                     user = existing_user
-                    print(f"Using existing user: {user.id}, {user.email}")
+                    # print(f"Using existing user: {user.id}, {user.email}")
                 else:
-                    user_data["fullname"] = name or user_data.get("fullname")  # Set fullname from name if provided
+                    user_data["fullname"] = name or user_data.get("fullname")
                     user_serializer = CustomUserSerializer(data=user_data)
                     user_serializer.is_valid(raise_exception=True)
                     user = user_serializer.save()
-                    print(f"Created new user: {user.id}, {user.email}")
+                    # print(f"Created new user: {user.id}, {user.email}")
             else:
                 raise serializers.ValidationError({"user.email": "This field is required."})
 
             validated_data["user"] = user
             validated_data["email"] = user.email
-            validated_data["name"] = name or user_data.get("fullname")  # Set employee name
+            validated_data["name"] = name or user_data.get("fullname")
 
             request = self.context.get("request")
             if not request:
@@ -332,14 +369,13 @@ class EmployeeSerializer(BaseApprovableSerializer):
                         {"error": f"Institution does not exist for the provided user."}
                     )
 
-        # Check for existing employees
         existing_employees = Employee.objects.filter(user=user)
-        print(f"Existing employees for user {user.id}: {existing_employees.count()}")
-        if existing_employees.exists():
-            print(f"Found employees: {[emp.id for emp in existing_employees]}")
+        # print(f"Existing employees for user {user.id}: {existing_employees.count()}")
+        # if existing_employees.exists():
+            # print(f"Found employees: {[emp.id for emp in existing_employees]}")
 
         employee = Employee.objects.create(**validated_data)
-        print(f"Created employee: {employee.id}, user: {employee.user.email}")
+        # print(f"Created employee: {employee.id}, user: {employee.user.email}")
 
         for bank_data in bank_accounts_data:
             bank_type = bank_data.pop('bank', None)
@@ -365,6 +401,27 @@ class EmployeeSerializer(BaseApprovableSerializer):
         if spouse_data and spouse_data.get("name"):
             Spouse.objects.create(employee=employee, **spouse_data)
 
+        if company_email_data and company_email_data.get("email"):
+            # print(f"Processing company_email_data for create: {company_email_data}")
+            try:
+                company_email_data_with_employee = {
+                    "employee": employee,
+                    "email": company_email_data["email"],
+                    "provider": company_email_data.get("provider"),
+                    "status": company_email_data.get("status", "pending")
+                }
+                # print(f"Prepared company_email_data_with_employee: {company_email_data_with_employee}")
+                company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data_with_employee)
+                company_email_serializer.is_valid(raise_exception=True)
+                company_email_serializer.save()
+                # print(f"Saved company email for employee {employee.id}: {company_email_data['email']}")
+            except serializers.ValidationError as e:
+                # print(f"Failed to save company email for employee {employee.id}: {e}")
+                raise
+            except Exception as e:
+                # print(f"Unexpected error saving company email for employee {employee.id}: {e}")
+                raise serializers.ValidationError({"company_email": f"Error saving company email: {str(e)}"})
+
         for i, branch_id in enumerate(selected_branches or []):
             try:
                 branch = Branch.objects.get(id=branch_id)
@@ -383,7 +440,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", None)
-        name = validated_data.pop("name", None)  # Extract name
+        name = validated_data.pop("name", None)
         selected_branches = validated_data.pop("selected_branches", None)
         bank_accounts_data = validated_data.pop("bank_accounts", [])
         next_of_kin_data = validated_data.pop("next_of_kin", [])
@@ -391,24 +448,22 @@ class EmployeeSerializer(BaseApprovableSerializer):
         work_experiences_data = validated_data.pop("work_experiences", [])
         children_data = validated_data.pop("children", [])
         spouse_data = validated_data.pop("spouse", None)
+        company_email_data = validated_data.pop("company_email", None)
 
-        # Update scalar fields
         if name is not None:
-            validated_data["name"] = name  # Update employee name
+            validated_data["name"] = name
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # Update user data (excluding fullname)
         if user_data:
-            user_data.pop("fullname", None)  # Do not update fullname
+            user_data.pop("fullname", None)
             user_serializer = CustomUserSerializer(instance.user, data=user_data, partial=True)
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
             instance.email = user_serializer.data['email']
         instance.save()
 
-        # Update bank accounts
         if bank_accounts_data:
             instance.bank_accounts.all().delete()
             for bank_data in bank_accounts_data:
@@ -416,14 +471,12 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if bank_type:
                     EmployeeBankAccount.objects.create(employee=instance, bank=bank_type, **bank_data)
 
-        # Update next of kin
         if next_of_kin_data:
             instance.next_of_kins.all().delete()
             for kin_data in next_of_kin_data:
                 if kin_data.get("name"):
                     NextOfKin.objects.create(employee=instance, **kin_data)
 
-        # Update educations
         if educations_data:
             instance.educations.all().delete()
             for edu_data in educations_data:
@@ -431,20 +484,17 @@ class EmployeeSerializer(BaseApprovableSerializer):
                 if edu_data.get("institution") and edu_data.get("name") and edu_data.get("year"):
                     Education.objects.create(employee=instance, qualification=qualification, **edu_data)
 
-        # Update work experiences
         if work_experiences_data:
             instance.work_experiences.all().delete()
             for exp_data in work_experiences_data:
                 WorkExperience.objects.create(employee=instance, **exp_data)
 
-        # Update children
         if children_data:
             instance.children.all().delete()
             for child_data in children_data:
                 if child_data.get("name"):
                     Child.objects.create(employee=instance, **child_data)
 
-        # Update or create spouse
         if spouse_data is not None and spouse_data:
             spouse_serializer = SpouseSerializer(data=spouse_data, context=self.context)
             try:
@@ -467,7 +517,45 @@ class EmployeeSerializer(BaseApprovableSerializer):
             if existing_spouse:
                 existing_spouse.delete()
 
-        # Update selected branches
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if company_email_data is not None:
+            # print(f"Processing company_email_data for update: {company_email_data}")
+            existing_company_email = instance.company_emails.first()
+            if company_email_data and company_email_data.get("email"):
+                try:
+                    # Create a new dictionary to avoid mutating the original
+                    company_email_data_with_employee = {
+                        "employee": instance.id,  # Use employee ID for PrimaryKeyRelatedField
+                        "email": company_email_data["email"],
+                        "provider": company_email_data.get("provider"),
+                        "status": company_email_data.get("status", "pending")
+                    }
+                    # print(f"Prepared company_email_data_with_employee: {company_email_data_with_employee}")
+                    company_email_serializer = EmployeeCompanyEmailSerializer(data=company_email_data_with_employee)
+                    company_email_serializer.is_valid(raise_exception=True)
+                    if existing_company_email:
+                        # Update existing company email
+                        for attr, value in company_email_serializer.validated_data.items():
+                            setattr(existing_company_email, attr, value)
+                        existing_company_email.save()
+                        # print(f"Updated company email for employee {instance.id}: {company_email_data['email']}")
+                    else:
+                        # Create new company email
+                        company_email_serializer.save()
+                        # print(f"Created company email for employee {instance.id}: {company_email_data['email']}")
+                except serializers.ValidationError as e:
+                    # print(f"Failed to save company email for employee {instance.id}: {e}")
+                    raise
+                except Exception as e:
+                    # print(f"Unexpected error saving company email for employee {instance.id}: {e}")
+                    raise serializers.ValidationError({"company_email": f"Error saving company email: {str(e)}"})
+            elif existing_company_email:
+                existing_company_email.delete()
+                # print(f"Deleted company email for employee {instance.id}")
+
         if selected_branches is not None:
             instance.user.attached_branches.all().delete()
             for i, branch_id in enumerate(selected_branches):
@@ -493,11 +581,13 @@ class EmployeeSerializer(BaseApprovableSerializer):
             data["position"] = data["position_details"]
         if data["payroll_branch"]:
             data["payroll_branch"] = BranchSerializer(instance.payroll_branch).data
+        
         data["work_type"] = WorkTypeSerializer(instance.work_type).data
         data["employee_type"] = EmployeeTypeSerializer(instance.employee_type).data
         data["next_of_kin"] = NextOfKinSerializer(instance.next_of_kins.all(), many=True).data
         data.pop("department_details", None)
         data.pop("position_details", None)
+
         return data
 
   

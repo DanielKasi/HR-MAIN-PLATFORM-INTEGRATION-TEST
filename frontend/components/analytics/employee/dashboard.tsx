@@ -13,19 +13,21 @@ import {
 	CartesianGrid,
 	ResponsiveContainer,
 } from "recharts";
-
+import DepartmentTreeMap from "./department-treemap";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEmployeeDashboard } from "@/lib/utils";
 import { IEmployeeDashboard } from "@/types/types.utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Icon } from "@iconify/react";
 
 const chartConfig = {
 	gender: {
-		male: { label: "Male", color: "hsl(var(--chart-1))" },
-		female: { label: "Female", color: "hsl(var(--chart-2))" },
-		Other: { label: "Other", color: "hsl(var(--chart-3))" },
-		unknown: { label: "Unknown", color: "hsl(var(--chart-4))" },
+		male: { label: "Male", color: "#ff4500" },
+		female: { label: "Female", color: "#ff7f50" },
+		other: { label: "Other", color: "#1e90ff" },
+		unknown: { label: "Unknown", color: "#gray" },
 	},
 	department: {
 		"Customer Service Department": {
@@ -37,9 +39,10 @@ const chartConfig = {
 		Sales: { label: "Sales", color: "hsl(var(--chart-4))" },
 	},
 	maritalStatus: {
-		single: { label: "Single", color: "hsl(var(--chart-1))" },
-		married: { label: "Married", color: "hsl(var(--chart-2))" },
-		divorced: { label: "Divorced", color: "hsl(var(--chart-3))" },
+		divorced: { label: "Divorced", color: "#ff4500" },
+		married: { label: "Married", color: "#ff7f50" },
+		single: { label: "Single", color: "#ff6347" },
+		widowed: { label: "Widowed", color: "#ff5722" },
 	},
 };
 
@@ -85,57 +88,79 @@ export default function EmployeeDashboard() {
 
 				{/* Key Metrics */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-					<Card className="border-l-4 border-l-chart-1">
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-							<Users className="h-4 w-4 text-chart-1" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-chart-1">{data?.total_employees}</div>
-							<p className="text-xs text-muted-foreground">Active workforce</p>
+					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
+						<CardContent className="flex items-start space-x-4 p-0">
+							<div className="w-12 h-12 bg-[#FF3403]/10 rounded-2xl flex items-center justify-center">
+								<Icon icon="hugeicons:user-multiple" color="#ff3403" strokeWidth={1.5} />
+							</div>
+							<div className="flex-1">
+								<div className="flex justify-between items-start">
+									<p className="text-sm font-medium text-gray-600">Total Employees</p>
+									<Icon icon="hugeicons:arrow-up-right-01" color="#162032" strokeWidth={1.5} />
+								</div>
+								<p className="text-3xl font-bold text-gray-900 mt-4">{data?.total_employees}</p>
+							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="border-l-4 border-l-chart-2">
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Average Age</CardTitle>
-							<Clock className="h-4 w-4 text-chart-2" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-chart-2">{data?.average_age}</div>
-							<p className="text-xs text-muted-foreground">Years old</p>
+					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
+						<CardContent className="flex items-start space-x-4 p-0">
+							<div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+								<Icon icon="hugeicons:calendar-02" color="#6366F1" strokeWidth={1.5} />
+							</div>
+							<div className="flex-1">
+								<p className="text-sm font-medium text-gray-600">Average Tenure</p>
+								<p className="text-2xl font-bold text-gray-900 mt-1">
+									{data?.average_tenure_years} Years
+								</p>
+							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="border-l-4 border-l-chart-3">
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Average Tenure</CardTitle>
-							<TrendingUp className="h-4 w-4 text-chart-3" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-chart-3">{data?.average_tenure_years}</div>
-							<p className="text-xs text-muted-foreground">Years of service</p>
+					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
+						<CardContent className="flex items-start space-x-4 p-0">
+							<div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+								<Icon icon="hugeicons:user-add-02" color="#3B82F6" strokeWidth={1.5} />
+							</div>
+							<div className="flex-1">
+								<p className="text-sm font-medium text-gray-600">New Hires (30d)</p>
+								<p className="text-2xl font-bold text-gray-900 mt-1">{data?.recent_hires}</p>
+							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="border-l-4 border-l-chart-4">
-						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium">Recent Hires</CardTitle>
-							<UserCheck className="h-4 w-4 text-chart-4" />
-						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-chart-4">{data?.recent_hires}</div>
-							<p className="text-xs text-muted-foreground">New employees</p>
+					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
+						<CardContent className="flex items-start space-x-4 p-0">
+							<div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+								<Icon icon="hugeicons:user-minus-02" color="#3B82F6" strokeWidth={1.5} />
+							</div>
+							<div className="flex-1">
+								<p className="text-sm font-medium text-gray-600">Turn Over Rate</p>
+								<p className="text-2xl font-bold text-gray-900 mt-1">2.1%</p>
+							</div>
 						</CardContent>
 					</Card>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{/* Department Distribution Bar Chart */}
+					<Card className="rounded-2xl border border-gray-200">
+						<CardHeader>
+							<CardTitle className="text-xl font-semibold">Department Distribution</CardTitle>
+							<hr className="border-gray-200 border-t mt-2" />
+						</CardHeader>
+						<CardContent>
+							<DepartmentTreeMap
+								data={data?.employees_by_department || []}
+								chartConfig={chartConfig.department}
+							/>
+						</CardContent>
+					</Card>
 					{/* Gender Distribution Pie Chart */}
-					<Card>
+					<Card className="rounded-2xl border border-gray-200">
 						<CardHeader>
 							<CardTitle className="text-xl font-semibold">Gender Distribution</CardTitle>
-							<CardDescription>Employee breakdown by gender</CardDescription>
+							<hr className="border-gray-200 border-t mt-2" />
 						</CardHeader>
 						<CardContent>
 							<ChartContainer config={chartConfig.gender} className="h-[300px]">
@@ -149,7 +174,8 @@ export default function EmployeeDashboard() {
 											label={({ gender, count, percent }) =>
 												`${gender}: ${(percent * 100).toFixed(0)}%`
 											}
-											outerRadius={80}
+											outerRadius={120}
+											innerRadius={60}
 											fill="#8884d8"
 											dataKey="count"
 											nameKey="gender"
@@ -163,6 +189,24 @@ export default function EmployeeDashboard() {
 												/>
 											))}
 										</Pie>
+										<text
+											x="50%"
+											y="45%"
+											textAnchor="middle"
+											dominantBaseline="middle"
+											className="text-2xl font-bold"
+										>
+											{data?.total_employees}
+										</text>
+										<text
+											x="50%"
+											y="55%"
+											textAnchor="middle"
+											dominantBaseline="middle"
+											className="text-sm text-muted-foreground"
+										>
+											Total Employees
+										</text>
 										<ChartTooltip content={<ChartTooltipContent />} />
 									</PieChart>
 								</ResponsiveContainer>
@@ -170,41 +214,11 @@ export default function EmployeeDashboard() {
 						</CardContent>
 					</Card>
 
-					{/* Department Distribution Bar Chart */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-xl font-semibold">Department Distribution</CardTitle>
-							<CardDescription>Employee count by department</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<ChartContainer config={chartConfig.department} className="h-[300px]">
-								<ResponsiveContainer width="100%" height="100%">
-									<BarChart
-										data={data?.employees_by_department}
-										margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-									>
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis
-											dataKey="department"
-											angle={-45}
-											textAnchor="end"
-											height={80}
-											fontSize={12}
-										/>
-										<YAxis />
-										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-									</BarChart>
-								</ResponsiveContainer>
-							</ChartContainer>
-						</CardContent>
-					</Card>
-
 					{/* Marital Status Pie Chart */}
-					<Card>
+					<Card className="rounded-2xl border border-gray-200">
 						<CardHeader>
 							<CardTitle className="text-xl font-semibold">Marital Status</CardTitle>
-							<CardDescription>Employee breakdown by marital status</CardDescription>
+							<hr className="border-gray-200 border-t mt-2" />
 						</CardHeader>
 						<CardContent>
 							<ChartContainer config={chartConfig.maritalStatus} className="h-[300px]">
@@ -218,7 +232,7 @@ export default function EmployeeDashboard() {
 											label={({ marital_status, count, percent }) =>
 												`${marital_status}: ${(percent * 100).toFixed(0)}%`
 											}
-											outerRadius={80}
+											outerRadius={120}
 											fill="#8884d8"
 											dataKey="count"
 											nameKey="marital_status"
@@ -241,10 +255,10 @@ export default function EmployeeDashboard() {
 					</Card>
 
 					{/* Work Type Comparison */}
-					<Card>
+					<Card className="rounded-2xl border border-gray-200">
 						<CardHeader>
 							<CardTitle className="text-xl font-semibold">Work Type Distribution</CardTitle>
-							<CardDescription>Remote vs office comparison</CardDescription>
+							<hr className="border-gray-200 border-t mt-2" />
 						</CardHeader>
 						<CardContent>
 							<ChartContainer config={{}} className="h-[300px]">
@@ -252,70 +266,21 @@ export default function EmployeeDashboard() {
 									<BarChart
 										data={data?.employees_by_work_type}
 										margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+										maxBarSize={60}
 									>
 										<CartesianGrid strokeDasharray="3 3" />
 										<XAxis dataKey="work_type" />
 										<YAxis />
 										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+										<Bar dataKey="count" radius={[4, 4, 0, 0]}>
+											{data?.employees_by_work_type.map((entry, index) => {
+												const colors = ["#ff4500", "#ff7f50", "#ff6347", "#ff5722"];
+												return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+											})}
+										</Bar>
 									</BarChart>
 								</ResponsiveContainer>
 							</ChartContainer>
-						</CardContent>
-					</Card>
-				</div>
-
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					{/* Employee Type */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-xl font-semibold">Employee Type</CardTitle>
-							<CardDescription>Breakdown by employment type</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div className="space-y-3">
-								{data?.employees_by_employee_type.map((item, index) => (
-									<div
-										key={index}
-										className="flex items-center justify-between p-3 bg-muted rounded-lg"
-									>
-										<span className="font-medium capitalize">{item.employee_type}</span>
-										<Badge variant="secondary" className="bg-chart-4 text-white">
-											{item.count}
-										</Badge>
-									</div>
-								))}
-							</div>
-						</CardContent>
-					</Card>
-
-					{/* Quick Stats Summary */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-xl font-semibold">Quick Stats</CardTitle>
-							<CardDescription>Key workforce metrics at a glance</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<div className="space-y-4">
-								<div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-									<span className="font-medium">Workforce Size</span>
-									<Badge variant="outline" className="text-lg font-bold">
-										{data?.total_employees} employees
-									</Badge>
-								</div>
-								<div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-									<span className="font-medium">Remote Workers</span>
-									<Badge variant="outline" className="text-lg font-bold">
-										{Math.round((49 / 50) * 100)}%
-									</Badge>
-								</div>
-								<div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-									<span className="font-medium">Largest Department</span>
-									<Badge variant="outline" className="text-lg font-bold">
-										Customer Service
-									</Badge>
-								</div>
-							</div>
 						</CardContent>
 					</Card>
 				</div>

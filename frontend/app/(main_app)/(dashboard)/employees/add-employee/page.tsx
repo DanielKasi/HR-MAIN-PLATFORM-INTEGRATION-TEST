@@ -20,6 +20,7 @@ import type {
 	IMaritalStatus,
 	IEmployeeEducationFormData,
 	IQualificationAward,
+	IBankType,
 } from "@/types/types.utils";
 
 import { useState, useEffect, useRef } from "react";
@@ -79,9 +80,9 @@ import WorkTypeModal from "@/components/dialogs/work-type-dialog";
 import { Steps } from "@/components/generic/steps";
 import { createEmployee } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
 import { formatCurrency } from "@/lib/helpers";
 import FormattedNumberInput from "@/components/common/inputs/formatted-number-input";
+import { BankTypeSearchableSelect } from "@/components/selects/bank-types-select";
 
 interface Child extends IChild {}
 interface NextOfKin extends INextOfKin {}
@@ -127,7 +128,7 @@ export default function AddEmployeeForm() {
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const currentEmployeeCreationForm = useSelector(selectEmployeeCreationForm);
-	const [institutionBanks, setInstitutionBanks] = useState<IBankAccount[]>([]);
+	const [institutionBanks, setInstitutionBanks] = useState<IBankType[]>([]);
 
 	const [children, setChildren] = useState<Child[]>([]);
 	const [nextOfKins, setNextOfKins] = useState<NextOfKin[]>([]);
@@ -884,6 +885,10 @@ export default function AddEmployeeForm() {
 						: undefined,
 			};
 
+			if (formData.company_email) {
+				dataToSubmit["company_email"] = formData.company_email;
+			}
+
 			await createEmployee({
 				institutionId: selectedInstitution.id,
 				employeeData: dataToSubmit,
@@ -1051,6 +1056,23 @@ export default function AddEmployeeForm() {
 												)}
 											</div>
 											<div className="space-y-2">
+												<Label
+													htmlFor="company_email"
+													className="text-sm font-medium text-gray-700"
+												>
+													Company Email
+												</Label>
+												<Input
+													id="company_email"
+													type="email"
+													value={formData.company_email || ""}
+													onChange={(e) => handleInputChange("company_email", e.target.value)}
+													placeholder="email@mycompany.com"
+													className="h-12 rounded-2xl"
+													required
+												/>
+											</div>
+											<div className="space-y-2">
 												<PhoneNumberInput
 													label="Phone Number"
 													required
@@ -1125,6 +1147,7 @@ export default function AddEmployeeForm() {
 											</Label>
 											<CountrySelect
 												selectedCountry={selectedCountry}
+												placeholder="Set nationality"
 												onCountryChange={(country) => {
 													setSelectedCountry(country);
 													if (country) {
@@ -1709,7 +1732,7 @@ export default function AddEmployeeForm() {
 								<Label htmlFor="bank" className="text-sm font-medium text-gray-700">
 									Bank
 								</Label>
-								<BankAccountSearchableSelect
+								<BankTypeSearchableSelect
 									setAccounts={setInstitutionBanks}
 									selectedItems={[bankAccountFormData.bank_id || 0]}
 									onValueChange={(values) => {
@@ -1726,7 +1749,7 @@ export default function AddEmployeeForm() {
 								</Label>
 								<Input
 									id="bankAccountName"
-									value={bankAccountFormData.account_name}
+									value={bankAccountFormData.account_name || formData.fullname || ""}
 									onChange={(e) =>
 										setBankAccountFormData((prev) => ({ ...prev, account_name: e.target.value }))
 									}
@@ -2336,93 +2359,6 @@ export default function AddEmployeeForm() {
 							</DialogFooter>
 						</DialogContent>
 					</Dialog>
-
-					{/* Bank Account Dialog */}
-					{/* <Dialog
-            open={isBankAccountDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsBankAccountDialogOpen(false);
-                setEditingBankAccount(null);
-                setBankAccountFormData({
-                  bank: 0,
-                  account_name: "",
-                  account_number: "",
-                });
-              } else {
-                setIsBankAccountDialogOpen(open);
-              }
-            }}
-          >
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingBankAccount ? "Edit Bank Account" : "Add Bank Account"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingBankAccount ? "Update bank account information" : "Add bank account"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bank" className="text-sm font-medium text-gray-700">
-                    Bank
-                  </Label>
-                  <BankAccountSearchableSelect
-                    setAccounts={setInstitutionBanks}
-                    value={[bankAccountFormData.bank || ""]}
-                    onValueChange={(values) => {
-                      if (values.length) {
-                        setBankAccountFormData((prev) => ({...prev, bank: Number(values[0])}));
-                      }
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountName" className="text-sm font-medium text-gray-700">
-                    Bank Account Name
-                  </Label>
-                  <Input
-                    id="bankAccountName"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account name"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountNumber" className="text-sm font-medium text-gray-700">
-                    Bank Account Number
-                  </Label>
-                  <Input
-                    id="bankAccountNumber"
-                    value={bankAccountFormData.account_name}
-                    onChange={(e) =>
-                      setBankAccountFormData((prev) => ({...prev, account_name: e.target.value}))
-                    }
-                    placeholder="Enter bank account number"
-                    className="h-12 rounded-2xl"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  onClick={handleAddBankAccount}
-                  className=" text-white rounded-full w-full"
-                  disabled={
-                    !bankAccountFormData.account_name ||
-                    !bankAccountFormData.bank ||
-                    !bankAccountFormData.account_number
-                  }
-                >
-                  {editingBankAccount ? "Update Bank Account" : "Add Bank Account"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog> */}
 
 					{/* Work Type Modal */}
 					<WorkTypeModal

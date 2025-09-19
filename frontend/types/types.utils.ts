@@ -680,6 +680,7 @@ export interface IEmployeeFormData {
 	user: Partial<IUser>;
 	id?: number;
 	email: string;
+	company_email?: string;
 	gender: "male" | "female" | "other";
 	phone_number: string;
 	phone_number_country_code?: string;
@@ -724,6 +725,7 @@ export interface ICreateEmployeeForm {
 	// Basic Information
 	fullname: string;
 	email: string;
+	company_email?: string;
 	phone_number: string;
 	phone_number_country_code?: string;
 	gender: "male" | "female" | "other";
@@ -756,9 +758,6 @@ export interface ICreateEmployeeForm {
 	work_experiences: IWorkExperience[];
 	bank_accounts: IEmployeeBankAccountFormData[];
 	spouse?: ISpouse;
-
-	// Profile picture
-	employee_profile_picture?: File | null;
 }
 
 // Form step types
@@ -2372,8 +2371,8 @@ export interface IProjectTask {
 	project: number;
 	task_name: string;
 	description: string;
-	managers: UserProfile[];
-	assigned_to: UserProfile[];
+	managers: IEmployee[];
+	assignees: IEmployee[];
 	start_date: string;
 	end_date: string;
 	task_status: IProjectTaskStatus;
@@ -2405,8 +2404,8 @@ export interface IProject {
 	id: number;
 	institution: number;
 	project_name: string;
-	managers: UserProfile[];
-	assignees: UserProfile[];
+	managers: IEmployee[];
+	assignees: IEmployee[];
 	description: string;
 	start_date: string;
 	end_date: string;

@@ -43,8 +43,7 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { PERMISSION_CODES } from "@/constants";
 import { fetchUpToDateInstitution } from "@/store/auth/actions";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import BankAccountSearchableSelect from "@/components/selects/bank-accounts-select";
-import { IBankAccount } from "@/types/types.utils";
+import { BankAccountSearchableSelect } from "@/components/selects/bank-accounts-select";
 
 export default function BranchesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
