@@ -49,13 +49,18 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { IProject, IProjectTask } from "@/types/types.utils";
+import { cn, PROJECTS_TASKS_API } from "@/lib/utils";
+import { IPaginatedResponse, IProject, IProjectTask } from "@/types/types.utils";
 import { PROJECTS_API } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { showErrorToast } from "@/lib/utils";
 import { toast } from "sonner";
 import { IProjectStatus, IProjectTaskPriority, IProjectTaskStatus } from "@/types/types.utils";
+import { Icon } from "@iconify/react";
+import { getFileUrl } from "@/lib/helpers";
+import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-table";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 const getStatusColor = (status: IProjectStatus | IProjectTaskStatus) => {
 	switch (status) {
@@ -114,7 +119,7 @@ const calculateProgress = (tasks: IProjectTask[]) => {
 };
 
 const getDaysRemaining = (endDate: string) => {
-	const today = new Date("2025-09-19T01:33:00Z"); // Updated to current date and time
+	const today = new Date("2025-09-19T16:05:00Z"); // Updated to 07:05 PM EAT
 	const end = new Date(endDate);
 	const diffTime = end.getTime() - today.getTime();
 	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -165,14 +170,28 @@ const CircularProgress = ({ percentage }: { percentage: number }) => {
 	);
 };
 
+const getStatusBadge = (status: IProjectTaskStatus) => {
+	switch (status) {
+		case "completed":
+			return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{status}</Badge>;
+		case "in_progress":
+			return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{status}</Badge>;
+		case "not_started":
+			return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{status}</Badge>;
+		default:
+			return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
+	}
+};
+
 export default function ProjectDetailsPage() {
 	const params = useParams();
 	const router = useRouter();
 	const [project, setProject] = useState<IProject | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [activeTab, setActiveTab] = useState<"board" | "timeline" | "table">("table"); // Default to table for testing
+	const [activeTab, setActiveTab] = useState<"board" | "timeline" | "table">("table");
 	const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [taskToDelete, setTaskToDelete] = useState<IProjectTask | null>(null);
 
 	// Mock documents
 	const documents = useMemo(
@@ -294,6 +313,100 @@ export default function ProjectDetailsPage() {
 		return groups;
 	}, [project]);
 
+	const columns: ColumnDef<IProjectTask>[] = [
+		{
+			key: "name",
+			header: (
+				<div className="flex items-center justify-start gap-4">
+					<span>Task</span>
+				</div>
+			),
+			cell: (task) => task.task_name || "",
+		},
+		{
+			key: "start_date",
+			header: (
+				<div className="flex items-center justify-start gap-4">
+					<span>Start Date</span>
+				</div>
+			),
+			cell: (task) =>
+				new Date(task.start_date).toLocaleDateString("en-US", {
+					month: "short",
+					day: "numeric",
+					year: "numeric",
+				}),
+		},
+		{
+			key: "end_date",
+			header: (
+				<div className="flex items-center justify-start gap-4">
+					<span>End Date</span>
+				</div>
+			),
+			cell: (task) =>
+				new Date(task.end_date).toLocaleDateString("en-US", {
+					month: "short",
+					day: "numeric",
+					year: "numeric",
+				}),
+		},
+		{
+			key: "priority",
+			header: (
+				<div className="flex items-center justify-start gap-4">
+					<span>Priority</span>
+				</div>
+			),
+			cell: (task) => task.priority.replace("_", " "),
+		},
+		{
+			key: "status",
+			header: "Status",
+			cell: (task) => getStatusBadge(task.task_status),
+		},
+		{
+			key: "actions",
+			header: "Actions",
+			cell: (task) => (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" className="h-8 w-8 p-0">
+							<MoreVertical className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start">
+						<DropdownMenuItem className="p-0">
+							<Link
+								className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
+								href={`/projects/project-tasks/${task.id}`}
+							>
+								<Eye className="h-4 w-4 mr-2" /> View Details
+							</Link>
+						</DropdownMenuItem>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_TASKS}>
+							<DropdownMenuItem className="p-0">
+								<Link
+									className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
+									href={`/projects/project-tasks/${task.id}/edit/`}
+								>
+									<Edit className="h-4 w-4 mr-2" /> Edit
+								</Link>
+							</DropdownMenuItem>
+						</ProtectedComponent>
+						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_TASKS}>
+							<DropdownMenuItem onClick={() => setTaskToDelete(task)} className="text-red-600 p-0">
+								<span className="text-red-600 hover:text-red-700 text-xs w-full h-full px-2 py-1.5 flex items-center">
+									<Trash2 className="h-4 w-4 mr-2" /> Delete
+								</span>
+							</DropdownMenuItem>
+						</ProtectedComponent>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			),
+		},
+	];
+
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-white p-4 rounded-xl space-y-6">
@@ -389,6 +502,26 @@ export default function ProjectDetailsPage() {
 		}
 	};
 
+	const handleTaskDelete = async () => {
+		if (!taskToDelete) return;
+		try {
+			// Assuming PROJECTS_API has a method to delete a task
+			await PROJECTS_TASKS_API.delete({ taskId: taskToDelete.id });
+			setProject((prev) => {
+				if (!prev) return null;
+				return {
+					...prev,
+					project_tasks: prev.project_tasks.filter((task) => task.id !== taskToDelete.id),
+				};
+			});
+			toast.success("Task deleted successfully");
+		} catch (error: unknown) {
+			showErrorToast({ error, defaultMessage: "Failed to delete task" });
+		} finally {
+			setTaskToDelete(null);
+		}
+	};
+
 	return (
 		<div className="min-h-screen bg-white p-4 rounded-xl space-y-6">
 			{/* Header */}
@@ -415,7 +548,7 @@ export default function ProjectDetailsPage() {
 					</div>
 				</div>
 				<div className="flex gap-2">
-					<Button variant="outline" size="sm" asChild>
+					<Button variant="outline" className="rounded-lg" asChild>
 						<Link href={`/projects/edit/${project.id || mockProject.id}`}>
 							<Edit className="h-4 w-4 mr-2" />
 							Edit
@@ -423,7 +556,7 @@ export default function ProjectDetailsPage() {
 					</Button>
 					<Button
 						variant="destructive"
-						size="sm"
+						className="!rounded-lg !bg-transparent !text-destructive !border !border-destructive"
 						onClick={() => setProjectToDelete(project || mockProject)}
 					>
 						<Trash2 className="h-4 w-4 mr-2" />
@@ -448,7 +581,13 @@ export default function ProjectDetailsPage() {
 						<div className="flex -space-x-2">
 							{(project.managers || mockProject.managers).slice(0, 3).map((lead) => (
 								<Avatar key={lead.id} className="h-8 w-8 border-2 border-white rounded-full">
-									<AvatarImage src={lead.employee_profile_picture || ""} />
+									<AvatarImage
+										src={
+											lead.employee_profile_picture
+												? getFileUrl(lead.employee_profile_picture)
+												: "/images/profile-placeholder.jpg"
+										}
+									/>
 									<AvatarFallback className="text-xs bg-gray-300">
 										{lead.name
 											?.split(" ")
@@ -469,7 +608,13 @@ export default function ProjectDetailsPage() {
 						<div className="flex -space-x-2">
 							{(project.assignees || mockProject.assignees).slice(0, 3).map((member) => (
 								<Avatar key={member.id} className="h-8 w-8 border-2 border-white rounded-full">
-									<AvatarImage src={member.employee_profile_picture || ""} />
+									<AvatarImage
+										src={
+											member.employee_profile_picture
+												? getFileUrl(member.employee_profile_picture)
+												: "/images/profile-placeholder.jpg"
+										}
+									/>
 									<AvatarFallback className="text-xs bg-gray-300">
 										{member.name
 											?.split(" ")
@@ -486,26 +631,28 @@ export default function ProjectDetailsPage() {
 						</div>
 					</div>
 				</div>
-				<div className="text-right space-y-1 text-sm">
-					<div className="flex justify-end">
+				<div className="flex flex-col md:flex-row items-center justify-end gap-8 space-y-1 text-sm">
+					<div className="flex justify-end items-center gap-4">
+						<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
 						<span className="text-gray-500">Start Date</span>
+						<p className="font-medium">
+							{new Date(project.start_date || mockProject.start_date).toLocaleDateString("en-US", {
+								month: "short",
+								day: "numeric",
+								year: "numeric",
+							})}
+						</p>
 					</div>
-					<div className="font-medium">
-						{new Date(project.start_date || mockProject.start_date).toLocaleDateString("en-US", {
-							month: "short",
-							day: "numeric",
-							year: "numeric",
-						})}
-					</div>
-					<div className="flex justify-end">
+					<div className="flex justify-end items-center gap-4">
+						<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
 						<span className="text-gray-500">End Date</span>
-					</div>
-					<div className="font-medium">
-						{new Date(project.end_date || mockProject.end_date).toLocaleDateString("en-US", {
-							month: "short",
-							day: "numeric",
-							year: "numeric",
-						})}
+						<p className="font-medium">
+							{new Date(project.end_date || mockProject.end_date).toLocaleDateString("en-US", {
+								month: "short",
+								day: "numeric",
+								year: "numeric",
+							})}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -577,46 +724,46 @@ export default function ProjectDetailsPage() {
 				))}
 			</div>
 
+			<div className="flex items-center justify-between">
+				<div className="flex items-center gap-4">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+						<Input placeholder="Search tasks..." className="pl-10 w-64" />
+					</div>
+					<Select>
+						<SelectTrigger className="w-[180px]">
+							<SelectValue placeholder="All Status" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Status</SelectItem>
+							<SelectItem value="not_started">Not started</SelectItem>
+							<SelectItem value="on_hold">On Hold</SelectItem>
+							<SelectItem value="in_progress">In Progress</SelectItem>
+							<SelectItem value="completed">Completed</SelectItem>
+						</SelectContent>
+					</Select>
+					<Select>
+						<SelectTrigger className="w-[180px]">
+							<SelectValue placeholder="All Priorities" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Priorities</SelectItem>
+							<SelectItem value="low">Low</SelectItem>
+							<SelectItem value="medium">Medium</SelectItem>
+							<SelectItem value="high">High</SelectItem>
+							<SelectItem value="urgent">Urgent</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<Button className="rounded-xl">
+					<Plus className="h-4 w-4 mr-2" />
+					New Task
+				</Button>
+			</div>
+
 			{/* Tab Content */}
 			{activeTab === "board" && (
 				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-4">
-							<div className="relative">
-								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-								<Input placeholder="Search tasks..." className="pl-10 w-64" />
-							</div>
-							<Select>
-								<SelectTrigger className="w-[180px]">
-									<SelectValue placeholder="All Status" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Status</SelectItem>
-									<SelectItem value="not_started">Not started</SelectItem>
-									<SelectItem value="on_hold">On Hold</SelectItem>
-									<SelectItem value="in_progress">In Progress</SelectItem>
-									<SelectItem value="completed">Completed</SelectItem>
-								</SelectContent>
-							</Select>
-							<Select>
-								<SelectTrigger className="w-[180px]">
-									<SelectValue placeholder="All Priorities" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Priorities</SelectItem>
-									<SelectItem value="low">Low</SelectItem>
-									<SelectItem value="medium">Medium</SelectItem>
-									<SelectItem value="high">High</SelectItem>
-									<SelectItem value="urgent">Urgent</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<Button className="rounded-xl">
-							<Plus className="h-4 w-4 mr-2" />
-							New Task
-						</Button>
-					</div>
-
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						{Object.entries(groupedTasks).map(([statusKey, tasks], index) => {
 							const status = statusKey as IProjectTaskStatus;
@@ -647,7 +794,13 @@ export default function ProjectDetailsPage() {
 																key={assignee.id}
 																className="h-6 w-6 border-2 border-white rounded-full"
 															>
-																<AvatarImage src={assignee.employee_profile_picture || ""} />
+																<AvatarImage
+																	src={
+																		assignee.employee_profile_picture
+																			? getFileUrl(assignee.employee_profile_picture)
+																			: "/images/profile-placeholder.jpg"
+																	}
+																/>
 																<AvatarFallback className="text-xs bg-gray-300">
 																	{assignee.name?.[0] || "?"}
 																</AvatarFallback>
@@ -673,10 +826,6 @@ export default function ProjectDetailsPage() {
 
 			{activeTab === "timeline" && (
 				<div className="space-y-4">
-					<div className="flex justify-between items-center">
-						<h3 className="text-lg font-semibold">Timeline</h3>
-						<Button>Add Milestone</Button>
-					</div>
 					<div className="space-y-6">
 						{(project.project_tasks || mockProject.project_tasks)
 							.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
@@ -714,99 +863,29 @@ export default function ProjectDetailsPage() {
 			)}
 
 			{activeTab === "table" && (
-				<Card className="border-0 shadow-none">
-					<CardContent className="p-0">
-						<Table>
-							<TableHeader className="bg-gray-50">
-								<TableRow>
-									<TableHead className="w-[300px] font-medium text-sm text-gray-600">
-										Task Name
-									</TableHead>
-									<TableHead className="w-[150px] font-medium text-sm text-gray-600">
-										Status
-									</TableHead>
-									<TableHead className="w-[150px] font-medium text-sm text-gray-600">
-										Priority
-									</TableHead>
-									<TableHead className="w-[100px] font-medium text-sm text-gray-600">
-										Assigned
-									</TableHead>
-									<TableHead className="w-[150px] font-medium text-sm text-gray-600">
-										Due Date
-									</TableHead>
-									<TableHead className="w-[50px] font-medium text-sm text-gray-600">
-										Actions
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{(project.project_tasks || mockProject.project_tasks).map((task) => (
-									<TableRow key={task.id} className="border-b border-gray-200">
-										<TableCell className="py-4">
-											<div>
-												<h4 className="font-medium text-sm">{task.task_name}</h4>
-												<p className="text-xs text-gray-500 mt-1">{task.description}</p>
-											</div>
-										</TableCell>
-										<TableCell className="py-4">
-											<Badge className={cn("px-2 py-1 rounded", getStatusColor(task.task_status))}>
-												{task.task_status.replace("_", " ")}
-											</Badge>
-										</TableCell>
-										<TableCell className="py-4">
-											<Badge className={cn("px-2 py-1 rounded", getPriorityColor(task.priority))}>
-												{task.priority}
-											</Badge>
-										</TableCell>
-										<TableCell className="py-4">
-											<div className="flex -space-x-2">
-												{task.assignees.slice(0, 2).map((assignee) => (
-													<Avatar
-														key={assignee.id}
-														className="h-6 w-6 border-2 border-white rounded-full"
-													>
-														<AvatarImage src={assignee.employee_profile_picture || ""} />
-														<AvatarFallback className="text-xs bg-gray-300">
-															{assignee.name?.[0] || "?"}
-														</AvatarFallback>
-													</Avatar>
-												))}
-												{task.assignees.length > 2 && (
-													<div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-														+{task.assignees.length - 2}
-													</div>
-												)}
-											</div>
-										</TableCell>
-										<TableCell className="py-4 text-sm text-gray-600">
-											{new Date(task.end_date).toLocaleDateString("en-US", {
-												month: "short",
-												day: "numeric",
-												year: "numeric",
-											})}
-										</TableCell>
-										<TableCell className="py-4">
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-														<MoreVertical className="h-4 w-4 text-gray-500" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align="end">
-													<DropdownMenuItem className="text-sm">View</DropdownMenuItem>
-													<DropdownMenuItem className="text-sm">Edit</DropdownMenuItem>
-													<DropdownMenuItem className="text-sm text-red-600">
-														Delete
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<PaginatedTable<IProjectTask>
+					paginated={false}
+					fetchFirstPage={async () => {
+						return {
+							count: project.project_tasks.length,
+							next: null,
+							previous: null,
+							results: project.project_tasks,
+						} as IPaginatedResponse<IProjectTask>;
+					}}
+					deps={[project]}
+					onError={(err) => showErrorToast({ error: err, defaultMessage: "Failed to fetch tasks" })}
+					className="space-y-4"
+					tableClassName="min-w-[800px]"
+					footerClassName="pt-4"
+					columns={columns}
+					skeletonRows={10}
+					emptyState={
+						<div className="text-center py-12">
+							<p className="text-muted-foreground mb-4">No tasks found</p>
+						</div>
+					}
+				/>
 			)}
 
 			{projectToDelete && (
@@ -817,6 +896,16 @@ export default function ProjectDetailsPage() {
 					onConfirm={handleDelete}
 					onClose={() => setProjectToDelete(null)}
 					disabled={isDeleting}
+				/>
+			)}
+
+			{taskToDelete && (
+				<ConfirmationDialog
+					isOpen={!!taskToDelete}
+					title="Delete Task"
+					description="Are you sure you want to delete this task? This action cannot be undone."
+					onConfirm={handleTaskDelete}
+					onClose={() => setTaskToDelete(null)}
 				/>
 			)}
 		</div>
