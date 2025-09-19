@@ -10,7 +10,8 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERFORMANCE_ANALYTICS_API } from "@/lib/utils";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import PieChart from "./piechart";
+import PieChart from "../components/piechart";
+import colors from "../components/colors";
 
 export default function PerformancePage() {
 	const [analytics, setAnalytics] = useState<any>({
@@ -87,33 +88,6 @@ export default function PerformancePage() {
 	useEffect(() => {
 		fetchAnalytics();
 	}, [currentInstitution]);
-
-	const modules = [
-		{
-			title: "Performance Periods",
-			description: "Manage performance review cycles and evaluation periods",
-			icon: <Calendar className="h-6 w-6" />,
-			href: "/performance/periods",
-			color: "bg-blue-500",
-			stats: analytics?.periods || { total: 0, active: 0 },
-		},
-		{
-			title: "Objectives",
-			description: "Define and manage performance objectives and goals",
-			icon: <Target className="h-6 w-6" />,
-			href: "/performance/objectives",
-			color: "bg-green-500",
-			stats: analytics?.objectives || { total: 0, with_assignees: 0 },
-		},
-		{
-			title: "360° Feedback",
-			description: "Collect and manage multi-source performance feedback",
-			icon: <MessageSquare className="h-6 w-6" />,
-			href: "/performance/feedback",
-			color: "bg-orange-500",
-			stats: analytics?.feedback || { total: 0, average_rating: 0 },
-		},
-	];
 
 	const cards = [
 		{
@@ -252,7 +226,7 @@ export default function PerformancePage() {
 				{/* Module Cards */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{graphs.map((g) => (
-						<PieChart title={g.title} data={g.stats}></PieChart>
+						<PieChart title={g.title} data={g.stats} colors={colors}></PieChart>
 					))}
 				</div>
 			</div>

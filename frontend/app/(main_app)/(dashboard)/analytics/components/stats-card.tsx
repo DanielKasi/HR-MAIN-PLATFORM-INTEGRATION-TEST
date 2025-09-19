@@ -22,7 +22,7 @@ export default function OverviewCard({
 	className = "",
 }: Props) {
 	return (
-		<Card className={`border rounded-2xl p-4 ${className}`}>
+		<Card className={`shadow-none border p-4 ${className}`}>
 			<div className="flex items-start justify-between">
 				<div className="flex items-start gap-3">
 					<div className={`w-10 h-10 ${bg} rounded-xl p-2 flex items-center justify-center`}>
@@ -38,7 +38,7 @@ export default function OverviewCard({
 						href={link}
 						className="!rounded-full aspect-square hover:bg-gray-100 border border-black/20 p-2 transition-colors"
 					>
-						<Icon icon="hugeicons:arrow-up-right-01" className="!size-5" />
+						<Icon icon="hugeicons:arrow-up-right-01" className="!size-3" />
 					</Link>
 				)}
 			</div>

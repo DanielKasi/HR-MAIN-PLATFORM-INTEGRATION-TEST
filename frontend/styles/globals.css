@@ -92,3 +92,15 @@ body {
 		@apply bg-background text-foreground;
 	}
 }
+
+@theme {
+	--color-theme-100: #ffd3b6;
+	--color-theme-200: #ffb49e;
+	--color-theme-300: #ff9f81;
+	--color-theme-400: #ff8c64;
+	--color-theme-500: #ff3403;
+	--color-theme-600: #e22c00;
+	--color-theme-700: #b92400;
+	--color-theme-800: #8c1c00;
+	--color-theme-900: #5a1200;
+}

@@ -12,7 +12,6 @@ import {
 	CartesianGrid,
 	Tooltip,
 	ResponsiveContainer,
-	PieChart,
 	Pie,
 	Cell,
 	LineChart,
@@ -31,10 +30,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import OverviewCard from "./overview-card";
+import StatsCard from "../components/stats-card";
+import PieChart from "../components/piechart";
 import { formatDate } from "@/lib/helpers";
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
 import RecentHiresTable from "./recent-hires";
+import colors from "../components/colors";
 
 export function RecruitmentDashboard() {
 	const [data, setData] = useState<IRecruitmentDashboard | null>({
@@ -180,84 +181,16 @@ export function RecruitmentDashboard() {
 		return { name: d.status[0].toUpperCase() + d.status.slice(1), count: d.count };
 	});
 
-	const SOURCE_COLORS: Record<string, string> = {
-		online: "#FFBBAB",
-		newspaper: "#FF9A81",
-		referral: "#FF7857",
-		internal: "#FF562D",
-		schools: "#FF3403",
-	};
 	const applicationsSources = data.applications_sources.map((d) => {
-		return { name: d.source[0].toUpperCase() + d.source.slice(1), count: d.count };
+		return { name: d.source[0].toUpperCase() + d.source.slice(1), value: d.count };
 	});
-
-	function renderActiveShape(props: PieSectorDataItem) {
-		const {
-			cx,
-			cy,
-			fill,
-			payload,
-			midAngle,
-			outerRadius,
-			percent,
-			innerRadius,
-			startAngle,
-			endAngle,
-		} = props;
-		const RADIAN = Math.PI / 180;
-		const sin = Math.sin(-RADIAN * (midAngle ?? 1));
-		const cos = Math.cos(-RADIAN * (midAngle ?? 1));
-		const sx = (cx ?? 0) + ((outerRadius ?? 0) + 10) * cos;
-		const sy = (cy ?? 0) + ((outerRadius ?? 0) + 10) * sin;
-		const mx = (cx ?? 0) + ((outerRadius ?? 0) + 30) * cos;
-		const my = (cy ?? 0) + ((outerRadius ?? 0) + 30) * sin;
-		const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-		const ey = my;
-		const textAnchor = cos >= 0 ? "start" : "end";
-		const dx = ((cx ?? 0) + sx) / 2;
-		const dy = ((cy ?? 0) + sy) / 2;
-		const tx = ex + (cos >= 0 ? 1 : -1) * 12;
-		const ty = ey + 10;
-		const textWidth = 5 + payload.name.length * 10;
-		const rx = cos >= 0 ? ex : tx + 10 - textWidth;
-		const ry = ey - 20;
-		return (
-			<g>
-				<Sector
-					cx={cx}
-					cy={cy}
-					innerRadius={innerRadius}
-					outerRadius={outerRadius}
-					startAngle={startAngle}
-					endAngle={endAngle}
-					fill={fill}
-				/>
-				<path d={`M${tx},${ty}L${dx},${dy}`} stroke={"#162032"} fill="none" />
-				<circle cx={dx} cy={dy} r={5} fill={"#162032"} stroke="none" />
-				<rect
-					rx={10}
-					ry={10}
-					x={rx}
-					y={ry}
-					width={textWidth}
-					height={50}
-					stroke={"#162032"}
-					fill={"#162032"}
-					strokeLinecap="round"
-				></rect>
-				<text x={tx - 5} y={ty - 10} textAnchor={textAnchor} fill="white">
-					{payload.name}
-				</text>
-				<text
-					x={tx - 5}
-					y={ty + 10}
-					textAnchor={textAnchor}
-					fill="white"
-					fontWeight="bold"
-				>{`${((percent ?? 1) * 100).toFixed(2)}%`}</text>
-			</g>
-		);
-	}
+	const applicationsSources2 = data.applications_sources.map((d) => {
+		return {
+			name: d.source[0].toUpperCase() + d.source.slice(1),
+			value: d.count * Math.random() * 100,
+		};
+	});
+	console.log(applicationsSources2);
 
 	return (
 		<div className="space-y-6 p-6">
@@ -270,8 +203,8 @@ export function RecruitmentDashboard() {
 
 			{/* Key Metrics */}
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				{cards.map((card) => (
-					<OverviewCard className="shadow-sm !rounded-2xl !border" {...card} />
+				{cards.map((card, i) => (
+					<StatsCard key={i} {...card} />
 				))}
 			</div>
 
@@ -283,8 +216,8 @@ export function RecruitmentDashboard() {
 						<div className="flex items-center gap-4">
 							<CardTitle className="text-xl">Applications vs Hires Over Time</CardTitle>
 							<div className="flex-grow flex gap-4 items-center justify-center">
-								{Object.entries(COLORS).map((c) => (
-									<div className="flex gap-2 items-center">
+								{Object.entries(COLORS).map((c, i) => (
+									<div key={i} className="flex gap-2 items-center">
 										<div className="p-2 rounded-full" style={{ backgroundColor: c[1] }}></div>
 										<div className="text-slate-900">{c[0]}</div>
 									</div>
@@ -393,41 +326,11 @@ export function RecruitmentDashboard() {
 				</Card>
 
 				{/* Source of Hire */}
-				<Card className="shadow-sm !rounded-2xl !border-none">
-					<CardHeader>
-						<div className="flex items-center gap-4">
-							<CardTitle className="text-xl flex-grow">Source of Hire</CardTitle>
-							<div className="flex items-center gap-4">
-								<Select>
-									<SelectTrigger className="text-slate-900">
-										<SelectValue placeholder="2025" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="current">2025</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</CardHeader>
-					<CardContent>
-						{data.applications_sources.length > 0 ? (
-							<ResponsiveContainer width="100%" height={400}>
-								<PieChart cx="50%" cy="50%" outerRadius={80} margin={{ bottom: 10, top: 10 }}>
-									<Pie activeShape={renderActiveShape} data={applicationsSources} dataKey="count">
-										{data.applications_sources.map((entry, index) => (
-											<Cell key={`cell-${index}`} fill={SOURCE_COLORS[entry.source]} />
-										))}
-									</Pie>
-									<Tooltip active={false} />
-								</PieChart>
-							</ResponsiveContainer>
-						) : (
-							<div className="flex items-center justify-center h-[300px] text-slate-500">
-								No application data available
-							</div>
-						)}
-					</CardContent>
-				</Card>
+				<PieChart
+					colors={colors}
+					data={{ "2025": applicationsSources, "2024": applicationsSources2 }}
+					title="Sources of Hire"
+				/>
 			</div>
 
 			{/* Bottom Row */}
