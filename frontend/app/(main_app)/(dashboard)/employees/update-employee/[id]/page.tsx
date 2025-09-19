@@ -762,10 +762,8 @@ export default function UpdateEmployeeForm() {
 					(
 						formData.tin &&
 						formData.tin.trim() &&
-						formData.tin.length <= 12 &&
 						formData.nssf_no &&
 						formData.nssf_no.trim() &&
-						formData.nssf_no.length <= 12 &&
 						formData.salary &&
 						formData.salary > 0
 					)
