@@ -2,6 +2,10 @@ import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { IPaginatedResponse } from "@/types/types.utils";
 
+interface IRecentHireProps {
+	className?: string;
+}
+
 interface IRecentHire {
 	name: string;
 	role: string;
@@ -10,7 +14,7 @@ interface IRecentHire {
 	created_at: string;
 }
 
-export default function RecentHiresTable() {
+export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 	const columns: ColumnDef<IRecentHire>[] = [
 		{
 			key: "name",
@@ -43,7 +47,7 @@ export default function RecentHiresTable() {
 		},
 	];
 	return (
-		<Card>
+		<Card className={`${className}`}>
 			<CardTitle className="text-xl flex-grow p-4">Recent Hires</CardTitle>
 			<CardContent>
 				<PaginatedTable
