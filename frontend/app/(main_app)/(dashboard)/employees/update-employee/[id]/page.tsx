@@ -623,7 +623,7 @@ export default function UpdateEmployeeForm() {
 			const updatedFormData = {
 				...formData,
 				department: departmentValue,
-				position: 0, // Reset position when department changes
+				position: 0,
 			};
 
 			setFormData(updatedFormData);
@@ -633,6 +633,9 @@ export default function UpdateEmployeeForm() {
 				[field]: value,
 			};
 
+			if (field === "fullname") {
+				setBankAccountFormData((prev) => ({ ...prev, account_name: value as string }));
+			}
 			setFormData(updatedFormData);
 		}
 	};
@@ -1810,7 +1813,7 @@ export default function UpdateEmployeeForm() {
 											: ""
 									}
 									setAccounts={setInstitutionBanks}
-									selectedItems={[
+									value={[
 										bankAccountFormData.bank_id
 											? bankAccountFormData.bank_id
 											: thisEmployee?.bank_accounts.length
@@ -1818,10 +1821,11 @@ export default function UpdateEmployeeForm() {
 												: 0,
 									]}
 									onValueChange={(values) => {
-										console.log("Selected bank accounts : ", values);
-										if (values.length) {
-											setBankAccountFormData((prev) => ({ ...prev, bank_id: Number(values[0]) }));
-										}
+										// console.log("Selected bank accounts : ", values);
+										setBankAccountFormData((prev) => ({
+											...prev,
+											bank_id: values.length ? Number(values[0]) : 0,
+										}));
 									}}
 								/>
 								{/* {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (
@@ -1834,7 +1838,7 @@ export default function UpdateEmployeeForm() {
 								</Label>
 								<Input
 									id="bankAccountName"
-									value={bankAccountFormData.account_name || formData.fullname || ""}
+									value={bankAccountFormData.account_name || ""}
 									onChange={(e) =>
 										setBankAccountFormData((prev) => ({ ...prev, account_name: e.target.value }))
 									}

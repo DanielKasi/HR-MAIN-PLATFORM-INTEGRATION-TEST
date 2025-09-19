@@ -99,6 +99,8 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 				: null;
 		if (itemMatch) {
 			setSelectedItem(itemMatch);
+		} else {
+			setSelectedItem(null);
 		}
 	}, [selectedItems, data, getItemId, multiple]);
 
@@ -172,19 +174,11 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		}
 	};
 
-	const handleRemoveItem = (itemId: string | number, item: T) => {
-		onRemove(itemId, item);
-		setSearch("");
-		if (!multiple) {
-			setSelectedItem(null);
-		}
-	};
-
 	return (
 		<div className={cn("relative", className)}>
-			<div className="relative">
-				{showSelectedItems && selectedItems.length > 0 && (
-					<div className="absolute bottom-full left-0 right-0 mb-1 flex items-center justify-start gap-2 flex-wrap">
+			<div className="py-1">
+				{showSelectedItems && (
+					<div className="flex items-center justify-start gap-2 flex-wrap">
 						{!defaultLabel ? (
 							<>
 								{data?.results
@@ -198,16 +192,17 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 										return (
 											<span
 												key={idx}
-												className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
+												className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1"
 											>
-												{getItemLabel(itemData)}
-												{isSelected && (
+												<span className="max-w-40 truncate">{getItemLabel(itemData)}</span>
+
+												{isSelected && onRemove && (
 													<button
 														className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
 														type="button"
 														onClick={(e) => {
 															e.stopPropagation();
-															handleRemoveItem(getItemId(itemData), itemData);
+															onRemove(getItemId(itemData), itemData);
 														}}
 													>
 														<X className="!h-3 !w-3 text-red-500" />
@@ -230,12 +225,15 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 					<Button
 						type="button"
 						aria-expanded={open}
-						className={cn("w-full justify-between h-12 rounded-2xl", triggerClassName)}
+						className={cn("w-full min-w-40 justify-between h-12 rounded-2xl", triggerClassName)}
 						disabled={disabled}
 						role="combobox"
 						variant="outline"
 					>
-						{!multiple && selectedItem ? getItemLabel(selectedItem) : placeholder}
+						<span className="max-w-40 truncate">
+							{!multiple && selectedItem ? getItemLabel(selectedItem) : placeholder}
+						</span>
+
 						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 					</Button>
 				</PopoverTrigger>
@@ -263,13 +261,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 												className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
 											/>
 											{getItemLabel(item)}
-											{isSelected && (
+											{multiple && isSelected && onRemove && (
 												<button
 													type="button"
 													className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
 													onClick={(e) => {
 														e.stopPropagation();
-														handleRemoveItem(getItemId(item), item);
+														onRemove(getItemId(item), item);
 													}}
 												>
 													<X className="!h-3 !w-3 text-red-500" />

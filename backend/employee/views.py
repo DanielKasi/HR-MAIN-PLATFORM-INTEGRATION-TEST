@@ -1,7 +1,5 @@
 from django.conf import settings
-from django.shortcuts import render
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
-from django.conf import settings
 from django.contrib.admin.models import LogEntry
 from django.shortcuts import redirect
 from settings.models import EmailProviderConfig
@@ -42,7 +40,6 @@ from .serializers import (
     EmployeeShiftSerializer,
 )
 from rest_framework.parsers import MultiPartParser, FormParser
-from employee.service import EmployeeBranchService
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiExample,
@@ -56,29 +53,21 @@ import logging
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
-from rest_framework.renderers import JSONRenderer
 from utilities.pagination import CustomPageNumberPagination
-from django.http import FileResponse
 from django.core.exceptions import ValidationError
-from users.models import CustomUser, Profile, UserRole
+from users.models import CustomUser
 from django.utils import timezone
 from datetime import datetime
-from django.contrib.auth.hashers import make_password
-import re
 import pandas as pd
 import io
 from openpyxl import Workbook
 from recruitment.models import JobPosition
 from django.http import HttpResponse
-from openpyxl.styles import Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
-from django.http import FileResponse
 from payroll.utils import generate_attendance_excel
 from django.utils.encoding import escape_uri_path
 from datetime import datetime, date
-from django.utils.dateparse import parse_date
 from .service import build_attendance_report_data
 from institution.models import Institution
 from utilities.helpers import (
@@ -88,13 +77,13 @@ from utilities.helpers import (
 from django.db.models import Q
 from datetime import datetime, date
 from institution.models import Institution, InstitutionBankType
-from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework import serializers
 from django.db.models import F, ExpressionWrapper, DurationField
 from .tasks import send_employee_welcome_email
 import string
 import secrets
-from django.db.models import Count, F, ExpressionWrapper, FloatField, Avg
+from django.db.models import Count, Avg
 import json
 from .utilities import create_company_email, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
@@ -489,9 +478,9 @@ class EmployeeDetailAPIView(APIView):
             )
 
 
-
 class EmployeeCreateAPIView(APIView):
     def parse_nested_multipart(self, query_dict):
+        # TODO: This function needs to be refactored
         """Parse multipart/form-data into a nested structure."""
         final_data = defaultdict(list)
         nested_fields = [
@@ -508,7 +497,7 @@ class EmployeeCreateAPIView(APIView):
             if field != "spouse" and field != "company_email":
                 final_data[field] = []
             else:
-                final_data[field] = {}
+                final_data[field] = None
 
         for key, values in query_dict.lists():
             if key in [
@@ -544,7 +533,9 @@ class EmployeeCreateAPIView(APIView):
             for field in nested_fields:
                 if field in ("spouse", "company_email") and key.startswith(f"{field}."):
                     subfield = key[len(f"{field}.") :].replace("[]", "")
-                    final_data[field][subfield] = values[0] if values else None
+                    if final_data[field]:
+                        final_data[field][subfield] = values[0] if values else None
+
                 elif key.startswith(field + "["):
                     index_str, subfield = key[len(field + "[") :].split("].", 1)
                     index = int(index_str) if field not in ("spouse", "company_email") else None
@@ -624,7 +615,7 @@ class EmployeeCreateAPIView(APIView):
         for field in ["next_of_kin", "educations", "work_experiences", "children"]:
             final_data[field] = final_data.get(field, [])
 
-        # print(f"Final parsed data: {final_data}")
+        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Final parsed data: {final_data}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
         return final_data
 
     @extend_schema(
@@ -723,7 +714,7 @@ class EmployeeCreateAPIView(APIView):
                 return Response(
                     {"detail": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             employee = serializer.save()
             if isinstance(data["user"], dict) and data["user"].get("password"):
                 employee.user.set_password(data["user"]["password"])
@@ -751,6 +742,7 @@ class EmployeeCreateAPIView(APIView):
             )
 
         final_data = self.parse_nested_multipart(request.data)
+
         serializer = EmployeeSerializer(data=final_data, context={"request": request})
         if not serializer.is_valid():
             return Response(
@@ -774,7 +766,7 @@ class EmployeeCreateAPIView(APIView):
         return Response(
             EmployeeSerializer(employee).data, status=status.HTTP_201_CREATED
         )
-        
+
     @transaction.atomic
     def handle_bulk_upload(self, request):
         import logging
@@ -784,7 +776,7 @@ class EmployeeCreateAPIView(APIView):
         from django.core.validators import validate_email
 
         logger = logging.getLogger(__name__)
-        
+
         site = get_current_site(request)
         institution = getattr(request.user.profile, "institution", None)
         if not institution:
@@ -1136,7 +1128,7 @@ class EmployeeCreateAPIView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-# 
+            #
             # print(f"employee_id column present: {'employee_id' in df.columns}")
             grouped = None
             if "employee_id" in df.columns and df["employee_id"].str.strip().notna().any():
@@ -1357,21 +1349,6 @@ class EmployeeCreateAPIView(APIView):
                             "error": f"Invalid position: {pos_name}"
                         }
 
-                if "company_email" in group.columns and pd.notna(first_row["company_email"]) and str(first_row["company_email"]).strip():
-                    company_email = str(first_row["company_email"]).strip()
-                    try:
-                        validate_email(company_email)
-                        employee_data["company_email"] = {
-                            "email": company_email,
-                            "provider": None,
-                            "status": "pending"
-                        }
-                        # print(f"Processed company_email for row {group.index[0] + 2}: {employee_data['company_email']}")
-                    except ValidationError:
-                        row_errors["company_email"] = {
-                            "error": f"Invalid email format: {company_email}"
-                        }
-                        # print(f"Invalid company_email in row {group.index[0] + 2}: '{company_email}'")
 
                 bank_data = {}
                 if "bank" in group.columns and pd.notna(first_row["bank"]) and str(first_row["bank"]).strip():
@@ -1613,7 +1590,6 @@ class EmployeeCreateAPIView(APIView):
                         data=employee_data, context=serializer_context
                     )
 
-                
                 if not serializer.is_valid():
                     print(f">>>>>>>>>>>>>>>>>>>>>Employee Data: {employee_data}")
                     # print(f"<<<<<<<<<<<<<<<<<<<<<<<<<Row {group.index[0] + 2} serializer errors: {serializer.errors}>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -1628,6 +1604,25 @@ class EmployeeCreateAPIView(APIView):
 
                 # try:
                 employee = serializer.save()
+                if "company_email" in group.columns and pd.notna(first_row["company_email"]) and str(first_row["company_email"]).strip():
+                    company_email = str(first_row["company_email"]).strip()
+                    try:
+                        validate_email(company_email)
+                        new_company_email_data = {
+                            "email": company_email,
+                            "provider": None,
+                            "status": "pending"
+                        }
+                        EmployeeCompanyEmail.objects.update_or_create(
+                            employee=employee,
+                            defaults=new_company_email_data
+                        )
+                        # print(f"Processed company_email for row {group.index[0] + 2}: {employee_data['company_email']}")
+                    except ValidationError:
+                        row_errors["company_email"] = {
+                            "error": f"Invalid email format: {company_email}"
+                        }
+
                 employees.append(employee)
                 if existing_employee:
                     updated_count += 1
@@ -1705,7 +1700,6 @@ class EmployeeCreateAPIView(APIView):
             )
 
 
-
 class EmployeeTemplateDownloadAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1716,7 +1710,6 @@ class EmployeeTemplateDownloadAPIView(APIView):
         tags=["Employee Management"],
     )
     def get(self, request, format_type="xlsx"):
-        # User-friendly column names for the template
         columns = [
             "employee fullname",
             "personal email",
@@ -2257,7 +2250,7 @@ class EmployeeBranchManagementAPIView(APIView):
                 branch_id = branch_data.get("branch_id")
                 if not branch_id:
                     return Response(
-                        {"error": f"branch_id is required for branch at index {i}"},
+                        {"error": f"branch_id is required for branch data: {branch_data}"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 

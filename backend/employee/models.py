@@ -20,6 +20,7 @@ from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
 from approval.models import BaseApprovableModel
 from django.core.validators import MinValueValidator, MaxValueValidator
+from dateutil.relativedelta import relativedelta
 
 
 class EmployeeType(BaseApprovableModel):
@@ -333,42 +334,99 @@ class Employee(BaseApprovableModel):
 
         return f"{prefix}{new_number:05d}"
 
+    def create_birthday_event(self):
+        if not self.date_of_birth or not self.department or not self.is_active:
+            return
+        if hasattr(self, 'deleted_at') and self.deleted_at:
+            return
+        institution = self.get_institution()
+        if not institution or not self.user or not hasattr(self.user, 'profile') or not self.user.profile:
+            return
+        current_year = date.today().year
+        calendar, _ = Calendar.objects.get_or_create(
+            institution=institution,
+            year=current_year,
+            defaults={'deleted_at': None}
+        )
+        birthday_date = self.date_of_birth.replace(year=current_year)
+        if birthday_date < date.today():
+            birthday_date = birthday_date.replace(year=current_year + 1)
+        
+        # Check for existing event with specific_employees
+        existing_events = Event.objects.filter(
+            is_birthday=True,
+            institution=institution
+        ).filter(specific_employees=self.user.profile)
+        
+        if existing_events.count() > 1:
+            # Handle duplicate events (log and delete extras)
+            print(f"Warning: Multiple birthday events found for {self.user.fullname}. Keeping the first one.")
+            for event in existing_events[1:]:
+                event.delete()
+            event = existing_events.first()
+            created = False
+        elif existing_events.exists():
+            event = existing_events.first()
+            created = False
+        else:
+            # Create new event
+            event = Event.objects.create(
+                is_birthday=True,
+                institution=institution,
+                title=f"{self.user.fullname}'s Birthday",
+                date=birthday_date,
+                description=f"Birthday celebration for {self.user.fullname}",
+                target_audience='individual',
+                event_mode='physical',
+                department=self.department,
+                frequency='yearly',
+                repeat_until=birthday_date + relativedelta(years=20),
+            )
+            created = True
+        
+        # Update or set event details
+        if created:
+            event.specific_employees.add(self.user.profile)
+        else:
+            event.specific_employees.set([self.user.profile])
+            event.title = f"{self.user.fullname}'s Birthday"
+            event.date = birthday_date
+            event.department = self.department
+            event.description = f"Birthday celebration for {self.user.fullname}"
+            event.save()
+        
+        event._add_event_to_calendar()
+        calendar.events.add(event)
+
     def save(self, *args, **kwargs):
-        self.full_clean()  # Run validation
+        self.full_clean()
         is_new = self._state.adding
         old_instance = None
         if not is_new:
             old_instance = Employee.objects.filter(pk=self.pk).first()
-
-        # Check if employee is active (not soft-deleted)
-        if hasattr(self, 'deleted_at') and self.deleted_at:
-            super().save(*args, **kwargs)  # Save without creating events
-            return
-
-
-        # Existing save logic
+        if not is_new and old_instance and old_instance.date_of_birth != self.date_of_birth:
+            Event.objects.filter(
+                is_birthday=True,
+                specific_employees=old_instance.user.profile
+            ).delete()
         is_new_employee = self.pk is None
         old_department = None
         old_gender = None
         old_is_active = None
-
         if not is_new_employee:
             old_employee = Employee.objects.get(pk=self.pk)
             old_department = old_employee.department
             old_gender = old_employee.gender
             old_is_active = old_employee.is_active
-
         if self.user and not self.payroll_branch:
             self.payroll_branch = self.get_default_branch()
-
         if self.position and hasattr(self.position, "salary_min") and not self.salary:
             self.salary = self.position.salary_min
-
         if not self.employee_id:
             self.employee_id = self.generate_employee_id()
-
         super().save(*args, **kwargs)
-
+        if self.date_of_birth and self.is_active:
+            self.create_birthday_event()
         should_initialize = (
             is_new_employee and self.is_active and self.department
         ) or (
@@ -380,59 +438,12 @@ class Employee(BaseApprovableModel):
                 or (not old_is_active and self.is_active)
             )
         )
-
         if should_initialize:
             self.sync_leave_balances()
 
         # if is_new_employee and self.is_active:
         #     self.sync_employee_working_days()
 
-    def create_birthday_event(employee):
-        """
-        Create or update a recurring birthday event for an employee.
-        """
-        if not employee.date_of_birth or not employee.department or not employee.is_active:
-            return
-
-        institution = employee.get_institution()
-        if not institution:
-            return
-
-        # Create or get the calendar for the current year
-        current_year = date.today().year
-        calendar, _ = Calendar.objects.get_or_create(
-            institution=institution,
-            year=current_year,
-        )
-
-        # Create a recurring yearly birthday event
-        birthday_date = employee.date_of_birth.replace(year=current_year)
-        if birthday_date < date.today():
-            birthday_date = birthday_date.replace(year=current_year + 1)
-
-        event, created = Event.objects.get_or_create(
-            institution=institution,
-            title=f"{employee.name}'s Birthday",
-            date=birthday_date,
-            is_birthday=True,
-            defaults={
-                'description': f"Birthday celebration for {employee.name}",
-                'target_audience': 'all',
-                'event_mode': 'physical',
-                'department': employee.department,
-                'frequency': 'yearly',
-                'repeat_until': birthday_date + relativedelta(years=20),  # Extended to 20 years
-            }
-        )
-
-        if not created:
-            # Update existing event if needed
-            event.date = birthday_date
-            event.department = employee.department
-            event.save()
-
-        # Rely on Event._add_event_to_calendar to create occurrences
-        event._add_event_to_calendar()    
 
     def sync_employee_working_days(self):
         department = self.department

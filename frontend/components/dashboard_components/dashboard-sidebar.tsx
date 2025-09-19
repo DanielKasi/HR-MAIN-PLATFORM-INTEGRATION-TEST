@@ -252,7 +252,6 @@ export default function DashboardSideBar() {
 			icon: <Icon icon="hugeicons:calendar-03" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: [
 				{ title: "Analytics", href: "/analytics/leave" },
-				{ title: "My Leave Requests", href: "#" },
 				{ title: "Leave Types", href: "/leave/leave-types" },
 				{ title: "Assigned Leave", href: "#" },
 				{ title: "Leave Allocation Request", href: "#" },
@@ -322,7 +321,7 @@ export default function DashboardSideBar() {
 			icon: <Icon icon="hugeicons:laptop" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: [
 				{ title: "Analytics", href: "/analytics/assets" },
-				{ title: "Asset Batches", href: "/assets/asset-categories" },
+				{ title: "Asset Categories", href: "/assets/asset-categories" },
 				{ title: "Asset View", href: "/assets/assets" },
 				{ title: "Asset Requests", href: "/assets/asset-requests" },
 				{ title: "Asset Allocations", href: "/assets/asset-allocations" },

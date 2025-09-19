@@ -58,7 +58,7 @@ export function PeriodSelect({
 			onValueChange={onValueChange}
 			disabled={disabled || loading}
 		>
-			<SelectTrigger className={className}>
+			<SelectTrigger className={`rounded-2xl ${className}`}>
 				<SelectValue placeholder={loading ? "Loading periods..." : placeholder} />
 			</SelectTrigger>
 			<SelectContent>

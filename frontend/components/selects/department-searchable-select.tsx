@@ -8,6 +8,7 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { getPaginatedDepartments, getPaginatedDepartmentsFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useEffect, useState } from "react";
 
 export interface DepartmentSearchableSelectProps {
 	value: (string | number)[];
@@ -37,6 +38,11 @@ export const DepartmentSearchableSelect = ({
 	setDepartments,
 }: DepartmentSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
+	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
+
+	useEffect(() => {
+		setSelectedItems(value);
+	}, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
@@ -51,9 +57,9 @@ export const DepartmentSearchableSelect = ({
 	};
 
 	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
-		if (!value.includes(itemId)) {
+		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
-				onValueChange([...value, itemId]);
+				onValueChange([...selectedItems, itemId]);
 			} else {
 				onValueChange([itemId]);
 			}
@@ -61,8 +67,11 @@ export const DepartmentSearchableSelect = ({
 	};
 
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
-		onValueChange(value.filter((id) => String(id) !== String(itemId)));
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
+
 	return (
 		<div className={className}>
 			<PaginatedSearchableSelect<IDepartment, { search?: string; page?: number }>
@@ -72,7 +81,7 @@ export const DepartmentSearchableSelect = ({
 				getItemId={(department) => department.id}
 				getItemLabel={(department) => department.name || ""}
 				getItemValue={(department) => department.id.toString()}
-				selectedItems={value}
+				selectedItems={selectedItems}
 				onSelect={handleSelect}
 				onRemove={handleRemove}
 				showSelectedItems={showSelectedItems}
