@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface PerformanceStatsCardProps {
-	link: string;
+	link?: string;
 	title: string;
 	value: string | number;
 	description?: string;
