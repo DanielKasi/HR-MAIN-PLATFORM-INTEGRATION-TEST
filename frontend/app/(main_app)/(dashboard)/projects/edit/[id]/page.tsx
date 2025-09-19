@@ -23,6 +23,7 @@ import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { UserProfileSearchableSelect } from "@/components/selects/user-profile-searchable-select";
 import { IProjectFormData, IProjectStatus } from "@/types/types.utils";
 import FixedLoader from "@/components/fixed-loader";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 export default function EditProjectPage() {
 	const router = useRouter();
@@ -267,7 +268,7 @@ export default function EditProjectPage() {
 								{/* Leaders Selection */}
 								<div className="space-y-3">
 									<Label className="text-base font-medium">Project Leaders *</Label>
-									<UserProfileSearchableSelect
+									<EmployeeSearchableSelect
 										value={formData.managers}
 										onValueChange={(values) => {
 											handleInputChange(
@@ -288,7 +289,7 @@ export default function EditProjectPage() {
 								{/* Members Selection */}
 								<div className="space-y-3">
 									<Label className="text-base font-medium">Project Members *</Label>
-									<UserProfileSearchableSelect
+									<EmployeeSearchableSelect
 										value={formData.assignees}
 										onValueChange={(values) => {
 											handleInputChange(

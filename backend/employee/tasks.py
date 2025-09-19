@@ -8,8 +8,16 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.http import HttpRequest
-from calendar2.models import EventOccurrence
+from communication.views import add_notification
+from employee.models import Employee
+from settings.models import EmailProviderConfig
+from calendar2.models import Event, EventOccurrence
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from datetime import date
+import time
+from django.core.signing import TimestampSigner
+from django.contrib.admin.models import LogEntry
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -215,21 +223,116 @@ def send_welcome_email_from_view(
     )
 
 
+
+
+@shared_task
+def send_email_task(employee_id, email, password, config_id, is_welcome_email):
+    """
+    Celery task to send emails asynchronously.
+    """
+    employee = Employee.objects.get(id=employee_id)
+    config = EmailProviderConfig.objects.get(id=config_id)
+
+    if is_welcome_email:
+        # Generate a signed token for the welcome email
+        signer = TimestampSigner()
+        signed_value = signer.sign(f"{employee.id}:{email}")
+        system_login_url = f"{settings.BACKEND_URL.rstrip('/')}/api/employee/verify-email/?token={signed_value}"
+        subject = "Welcome to Our System"
+        template = "emails/welcom_email.html"
+        context = {
+            "employee": employee,
+            "system_login_url": system_login_url,
+        }
+        if settings.ENVIRONMENT == "production":
+            recipient_list = [email]
+        else:
+            print(">>>>>>>>>>>>>>>>>>>>> development environment, sending to personal email<<<<<<<<<<<<<<<<<<<<<<<")
+            recipient_list = [employee.user.email]
+    else:
+        # Email to employee's personal email with email, password, and webmail login link
+        webmail_url = config.webmail_url or config.api_url
+        subject = "Your Company Email Account"
+        template = "emails/email_account_created.html"
+        context = {
+            "employee": employee,
+            "email": email,
+            "password": password,
+            "webmail_url": webmail_url,
+        }
+        recipient_list = [employee.user.email]  # Employee's personal email
+
+    try:
+        message = render_to_string(template, context)
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipient_list,
+            html_message=message,
+            fail_silently=False,
+        )
+    except Exception as e:
+        # Log the error
+        LogEntry.objects.log_action(
+            user_id=employee.user.id,
+            content_type_id=None,
+            object_id=None,
+            object_repr="Email sending failed",
+            action_flag=2,  # Change
+            change_message=f"Failed to send {'welcome' if is_welcome_email else 'account creation'} email: {str(e)}",
+        )
+        raise ValidationError(f"Failed to send email: {str(e)}")
+    
+
 @shared_task
 def send_birthday_notifications():
-    today = timezone.now().date()
-    birthday_occurrences = EventOccurrence.objects.filter(
-        event__is_birthday=True,
-        date=today
-    ).select_related('event__specific_employees__user')
-    for occurrence in birthday_occurrences:
-        event = occurrence.event
-        profile = event.specific_employees.first()
-        if profile and profile.user.email:
-            send_mail(
-                subject=f"Happy Birthday, {profile.user.fullname}!",
-                message=f"Wishing you a fantastic birthday, {profile.user.fullname}!",
-                from_email='hr@example.com',
-                recipient_list=[profile.user.email],
-                fail_silently=True,
-            )
+    """
+    Celery task to check for birthdays and send styled HTML emails and SSE notifications.
+    """
+    today = date.today()
+
+    # Find birthday events for today
+    birthday_events = Event.objects.filter(
+        is_birthday=True,
+        occurrences__date=today,
+    ).distinct()
+
+    for event in birthday_events:
+        employee = Employee.objects.filter(
+            name=event.title.split("'s Birthday")[0],
+            date_of_birth__month=today.month,
+            date_of_birth__day=today.day,
+        ).first()
+
+        if not employee or not employee.email or not employee.user:
+            continue
+
+        # Prepare context for email template
+        context = {
+            'employee_name': employee.name,
+            'institution_name': employee.get_institution().institution_name,
+            'current_year': today.year,
+        }
+
+        # Render HTML email content
+        html_message = render_to_string('emails/birthday_email.html', context)
+
+        # Send styled HTML email
+        send_mail(
+            subject=f"Happy Birthday, {employee.name}!",
+            message="Please view this email in an HTML-compatible email client.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[employee.email],
+            html_message=html_message,
+            fail_silently=True,
+        )
+
+        # Send SSE notification
+        notification_message = f"Happy Birthday, {employee.name}! We celebrate you today! 🎂"
+        add_notification(
+            user_id=employee.user.id,
+            message=notification_message,
+            model_name='Event',
+            object_id=str(event.id)
+        )

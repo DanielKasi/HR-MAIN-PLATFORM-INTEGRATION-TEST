@@ -2,15 +2,15 @@
 
 import { useSelector } from "react-redux";
 
-import { IBankAccount } from "@/types/types.utils";
+import { IBankType } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { bankAccountsAPI } from "@/lib/utils";
+import { bankTypesAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { useMemo } from "react";
 
-export interface BankAccountSearchableSelectProps {
+export interface BankTypeSearchableSelectProps {
 	selectedItems: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
@@ -21,10 +21,10 @@ export interface BankAccountSearchableSelectProps {
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
 	defaultLabel?: string;
-	setAccounts?: (accounts: IBankAccount[]) => void;
+	setAccounts?: (accounts: IBankType[]) => void;
 }
 
-export const BankAccountSearchableSelect = ({
+export const BankTypeSearchableSelect = ({
 	selectedItems,
 	onValueChange,
 	disabled = false,
@@ -36,7 +36,7 @@ export const BankAccountSearchableSelect = ({
 	hideSelectedFromList = false,
 	defaultLabel,
 	setAccounts,
-}: BankAccountSearchableSelectProps) => {
+}: BankTypeSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
 
@@ -44,19 +44,21 @@ export const BankAccountSearchableSelect = ({
 	//   setSelectedItems(value);
 	// }, [value])
 
+	console.log("Current selected items : ", selectedItems);
+
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
 
-		return await bankAccountsAPI.getAll(query?.search);
+		return await bankTypesAPI.getAll(query?.search);
 	};
 
 	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await bankAccountsAPI.getPaginatedFRomUrl({ url });
+		return await bankTypesAPI.getPaginatedFromUrl({ url });
 	};
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
+	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
 		// console.log("\n\n Selecting account : ", itemId)
 		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
@@ -69,7 +71,7 @@ export const BankAccountSearchableSelect = ({
 			}
 		}
 	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
+	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
 		if (multiple) {
 			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
 		}
@@ -77,12 +79,12 @@ export const BankAccountSearchableSelect = ({
 
 	return (
 		<div className={className}>
-			<PaginatedSearchableSelect<IBankAccount, { search?: string; page?: number }>
+			<PaginatedSearchableSelect<IBankType, { search?: string; page?: number }>
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
 				getItemId={(account) => account.id}
-				getItemLabel={(account) => account.account_name || ""}
+				getItemLabel={(account) => account.bank_fullname || ""}
 				getItemValue={(account) => account.id.toString()}
 				selectedItems={selectedItems || [""]}
 				onSelect={handleSelect}

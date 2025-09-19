@@ -17,7 +17,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { IAttendance, IMaritalStatus } from "@/types/types.utils";
+import type { IAttendance, ICompanyEmail, IMaritalStatus } from "@/types/types.utils";
 import EmployeeLeaveBalances from "@/components/employee/employee-leave-balances";
 import EmployeeLeaveApplications from "@/components/employee/employee-leave-applications";
 import EmployeeDiscipline from "@/components/employee/employee-discipline";
@@ -383,8 +383,10 @@ export default function EmployeeProfile() {
 		if (!employeeId || generatingEmail) return;
 		setGeneratingEmail(true);
 		try {
-			const response = await employeeAPI.generateCompanyEmail({ employee_id: Number(employeeId) });
-			setCompanyEmail(response);
+			const company_email = await employeeAPI.generateCompanyEmail({
+				employee_id: Number(employeeId),
+			});
+			setEmployee((prev) => ({ ...prev, company_email: company_email }) as IEmployee);
 			toast.success("Company email generated successfully!");
 		} catch (error: any) {
 			let errorMessage = "Failed to generate company email";
@@ -413,7 +415,7 @@ export default function EmployeeProfile() {
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center px-4">
 				<div className="text-center max-w-md w-full">
 					<p className="text-[#e21732] mb-4">{error || "Employee not found"}</p>
-					<div className="space-y-2">
+					<div className="space-y-2 space-x-8">
 						<Link href="/employees/employee-list">
 							<Button className="text-white w-full md:w-auto">Back to Employees</Button>
 						</Link>
@@ -644,26 +646,26 @@ export default function EmployeeProfile() {
 												<Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
 													<CardContent className="p-4 md:p-6 space-y-6">
 														<div className="space-y-6 !flex !items-center ">
-															<div className="flex items-start gap-8">
-																<h2 className="flex items-center font-semibold gap-2">
+															<div className="flex items-center gap-8">
+																<p className="flex items-center font-semibold gap-2">
 																	<Mail className="w-5 h-5" />
 																	Company Email
-																</h2>
-																<p className="text-sm font-semibold text-gray-900">
-																	{companyEmail?.email || employee.email}
 																</p>
-															</div>
-															<div className="!flex !items-start justify-start">
-																{!companyEmail && (
+																<p className="text-sm font-semibold text-gray-900">
+																	{employee.company_email?.email || "Not set"}
+																</p>
+																{!employee.company_email?.email && (
 																	<Button
 																		onClick={handleGenerateCompanyEmail}
 																		disabled={generatingEmail}
+																		size={"sm"}
 																		className="rounded-full"
 																	>
-																		{generatingEmail ? "Generating..." : "Generate Company Email"}
+																		{generatingEmail ? "Generating..." : "Generate"}
 																	</Button>
 																)}
 															</div>
+															<div className="!flex !items-center justify-start"></div>
 														</div>
 														<div>
 															<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

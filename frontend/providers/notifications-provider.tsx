@@ -21,7 +21,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	const serviceWorkerRef = useRef<ServiceWorkerRegistration | null>(null);
 	const retryCountRef = useRef(0);
 	const maxRetries = 3;
-	const retryDelay = 10000; // 10 seconds
+	const retryInterval = 10000; // 10 seconds
 
 	// Register Service Worker
 	useEffect(() => {
@@ -33,12 +33,12 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 					console.log("Service Worker registered");
 				})
 				.catch((error) => {
-					console.error("Service Worker registration failed:", error);
+					console.warn("Service Worker registration failed:", error);
 				});
 		}
 	}, []);
 
-	// Handle SSE connection with retry logic
+	// Handle SSE connection with retry mechanism
 	useEffect(() => {
 		if (!currentUser || !accessToken || isInitialized) {
 			return;
@@ -53,7 +53,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
 		const controller = new AbortController();
 
-		async function streamNotifications(attemptNumber = 1) {
+		async function streamNotifications() {
 			try {
 				const response = await fetch(url, {
 					method: "GET",
@@ -68,8 +68,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 					throw new Error("No response body");
 				}
 
-				// Reset retry count on successful connection
-				retryCountRef.current = 0;
+				retryCountRef.current = 0; // Reset retry count on successful connection
+				setIsInitialized(true);
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -95,47 +95,36 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 								}
 							} catch (error) {
 								console.warn("Error parsing notification:", error);
-								// showErrorToast({ error, defaultMessage: "Error parsing notification" });
 							}
 						}
 					}
 				}
 			} catch (error) {
-				if (error instanceof Error && error.name === "AbortError") {
-					console.warn("Notification stream connection aborted");
-					return;
-				}
+				if (error instanceof Error && error.name !== "AbortError") {
+					console.warn("Failed to connect to notification stream:", error);
 
-				console.warn(
-					`Failed to connect to notification stream (attempt ${attemptNumber}/${maxRetries}):`,
-					error,
-				);
-
-				if (attemptNumber < maxRetries) {
-					retryCountRef.current = attemptNumber;
-					console.log(`Retrying in ${retryDelay / 1000} seconds...`);
-
-					setTimeout(() => {
-						if (!controller.signal.aborted) {
-							streamNotifications(attemptNumber + 1);
-						}
-					}, retryDelay);
-				} else {
-					console.warn(
-						"Max retry attempts reached. No longer attempting to connect to notification stream.",
-					);
-					// showErrorToast({ error, defaultMessage: "Failed to connect to notification stream" });
+					if (retryCountRef.current < maxRetries) {
+						retryCountRef.current += 1;
+						console.warn(`Retrying connection (${retryCountRef.current}/${maxRetries})...`);
+						setTimeout(() => {
+							streamNotifications();
+						}, retryInterval);
+					} else {
+						console.warn(
+							`Maximum retry attempts (${maxRetries}) reached. No further retries will be attempted.`,
+						);
+						setIsInitialized(true); // Prevent further attempts
+					}
 				}
 			}
 		}
 
 		streamNotifications();
-		setIsInitialized(true);
 
 		return () => {
 			controller.abort();
 		};
-	}, [dispatch, currentUser, accessToken, isInitialized, notifications]);
+	}, [dispatch, currentUser, accessToken, isInitialized]);
 
 	// Watch notifications and show browser notifications
 	useEffect(() => {
@@ -145,11 +134,11 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	// Request Notification permission
 	const requestNotificationPermission = async () => {
 		if (typeof Notification === "undefined") {
-			console.warn("Browser notifications are not supported");
-			// showErrorToast({
-			// 	error: new Error("Notifications not supported"),
-			// 	defaultMessage: "Browser notifications are not supported",
-			// });
+			showErrorToast({
+				error: new Error("Notifications not supported"),
+				defaultMessage: "Browser notifications are not supported",
+			});
+
 			return;
 		}
 		const permission = await Notification.requestPermission();
@@ -170,6 +159,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			!serviceWorkerRef.current
 		) {
 			console.warn("Notifications not supported or permission not granted");
+
 			return;
 		}
 
@@ -179,6 +169,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			notifications === prevNotificationsRef.current
 		) {
 			console.warn("No notifications to show");
+
 			return;
 		}
 
@@ -188,17 +179,19 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			const url = getNotificationPath(lastNotification);
 
 			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message}`, {
-				body: `${lastNotification.type?.toUpperCase() || "Alert"}`,
-				icon: "/icon.png", // Our app's icon
-				tag: lastNotification.id || (notifications.length - 1).toString(), // Prevents duplicates
-				data: { url }, // Navigate to approval page
+				body: `${lastNotification.type?.toUpperCase() || "Alert"}: Received at ${new Date(
+					lastNotification.timestamp,
+				).toLocaleString()}`,
+				icon: "/icon.png",
+				tag: lastNotification.id || (notifications.length - 1).toString(),
+				data: { url },
 			});
 		}
 
 		prevNotificationsRef.current = notifications;
 	};
 
-	// Monitor new notifications
+	// Monitor new notifications and show permission button if needed
 	useEffect(() => {
 		if (
 			typeof Notification !== "undefined" &&
