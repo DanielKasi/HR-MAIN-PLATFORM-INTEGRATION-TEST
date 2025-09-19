@@ -310,11 +310,11 @@ class BonusPointSettings(BaseApprovableModel):
 
         # Validate condition_value based on field type
         field = model_class._meta.get_field(self.condition_field)
-        if isinstance(field, (models.DateField, models.DateTimeField)):
-            try:
-                datetime.strptime(self.condition_value, '%Y-%m-%d')
-            except ValueError:
-                raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
+        # if isinstance(field, (models.DateField, models.DateTimeField)):
+        #     try:
+        #         datetime.strptime(self.condition_value, '%Y-%m-%d')
+        #     except ValueError:
+        #         raise ValidationError({"error": f"Invalid condition_value for {self.condition_field}. Must be a valid date (YYYY-MM-DD)."})
 
 
 
