@@ -122,12 +122,13 @@ def generate_employee_excel(employees):
         child = emp.children.first()
         edu = emp.educations.first()
         exp = emp.work_experiences.first()
+        company_email = getattr(emp, "company_email", None)
 
         row = [
             emp.employee_id,
             emp.user.fullname if emp.user else "",
             emp.user.email if emp.user else "",
-            emp.company_email.email if emp.company_email else "",
+            company_email.email if company_email else "",
             emp.phone_number or "",
             emp.position.name if emp.position else "",
             emp.gender or "",
