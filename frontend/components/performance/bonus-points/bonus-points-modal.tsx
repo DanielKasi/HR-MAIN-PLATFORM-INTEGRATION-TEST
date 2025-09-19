@@ -22,6 +22,7 @@ import type {
 import { Checkbox } from "@/components/ui/checkbox";
 import BonusPointSettingsSelect from "@/components/selects/bonus-points-settings-select";
 import { Input } from "@/components/ui/input";
+import { PeriodSelect } from "@/components/selects/period-select";
 
 interface BonusPointsModalProps {
 	isOpen: boolean;
@@ -43,7 +44,7 @@ export function BonusPointsModal({
 		reason: "",
 		date: new Date().toISOString().split("T")[0],
 		redeemed: false,
-		bonus_point_setting: bonusPoint?.bonus_point_setting?.id || 0,
+		bonus_point_setting_id: bonusPoint?.bonus_point_setting?.id || 0,
 	});
 	const [submitting, setSubmitting] = useState(false);
 
@@ -52,13 +53,13 @@ export function BonusPointsModal({
 	const memoizedBonusPointSettingsSelect = useMemo(
 		() => (
 			<BonusPointSettingsSelect
-				value={formData.bonus_point_setting ? [formData.bonus_point_setting] : []}
-				onValueChange={(values) => handleInputChange("bonus_point_setting", values[0] || 0)}
+				value={formData.bonus_point_setting_id ? [formData.bonus_point_setting_id] : []}
+				onValueChange={(values) => handleInputChange("bonus_point_setting_id", values[0] || 0)}
 				disabled={submitting}
 				placeholder="Select bonus point setting"
 			/>
 		),
-		[formData.bonus_point_setting],
+		[formData.bonus_point_setting_id],
 	);
 
 	const handleInputChange = (
@@ -73,7 +74,7 @@ export function BonusPointsModal({
 			toast.error("Reason is required");
 			return;
 		}
-		if (!formData.bonus_point_setting) {
+		if (!formData.bonus_point_setting_id) {
 			toast.error("Bonus point setting is required");
 			return;
 		}
@@ -116,6 +117,20 @@ export function BonusPointsModal({
 							Bonus Point Setting *
 						</Label>
 						{memoizedBonusPointSettingsSelect}
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="bonus_pperiod_idoint_setting" className="text-sm font-medium">
+							Performance Period (Optional)
+						</Label>
+						<PeriodSelect
+							value={formData.period_id ?? 0}
+							onValueChange={(val) => handleInputChange("period_id", Number(val))}
+							placeholder="Select performance period"
+							disabled={submitting}
+						/>
+						<p className="text-xs text-slate-500">
+							Link this bonus point to a specific performance period
+						</p>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="reason" className="text-sm font-medium">

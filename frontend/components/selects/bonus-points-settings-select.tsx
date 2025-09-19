@@ -35,9 +35,9 @@ export const BonusPointSettingsSelect = ({
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	// useEffect(() => {
-	// 	setSelectedItems(value);
-	// }, [value]);
+	useEffect(() => {
+		setSelectedItems(value);
+	}, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
@@ -67,9 +67,12 @@ export const BonusPointSettingsSelect = ({
 		itemId: string | number,
 		_item: PaginatedSelectItem<IBonusPointSettings>,
 	) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		// if (multiple) {
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		console.log("\n\n New selected items : ", newItems);
+		onValueChange(newItems);
+		setSelectedItems(newItems);
+		// }
 	};
 
 	return (

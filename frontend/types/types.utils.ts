@@ -2549,10 +2549,10 @@ export interface IEmployeeBonusPoint {
 
 export interface IEmployeeBonusPointFormData {
 	employee_id: number;
-	bonus_point_setting?: number;
+	bonus_point_setting_id?: number;
 	reason: string;
 	date?: string;
-	period?: number;
+	period_id?: number;
 	redeemed?: boolean;
 }
 

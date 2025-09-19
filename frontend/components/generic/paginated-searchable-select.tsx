@@ -93,7 +93,6 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	}, []);
 
 	React.useEffect(() => {
-		console.log("\n\n SElected items changed as : ", selectedItems);
 		const itemMatch =
 			!multiple && selectedItems.length > 0
 				? data?.results.find((item) => getItemId(item) === selectedItems[0])
