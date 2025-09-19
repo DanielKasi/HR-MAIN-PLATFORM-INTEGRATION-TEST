@@ -41,13 +41,13 @@ class TicketCategorySerializer(BaseApprovableSerializer):
         data = TicketCategory.objects.create(**validated_data)
         return data
     
-class TicketCommentSerializer(BaseApprovableSerializer):
+class TicketCommentSerializer(serializers.ModelSerializer):
     ticket = serializers.PrimaryKeyRelatedField(queryset=Ticket.objects.all(), write_only=True)
     ticket_detail = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = TicketComment
-        fields = '__all__'
+        fields = ['id', 'ticket', 'ticket_detail', 'comment', 'created_at', 'updated_at', 'is_active']
 
     def get_ticket_detail(self, obj):
         return {'id': obj.ticket.id, 'title': obj.ticket.title}
@@ -55,7 +55,8 @@ class TicketCommentSerializer(BaseApprovableSerializer):
     def validate(self, data):
         request = self.context.get('request')
         ticket = data.get('ticket')
-        if ticket and ticket.assigned_to != request.user.employee:
+        user_employee = request.user.employees.first()
+        if ticket and ticket.assigned_to != user_employee:
             raise serializers.ValidationError(
                 {"error": "Only the assigned employee can comment on this ticket."}
             )
@@ -63,7 +64,7 @@ class TicketCommentSerializer(BaseApprovableSerializer):
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
-        return TicketComment.objects.create(**validated_data)   
+        return TicketComment.objects.create(**validated_data) 
 
 class TicketAttachmentSerializer(BaseApprovableSerializer):
     ticket = serializers.PrimaryKeyRelatedField(queryset=Ticket.objects.all(), write_only=True)
@@ -89,8 +90,8 @@ class TicketSerializer(BaseApprovableSerializer):
     assigned_to_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='assigned_to', write_only=True, allow_null=True
     )
-    comments = TicketCommentSerializer(many=True, read_only=True)  # Removed source='comments'
-    attachments = TicketAttachmentSerializer(many=True, read_only=True)  # Removed source='attachments'
+    comments = TicketCommentSerializer(many=True, read_only=True)
+    attachments = TicketAttachmentSerializer(many=True, read_only=True)
     new_comments = serializers.ListField(
         child=serializers.CharField(), write_only=True, required=False
     )
@@ -108,17 +109,21 @@ class TicketSerializer(BaseApprovableSerializer):
         ]
 
 
+
     def create(self, validated_data):
         new_comments = validated_data.pop('new_comments', [])
         new_attachments = validated_data.pop('new_attachments', [])
         ticket = Ticket.objects.create(**validated_data)
 
+        # Check if the user is the assigned employee for comments
+        user_employee = self.context['request'].user.employees.first()
+        if new_comments and ticket.assigned_to != user_employee:
+            raise serializers.ValidationError(
+                {"error": "Only the assigned employee can add comments."}
+            )
+
         # Create comments if provided
         for comment_text in new_comments:
-            if ticket.assigned_to != self.context['request'].user.employee:
-                raise serializers.ValidationError(
-                    {"error": "Only the assigned employee can add comments."}
-                )
             TicketComment.objects.create(
                 ticket=ticket,
                 comment=comment_text,
@@ -140,12 +145,15 @@ class TicketSerializer(BaseApprovableSerializer):
         new_attachments = validated_data.pop('new_attachments', [])
         instance = super().update(instance, validated_data)
 
+        # Check if the user is the assigned employee for comments
+        user_employee = self.context['request'].user.employees.first()
+        if new_comments and instance.assigned_to != user_employee:
+            raise serializers.ValidationError(
+                {"error": "Only the assigned employee can add comments."}
+            )
+
         # Add new comments if provided
         for comment_text in new_comments:
-            if instance.assigned_to != self.context['request'].user.employee:
-                raise serializers.ValidationError(
-                    {"error": "Only the assigned employee can add comments."}
-                )
             TicketComment.objects.create(
                 ticket=instance,
                 comment=comment_text,
@@ -160,4 +168,4 @@ class TicketSerializer(BaseApprovableSerializer):
                 created_by=self.context['request'].user
             )
 
-        return instance 
+        return instance
