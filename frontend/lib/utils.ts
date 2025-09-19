@@ -1105,8 +1105,17 @@ export const upddateInterviewStage = async ({
 		formData.append("interviewers", interviewerId.toString());
 	});
 
-	const response = await apiRequest.post(`recruitment/interview-stage/${stageId}/`, formData);
+	const response = await apiRequest.patch(`recruitment/interview-stage/${stageId}/`, formData);
 
+	return response.data as IInterviewStage;
+};
+
+export const getInterviewStageById = async ({ 
+	stageId 
+}: { 
+	stageId: number; 
+}): Promise<IInterviewStage | null> => {
+	const response = await apiRequest.get(`recruitment/interview-stage/${stageId}/`);
 	return response.data as IInterviewStage;
 };
 
