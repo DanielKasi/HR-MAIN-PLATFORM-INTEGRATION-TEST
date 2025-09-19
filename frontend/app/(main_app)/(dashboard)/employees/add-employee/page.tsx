@@ -728,7 +728,6 @@ export default function AddEmployeeForm() {
 					bankAccountFormData.account_number.trim() &&
 					bankAccountFormData.bank_id &&
 					formData.tin.trim() &&
-					formData.tin.length <= 12 &&
 					formData.nssf_no.trim()
 				);
 			default:

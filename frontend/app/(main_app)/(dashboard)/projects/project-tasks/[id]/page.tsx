@@ -225,7 +225,7 @@ export default function TaskDetailsPage() {
 										<div className="flex items-center justify-between">
 											<div>
 												<p className="text-sm font-medium">Assignees</p>
-												<p className="text-3xl font-bold">{task.assigned_to.length}</p>
+												<p className="text-3xl font-bold">{task.assignees.length}</p>
 											</div>
 											<Users className="h-8 w-8" />
 										</div>
@@ -309,15 +309,16 @@ export default function TaskDetailsPage() {
 															<Avatar className="h-8 w-8">
 																<AvatarImage src={`/placeholder.svg?height=32&width=32`} />
 																<AvatarFallback className="text-xs">
-																	{leader.user.fullname
-																		.split(" ")
-																		.map((n) => n[0])
-																		.join("")}
+																	{leader.name ||
+																		leader.user?.fullname
+																			.split(" ")
+																			.map((n) => n[0])
+																			.join("")}
 																</AvatarFallback>
 															</Avatar>
 															<div className="flex-1 min-w-0">
 																<p className="text-sm font-medium text-slate-900 truncate">
-																	{leader.user.fullname}
+																	{leader.name || leader.user?.fullname}
 																</p>
 																<p className="text-xs text-slate-600">Leader</p>
 															</div>
@@ -329,7 +330,7 @@ export default function TaskDetailsPage() {
 											<div>
 												<h4 className="font-medium text-slate-900 mb-3">Assignees</h4>
 												<div className="space-y-2">
-													{task.assigned_to.map((member) => (
+													{task.assignees.map((member) => (
 														<div
 															key={member.id}
 															className="flex items-center gap-3 p-2 rounded-lg bg-slate-50"
@@ -337,15 +338,16 @@ export default function TaskDetailsPage() {
 															<Avatar className="h-8 w-8">
 																<AvatarImage src={`/placeholder.svg?height=32&width=32`} />
 																<AvatarFallback className="text-xs">
-																	{member.user.fullname
-																		.split(" ")
-																		.map((n) => n[0])
-																		.join("")}
+																	{member.name ||
+																		member.user?.fullname
+																			.split(" ")
+																			.map((n) => n[0])
+																			.join("")}
 																</AvatarFallback>
 															</Avatar>
 															<div className="flex-1 min-w-0">
 																<p className="text-sm font-medium text-slate-900 truncate">
-																	{member.user.fullname}
+																	{member.name || member.user?.fullname}
 																</p>
 																<p className="text-xs text-slate-600">Assignee</p>
 															</div>
