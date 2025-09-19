@@ -266,29 +266,19 @@ export function RecruitmentDashboard() {
 				<h1 className="flex-grow text-3xl font-bold tracking-tight text-slate-900">
 					Recruitment Analytics
 				</h1>
-				<div>
-					<Select>
-						<SelectTrigger className="text-slate-900 pr-2">
-							<SelectValue placeholder="This Month" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="current">This Month</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
 			</div>
 
 			{/* Key Metrics */}
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 				{cards.map((card) => (
-					<OverviewCard data={card} />
+					<OverviewCard className="shadow-sm !rounded-2xl !border" {...card} />
 				))}
 			</div>
 
 			{/* Charts Row */}
 			<div className="grid gap-6 md:grid-cols-2">
 				{/* Applications by Status */}
-				<Card className="md:col-span-2">
+				<Card className="md:col-span-2 shadow-sm !rounded-2xl !border-none">
 					<CardHeader>
 						<div className="flex items-center gap-4">
 							<CardTitle className="text-xl">Applications vs Hires Over Time</CardTitle>
@@ -341,7 +331,7 @@ export function RecruitmentDashboard() {
 				</Card>
 
 				{/* candidates by stage */}
-				<Card className="">
+				<Card className="shadow-sm !rounded-2xl !border-none">
 					<CardHeader>
 						<div className="flex items-center gap-4">
 							<CardTitle className="text-xl flex-grow">Candidates by Stage</CardTitle>
@@ -403,7 +393,7 @@ export function RecruitmentDashboard() {
 				</Card>
 
 				{/* Source of Hire */}
-				<Card className="">
+				<Card className="shadow-sm !rounded-2xl !border-none">
 					<CardHeader>
 						<div className="flex items-center gap-4">
 							<CardTitle className="text-xl flex-grow">Source of Hire</CardTitle>
@@ -441,7 +431,7 @@ export function RecruitmentDashboard() {
 			</div>
 
 			{/* Bottom Row */}
-			{data.applications_over_time.length > 0 && <RecentHiresTable />}
+			{data.applications_over_time.length > 0 && <RecentHiresTable className="!border-none" />}
 		</div>
 	);
 }

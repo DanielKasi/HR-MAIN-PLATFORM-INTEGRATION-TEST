@@ -16,12 +16,14 @@ export default function CountrySelect({
 	onCountryChange,
 	disabled = false,
 	compact = false,
+	placeholder = "",
 }: {
 	countries?: ICountry[];
 	selectedCountry: ICountry | null;
 	onCountryChange: (country: ICountry | null) => void;
 	disabled?: boolean;
 	compact?: boolean;
+	placeholder?: string;
 }) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -87,7 +89,7 @@ export default function CountrySelect({
 					) : compact ? (
 						<span className="text-gray-400">+Code</span>
 					) : (
-						"Select country"
+						placeholder || "Select country"
 					)}
 				</span>
 				<span className="ml-auto">
