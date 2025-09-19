@@ -66,9 +66,9 @@ export const UserProfileSearchableSelect = ({
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<UserProfile>) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (

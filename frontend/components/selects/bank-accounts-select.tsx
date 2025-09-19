@@ -8,10 +8,10 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { bankAccountsAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export interface BankAccountSearchableSelectProps {
-	selectedItems: (string | number)[];
+	value: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
@@ -25,7 +25,7 @@ export interface BankAccountSearchableSelectProps {
 }
 
 export const BankAccountSearchableSelect = ({
-	selectedItems,
+	value,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
@@ -38,11 +38,11 @@ export const BankAccountSearchableSelect = ({
 	setAccounts,
 }: BankAccountSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	// useEffect(() => {
-	//   setSelectedItems(value);
-	// }, [value])
+	useEffect(() => {
+		setSelectedItems(value);
+	}, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
@@ -70,9 +70,9 @@ export const BankAccountSearchableSelect = ({
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (

@@ -67,9 +67,12 @@ export const BonusPointSettingsSelect = ({
 		itemId: string | number,
 		_item: PaginatedSelectItem<IBonusPointSettings>,
 	) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		// if (multiple) {
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		console.log("\n\n New selected items : ", newItems);
+		onValueChange(newItems);
+		setSelectedItems(newItems);
+		// }
 	};
 
 	return (
