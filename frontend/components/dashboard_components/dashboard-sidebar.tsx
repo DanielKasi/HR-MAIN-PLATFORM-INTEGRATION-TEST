@@ -326,7 +326,7 @@ export default function DashboardSideBar() {
 				{ title: "Asset Requests", href: "/assets/asset-requests" },
 				{ title: "Asset Allocations", href: "/assets/asset-allocations" },
 				{ title: "Asset Returns", href: "/assets/asset-returns" },
-				{ title: "Asset History", href: "#" },
+				{ title: "Asset History", href: "/assets/asset-histories" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
 		},
