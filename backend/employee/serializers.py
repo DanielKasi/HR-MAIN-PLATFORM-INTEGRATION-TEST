@@ -189,27 +189,48 @@ class BankAccountSerializer(serializers.ModelSerializer):
     #     return data
 
 class EmployeeCompanyEmailSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), required=False, allow_null=True)
+
     class Meta:
         model = EmployeeCompanyEmail
         fields = ['email', 'provider', 'status']
         extra_kwargs = {
             'email': {'required': True},
             'provider': {'required': False, 'allow_null': True, 'allow_blank': True},
-            'status': {'required': False, 'default': 'pending'}
+            'status': {'required': False, 'default': 'pending'},
+            'employee': {'required': False, 'allow_null': True}
         }
 
     def create(self, validated_data):
-        employee = validated_data['employee']
-        institution = employee.get_institution()
-        try:
-            config = institution.email_config
-        except EmailProviderConfig.DoesNotExist:
-            raise serializers.ValidationError("No email provider config found.")
+        # Remove the employee check since it will be set by the parent serializer
+        email = validated_data.get('email')
+        provider = validated_data.get('provider')
+        institution = None
 
-        validated_data['email'] = generate_email(employee)
-        validated_data['provider'] = config.provider
-        return super().create(validated_data)  
-        
+        # If employee is provided, use it to fetch institution
+        employee = validated_data.get('employee')
+        if employee:
+            institution = employee.get_institution()
+            try:
+                config = institution.email_config
+            except EmailProviderConfig.DoesNotExist:
+                config = None
+
+            if not email:
+                try:
+                    email = generate_email(employee)
+                    validated_data['email'] = email
+                except Exception as e:
+                    raise serializers.ValidationError(f"Failed to generate company email: {str(e)}")
+
+            if provider is None and config:
+                validated_data['provider'] = config.provider
+
+        try:
+            company_email = super().create(validated_data)
+            return company_email
+        except Exception as e:
+            raise serializers.ValidationError(f"Error creating company email: {str(e)}")      
 class EmployeeSerializer(BaseApprovableSerializer):
     date_of_birth = serializers.DateField(format="%Y-%m-%d", input_formats=["%Y-%m-%d"])
     user = CustomUserSerializer()
@@ -336,13 +357,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
                         {"error": f"Institution does not exist for the provided user."}
                     )
 
-        existing_employees = Employee.objects.filter(user=user)
-        print(f"Existing employees for user {user.id}: {existing_employees.count()}")
-        if existing_employees.exists():
-            print(f"Found employees: {[emp.id for emp in existing_employees]}")
-
         employee = Employee.objects.create(**validated_data)
-        print(f"Created employee: {employee.id}, user: {employee.user.email}")
 
         for bank_data in bank_accounts_data:
             bank_type = bank_data.pop('bank', None)
