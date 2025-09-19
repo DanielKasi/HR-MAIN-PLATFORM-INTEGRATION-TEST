@@ -139,7 +139,7 @@ class Command(BaseCommand):
             self.stdout.write('Dry run mode: No records will be deleted.')
             self.stdout.write(f'Found {employee_count} inactive employee(s):')
             for employee in inactive_employees:
-                self.stdout.write(f'- Employee: {employee.user.fullname if employee.user else 'Unnamed'}')
+                self.stdout.write(f'- Employee: {employee.user.fullname if employee.user else "Unnamed"}')
             return
         if not no_confirm:
             self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
