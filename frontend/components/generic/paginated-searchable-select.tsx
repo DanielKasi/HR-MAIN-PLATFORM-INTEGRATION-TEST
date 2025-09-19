@@ -172,11 +172,19 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 		}
 	};
 
+	const handleRemoveItem = (itemId: string | number, item: T) => {
+		onRemove(itemId, item);
+		setSearch("");
+		if (!multiple) {
+			setSelectedItem(null);
+		}
+	};
+
 	return (
 		<div className={cn("relative", className)}>
-			<div className="py-1">
-				{showSelectedItems && (
-					<div className="flex items-center justify-start gap-2 flex-wrap">
+			<div className="relative">
+				{showSelectedItems && selectedItems.length > 0 && (
+					<div className="absolute bottom-full left-0 right-0 mb-1 flex items-center justify-start gap-2 flex-wrap">
 						{!defaultLabel ? (
 							<>
 								{data?.results
@@ -193,13 +201,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 												className="px-2 rounded-full text-sm inline-flex bg-primary/20 text-primary py-1 w-fit items-center gap-1 max-w-xs"
 											>
 												{getItemLabel(itemData)}
-												{multiple && isSelected && onRemove && (
+												{isSelected && (
 													<button
 														className="rounded-full ml-1 !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
 														type="button"
 														onClick={(e) => {
 															e.stopPropagation();
-															onRemove(getItemId(itemData), itemData);
+															handleRemoveItem(getItemId(itemData), itemData);
 														}}
 													>
 														<X className="!h-3 !w-3 text-red-500" />
@@ -255,13 +263,13 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 												className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
 											/>
 											{getItemLabel(item)}
-											{multiple && isSelected && onRemove && (
+											{isSelected && (
 												<button
 													type="button"
 													className="rounded-full ml-auto !px-1 bg-red-500/20 cursor-pointer aspect-square !text-xs"
 													onClick={(e) => {
 														e.stopPropagation();
-														onRemove(getItemId(item), item);
+														handleRemoveItem(getItemId(item), item);
 													}}
 												>
 													<X className="!h-3 !w-3 text-red-500" />

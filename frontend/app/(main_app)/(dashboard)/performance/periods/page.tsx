@@ -115,7 +115,7 @@ export default function PeriodsPage() {
 				{/* Header */}
 				<div className="mb-8">
 					<div className="flex items-center gap-4 mb-4">
-						<Link href="/performance">
+						<Link href="/analytics/performance">
 							<Button
 								variant="outline"
 								size="sm"

@@ -885,6 +885,10 @@ export default function AddEmployeeForm() {
 						: undefined,
 			};
 
+			if (formData.company_email) {
+				dataToSubmit["company_email"] = formData.company_email;
+			}
+
 			await createEmployee({
 				institutionId: selectedInstitution.id,
 				employeeData: dataToSubmit,
@@ -1052,6 +1056,23 @@ export default function AddEmployeeForm() {
 												)}
 											</div>
 											<div className="space-y-2">
+												<Label
+													htmlFor="company_email"
+													className="text-sm font-medium text-gray-700"
+												>
+													Company Email
+												</Label>
+												<Input
+													id="company_email"
+													type="email"
+													value={formData.company_email || ""}
+													onChange={(e) => handleInputChange("company_email", e.target.value)}
+													placeholder="email@mycompany.com"
+													className="h-12 rounded-2xl"
+													required
+												/>
+											</div>
+											<div className="space-y-2">
 												<PhoneNumberInput
 													label="Phone Number"
 													required
@@ -1126,6 +1147,7 @@ export default function AddEmployeeForm() {
 											</Label>
 											<CountrySelect
 												selectedCountry={selectedCountry}
+												placeholder="Set nationality"
 												onCountryChange={(country) => {
 													setSelectedCountry(country);
 													if (country) {
@@ -1727,7 +1749,7 @@ export default function AddEmployeeForm() {
 								</Label>
 								<Input
 									id="bankAccountName"
-									value={bankAccountFormData.account_name}
+									value={bankAccountFormData.account_name || formData.fullname || ""}
 									onChange={(e) =>
 										setBankAccountFormData((prev) => ({ ...prev, account_name: e.target.value }))
 									}
