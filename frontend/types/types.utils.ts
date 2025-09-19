@@ -2372,8 +2372,8 @@ export interface IProjectTask {
 	project: number;
 	task_name: string;
 	description: string;
-	managers: UserProfile[];
-	assigned_to: UserProfile[];
+	managers: IEmployee[];
+	assignees: IEmployee[];
 	start_date: string;
 	end_date: string;
 	task_status: IProjectTaskStatus;
@@ -2405,8 +2405,8 @@ export interface IProject {
 	id: number;
 	institution: number;
 	project_name: string;
-	managers: UserProfile[];
-	assignees: UserProfile[];
+	managers: IEmployee[];
+	assignees: IEmployee[];
 	description: string;
 	start_date: string;
 	end_date: string;

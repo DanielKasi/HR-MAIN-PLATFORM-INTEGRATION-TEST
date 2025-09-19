@@ -15,6 +15,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PROJECTS_API, showErrorToast } from "@/lib/utils";
 import { IProjectFormData } from "@/types/types.utils";
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
+import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
 export default function AddProjectPage() {
 	const router = useRouter();
@@ -221,7 +222,7 @@ export default function AddProjectPage() {
 									Project Leaders *
 								</Label>
 								{errors.managers && <p className="text-sm text-red-600">{errors.managers}</p>}
-								<UserProfileSearchableSelect
+								<EmployeeSearchableSelect
 									value={formData.managers}
 									onValueChange={(values) => {
 										handleInputChange(
@@ -241,7 +242,7 @@ export default function AddProjectPage() {
 									Project Members *
 								</Label>
 								{errors.assignees && <p className="text-sm text-red-600">{errors.assignees}</p>}
-								<UserProfileSearchableSelect
+								<EmployeeSearchableSelect
 									value={formData.assignees}
 									onValueChange={(values) => {
 										handleInputChange(

@@ -39,9 +39,9 @@ export const NavItemComponent = ({
 			<Button
 				disabled={!item.href || (item.href.startsWith("#") && !item.submenu?.length)}
 				variant="ghost"
-				className={`w-full !rounded-xl flex items-center justify-between px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 ${
+				className={`w-full !rounded-xl flex items-center px-2 !py-6 text-sm font-medium text-gray-600 hover:bg-primary/80 hover:text-gray-100 ${
 					isActive ? "bg-primary/80 text-gray-100" : "hover:bg-opacity-30"
-				}`}
+				} ${isSideBarOpen ? "justify-between" : "justify-center"}`}
 				onMouseEnter={() => {
 					if (!isSideBarOpen && !isMobile) setIsTooltipVisible(true);
 				}}
