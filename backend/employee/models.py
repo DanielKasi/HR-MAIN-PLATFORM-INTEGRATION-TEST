@@ -627,6 +627,8 @@ class EmployeeCompanyEmail(BaseApprovableModel):
     email = models.EmailField(unique=True)
     provider = models.CharField(
         max_length=20,
+        null=True,
+        blank=True,
         choices=EmailProviderConfig.PROVIDER_CHOICES,
         help_text="Email provider (e.g., cPanel, Google Workspace)"
     )
