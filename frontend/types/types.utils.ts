@@ -2740,6 +2740,7 @@ export interface IAssetAllocation extends IBaseApprovable {}
 export interface IAssetCategory extends IBaseApprovable {}
 export interface IAssetRequest extends IBaseApprovable {}
 export interface IAssetReturn extends IBaseApprovable {}
+export interface IAssetHistory extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}

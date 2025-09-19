@@ -174,6 +174,7 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
+	IAssetHistory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -1482,6 +1483,15 @@ export const getPaginatedEmployees = async ({
 	const response = await apiRequest.get(endpoint);
 
 	return response.data as IPaginatedResponse<IEmployee>;
+};
+
+export const getPaginatedAssetHistoriesFromUrl = async ({
+  url,
+}: {
+  url: string;
+}): Promise<IPaginatedResponse<IAssetHistory>> => {
+  const response = await apiRequest.get(forceUrlToHttps(url));
+  return response.data as IPaginatedResponse<IAssetHistory>;
 };
 
 export const getPaginatedEmployeesFromUrl = async ({
@@ -6625,6 +6635,58 @@ export const assetsAPI = {
 			throw error;
 		}
 	},
+};
+
+
+
+// Asset History API functions
+export const assetHistoriesAPI = {
+  getAll: async (): Promise<IAssetHistory[]> => {
+    try {
+      const response = await apiRequest.get("/assets/asset-histories/");
+      return response.data.results || response.data;
+    } catch (error) {
+      console.error("Error fetching asset histories:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id: number): Promise<IAssetHistory> => {
+    try {
+      const response = await apiRequest.get(`/assets/asset-histories/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching asset history:", error);
+      throw error;
+    }
+  },
+
+  getPaginated: async ({
+    page = 1,
+    search,
+    eventType,
+    ordering,
+  }: {
+    page?: number;
+    search?: string;
+    eventType?: string;
+    ordering?: string;
+  }): Promise<IPaginatedResponse<IAssetHistory>> => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+      });
+      if (search) params.append("search", search);
+      if (eventType && eventType !== "all") params.append("event_type", eventType);
+      if (ordering) params.append("ordering", ordering);
+      const endpoint = `/assets/asset-histories/?${params.toString()}`;
+      const response = await apiRequest.get(endpoint);
+      return response.data as IPaginatedResponse<IAssetHistory>;
+    } catch (error) {
+      console.error("Error fetching paginated asset histories:", error);
+      throw error;
+    }
+  },
 };
 
 export const employeeAPI = {

@@ -137,6 +137,7 @@ export interface IUser {
 }
 
 export interface UserProfile {
+	fullname: string;
 	id: number;
 	user: IUser;
 	institution: number;
