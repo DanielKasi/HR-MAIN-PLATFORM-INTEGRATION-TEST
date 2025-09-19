@@ -1613,6 +1613,7 @@ class EmployeeCreateAPIView(APIView):
                         data=employee_data, context=serializer_context
                     )
 
+                
                 if not serializer.is_valid():
                     print(f">>>>>>>>>>>>>>>>>>>>>Employee Data: {employee_data}")
                     # print(f"<<<<<<<<<<<<<<<<<<<<<<<<<Row {group.index[0] + 2} serializer errors: {serializer.errors}>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -1719,7 +1720,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
         columns = [
             "employee fullname",
             "personal email",
-            "company email",
+            # "company email",
             "phone number",
             "job position",
             "gender",
@@ -1762,7 +1763,7 @@ class EmployeeTemplateDownloadAPIView(APIView):
         sample_data = {
             "employee fullname": "John Doe",
             "personal email": "john.doe@example.com",
-            "company email": "john.doe@company.com",
+            # "company email": "john.doe@company.com",
             "phone number": "+1234567890",
             "job position": "Software Engineer",
             "gender": "Male",
