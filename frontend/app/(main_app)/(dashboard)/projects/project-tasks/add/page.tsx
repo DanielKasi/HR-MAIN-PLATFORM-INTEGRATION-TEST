@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
-import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 import { IProjectTaskFormData } from "@/types/types.utils";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
 
