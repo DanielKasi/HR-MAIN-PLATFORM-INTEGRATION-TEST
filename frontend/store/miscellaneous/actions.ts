@@ -8,6 +8,7 @@ import {
 	ICreateEmployeeForm,
 	JobAdvertCompleteFormData,
 	JobApplicationCompleteFormData,
+	IProjectTask,
 } from "@/types/types.utils";
 
 type ToggleSideBar = Action<MISC_ACTION_TYPES.TOGGLE_SIDEBAR>;
@@ -32,6 +33,9 @@ type SaveApplicationForm = ActionWithPayLoad<
 >;
 type ClearApplicationForm = Action<MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM>;
 
+type SaveSelectedTask = ActionWithPayLoad<MISC_ACTION_TYPES.SAVE_SELECTED_TASK, IProjectTask>;
+type ClearSelectedTask = Action<MISC_ACTION_TYPES.CLEAR_SELECTED_TASK>;
+
 export type MiscAction =
 	| ToggleSideBar
 	| OpenSideBar
@@ -41,7 +45,9 @@ export type MiscAction =
 	| SaveJobAdvertForm
 	| ClearJobAdvertForm
 	| SaveApplicationForm
-	| ClearApplicationForm;
+	| ClearApplicationForm
+	| SaveSelectedTask
+	| ClearSelectedTask;
 
 export const toggleSideBarAction = () => createAction(MISC_ACTION_TYPES.TOGGLE_SIDEBAR);
 
@@ -64,3 +70,8 @@ export const saveApplicationForm = (
 ): SaveApplicationForm => createAction(MISC_ACTION_TYPES.SAVE_APPLICATION_FORM, applicationForm);
 export const clearApplicationForm = (): ClearApplicationForm =>
 	createAction(MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM);
+
+export const saveSelectedTask = (task: IProjectTask): SaveSelectedTask =>
+	createAction(MISC_ACTION_TYPES.SAVE_SELECTED_TASK, task);
+export const clearSelectedTask = (): ClearSelectedTask =>
+	createAction(MISC_ACTION_TYPES.CLEAR_SELECTED_TASK);
