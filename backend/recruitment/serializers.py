@@ -6,6 +6,8 @@ from recruitment.models import (
     JobAdvertApplication,
     InterviewStage,
     JobInterview,
+    SkillZone,
+    SkillZoneCategory,
 )
 from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
@@ -468,3 +470,62 @@ class JobInterviewSerializer(BaseApprovableSerializer):
                     {"error": "Rating must be between 1 and 10."}
                 )
         return attrs
+    
+    
+class SkillZoneCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SkillZoneCategory
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at', 'deleted_at']
+
+    def create(self, validated_data):
+        """Set institution from the request user."""
+        validated_data['institution'] = self.context['request'].user.profile.institution
+        return super().create(validated_data)    
+
+
+class SkillZoneSerializer(BaseApprovableSerializer):
+    candidate = serializers.PrimaryKeyRelatedField(
+        queryset=JobAdvertApplication.objects.filter(status='rejected')
+    )
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=SkillZoneCategory.objects.all(), many=True, required=False
+    )
+    applicant_name = serializers.CharField(source='candidate.applicant_name', read_only=True)
+    job_title = serializers.CharField(
+        source='candidate.job_position_advert.job_position.name', read_only=True
+    )
+    category_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SkillZone
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at', 'deleted_at', 'applicant_name', 'job_title']
+
+    def get_category_names(self, obj):
+        """Return list of category names for the SkillZone entry."""
+        return [category.name for category in obj.category.all()]
+
+
+    def validate_category(self, value):
+        """Ensure categories belong to the same institution as the candidate."""
+        institution = self.context['request'].user.profile.institution
+        for category in value:
+            if category.institution != institution:
+                raise ValidationError(f"Category {category.name} does not belong to your institution.")
+        return value
+
+    def create(self, validated_data):
+        """Create SkillZone entry and assign categories."""
+        categories = validated_data.pop('category', [])
+        skill_zone = super().create(validated_data)
+        skill_zone.category.set(categories)
+        return skill_zone
+
+    def update(self, instance, validated_data):
+        """Update SkillZone entry and reassign categories if provided."""
+        categories = validated_data.pop('category', None)
+        instance = super().update(instance, validated_data)
+        if categories is not None:
+            instance.category.set(categories)
+        return instance
