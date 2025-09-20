@@ -146,7 +146,7 @@ export default function DashboardSideBar() {
 				{ title: "Recruitment", href: "#" },
 				{ title: "Open Jobs", href: "/job-adverts" },
 				{ title: "Stages", href: "#" },
-				{ title: "Skill Zone", href: "#" },
+				{ title: "Skill Zone", href: "/skill-zones" },
 				{ title: "Onboarding", href: "/on-boarding" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_JOB_POSITIONS,
