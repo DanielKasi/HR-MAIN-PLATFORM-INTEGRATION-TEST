@@ -81,7 +81,7 @@ class TicketAttachmentSerializer(BaseApprovableSerializer):
         validated_data['created_by'] = self.context['request'].user
         return TicketAttachment.objects.create(**validated_data)     
     
-class TicketSerializer(BaseApprovableSerializer):
+class TicketSerializer(serializers.ModelSerializer):
     category = TicketCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=TicketCategory.objects.all(), source='category', write_only=True, allow_null=True
@@ -96,18 +96,14 @@ class TicketSerializer(BaseApprovableSerializer):
         child=serializers.CharField(), write_only=True, required=False
     )
     new_attachments = serializers.ListField(
-        child=serializers.FileField(), write_only=True, required=False
+        child=serializers.FileField(max_length=100000, allow_empty_file=False), 
+        write_only=True, 
+        required=False
     )
 
     class Meta:
         model = Ticket
-        fields = [
-            'id', 'title', 'status', 'priority', 'category', 'category_id',
-            'assigned_to', 'assigned_to_id', 'approval_status',
-            'created_at', 'updated_at', 'is_active', 'comments', 'attachments',
-            'new_comments', 'new_attachments'
-        ]
-
+        fields = '__all__'
 
 
     def create(self, validated_data):
@@ -117,6 +113,10 @@ class TicketSerializer(BaseApprovableSerializer):
 
         # Check if the user is the assigned employee for comments
         user_employee = self.context['request'].user.employees.first()
+        if new_comments and not user_employee:
+            raise serializers.ValidationError(
+                {"error": "User must be linked to an Employee to add comments."}
+            )
         if new_comments and ticket.assigned_to != user_employee:
             raise serializers.ValidationError(
                 {"error": "Only the assigned employee can add comments."}
@@ -132,11 +132,16 @@ class TicketSerializer(BaseApprovableSerializer):
 
         # Create attachments if provided
         for attachment_file in new_attachments:
-            TicketAttachment.objects.create(
-                ticket=ticket,
-                file=attachment_file,
-                created_by=self.context['request'].user
-            )
+            try:
+                attachment = TicketAttachment.objects.create(
+                    ticket=ticket,
+                    file=attachment_file,
+                    created_by=self.context['request'].user
+                )
+            except Exception as e:
+                raise serializers.ValidationError(
+                    {"new_attachments": f"Failed to create attachment: {str(e)}"}
+                )
 
         return ticket
 
@@ -147,6 +152,10 @@ class TicketSerializer(BaseApprovableSerializer):
 
         # Check if the user is the assigned employee for comments
         user_employee = self.context['request'].user.employees.first()
+        if new_comments and not user_employee:
+            raise serializers.ValidationError(
+                {"error": "User must be linked to an Employee to add comments."}
+            )
         if new_comments and instance.assigned_to != user_employee:
             raise serializers.ValidationError(
                 {"error": "Only the assigned employee can add comments."}
@@ -162,10 +171,15 @@ class TicketSerializer(BaseApprovableSerializer):
 
         # Add new attachments if provided
         for attachment_file in new_attachments:
-            TicketAttachment.objects.create(
-                ticket=instance,
-                file=attachment_file,
-                created_by=self.context['request'].user
-            )
+            try:
+                attachment = TicketAttachment.objects.create(
+                    ticket=instance,
+                    file=attachment_file,
+                    created_by=self.context['request'].user
+                )
+            except Exception as e:
+                raise serializers.ValidationError(
+                    {"new_attachments": f"Failed to create attachment: {str(e)}"}
+                )
 
         return instance
