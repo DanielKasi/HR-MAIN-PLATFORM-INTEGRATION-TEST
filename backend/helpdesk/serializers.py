@@ -81,7 +81,7 @@ class TicketAttachmentSerializer(BaseApprovableSerializer):
         validated_data['created_by'] = self.context['request'].user
         return TicketAttachment.objects.create(**validated_data)     
     
-class TicketSerializer(serializers.ModelSerializer):
+class TicketSerializer(BaseApprovableSerializer):
     category = TicketCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=TicketCategory.objects.all(), source='category', write_only=True, allow_null=True
