@@ -3,39 +3,13 @@
 import type { IRecruitmentDashboard } from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
-import {
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	Legend,
-	CartesianGrid,
-	Tooltip,
-	ResponsiveContainer,
-	Pie,
-	Cell,
-	LineChart,
-	Line,
-	Label,
-	LabelList,
-	LabelProps,
-	Sector,
-} from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getRecruitmentDashboard } from "@/lib/utils";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import StatsCard from "../components/stats-card";
-import PieChart from "../components/piechart";
-import { formatDate } from "@/lib/helpers";
-import { PieSectorDataItem } from "recharts/types/polar/Pie";
+import StatsCard from "../_components/stats.card";
+import PieChart from "../_components/pie.chart";
 import RecentHiresTable from "./recent-hires";
-import colors from "../components/colors";
+import colors from "../_components/colors";
+import BarSChart from "../_components/bars.chart";
+import BarVChart from "../_components/barv.chart";
 
 export function RecruitmentDashboard() {
 	const [data, setData] = useState<IRecruitmentDashboard | null>({
@@ -65,21 +39,17 @@ export function RecruitmentDashboard() {
 			{ source: "schools", count: 10 },
 		],
 		applications_over_time: [
-			{ date: new Date().toString(), count: 20 },
-			{ date: new Date().toString(), count: 30 },
-			{ date: new Date().toString(), count: 20 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 40 },
-			{ date: new Date().toString(), count: 10 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 30 },
-			{ date: new Date().toString(), count: 20 },
-			{ date: new Date().toString(), count: 50 },
-			{ date: new Date().toString(), count: 40 },
+			{ month: "JAN", hired: 20, applications: 100 },
+			{ month: "FEB", hired: 30, applications: 120 },
+			{ month: "MAR", hired: 20, applications: 200 },
+			{ month: "APR", hired: 50, applications: 300 },
+			{ month: "JUN", hired: 50, applications: 400 },
+			{ month: "JUL", hired: 50, applications: 100 },
+			{ month: "AUG", hired: 50, applications: 200 },
+			{ month: "SEP", hired: 50, applications: 300 },
+			{ month: "OCT", hired: 40, applications: 200 },
+			{ month: "NOV", hired: 10, applications: 100 },
+			{ month: "DEC", hired: 50, applications: 200 },
 		],
 	});
 	const [loading, setLoading] = useState(true);
@@ -116,11 +86,6 @@ export function RecruitmentDashboard() {
 		);
 	}
 
-	const activeJobRate =
-		data.total_job_positions > 0 ? (data.active_job_positions / data.total_job_positions) * 100 : 0;
-	const activeAdvertRate =
-		data.total_adverts > 0 ? (data.active_adverts / data.total_adverts) * 100 : 0;
-
 	const cards = [
 		{
 			title: "Open Positions",
@@ -154,44 +119,6 @@ export function RecruitmentDashboard() {
 			icon: "hugeicons:time-04",
 		},
 	];
-
-	const COLORS = {
-		Applications: "#FFBBAB",
-		Hired: "#FF3403",
-	};
-
-	const applicationOverTimeData = data.applications_over_time.map((d) => {
-		const month = formatDate(d.date);
-		return {
-			name: month,
-			applications: d.count,
-			hired: d.count / 2,
-			amt: d.count,
-		};
-	});
-
-	const STATUS_COLORS: Record<string, string> = {
-		applied: "#FFD6CD",
-		screened: "#FF9A81",
-		interviewed: "#FF3403",
-		offered: "#AA2302",
-		hired: "#551101",
-	};
-	const applicationsByStatus = data.applications_by_status.map((d) => {
-		return { name: d.status[0].toUpperCase() + d.status.slice(1), count: d.count };
-	});
-
-	const applicationsSources = data.applications_sources.map((d) => {
-		return { name: d.source[0].toUpperCase() + d.source.slice(1), value: d.count };
-	});
-	const applicationsSources2 = data.applications_sources.map((d) => {
-		return {
-			name: d.source[0].toUpperCase() + d.source.slice(1),
-			value: d.count * Math.random() * 100,
-		};
-	});
-	console.log(applicationsSources2);
-
 	return (
 		<div className="space-y-6 p-6">
 			{/* Header */}
@@ -209,127 +136,43 @@ export function RecruitmentDashboard() {
 			</div>
 
 			{/* Charts Row */}
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-6 lg:grid-cols-2">
 				{/* Applications by Status */}
-				<Card className="md:col-span-2 shadow-sm !rounded-2xl !border-none">
-					<CardHeader>
-						<div className="flex items-center gap-4">
-							<CardTitle className="text-xl">Applications vs Hires Over Time</CardTitle>
-							<div className="flex-grow flex gap-4 items-center justify-center">
-								{Object.entries(COLORS).map((c, i) => (
-									<div key={i} className="flex gap-2 items-center">
-										<div className="p-2 rounded-full" style={{ backgroundColor: c[1] }}></div>
-										<div className="text-slate-900">{c[0]}</div>
-									</div>
-								))}
-							</div>
-							<div>
-								<Select>
-									<SelectTrigger className="text-slate-900">
-										<SelectValue placeholder="2025" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="current">2025</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</CardHeader>
-					<CardContent>
-						{data.applications_over_time.length > 0 ? (
-							<ResponsiveContainer width="100%" height={400}>
-								<BarChart data={applicationOverTimeData} cx="50%" cy="50%" outerRadius={80}>
-									<CartesianGrid strokeDasharray="3 3" vertical={false} />
-									<XAxis dataKey="name" />
-									<YAxis
-										domain={[0, 2.5 * Math.max(...data.applications_over_time.map((x) => x.count))]}
-									/>
-									<Tooltip />
-									<Bar legendType="circle" dataKey="hired" stackId="a" fill="#FF3403" />
-									<Bar
-										legendType="circle"
-										dataKey="applications"
-										stackId="a"
-										fill="#FFBBAB"
-										radius={[12, 12, 0, 0]}
-									/>
-								</BarChart>
-							</ResponsiveContainer>
-						) : (
-							<div className="flex items-center justify-center h-[300px] text-slate-500">
-								No application data available
-							</div>
-						)}
-					</CardContent>
-				</Card>
+				<BarSChart
+					title={"Applications vs Hires Over Time"}
+					label={""}
+					data={{
+						"2025": data.applications_over_time,
+					}}
+					dataKey1={"applications"}
+					dataKey2={"hired"}
+					nameKey={"month"}
+					colors={colors}
+					rounded
+				/>
 
 				{/* candidates by stage */}
-				<Card className="shadow-sm !rounded-2xl !border-none">
-					<CardHeader>
-						<div className="flex items-center gap-4">
-							<CardTitle className="text-xl flex-grow">Candidates by Stage</CardTitle>
-							<div className="flex items-center gap-4">
-								<Select>
-									<SelectTrigger className="text-slate-900">
-										<SelectValue placeholder="All Positions" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="current">All Positions</SelectItem>
-									</SelectContent>
-								</Select>
-								<Select>
-									<SelectTrigger className="text-slate-900">
-										<SelectValue placeholder="2025" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="current">2025</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-					</CardHeader>
-					<CardContent>
-						{data.applications_by_status.length > 0 ? (
-							<ResponsiveContainer width="100%" height={400}>
-								<BarChart
-									data={applicationsByStatus}
-									cx="50%"
-									cy="50%"
-									barGap={0}
-									barCategoryGap={0}
-									outerRadius={80}
-								>
-									<CartesianGrid strokeDasharray="1 1 0" horizontal={false} />
-									<XAxis hide dataKey="name" />
-									<YAxis
-										hide
-										domain={[
-											0,
-											1.25 * Math.max(...data.applications_by_status.map((x) => x.count)),
-										]}
-									/>
-									<Tooltip />
-									<Bar dataKey="count">
-										<LabelList dataKey="name" position="top"></LabelList>
-										{data.applications_by_status.map((entry, index) => (
-											<Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status]} />
-										))}
-									</Bar>
-								</BarChart>
-							</ResponsiveContainer>
-						) : (
-							<div className="flex items-center justify-center h-[300px] text-slate-500">
-								No application data available
-							</div>
-						)}
-					</CardContent>
-				</Card>
+				<BarVChart
+					title={"Candidates by Stage"}
+					label={""}
+					data={{
+						"2025": data.applications_by_status,
+					}}
+					dataKey={"count"}
+					nameKey={"status"}
+					colors={colors}
+				/>
 
 				{/* Source of Hire */}
 				<PieChart
 					colors={colors}
-					data={{ "2025": applicationsSources, "2024": applicationsSources2 }}
+					data={{ "2025": data.applications_sources }}
 					title="Sources of Hire"
+					totalStr={""}
+					label={""}
+					dataKey={"count"}
+					nameKey={"source"}
+					labelList
 				/>
 			</div>
 

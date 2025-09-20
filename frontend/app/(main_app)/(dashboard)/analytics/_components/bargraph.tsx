@@ -44,11 +44,7 @@ export default function Bargraph(props: Props) {
 							}
 						/>
 						<XAxis dataKey="name" axisLine={false} tickMargin={10} />
-						<YAxis
-							axisLine={false}
-							tickLine={false}
-							domain={[0, 1.25 * Math.max(...p.items.map((x) => x.value))]}
-						/>
+
 						<Bar dataKey="value" shape={(p: any) => <Rectangle {...p} radius={[10, 10, 0, 0]} />}>
 							{p.items.map((_, index) => (
 								<Cell key={`cell-${index}`} fill={props.colors[index]} />

@@ -12,15 +12,7 @@ interface Props {
 	className?: string;
 }
 
-export default function OverviewCard({
-	bg,
-	color,
-	icon,
-	link,
-	title,
-	value,
-	className = "",
-}: Props) {
+export default function StatsCard({ bg, color, icon, link, title, value, className = "" }: Props) {
 	return (
 		<Card className={`shadow-none border p-4 ${className}`}>
 			<div className="flex items-start justify-between">
@@ -38,7 +30,7 @@ export default function OverviewCard({
 						href={link}
 						className="!rounded-full aspect-square hover:bg-gray-100 border border-black/20 p-2 transition-colors"
 					>
-						<Icon icon="hugeicons:arrow-up-right-01" className="!size-3" />
+						<Icon icon="hugeicons:arrow-up-right-01" className="!size-4" />
 					</Link>
 				)}
 			</div>

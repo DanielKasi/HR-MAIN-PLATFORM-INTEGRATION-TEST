@@ -10,8 +10,8 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERFORMANCE_ANALYTICS_API } from "@/lib/utils";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import PieChart from "../components/piechart";
-import colors from "../components/colors";
+import PieChart from "../_components/piechart";
+import colors from "../_components/colors";
 
 export default function PerformancePage() {
 	const [analytics, setAnalytics] = useState<any>({

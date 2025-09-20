@@ -11,6 +11,17 @@ const config: Config = {
 	theme: {
 		extend: {
 			colors: {
+				theme: {
+					100: "hsl(var(--chart-1))",
+					200: "hsl(var(--chart-2))",
+					300: "hsl(var(--chart-3))",
+					400: "hsl(var(--chart-4))",
+					500: "hsl(var(--chart-5))",
+					600: "hsl(var(--chart-6))",
+					700: "hsl(var(--chart-7))",
+					800: "hsl(var(--chart-8))",
+					900: "hsl(var(--chart-9))",
+				},
 				mainColor: "#FF3403",
 				myblack: "#162032",
 				background: "hsl(var(--background))",
@@ -48,11 +59,15 @@ const config: Config = {
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",
 				chart: {
-					"1": "hsl(var(--chart-1))",
-					"2": "hsl(var(--chart-2))",
-					"3": "hsl(var(--chart-3))",
-					"4": "hsl(var(--chart-4))",
-					"5": "hsl(var(--chart-5))",
+					1: "hsl(var(--chart-1))",
+					2: "hsl(var(--chart-2))",
+					3: "hsl(var(--chart-3))",
+					4: "hsl(var(--chart-4))",
+					5: "hsl(var(--chart-5))",
+					6: "hsl(var(--chart-6))",
+					7: "hsl(var(--chart-7))",
+					8: "hsl(var(--chart-8))",
+					9: "hsl(var(--chart-9))",
 				},
 				sidebar: {
 					DEFAULT: "hsl(var(--sidebar-background))",

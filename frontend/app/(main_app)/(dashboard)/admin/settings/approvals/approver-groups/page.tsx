@@ -7,7 +7,7 @@ import { useSelector } from "react-redux";
 import { Plus, Users, Shield, Edit, Trash2, Search, MoreVertical, Eye } from "lucide-react";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable } from "@/components/common/tables/paginated-table";
+import { PaginatedTable } from "@/components/PaginatedTable";
 import {
 	Dialog,
 	DialogContent,

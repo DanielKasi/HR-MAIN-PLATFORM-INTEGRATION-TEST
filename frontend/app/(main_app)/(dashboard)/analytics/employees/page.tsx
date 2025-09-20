@@ -1,50 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-	Pie,
-	Cell,
-	BarChart,
-	Bar,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	ResponsiveContainer,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { getEmployeeDashboard } from "@/lib/utils";
 import { IEmployeeDashboard } from "@/types/types.utils";
-import { Icon } from "@iconify/react";
-import StatsCard from "../components/stats-card";
-import { Doughnut } from "../components/donut";
-import Bargraph from "../components/bargraph";
-import Piechart from "../components/piechart";
-import colors from "../components/colors";
-
-const chartConfig = {
-	gender: {
-		male: { label: "Male", color: "#ff4500" },
-		female: { label: "Female", color: "#ff7f50" },
-		other: { label: "Other", color: "#1e90ff" },
-		unknown: { label: "Unknown", color: "#gray" },
-	},
-	department: {
-		"Customer Service Department": {
-			label: "Customer Service Department",
-			color: "hsl(var(--chart-1))",
-		},
-		Engineering: { label: "Engineering", color: "hsl(var(--chart-2))" },
-		Marketing: { label: "Marketing", color: "hsl(var(--chart-3))" },
-		Sales: { label: "Sales", color: "hsl(var(--chart-4))" },
-	},
-	maritalStatus: {
-		divorced: { label: "Divorced", color: "#ff4500" },
-		married: { label: "Married", color: "#ff7f50" },
-		single: { label: "Single", color: "#ff6347" },
-		widowed: { label: "Widowed", color: "#ff5722" },
-	},
-};
+import StatsCard from "../_components/stats.card";
+import colors from "../_components/colors";
+import DonutChart from "../_components/pie.chart";
+import BarHChart from "../_components/barh.chart";
+import BarVChart from "../_components/barv.chart";
 
 export default function EmployeePage() {
 	const [data, setData] = useState<IEmployeeDashboard | null>({
@@ -153,29 +117,21 @@ export default function EmployeePage() {
 	];
 
 	const gender = {
-		"2025": { total: 20, data: { Female: 12, Male: 8 } },
-		"2024": { total: 6, data: { Female: 2, Male: 4 } },
+		"2025": [
+			{ gender: "Female", count: 12 },
+			{ gender: "Male", count: 8 },
+		],
+		"2024": [
+			{ gender: "Female", count: 10 },
+			{ gender: "Male", count: 18 },
+		],
 	};
 
 	const departments = {
-		"2025": (data?.employees_by_department ?? []).map((x) => ({
-			name: x.department,
-			value: x.count,
-		})),
+		"2025": (data?.employees_by_department ?? []).map((x) => x),
 		"2024": (data?.employees_by_department ?? []).map((x) => ({
-			name: x.department,
-			value: (x.count * Math.random()).toFixed(2),
-		})),
-	};
-
-	const maritalStatus = {
-		"2025": (data?.employees_by_marital_status ?? []).map((x) => ({
-			name: x.marital_status,
-			value: x.count,
-		})),
-		"2024": (data?.employees_by_marital_status ?? []).map((x) => ({
-			name: x.marital_status,
-			value: (x.count * Math.random()).toFixed(2),
+			...x,
+			count: (x.count * Math.random()).toFixed(2),
 		})),
 	};
 
@@ -197,19 +153,49 @@ export default function EmployeePage() {
 					))}
 				</div>
 
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+				<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 					{/* Department Distribution Bar Chart */}
-					<Bargraph title="Department Distribution" data={departments as any} colors={colors} />
-
-					{/* Gender Distribution Pie Chart */}
-					<Doughnut
-						groups={gender}
-						title="Gender Distribution"
-						totalStr="Total Employess"
-						colors={["#415180", "#FF3403"]}
+					<BarHChart
+						title={"Department Distribution"}
+						label={"Departments"}
+						data={departments}
+						dataKey={"count"}
+						nameKey={"department"}
+						color={colors[4]}
+						rounded
+					/>
+					<BarVChart
+						title={"Department Distribution"}
+						label={"Departments"}
+						data={departments}
+						dataKey={"count"}
+						nameKey={"department"}
+						colors={colors}
 					/>
 
-					<Bargraph title="Department Distribution" data={departments as any} colors={colors} />
+					{/* Gender Distribution Pie Chart */}
+					<DonutChart
+						title="Gender Distribution"
+						totalStr="Total Employees"
+						data={gender}
+						colors={["#415180", "#FF3403"]}
+						label={"Gender"}
+						dataKey={"count"}
+						nameKey={"gender"}
+						labelList
+					/>
+
+					<DonutChart
+						title="Gender 2 "
+						totalStr="Total Employees"
+						data={gender}
+						colors={["#415180", "#FF3403"]}
+						label={"Gender"}
+						dataKey={"count"}
+						nameKey={"gender"}
+						labelList
+						donut
+					/>
 
 					{/* Work Type Comparison */}
 					<Card className="rounded-2xl border border-gray-200">
@@ -218,7 +204,7 @@ export default function EmployeePage() {
 							<hr className="border-gray-200 border-t mt-2" />
 						</CardHeader>
 						<CardContent>
-							<ChartContainer config={{}} className="h-[300px]">
+							{/* <ChartContainer config={{}} className="h-[300px]">
 								<ResponsiveContainer width="100%" height="100%">
 									<BarChart
 										data={data?.employees_by_work_type}
@@ -237,7 +223,7 @@ export default function EmployeePage() {
 										</Bar>
 									</BarChart>
 								</ResponsiveContainer>
-							</ChartContainer>
+							</ChartContainer> */}
 						</CardContent>
 					</Card>
 				</div>
