@@ -7866,7 +7866,13 @@ export const PROJECTS_TASKS_API = {
 		return response.data as IPaginatedResponse<IProjectTask>;
 	},
 
-	create: async ({ projectId, data }: { projectId: number; data: IProjectTaskFormData }) => {
+	create: async ({
+		projectId,
+		data,
+	}: {
+		projectId: number;
+		data: Partial<IProjectTaskFormData>;
+	}) => {
 		const response = await apiRequest.post(`projects/tasks/`, data);
 
 		return response.data as IProjectTask;

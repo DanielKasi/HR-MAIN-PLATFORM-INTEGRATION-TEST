@@ -1,3 +1,4 @@
+import { DialogSkeleton } from "@/components/dialogs/dialog-skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -49,75 +50,98 @@ export default function TaskDetailsDialog({ isOpen, onClose, task }: TaskDetails
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[500px]">
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">Task Details</DialogTitle>
-					<DialogDescription>View the details of this task</DialogDescription>
-				</DialogHeader>
-				<div className="space-y-6">
-					<div className="grid grid-cols-1 gap-6">
-						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Task Name</Label>
-							<div className="p-3 bg-gray-50 rounded-md border">
-								<span className="font-medium">{task.task_name}</span>
-							</div>
-						</div>
-						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Description</Label>
-							<div className="p-3 bg-gray-50 rounded-md border">
-								<span>{task.description || "No description"}</span>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">Start Date</Label>
-								<div className="p-3 bg-gray-50 rounded-md border">
-									{new Date(task.start_date).toLocaleDateString()}
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">End Date</Label>
-								<div className="p-3 bg-gray-50 rounded-md border">
-									{new Date(task.end_date).toLocaleDateString()}
-								</div>
-							</div>
-						</div>
-						<div className="grid grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">Status</Label>
-								<div className="p-3 bg-gray-50 rounded-md border">
-									<Badge variant="outline" className={getStatusColor(task.task_status)}>
-										{task.task_status}
-									</Badge>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">Priority</Label>
-								<div className="p-3 bg-gray-50 rounded-md border">
-									<Badge variant="outline" className={getPriorityColor(task.priority)}>
-										{task.priority}
-									</Badge>
-								</div>
-							</div>
-						</div>
+		<>
+			{/* <Dialog open={isOpen} onOpenChange={onClose}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2"></DialogTitle>
+						<DialogDescription></DialogDescription>
+					</DialogHeader>
 
-						{(task.assignees?.length || task.managers?.length) && (
+				</DialogContent>
+			</Dialog> */}
+
+			<DialogSkeleton
+				isOpen={isOpen}
+				onClose={onClose}
+				title="Task Details"
+				onConfirm={() => {}}
+				showActions={false}
+			>
+				<>
+					<h1 className="font-semibold text-lg">View the details of this task</h1>
+					<div className="space-y-6">
+						<div className="grid grid-cols-1 gap-6">
 							<div className="space-y-2">
-								<Label className="text-sm font-medium text-gray-700">Assignees</Label>
+								<Label className="text-sm font-medium text-gray-700">Task Name</Label>
 								<div className="p-3 bg-gray-50 rounded-md border">
-									{(task.assignees || []).map((assignee) => (
-										<div key={assignee.id}>{assignee.toString()}</div>
-									))}
-									{(task.managers || []).map((manager) => (
-										<div key={manager.id}>Manager: {manager.toString()}</div>
-									))}
+									<span className="font-medium">{task.task_name}</span>
 								</div>
 							</div>
-						)}
+							<div className="space-y-2">
+								<Label className="text-sm font-medium text-gray-700">Description</Label>
+								<div className="p-3 bg-gray-50 rounded-md border">
+									<span>{task.description || "No description"}</span>
+								</div>
+							</div>
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Start Date</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										{new Date(task.start_date).toLocaleDateString()}
+									</div>
+								</div>
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">End Date</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										{new Date(task.end_date).toLocaleDateString()}
+									</div>
+								</div>
+							</div>
+							<div className="grid grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Status</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										<Badge variant="outline" className={getStatusColor(task.task_status)}>
+											{task.task_status}
+										</Badge>
+									</div>
+								</div>
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Priority</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										<Badge variant="outline" className={getPriorityColor(task.priority)}>
+											{task.priority}
+										</Badge>
+									</div>
+								</div>
+							</div>
+
+							{
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Managers</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										{task.managers.map((manager) => (
+											<div key={manager.id}>{manager.name || manager.user?.fullname || ""}</div>
+										))}
+									</div>
+								</div>
+							}
+
+							{
+								<div className="space-y-2">
+									<Label className="text-sm font-medium text-gray-700">Assignees</Label>
+									<div className="p-3 bg-gray-50 rounded-md border">
+										{task.assignees.map((assignee) => (
+											<div key={assignee.id}>{assignee.name || assignee.user?.fullname || ""}</div>
+										))}
+									</div>
+								</div>
+							}
+						</div>
 					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
+				</>
+			</DialogSkeleton>
+		</>
 	);
 }

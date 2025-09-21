@@ -106,9 +106,7 @@ export function AllowanceTable({
 						<TableRow key={allowance.id} className="hover:bg-gray-50 transition-colors">
 							<TableCell>
 								<div>
-									<div className="font-medium text-gray-900">
-										{allowance.employee.user?.fullname}
-									</div>
+									<div className="font-medium text-gray-900">{allowance.employee?.name}</div>
 									<div className="text-sm text-gray-500">{allowance.employee.email}</div>
 								</div>
 							</TableCell>

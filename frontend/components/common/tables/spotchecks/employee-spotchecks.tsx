@@ -59,7 +59,7 @@ export default function EmployeeSpotchecks({ employee }: Props) {
 				description="You're about to send a spotcheck to this employee. Do you want to proceed ?"
 				disabled={isSending}
 				isOpen={open}
-				title={`Send spotcheck to  ${employee.user?.fullname || "employee"}`}
+				title={`Send spotcheck to  ${employee?.name || "employee"}`}
 				onConfirm={handleSend}
 				onClose={() => setOpen(false)}
 			/>

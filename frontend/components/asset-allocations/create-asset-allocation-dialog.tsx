@@ -65,7 +65,7 @@ export const CreateAssetAllocationDialog = ({
 
 	const filteredEmployees = employees.filter((employee) => {
 		const fullName =
-			employee.user?.fullname ||
+			employee?.name ||
 			`${employee.first_name || ""} ${employee.last_name || ""}`.trim() ||
 			"Unknown";
 		const employeeId = employee.employee_id || "";

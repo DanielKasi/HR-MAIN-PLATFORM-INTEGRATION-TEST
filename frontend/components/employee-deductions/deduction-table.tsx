@@ -114,9 +114,7 @@ export function DeductionTable({
 						<TableRow key={deduction.id} className="hover:bg-gray-50 transition-colors">
 							<TableCell>
 								<div>
-									<div className="font-medium text-gray-900">
-										{deduction.employee.user?.fullname}
-									</div>
+									<div className="font-medium text-gray-900">{deduction.employee?.name}</div>
 									<div className="text-sm text-gray-500">{deduction.employee.email}</div>
 								</div>
 							</TableCell>

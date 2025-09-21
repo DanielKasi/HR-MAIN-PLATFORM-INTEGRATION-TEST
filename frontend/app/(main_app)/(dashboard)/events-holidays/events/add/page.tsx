@@ -229,7 +229,7 @@ export default function AddEventPage() {
 	// Filter employees based on search term
 	const filteredEmployees = employees.filter(
 		(employee) =>
-			`${employee.user?.fullname} `.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
+			`${employee?.name} `.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
 			employee.employee_id?.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
 			(employee.department?.name &&
 				employee.department.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())),
@@ -615,7 +615,7 @@ export default function AddEventPage() {
 																		className="flex-1 cursor-pointer"
 																	>
 																		<div className="font-medium text-slate-900">
-																			{employee.user?.fullname}
+																			{employee?.name}
 																		</div>
 																	</label>
 																</div>

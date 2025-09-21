@@ -10,7 +10,7 @@ interface DialogSkeletonProps {
 	title: string;
 	children: React.ReactNode;
 	className?: string;
-	onConfirm: () => void;
+	onConfirm?: () => void;
 	confirmText?: string;
 	cancelText?: string;
 	confirmDisabled?: boolean;
@@ -30,7 +30,7 @@ export function DialogSkeleton({
 	showActions = true,
 }: DialogSkeletonProps) {
 	const handleConfirm = () => {
-		onConfirm();
+		onConfirm?.();
 		onClose();
 	};
 
@@ -41,7 +41,9 @@ export function DialogSkeleton({
 					<DialogTitle className="text-lg font-semibold text-center w-full">{title}</DialogTitle>
 				</DialogHeader>
 
-				<div className="space-y-4">{children}</div>
+				<div className="space-y-4 overflow-y-auto max-h-[70svh] md:max-h-[60svh] py-6">
+					{children}
+				</div>
 
 				{showActions && (
 					<div className="flex items-center space-x-2 pt-4">

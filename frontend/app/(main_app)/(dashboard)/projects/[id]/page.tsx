@@ -10,7 +10,7 @@ import {
 	Plus,
 	Search,
 	Filter,
-	MoreVertical,
+	MoreHorizontal,
 	Eye,
 	Trash2,
 	Clock,
@@ -40,14 +40,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, PROJECTS_TASKS_API } from "@/lib/utils";
 import { IPaginatedResponse, IProject, IProjectTask } from "@/types/types.utils";
@@ -64,6 +57,7 @@ import { PERMISSION_CODES } from "@/constants";
 import Calender, { Group, Item } from "@/components/projects/tasks/calender";
 import TaskDialog from "@/components/projects/tasks/project-task-dialog";
 import TaskDetailsDialog from "@/components/projects/tasks/project-task-details-dialog";
+import { CircularProgress } from "@/components/common/progress-bar/circular-progressbar";
 
 const getStatusColor = (status: IProjectStatus | IProjectTaskStatus) => {
 	switch (status) {
@@ -136,53 +130,73 @@ const statusMap: Record<IProjectTaskStatus, { label: string; color: string }> = 
 	completed: { label: "Completed", color: "bg-green-100" },
 };
 
-const CircularProgress = ({ percentage }: { percentage: number }) => {
-	const radius = 36;
-	const stroke = 4;
-	const normalizedRadius = radius - stroke * 2;
-	const circumference = normalizedRadius * 2 * Math.PI;
-	const strokeDashoffset = circumference - (percentage / 100) * circumference;
+// const CircularProgress = ({ percentage }: { percentage: number }) => {
+// 	const radius = 70;
+// 	const stroke = 14;
+// 	const normalizedRadius = radius - stroke * 2;
+// 	const circumference = normalizedRadius * 2 * Math.PI;
+// 	const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-	return (
-		<div className="relative">
-			<svg height="80" width="80" className="transform -rotate-90 origin-center">
-				<circle
-					stroke="#e5e7eb"
-					strokeWidth={stroke}
-					fill="transparent"
-					r={normalizedRadius}
-					cx={radius}
-					cy={radius}
-				/>
-				<circle
-					stroke="#3b82f6"
-					strokeWidth={stroke}
-					fill="transparent"
-					r={normalizedRadius}
-					cx={radius}
-					cy={radius}
-					strokeDasharray={circumference}
-					strokeDashoffset={strokeDashoffset}
-					strokeLinecap="round"
-				/>
-			</svg>
-			<div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-				<div className="text-sm font-bold text-gray-700">{percentage}%</div>
-			</div>
-		</div>
-	);
-};
+// 	return (
+// 		<div className="relative bg-red-300">
+// 			<svg height="160" width="160" className="bg-violet-300">
+// 				<g transform={`rotate(-90 ${"100 100"})`}>
+// 					<circle
+// 						stroke="#e5e7eb"
+// 						strokeWidth={stroke}
+// 						fill="transparent"
+// 						r={normalizedRadius}
+// 						cx={radius}
+// 						cy={radius}
+// 					/>
+// 					<circle
+// 						stroke="#3b82f6"
+// 						strokeWidth={stroke}
+// 						fill="transparent"
+// 						r={normalizedRadius}
+// 						cx={radius}
+// 						cy={radius}
+// 						strokeDasharray={circumference}
+// 						strokeDashoffset={strokeDashoffset}
+// 						strokeLinecap="round"
+// 					/>
+// 				</g>
+// 			</svg>
+// 			<div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+// 				<div className="text-sm font-bold text-gray-700">{percentage}%</div>
+// 			</div>
+// 		</div>
+// 	);
+// };
+
+const formatStatus = (status: string) => status.replace("_", " ");
 
 const getStatusBadge = (status: IProjectTaskStatus) => {
 	switch (status) {
 		case "completed":
-			return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">{status}</Badge>;
+			return (
+				<Badge className="bg-green-100 text-green-800 hover:bg-green-100 capitalize text-xs">
+					{formatStatus(status)}
+				</Badge>
+			);
 		case "in_progress":
-			return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">{status}</Badge>;
+			return (
+				<Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs capitalize">
+					{formatStatus(status)}
+				</Badge>
+			);
 		case "not_started":
-			return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">{status}</Badge>;
+			return (
+				<Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs capitalize">
+					{formatStatus(status)}
+				</Badge>
+			);
 		default:
-			return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">{status}</Badge>;
+			return (
+				<Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100 text-xs capitalize">
+					{formatStatus(status)}
+				</Badge>
+			);
 	}
 };
 
@@ -200,6 +214,7 @@ export default function ProjectDetailsPage() {
 	const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 	const [selectedTask, setSelectedTask] = useState<IProjectTask | null>(null);
 	const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+	const [filteredProject, setFilteredProject] = useState<IProject | null>(null);
 
 	// Mock documents
 	const documents = useMemo(
@@ -218,25 +233,44 @@ export default function ProjectDetailsPage() {
 
 	const fetchProject = async () => {
 		try {
-			setLoading(true);
 			const fetchedProject = await PROJECTS_API.getByProjectById({ project_id: Number(params.id) });
 			setProject(fetchedProject);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to fetch project" });
 		} finally {
-			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
 		if (params.id) {
-			fetchProject();
+			loadData();
 		}
 	}, [params.id]);
 
+	const loadData = async () => {
+		setLoading(true);
+		await fetchProject();
+		setLoading(false);
+	};
+
+	useEffect(() => {
+		if (project) {
+			if (searchQuery) {
+				setFilteredProject((prev) => ({
+					...project,
+					project_tasks: project.project_tasks.filter((task) =>
+						task.task_name.toLowerCase().includes(searchQuery.toLowerCase()),
+					),
+				}));
+			} else {
+				setFilteredProject(project);
+			}
+		}
+	}, [project, searchQuery]);
+
 	// Group tasks by status for board, ensure useMemo runs unconditionally
 	const groupedTasks = useMemo(() => {
-		if (!project)
+		if (!filteredProject)
 			return {
 				not_started: [],
 				on_hold: [],
@@ -249,11 +283,42 @@ export default function ProjectDetailsPage() {
 			in_progress: [],
 			completed: [],
 		};
-		project.project_tasks.forEach((task) => {
+		filteredProject.project_tasks.forEach((task) => {
 			groups[task.task_status].push(task);
 		});
 		return groups;
-	}, [project]);
+	}, [filteredProject]);
+
+	const taskActionsDropdown = (task: IProjectTask) => (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" size="icon">
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent>
+				<DropdownMenuItem
+					onClick={() => {
+						setSelectedTask(task);
+						setIsTaskDetailsOpen(true);
+					}}
+				>
+					<Eye className="mr-2 h-4 w-4" /> View
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						setSelectedTask(task);
+						setIsAddTaskOpen(true);
+					}}
+				>
+					<Edit className="mr-2 h-4 w-4" /> Edit
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => setTaskToDelete(task)} className="text-red-600">
+					<Trash2 className="mr-2 h-4 w-4" /> Delete
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 
 	const columns: ColumnDef<IProjectTask>[] = [
 		{
@@ -310,30 +375,11 @@ export default function ProjectDetailsPage() {
 		{
 			key: "actions",
 			header: "Actions",
-			cell: (task) => (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" size="icon">
-							<MoreVertical className="h-4 w-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent>
-						<DropdownMenuItem onClick={() => setSelectedTask(task)}>
-							<Eye className="mr-2 h-4 w-4" /> View
-						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => setIsAddTaskOpen(true)}>
-							<Edit className="mr-2 h-4 w-4" /> Edit
-						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => setTaskToDelete(task)} className="text-red-600">
-							<Trash2 className="mr-2 h-4 w-4" /> Delete
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			),
+			cell: (task) => taskActionsDropdown(task),
 		},
 	];
 
-	if (loading) {
+	if (loading || !project) {
 		return (
 			<div className="min-h-screen bg-white p-4 rounded-xl space-y-6">
 				<div className="flex items-center justify-between">
@@ -389,15 +435,7 @@ export default function ProjectDetailsPage() {
 		);
 	}
 
-	if (!project) {
-		return (
-			<div className="flex h-full w-full items-center justify-center">
-				<div className="text-lg">Project not found</div>
-			</div>
-		);
-	}
-
-	const progress = calculateProgress(project.project_tasks);
+	const progress = calculateProgress(project?.project_tasks || []);
 
 	const handleDelete = async () => {
 		if (!project) return;
@@ -423,8 +461,11 @@ export default function ProjectDetailsPage() {
 		start_date?: string;
 		end_date?: string;
 	}) => {
+		if (!project) {
+			return;
+		}
 		try {
-			const response = await PROJECTS_TASKS_API.update({
+			await PROJECTS_TASKS_API.update({
 				taskId,
 				data: {
 					start_date: start_date?.split("T")[0],
@@ -432,7 +473,7 @@ export default function ProjectDetailsPage() {
 					project: project.id,
 				},
 			});
-			// await fetchProject();
+			await fetchProject();
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to update task" });
 		}
@@ -456,13 +497,7 @@ export default function ProjectDetailsPage() {
 		if (!taskToDelete) return;
 		try {
 			await PROJECTS_TASKS_API.delete({ taskId: taskToDelete.id });
-			setProject((prev) => {
-				if (!prev) return null;
-				return {
-					...prev,
-					project_tasks: prev.project_tasks.filter((task) => task.id !== taskToDelete.id),
-				};
-			});
+			await fetchProject();
 			toast.success("Task deleted successfully");
 		} catch (error: unknown) {
 			showErrorToast({ error, defaultMessage: "Failed to delete task" });
@@ -473,197 +508,203 @@ export default function ProjectDetailsPage() {
 
 	return (
 		<div className="min-h-screen bg-white p-4 rounded-xl space-y-6">
-			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4">
-					<Link href="/projects" className="p-2 hover:bg-gray-100 rounded-full">
-						<ArrowLeft className="h-5 w-5" />
-					</Link>
-					<div className="flex items-center gap-3">
-						<h1 className="text-2xl font-bold">{project.project_name}</h1>
-						<Badge className={cn("capitalize", getStatusColor(project.project_status))}>
-							{getStatusIcon(project.project_status)}
-							<span className="ml-1">{project.project_status.replace("_", " ")}</span>
-						</Badge>
-					</div>
-				</div>
-				<div className="flex gap-2">
-					<Button variant="outline" className="rounded-lg" asChild>
-						<Link href={`/projects/edit/${project.id}`}>
-							<Edit className="h-4 w-4 mr-2" />
-							Edit
-						</Link>
-					</Button>
-					<Button
-						variant="destructive"
-						className="!rounded-lg !bg-transparent !text-destructive !border !border-destructive"
-						onClick={() => setProjectToDelete(project)}
-					>
-						<Trash2 className="h-4 w-4 mr-2" />
-						Delete
-					</Button>
-				</div>
-			</div>
-
-			{/* Description and Progress */}
-			<div className="flex items-start justify-between">
-				<p className="text-gray-600 max-w-[70%]">{project.description}</p>
-				<CircularProgress percentage={progress} />
-			</div>
-
-			{/* Team and Dates */}
-			<div className="flex justify-between items-center">
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<h3 className="font-medium text-sm">Leads</h3>
-						<div className="flex -space-x-2">
-							{project.managers.slice(0, 3).map((lead) => (
-								<Avatar key={lead.id} className="h-8 w-8 border-2 border-white rounded-full">
-									<AvatarImage
-										src={
-											lead.employee_profile_picture
-												? getFileUrl(lead.employee_profile_picture)
-												: "/images/profile-placeholder.jpg"
-										}
-									/>
-									<AvatarFallback className="text-xs bg-gray-300">
-										{lead.name
-											?.split(" ")
-											.map((n) => n[0])
-											.join("") || "?"}
-									</AvatarFallback>
-								</Avatar>
-							))}
-							{project.managers.length > 3 && (
-								<div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium">
-									+{project.managers.length - 3}
-								</div>
-							)}
-						</div>
-					</div>
-					<div className="space-y-2">
-						<h3 className="font-medium text-sm">Members</h3>
-						<div className="flex -space-x-2">
-							{project.assignees.slice(0, 3).map((member) => (
-								<Avatar key={member.id} className="h-8 w-8 border-2 border-white rounded-full">
-									<AvatarImage
-										src={
-											member.employee_profile_picture
-												? getFileUrl(member.employee_profile_picture)
-												: "/images/profile-placeholder.jpg"
-										}
-									/>
-									<AvatarFallback className="text-xs bg-gray-300">
-										{member.name
-											?.split(" ")
-											.map((n) => n[0])
-											.join("") || "?"}
-									</AvatarFallback>
-								</Avatar>
-							))}
-							{project.assignees.length > 3 && (
-								<div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium">
-									+{project.assignees.length - 3}
-								</div>
-							)}
-						</div>
-					</div>
-				</div>
-				<div className="flex flex-col md:flex-row items-center justify-end gap-8 space-y-1 text-sm">
-					<div className="flex justify-end items-center gap-4">
-						<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
-						<span className="text-gray-500">Start Date</span>
-						<p className="font-medium">
-							{new Date(project.start_date).toLocaleDateString("en-US", {
-								month: "short",
-								day: "numeric",
-								year: "numeric",
-							})}
-						</p>
-					</div>
-					<div className="flex justify-end items-center gap-4">
-						<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
-						<span className="text-gray-500">End Date</span>
-						<p className="font-medium">
-							{new Date(project.end_date).toLocaleDateString("en-US", {
-								month: "short",
-								day: "numeric",
-								year: "numeric",
-							})}
-						</p>
-					</div>
-				</div>
-			</div>
-
-			{/* Documents */}
-			<div>
-				<h3 className="font-medium mb-4">Documents</h3>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					{documents.map((doc) => (
-						<div
-							key={doc.id}
-							className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-						>
+			{project ? (
+				<>
+					{/* Header */}
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-4">
+							<Link href="/projects" className="p-2 hover:bg-gray-100 rounded-full">
+								<ArrowLeft className="h-5 w-5" />
+							</Link>
 							<div className="flex items-center gap-3">
-								<div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-									<span className="text-red-600 text-sm font-medium">PDF</span>
-								</div>
-								<div>
-									<p className="font-medium text-sm">{doc.name}</p>
-									<p className="text-xs text-gray-500">Created: {doc.created}</p>
+								<h1 className="text-2xl font-bold">{project.project_name}</h1>
+								<Badge className={cn("capitalize", getStatusColor(project.project_status))}>
+									{getStatusIcon(project.project_status)}
+									<span className="ml-1">{project.project_status.replace("_", " ")}</span>
+								</Badge>
+							</div>
+						</div>
+						<div className="flex gap-2">
+							<Button variant="outline" className="rounded-lg" asChild>
+								<Link href={`/projects/edit/${project.id}`}>
+									<Edit className="h-4 w-4 mr-2" />
+									Edit
+								</Link>
+							</Button>
+							<Button
+								variant="destructive"
+								className="!rounded-lg !bg-transparent !text-destructive !border !border-destructive"
+								onClick={() => setProjectToDelete(project)}
+							>
+								<Trash2 className="h-4 w-4 mr-2" />
+								Delete
+							</Button>
+						</div>
+					</div>
+
+					{/* Description and Progress */}
+					<div className="flex items-start justify-between">
+						<p className="text-gray-600 max-w-[70%]">{project.description}</p>
+						<CircularProgress percentage={progress} />
+					</div>
+
+					{/* Team and Dates */}
+					<div className="flex justify-between items-center">
+						<div className="space-y-4">
+							<div className="space-y-2">
+								<h3 className="font-medium text-sm">Leads</h3>
+								<div className="flex -space-x-2">
+									{project.managers.slice(0, 3).map((lead) => (
+										<Avatar key={lead.id} className="h-8 w-8 border-2 border-white rounded-full">
+											<AvatarImage
+												src={
+													lead.employee_profile_picture
+														? getFileUrl(lead.employee_profile_picture)
+														: "/images/profile-placeholder.jpg"
+												}
+											/>
+											<AvatarFallback className="text-xs bg-gray-300">
+												{lead.name
+													?.split(" ")
+													.map((n) => n[0])
+													.join("") || "?"}
+											</AvatarFallback>
+										</Avatar>
+									))}
+									{project.managers.length > 3 && (
+										<div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium">
+											+{project.managers.length - 3}
+										</div>
+									)}
 								</div>
 							</div>
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" className="h-8 w-8 p-0">
-										<MoreVertical className="h-4 w-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuItem onClick={() => handleDocumentAction("view", doc.id)}>
-										<Eye className="h-4 w-4 mr-2" />
-										View
-									</DropdownMenuItem>
-									<DropdownMenuItem onClick={() => handleDocumentAction("edit", doc.id)}>
-										<Edit className="h-4 w-4 mr-2" />
-										Edit
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										className="text-red-600"
-										onClick={() => handleDocumentAction("delete", doc.id)}
-									>
-										<Trash2 className="h-4 w-4 mr-2" />
-										Delete
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
+							<div className="space-y-2">
+								<h3 className="font-medium text-sm">Members</h3>
+								<div className="flex -space-x-2">
+									{project.assignees.slice(0, 3).map((member) => (
+										<Avatar key={member.id} className="h-8 w-8 border-2 border-white rounded-full">
+											<AvatarImage
+												src={
+													member.employee_profile_picture
+														? getFileUrl(member.employee_profile_picture)
+														: "/images/profile-placeholder.jpg"
+												}
+											/>
+											<AvatarFallback className="text-xs bg-gray-300">
+												{member.name
+													?.split(" ")
+													.map((n) => n[0])
+													.join("") || "?"}
+											</AvatarFallback>
+										</Avatar>
+									))}
+									{project.assignees.length > 3 && (
+										<div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium">
+											+{project.assignees.length - 3}
+										</div>
+									)}
+								</div>
+							</div>
 						</div>
-					))}
-				</div>
-			</div>
+						<div className="flex flex-col md:flex-row items-center justify-end gap-8 space-y-1 text-sm">
+							<div className="flex justify-end items-center gap-4">
+								<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
+								<span className="text-gray-500">Start Date</span>
+								<p className="font-medium">
+									{new Date(project.start_date).toLocaleDateString("en-US", {
+										month: "short",
+										day: "numeric",
+										year: "numeric",
+									})}
+								</p>
+							</div>
+							<div className="flex justify-end items-center gap-4">
+								<Icon icon="hugeicons:calendar-03" className="!w-5 !h-5 text-gray-600" />
+								<span className="text-gray-500">End Date</span>
+								<p className="font-medium">
+									{new Date(project.end_date).toLocaleDateString("en-US", {
+										month: "short",
+										day: "numeric",
+										year: "numeric",
+									})}
+								</p>
+							</div>
+						</div>
+					</div>
 
-			{/* Custom Tabs */}
-			<div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8 overflow-x-auto border-b border-gray-200">
-				{tabConfig.map((tab) => (
-					<button
-						key={tab.id}
-						onClick={() => setActiveTab(tab.id)}
-						className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
-							activeTab === tab.id
-								? "text-gray-800 font-semibold"
-								: "text-[#848496] hover:text-gray-800"
-						}`}
-					>
-						{tab.label}
-						{activeTab === tab.id && (
-							<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
-						)}
-					</button>
-				))}
-			</div>
+					{/* Documents */}
+					<div>
+						<h3 className="font-medium mb-4">Documents</h3>
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+							{documents.map((doc) => (
+								<div
+									key={doc.id}
+									className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+								>
+									<div className="flex items-center gap-3">
+										<div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+											<span className="text-red-600 text-sm font-medium">PDF</span>
+										</div>
+										<div>
+											<p className="font-medium text-sm">{doc.name}</p>
+											<p className="text-xs text-gray-500">Created: {doc.created}</p>
+										</div>
+									</div>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button variant="ghost" className="h-8 w-8 p-0">
+												<MoreHorizontal className="h-4 w-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem onClick={() => handleDocumentAction("view", doc.id)}>
+												<Eye className="h-4 w-4 mr-2" />
+												View
+											</DropdownMenuItem>
+											<DropdownMenuItem onClick={() => handleDocumentAction("edit", doc.id)}>
+												<Edit className="h-4 w-4 mr-2" />
+												Edit
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												className="text-red-600"
+												onClick={() => handleDocumentAction("delete", doc.id)}
+											>
+												<Trash2 className="h-4 w-4 mr-2" />
+												Delete
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Custom Tabs */}
+					<div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8 overflow-x-auto border-b border-gray-200">
+						{tabConfig.map((tab) => (
+							<button
+								key={tab.id}
+								onClick={() => setActiveTab(tab.id)}
+								className={`pb-4 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap flex-shrink-0 ${
+									activeTab === tab.id
+										? "text-gray-800 font-semibold"
+										: "text-[#848496] hover:text-gray-800"
+								}`}
+							>
+								{tab.label}
+								{activeTab === tab.id && (
+									<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+								)}
+							</button>
+						))}
+					</div>
+				</>
+			) : (
+				<></>
+			)}
 
 			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4 !z-[80]">
+				<div className="flex items-center gap-4 ">
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 						<Input
@@ -672,11 +713,27 @@ export default function ProjectDetailsPage() {
 							onChange={(e) => setSearchQuery(e.target.value)}
 						/>
 					</div>
-					<Select>
+					<Select
+						onValueChange={(val: string) => {
+							if (val !== "all") {
+								setFilteredProject(
+									(prev) =>
+										({
+											...project,
+											project_tasks: project?.project_tasks.filter(
+												(task) => task.task_status === val,
+											),
+										}) as IProject,
+								);
+							} else {
+								setFilteredProject(project);
+							}
+						}}
+					>
 						<SelectTrigger className="w-[180px] rounded-2xl">
 							<SelectValue placeholder="All Status" />
 						</SelectTrigger>
-						<SelectContent className="!z-[80]">
+						<SelectContent className="">
 							<SelectItem value="all">All Status</SelectItem>
 							<SelectItem value="not_started">Not started</SelectItem>
 							<SelectItem value="on_hold">On Hold</SelectItem>
@@ -684,11 +741,26 @@ export default function ProjectDetailsPage() {
 							<SelectItem value="completed">Completed</SelectItem>
 						</SelectContent>
 					</Select>
-					<Select>
+					<Select
+						onValueChange={(val: string) => {
+							console.log("\n\n Setting priorities to : ", val);
+							if (val !== "all") {
+								setFilteredProject(
+									(prev) =>
+										({
+											...project,
+											project_tasks: project?.project_tasks.filter((task) => task.priority === val),
+										}) as IProject,
+								);
+							} else {
+								setFilteredProject(project);
+							}
+						}}
+					>
 						<SelectTrigger className="w-[180px] rounded-2xl">
 							<SelectValue placeholder="All Priorities" />
 						</SelectTrigger>
-						<SelectContent className="!z-[80]">
+						<SelectContent className="">
 							<SelectItem value="all">All Priorities</SelectItem>
 							<SelectItem value="low">Low</SelectItem>
 							<SelectItem value="medium">Medium</SelectItem>
@@ -711,55 +783,77 @@ export default function ProjectDetailsPage() {
 			{/* Tab Content */}
 			{activeTab === "board" && (
 				<div className="space-y-4">
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
 						{Object.entries(groupedTasks).map(([statusKey, tasks], index) => {
 							const status = statusKey as IProjectTaskStatus;
 							const { label, color } = statusMap[status];
 							return (
 								<div
 									key={status}
-									className={`min-w-[280px] ${index > 0 ? "border-l border-gray-200 pl-4" : ""}`}
+									className={`pr-1 ${index > 0 ? "border-l border-gray-400/30 ml-1 pl-2" : ""}`}
 								>
-									<div className="flex justify-between items-center mb-4">
+									<div
+										className={`flex justify-start gap-3 items-center mb-4 rounded-xl p-2 ${color}`}
+									>
 										<h3 className="font-medium">{label}</h3>
-										<Badge variant="outline">{tasks.length}</Badge>
+										<span className="!text-sm font-semibold text-gray-600/60">
+											({tasks.length})
+										</span>
 									</div>
-									<div className={cn("space-y-3", color)}>
-										{tasks.slice(0, 5).map((task) => (
-											<Card key={task.id} className="p-3">
-												<h4 className="font-medium text-sm mb-2">{task.task_name}</h4>
-												<Badge
-													className={`${getPriorityColor(task.priority)} text-xs mb-2`}
-													variant="outline"
-												>
-													{task.priority}
-												</Badge>
+									<div className={cn("space-y-3 !w-full flex flex-col items-center !h-full")}>
+										{tasks.map((task) => (
+											<Card
+												key={task.id}
+												className="shadow-sm !w-full !max-w-full shadow-black/10 border-black/10 border-[1.5px] !overflow-hidden !rounded-xl !p-4"
+											>
 												<div className="flex items-center justify-between">
-													<div className="flex -space-x-1">
-														{task.assignees.slice(0, 2).map((assignee) => (
-															<Avatar
-																key={assignee.id}
-																className="h-6 w-6 border-2 border-white rounded-full"
-															>
-																<AvatarImage
-																	src={
-																		assignee.employee_profile_picture
-																			? getFileUrl(assignee.employee_profile_picture)
-																			: "/images/profile-placeholder.jpg"
-																	}
-																/>
-																<AvatarFallback className="text-xs bg-gray-300">
-																	{assignee.name?.[0] || "?"}
-																</AvatarFallback>
-															</Avatar>
-														))}
-														{task.assignees.length > 2 && (
-															<div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
-																+{task.assignees.length - 2}
+													<h4 className="font-medium text-lg mb-2">{task.task_name}</h4>
+													{taskActionsDropdown(task)}
+												</div>
+												<div className="flex items-end justify-between gap-8 mt-3">
+													<div className="!flex !items-center !justify-start gap-4 ">
+														{getStatusBadge(task.task_status)}
+														<Badge
+															className={`${getPriorityColor(task.priority)} !capitalize text-xs`}
+															variant="outline"
+														>
+															{task.priority}
+														</Badge>
+													</div>
+													<div className="flex items-center justify-between">
+														{task.assignees.length ? (
+															<div className="flex -space-x-1">
+																{task.assignees.slice(0, 2).map((assignee) => (
+																	<Avatar
+																		key={assignee.id}
+																		className="h-6 w-6 border-2 border-white rounded-full"
+																	>
+																		<AvatarImage
+																			src={
+																				assignee.employee_profile_picture
+																					? getFileUrl(assignee.employee_profile_picture)
+																					: "/images/profile-placeholder.jpg"
+																			}
+																		/>
+																		<AvatarFallback className="text-xs bg-gray-300">
+																			{assignee.name?.[0] || "?"}
+																		</AvatarFallback>
+																	</Avatar>
+																))}
+																{task.assignees.length > 2 ? (
+																	<div className="h-6 w-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">
+																		+{task.assignees.length - 2}
+																	</div>
+																) : (
+																	<></>
+																)}
 															</div>
+														) : (
+															<span className="text-xs font-semibold text-gray-500">
+																No assignees
+															</span>
 														)}
 													</div>
-													<span className="text-xs text-gray-500">{task.assignees.length}</span>
 												</div>
 											</Card>
 										))}
@@ -771,17 +865,17 @@ export default function ProjectDetailsPage() {
 				</div>
 			)}
 
-			{activeTab === "timeline" && (
+			{activeTab === "timeline" && filteredProject && (
 				<div className="space-y-4">
 					<Calender
-						groups={project.project_tasks.map(
+						groups={filteredProject.project_tasks.map(
 							(task: IProjectTask): Group => ({
 								id: task.id,
 								title: task.task_name,
 								rightTitle: task.task_status.replace("_", " ").toUpperCase(),
 							}),
 						)}
-						items={project.project_tasks.map(
+						items={filteredProject.project_tasks.map(
 							(task: IProjectTask): Item => ({
 								id: task.id,
 								group: task.id,
@@ -796,7 +890,7 @@ export default function ProjectDetailsPage() {
 							}),
 						)}
 						onItemMove={async (itemId: number, dragTime: number, newGroupOrder: number) => {
-							const task = project.project_tasks.find((t) => t.id === itemId);
+							const task = filteredProject.project_tasks.find((t) => t.id === itemId);
 							if (!task) return;
 
 							const todayTimestamp = new Date().setHours(0, 0, 0, 0);
@@ -816,7 +910,7 @@ export default function ProjectDetailsPage() {
 							});
 						}}
 						onItemResize={async (itemId: number, time: number, edge: "left" | "right") => {
-							const task = project.project_tasks.find((t) => t.id === itemId);
+							const task = filteredProject.project_tasks.find((t) => t.id === itemId);
 							if (!task) return;
 
 							const todayTimestamp = new Date().setHours(0, 0, 0, 0);
@@ -842,18 +936,18 @@ export default function ProjectDetailsPage() {
 				</div>
 			)}
 
-			{activeTab === "table" && (
+			{activeTab === "table" && filteredProject && (
 				<PaginatedTable<IProjectTask>
 					paginated={false}
 					fetchFirstPage={async () => {
 						return {
-							count: project.project_tasks.length,
+							count: filteredProject.project_tasks.length,
 							next: null,
 							previous: null,
-							results: project.project_tasks,
+							results: filteredProject.project_tasks,
 						} as IPaginatedResponse<IProjectTask>;
 					}}
-					deps={[project]}
+					deps={[filteredProject]}
 					onError={(err) => showErrorToast({ error: err, defaultMessage: "Failed to fetch tasks" })}
 					className="space-y-4"
 					tableClassName="min-w-[800px]"
@@ -889,46 +983,31 @@ export default function ProjectDetailsPage() {
 				/>
 			)}
 
-			<TaskDialog
-				isOpen={isAddTaskOpen}
-				onClose={() => setIsAddTaskOpen(false)}
-				onSave={async (taskData) => {
-					try {
-						const newTask = await PROJECTS_TASKS_API.create({
-							projectId: project.id,
-							data: taskData,
-						});
+			{filteredProject && (
+				<TaskDialog
+					isOpen={isAddTaskOpen}
+					onClose={() => {
+						setSelectedTask(null);
+						setIsAddTaskOpen(false);
+					}}
+					onSave={async (taskData) => {
+						await fetchProject();
+					}}
+					initialData={selectedTask}
+					projectId={filteredProject.id}
+				/>
+			)}
 
-						setProject(
-							(prev) =>
-								({
-									...prev,
-									project_tasks: [...(prev?.project_tasks || []), newTask],
-								}) as IProject,
-						);
-						toast.success("Task created successfully");
-					} catch (err) {
-						showErrorToast({ error: err, defaultMessage: "Failed to create task" });
-					}
-				}}
-				initialData={
-					selectedTask
-						? {
-								...selectedTask,
-								assigned_to: selectedTask.assignees.map((val) => val.id),
-								managers: selectedTask.managers.map((val) => val.id),
-								project: Number(project.id),
-							}
-						: { project: Number(project.id) }
-				}
-				isEdit={!!selectedTask}
-			/>
-
-			<TaskDetailsDialog
-				isOpen={isTaskDetailsOpen}
-				onClose={() => setIsTaskDetailsOpen(false)}
-				task={selectedTask}
-			/>
+			{selectedTask && (
+				<TaskDetailsDialog
+					isOpen={isTaskDetailsOpen}
+					onClose={() => {
+						setSelectedTask(null);
+						setIsTaskDetailsOpen(false);
+					}}
+					task={selectedTask}
+				/>
+			)}
 		</div>
 	);
 }

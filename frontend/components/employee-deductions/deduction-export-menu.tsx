@@ -39,7 +39,7 @@ export function DeductionExportMenu({
 				"Effective To",
 			],
 			...deductions.map((deduction) => [
-				deduction.employee.user?.fullname,
+				deduction.employee?.name,
 				deduction.deduction_type.name,
 				deduction.calculation_method,
 				deduction.amount,
@@ -66,7 +66,7 @@ export function DeductionExportMenu({
 	const exportToExcel = () => {
 		try {
 			const excelData = deductions.map((deduction) => ({
-				"Employee Name": deduction.employee.user?.fullname,
+				"Employee Name": deduction.employee?.name,
 				"Employee Email": deduction.employee.email,
 				"Deduction Type": deduction.deduction_type.name,
 				"Calculation Method":

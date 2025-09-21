@@ -78,7 +78,7 @@ export function PaginatedTable<T, Q = unknown>({
 	refreshRef,
 }: PaginatedTableProps<T, Q>) {
 	const [data, setData] = useState<IPaginatedResponse<T> | null>(null);
-	const [loading, setLoading] = useState<boolean>(paginated);
+	const [loading, setLoading] = useState<boolean>(true);
 
 	const handleError = (err: unknown) => {
 		if (onError) onError(err);
@@ -144,8 +144,7 @@ export function PaginatedTable<T, Q = unknown>({
 
 	// Initial fetch and refresh on deps change (with slight delay for debouncing)
 	useEffect(() => {
-		const timer = setTimeout(refresh, 1000);
-
+		const timer = setTimeout(refresh, paginated ? 1000 : 100);
 		return () => clearTimeout(timer);
 	}, [...deps]);
 
