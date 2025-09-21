@@ -50,7 +50,6 @@ from datetime import date, timedelta, datetime
 from users.models import CustomUser, Profile, UserRole
 from institution.serializers import BranchSerializer
 
-
 class EmployeeTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmployeeType
@@ -958,12 +957,11 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
             "employee",
             "shift",
             "context",
-            "shift_status",
             "date",
             "created_at",
             "created_by",
         ]
-        read_only_fields = ["created_at", "created_by", "shift_status"]
+        read_only_fields = ["created_at", "created_by"]
 
     def validate(self, data):
         request_user = self.context["request"].user

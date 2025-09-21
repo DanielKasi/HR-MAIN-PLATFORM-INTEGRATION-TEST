@@ -24,6 +24,9 @@ from .models import (
     RequiredDocument,
 )
 
+from employee.models import Employee
+from employee.serializers import EmployeeSerializer
+
 from utilities.sortable_api import SortableAPIMixin
 from django.db.models import Count, Avg, F
 from drf_spectacular.utils import extend_schema, OpenApiResponse, inline_serializer
@@ -595,29 +598,6 @@ class RecruitmentDashboardAPIView(APIView):
                             }
                         }
                     },
-                    'total_interviews': {'type': 'integer'},
-                    'interviews_by_status': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
-                        }
-                    },
-                    'upcoming_interviews': {'type': 'integer'},
-                    'total_onboardings': {'type': 'integer'},
-                    'onboardings_by_status': {
-                        'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'properties': {
-                                'status': {'type': 'string'},
-                                'count': {'type': 'integer'}
-                            }
-                        }
-                    },
                     'average_time_to_hire_days': {'type': 'integer'},
                     'applications_sources': {
                         'type': 'array',
@@ -638,6 +618,19 @@ class RecruitmentDashboardAPIView(APIView):
                                 'count': {'type': 'integer'}
                             }
                         }
+                    },
+                    "recent_hires": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "position": {"type": "string"},
+                                "department": {"type": "string"},
+                                "date_of_joining": {"type": "string", "format": "date"},
+                                "status":{"type": "string"},
+                            },
+                        },
                     },
                 }
             }
@@ -680,23 +673,6 @@ class RecruitmentDashboardAPIView(APIView):
             applications.values('status').annotate(count=Count('id')).order_by('status')
         )
 
-        # Interviews
-        total_interviews = interviews.count()
-        interviews_by_status = list(
-            interviews.values('status').annotate(count=Count('id')).order_by('status')
-        )
-        upcoming_interviews = interviews.filter(
-            interview_date__gte=timezone.now(),
-            interview_date__lte=timezone.now() + timedelta(days=7),
-            status='scheduled'
-        ).count()
-
-        # Onboarding
-        total_onboardings = onboardings.count()
-        onboardings_by_status = list(
-            onboardings.values('status').annotate(count=Count('id')).order_by('status')
-        )
-
         # Average time to hire (for accepted offers)
         accepted_onboardings = onboardings.filter(status='accepted_offer').select_related('application')
         if accepted_onboardings.exists():
@@ -731,6 +707,14 @@ class RecruitmentDashboardAPIView(APIView):
             }
             for item in applications_over_time
         ]
+        
+        # Recent hires (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_hires = Employee.objects.filter(
+            department__institution=institution, 
+            date_of_joining__gte=thirty_days_ago.date()
+        ).select_related('position', 'department').order_by('-date_of_joining')
+        recent_hires_data = EmployeeSerializer(recent_hires, many=True, context={'request': request}).data
 
         data = {
             'total_job_positions': total_job_positions,
@@ -739,14 +723,10 @@ class RecruitmentDashboardAPIView(APIView):
             'active_adverts': active_adverts,
             'total_applications': total_applications,
             'applications_by_status': applications_by_status,
-            'total_interviews': total_interviews,
-            'interviews_by_status': interviews_by_status,
-            'upcoming_interviews': upcoming_interviews,
-            'total_onboardings': total_onboardings,
-            'onboardings_by_status': onboardings_by_status,
             'average_time_to_hire_days': average_time_to_hire,
             'applications_sources': applications_sources,
             'applications_over_time': applications_over_time,
+            'recent_hires': recent_hires_data,
         }
 
         return Response(data)    

@@ -3303,7 +3303,6 @@ class EmployeeShiftListCreateView(APIView, SortableAPIMixin):
         "created_at",
         "shift",
         "context",
-        "shift_status",
         "date" "is_active",
     ]
     default_ordering = ["employee"]
@@ -3444,8 +3443,8 @@ class EmployeeDashboardAPIView(APIView):
         tags=["Employee Dashboard"],
         description=(
             "Retrieves key analytics for the employee module dashboard, filtered by the authenticated user's institution. "
-            "Metrics include employee counts, demographics, employee types, work types, shift statuses, "
-            "average age, average tenure, and recent hires."
+            "Metrics include employee counts, demographics, work types, shift statuses, "
+            "average age and average tenure."
         ),
         responses={
             200: {
@@ -3465,17 +3464,6 @@ class EmployeeDashboardAPIView(APIView):
                             },
                         },
                         "description": "Employee count by gender",
-                    },
-                    "employees_by_employee_type": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "employee_type": {"type": "string"},
-                                "count": {"type": "integer"},
-                            },
-                        },
-                        "description": "Employee count by employee type",
                     },
                     "employees_by_work_type": {
                         "type": "array",
@@ -3499,17 +3487,6 @@ class EmployeeDashboardAPIView(APIView):
                         },
                         "description": "Employee count by department",
                     },
-                    "shift_statuses": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "status": {"type": "string"},
-                                "count": {"type": "integer"},
-                            },
-                        },
-                        "description": "Shift counts by status (last 30 days)",
-                    },
                     "average_age": {
                         "type": "integer",
                         "description": "Average employee age",
@@ -3517,10 +3494,6 @@ class EmployeeDashboardAPIView(APIView):
                     "average_tenure_years": {
                         "type": "number",
                         "description": "Average years of tenure",
-                    },
-                    "recent_hires": {
-                        "type": "integer",
-                        "description": "Employees hired in last 30 days",
                     },
                     "employees_by_marital_status": {
                         "type": "array",
@@ -3574,13 +3547,6 @@ class EmployeeDashboardAPIView(APIView):
             employees.values("gender").annotate(count=Count("id")).order_by("gender")
         )
 
-        # Employees by employee type
-        employees_by_employee_type = list(
-            employees.values("employee_type__name")
-            .annotate(count=Count("id"))
-            .order_by("employee_type__name")
-        )
-
         # Employees by work type
         employees_by_work_type = list(
             employees.values("work_type__name")
@@ -3593,19 +3559,6 @@ class EmployeeDashboardAPIView(APIView):
             employees.values("department__name")
             .annotate(count=Count("id"))
             .order_by("department__name")
-        )
-
-        # Shift statuses (last 30 days)
-        thirty_days_ago = timezone.now() - timedelta(days=30)
-        shift_statuses = list(
-            EmployeeShift.objects.filter(
-                employee__department__institution=institution,
-                date__gte=thirty_days_ago,
-                employee__deleted_at__isnull=True,
-            )
-            .values("shift_status")
-            .annotate(count=Count("id"))
-            .order_by("shift_status")
         )
 
         # Method 1: Calculate average age using database aggregation (More efficient for large datasets)
@@ -3674,38 +3627,6 @@ class EmployeeDashboardAPIView(APIView):
             else 0
         )
 
-        # Alternative Python-based tenure calculation (more precise)
-        # employees_with_join_date = employees.filter(date_of_joining__isnull=False)
-        # if employees_with_join_date.exists():
-        #     tenures = []
-        #     for emp in employees_with_join_date:
-        #         tenure_years = current_date.year - emp.date_of_joining.year
-        #         if (current_date.month, current_date.day) < (emp.date_of_joining.month, emp.date_of_joining.day):
-        #             tenure_years -= 1
-        #         # Add fractional part for more precision
-        #         if emp.date_of_joining.month <= current_date.month:
-        #             months_diff = current_date.month - emp.date_of_joining.month
-        #             if emp.date_of_joining.day <= current_date.day:
-        #                 days_diff = current_date.day - emp.date_of_joining.day
-        #             else:
-        #                 months_diff -= 1
-        #                 days_diff = (current_date.replace(day=1) - timedelta(days=1)).day - emp.date_of_joining.day + current_date.day
-        #         else:
-        #             months_diff = 12 - emp.date_of_joining.month + current_date.month
-        #             tenure_years -= 1
-        #             days_diff = current_date.day - emp.date_of_joining.day if emp.date_of_joining.day <= current_date.day else 0
-        #
-        #         tenure_precise = tenure_years + (months_diff + days_diff/30.44) / 12  # 30.44 is average days per month
-        #         tenures.append(tenure_precise)
-        #     average_tenure_years = round(sum(tenures) / len(tenures), 1)
-        # else:
-        #     average_tenure_years = 0
-
-        # Recent hires (last 30 days)
-        recent_hires = employees.filter(
-            date_of_joining__gte=thirty_days_ago.date()
-        ).count()
-
         # Employees by marital status
         employees_by_marital_status = list(
             employees.values("marital_status")
@@ -3719,11 +3640,6 @@ class EmployeeDashboardAPIView(APIView):
                 {"gender": item["gender"] or "Unknown", "count": item["count"]}
                 for item in employees_by_gender
             ],
-            "employees_by_employee_type": [
-                {"employee_type": item["employee_type__name"], "count": item["count"]}
-                for item in employees_by_employee_type
-                if item["employee_type__name"]
-            ],
             "employees_by_work_type": [
                 {"work_type": item["work_type__name"], "count": item["count"]}
                 for item in employees_by_work_type
@@ -3734,10 +3650,8 @@ class EmployeeDashboardAPIView(APIView):
                 for item in employees_by_department
                 if item["department__name"]
             ],
-            "shift_statuses": shift_statuses,
             "average_age": average_age,
             "average_tenure_years": average_tenure_years,
-            "recent_hires": recent_hires,
             "employees_by_marital_status": employees_by_marital_status,
         }
 
