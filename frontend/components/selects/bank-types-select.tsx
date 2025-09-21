@@ -8,10 +8,10 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { bankTypesAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export interface BankTypeSearchableSelectProps {
-	selectedItems: (string | number)[];
+	value: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
@@ -25,7 +25,7 @@ export interface BankTypeSearchableSelectProps {
 }
 
 export const BankTypeSearchableSelect = ({
-	selectedItems,
+	value,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
@@ -38,13 +38,12 @@ export const BankTypeSearchableSelect = ({
 	setAccounts,
 }: BankTypeSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	// useEffect(() => {
-	//   setSelectedItems(value);
-	// }, [value])
-
-	console.log("Current selected items : ", selectedItems);
+	useEffect(() => {
+		console.log("\n\n Received value as : ", value);
+		setSelectedItems(value);
+	}, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
@@ -59,22 +58,18 @@ export const BankTypeSearchableSelect = ({
 	};
 
 	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
-		// console.log("\n\n Selecting account : ", itemId)
 		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
-				// console.log("\n\n Value changed with mutliple and selected items : ", selectedItems)
 				onValueChange([...selectedItems, itemId]);
 			} else {
-				// console.log("\n\n Value change with single value  : ", itemId)
 				onValueChange([itemId]);
-				// console.log("\n\n On value change called with : ", [itemId])
 			}
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (

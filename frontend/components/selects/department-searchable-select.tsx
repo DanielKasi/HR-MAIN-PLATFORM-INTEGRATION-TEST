@@ -1,42 +1,42 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
 
-import { IEmployee } from "@/types/types.utils";
+import { IDepartment } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
+import { getPaginatedDepartments, getPaginatedDepartmentsFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useEffect, useState } from "react";
 
-export interface EmployeeSearchableSelectProps {
+export interface DepartmentSearchableSelectProps {
 	value: (string | number)[];
+	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	showEmployeeId?: boolean;
-	showDepartment?: boolean;
 	className?: string;
 	triggerClassName?: string;
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
+	setDepartments?: (departments: IDepartment[]) => void;
 }
 
-export const EmployeeSearchableSelect = ({
+export const DepartmentSearchableSelect = ({
 	value,
+	defaultLabel,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
-	placeholder = "Select employee(s)",
-	showEmployeeId = true,
-	showDepartment = true,
+	placeholder = "Select Department(s)",
 	className,
 	triggerClassName,
 	multiple = false,
 	hideSelectedFromList = false,
-}: EmployeeSearchableSelectProps) => {
+	setDepartments,
+}: DepartmentSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
@@ -44,20 +44,19 @@ export const EmployeeSearchableSelect = ({
 		setSelectedItems(value);
 	}, [value]);
 
-	// Fetchers
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
 			throw new Error("No institution found !");
 		}
 
-		return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+		return await getPaginatedDepartments({ institutionId: currentInstitution.id, ...query });
 	};
 
 	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await getPaginatedEmployeesFromUrl({ url });
+		return await getPaginatedDepartmentsFromUrl({ url });
 	};
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
 		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
 				onValueChange([...selectedItems, itemId]);
@@ -66,22 +65,22 @@ export const EmployeeSearchableSelect = ({
 			}
 		}
 	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-		// console.log("\n\n Removing item  : ", itemId)
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+
+	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IDepartment>) => {
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (
 		<div className={className}>
-			<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+			<PaginatedSearchableSelect<IDepartment, { search?: string; page?: number }>
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
-				getItemId={(emp) => emp.id}
-				getItemLabel={(emp) => emp.user?.fullname || ""}
-				getItemValue={(emp) => emp.id.toString()}
+				getItemId={(department) => department.id}
+				getItemLabel={(department) => department.name || ""}
+				getItemValue={(department) => department.id.toString()}
 				selectedItems={selectedItems}
 				onSelect={handleSelect}
 				onRemove={handleRemove}
@@ -89,13 +88,15 @@ export const EmployeeSearchableSelect = ({
 				multiple={multiple}
 				disabled={disabled}
 				placeholder={placeholder}
-				searchPlaceholder="Search employees by name, email, ID, or department..."
-				triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+				searchPlaceholder="Search departments by name..."
+				triggerClassName={`w-full justify-between focus:ring-primary  ${triggerClassName || ""}`}
 				popoverClassName="w-full"
 				hideSelectedFromList={hideSelectedFromList}
+				setParentItems={setDepartments}
+				defaultLabel={defaultLabel}
 			/>
 		</div>
 	);
 };
 
-export default EmployeeSearchableSelect;
+export default DepartmentSearchableSelect;

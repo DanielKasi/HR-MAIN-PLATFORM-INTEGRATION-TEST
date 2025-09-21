@@ -19,3 +19,5 @@ export const selectApplicationForm = createSelector(
 	[selectMiscState],
 	(misc) => misc.applicationForm,
 );
+
+export const selectSelectedTask = createSelector([selectMiscState], (misc) => misc.selectedTask);

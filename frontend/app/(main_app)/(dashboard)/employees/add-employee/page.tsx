@@ -594,10 +594,14 @@ export default function AddEmployeeForm() {
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
 		} else {
-			const updatedFormData = {
+			let updatedFormData = {
 				...formData,
 				[field]: value,
 			};
+
+			if (field === "fullname") {
+				setBankAccountFormData((prev) => ({ ...prev, account_name: value as string }));
+			}
 
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
@@ -724,7 +728,6 @@ export default function AddEmployeeForm() {
 					bankAccountFormData.account_number.trim() &&
 					bankAccountFormData.bank_id &&
 					formData.tin.trim() &&
-					formData.tin.length <= 12 &&
 					formData.nssf_no.trim()
 				);
 			default:
@@ -884,6 +887,10 @@ export default function AddEmployeeForm() {
 							}
 						: undefined,
 			};
+
+			if (formData.company_email) {
+				dataToSubmit["company_email"] = formData.company_email;
+			}
 
 			await createEmployee({
 				institutionId: selectedInstitution.id,
@@ -1052,6 +1059,23 @@ export default function AddEmployeeForm() {
 												)}
 											</div>
 											<div className="space-y-2">
+												<Label
+													htmlFor="company_email"
+													className="text-sm font-medium text-gray-700"
+												>
+													Company Email
+												</Label>
+												<Input
+													id="company_email"
+													type="email"
+													value={formData.company_email || ""}
+													onChange={(e) => handleInputChange("company_email", e.target.value)}
+													placeholder="email@mycompany.com"
+													className="h-12 rounded-2xl"
+													required
+												/>
+											</div>
+											<div className="space-y-2">
 												<PhoneNumberInput
 													label="Phone Number"
 													required
@@ -1126,6 +1150,7 @@ export default function AddEmployeeForm() {
 											</Label>
 											<CountrySelect
 												selectedCountry={selectedCountry}
+												placeholder="Set nationality"
 												onCountryChange={(country) => {
 													setSelectedCountry(country);
 													if (country) {
@@ -1712,11 +1737,12 @@ export default function AddEmployeeForm() {
 								</Label>
 								<BankTypeSearchableSelect
 									setAccounts={setInstitutionBanks}
-									selectedItems={[bankAccountFormData.bank_id || 0]}
+									value={[bankAccountFormData.bank_id ?? 0]}
 									onValueChange={(values) => {
-										if (values.length) {
-											setBankAccountFormData((prev) => ({ ...prev, bank_id: Number(values[0]) }));
-										}
+										setBankAccountFormData((prev) => ({
+											...prev,
+											bank_id: values.length ? Number(values[0]) : 0,
+										}));
 									}}
 								/>
 								{/* {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>} */}
@@ -1727,7 +1753,7 @@ export default function AddEmployeeForm() {
 								</Label>
 								<Input
 									id="bankAccountName"
-									value={bankAccountFormData.account_name}
+									value={bankAccountFormData.account_name || ""}
 									onChange={(e) =>
 										setBankAccountFormData((prev) => ({ ...prev, account_name: e.target.value }))
 									}

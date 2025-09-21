@@ -8,6 +8,7 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { getPaginatedJobPositions, getPaginatedJobPositionsFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useEffect, useState } from "react";
 
 export interface JobPositionSearchableSelectProps {
 	value: (string | number)[];
@@ -36,14 +37,12 @@ export const JobPositionSearchableSelect = ({
 	hideSelectedFromList = false,
 	setPositions,
 }: JobPositionSearchableSelectProps) => {
-	// console.log("\n\n The passed in position values are : ", value)
-
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	// useEffect(() => {
-	//   setSelectedItems(value);
-	// }, [value])
+	useEffect(() => {
+		setSelectedItems(value);
+	}, [value]);
 
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
@@ -58,18 +57,19 @@ export const JobPositionSearchableSelect = ({
 	};
 
 	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
-		if (!value.includes(itemId)) {
+		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
-				onValueChange([...value, itemId]);
+				onValueChange([...selectedItems, itemId]);
 			} else {
 				onValueChange([itemId]);
 			}
 		}
 	};
+
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IJobPosition>) => {
-		if (multiple) {
-			onValueChange(value.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (
@@ -81,7 +81,7 @@ export const JobPositionSearchableSelect = ({
 				getItemId={(position) => position.id}
 				getItemLabel={(position) => position.name || ""}
 				getItemValue={(position) => position.id.toString()}
-				selectedItems={value}
+				selectedItems={selectedItems}
 				onSelect={handleSelect}
 				onRemove={handleRemove}
 				showSelectedItems={showSelectedItems}

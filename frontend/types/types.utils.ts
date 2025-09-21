@@ -680,6 +680,7 @@ export interface IEmployeeFormData {
 	user: Partial<IUser>;
 	id?: number;
 	email: string;
+	company_email?: string;
 	gender: "male" | "female" | "other";
 	phone_number: string;
 	phone_number_country_code?: string;
@@ -724,6 +725,7 @@ export interface ICreateEmployeeForm {
 	// Basic Information
 	fullname: string;
 	email: string;
+	company_email?: string;
 	phone_number: string;
 	phone_number_country_code?: string;
 	gender: "male" | "female" | "other";
@@ -756,9 +758,6 @@ export interface ICreateEmployeeForm {
 	work_experiences: IWorkExperience[];
 	bank_accounts: IEmployeeBankAccountFormData[];
 	spouse?: ISpouse;
-
-	// Profile picture
-	employee_profile_picture?: File | null;
 }
 
 // Form step types
@@ -2550,10 +2549,10 @@ export interface IEmployeeBonusPoint {
 
 export interface IEmployeeBonusPointFormData {
 	employee_id: number;
-	bonus_point_setting?: number;
+	bonus_point_setting_id?: number;
 	reason: string;
 	date?: string;
-	period?: number;
+	period_id?: number;
 	redeemed?: boolean;
 }
 
@@ -2741,6 +2740,7 @@ export interface IAssetAllocation extends IBaseApprovable {}
 export interface IAssetCategory extends IBaseApprovable {}
 export interface IAssetRequest extends IBaseApprovable {}
 export interface IAssetReturn extends IBaseApprovable {}
+export interface IAssetHistory extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}

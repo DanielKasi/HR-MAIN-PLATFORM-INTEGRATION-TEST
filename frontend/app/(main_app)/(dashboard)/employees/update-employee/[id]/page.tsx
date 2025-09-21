@@ -476,6 +476,7 @@ export default function UpdateEmployeeForm() {
 			setFormData({
 				fullname: employee.user?.fullname || "",
 				email: employee.email,
+				company_email: employee.company_email?.email || "",
 				phone_number: employee.phone_number,
 				position: employee.position.id,
 				department: employee.department.id,
@@ -622,7 +623,7 @@ export default function UpdateEmployeeForm() {
 			const updatedFormData = {
 				...formData,
 				department: departmentValue,
-				position: 0, // Reset position when department changes
+				position: 0,
 			};
 
 			setFormData(updatedFormData);
@@ -632,6 +633,9 @@ export default function UpdateEmployeeForm() {
 				[field]: value,
 			};
 
+			if (field === "fullname") {
+				setBankAccountFormData((prev) => ({ ...prev, account_name: value as string }));
+			}
 			setFormData(updatedFormData);
 		}
 	};
@@ -758,10 +762,8 @@ export default function UpdateEmployeeForm() {
 					(
 						formData.tin &&
 						formData.tin.trim() &&
-						formData.tin.length <= 12 &&
 						formData.nssf_no &&
 						formData.nssf_no.trim() &&
-						formData.nssf_no.length <= 12 &&
 						formData.salary &&
 						formData.salary > 0
 					)
@@ -918,6 +920,9 @@ export default function UpdateEmployeeForm() {
 					phone_number: spouseFormData.phone_number,
 					date_of_birth: spouseFormData.dateOfBirth,
 				};
+			}
+			if (formData.company_email) {
+				dataToSubmit["company_email"] = formData.company_email;
 			}
 
 			await updateEmployee({
@@ -1112,6 +1117,23 @@ export default function UpdateEmployeeForm() {
 												{!formData.email && (
 													<p className="text-red-400 text-xs">Employee email is required</p>
 												)}
+											</div>
+											<div className="space-y-2">
+												<Label
+													htmlFor="company_email"
+													className="text-sm font-medium text-gray-700"
+												>
+													Company Email
+												</Label>
+												<Input
+													id="company_email"
+													type="email"
+													value={formData.company_email || ""}
+													onChange={(e) => handleInputChange("company_email", e.target.value)}
+													placeholder="email@mycompany.com"
+													className="h-12 rounded-2xl"
+													required
+												/>
 											</div>
 											<div className="space-y-2">
 												<PhoneNumberInput
@@ -1789,7 +1811,7 @@ export default function UpdateEmployeeForm() {
 											: ""
 									}
 									setAccounts={setInstitutionBanks}
-									selectedItems={[
+									value={[
 										bankAccountFormData.bank_id
 											? bankAccountFormData.bank_id
 											: thisEmployee?.bank_accounts.length
@@ -1797,10 +1819,11 @@ export default function UpdateEmployeeForm() {
 												: 0,
 									]}
 									onValueChange={(values) => {
-										console.log("Selected bank accounts : ", values);
-										if (values.length) {
-											setBankAccountFormData((prev) => ({ ...prev, bank_id: Number(values[0]) }));
-										}
+										// console.log("Selected bank accounts : ", values);
+										setBankAccountFormData((prev) => ({
+											...prev,
+											bank_id: values.length ? Number(values[0]) : 0,
+										}));
 									}}
 								/>
 								{/* {!thisEmployee?.bank_accounts.length && !bankAccountFormData.bank_id && (

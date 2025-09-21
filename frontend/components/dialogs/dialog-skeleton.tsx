@@ -14,6 +14,7 @@ interface DialogSkeletonProps {
 	confirmText?: string;
 	cancelText?: string;
 	confirmDisabled?: boolean;
+	showActions?: boolean;
 }
 
 export function DialogSkeleton({
@@ -26,6 +27,7 @@ export function DialogSkeleton({
 	confirmText = "Confirm",
 	cancelText = "Cancel",
 	confirmDisabled = false,
+	showActions = true,
 }: DialogSkeletonProps) {
 	const handleConfirm = () => {
 		onConfirm();
@@ -41,15 +43,17 @@ export function DialogSkeleton({
 
 				<div className="space-y-4">{children}</div>
 
-				<div className="flex items-center space-x-2 pt-4">
-					<Button
-						onClick={handleConfirm}
-						disabled={confirmDisabled}
-						className="rounded-full w-full"
-					>
-						{confirmText}
-					</Button>
-				</div>
+				{showActions && (
+					<div className="flex items-center space-x-2 pt-4">
+						<Button
+							onClick={handleConfirm}
+							disabled={confirmDisabled}
+							className="rounded-full w-full"
+						>
+							{confirmText}
+						</Button>
+					</div>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

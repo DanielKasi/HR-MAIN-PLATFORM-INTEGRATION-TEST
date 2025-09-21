@@ -1,24 +1,24 @@
 from rest_framework import serializers
-
+from approval.serializers import BaseApprovableSerializer
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
 from .models import Period, Objectives, EmployeeObjectives, KeyResult, Feedback360, EmployeeBonusPoint, QuestionTemplate, BonusPointSettings, Meeting
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-class PeriodSerializer(serializers.ModelSerializer):
+class PeriodSerializer(BaseApprovableSerializer):
     class Meta:
         model = Period
         fields = '__all__'
         read_only_fields = ['institution']
 
-class KeyResultSerializer(serializers.ModelSerializer):
+class KeyResultSerializer(BaseApprovableSerializer):
     class Meta:
         model = KeyResult
         fields = '__all__'
         read_only_fields = ['institution']
 
-class ObjectivesSerializer(serializers.ModelSerializer):
+class ObjectivesSerializer(BaseApprovableSerializer):
     managers = EmployeeSerializer(read_only=True)
     assignees = EmployeeSerializer(many=True, read_only=True)
     key_result = KeyResultSerializer(read_only=True)
@@ -38,7 +38,6 @@ class ObjectivesSerializer(serializers.ModelSerializer):
         read_only_fields = ['institution']
 
     def create(self, validated_data):
-        # Pop assignees but don't create EmployeeObjectives records
         assignees = validated_data.pop('assignees', [])
         validated_data['institution'] = self.context['request'].user.profile.institution
         objective = Objectives.objects.create(**validated_data)
@@ -46,7 +45,7 @@ class ObjectivesSerializer(serializers.ModelSerializer):
             objective.assignees.set(assignees)  # Set the M2M relationship
         return objective
 
-class EmployeeObjectivesSerializer(serializers.ModelSerializer):
+class EmployeeObjectivesSerializer(BaseApprovableSerializer):
     employee = EmployeeSerializer(read_only=True)
     objective = ObjectivesSerializer(read_only=True)
     employee_id = serializers.PrimaryKeyRelatedField(
@@ -60,7 +59,7 @@ class EmployeeObjectivesSerializer(serializers.ModelSerializer):
         model = EmployeeObjectives
         fields = '__all__'
 
-class Feedback360Serializer(serializers.ModelSerializer):
+class Feedback360Serializer(BaseApprovableSerializer):
     given_by = EmployeeSerializer(read_only=True)
     reviewer = EmployeeSerializer(read_only=True)
     period = PeriodSerializer(read_only=True)
@@ -78,7 +77,7 @@ class Feedback360Serializer(serializers.ModelSerializer):
         model = Feedback360
         fields = '__all__'
 
-class BonusPointSettingsSerializer(serializers.ModelSerializer):
+class BonusPointSettingsSerializer(BaseApprovableSerializer):
     content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.filter(model__in=[
         'task', 'objectives', 'project'
     ]))
@@ -129,7 +128,7 @@ class BonusPointSettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['institution']        
 
-class EmployeeBonusPointSerializer(serializers.ModelSerializer):
+class EmployeeBonusPointSerializer(BaseApprovableSerializer):
     employee = EmployeeSerializer(read_only=True)
     bonus_point_setting = BonusPointSettingsSerializer(read_only=True)
     employee_id = serializers.PrimaryKeyRelatedField(
@@ -149,7 +148,7 @@ class EmployeeBonusPointSerializer(serializers.ModelSerializer):
         model = EmployeeBonusPoint
         fields = '__all__'
 
-class QuestionTemplateSerializer(serializers.ModelSerializer):
+class QuestionTemplateSerializer(BaseApprovableSerializer):
     class Meta:
         model = QuestionTemplate
         fields = '__all__'
@@ -157,7 +156,7 @@ class QuestionTemplateSerializer(serializers.ModelSerializer):
 
 
 
-class MeetingSerializer(serializers.ModelSerializer):
+class MeetingSerializer(BaseApprovableSerializer):
     organizer = EmployeeSerializer(read_only=True)
     participants = EmployeeSerializer(many=True, read_only=True)
     organizer_id = serializers.PrimaryKeyRelatedField(

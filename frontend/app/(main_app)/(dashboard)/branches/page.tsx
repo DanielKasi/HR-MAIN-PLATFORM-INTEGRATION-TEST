@@ -441,7 +441,7 @@ export default function BranchesPage() {
 												</Label>
 												<BankAccountSearchableSelect
 													className="col-span-3"
-													selectedItems={[newBranch.paying_bank_account || 0]}
+													value={[newBranch.paying_bank_account ?? 0]}
 													onValueChange={(values) => {
 														if (values.length) {
 															setNewBranch((prev) => ({
