@@ -145,8 +145,8 @@ export default function EmployeeProfile() {
 	}, []);
 
 	const getEmployeeInitials = useCallback((employee: IEmployee) => {
-		if (employee.user?.fullname) {
-			const names = employee.user.fullname.split(" ").filter((name) => name.length > 0);
+		if (employee?.name) {
+			const names = employee?.name.split(" ").filter((name) => name.length > 0);
 			if (names.length >= 2) {
 				return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
 			} else if (names.length === 1) {
@@ -449,7 +449,7 @@ export default function EmployeeProfile() {
 							</Link>
 
 							<h1 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center justify-start gap-2 md:gap-3">
-								<span>{employee.user?.fullname || "Unknown Employee"}</span>
+								<span>{employee?.name || "Unknown Employee"}</span>
 								<Badge className="bg-[#e1faec] text-[#3cb371] border-[#3cb371] font-medium self-start md:self-auto">
 									{employee.is_active ? "Active" : "Inactive"}
 								</Badge>
@@ -525,7 +525,7 @@ export default function EmployeeProfile() {
 
 												<div className="flex flex-col text-center md:text-left">
 													<h2 className="text-lg md:text-xl font-bold text-gray-800 mb-1">
-														{employee.user?.fullname || "Unknown Employee"}
+														{employee?.name || "Unknown Employee"}
 														{employee.user?.gender && (
 															<span className="block md:inline text-[#9ca3af] text-sm font-normal md:ml-2">
 																{employee.user.gender}
@@ -1230,7 +1230,7 @@ export default function EmployeeProfile() {
 																			</DialogTitle>
 																			<DialogDescription className="text-gray-600 text-base">
 																				Configure spotcheck settings for{" "}
-																				{employee.user?.fullname || "this employee"}.
+																				{employee?.name || "this employee"}.
 																			</DialogDescription>
 																		</DialogHeader>
 																		<div className="grid grid-cols-1 gap-6 py-6">
@@ -1364,8 +1364,8 @@ export default function EmployeeProfile() {
 																		</DialogTitle>
 																		<DialogDescription className="text-gray-600 text-base">
 																			Are you sure you want to delete the spotcheck configuration
-																			for {employee.user?.fullname || "this employee"}? This action
-																			cannot be undone.
+																			for {employee?.name || "this employee"}? This action cannot be
+																			undone.
 																		</DialogDescription>
 																	</DialogHeader>
 																	<DialogFooter className="flex gap-3 pt-6">

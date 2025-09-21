@@ -105,7 +105,7 @@ export default function InterviewsPage() {
 		const uniqueInterviewers = new Set<string>();
 		interviews.forEach((interview) => {
 			interview.interview_stage_details?.interviewers_details?.forEach((employee) => {
-				uniqueInterviewers.add(`${employee.user?.fullname} `);
+				uniqueInterviewers.add(`${employee?.name} `);
 			});
 		});
 		return [
@@ -190,7 +190,7 @@ export default function InterviewsPage() {
 						.toLowerCase()
 						.includes(searchTerm.toLowerCase()) ||
 					interview.interview_stage_details?.interviewers_details?.some((employee) =>
-						employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()),
+						employee?.name.toLowerCase().includes(searchTerm.toLowerCase()),
 					),
 			);
 		}
@@ -204,7 +204,7 @@ export default function InterviewsPage() {
 		if (interviewerFilter && interviewerFilter !== "all") {
 			filtered = filtered.filter((interview) =>
 				interview.interview_stage_details?.interviewers_details?.some(
-					(employee) => `${employee.user?.fullname}` === interviewerFilter,
+					(employee) => `${employee?.name}` === interviewerFilter,
 				),
 			);
 		}
@@ -680,7 +680,7 @@ export default function InterviewsPage() {
 										if (interviewerFilter !== "all") {
 											const hasInterviewer =
 												interview.interview_stage_details?.interviewers_details?.some(
-													(employee: any) => `${employee.user?.fullname} ` === interviewerFilter,
+													(employee: any) => `${employee?.name} ` === interviewerFilter,
 												);
 
 											if (!hasInterviewer) return false;

@@ -88,15 +88,6 @@ export const SkillZoneCreateEditDialog = ({
 		}
 	};
 
-	// const memoizedJobApplicatinsSelect = useMemo(() => (
-	//     <JobApplicationsSearchableSelect
-	//         value={[formData.candidate]}
-	//         onValueChange={(ids) => setFormData({ ...formData, candidate: Number(ids[0]) || 0 })}
-	//         placeholder="Select candidate..."
-	//         multiple={false}
-	//     />
-	// ), [])
-
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogTrigger asChild>

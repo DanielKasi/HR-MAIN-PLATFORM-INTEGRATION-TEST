@@ -107,8 +107,8 @@ export function BonusPointsModal({
 					<DialogTitle>{bonusPoint ? "Edit Bonus Point" : "Create Bonus Point"}</DialogTitle>
 					<DialogDescription>
 						{bonusPoint
-							? `Update bonus point for ${employee.user?.fullname || "this employee"}`
-							: `Create a new bonus point for ${employee.user?.fullname || "this employee"}`}
+							? `Update bonus point for ${employee?.name || "this employee"}`
+							: `Create a new bonus point for ${employee?.name || "this employee"}`}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-4">

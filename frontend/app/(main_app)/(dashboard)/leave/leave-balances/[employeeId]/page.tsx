@@ -157,7 +157,7 @@ export default function EmployeeLeaveBalanceDetails() {
 
 	const getEmployeeName = (employee: any) => {
 		if (typeof employee === "object" && employee?.user?.fullname) {
-			return employee.user.fullname;
+			return employee?.name;
 		}
 		const emp = employees.find((emp) => emp.id === employee);
 

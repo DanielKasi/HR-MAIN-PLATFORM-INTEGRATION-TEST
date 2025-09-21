@@ -138,7 +138,7 @@ export default function CreateTerminationInitiationPage() {
                       <SelectContent>
                         {employees.map((employee) => (
                           <SelectItem key={employee.id} value={employee.id.toString()}>
-                            {employee.user?.fullname}
+                            {employee?.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

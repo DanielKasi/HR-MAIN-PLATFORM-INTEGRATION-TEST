@@ -96,7 +96,7 @@ export function EmployeePayrollTable({
 
 		try {
 			await markPayslipAsPaid(payslip.id);
-			toast.success(`Payslip for ${payslip.employee.user?.fullname} marked as paid`);
+			toast.success(`Payslip for ${payslip.employee?.name} marked as paid`);
 			if (refreshFunctionRef.current) {
 				refreshFunctionRef.current();
 			}
@@ -275,7 +275,7 @@ export function EmployeePayrollTable({
 														{showEmployeeAvatar ? (
 															<Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-orange-100 flex-shrink-0 flex items-center justify-center rounded-full overflow-hidden">
 																<AvatarFallback className="bg-orange-100 text-orange-700 font-semibold text-xs flex items-center justify-center sm:text-sm h-full w-full">
-																	{getInitials(payslip.employee.user?.fullname || "")}
+																	{getInitials(payslip.employee?.name || "")}
 																</AvatarFallback>
 															</Avatar>
 														) : (
@@ -284,7 +284,7 @@ export function EmployeePayrollTable({
 
 														<div className="min-w-0 flex-1">
 															<div className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-																{payslip.employee.user?.fullname || ""}
+																{payslip.employee?.name || ""}
 															</div>
 															<div className="text-sm text-gray-500 truncate">
 																{payslip.employee.department.name}
@@ -477,8 +477,8 @@ export function EmployeePayrollTable({
 																<DialogTitle>Confirm Deletion</DialogTitle>
 																<DialogDescription>
 																	Are you sure you want to delete the payslip for{" "}
-																	{payslip.employee.user?.fullname || ""} in{" "}
-																	{payslip.payroll_period.name}? This action cannot be undone.
+																	{payslip.employee?.name || ""} in {payslip.payroll_period.name}?
+																	This action cannot be undone.
 																</DialogDescription>
 															</DialogHeader>
 															<DialogFooter>
