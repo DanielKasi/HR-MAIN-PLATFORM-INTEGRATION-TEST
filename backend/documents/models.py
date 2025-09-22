@@ -1,11 +1,12 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 from institution.models import Institution
 from django_ckeditor_5.fields import CKEditor5Field
 from markdownx.models import MarkdownxField
 from ckeditor_uploader.fields import RichTextUploadingField
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
+from django.utils import timezone
 
 class DocumentType(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
@@ -82,4 +83,49 @@ class Document(BaseApprovableModel):
         return f"Document for {self.document_template.name} - Status: {self.status}"
 
     def get_institution(self):
-        return self.document_template.document_type.institution      
+        return self.document_template.document_type.institution 
+
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.status = "reviewed"
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+                elif approval.action.name == "update":
+                    self.status = "reviewed"
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+                elif approval.action.name == "delete":
+                    self.status = "pending"
+                    self.approval_status = "under_deletion"
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.delete()
+                    return
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
+                    self.status = "pending"
+                    self.approval_status = "rejected"
+                    self.is_active = False
+                    self.deleted_at = None
+                elif approval.action.name == "update":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+
+                elif approval.action.name == "delete":
+                    self.approval_status = "active"
+                    self.is_active = True
+                    self.deleted_at = None
+            self.save(
+                update_fields=[
+                    "approval_status",
+                    "status",
+                    "is_active",
+                    "deleted_at"
+                ]
+            )        

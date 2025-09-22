@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from approval.serializers import BaseApprovableSerializer
+from documents.models import DocumentTemplate
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
-from .models import Period, Objectives, EmployeeObjectives, KeyResult, Feedback360, EmployeeBonusPoint, QuestionTemplate, BonusPointSettings, Meeting
+from .models import PIPEmployeeObjectives, PIPSupportResource, PIPSupportResourceType, PerformanceConcern, PerformanceConcernType, PerformanceImprovementPlan, Period, Objectives, EmployeeObjectives, KeyResult, Feedback360, EmployeeBonusPoint, QuestionTemplate, BonusPointSettings, Meeting
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
@@ -170,3 +171,119 @@ class MeetingSerializer(BaseApprovableSerializer):
         model = Meeting
         fields = '__all__'
         read_only_fields = ['institution', 'online_link', 'calendar_event_id']
+
+
+class PerformanceConcernTypeSerializer(BaseApprovableSerializer):
+    institution = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = PerformanceConcernType
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request and request.user.profile.institution:
+            data['institution'] = request.user.profile.institution
+        return data
+    
+class PerformanceConcernSerializer(BaseApprovableSerializer):
+    category = serializers.PrimaryKeyRelatedField(queryset=PerformanceConcernType.objects.all())
+
+    class Meta:
+        model = PerformanceConcern
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']   
+
+
+class PIPSupportResourceTypeSerializer(BaseApprovableSerializer):
+    institution = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = PIPSupportResourceType
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request and request.user.profile.institution:
+            data['institution'] = request.user.profile.institution
+        return data         
+
+class PIPSupportResourceSerializer(BaseApprovableSerializer):
+    type = serializers.PrimaryKeyRelatedField(queryset=PIPSupportResourceType.objects.all())
+
+    class Meta:
+        model = PIPSupportResource
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status', 'institution']
+
+class PIPEmployeeObjectivesSerializer(serializers.ModelSerializer):
+    pip = serializers.PrimaryKeyRelatedField(queryset=PerformanceImprovementPlan.objects.all())
+    objective = serializers.PrimaryKeyRelatedField(queryset=Objectives.objects.all())
+
+    class Meta:
+        model = PIPEmployeeObjectives
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']     
+
+class PerformanceImprovementPlanSerializer(BaseApprovableSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+    issues = serializers.PrimaryKeyRelatedField(many=True, queryset=PerformanceConcern.objects.all())
+    support_resources = serializers.PrimaryKeyRelatedField(many=True, queryset=PIPSupportResource.objects.all(), required=False)
+    objectives = serializers.PrimaryKeyRelatedField(many=True, queryset=Objectives.objects.all(), required=False)
+    document_template = serializers.PrimaryKeyRelatedField(queryset=DocumentTemplate.objects.all(), allow_null=True, required=False)
+
+    class Meta:
+        model = PerformanceImprovementPlan
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']    
+        
+    def create(self, validated_data):
+        issues = validated_data.pop('issues', [])
+        support_resources = validated_data.pop('support_resources', [])
+        objectives = validated_data.pop('objectives', [])
+
+        instance = PerformanceImprovementPlan(**validated_data)
+        instance.save()
+
+        if issues:
+            instance.issues.set(issues)
+        if support_resources:
+            instance.support_resources.set(support_resources)
+
+        if objectives:
+            for objective in objectives:
+                PIPEmployeeObjectives.objects.create(
+                    pip=instance,
+                    objective=objective,
+                    employee=instance.employee,  
+                    milestone_checks=[]  
+                )
+
+        return instance
+
+    def update(self, instance, validated_data):
+        issues = validated_data.pop('issues', None)
+        support_resources = validated_data.pop('support_resources', None)
+        objectives = validated_data.pop('objectives', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if issues is not None:
+            instance.issues.set(issues)
+        if support_resources is not None:
+            instance.support_resources.set(support_resources)
+        if objectives is not None:
+            instance.pip_employee_objectives.all().delete()
+            for objective in objectives:
+                PIPEmployeeObjectives.objects.create(
+                    pip=instance,
+                    objective=objective,
+                    employee=instance.employee,  
+                    milestone_checks=[]  
+                )
+
+        return instance           

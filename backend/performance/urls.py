@@ -23,4 +23,63 @@ urlpatterns = [
     path('initiate-oauth/', views.initiate_oauth, name='initiate_oauth'),
     path('oauth2callback/', views.oauth2callback, name='oauth2callback'),
     path('analytics/', views.AnalyticsView.as_view(), name='analytics'),
+    path('pips/', views.PerformanceImprovementPlanListCreateView.as_view(), name='pip_list_create'),
+    path('pips/<int:pk>/', views.PerformanceImprovementPlanDetailView.as_view(), name='pip_detail'),
+    path('pips/<int:pip_id>/document/', views.PIPDocumentGenerateView.as_view(), name='pip_document_generate'),
+    path(
+        'concern-types/',
+        views.PerformanceConcernTypeListCreateView.as_view(),
+        name='performance-concern-type-list-create'
+    ),
+    path(
+        'concern-types/<int:pk>/',
+        views.PerformanceConcernTypeDetailView.as_view(),
+        name='performance-concern-type-detail'
+    ),
+
+    # PerformanceConcern URLs
+    path(
+        'concerns/',
+        views.PerformanceConcernListCreateView.as_view(),
+        name='performance-concern-list-create'
+    ),
+    path(
+        'concerns/<int:pk>/',
+        views.PerformanceConcernDetailView.as_view(),
+        name='performance-concern-detail'
+    ),
+
+    # PIPSupportResourceType URLs
+    path(
+        'support-resource-types/',
+        views.PIPSupportResourceTypeListCreateView.as_view(),
+        name='pip-support-resource-type-list-create'
+    ),
+    path(
+        'support-resource-types/<int:pk>/',
+        views.PIPSupportResourceTypeDetailView.as_view(),
+        name='pip-support-resource-type-detail'
+    ),
+
+    # PIPSupportResource URLs
+    path(
+        'support-resources/',
+        views.PIPSupportResourceListCreateView.as_view(),
+        name='pip-support-resource-list-create'
+    ),
+    path(
+        'support-resources/<int:pk>/',
+        views.PIPSupportResourceDetailView.as_view(),
+        name='pip-support-resource-detail'
+    ),
+        path(
+        'employee-objectives/',
+        views.PIPEmployeeObjectivesListCreateView.as_view(),
+        name='pip-employee-objectives-list-create'
+    ),
+    path(
+        'employee-objectives/<int:pk>/',
+        views.PIPEmployeeObjectivesDetailView.as_view(),
+        name='pip-employee-objectives-detail'
+    ),
 ]
