@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -20,39 +20,38 @@ interface Props {
 	title: string;
 	label: string;
 	data: Record<string, Entry[]>;
-	dataKey1: string;
-	dataKey2: string;
+	dataKey: string[];
 	nameKey: string;
 	colors: string[];
-	rounded?: boolean;
 	headerSlot?: React.ReactElement;
 	className?: string;
 	select?: boolean;
 }
 
-export default function BarSChart({
+export default function Linechart({
 	title,
 	label,
-	dataKey1,
-	dataKey2,
+	dataKey,
 	nameKey,
 	colors,
 	data,
-	rounded,
 	headerSlot,
 	className,
 	select = true,
 }: Props) {
-	const [groups] = React.useState(Object.keys(data).sort().reverse());
+	const [years] = React.useState(Object.keys(data).sort().reverse());
 
-	const [category, setCategory] = React.useState(groups[0]);
+	const [category, setCategory] = React.useState(years[0]);
 
-	const [items, setItems] = React.useState(data[groups[0]] || ([] as Entry[]));
+	const [items, setItems] = React.useState(data[years[0]] || ([] as Entry[]));
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
-			if (index == 0) acc[dataKey1] = { color: colors[index] };
-			if (index == 1) acc[dataKey2] = { label, color: colors[index] };
+			if (index == 0) {
+				dataKey.forEach((key, i) => {
+					acc[key] = { label, color: colors[i] };
+				});
+			}
 			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: colors[index] };
 			return acc;
 		}, {} as any);
@@ -76,7 +75,7 @@ export default function BarSChart({
 								<SelectValue placeholder={category} />
 							</SelectTrigger>
 							<SelectContent>
-								{groups.map((k) => (
+								{years.map((k) => (
 									<SelectItem key={k} value={k}>
 										{sentenceCase(k)}
 									</SelectItem>
@@ -91,34 +90,42 @@ export default function BarSChart({
 					config={chartConfig}
 					className="mx-auto aspect-square w-full h-full max-h-[400px]"
 				>
-					<BarChart accessibilityLayer data={items}>
+					<LineChart
+						accessibilityLayer
+						data={items}
+						margin={{
+							left: 12,
+							right: 12,
+							top: 10,
+							bottom: 10,
+						}}
+					>
 						<CartesianGrid vertical={false} />
 						<XAxis
 							dataKey={nameKey}
 							tickLine={false}
-							tickMargin={10}
 							axisLine={false}
-							tickFormatter={(value) => sentenceCase(value)}
+							tickMargin={8}
+							tickFormatter={(value) => value}
 						/>
-						<YAxis
-							axisLine={false}
-							tickLine={false}
-							// domain={[0, 1.25 * Math.max(...items.map((x) => x[nameKey] as number))]}
-						/>
-						<ChartTooltip
-							active
-							cursor={false}
-							content={<ChartTooltipContent hideLabel hideIndicator />}
-						/>
-						<Bar legendType="circle" dataKey={dataKey1} stackId="a" fill={colors[0]} />
-						<Bar
-							legendType="circle"
-							dataKey={dataKey2}
-							stackId="a"
-							fill={colors[1]}
-							radius={rounded ? [10, 10, 0, 0] : 0}
-						/>
-					</BarChart>
+						<YAxis axisLine={false} tickLine={false} tickMargin={8} />
+						<ChartTooltip active cursor={false} content={<ChartTooltipContent hideLabel />} />
+						{dataKey.map((key, i) => (
+							<Line
+								key={key}
+								dataKey={key}
+								type="monotone"
+								stroke={colors[i]}
+								strokeWidth={2}
+								dot={{
+									r: 6,
+								}}
+								activeDot={{
+									r: 8,
+								}}
+							/>
+						))}
+					</LineChart>
 				</ChartContainer>
 			</CardContent>
 		</Card>

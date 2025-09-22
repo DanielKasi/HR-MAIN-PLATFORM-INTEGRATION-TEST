@@ -1,9 +1,9 @@
 import { ReactNode, useState, useEffect } from "react";
 
 type Props<T> = {
-	content: (data: T) => ReactNode;
 	initialData: T;
 	fetchData: () => Promise<T>;
+	content: (data: T) => ReactNode;
 };
 
 export default function LoadingComponent<T>({ initialData, fetchData, content }: Props<T>) {

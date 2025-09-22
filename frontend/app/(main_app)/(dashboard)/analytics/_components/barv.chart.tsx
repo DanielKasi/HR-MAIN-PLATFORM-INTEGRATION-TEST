@@ -27,6 +27,7 @@ interface Props {
 	headerSlot?: React.ReactElement;
 	className?: string;
 	gap?: boolean;
+	select?: boolean;
 }
 
 export default function BarVChart({
@@ -40,13 +41,13 @@ export default function BarVChart({
 	headerSlot,
 	className,
 	gap,
+	select = true,
 }: Props) {
-	const years = Object.keys(data).sort().reverse();
+	const [years] = React.useState(Object.keys(data).sort().reverse());
 
-	const currentYear = years[0] || new Date().getFullYear().toString();
-	const [category, setCategory] = React.useState(currentYear);
+	const [category, setCategory] = React.useState(years[0]);
 
-	const [items, setItems] = React.useState(data[currentYear] || ([] as Entry[]));
+	const [items, setItems] = React.useState(data[years[0]] || ([] as Entry[]));
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
@@ -62,24 +63,26 @@ export default function BarVChart({
 				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
 				{headerSlot || null}
 				<div className="flex items-center gap-4">
-					<Select
-						defaultValue={category}
-						onValueChange={(d) => {
-							setCategory(d);
-							setItems(data[d]);
-						}}
-					>
-						<SelectTrigger className="text-slate-900">
-							<SelectValue placeholder={currentYear} />
-						</SelectTrigger>
-						<SelectContent>
-							{years.map((k) => (
-								<SelectItem key={k} value={k}>
-									{sentenceCase(k)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					{select && category && (
+						<Select
+							defaultValue={category}
+							onValueChange={(d) => {
+								setCategory(d);
+								setItems(data[d]);
+							}}
+						>
+							<SelectTrigger className="text-slate-900">
+								<SelectValue placeholder={category} />
+							</SelectTrigger>
+							<SelectContent>
+								{years.map((k) => (
+									<SelectItem key={k} value={k}>
+										{sentenceCase(k)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
 				</div>
 			</CardHeader>
 			<CardContent className="flex-1 flex items-center">

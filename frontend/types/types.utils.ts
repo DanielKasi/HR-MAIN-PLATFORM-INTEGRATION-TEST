@@ -1,5 +1,9 @@
-import type { Branch, IUser, IUserInstitution, Role, UserProfile } from ".";
 import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types";
+import { IProjectDashboard } from "./project.type";
+import { IAssetHistory } from "./assets.types";
+import { Branch } from "./branch.types";
+import { IUserInstitution } from "./other";
+import { IUser, Role, UserProfile } from "./user.types";
 
 export type ContextType = "employee" | "department" | "job_position";
 export type CalculationMethod = "fixed" | "percentage";
@@ -377,94 +381,6 @@ export interface IRecruitmentDashboard {
 	}>;
 }
 
-export interface IEmployeeDashboard {
-	total_employees: number;
-	employees_by_gender: Array<{
-		gender: string;
-		count: number;
-	}>;
-	employees_by_employee_type: Array<{
-		employee_type: string;
-		count: number;
-	}>;
-	employees_by_work_type: Array<{
-		work_type: string;
-		count: number;
-	}>;
-	employees_by_department: Array<{
-		department: string;
-		count: number;
-	}>;
-	shift_statuses: Array<{
-		status: string;
-		count: number;
-	}>;
-	average_age: number;
-	average_tenure_years: number;
-	recent_hires: number;
-	employees_by_marital_status: Array<{
-		marital_status: string;
-		count: number;
-	}>;
-}
-
-export interface ILeaveDashboard {
-	total_leave_applications: number;
-	applications_by_status: Array<{
-		status: string;
-		count: number;
-	}>;
-	applications_by_leave_type: Array<{
-		leave_type: string;
-		count: number;
-	}>;
-	leave_balances_by_type: Array<{
-		leave_type: string;
-		total_allocated_days: number;
-		total_used_days: number;
-		total_available_days: number;
-	}>;
-	average_leave_days_taken: number;
-	pending_approvals: number;
-	applications_over_time: Array<{
-		date: string;
-		count: number;
-	}>;
-}
-
-export interface ProjectStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskPriorityCount {
-	priority: string;
-	count: number;
-}
-
-export interface ProjectsAnalytics {
-	total: number;
-	by_status: ProjectStatusCount[];
-}
-
-export interface TasksAnalytics {
-	total: number;
-	by_status: TaskStatusCount[];
-	by_priority: TaskPriorityCount[];
-}
-
-export interface IProjectDashboard {
-	projects: ProjectsAnalytics;
-	tasks: TasksAnalytics;
-	active_projects: number;
-	overdue_tasks: number;
-}
-
 export interface DashboardError {
 	error: string;
 }
@@ -488,43 +404,6 @@ export interface IAttendanceDashboard {
 		month: string;
 		count: number;
 	}>;
-}
-
-export interface IPayrollDashboard {
-	total_payroll_amount: number;
-	total_gross_payroll: number;
-	payroll_by_department: Array<{
-		department: string;
-		total_net: number;
-		total_gross: number;
-		employee_count: number;
-	}>;
-	payroll_over_time: Array<{
-		month: string;
-		total_net: number;
-		total_gross: number;
-		payslips_count: number;
-	}>;
-	allowances_vs_deductions: {
-		total_allowances: number;
-		total_deductions: number;
-		net_difference: number;
-	};
-	average_gross_salary: number;
-	average_net_salary: number;
-	payroll_periods_summary: {
-		total_periods: number;
-		processed_periods: number;
-		pending_periods: number;
-		latest_period: string;
-	};
-	penalty_breakdown: Array<{
-		penalty_type: string;
-		count: number;
-		total_amount: number;
-	}>;
-	total_penalties_amount: number;
-	total_penalties_count: number;
 }
 
 export interface IInterviewStageFormData {

@@ -10,7 +10,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERFORMANCE_ANALYTICS_API } from "@/lib/utils";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
-import PieChart from "../_components/piechart";
+import PieChart from "../_components/pie.chart";
 import colors from "../_components/colors";
 
 export default function PerformancePage() {
@@ -226,7 +226,15 @@ export default function PerformancePage() {
 				{/* Module Cards */}
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 					{graphs.map((g) => (
-						<PieChart title={g.title} data={g.stats} colors={colors}></PieChart>
+						<PieChart
+							title={g.title}
+							data={g.stats}
+							colors={colors}
+							totalStr={""}
+							label={""}
+							dataKey={""}
+							nameKey={""}
+						></PieChart>
 					))}
 				</div>
 			</div>

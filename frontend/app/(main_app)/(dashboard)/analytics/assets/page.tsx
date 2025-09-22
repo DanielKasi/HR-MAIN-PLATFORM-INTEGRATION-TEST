@@ -11,6 +11,7 @@ import colors from "../_components/colors";
 import BarVChart from "../_components/barv.chart";
 import RecentAssetsTable from "./assets.table";
 import LoadingComponent from "@/components/LoadingComponent";
+import BarHChart from "../_components/barh.chart";
 
 export default function AssetsDashboard() {
 	const initialData: AssetsData = {
@@ -22,6 +23,7 @@ export default function AssetsDashboard() {
 			total: 10,
 		},
 		category_counts: {
+			total: 6,
 			additionalProp1: 1,
 			additionalProp2: 2,
 			additionalProp3: 3,
@@ -108,7 +110,7 @@ export default function AssetsDashboard() {
 						{/* Key Metrics Cards */}
 						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 							{getCards(data).map((card, i) => (
-								<StatsCard key={i} {...card} />
+								<StatsCard key={i} index={i} {...card} />
 							))}
 						</div>
 
@@ -128,47 +130,46 @@ export default function AssetsDashboard() {
 								dataKey={"count"}
 								nameKey={"name"}
 								colors={colors}
+								donut
+								labelList
+								select={false}
 							/>
 
 							{/* Category Breakdown */}
-							<BarVChart
+							<BarHChart
 								title={"Assets by Category"}
-								label={""}
 								data={{
-									"2025": [],
+									"2025": [
+										{ category: "Laptop", count: 12 },
+										{ category: "Mobile phones", count: 42 },
+										{ category: "Furniture", count: 20 },
+										{ category: "Vechiles", count: 14 },
+										{ category: "Buildings", count: 2 },
+									],
 								}}
-								dataKey={""}
-								nameKey={""}
-								colors={colors}
+								dataKey={"count"}
+								nameKey={"category"}
+								color={colors[4]}
+								rounded
+								select={false}
 							/>
-						</div>
 
-						{/* Pending Actions and Recent Assets */}
-						<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-							{/* Pending Actions */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Pending Actions</CardTitle>
-									<CardDescription>Items requiring attention</CardDescription>
-								</CardHeader>
-								<CardContent className="space-y-4">
-									<div className="flex items-center justify-between">
-										<span className="text-sm">Asset Requests</span>
-										<Badge variant="secondary">{data.pending_counts.requests}</Badge>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-sm">Pending Allocations</span>
-										<Badge variant="secondary">{data.pending_counts.allocations}</Badge>
-									</div>
-									<div className="flex items-center justify-between">
-										<span className="text-sm">Pending Returns</span>
-										<Badge variant="secondary">{data.pending_counts.returns}</Badge>
-									</div>
-									{/* <Button className="w-full mt-4 bg-transparent" variant="outline">
-                                View All Pending
-                            </Button> */}
-								</CardContent>
-							</Card>
+							{/* Category Breakdown */}
+							<BarHChart
+								title={"Assets Allocation by Department"}
+								data={{
+									"All Assets": [
+										{ department: "Accounting", count: 12 },
+										{ department: "IT / Technology", count: 42 },
+										{ department: "Sales", count: 20 },
+										{ department: "Marketing", count: 14 },
+									],
+								}}
+								dataKey={"count"}
+								nameKey={"department"}
+								color={colors[5]}
+								rounded
+							/>
 
 							{/* Recent Assets */}
 							{data?.recent_assets?.length && <RecentAssetsTable />}

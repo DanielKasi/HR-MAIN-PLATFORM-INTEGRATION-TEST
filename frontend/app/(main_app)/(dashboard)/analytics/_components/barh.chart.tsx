@@ -18,31 +18,30 @@ type Entry = Record<string, string | number>;
 
 interface Props {
 	title: string;
-	label: string;
 	data: Record<string, Entry[]>;
 	dataKey: string;
 	nameKey: string;
 	color: string;
 	rounded?: boolean;
 	className?: string;
+	select?: boolean;
 }
 
 export default function BarHChart({
 	title,
-	label,
 	dataKey,
 	nameKey,
 	color,
 	data,
 	rounded,
 	className,
+	select = true,
 }: Props) {
-	const years = Object.keys(data).sort().reverse();
+	const [groups] = React.useState(Object.keys(data).sort().reverse());
 
-	const currentYear = years[0] || new Date().getFullYear().toString();
-	const [category, setCategory] = React.useState(currentYear);
+	const [category, setCategory] = React.useState(groups[0]);
 
-	const [items, setItems] = React.useState(data[currentYear] || ([] as Entry[]));
+	const [items, setItems] = React.useState(data[groups[0]] || ([] as Entry[]));
 
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
@@ -52,32 +51,32 @@ export default function BarHChart({
 		}, {} as any);
 	}, []);
 
-	console.log(chartConfig);
-
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
 				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
-				<div className="flex items-center gap-4">
-					<Select
-						defaultValue={category}
-						onValueChange={(d) => {
-							setCategory(d);
-							setItems(data[d]);
-						}}
-					>
-						<SelectTrigger className="text-slate-900">
-							<SelectValue placeholder={currentYear} />
-						</SelectTrigger>
-						<SelectContent>
-							{years.map((k) => (
-								<SelectItem key={k} value={k}>
-									{sentenceCase(k)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
+				{select && groups?.length && (
+					<div className="flex items-center gap-4">
+						<Select
+							defaultValue={category}
+							onValueChange={(d) => {
+								setCategory(d);
+								setItems(data[d]);
+							}}
+						>
+							<SelectTrigger className="text-slate-900">
+								<SelectValue placeholder={category} />
+							</SelectTrigger>
+							<SelectContent>
+								{groups.map((k) => (
+									<SelectItem key={k} value={k}>
+										{sentenceCase(k)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+				)}
 			</CardHeader>
 			<CardContent className="flex-1 flex items-center">
 				<ChartContainer
@@ -90,8 +89,9 @@ export default function BarHChart({
 						layout="vertical"
 						barCategoryGap={20}
 						margin={{
-							top: 10,
+							top: 20,
 							left: 20,
+							bottom: 10,
 						}}
 					>
 						<CartesianGrid horizontal={false} />
@@ -100,6 +100,7 @@ export default function BarHChart({
 							dataKey={dataKey}
 							axisLine={false}
 							tickFormatter={(v) => sentenceCase(v)}
+							domain={[0, 1.25 * Math.max(...items.map((x) => x[dataKey] as number))]}
 						/>
 						<YAxis dataKey={nameKey} type="category" axisLine={false} hide />
 						<ChartTooltip
@@ -113,12 +114,12 @@ export default function BarHChart({
 							fill={color}
 							background={{ fill: "hsl(var(--accent))" }}
 						>
+							<LabelList position="right" offset={8} className="text-sm fill-slate-600" />
 							<LabelList
 								dataKey={nameKey}
 								position="insideTopLeft"
 								offset={-20}
-								width="300"
-								className="text-base fill-slate-600 -ml-4 w-full"
+								className="text-base fill-slate-600"
 							/>
 						</Bar>
 					</BarChart>

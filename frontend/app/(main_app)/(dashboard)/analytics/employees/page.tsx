@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEmployeeDashboard } from "@/lib/utils";
-import { IEmployeeDashboard } from "@/types/types.utils";
+import { IEmployeeDashboard } from "@/types/employee.types";
 import StatsCard from "../_components/stats.card";
 import colors from "../_components/colors";
 import DonutChart from "../_components/pie.chart";
 import BarHChart from "../_components/barh.chart";
 import BarVChart from "../_components/barv.chart";
+import LoadingComponent from "@/components/LoadingComponent";
+import DepartmentTreeMap from "./department.treemap";
 
 export default function EmployeePage() {
-	const [data, setData] = useState<IEmployeeDashboard | null>({
+	const initialData: IEmployeeDashboard = {
 		total_employees: 0,
 		employees_by_gender: [
 			{
@@ -53,35 +53,9 @@ export default function EmployeePage() {
 			{ marital_status: "married", count: 23 },
 			{ marital_status: "divorced", count: 5 },
 		],
-	});
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	};
 
-	useEffect(() => {
-		async function fetchData() {
-			try {
-				const dashboardData = await getEmployeeDashboard();
-
-				// setData(dashboardData);
-			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to fetch data");
-			} finally {
-				setLoading(false);
-			}
-		}
-
-		fetchData();
-	}, []);
-
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-lg text-muted-foreground">Loading employee dashboard...</div>
-			</div>
-		);
-	}
-
-	const cards = [
+	const getCards = (data: IEmployeeDashboard) => [
 		{
 			title: "Total Employees",
 			value: data?.total_employees ?? 0,
@@ -91,143 +65,125 @@ export default function EmployeePage() {
 			link: "#",
 		},
 		{
-			title: "Total Employees",
+			title: "Average Tenure",
+			value: `${data?.total_employees ?? 0} years`,
+			color: "text-blue-600",
+			bg: "bg-blue-100",
+			icon: "hugeicons:calendar-02",
+			link: "#",
+		},
+		{
+			title: "New Hires (30d)",
 			value: data?.total_employees ?? 0,
-			color: "text-orange-600",
-			bg: "bg-orange-100",
+			color: "text-emerald-600",
+			bg: "bg-emerald-100",
 			icon: "hugeicons:megaphone-02",
 			link: "#",
 		},
 		{
-			title: "Total Employees",
+			title: "Turn Over Rate",
 			value: data?.total_employees ?? 0,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
-			icon: "hugeicons:megaphone-02",
-			link: "#",
-		},
-		{
-			title: "Total Employees",
-			value: data?.total_employees ?? 0,
-			color: "text-orange-600",
-			bg: "bg-orange-100",
-			icon: "hugeicons:megaphone-02",
+			icon: "hugeicons:user-minus-02",
 			link: "#",
 		},
 	];
 
-	const gender = {
-		"2025": [
-			{ gender: "Female", count: 12 },
-			{ gender: "Male", count: 8 },
-		],
-		"2024": [
-			{ gender: "Female", count: 10 },
-			{ gender: "Male", count: 18 },
-		],
-	};
-
-	const departments = {
-		"2025": (data?.employees_by_department ?? []).map((x) => x),
-		"2024": (data?.employees_by_department ?? []).map((x) => ({
-			...x,
-			count: (x.count * Math.random()).toFixed(2),
-		})),
-	};
-
 	return (
-		<div className="bg-background p-6 min-h-screen">
-			<div className="space-y-8">
-				{/* Header */}
-				<div className="space-y-2">
-					<h1 className="text-4xl font-bold text-foreground">Employee Analytics Dashboard</h1>
-					<p className="text-lg text-muted-foreground">
-						Comprehensive workforce insights and metrics
-					</p>
+		<LoadingComponent
+			initialData={initialData}
+			// fetchData={getEmployeeDashboard}
+			fetchData={() => Promise.resolve(initialData)}
+			content={(data) => (
+				<div className="bg-background p-6 min-h-screen">
+					<div className="space-y-8">
+						{/* Header */}
+						<div className="space-y-2">
+							<h1 className="text-4xl font-bold text-foreground">Employee Analytics Dashboard</h1>
+							<p className="text-lg text-muted-foreground">
+								Comprehensive workforce insights and metrics
+							</p>
+						</div>
+
+						{/* Key Metrics */}
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+							{getCards(data).map((card, i) => (
+								<StatsCard key={i} index={i} {...card} />
+							))}
+						</div>
+
+						<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+							{/* Department Distribution Bar Chart */}
+							<DepartmentTreeMap
+								data={data.employees_by_department}
+								title={"Employees per Department"}
+							/>
+
+							{/* Gender Distribution Pie Chart */}
+							<DonutChart
+								title="Gender Distribution"
+								totalStr="Total Employees"
+								data={{
+									"2025": [
+										{ gender: "Female", count: 12 },
+										{ gender: "Male", count: 8 },
+									],
+									"2024": [
+										{ gender: "Female", count: 10 },
+										{ gender: "Male", count: 18 },
+									],
+								}}
+								colors={["#415180", "#FF3403"]}
+								label={"Gender"}
+								dataKey={"count"}
+								nameKey={"gender"}
+								labelList
+								donut
+							/>
+
+							{/* employee count over time */}
+							<BarVChart
+								title={"Employee Counts Over Time"}
+								label={""}
+								data={{
+									"2021-2025": [
+										{ year: "2021", count: 12 },
+										{ year: "2022", count: 20 },
+										{ year: "2023", count: 40 },
+										{ year: "2024", count: 30 },
+										{ year: "2025", count: 50 },
+									],
+								}}
+								dataKey={"count"}
+								nameKey={"year"}
+								colors={colors}
+								gap
+								rounded
+							/>
+
+							{/* Work Type Comparison */}
+							<BarVChart
+								title={"Work Type Distribution"}
+								label={""}
+								data={{
+									"2025": [
+										{ worktype: "full-time", count: 12 },
+										{ worktype: "part-time", count: 20 },
+										{ worktype: "internship", count: 4 },
+										{ worktype: "contract", count: 5 },
+									],
+								}}
+								dataKey={"count"}
+								nameKey={"worktype"}
+								colors={colors}
+								gap
+								rounded
+							/>
+						</div>
+					</div>
 				</div>
-
-				{/* Key Metrics */}
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					{cards.map((card, i) => (
-						<StatsCard key={i} {...card} />
-					))}
-				</div>
-
-				<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-					{/* Department Distribution Bar Chart */}
-					<BarHChart
-						title={"Department Distribution"}
-						label={"Departments"}
-						data={departments}
-						dataKey={"count"}
-						nameKey={"department"}
-						color={colors[4]}
-						rounded
-					/>
-					<BarVChart
-						title={"Department Distribution"}
-						label={"Departments"}
-						data={departments}
-						dataKey={"count"}
-						nameKey={"department"}
-						colors={colors}
-					/>
-
-					{/* Gender Distribution Pie Chart */}
-					<DonutChart
-						title="Gender Distribution"
-						totalStr="Total Employees"
-						data={gender}
-						colors={["#415180", "#FF3403"]}
-						label={"Gender"}
-						dataKey={"count"}
-						nameKey={"gender"}
-						labelList
-					/>
-
-					<DonutChart
-						title="Gender 2 "
-						totalStr="Total Employees"
-						data={gender}
-						colors={["#415180", "#FF3403"]}
-						label={"Gender"}
-						dataKey={"count"}
-						nameKey={"gender"}
-						labelList
-						donut
-					/>
-
-					{/* Work Type Comparison */}
-					<Card className="rounded-2xl border border-gray-200">
-						<CardHeader>
-							<CardTitle className="text-xl font-semibold">Work Type Distribution</CardTitle>
-							<hr className="border-gray-200 border-t mt-2" />
-						</CardHeader>
-						<CardContent>
-							{/* <ChartContainer config={{}} className="h-[300px]">
-								<ResponsiveContainer width="100%" height="100%">
-									<BarChart
-										data={data?.employees_by_work_type}
-										margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-										maxBarSize={60}
-									>
-										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="work_type" />
-										<YAxis />
-										<ChartTooltip content={<ChartTooltipContent />} />
-										<Bar dataKey="count" radius={[4, 4, 0, 0]}>
-											{data?.employees_by_work_type.map((entry, index) => {
-												const colors = ["#ff4500", "#ff7f50", "#ff6347", "#ff5722"];
-												return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-											})}
-										</Bar>
-									</BarChart>
-								</ResponsiveContainer>
-							</ChartContainer> */}
-						</CardContent>
-					</Card>
-				</div>
-			</div>
-		</div>
+			)}
+		></LoadingComponent>
 	);
 }

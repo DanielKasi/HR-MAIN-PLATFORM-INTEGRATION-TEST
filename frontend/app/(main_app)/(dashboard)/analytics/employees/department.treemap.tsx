@@ -3,6 +3,7 @@
 import { Treemap, ResponsiveContainer } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DepartmentData {
 	department: string;
@@ -10,6 +11,7 @@ interface DepartmentData {
 }
 
 interface DepartmentTreeMapProps {
+	title: string;
 	data: DepartmentData[];
 	chartConfig?: any;
 }
@@ -64,19 +66,19 @@ const CustomTreemapContent = (props: any) => {
 	);
 };
 
-export default function DepartmentTreeMap({ data, chartConfig }: DepartmentTreeMapProps) {
+export default function DepartmentTreeMap({ data, chartConfig, title }: DepartmentTreeMapProps) {
 	const departmentConfig = React.useMemo(() => {
 		const config: Record<string, { label: string; color: string }> = {};
 		const colors = [
-			"#ff4500", 
-			"#ff7f50", 
+			"#ff4500",
+			"#ff7f50",
 			"#ff6347",
-			"#ff5722", 
-			"#ffa07a", 
-			"#ff6b35", 
-			"#ff8a50", 
-			"#ff9770", 
-			"#ffab91", 
+			"#ff5722",
+			"#ffa07a",
+			"#ff6b35",
+			"#ff8a50",
+			"#ff9770",
+			"#ffab91",
 			"#d84315",
 		];
 		data.forEach((item, index) => {
@@ -90,17 +92,22 @@ export default function DepartmentTreeMap({ data, chartConfig }: DepartmentTreeM
 	}, [data]);
 
 	return (
-		<ChartContainer config={chartConfig} className="h-[300px]">
-			<ResponsiveContainer width="100%" height="100%">
-				<Treemap
-					data={data}
-					dataKey="count"
-					nameKey="department"
-					content={<CustomTreemapContent />}
-				>
-					<ChartTooltip content={<ChartTooltipContent />} />
-				</Treemap>
-			</ResponsiveContainer>
-		</ChartContainer>
+		<Card className="shadow-none border rounded-xl">
+			<CardHeader className="flex flex-row items-center justify-between pb-0">
+				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
+			</CardHeader>
+			<CardContent>
+				<ChartContainer config={departmentConfig} className="w-full h-full max-h-[400px]">
+					<Treemap
+						data={data}
+						dataKey="count"
+						nameKey="department"
+						content={<CustomTreemapContent />}
+					>
+						<ChartTooltip content={<ChartTooltipContent />} />
+					</Treemap>
+				</ChartContainer>
+			</CardContent>
+		</Card>
 	);
 }
