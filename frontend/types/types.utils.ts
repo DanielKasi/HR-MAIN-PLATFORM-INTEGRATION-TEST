@@ -1,6 +1,5 @@
 import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types";
 import { IProjectDashboard } from "./project.type";
-import { IAssetHistory } from "./assets.types";
 import { Branch } from "./branch.types";
 import { IUserInstitution } from "./other";
 import { IUser, Role, UserProfile } from "./user.types";
