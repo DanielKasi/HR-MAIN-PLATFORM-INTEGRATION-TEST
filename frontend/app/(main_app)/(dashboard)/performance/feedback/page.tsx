@@ -37,7 +37,6 @@ export default function FeedbackPage() {
 			setFeedback(response.results);
 		} catch (error) {
 			toast.error("Failed to fetch feedback");
-			console.error("Error fetching feedback:", error);
 		} finally {
 			setLoading(false);
 		}

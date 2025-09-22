@@ -23,7 +23,7 @@ import {
 	type CreateJobPositionData,
 } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
-import { RichEditorField } from "@/components/common/rich-editor";
+import { RichTextEditor } from "@/components/common/rich-editor";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 function formatWithCommas(value: string) {
@@ -406,7 +406,7 @@ export default function CreateJobPositionPage() {
 									<Label htmlFor="description" className="text-sm font-medium">
 										Job Description *
 									</Label>
-									<RichEditorField
+									<RichTextEditor
 										id="description"
 										placeholder="Describe the job responsibilities, requirements, and qualifications..."
 										value={formData.description}

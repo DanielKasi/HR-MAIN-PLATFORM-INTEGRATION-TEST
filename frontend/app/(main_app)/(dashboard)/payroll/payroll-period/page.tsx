@@ -152,8 +152,8 @@ export default function PayrollPeriods() {
 		const errors: ValidationResult = {};
 
 		if (isModalOpen) {
-			if (formData.name && formData.name.trim().length < 3) {
-				errors.name = "Period name must be at least 3 characters long";
+			if (!formData.name) {
+				errors.name = "Period name is required";
 			}
 			if (formData.start_date && formData.end_date) {
 				if (new Date(formData.end_date) <= new Date(formData.start_date)) {
@@ -756,6 +756,7 @@ export default function PayrollPeriods() {
 								<Input
 									id="name"
 									type="text"
+									required
 									placeholder="Enter period name"
 									value={formData.name}
 									onChange={(e) => handleInputChange("name", e.target.value)}
@@ -785,6 +786,7 @@ export default function PayrollPeriods() {
 									id="start_date"
 									type="date"
 									value={formData.start_date}
+									required
 									onChange={(e) => handleInputChange("start_date", e.target.value)}
 									disabled={saving}
 									className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
@@ -807,6 +809,7 @@ export default function PayrollPeriods() {
 								<Input
 									id="end_date"
 									type="date"
+									required
 									value={formData.end_date}
 									onChange={(e) => handleInputChange("end_date", e.target.value)}
 									disabled={saving}

@@ -135,7 +135,9 @@ export function PerformanceTable<T extends { id: number | string }>({
 									{column.label}
 								</TableHead>
 							))}
-							{actions.length > 0 && <TableHead className="w-12" />}
+							{actions.length > 0 && (
+								<TableHead className="w-12 font-semibold text-slate-700">Actions</TableHead>
+							)}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
