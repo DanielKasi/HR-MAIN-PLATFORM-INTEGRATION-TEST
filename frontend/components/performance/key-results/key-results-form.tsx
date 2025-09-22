@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import FormatNumberInput from "@/components/format-number-input";
 
 interface KeyResultFormProps {
 	initialData?: IKeyResult;
@@ -164,11 +165,10 @@ export const KeyResultForm = forwardRef<HTMLFormElement, KeyResultFormProps>(
 						<Label htmlFor="target_value" className="text-sm font-medium text-slate-700">
 							Target Value <span className="text-red-500">*</span>
 						</Label>
-						<Input
+						<FormatNumberInput
 							id="target_value"
-							type="number"
-							value={formData.target_value}
-							onChange={(e) => handleChange("target_value", e.target.value)}
+							value={formData.target_value?.toString() || ""}
+							onChange={(formatted, numeric) => handleChange("target_value", numeric.toString())}
 							placeholder="e.g., 95"
 							disabled={isLoading}
 							className={cn("rounded-xl", errors.target_value && "border-red-500")}
