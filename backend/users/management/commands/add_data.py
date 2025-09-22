@@ -25,7 +25,7 @@ from employee.views import generate_compliant_password
 from calendar2.models import Calendar, Event
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, resend welcome emails, and delete inactive employees"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, resend welcome emails, sync employee names, and delete inactive employees"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -56,9 +56,82 @@ class Command(BaseCommand):
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
+        self.sync_employee_names()  # Add this new method call
         self.create_birthday_events()
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+
+    def sync_employee_names(self):
+        """Sync employee.name with user.fullname for all existing employees"""
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Syncing employee names with user fullnames...\n")
+        )
+        
+        # Get all employees with associated users
+        employees = Employee.objects.filter(
+            user__isnull=False,
+            deleted_at__isnull=True
+        ).select_related('user')
+        
+        if not employees.exists():
+            self.stdout.write(
+                self.style.NOTICE("No employees with users found to sync names.")
+            )
+            return
+        
+        updated_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        for employee in employees:
+            try:
+                # Check if user has a fullname and if it's different from employee.name
+                if not employee.user.fullname:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  ⏭️ Skipping employee ID {employee.id}: User has no fullname"
+                        )
+                    )
+                    skipped_count += 1
+                    continue
+                
+                # Check if name needs updating
+                if employee.name == employee.user.fullname:
+                    self.stdout.write(
+                        self.style.NOTICE(
+                            f"  ♻️ Employee '{employee.user.fullname}' already has correct name"
+                        )
+                    )
+                    skipped_count += 1
+                    continue
+                
+                # Update the employee name
+                old_name = employee.name
+                employee.name = employee.user.fullname
+                employee.save(update_fields=['name'])
+                
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"  ✅ Updated employee name: '{old_name or 'None'}' → '{employee.name}'"
+                    )
+                )
+                updated_count += 1
+                
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"  ❌ Error updating employee ID {employee.id}: {str(e)}"
+                    )
+                )
+                error_count += 1
+        
+        # Summary
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Employee Names Sync Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ✅ Updated: {updated_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ♻️ Skipped: {skipped_count}"))
+        if error_count > 0:
+            self.stdout.write(self.style.NOTICE(f"  ❌ Errors: {error_count}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Employee names synced successfully!"))
 
     def create_birthday_events(self):
         self.stdout.write(
@@ -254,11 +327,11 @@ class Command(BaseCommand):
         )
         default_awards = [
             {"name": "PLE", "description": "Primary Leaving Examination"},
-            {"name": "UCE", "description": "Uganda Certificate of Education (O’Level)"},
-            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A’Level)"},
+            {"name": "UCE", "description": "Uganda Certificate of Education (O'Level)"},
+            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A'Level)"},
             {"name": "Diploma", "description": "Diploma level qualification"},
-            {"name": "Bachelor’s Degree", "description": "Undergraduate degree"},
-            {"name": "Master’s Degree", "description": "Postgraduate degree"},
+            {"name": "Bachelor's Degree", "description": "Undergraduate degree"},
+            {"name": "Master's Degree", "description": "Postgraduate degree"},
             {"name": "PhD", "description": "Doctor of Philosophy"},
         ]
         valid_award_names = set()
