@@ -9,6 +9,7 @@ import { StatusBadge } from "../common/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { hasPermission } from "@/lib/helpers";
 import { PERMISSION_CODES } from "@/constants";
+import RichTextDisplay from "@/components/common/rich-text-display";
 
 interface FeedbackTableProps {
 	feedback: IFeedback360[];
@@ -124,21 +125,10 @@ export function FeedbackTable({
 			label: "Feedback Preview",
 			render: (item) => (
 				<div className="max-w-xs">
-					<div className="text-sm text-slate-600 line-clamp-2">
-						{item.feedback_text || "No feedback text"}
-					</div>
-					<div className="flex gap-1 mt-1">
-						{item.strengths && (
-							<Badge variant="outline" className="text-xs">
-								Strengths
-							</Badge>
-						)}
-						{item.areas_for_improvement && (
-							<Badge variant="outline" className="text-xs">
-								Improvements
-							</Badge>
-						)}
-					</div>
+					<RichTextDisplay
+						className="text-sm text-muted-foreground line-clamp-2"
+						htmlContent={item.feedback_text || ""}
+					/>
 				</div>
 			),
 		},

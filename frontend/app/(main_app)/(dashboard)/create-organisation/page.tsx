@@ -1009,50 +1009,50 @@ export default function CreateOrganisationWizard() {
 							className={`px-6 py-4 ${errorMessage ? "h-[50svh] max-h-[50vh]" : "h-[60svh] max-h-[60vh]"} overflow-y-auto`}
 						>
 							{renderStepContent()}
-						</div>
 
-						{/* Navigation */}
-						<div className="flex items-center justify-between p-6 border-t bg-muted/30">
-							{currentStep !== 1 && (
-								<Button
-									type="button"
-									variant="outline"
-									onClick={prevStep}
-									disabled={currentStep === 1}
-									className="flex items-center gap-2 rounded-full"
-								>
-									<ChevronLeft className="h-4 w-4" />
-									Previous
-								</Button>
-							)}
+							{/* Navigation */}
+							<div className="flex items-center justify-between p-6 border-t bg-muted/30 mt-6">
+								{currentStep !== 1 && (
+									<Button
+										type="button"
+										variant="outline"
+										onClick={prevStep}
+										disabled={currentStep === 1}
+										className="flex items-center gap-2 rounded-full"
+									>
+										<ChevronLeft className="h-4 w-4" />
+										Previous
+									</Button>
+								)}
 
-							{currentStep < STEPS.length ? (
-								<Button
-									type="submit"
-									disabled={!validateStep(currentStep)}
-									className="flex items-center gap-2 rounded-full px-8 md:px-12 lg:px-16"
-								>
-									Continue
-								</Button>
-							) : (
-								<Button
-									type="submit"
-									disabled={isSubmitting || !validateStep(currentStep)}
-									className="flex items-center gap-2 px-8 md:px-12 rounded-full"
-								>
-									{isSubmitting ? (
-										<>
-											<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-											Creating...
-										</>
-									) : (
-										<>
-											<Check className="h-4 w-4" />
-											Complete & Create Organisation
-										</>
-									)}
-								</Button>
-							)}
+								{currentStep < STEPS.length ? (
+									<Button
+										type="submit"
+										disabled={!validateStep(currentStep)}
+										className="flex items-center gap-2 rounded-full px-8 md:px-12 lg:px-16"
+									>
+										Continue
+									</Button>
+								) : (
+									<Button
+										type="submit"
+										disabled={isSubmitting || !validateStep(currentStep)}
+										className="flex items-center gap-2 px-8 md:px-12 rounded-full"
+									>
+										{isSubmitting ? (
+											<>
+												<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+												Creating...
+											</>
+										) : (
+											<>
+												<Check className="h-4 w-4" />
+												Complete & Create Organisation
+											</>
+										)}
+									</Button>
+								)}
+							</div>
 						</div>
 					</div>
 				</form>

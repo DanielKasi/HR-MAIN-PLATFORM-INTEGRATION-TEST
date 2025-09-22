@@ -24,6 +24,7 @@ import { SkillZoneCreateEditDialog } from "./_components/skill-zone-create-edit-
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Link from "next/link";
 
 export default function SkillZonesPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -158,6 +159,13 @@ export default function SkillZonesPage() {
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Skill Zones</h1>
+				<div className="flex items-center justify-end gap-8">
+					<Link href={"/skill-zones/categories"}>
+						<Button variant={"outline"} className="rounded-xl">
+							Categories
+						</Button>
+					</Link>
+				</div>
 				<SkillZoneCreateEditDialog
 					open={openCreateEditDialog}
 					onOpenChange={setOpenCreateEditDialog}

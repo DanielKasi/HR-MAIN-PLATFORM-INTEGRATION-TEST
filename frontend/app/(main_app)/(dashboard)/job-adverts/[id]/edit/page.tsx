@@ -27,7 +27,7 @@ import {
 	getJobPosition,
 } from "@/lib/utils";
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
-import { RichEditorField } from "@/components/common/rich-editor";
+import { RichTextEditor } from "@/components/common/rich-editor";
 
 export default function EditJobAdvertPage() {
 	const [jobAdvert, setJobAdvert] = useState<JobPositionAdvert | null>(null);
@@ -454,7 +454,7 @@ export default function EditJobAdvertPage() {
 									Job Description (Optional)
 								</Label>
 
-								<RichEditorField
+								<RichTextEditor
 									id="extra_information"
 									placeholder="Add any additional information about this job opening..."
 									value={formData.extra_information || ""}

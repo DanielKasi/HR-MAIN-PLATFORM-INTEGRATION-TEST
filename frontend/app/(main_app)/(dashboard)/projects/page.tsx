@@ -164,6 +164,7 @@ export default function ProjectsPage() {
 				return res;
 			} catch (error) {
 				showErrorToast({ error, defaultMessage: "Failed to fetch projects" });
+				setHasMore(false);
 				return null;
 			}
 		},
@@ -175,13 +176,17 @@ export default function ProjectsPage() {
 		setPage(1);
 		setHasMore(true);
 		setLoading(true);
-		fetchProjects(1, searchTerm).then((res) => {
-			if (res) {
-				setProjects(res.results);
-				setHasMore(!!res.next);
-			}
-			setLoading(false);
-		});
+		fetchProjects(1, searchTerm)
+			.then((res) => {
+				if (res) {
+					setProjects(res.results);
+					setHasMore(!!res.next);
+				}
+				setLoading(false);
+			})
+			.catch((err) => {
+				setHasMore(false);
+			});
 	}, [currentInstitution?.id, searchTerm, fetchProjects]);
 
 	useEffect(() => {

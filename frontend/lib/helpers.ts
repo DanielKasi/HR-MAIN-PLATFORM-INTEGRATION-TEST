@@ -23,6 +23,9 @@ export function capitalizeEachWord(str: string) {
 }
 
 export const formatDate = (dateString: string) => {
+	if (!dateString) {
+		return "Unknown";
+	}
 	return new Date(dateString).toLocaleDateString("en-US", {
 		month: "short",
 		day: "numeric",
