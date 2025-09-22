@@ -349,8 +349,8 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/project" },
 				{ title: "Projects", href: "/projects" },
-				{ title: "Tasks", href: "#" },
-				{ title: "Timesheet", href: "#" },
+				// { title: "Tasks", href: "#" },
+				// { title: "Timesheet", href: "#" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_PROJECTS,
 		},
