@@ -315,7 +315,7 @@ export default function EmployeeDeductionsPage() {
 													{filteredResults.map((deduction) => (
 														<TableRow key={deduction.id}>
 															<TableCell className="font-medium">
-																{deduction.employee.user?.fullname || "Unknown Employee"}
+																{deduction.employee?.name || "Unknown Employee"}
 															</TableCell>
 															<TableCell>{deduction.deduction_type.name}</TableCell>
 															<TableCell>
@@ -397,7 +397,7 @@ export default function EmployeeDeductionsPage() {
 													<div className="flex items-start justify-between mb-3">
 														<div className="flex-1">
 															<h3 className="font-semibold text-gray-900 mb-1">
-																{deduction.employee.user?.fullname || "Unknown Employee"}
+																{deduction.employee?.name || "Unknown Employee"}
 															</h3>
 															<p className="text-sm text-gray-600">
 																Type: {deduction.deduction_type.name}

@@ -59,6 +59,11 @@ class AssetHistorySerializer(serializers.ModelSerializer):
         else:
             rep["performed_by"] = None
 
+        if instance.asset:
+            rep["asset"] = AssetSerializer(instance.asset).data
+        else:
+            rep["asset"] = None
+
         if instance.affected_user:
             rep["affected_user"] = ProfileSerializer(instance.affected_user).data
         else:

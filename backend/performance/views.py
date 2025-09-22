@@ -1224,7 +1224,7 @@ class AnalyticsView(APIView):
         bonus_points = EmployeeBonusPoint.objects.filter(period__institution=institution)
         bonus_points_analytics = {
             "total": bonus_points.count(),
-            "total_points": bonus_points.aggregate(sum=Sum('points'))['sum'] or 0,
+            "total_points": bonus_points.aggregate(sum=Sum('bonus_point_setting__points'))['sum'] or 0,
             "redeemed": bonus_points.filter(redeemed=True).count(),
         }
 

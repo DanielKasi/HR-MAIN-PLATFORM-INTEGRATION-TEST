@@ -5,6 +5,7 @@ import {
 	ICreateEmployeeForm,
 	JobAdvertCompleteFormData,
 	JobApplicationCompleteFormData,
+	IProjectTask,
 } from "@/types/types.utils";
 
 export type MiscState = {
@@ -12,6 +13,7 @@ export type MiscState = {
 	employeeCreationForm: Exclude<ICreateEmployeeForm, "employee_profile_picture"> | null;
 	jobAdvertForm: JobAdvertCompleteFormData | null;
 	applicationForm: JobApplicationCompleteFormData | null;
+	selectedTask: IProjectTask | null;
 };
 
 const intialMiscState: MiscState = {
@@ -19,6 +21,7 @@ const intialMiscState: MiscState = {
 	employeeCreationForm: null,
 	jobAdvertForm: null,
 	applicationForm: null,
+	selectedTask: null,
 };
 
 export const miscReducer = (
@@ -30,7 +33,6 @@ export const miscReducer = (
 			return { ...state, sideBarOpened: !state.sideBarOpened };
 		case MISC_ACTION_TYPES.OPEN_SIDE_BAR:
 			return { ...state, sideBarOpened: true };
-
 		case MISC_ACTION_TYPES.CLOSE_SIDE_BAR:
 			return { ...state, sideBarOpened: false };
 		case MISC_ACTION_TYPES.SAVE_EMPLOYEE_FORM:
@@ -45,6 +47,10 @@ export const miscReducer = (
 			return { ...state, applicationForm: action.payload as JobApplicationCompleteFormData };
 		case MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM:
 			return { ...state, applicationForm: null };
+		case MISC_ACTION_TYPES.SAVE_SELECTED_TASK:
+			return { ...state, selectedTask: action.payload as IProjectTask };
+		case MISC_ACTION_TYPES.CLEAR_SELECTED_TASK:
+			return { ...state, selectedTask: null };
 		default:
 			return state;
 	}

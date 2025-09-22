@@ -53,7 +53,7 @@ export default function FileUploadArea({
 					className="sr-only"
 					ref={inputRef}
 					onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-					accept=".pdf,.doc,.docx" // Assuming these are the accepted types
+					accept=".pdf,.doc,.docx"
 				/>
 				<Upload className="h-10 w-10 text-[#FF4D4D] mb-2" />
 				<span className="text-sm font-medium text-[#FF4D4D]">Click to Upload or drag and drop</span>

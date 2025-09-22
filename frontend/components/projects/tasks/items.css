@@ -1,0 +1,75 @@
+.confirm,
+.assign,
+.pending,
+.htmlCss,
+.js2,
+.js3,
+.nodejs,
+.mySql,
+.react {
+	color: #fff;
+}
+
+.confirm {
+	background-color: #4897d8 !important;
+}
+
+.assign {
+	background-color: #d88948 !important;
+}
+
+.pending {
+	background-color: #fa6e59 !important;
+}
+
+.htmlCss {
+	background-color: #429970 !important;
+}
+
+.js1 {
+	background-color: #ffdb5c !important;
+	color: #000;
+}
+
+.js2 {
+	background-color: #fa6e59 !important;
+}
+
+.js3 {
+	background-color: #be59fa !important;
+}
+
+.nodejs {
+	background-color: #4897d8 !important;
+}
+
+.mySql {
+	background-color: #6d6d6d !important;
+}
+
+.react {
+	background-color: #59e5fa !important;
+}
+
+.not_started,
+.in_progress,
+.completed,
+.on_hold {
+	color: #fff;
+}
+
+.not_started {
+	background-color: #6d6d6d !important;
+}
+
+.in_progress {
+	background-color: #4897d8 !important;
+}
+
+.completed {
+	background-color: #429970 !important;
+}
+
+.on_hold {
+	background-color: #fa6e59 !important;
+}

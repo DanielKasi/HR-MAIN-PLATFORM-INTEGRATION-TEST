@@ -174,6 +174,7 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
+	IAssetHistory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -1110,10 +1111,10 @@ export const upddateInterviewStage = async ({
 	return response.data as IInterviewStage;
 };
 
-export const getInterviewStageById = async ({ 
-	stageId 
-}: { 
-	stageId: number; 
+export const getInterviewStageById = async ({
+	stageId,
+}: {
+	stageId: number;
 }): Promise<IInterviewStage | null> => {
 	const response = await apiRequest.get(`recruitment/interview-stage/${stageId}/`);
 	return response.data as IInterviewStage;
@@ -1438,24 +1439,24 @@ export const bulkCreateEmployees = async ({
 	return response.data;
 };
 
-export const getPaginatedEmployees = async ({ 
-    institutionId, 
-    page = 1, 
-    search, 
-    ordering, 
-    positionSearch, 
-    departmentSearch,  
-    minSalary,  
-    maxSalary, 
-}: { 
-    institutionId: number; 
-    page?: number; 
-    search?: string; 
-    ordering?: string; 
-    positionSearch?: string;  
-    departmentSearch?: string; 
-    minSalary?: string; 
-    maxSalary?: string; 
+export const getPaginatedEmployees = async ({
+	institutionId,
+	page = 1,
+	search,
+	ordering,
+	positionSearch,
+	departmentSearch,
+	minSalary,
+	maxSalary,
+}: {
+	institutionId: number;
+	page?: number;
+	search?: string;
+	ordering?: string;
+	positionSearch?: string;
+	departmentSearch?: string;
+	minSalary?: string;
+	maxSalary?: string;
 }) => {
 	const params = new URLSearchParams({
 		page: page.toString(),
@@ -1464,15 +1465,15 @@ export const getPaginatedEmployees = async ({
 	if (positionSearch) {
 		params.append("position_search", positionSearch);
 	}
-	if (departmentSearch) { 
-		params.append("department_search", departmentSearch); 
+	if (departmentSearch) {
+		params.append("department_search", departmentSearch);
 	}
-		if (minSalary) {  
-		params.append("min_salary", minSalary); 
-	}  
+	if (minSalary) {
+		params.append("min_salary", minSalary);
+	}
 
-	if (maxSalary) {  
-		params.append("max_salary", maxSalary); 
+	if (maxSalary) {
+		params.append("max_salary", maxSalary);
 	}
 	if (search) {
 		params.append("search", search);
@@ -1482,6 +1483,15 @@ export const getPaginatedEmployees = async ({
 	const response = await apiRequest.get(endpoint);
 
 	return response.data as IPaginatedResponse<IEmployee>;
+};
+
+export const getPaginatedAssetHistoriesFromUrl = async ({
+	url,
+}: {
+	url: string;
+}): Promise<IPaginatedResponse<IAssetHistory>> => {
+	const response = await apiRequest.get(forceUrlToHttps(url));
+	return response.data as IPaginatedResponse<IAssetHistory>;
 };
 
 export const getPaginatedEmployeesFromUrl = async ({
@@ -4184,7 +4194,6 @@ export const getCurrentPayrollPeriod = async (
 			`payroll/${institutionId}/payroll-periods/?current_date=${today}`,
 		);
 
-		// Assuming the API returns the current period or we find it from the list
 		const periods = response.data as IPayrollPeriod[];
 		const currentPeriod = periods.find(
 			(period) => period.start_date <= today && period.end_date >= today,
@@ -6627,6 +6636,56 @@ export const assetsAPI = {
 	},
 };
 
+// Asset History API functions
+export const assetHistoriesAPI = {
+	getAll: async (): Promise<IAssetHistory[]> => {
+		try {
+			const response = await apiRequest.get("/assets/asset-histories/");
+			return response.data.results || response.data;
+		} catch (error) {
+			console.error("Error fetching asset histories:", error);
+			throw error;
+		}
+	},
+
+	getById: async (id: number): Promise<IAssetHistory> => {
+		try {
+			const response = await apiRequest.get(`/assets/asset-histories/${id}/`);
+			return response.data;
+		} catch (error) {
+			console.error("Error fetching asset history:", error);
+			throw error;
+		}
+	},
+
+	getPaginated: async ({
+		page = 1,
+		search,
+		eventType,
+		ordering,
+	}: {
+		page?: number;
+		search?: string;
+		eventType?: string;
+		ordering?: string;
+	}): Promise<IPaginatedResponse<IAssetHistory>> => {
+		try {
+			const params = new URLSearchParams({
+				page: page.toString(),
+			});
+			if (search) params.append("search", search);
+			if (eventType && eventType !== "all") params.append("event_type", eventType);
+			if (ordering) params.append("ordering", ordering);
+			const endpoint = `/assets/asset-histories/?${params.toString()}`;
+			const response = await apiRequest.get(endpoint);
+			return response.data as IPaginatedResponse<IAssetHistory>;
+		} catch (error) {
+			console.error("Error fetching paginated asset histories:", error);
+			throw error;
+		}
+	},
+};
+
 export const employeeAPI = {
 	getAll: async (institutionId: number): Promise<IEmployee[]> => {
 		try {
@@ -7807,7 +7866,13 @@ export const PROJECTS_TASKS_API = {
 		return response.data as IPaginatedResponse<IProjectTask>;
 	},
 
-	create: async ({ projectId, data }: { projectId: number; data: IProjectTaskFormData }) => {
+	create: async ({
+		projectId,
+		data,
+	}: {
+		projectId: number;
+		data: Partial<IProjectTaskFormData>;
+	}) => {
 		const response = await apiRequest.post(`projects/tasks/`, data);
 
 		return response.data as IProjectTask;

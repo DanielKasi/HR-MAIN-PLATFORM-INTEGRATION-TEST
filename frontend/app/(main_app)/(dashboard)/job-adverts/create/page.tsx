@@ -662,7 +662,7 @@ export default function JobAdvertsPage() {
 		if (employee && !selectedInterviewers.some((i) => i.id === interviewerId)) {
 			const interviewer: Interviewer = {
 				id: interviewerId,
-				name: employee.user?.fullname || `Employee ${employee.id}`,
+				name: employee?.name || `Employee ${employee.id}`,
 				role: employee.user?.user_type || "Staff",
 			};
 			const updatedSelectedInterviewers = [...selectedInterviewers, interviewer];
@@ -1325,9 +1325,9 @@ export default function JobAdvertsPage() {
 										<SearchableSelect
 											items={employees.map((employee) => ({
 												id: employee.id.toString(),
-												label: `${employee.user?.fullname || `Employee ${employee.id}`} (${employee.user?.user_type || "Staff"})`,
+												label: `${employee?.name || `Employee ${employee.id}`} (${employee.user?.user_type || "Staff"})`,
 												value:
-													`${employee.user?.fullname || `Employee ${employee.id}`} ${employee.user?.user_type || "Staff"}`.toLowerCase(),
+													`${employee?.name || `Employee ${employee.id}`} ${employee.user?.user_type || "Staff"}`.toLowerCase(),
 											}))}
 											selectedItems={selectedInterviewers.map((interviewer) => interviewer.id)}
 											placeholder="Select Interviewers"
