@@ -29,7 +29,8 @@ export function DialogSkeleton({
 	confirmDisabled = false,
 	showActions = true,
 }: DialogSkeletonProps) {
-	const handleConfirm = () => {
+	const handleConfirm = (e: React.MouseEvent) => {
+		e.stopPropagation();
 		onConfirm?.();
 		onClose();
 	};
@@ -38,15 +39,15 @@ export function DialogSkeleton({
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className={`${className}`}>
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-					<DialogTitle className="text-lg font-semibold text-center w-full">{title}</DialogTitle>
+					<DialogTitle className="text-lg font-semibold w-full">{title}</DialogTitle>
 				</DialogHeader>
 
-				<div className="space-y-4 overflow-y-auto max-h-[70svh] md:max-h-[60svh] py-6 px-4">
+				<div className="space-y-2 overflow-y-auto max-h-[70svh] md:max-h-[60svh] px-2">
 					{children}
 				</div>
 
-				{showActions && (
-					<div className="flex items-center space-x-2 pt-4">
+				{showActions && onConfirm && (
+					<div className="flex items-center space-x-2 pt-2">
 						<Button
 							onClick={handleConfirm}
 							disabled={confirmDisabled}

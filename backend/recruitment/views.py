@@ -908,6 +908,7 @@ class SkillZoneListCreateView(APIView, SortableAPIMixin):
         serializer = SkillZoneSerializer(
             data=request.data, context={"request": request}
         )
+        print("Data", request.data)
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()
