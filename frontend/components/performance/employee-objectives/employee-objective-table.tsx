@@ -3,7 +3,7 @@
 import type { IEmployeeObjective } from "@/types/types.utils";
 
 import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
-import { hasPermission } from "@/lib/helpers";
+import { formatDate, hasPermission } from "@/lib/helpers";
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
 import { PERMISSION_CODES } from "@/constants";
@@ -65,7 +65,7 @@ export function EmployeeObjectivesTable({
 			render: (item) => (
 				<div className="flex items-center gap-2 text-slate-600">
 					<Calendar className="h-4 w-4" />
-					{new Date(item.start_date).toLocaleDateString()}
+					{formatDate(item.start_date)}
 				</div>
 			),
 		},
@@ -75,34 +75,34 @@ export function EmployeeObjectivesTable({
 			render: (item) => (
 				<div className="flex items-center gap-2 text-slate-600">
 					<Calendar className="h-4 w-4" />
-					{new Date(item.end_date).toLocaleDateString()}
+					{formatDate(item.end_date)}
 				</div>
 			),
 		},
-		{
-			key: "progress",
-			label: "Progress",
-			render: (item) => {
-				const now = new Date();
-				const start = new Date(item.start_date);
-				const end = new Date(item.end_date);
-				const total = end.getTime() - start.getTime();
-				const elapsed = now.getTime() - start.getTime();
-				const progress = Math.max(0, Math.min(100, (elapsed / total) * 100));
+		// {
+		// 	key: "progress",
+		// 	label: "Progress",
+		// 	render: (item) => {
+		// 		const now = new Date();
+		// 		const start = new Date(item.start_date);
+		// 		const end = new Date(item.end_date);
+		// 		const total = end.getTime() - start.getTime();
+		// 		const elapsed = now.getTime() - start.getTime();
+		// 		const progress = Math.max(0, Math.min(100, (elapsed / total) * 100));
 
-				return (
-					<div className="flex items-center gap-2">
-						<div className="w-16 bg-slate-200 rounded-full h-2">
-							<div
-								className="bg-blue-500 h-2 rounded-full transition-all"
-								style={{ width: `${progress}%` }}
-							/>
-						</div>
-						<span className="text-xs text-slate-600">{Math.round(progress)}%</span>
-					</div>
-				);
-			},
-		},
+		// 		return (
+		// 			<div className="flex items-center gap-2">
+		// 				<div className="w-16 bg-slate-200 rounded-full h-2">
+		// 					<div
+		// 						className="bg-blue-500 h-2 rounded-full transition-all"
+		// 						style={{ width: `${progress}%` }}
+		// 					/>
+		// 				</div>
+		// 				<span className="text-xs text-slate-600">{Math.round(progress)}%</span>
+		// 			</div>
+		// 		);
+		// 	},
+		// },
 		{
 			key: "key_result",
 			label: "Key Result",

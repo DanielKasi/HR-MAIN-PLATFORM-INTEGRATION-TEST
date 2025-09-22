@@ -36,12 +36,12 @@ export function DialogSkeleton({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className={`sm:max-w-lg md:max-w-xl ${className}`}>
+			<DialogContent className={`${className}`}>
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
 					<DialogTitle className="text-lg font-semibold text-center w-full">{title}</DialogTitle>
 				</DialogHeader>
 
-				<div className="space-y-4 overflow-y-auto max-h-[70svh] md:max-h-[60svh] py-6">
+				<div className="space-y-4 overflow-y-auto max-h-[70svh] md:max-h-[60svh] py-6 px-4">
 					{children}
 				</div>
 

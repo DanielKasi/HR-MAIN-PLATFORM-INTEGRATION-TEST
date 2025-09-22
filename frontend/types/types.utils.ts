@@ -2521,20 +2521,16 @@ export interface IFeedback360 {
 	rating?: number | null;
 	is_anonymous: boolean;
 	submission_date: string;
-	strengths?: string | null;
-	areas_for_improvement?: string | null;
 }
 
 export interface IFeedback360FormData {
-	reviewee_id: number | null;
+	given_by?: number | null;
 	reviewer_id: number | null;
 	period?: number;
 	feedback_text?: string;
 	rating?: number;
 	is_anonymous?: boolean;
 	submission_date?: string;
-	strengths?: string;
-	areas_for_improvement?: string;
 }
 
 export interface IEmployeeBonusPoint {
