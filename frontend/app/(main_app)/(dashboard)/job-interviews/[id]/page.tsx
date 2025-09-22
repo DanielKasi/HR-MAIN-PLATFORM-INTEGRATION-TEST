@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import { getInterviewById } from "@/lib/utils";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import { downloadFile } from "@/lib/helpers";
 
 export default function InterviewViewPage() {
 	const [interview, setInterview] = useState<IInterview | null>(null);
@@ -129,11 +130,6 @@ export default function InterviewViewPage() {
 
 	const getInitials = (fullName: string) => {
 		return `${fullName.split(" ")[0]?.charAt(0) || ""}${fullName.split(" ")[1]?.charAt(0) || ""}`.toUpperCase();
-	};
-
-	const downloadFile = (filePath: string, fileName: string) => {
-		// TODO: Implement file download functionality
-		toast.success(`Download ${fileName} would be implemented here`);
 	};
 
 	if (!selectedInstitution || !selectedBranch) {

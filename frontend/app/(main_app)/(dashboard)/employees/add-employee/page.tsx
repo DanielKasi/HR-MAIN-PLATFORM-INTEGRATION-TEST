@@ -594,10 +594,14 @@ export default function AddEmployeeForm() {
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
 		} else {
-			const updatedFormData = {
+			let updatedFormData = {
 				...formData,
 				[field]: value,
 			};
+
+			if (field === "fullname") {
+				setBankAccountFormData((prev) => ({ ...prev, account_name: value as string }));
+			}
 
 			setFormData(updatedFormData);
 			handleSaveLocalEmployeeCreateForm(updatedFormData);
@@ -724,7 +728,6 @@ export default function AddEmployeeForm() {
 					bankAccountFormData.account_number.trim() &&
 					bankAccountFormData.bank_id &&
 					formData.tin.trim() &&
-					formData.tin.length <= 12 &&
 					formData.nssf_no.trim()
 				);
 			default:
@@ -1734,11 +1737,12 @@ export default function AddEmployeeForm() {
 								</Label>
 								<BankTypeSearchableSelect
 									setAccounts={setInstitutionBanks}
-									selectedItems={[bankAccountFormData.bank_id || 0]}
+									value={[bankAccountFormData.bank_id ?? 0]}
 									onValueChange={(values) => {
-										if (values.length) {
-											setBankAccountFormData((prev) => ({ ...prev, bank_id: Number(values[0]) }));
-										}
+										setBankAccountFormData((prev) => ({
+											...prev,
+											bank_id: values.length ? Number(values[0]) : 0,
+										}));
 									}}
 								/>
 								{/* {!bankAccountFormData.bank_id && <p className="text-red-400 text-xs">Please select a bank</p>} */}
@@ -1749,7 +1753,7 @@ export default function AddEmployeeForm() {
 								</Label>
 								<Input
 									id="bankAccountName"
-									value={bankAccountFormData.account_name || formData.fullname || ""}
+									value={bankAccountFormData.account_name || ""}
 									onChange={(e) =>
 										setBankAccountFormData((prev) => ({ ...prev, account_name: e.target.value }))
 									}

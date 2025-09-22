@@ -2,41 +2,39 @@
 
 import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-
-import { IEmployee } from "@/types/types.utils";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
-import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { ISkillZoneCategory } from "@/types/recruitment.types";
+import { SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
 
-export interface EmployeeSearchableSelectProps {
+interface SkillZoneCategoriesSearchableSelectProps {
 	value: (string | number)[];
+	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	showEmployeeId?: boolean;
-	showDepartment?: boolean;
 	className?: string;
 	triggerClassName?: string;
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
+	setCategories?: (categories: ISkillZoneCategory[]) => void;
 }
 
-export const EmployeeSearchableSelect = ({
+export const SkillZoneCategoriesSearchableSelect = ({
 	value,
+	defaultLabel,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
-	placeholder = "Select employee(s)",
-	showEmployeeId = true,
-	showDepartment = true,
+	placeholder = "Select category(s)",
 	className,
 	triggerClassName,
-	multiple = false,
+	multiple = true,
 	hideSelectedFromList = false,
-}: EmployeeSearchableSelectProps) => {
+}: SkillZoneCategoriesSearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
@@ -44,20 +42,21 @@ export const EmployeeSearchableSelect = ({
 		setSelectedItems(value);
 	}, [value]);
 
-	// Fetchers
 	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
 		if (!currentInstitution) {
-			throw new Error("No institution found !");
+			throw new Error("No institution found!");
 		}
-
-		return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+		return await SKILL_ZONE_CATEGORIES_API.getPaginated({ ...query });
 	};
 
 	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await getPaginatedEmployeesFromUrl({ url });
+		return await SKILL_ZONE_CATEGORIES_API.getPaginatedFromUrl({ url });
 	};
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+	const handleSelect = (
+		itemId: string | number,
+		_item: PaginatedSelectItem<ISkillZoneCategory>,
+	) => {
 		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
 				onValueChange([...selectedItems, itemId]);
@@ -66,22 +65,25 @@ export const EmployeeSearchableSelect = ({
 			}
 		}
 	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-		// console.log("\n\n Removing item  : ", itemId)
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+
+	const handleRemove = (
+		itemId: string | number,
+		_item: PaginatedSelectItem<ISkillZoneCategory>,
+	) => {
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (
 		<div className={className}>
-			<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+			<PaginatedSearchableSelect<ISkillZoneCategory, { search?: string; page?: number }>
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
-				getItemId={(emp) => emp.id}
-				getItemLabel={(emp) => emp.user?.fullname || ""}
-				getItemValue={(emp) => emp.id.toString()}
+				getItemId={(category) => category.id}
+				getItemLabel={(category) => category.name || ""}
+				getItemValue={(category) => category.id.toString()}
 				selectedItems={selectedItems}
 				onSelect={handleSelect}
 				onRemove={handleRemove}
@@ -89,13 +91,14 @@ export const EmployeeSearchableSelect = ({
 				multiple={multiple}
 				disabled={disabled}
 				placeholder={placeholder}
-				searchPlaceholder="Search employees by name, email, ID, or department..."
-				triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+				searchPlaceholder="Search categories by name..."
+				triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
 				popoverClassName="w-full"
 				hideSelectedFromList={hideSelectedFromList}
+				defaultLabel={defaultLabel}
 			/>
 		</div>
 	);
 };
 
-export default EmployeeSearchableSelect;
+export default SkillZoneCategoriesSearchableSelect;

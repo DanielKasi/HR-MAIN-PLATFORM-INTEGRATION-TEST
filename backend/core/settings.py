@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "easyaudit",
     "communication",
     'django.contrib.sites',
+    'helpdesk',
     
 ]
 

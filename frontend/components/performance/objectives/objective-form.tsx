@@ -30,6 +30,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import FormatNumberInput from "@/components/format-number-input";
 
 interface ObjectiveFormProps {
 	initialData?: IObjective;
@@ -238,11 +239,10 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 							Duration <span className="text-red-500">*</span>
 						</Label>
 						<div className="flex gap-2">
-							<Input
+							<FormatNumberInput
 								id="duration"
-								type="number"
-								value={formData.duration}
-								onChange={(e) => handleChange("duration", e.target.value)}
+								value={formData.duration?.toString() || ""}
+								onChange={(formatted, numeric) => handleChange("duration", numeric.toString())}
 								placeholder="e.g., 6"
 								disabled={isLoading}
 								className={cn("rounded-xl", errors.duration && "border-red-500")}

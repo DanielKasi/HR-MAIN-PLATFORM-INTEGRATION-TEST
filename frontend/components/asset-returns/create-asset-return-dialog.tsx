@@ -60,7 +60,7 @@ export function CreateAssetReturnDialog({
 	const fetchAssets = async () => {
 		try {
 			const data = await assetsAPI.getAll();
-
+			console.log("Fetched assets:", data);
 			setAssets(data);
 		} catch (error) {
 			console.error("Error fetching assets:", error);

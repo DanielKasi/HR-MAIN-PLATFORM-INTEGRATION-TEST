@@ -95,7 +95,7 @@ export function EditPayslipDialog({
 				<DialogHeader>
 					<DialogTitle>Edit Payslip</DialogTitle>
 					<DialogDescription>
-						Update payslip details for {paySlip?.employee.user?.fullname || ""} in{" "}
+						Update payslip details for {paySlip?.employee?.name || ""} in{" "}
 						{paySlip?.payroll_period.name}
 					</DialogDescription>
 				</DialogHeader>

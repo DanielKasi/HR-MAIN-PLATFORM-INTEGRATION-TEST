@@ -886,7 +886,7 @@ class AssetHistoryListView(APIView, SortableAPIMixin):
     def get(self, request):
         search_query = request.query_params.get("search", None)
         status = request.query_params.get("status", None)
-        user = request.user
+        user = request.user.profile
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -895,7 +895,7 @@ class AssetHistoryListView(APIView, SortableAPIMixin):
                 status=status.HTTP_404_NOT_FOUND,
             )
         asset_histories = AssetHistory.objects.filter(
-            asset__institution=institution, deleted_at__is_null=True
+            asset__institution=institution, deleted_at__isnull=True
         )
 
         if status:

@@ -135,7 +135,7 @@ export function TaxTable({ taxes, totalTaxes, onEdit, onDelete, onClearFilters }
 										</div>
 										<div>
 											<p className="font-medium text-gray-900">
-												{tax.employee.user?.fullname || "Unknown Employee"}
+												{tax.employee?.name || "Unknown Employee"}
 											</p>
 											<p className="text-sm text-gray-500">{tax.employee.email}</p>
 										</div>

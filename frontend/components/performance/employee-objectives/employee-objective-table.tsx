@@ -3,10 +3,10 @@
 import type { IEmployeeObjective } from "@/types/types.utils";
 
 import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
-import {hasPermission} from "@/lib/helpers";
-import {PerformanceTable, type TableColumn, type TableAction} from "../common/performance-table";
-import {StatusBadge} from "../common/status-badge";
-import {PERMISSION_CODES} from "@/constants";
+import { hasPermission } from "@/lib/helpers";
+import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
+import { StatusBadge } from "../common/status-badge";
+import { PERMISSION_CODES } from "@/constants";
 
 interface EmployeeObjectivesTableProps {
 	employeeObjectives: IEmployeeObjective[];
@@ -33,9 +33,7 @@ export function EmployeeObjectivesTable({
 				<div className="flex items-center gap-2">
 					<User className="h-4 w-4 text-slate-400" />
 					<div>
-						<div className="font-medium text-slate-900">
-							{item.employee.user?.fullname || "Unknown"}
-						</div>
+						<div className="font-medium text-slate-900">{item.employee?.name || "Unknown"}</div>
 						<div className="text-sm text-slate-500">
 							{item.employee.department?.name || "No department"}
 						</div>
@@ -139,17 +137,17 @@ export function EmployeeObjectivesTable({
 		},
 	];
 
-  return (
-    <PerformanceTable
-      data={employeeObjectives}
-      columns={columns}
-      actions={actions}
-      onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
-      addLabel="Assign Objective"
-      searchPlaceholder="Search by employee or objective..."
-      onSearch={onSearch}
-      isLoading={isLoading}
-      emptyMessage="No objective assignments found"
-    />
-  );
+	return (
+		<PerformanceTable
+			data={employeeObjectives}
+			columns={columns}
+			actions={actions}
+			onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
+			addLabel="Assign Objective"
+			searchPlaceholder="Search by employee or objective..."
+			onSearch={onSearch}
+			isLoading={isLoading}
+			emptyMessage="No objective assignments found"
+		/>
+	);
 }

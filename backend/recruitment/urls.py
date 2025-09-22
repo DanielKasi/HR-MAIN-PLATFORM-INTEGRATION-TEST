@@ -5,7 +5,9 @@ from .views import (
     JobAdvertApplicationListAPI, JobAdvertApplicationDetailAPI,
     InterviewStageListAPI, InterviewStageDetailAPI,
     JobInterviewListAPI, JobInterviewDetailAPI,
-    RecruitmentDashboardAPIView
+    RecruitmentDashboardAPIView,
+    SkillZoneCategoryListCreateView, SkillZoneCategoryDetailView,
+    SkillZoneListCreateView, SkillZoneDetailView
 )
 
 urlpatterns = [
@@ -25,6 +27,9 @@ urlpatterns = [
 
     path("institution/<int:institution_id>/job-interview/", JobInterviewListAPI.as_view()),
     path("job-interview/<int:interview_id>/", JobInterviewDetailAPI.as_view()),
-    path('analytics/', RecruitmentDashboardAPIView.as_view(), name='recruitment-analytics')   
-
+    path('analytics/', RecruitmentDashboardAPIView.as_view(), name='recruitment-analytics'),
+    path('skillzone-categories/', SkillZoneCategoryListCreateView.as_view(), name='skillzone-category-list-create'),
+    path('skillzone-categories/<int:pk>/', SkillZoneCategoryDetailView.as_view(), name='skillzone-category-detail'),
+    path('skillzone/', SkillZoneListCreateView.as_view(), name='skillzone-list-create'),
+    path('skillzone/<int:pk>/', SkillZoneDetailView.as_view(), name='skillzone-detail'),
 ]

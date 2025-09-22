@@ -2286,10 +2286,10 @@ export interface IEmployeeBonusPoint {
 
 export interface IEmployeeBonusPointFormData {
 	employee_id: number;
-	bonus_point_setting?: number;
+	bonus_point_setting_id?: number;
 	reason: string;
 	date?: string;
-	period?: number;
+	period_id?: number;
 	redeemed?: boolean;
 }
 
@@ -2477,6 +2477,7 @@ export interface IAssetAllocation extends IBaseApprovable {}
 export interface IAssetCategory extends IBaseApprovable {}
 export interface IAssetRequest extends IBaseApprovable {}
 export interface IAssetReturn extends IBaseApprovable {}
+export interface IAssetHistory extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}

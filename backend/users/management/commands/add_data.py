@@ -1,4 +1,3 @@
-
 import json
 import os
 from django.core.management.base import BaseCommand
@@ -23,10 +22,10 @@ from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
 from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
-
+from calendar2.models import Calendar, Event
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, resend welcome emails, and delete inactive employees"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, resend welcome emails, and delete inactive employees"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -51,95 +50,139 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        # Run sync and creation logic
         self.sync_permissions()
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
+        self.create_birthday_events()
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
-        
-        # Run deletion logic
-    #     self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+        self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    # def delete_inactive_employees(self, dry_run, no_confirm):
-    #     self.stdout.write(
-    #         self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
-    #     )
-        
-    #     # Find inactive employees that are not soft-deleted
-    #     inactive_employees = Employee.objects.filter(
-    #         is_active=False, deleted_at__isnull=False
-    #     ).select_related('user')
-        
-    #     employee_count = inactive_employees.count()
-    #     user_count = sum(1 for emp in inactive_employees if emp.user)
-        
-    #     if employee_count == 0:
-    #         self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
-    #         return
+    def create_birthday_events(self):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Creating birthday events for existing employees...\n")
+        )
+        employees = Employee.objects.filter(
+            date_of_birth__isnull=False,
+            deleted_at__isnull=True,
+            is_active=True
+        ).select_related('user__profile', 'department__institution')
+        created_count = 0
+        skipped_count = 0
+        for employee in employees:
+            if not employee.user or not hasattr(employee.user, 'profile') or not employee.user.profile:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  ⏭️ Skipping employee {employee.user.fullname if employee.user else 'Unnamed'}: No user or profile"
+                    )
+                )
+                skipped_count += 1
+                continue
+            institution = employee.get_institution()
+            if not institution:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  ⏭️ Skipping employee {employee.user.fullname}: No institution"
+                    )
+                )
+                skipped_count += 1
+                continue
+            existing_events = Event.objects.filter(
+                is_birthday=True,
+                institution=institution
+            ).filter(specific_employees=employee.user.profile)
+            if existing_events.count() > 1:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  ⚠️ Multiple birthday events found for {employee.user.fullname}. Deleting extras."
+                    )
+                )
+                for event in existing_events[1:]:
+                    event.delete()
+                skipped_count += 1
+                continue
+            elif existing_events.exists():
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"  ♻️ Birthday event already exists for {employee.user.fullname}"
+                    )
+                )
+                skipped_count += 1
+                continue
+            employee.create_birthday_event()
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"  ✅ Created birthday event for {employee.user.fullname}"
+                )
+            )
+            created_count += 1
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Birthday Events Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skipped_count}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Birthday events created successfully!"))
 
-    #     if dry_run:
-    #         self.stdout.write('Dry run mode: No records will be deleted.')
-    #         self.stdout.write(f'Found {employee_count} inactive employee(s):')
-    #         for employee in inactive_employees:
-    #             self.stdout.write(f'- Employee: {employee.name or "Unnamed"}, User: {employee.user.fullname if employee.user else "No User"}')
-    #         return
-
-    #     # Confirmation prompt unless --no-confirm is provided
-    #     if not no_confirm:
-    #         self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
-    #         confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
-    #         if confirm.lower() != 'yes':
-    #             self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
-    #             return
-
-    #     try:
-    #         with transaction.atomic():
-    #             deleted_employees = []
-    #             deleted_users = []
-    #             for employee in inactive_employees:
-    #                 self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee.name or "Unnamed"}'))
-    #                 # Delete Employee first to satisfy PROTECT constraint
-    #                 Employee._base_manager.filter(id=employee.id).delete()
-    #                 deleted_employees.append(str(employee))
-                    
-    #                 if employee.user:
-    #                     self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user.fullname}'))
-    #                     # Delete CustomUser after Employee
-    #                     CustomUser._base_manager.filter(id=employee.user.id).delete()
-    #                     deleted_users.append(str(employee.user))
-
-    #             # Verify deletions
-    #             remaining = Employee.objects.filter(
-    #                 is_active=False, deleted_at__isnull=True
-    #             ).count()
-    #             if remaining > 0:
-    #                 self.stdout.write(
-    #                     self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
-    #                 )
-
-    #             self.stdout.write(self.style.SUCCESS(
-    #                 f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
-    #             ))
-    #             self.stdout.write('Deleted Employees:')
-    #             for emp in deleted_employees:
-    #                 self.stdout.write(f'- {emp}')
-    #             self.stdout.write('Deleted Users:')
-    #             for user in deleted_users:
-    #                 self.stdout.write(f'- {user}')
-
-    #     except Exception as e:
-    #         self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
-    #         raise
+    def delete_inactive_employees(self, dry_run, no_confirm):
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Processing inactive employees for deletion...\n")
+        )
+        inactive_employees = Employee.objects.filter(
+            is_active=False, deleted_at__isnull=False
+        ).select_related('user')
+        employee_count = inactive_employees.count()
+        user_count = sum(1 for emp in inactive_employees if emp.user)
+        if employee_count == 0:
+            self.stdout.write(self.style.SUCCESS('No inactive employees found.'))
+            return
+        if dry_run:
+            self.stdout.write('Dry run mode: No records will be deleted.')
+            self.stdout.write(f'Found {employee_count} inactive employee(s):')
+            for employee in inactive_employees:
+                self.stdout.write(f'- Employee: {employee.user.fullname if employee.user else "Unnamed"}')
+            return
+        if not no_confirm:
+            self.stdout.write(f'Found {employee_count} inactive employee(s) and {user_count} related user(s) to permanently delete.')
+            confirm = input('Are you sure you want to permanently delete these records? (yes/no): ')
+            if confirm.lower() != 'yes':
+                self.stdout.write(self.style.WARNING('Deletion cancelled by user.'))
+                return
+        try:
+            with transaction.atomic():
+                deleted_employees = []
+                deleted_users = []
+                for employee in inactive_employees:
+                    self.stdout.write(self.style.NOTICE(f'Attempting to delete Employee: {employee.user.fullname if employee.user else "Unnamed"}'))
+                    Employee._base_manager.filter(id=employee.id).delete()
+                    deleted_employees.append(str(employee))
+                    if employee.user:
+                        self.stdout.write(self.style.NOTICE(f'Attempting to delete User: {employee.user.fullname}'))
+                        CustomUser._base_manager.filter(id=employee.user.id).delete()
+                        deleted_users.append(str(employee.user))
+                remaining = Employee.objects.filter(
+                    is_active=False, deleted_at__isnull=True
+                ).count()
+                if remaining > 0:
+                    self.stdout.write(
+                        self.style.WARNING(f'Warning: {remaining} inactive employees remain after deletion.')
+                    )
+                self.stdout.write(self.style.SUCCESS(
+                    f'Successfully deleted {len(deleted_employees)} inactive employee(s) and {len(deleted_users)} related user(s):'
+                ))
+                self.stdout.write('Deleted Employees:')
+                for emp in deleted_employees:
+                    self.stdout.write(f'- {emp}')
+                self.stdout.write('Deleted Users:')
+                for user in deleted_users:
+                    self.stdout.write(f'- {user}')
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error during deletion: {str(e)}'))
+            raise
 
     def resend_welcome_emails(self, reset_password, employee_ids=None):
         self.stdout.write(
             self.style.MIGRATE_HEADING("\n⏳ Resending welcome emails...\n")
         )
-
-        # Determine which employees to process
         if employee_ids:
             try:
                 employee_ids = [int(id.strip()) for id in employee_ids.split(",")]
@@ -156,27 +199,23 @@ class Command(BaseCommand):
                 Q(user__welcome_email_sent=False)
                 | Q(user__welcome_email_sent__isnull=True)
             )
-
         if not employees.exists():
             self.stdout.write(
                 self.style.NOTICE("No employees found to resend welcome emails.")
             )
             return
-
         success_count = 0
         error_count = 0
         skip_count = 0
-
         for employee in employees:
             if not employee.user or not employee.user.email:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Skipping employee {employee.name or 'Unnamed'}: No user or email"
+                        f"Skipping employee {employee.user.fullname if employee.user else 'Unnamed'}: No user or email"
                     )
                 )
                 skip_count += 1
                 continue
-
             try:
                 password = None
                 if reset_password:
@@ -185,60 +224,46 @@ class Command(BaseCommand):
                     employee.user.is_password_verified = True
                     employee.user.welcome_email_sent = False
                     employee.user.save()
-
                 send_employee_welcome_email.delay_on_commit(
                     employee.user.email,
-                    employee.name or employee.user.fullname,  # Fallback to user.fullname
+                    employee.user.fullname,
                     password,
                 )
                 employee.user.welcome_email_sent = True
                 employee.user.save()
                 self.stdout.write(
-                    self.style.SUCCESS(f"Welcome email resent to {employee.user.email} for employee '{employee.name or 'Unnamed'}'")
+                    self.style.SUCCESS(f"Welcome email resent to {employee.user.email} for employee '{employee.user.fullname}'")
                 )
                 success_count += 1
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"Failed to resend email to {employee.user.email} for employee '{employee.name or 'Unnamed'}': {str(e)}"
+                        f"Failed to resend email to {employee.user.email} for employee '{employee.user.fullname}': {str(e)}"
                     )
                 )
                 error_count += 1
-
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Welcome Emails Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  ➕ Successfully resent: {success_count}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  ➕ Successfully resent: {success_count}"))
         self.stdout.write(self.style.NOTICE(f"  ❌ Failed: {error_count}"))
         self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skip_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Welcome emails processing completed!")
-        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Welcome emails processing completed!"))
 
     def create_default_awards(self):
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "\n⏳ Creating default qualification awards...\n"
-            )
+            self.style.MIGRATE_HEADING("\n⏳ Creating default qualification awards...\n")
         )
-
         default_awards = [
             {"name": "PLE", "description": "Primary Leaving Examination"},
             {"name": "UCE", "description": "Uganda Certificate of Education (O’Level)"},
-            {
-                "name": "UACE",
-                "description": "Uganda Advanced Certificate of Education (A’Level)",
-            },
+            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A’Level)"},
             {"name": "Diploma", "description": "Diploma level qualification"},
             {"name": "Bachelor’s Degree", "description": "Undergraduate degree"},
             {"name": "Master’s Degree", "description": "Postgraduate degree"},
             {"name": "PhD", "description": "Doctor of Philosophy"},
         ]
-
         valid_award_names = set()
         created_count = 0
         updated_count = 0
-
         for award_data in default_awards:
             award, created = QualificationAward.objects.update_or_create(
                 name=award_data["name"],
@@ -247,54 +272,35 @@ class Command(BaseCommand):
             valid_award_names.add(award_data["name"])
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"  ✅ Created award: {award.name}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created award: {award.name}"))
             else:
                 updated_count += 1
                 self.stdout.write(self.style.NOTICE(f"  ♻️ Updated award: {award.name}"))
-
         deleted_awards, _ = QualificationAward.objects.exclude(
             name__in=valid_award_names
         ).delete()
-
-        self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Qualification Awards Summary")
-        )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Qualification Awards Summary"))
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
         self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_awards}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Qualification awards synced successfully!")
-        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Qualification awards synced successfully!"))
 
     def sync_permissions(self):
-        filepath = os.path.join(
-            settings.BASE_DIR, "users", "fixtures", "permissions.json"
-        )
+        filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "permissions.json")
         if not os.path.exists(filepath):
-            self.stdout.write(
-                self.style.ERROR(f"Permissions file not found at {filepath}")
-            )
+            self.stdout.write(self.style.ERROR(f"Permissions file not found at {filepath}"))
             return
-
         with open(filepath, "r") as file:
             permissions_data = json.load(file)
-
         self.stdout.write(self.style.MIGRATE_HEADING("⏳ Syncing permissions...\n"))
-
         valid_permission_codes = set()
         valid_category_names = set()
-
         for category_name, perms in permissions_data.items():
             category, _ = PermissionCategory.objects.get_or_create(
                 permission_category_name=category_name,
-                defaults={
-                    "permission_category_description": f"{category_name} related permissions"
-                },
+                defaults={"permission_category_description": f"{category_name} related permissions"},
             )
             valid_category_names.add(category.permission_category_name)
-
             for perm in perms:
                 Permission.objects.update_or_create(
                     permission_code=perm["code"],
@@ -305,46 +311,33 @@ class Command(BaseCommand):
                     },
                 )
                 valid_permission_codes.add(perm["code"])
-
         deleted_permissions, _ = Permission.objects.exclude(
             permission_code__in=valid_permission_codes
         ).delete()
         deleted_categories, _ = PermissionCategory.objects.exclude(
             permission_category_name__in=valid_category_names
         ).delete()
-
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Permissions Summary"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Permissions: {deleted_permissions}")
-        )
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed Categories: {deleted_categories}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Permissions: {deleted_permissions}"))
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed Categories: {deleted_categories}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Permissions synced successfully!"))
 
     def sync_systems(self):
-        filepath = os.path.join(
-            settings.BASE_DIR, "users", "fixtures", "default_systems.json"
-        )
+        filepath = os.path.join(settings.BASE_DIR, "users", "fixtures", "default_systems.json")
         if not os.path.exists(filepath):
             self.stdout.write(self.style.ERROR(f"Systems file not found at {filepath}"))
             return
-
         with open(filepath, "r") as file:
             systems_data = json.load(file)
-
         self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing systems...\n"))
-
         valid_system_type_names = set()
         valid_system_codes = set()
-
         for st_data in systems_data.get("system_types", []):
             SystemType.objects.update_or_create(
                 name=st_data["name"],
                 defaults={"description": st_data.get("description", "")},
             )
             valid_system_type_names.add(st_data["name"])
-
         for sys_data in systems_data.get("systems", []):
             try:
                 system_type = SystemType.objects.get(name=sys_data["system_type"])
@@ -355,7 +348,6 @@ class Command(BaseCommand):
                     )
                 )
                 continue
-
             System.objects.update_or_create(
                 code=sys_data["code"],
                 defaults={
@@ -364,26 +356,19 @@ class Command(BaseCommand):
                 },
             )
             valid_system_codes.add(sys_data["code"])
-
         deleted_systems, _ = System.objects.exclude(
             code__in=valid_system_codes
         ).delete()
         deleted_system_types, _ = SystemType.objects.exclude(
             name__in=valid_system_type_names
         ).delete()
-
         self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Systems Summary"))
         self.stdout.write(self.style.NOTICE(f"  🧹 Removed Systems: {deleted_systems}"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed System Types: {deleted_system_types}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Systems synced successfully!"))
 
     def sync_discipline_types(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Syncing discipline types...\n")
-        )
-
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing discipline types...\n"))
         default_types = [
             {
                 "name": "Verbal Warning",
@@ -421,11 +406,9 @@ class Command(BaseCommand):
                 "severity": "low",
             },
         ]
-
         valid_discipline_names = set()
         created_count = 0
         updated_count = 0
-
         for type_data in default_types:
             discipline_type, created = DisciplineType.objects.update_or_create(
                 name=type_data["name"],
@@ -437,40 +420,21 @@ class Command(BaseCommand):
             valid_discipline_names.add(type_data["name"])
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created discipline type: {discipline_type.name}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created discipline type: {discipline_type.name}"))
             else:
                 updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️ Updated discipline type: {discipline_type.name}"
-                    )
-                )
-
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated discipline type: {discipline_type.name}"))
         deleted_discipline_types, _ = DisciplineType.objects.exclude(
             name__in=valid_discipline_names
         ).delete()
-
-        self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Discipline Types Summary")
-        )
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Discipline Types Summary"))
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
-        self.stdout.write(
-            self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}")
-        )
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Discipline types synced successfully!")
-        )
+        self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_discipline_types}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Discipline types synced successfully!"))
 
     def sync_approval_actions(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n")
-        )
-
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Syncing approval actions...\n"))
         default_actions = [
             {
                 "name": "create",
@@ -485,11 +449,9 @@ class Command(BaseCommand):
                 "description": "Action for deleting records that require approval",
             },
         ]
-
         valid_action_names = set()
         created_count = 0
         updated_count = 0
-
         for action_data in default_actions:
             action, created = Action.objects.update_or_create(
                 name=action_data["name"],
@@ -498,33 +460,17 @@ class Command(BaseCommand):
             valid_action_names.add(action_data["name"])
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created approval action: {action.name} (Code: {action.code})"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created approval action: {action.name} (Code: {action.code})"))
             else:
                 updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️ Updated approval action: {action.name} (Code: {action.code})"
-                    )
-                )
-
-        self.stdout.write(
-            "\n" + self.style.MIGRATE_LABEL("📋 Approval Actions Summary")
-        )
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated approval action: {action.name} (Code: {action.code})"))
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Approval Actions Summary"))
         self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
         self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
-        self.stdout.write(
-            self.style.SUCCESS("\n🎉 Approval actions synced successfully!")
-        )
+        self.stdout.write(self.style.SUCCESS("\n🎉 Approval actions synced successfully!"))
 
     def create_default_system_days(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating default system days...\n")
-        )
-
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Creating default system days...\n"))
         default_days = [
             {"day_code": "MON", "day_name": "Monday", "level": 1},
             {"day_code": "TUE", "day_name": "Tuesday", "level": 2},
@@ -534,32 +480,20 @@ class Command(BaseCommand):
             {"day_code": "SAT", "day_name": "Saturday", "level": 6},
             {"day_code": "SUN", "day_name": "Sunday", "level": 7},
         ]
-
         for day_data in default_days:
             day_code = day_data["day_code"]
             if SystemDay.objects.filter(day_code=day_code).exists():
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️ System day '{day_data['day_name']}' already exists, skipping."
-                    )
-                )
+                self.stdout.write(self.style.NOTICE(f"  ♻️ System day '{day_data['day_name']}' already exists, skipping."))
             else:
                 SystemDay.objects.create(
                     day_code=day_code,
                     day_name=day_data["day_name"],
                     level=day_data["level"],
                 )
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Created system day: {day_data['day_name']}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created system day: {day_data['day_name']}"))
 
     def create_default_bank_info(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating default bank info and updating employees...\n")
-        )
-
+        self.stdout.write(self.style.MIGRATE_HEADING("\n⏳ Creating default bank info and updating employees...\n"))
         default_bank_data = {
             "bank_fullname": "Centenary Bank",
             "bank_code": "0001",
@@ -567,7 +501,6 @@ class Command(BaseCommand):
             "account_name": "Default Account",
             "account_number": "1234567890",
         }
-
         institutions = Institution.objects.all()
         for institution in institutions:
             self.stdout.write(f"Processing {institution.institution_name}")
@@ -579,14 +512,9 @@ class Command(BaseCommand):
                 defaults={"created_by": None, "updated_by": None},
             )
             if created:
-                self.stdout.write(
-                    self.style.SUCCESS(f"  ✅ Created default bank type for {institution.institution_name}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created default bank type for {institution.institution_name}"))
             else:
-                self.stdout.write(
-                    self.style.NOTICE(f"  ♻️ Default bank type already exists for {institution.institution_name}")
-                )
-
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Default bank type already exists for {institution.institution_name}"))
             account, acc_created = InstitutionBankAccount.objects.get_or_create(
                 institution_bank=bank_type,
                 account_number=default_bank_data["account_number"],
@@ -597,46 +525,23 @@ class Command(BaseCommand):
                 },
             )
             if acc_created:
-                self.stdout.write(
-                    self.style.SUCCESS(f"  ✅ Created default bank account for {institution.institution_name}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created default bank account for {institution.institution_name}"))
             else:
-                self.stdout.write(
-                    self.style.NOTICE(f"  ♻️ Default bank account already exists for {institution.institution_name}")
-                )
-
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Default bank account already exists for {institution.institution_name}"))
             branches = Branch.objects.filter(institution=institution)
             for branch in branches:
                 if branch.paying_bank_account is None:
                     branch.paying_bank_account = account
                     branch.save()
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"
-                        )
-                    )
-
-                branch_working_days, created = BranchWorkingDays.objects.get_or_create(
-                    branch=branch
-                )
+                    self.stdout.write(self.style.SUCCESS(f"    └─ Updated branch '{branch.branch_name or branch.branch_location}' with default bank account"))
+                branch_working_days, created = BranchWorkingDays.objects.get_or_create(branch=branch)
                 if created:
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"
-                        )
-                    )
+                    self.stdout.write(self.style.SUCCESS(f"    └─ Created working days for branch '{branch.branch_name or branch.branch_location}'"))
                 else:
-                    self.stdout.write(
-                        self.style.NOTICE(
-                            f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"
-                        )
-                    )
-
+                    self.stdout.write(self.style.NOTICE(f"    └─ Branch '{branch.branch_name or branch.branch_location}' already has working days"))
             employees = Employee.objects.filter(department__institution=institution).select_related('user')
             if not employees.exists():
-                self.stdout.write(
-                    self.style.NOTICE(f"    └─ No employees found for {institution.institution_name}")
-                )
+                self.stdout.write(self.style.NOTICE(f"    └─ No employees found for {institution.institution_name}"))
             for employee in employees:
                 update_fields = []
                 if employee.payroll_branch is None:
@@ -644,101 +549,27 @@ class Command(BaseCommand):
                     if default_branch:
                         employee.payroll_branch = default_branch
                         update_fields.append("payroll_branch")
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"    └─ Updated employee '{employee.name or employee.user.fullname if employee.user else 'Unnamed'}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"
-                            )
-                        )
+                        self.stdout.write(self.style.SUCCESS(f"    └─ Updated employee '{employee.user.fullname if employee.user else 'Unnamed'}' with default payroll branch '{default_branch.branch_name or default_branch.branch_location}'"))
                     else:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"    └─ No default branch available for employee '{employee.name or employee.user.fullname if employee.user else 'Unnamed'}'"
-                            )
-                        )
-                if not employee.name and employee.user:
-                    employee.name = employee.user.fullname
-                    update_fields.append("name")
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"    └─ Set name for employee '{employee.name}' (ID: {employee.id}) from user '{employee.user.fullname}'"
-                        )
-                    )
-                elif employee.name:
-                    self.stdout.write(
-                        self.style.NOTICE(
-                            f"    └─ Employee '{employee.name}' (ID: {employee.id}) already has name set"
-                        )
-                    )
-                else:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"    └─ Employee (ID: {employee.id}) has no name and no associated user"
-                        )
-                    )
+                        self.stdout.write(self.style.WARNING(f"    └─ No default branch available for employee '{employee.user.fullname if employee.user else 'Unnamed'}'"))
                 if update_fields:
                     employee.save(update_fields=update_fields)
-
-            self.stdout.write(
-                f"\nProcessing Working Days for {institution.institution_name}"
-            )
-            working_days, created = InstitutionWorkingDays.objects.get_or_create(
-                institution=institution
-            )
+            self.stdout.write(f"\nProcessing Working Days for {institution.institution_name}")
+            working_days, created = InstitutionWorkingDays.objects.get_or_create(institution=institution)
             if created:
                 working_days.days.set(SystemDay.objects.all())
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"   └─ Created default working days for {institution.institution_name}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"   └─ Created default working days for {institution.institution_name}"))
             else:
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"   └─ Default working days already exist for {institution.institution_name}"
-                    )
-                )
-
-            # Creating employee instance for institution owners that didn't have them
+                self.stdout.write(self.style.NOTICE(f"   └─ Default working days already exist for {institution.institution_name}"))
             owner_user = institution.institution_owner
             owner_employee = Employee.objects.filter(
                 user=owner_user, payroll_branch__institution__id=institution.id
             ).first()
-
             if not owner_employee:
                 owner_employee = create_owner_employee(institution)
                 if owner_employee:
-                    if not owner_employee.name and owner_user:
-                        owner_employee.name = owner_user.fullname
-                        owner_employee.save(update_fields=["name"])
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"  └─ Created employee for owner user {owner_user.email} with name '{owner_employee.name}'"
-                            )
-                        )
-                    else:
-                        self.stdout.write(
-                            self.style.SUCCESS(
-                                f"  └─ Created employee for owner user {owner_user.email} with name '{owner_employee.name}'"
-                            )
-                        )
+                    self.stdout.write(self.style.SUCCESS(f"  └─ Created employee for owner user {owner_user.email}"))
                 else:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"  └─ Failed to create employee for owner user {owner_user.email}"
-                        )
-                    )
+                    self.stdout.write(self.style.WARNING(f"  └─ Failed to create employee for owner user {owner_user.email}"))
             else:
-                if not owner_employee.name and owner_user:
-                    owner_employee.name = owner_user.fullname
-                    owner_employee.save(update_fields=["name"])
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"  └─ Updated employee for owner user {owner_user.email} with name '{owner_employee.name}'"
-                        )
-                    )
-                else:
-                    self.stdout.write(
-                        self.style.NOTICE(
-                            f"  └─ Employee already exists for owner user {owner_user.email} with name '{owner_employee.name or "Unnamed"}'"
-                        )
-                    )
+                self.stdout.write(self.style.NOTICE(f"  └─ Employee already exists for owner user {owner_user.email}"))

@@ -134,7 +134,7 @@ export default function TerminationInitiationDetailsPage() {
 								<dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div>
 										<dt className="text-sm font-medium text-muted-foreground">Employee</dt>
-										<dd className="text-base">{termination.separation.employee.user?.fullname}</dd>
+										<dd className="text-base">{termination.separation.employee?.name}</dd>
 									</div>
 									<div>
 										<dt className="text-sm font-medium text-muted-foreground">Initiated By</dt>

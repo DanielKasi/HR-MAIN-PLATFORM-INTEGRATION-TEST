@@ -291,21 +291,23 @@ def send_birthday_notifications():
     Celery task to check for birthdays and send styled HTML emails and SSE notifications.
     """
     today = date.today()
+    birthday_occurrences = EventOccurrence.objects.filter(
+        event__is_birthday=True,
+        date=today
+    ).select_related('event__specific_employees__user')
 
-    # Find birthday events for today
-    birthday_events = Event.objects.filter(
-        is_birthday=True,
-        occurrences__date=today,
-    ).distinct()
+    for occurrence in birthday_occurrences:
+        event = occurrence.event
+        profile = event.specific_employees.first()
+        if not profile or not profile.user.email:
+            continue
 
-    for event in birthday_events:
         employee = Employee.objects.filter(
-            name=event.title.split("'s Birthday")[0],
-            date_of_birth__month=today.month,
-            date_of_birth__day=today.day,
+            user=profile.user,
+            deleted_at__isnull=True,
+            is_active=True
         ).first()
-
-        if not employee or not employee.email or not employee.user:
+        if not employee:
             continue
 
         # Prepare context for email template
@@ -323,7 +325,7 @@ def send_birthday_notifications():
             subject=f"Happy Birthday, {employee.name}!",
             message="Please view this email in an HTML-compatible email client.",
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[employee.email],
+            recipient_list=[employee.user.email],
             html_message=html_message,
             fail_silently=True,
         )

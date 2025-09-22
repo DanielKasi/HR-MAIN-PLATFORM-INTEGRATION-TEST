@@ -126,7 +126,7 @@ export default function EmployeeDashboard() {
 						</CardContent>
 					</Card>
 
-					<Card className="bg-white p-4 rounded-2xl border border-gray-100">
+					{/* <Card className="bg-white p-4 rounded-2xl border border-gray-100">
 						<CardContent className="flex items-start space-x-4 p-0">
 							<div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
 								<Icon icon="hugeicons:user-minus-02" color="#3B82F6" strokeWidth={1.5} />
@@ -136,7 +136,7 @@ export default function EmployeeDashboard() {
 								<p className="text-2xl font-bold text-gray-900 mt-1">2.1%</p>
 							</div>
 						</CardContent>
-					</Card>
+					</Card> */}
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

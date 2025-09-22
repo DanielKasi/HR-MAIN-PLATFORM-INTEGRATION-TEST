@@ -9,6 +9,7 @@ import PaginatedSearchableSelect, {
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { Role } from "@/types";
 import { ROLES_API } from "@/lib/utils";
+import { IRole } from "@/types/types.utils";
 
 export interface RoleSearchableSelectProps {
 	value: (string | number)[];
@@ -62,9 +63,9 @@ export const RoleSearchableSelect = ({
 		}
 	};
 	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<Role>) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
+		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+		setSelectedItems(newItems);
+		onValueChange(newItems);
 	};
 
 	return (

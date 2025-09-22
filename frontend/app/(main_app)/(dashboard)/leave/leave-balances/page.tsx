@@ -168,7 +168,7 @@ export default function LeaveBalanceComponent() {
 	const getEmployeeName = useCallback(
 		(employee: any) => {
 			if (typeof employee === "object" && employee?.user?.fullname) {
-				return employee.user.fullname;
+				return employee?.name;
 			}
 			const emp = employees.find((emp) => emp.id === employee);
 
@@ -923,7 +923,7 @@ export default function LeaveBalanceComponent() {
 										<SelectContent>
 											{employees.map((employee) => (
 												<SelectItem key={employee.id} value={employee.id.toString()}>
-													{employee.user?.fullname || "Unknown Employee"}
+													{employee?.name || "Unknown Employee"}
 												</SelectItem>
 											))}
 										</SelectContent>

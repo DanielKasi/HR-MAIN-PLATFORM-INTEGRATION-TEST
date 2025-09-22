@@ -213,7 +213,7 @@ export default function DisciplinaryActionsPage() {
 					const apiResults = data?.results || [];
 					const filteredActions = apiResults.filter((action) => {
 						const matchesSearch =
-							action.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+							action.employee?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 							action.discipline_type?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 							(action.employee.department.name &&
 								action.employee.department.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -362,9 +362,7 @@ export default function DisciplinaryActionsPage() {
 													<TableRow key={action.id} className="hover:bg-gray-50">
 														<TableCell>
 															<div>
-																<div className="font-medium">
-																	{action.employee.user?.fullname || ""}
-																</div>
+																<div className="font-medium">{action.employee?.name || ""}</div>
 																{action.employee.department.name &&
 																	action.employee.department.name.trim() && (
 																		<div className="text-sm text-muted-foreground">
@@ -487,7 +485,7 @@ export default function DisciplinaryActionsPage() {
 											{(
 												actionToDelete &&
 												filteredActions.find((action) => action.id === actionToDelete.id)
-											)?.employee.user?.fullname || "this employee"}{" "}
+											)?.employee?.name || "this employee"}{" "}
 											(
 											{(actionToDelete &&
 												filteredActions.find((action) => action.id === actionToDelete.id)
@@ -532,15 +530,14 @@ export default function DisciplinaryActionsPage() {
 								Disciplinary Action Details
 							</DialogTitle>
 							<DialogDescription>
-								Complete information for {selectedAction.employee.user?.fullname || ""}'s
-								disciplinary action
+								Complete information for {selectedAction.employee?.name || ""}'s disciplinary action
 							</DialogDescription>
 						</DialogHeader>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 							<div className="space-y-4">
 								<div>
 									<Label className="text-sm font-medium text-muted-foreground">Employee</Label>
-									<p className="text-lg font-semibold">{selectedAction.employee.user?.fullname}</p>
+									<p className="text-lg font-semibold">{selectedAction.employee?.name}</p>
 									{selectedAction.employee.department &&
 										selectedAction.employee.department.name.trim() && (
 											<p className="text-sm text-muted-foreground">
