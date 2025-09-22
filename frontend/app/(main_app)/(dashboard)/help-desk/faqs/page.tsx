@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
@@ -12,22 +11,22 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Edit, Eye, Trash2, Plus, Search } from "lucide-react";
+import { MoreVertical, Edit, Eye, Trash2, Search, Plus } from "lucide-react";
 import { ColumnDef } from "@/components/common/tables/paginated-table";
 import { PaginatedTable } from "@/components/common/tables/paginated-table";
-import { SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
-import type { ISkillZoneCategory } from "@/types/recruitment.types";
+import { FAQ_API } from "@/lib/api/help-desk.utils";
+import type { FAQ } from "@/types/help-desk.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import FixedLoader from "@/components/fixed-loader";
 import { Icon } from "@iconify/react";
-import SkillZoneCategoryCreateEditDialog from "./_components/skill-zone-category-create-edit-dialog";
+import FAQCreateEditDialog from "./_components/faq-create-edit-dialog";
 import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function SkillZoneCategoriesPage() {
-	const router = useRouter();
+export default function FAQsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const tableRefreshRef = useRef<(() => void) | null>(null);
 
@@ -38,11 +37,11 @@ export default function SkillZoneCategoriesPage() {
 	// Dialog states
 	const [openCreateEditDialog, setOpenCreateEditDialog] = useState(false);
 	const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
-	const [selectedCategory, setSelectedCategory] = useState<ISkillZoneCategory | null>(null);
+	const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
 
 	// Delete confirmation
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-	const [categoryToDelete, setCategoryToDelete] = useState<ISkillZoneCategory | null>(null);
+	const [faqToDelete, setFAQToDelete] = useState<FAQ | null>(null);
 	const [deleting, setDeleting] = useState(false);
 
 	useEffect(() => {
@@ -54,59 +53,65 @@ export default function SkillZoneCategoriesPage() {
 	}, [currentInstitution]);
 
 	const handleDelete = async () => {
-		if (!categoryToDelete) return;
+		if (!faqToDelete) return;
 
 		try {
 			setDeleting(true);
-			await SKILL_ZONE_CATEGORIES_API.delete({ categoryId: categoryToDelete.id });
-			showSuccessToast("Category deleted successfully!");
+			await FAQ_API.delete({ faqId: faqToDelete.id });
+			showSuccessToast("FAQ deleted successfully!");
 			if (tableRefreshRef.current) tableRefreshRef.current();
 		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to delete category" });
+			showErrorToast({ error: err, defaultMessage: "Failed to delete FAQ" });
 		} finally {
 			setDeleting(false);
 			setDeleteConfirmOpen(false);
-			setCategoryToDelete(null);
+			setFAQToDelete(null);
 		}
 	};
 
-	const openEditDialog = (category: ISkillZoneCategory) => {
-		setSelectedCategory(category);
+	const openEditDialog = (faq: FAQ) => {
+		setSelectedFAQ(faq);
 		setOpenCreateEditDialog(true);
 	};
 
-	const openDetails = (category: ISkillZoneCategory) => {
-		setSelectedCategory(category);
+	const openDetails = (faq: FAQ) => {
+		setSelectedFAQ(faq);
 		setOpenDetailsDialog(true);
 	};
 
-	const columns: ColumnDef<ISkillZoneCategory>[] = [
+	const columns: ColumnDef<FAQ>[] = [
 		{
-			key: "name",
+			key: "question",
 			header: (
 				<div className="flex items-center justify-start gap-4">
-					<span>Name</span>
+					<span>Question</span>
 					<Button
-						onClick={() => setOrdering((prev) => (prev === "name" ? "-name" : "name"))}
+						onClick={() => setOrdering((prev) => (prev === "question" ? "-question" : "question"))}
 						size="sm"
-						variant={ordering.includes("name") ? "default" : "outline"}
+						variant={ordering.includes("question") ? "default" : "outline"}
 						type="button"
 					>
 						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 					</Button>
 				</div>
 			),
-			cell: (category) => category.name,
+			cell: (faq) => faq.question,
 		},
 		{
-			key: "description",
-			header: "Description",
-			cell: (category) => category.description || "N/A",
+			key: "category",
+			header: "Category",
+			cell: (faq) => faq.category.name || "N/A",
+		},
+		{
+			key: "answer",
+			header: "Answer",
+			cell: (faq) =>
+				faq.answer?.substring(0, 50) + (faq.answer && faq.answer.length > 50 ? "..." : "") || "N/A",
 		},
 		{
 			key: "actions",
 			header: "Actions",
-			cell: (category) => (
+			cell: (faq) => (
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button variant="ghost" className="h-8 w-8 p-0">
@@ -114,15 +119,15 @@ export default function SkillZoneCategoriesPage() {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(category)}>
+						<DropdownMenuItem onClick={() => openDetails(faq)}>
 							<Eye className="h-4 w-4 mr-2" /> View Details
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEditDialog(category)}>
+						<DropdownMenuItem onClick={() => openEditDialog(faq)}>
 							<Edit className="h-4 w-4 mr-2" /> Edit
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => {
-								setCategoryToDelete(category);
+								setFAQToDelete(faq);
 								setDeleteConfirmOpen(true);
 							}}
 							className="text-red-600"
@@ -137,19 +142,32 @@ export default function SkillZoneCategoriesPage() {
 
 	if (loading) return <FixedLoader />;
 
-	const renderDetailsContent = (category: ISkillZoneCategory) => (
+	const renderDetailsContent = (faq: FAQ) => (
 		<div className="space-y-4">
 			<div>
-				<Label className="text-sm font-medium">Name</Label>
-				<p className="text-sm px-2 rounded-lg  sm:text-base resize-none bg-gray-50 py-6">
-					{category.name || ""}
-				</p>
+				<Label className="text-sm font-medium">Question</Label>
+				<Input
+					value={faq.question}
+					disabled
+					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
+				/>
 			</div>
 			<div>
-				<Label className="text-sm font-medium">Description</Label>
-				<p className="text-sm px-2 rounded-lg sm:text-base resize-none bg-gray-50 py-6">
-					{category.description || ""}
-				</p>
+				<Label className="text-sm font-medium">Category</Label>
+				<Input
+					value={faq.category.name || "N/A"}
+					disabled
+					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
+				/>
+			</div>
+			<div>
+				<Label className="text-sm font-medium">Answer</Label>
+				<Textarea
+					value={faq.answer || "N/A"}
+					disabled
+					rows={4}
+					className="rounded-xl border-gray-200 text-sm sm:text-base resize-none bg-gray-50"
+				/>
 			</div>
 		</div>
 	);
@@ -157,18 +175,34 @@ export default function SkillZoneCategoriesPage() {
 	return (
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Skill Zone Categories</h1>
-				<SkillZoneCategoryCreateEditDialog
-					open={openCreateEditDialog}
-					onOpenChange={(open) => {
-						setOpenCreateEditDialog(open);
-						if (!open) setSelectedCategory(null);
-					}}
-					selectedCategory={selectedCategory}
-					onSuccess={() => {
-						if (tableRefreshRef.current) tableRefreshRef.current();
-					}}
-				/>
+				<h1 className="text-2xl font-bold">FAQs</h1>
+				<div className="flex items-center justify-end gap-4">
+					<Link href={"/help-desk/faq-categories"}>
+						<Button variant="outline" className="rounded-xl">
+							Categories
+						</Button>
+					</Link>
+					<Button
+						className="rounded-xl"
+						onClick={() => {
+							setSelectedFAQ(null);
+							setOpenCreateEditDialog(true);
+						}}
+					>
+						<Plus className="h-4 w-4 mr-2" /> Create FAQ
+					</Button>
+					<FAQCreateEditDialog
+						open={openCreateEditDialog}
+						onOpenChange={(open) => {
+							setOpenCreateEditDialog(open);
+							if (!open) setSelectedFAQ(null);
+						}}
+						selectedFAQ={selectedFAQ}
+						onSuccess={() => {
+							if (tableRefreshRef.current) tableRefreshRef.current();
+						}}
+					/>
+				</div>
 			</div>
 
 			<div className="flex items-center gap-4">
@@ -176,49 +210,49 @@ export default function SkillZoneCategoriesPage() {
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
 						className="pl-9 w-full max-w-md lg:max-w-xl"
-						placeholder="Search categories..."
+						placeholder="Search FAQs..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>
 				</div>
 			</div>
 
-			<PaginatedTable<ISkillZoneCategory>
+			<PaginatedTable<FAQ>
 				fetchFirstPage={async () => {
 					if (!currentInstitution) throw new Error("No institution selected");
-					return await SKILL_ZONE_CATEGORIES_API.getPaginated({
+					return await FAQ_API.getPaginated({
 						page: 1,
 						search: searchTerm || undefined,
 						ordering,
 					});
 				}}
-				fetchFromUrl={SKILL_ZONE_CATEGORIES_API.getPaginatedFromUrl}
+				fetchFromUrl={FAQ_API.getPaginatedFromUrl}
 				deps={[currentInstitution?.id, searchTerm, ordering]}
-				onError={(err) =>
-					showErrorToast({ error: err, defaultMessage: "Failed to fetch categories" })
-				}
+				onError={(err) => showErrorToast({ error: err, defaultMessage: "Failed to fetch FAQs" })}
 				columns={columns}
 				skeletonRows={10}
 				refreshRef={tableRefreshRef}
 				emptyState={
 					<div className="text-center py-12">
-						<p className="text-muted-foreground mb-4">No categories found</p>
+						<p className="text-muted-foreground mb-4">No FAQs found</p>
 					</div>
 				}
 			/>
 
-			{selectedCategory && (
+			{selectedFAQ && (
 				<ApprovableDialog
 					isOpen={openDetailsDialog}
 					onOpenChange={(open) => {
 						setOpenDetailsDialog(open);
-						if (!open) setSelectedCategory(null);
+						if (!open) setSelectedFAQ(null);
 					}}
-					title={`Skill Zone Category Details: ${selectedCategory.name}`}
-					description="View the details for this skill zone category."
+					title={`FAQ Details: ${selectedFAQ.question}`}
+					description="View the details for this FAQ."
+					approvals={selectedFAQ.approvals}
+					instanceApprovalStatus={selectedFAQ.approval_status}
 					onRefresh={() => tableRefreshRef.current?.()}
 				>
-					{renderDetailsContent(selectedCategory)}
+					{renderDetailsContent(selectedFAQ)}
 				</ApprovableDialog>
 			)}
 
@@ -226,8 +260,8 @@ export default function SkillZoneCategoriesPage() {
 				isOpen={deleteConfirmOpen}
 				onClose={() => setDeleteConfirmOpen(false)}
 				onConfirm={handleDelete}
-				title="Delete Category"
-				description="Are you sure you want to delete this category? This action cannot be undone."
+				title="Delete FAQ"
+				description="Are you sure you want to delete this FAQ? This action cannot be undone."
 				confirmText="Delete"
 				cancelText="Cancel"
 				disabled={deleting}

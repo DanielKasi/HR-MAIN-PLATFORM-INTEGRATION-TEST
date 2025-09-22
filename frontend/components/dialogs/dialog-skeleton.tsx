@@ -36,7 +36,14 @@ export function DialogSkeleton({
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
+		<Dialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (!open) {
+					onClose();
+				}
+			}}
+		>
 			<DialogContent className={`${className}`}>
 				<DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
 					<DialogTitle className="text-lg font-semibold w-full">{title}</DialogTitle>

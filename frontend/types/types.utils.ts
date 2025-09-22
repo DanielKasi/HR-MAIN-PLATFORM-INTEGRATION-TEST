@@ -157,6 +157,8 @@ export interface CreateJobPositionData {
 	salary_max: number;
 }
 
+export type JobApplicationStatus = "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+
 export interface JobApplication {
 	scheduled_by: any;
 	application: any;
@@ -179,7 +181,7 @@ export interface JobApplication {
 	resume: string;
 	cover_letter: string;
 	application_date: string;
-	status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status: JobApplicationStatus;
 	gender: "male" | "female";
 	state: string;
 	address: string;
@@ -196,7 +198,7 @@ export interface JobApplicationFormData {
 	resume: File | null;
 	cover_letter?: File | null;
 	application_date?: string;
-	status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status?: JobApplicationStatus;
 	gender: "male" | "female";
 	state?: string;
 	address: string;
