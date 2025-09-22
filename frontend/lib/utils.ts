@@ -4364,11 +4364,21 @@ export function generatePeriodName(startDate: string, endDate: string): string {
 
 		return `Week ${weekNumber} - ${monthName} ${year}`;
 	} else {
-		// Monthly default: "August 2025"
-		const monthName = monthFormatter.format(start);
-
-		return `${monthName} ${year}`;
+	const monthDays: Record<string, number> = {};
+	
+	const currentDate = new Date(start);
+	while (currentDate <= end) {
+		const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
+		monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
+		currentDate.setDate(currentDate.getDate() + 1);
 	}
+	
+	const dominantMonth = Object.keys(monthDays).reduce((a, b) => 
+		monthDays[a] > monthDays[b] ? a : b
+	);
+	
+	return dominantMonth;
+}
 }
 
 export const checkPeriodOverlap = async ({
