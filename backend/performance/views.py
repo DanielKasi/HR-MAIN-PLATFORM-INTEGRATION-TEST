@@ -6,13 +6,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes, OpenApiExample
-
+from django.conf import settings
+from documents.models import Document, DocumentTemplate, DocumentType
 from settings.models import MeetingIntegration
 from utilities.pagination import CustomPageNumberPagination
 from utilities.sortable_api import SortableAPIMixin
-from .models import Period, Objectives, EmployeeObjectives, KeyResult, Feedback360, EmployeeBonusPoint, QuestionTemplate, BonusPointSettings, Meeting, Institution
+from .models import PIPEmployeeObjectives, PIPSupportResource, PIPSupportResourceType, PerformanceConcern, PerformanceConcernType, PerformanceImprovementPlan, Period, Objectives, EmployeeObjectives, KeyResult, Feedback360, EmployeeBonusPoint, QuestionTemplate, BonusPointSettings, Meeting, Institution
 from .serializers import (
-    PeriodSerializer, ObjectivesSerializer, EmployeeObjectivesSerializer,
+    PIPEmployeeObjectivesSerializer, PIPSupportResourceSerializer, PIPSupportResourceTypeSerializer, PerformanceConcernSerializer, PerformanceConcernTypeSerializer, PerformanceImprovementPlanSerializer, PeriodSerializer, ObjectivesSerializer, EmployeeObjectivesSerializer,
     KeyResultSerializer, Feedback360Serializer, EmployeeBonusPointSerializer,
     QuestionTemplateSerializer, BonusPointSettingsSerializer, MeetingSerializer
 )
@@ -21,6 +22,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from google_auth_oauthlib.flow import InstalledAppFlow
 import os
+import subprocess
+import tempfile
+from django.core.files import File
 
 class PeriodListCreateView(APIView, SortableAPIMixin):
     permission_classes = [IsAuthenticated]
@@ -1262,3 +1266,1051 @@ class AnalyticsView(APIView):
         }
 
         return Response(analytics, status=status.HTTP_200_OK) 
+    
+class PerformanceConcernTypeListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['name', 'created_at']
+    default_ordering = ['name']
+
+    @extend_schema(
+        request=PerformanceConcernTypeSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PerformanceConcernTypeSerializer,
+                description="Performance concern type created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PerformanceConcernTypeSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by name or description"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'name,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernTypeSerializer(many=True),
+                description="List of performance concern types.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        concern_types = PerformanceConcernType.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            concern_types = concern_types.filter(
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
+            )
+
+        if created_at:
+            concern_types = concern_types.filter(created_at=created_at)
+
+        try:
+            concern_types = self.apply_sorting(concern_types, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(concern_types, request)
+        serializer = PerformanceConcernTypeSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)  
+
+class PerformanceConcernTypeDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernTypeSerializer,
+                description="Performance concern type details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        concern_type = get_object_or_404(PerformanceConcernType, pk=pk)
+        serializer = PerformanceConcernTypeSerializer(concern_type)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern type marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        concern_type = get_object_or_404(PerformanceConcernType, pk=pk)
+        concern_type.approval_status = 'under_deletion'
+        concern_type.save(update_fields=['approval_status'])
+        concern_type.confirm_delete()
+        return Response(
+            {"message": "Performance concern type submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernTypeSerializer,
+                description="Performance concern type updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        concern_type = get_object_or_404(PerformanceConcernType, pk=pk)
+        concern_type.approval_status = 'under_update'
+        serializer = PerformanceConcernTypeSerializer(concern_type, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            concern_type.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PerformanceConcernListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['description', 'created_at']
+    default_ordering = ['created_at']
+
+    @extend_schema(
+        request=PerformanceConcernSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PerformanceConcernSerializer,
+                description="Performance concern created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PerformanceConcernSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by description"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "category", "type": "int", "description": "Filter by category ID"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'description,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernSerializer(many=True),
+                description="List of performance concerns.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        category_id = request.query_params.get("category", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        concerns = PerformanceConcern.objects.filter(
+            category__institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            concerns = concerns.filter(description__icontains=search_query)
+
+        if created_at:
+            concerns = concerns.filter(created_at=created_at)
+
+        if category_id:
+            concerns = concerns.filter(category__id=category_id)
+
+        try:
+            concerns = self.apply_sorting(concerns, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(concerns, request)
+        serializer = PerformanceConcernSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class PerformanceConcernDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernSerializer,
+                description="Performance concern details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        concern = get_object_or_404(PerformanceConcern, pk=pk)
+        serializer = PerformanceConcernSerializer(concern)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        concern = get_object_or_404(PerformanceConcern, pk=pk)
+        concern.approval_status = 'under_deletion'
+        concern.save(update_fields=['approval_status'])
+        concern.confirm_delete()
+        return Response(
+            {"message": "Performance concern submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceConcernSerializer,
+                description="Performance concern updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance concern not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        concern = get_object_or_404(PerformanceConcern, pk=pk)
+        concern.approval_status = 'under_update'
+        serializer = PerformanceConcernSerializer(concern, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            concern.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class PIPSupportResourceTypeListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['name', 'created_at']
+    default_ordering = ['name']
+
+    @extend_schema(
+        request=PIPSupportResourceTypeSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PIPSupportResourceTypeSerializer,
+                description="PIP support resource type created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PIPSupportResourceTypeSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by name or description"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'name,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceTypeSerializer(many=True),
+                description="List of PIP support resource types.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        resource_types = PIPSupportResourceType.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            resource_types = resource_types.filter(
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
+            )
+
+        if created_at:
+            resource_types = resource_types.filter(created_at=created_at)
+
+        try:
+            resource_types = self.apply_sorting(resource_types, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(resource_types, request)
+        serializer = PIPSupportResourceTypeSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class PIPSupportResourceTypeDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceTypeSerializer,
+                description="PIP support resource type details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        resource_type = get_object_or_404(PIPSupportResourceType, pk=pk)
+        serializer = PIPSupportResourceTypeSerializer(resource_type)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource type marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        resource_type = get_object_or_404(PIPSupportResourceType, pk=pk)
+        resource_type.approval_status = 'under_deletion'
+        resource_type.save(update_fields=['approval_status'])
+        resource_type.confirm_delete()
+        return Response(
+            {"message": "PIP support resource type submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceTypeSerializer,
+                description="PIP support resource type updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource type not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        resource_type = get_object_or_404(PIPSupportResourceType, pk=pk)
+        resource_type.approval_status = 'under_update'
+        serializer = PIPSupportResourceTypeSerializer(resource_type, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            resource_type.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    
+    
+
+class PIPSupportResourceListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['name', 'created_at']
+    default_ordering = ['name']
+
+    @extend_schema(
+        request=PIPSupportResourceSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PIPSupportResourceSerializer,
+                description="PIP support resource created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PIPSupportResourceSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by name or description"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "type", "type": "int", "description": "Filter by resource type ID"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'name,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceSerializer(many=True),
+                description="List of PIP support resources.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        type_id = request.query_params.get("type", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        resources = PIPSupportResource.objects.filter(
+            type__institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            resources = resources.filter(
+                Q(name__icontains=search_query) | Q(description__icontains=search_query)
+            )
+
+        if created_at:
+            resources = resources.filter(created_at=created_at)
+
+        if type_id:
+            resources = resources.filter(type__id=type_id)
+
+        try:
+            resources = self.apply_sorting(resources, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(resources, request)
+        serializer = PIPSupportResourceSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class PIPSupportResourceDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceSerializer,
+                description="PIP support resource details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        resource = get_object_or_404(PIPSupportResource, pk=pk)
+        serializer = PIPSupportResourceSerializer(resource)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        resource = get_object_or_404(PIPSupportResource, pk=pk)
+        resource.approval_status = 'under_deletion'
+        resource.save(update_fields=['approval_status'])
+        resource.confirm_delete()
+        return Response(
+            {"message": "PIP support resource submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPSupportResourceSerializer,
+                description="PIP support resource updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP support resource not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        resource = get_object_or_404(PIPSupportResource, pk=pk)
+        resource.approval_status = 'under_update'
+        serializer = PIPSupportResourceSerializer(resource, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            resource.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PerformanceImprovementPlanListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['start_date', 'end_date', 'status', 'created_at']
+    default_ordering = ['start_date']
+
+    @extend_schema(
+        request=PerformanceImprovementPlanSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PerformanceImprovementPlanSerializer,
+                description="Performance improvement plan created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PerformanceImprovementPlanSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by employee name or progress notes"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "status", "type": "str", "description": "Filter by status (e.g., draft, active)"},
+            {"name": "employee", "type": "int", "description": "Filter by employee ID"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'start_date,-status')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceImprovementPlanSerializer(many=True),
+                description="List of performance improvement plans.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        status_filter = request.query_params.get("status", None)
+        employee_id = request.query_params.get("employee", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        plans = PerformanceImprovementPlan.objects.filter(
+            employee__payroll_branch__institution=institution, deleted_at__isnull=True
+        )
+
+        if search_query:
+            plans = plans.filter(
+                Q(employee__user__fullname__icontains=search_query) | 
+                Q(progress_notes__icontains=search_query)
+            )
+
+        if created_at:
+            plans = plans.filter(created_at=created_at)
+
+        if status_filter:
+            plans = plans.filter(status=status_filter)
+
+        if employee_id:
+            plans = plans.filter(employee__id=employee_id)
+
+        try:
+            plans = self.apply_sorting(plans, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(plans, request)
+        serializer = PerformanceImprovementPlanSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class PerformanceImprovementPlanDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceImprovementPlanSerializer,
+                description="Performance improvement plan details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance improvement plan not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        plan = get_object_or_404(PerformanceImprovementPlan, pk=pk)
+        serializer = PerformanceImprovementPlanSerializer(plan)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance improvement plan marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance improvement plan not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        plan = get_object_or_404(PerformanceImprovementPlan, pk=pk)
+        plan.approval_status = 'under_deletion'
+        plan.save(update_fields=['approval_status'])
+        plan.confirm_delete()
+        return Response(
+            {"message": "Performance improvement plan submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PerformanceImprovementPlanSerializer,
+                description="Performance improvement plan updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Performance improvement plan not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        plan = get_object_or_404(PerformanceImprovementPlan, pk=pk)
+        plan.approval_status = 'under_update'
+        serializer = PerformanceImprovementPlanSerializer(plan, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            plan.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PIPEmployeeObjectivesListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['created_at']
+    default_ordering = ['created_at']
+
+    @extend_schema(
+        request=PIPEmployeeObjectivesSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=PIPEmployeeObjectivesSerializer,
+                description="PIP employee objective created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = PIPEmployeeObjectivesSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "pip", "type": "int", "description": "Filter by PIP ID"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., '-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=PIPEmployeeObjectivesSerializer(many=True),
+                description="List of PIP employee objectives.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        pip_id = request.query_params.get("pip", None)
+        created_at = request.query_params.get("created_at", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        objectives = PIPEmployeeObjectives.objects.filter(
+            pip__employee__payroll_branch__institution=institution, deleted_at__isnull=True
+        )
+
+        if pip_id:
+            objectives = objectives.filter(pip__id=pip_id)
+
+        if created_at:
+            objectives = objectives.filter(created_at=created_at)
+
+        try:
+            objectives = self.apply_sorting(objectives, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(objectives, request)
+        serializer = PIPEmployeeObjectivesSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class PIPEmployeeObjectivesDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPEmployeeObjectivesSerializer,
+                description="PIP employee objective details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP employee objective not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    def get(self, request, pk):
+        objective = get_object_or_404(PIPEmployeeObjectives, pk=pk)
+        serializer = PIPEmployeeObjectivesSerializer(objective)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP employee objective marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP employee objective not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        objective = get_object_or_404(PIPEmployeeObjectives, pk=pk)
+        objective.approval_status = 'under_deletion'
+        objective.save(update_fields=['approval_status'])
+        objective.confirm_delete()
+        return Response(
+            {"message": "PIP employee objective submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=PIPEmployeeObjectivesSerializer,
+                description="PIP employee objective updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP employee objective not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        objective = get_object_or_404(PIPEmployeeObjectives, pk=pk)
+        objective.approval_status = 'under_update'
+        serializer = PIPEmployeeObjectivesSerializer(objective, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            objective.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
+    
+
+class PIPDocumentGenerateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            201: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document and PDF generated successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Invalid PIP ID or template.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="PIP not found.",
+            ),
+        },
+        tags=["PIP Management"],
+    )
+    @transaction.atomic()
+    def post(self, request, pip_id):
+        pip = get_object_or_404(PerformanceImprovementPlan, id=pip_id)
+
+        # Get selected template or fall back to default
+        template = pip.document_template
+        if not template:
+            try:
+                template = DocumentTemplate.objects.get(
+                    document_type__institution=pip.get_institution(),
+                    name="Default PIP Template"
+                )
+            except DocumentTemplate.DoesNotExist:
+                doc_type, _ = DocumentType.objects.get_or_create(
+                    institution=pip.get_institution(),
+                    name="Performance Improvement Plan",
+                    defaults={'description': 'Template for employee performance improvement plans.'}
+                )
+                default_template_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+                with open(default_template_path, 'rb') as f:
+                    template = DocumentTemplate.objects.create(
+                        document_type=doc_type,
+                        name="Default PIP Template",
+                        template_type="pdf",
+                        file=File(f, name=f'default_pip_template_{pip.get_institution().id}.tex'),
+                        placeholders=[
+                            "{{employee_name}}",
+                            "{{position}}",
+                            "{{department}}",
+                            "{{supervisor}}",
+                            "{{date_issued}}",
+                            "{{review_period}}",
+                            "{{concern_1}}",
+                            "{{concern_2}}",
+                            "{{support_resource_1}}",
+                            "{{support_resource_2}}",
+                            "{{support_resource_3}}",
+                            "{{reviewer_role}}",
+                            "{{consequences}}"
+                        ]
+                    )
+
+        # Prepare placeholder values
+        concerns = list(pip.issues.all())
+        resources = list(pip.support_resources.all())
+        placeholder_values = {
+            "employee_name": getattr(pip.employee.user, 'fullname', 'N/A'),
+            "position": getattr(pip.employee.position, 'name', 'N/A') if pip.employee.position else 'N/A',
+            "department": getattr(pip.employee.department, 'name', 'N/A') if pip.employee.department else 'N/A',
+            "supervisor": getattr(pip.employee.position.reports_to, 'name', 'Head of Finance and Credit') if pip.employee.position.reports_to else 'Head of Finance and Credit',
+            "date_issued": pip.start_date.strftime("%dth %B %Y"),
+            "review_period": f"{(pip.end_date - pip.start_date).days} Days",
+            "concern_1": concerns[0].description if concerns else "",
+            "concern_2": concerns[1].description if len(concerns) > 1 else "",
+            "support_resource_1": resources[0].description if resources else "",
+            "support_resource_2": resources[1].description if len(resources) > 1 else "",
+            "support_resource_3": resources[2].description if len(resources) > 2 else "",
+            "reviewer_role": "Chief Operating Officer",
+            "consequences": pip.consequences or "Failure to demonstrate the required improvements within the stipulated timeframe may result in further disciplinary action, up to and including termination of employment."
+        }
+
+        # Read template content
+        template_file = template.file
+        if not template_file:
+            template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+        else:
+            template_file_path = template_file.path
+
+        with open(template_file_path, 'r') as f:
+            content = f.read()
+
+        # Replace placeholders
+        for key, value in placeholder_values.items():
+            content = content.replace(key, str(value).replace('\n', ' ').replace('\r', ''))
+
+        # Generate PDF
+        os.makedirs(os.path.join(settings.MEDIA_ROOT, 'generated_documents'), exist_ok=True)
+        pdf_filename = f'pip_{pip.id}.pdf'
+        pdf_path = os.path.join(settings.MEDIA_ROOT, 'generated_documents', pdf_filename)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tex_path = os.path.join(tmpdir, 'document.tex')
+            tmp_pdf_path = os.path.join(tmpdir, 'document.pdf')
+
+            with open(tex_path, 'w') as f:
+                f.write(content)
+
+            try:
+                subprocess.run(['pdflatex', '-output-directory', tmpdir, tex_path], check=True)
+                with open(tmp_pdf_path, 'rb') as pdf_file:
+                    with open(pdf_path, 'wb') as f:
+                        f.write(pdf_file.read())
+            except subprocess.CalledProcessError as e:
+                print(f"PDF generation failed: {e}")
+                return Response({"detail": "Failed to generate PDF."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Create Document
+        document = Document.objects.create(
+            document_template=template,
+            placeholder_values=placeholder_values,
+            status="pending"
+        )
+
+        return Response({
+            "document_id": document.id,
+            "pdf_url": f"{settings.MEDIA_URL}generated_documents/{pdf_filename}"
+        }, status=status.HTTP_201_CREATED)    

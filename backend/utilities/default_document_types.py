@@ -39,4 +39,8 @@ DEFAULT_DOCUMENT_TYPES = [
         'name': 'Resignation Acceptance Letter',
         'description': 'To acknowledge and accept an employee’s resignation. Suggested placeholders: {{FULLNAME}}, {{RESIGNATION_DATE}}, {{LAST_WORKING_DAY}}',
     },
+    {
+        'name': 'Performance Improvement Plan',
+        'description': 'Template for employee performance improvement plans.',
+    },
 ]
