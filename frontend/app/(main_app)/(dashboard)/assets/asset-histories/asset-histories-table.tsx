@@ -86,18 +86,18 @@ export function AssetHistoriesTable({
 					<Button
 						onClick={() =>
 							setOrdering((prev) =>
-								prev === "performed_by__user.fullname" ? "" : "performed_by__user.fullname",
+								prev === "performed_by.fullname" ? "" : "performed_by.fullname",
 							)
 						}
 						size="sm"
-						variant={ordering === "performed_by__user.fullname" ? "default" : "outline"}
+						variant={ordering === "performed_by.fullname" ? "default" : "outline"}
 						type="button"
 					>
 						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 					</Button>
 				</div>
 			),
-			cell: (history) => history.performed_by?.user.fullname || "N/A",
+			cell: (history) => history.performed_by?.fullname || "N/A",
 		},
 		{
 			key: "affected_user",

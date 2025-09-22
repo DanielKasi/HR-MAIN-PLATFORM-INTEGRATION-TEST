@@ -743,7 +743,7 @@ class SkillZone(BaseApprovableModel):
         ordering = ['-created_at']
     
     def str(self):
-        return f"SkillZone: {self.application.applicant_name} ({self.application.job_position_advert.job_position.name})"
+        return f"SkillZone: {self.candidate.applicant_name} ({self.candidate.job_position_advert.job_position.name})"
     
     def get_institution(self):
-        return self.category.institution    
+        return self.candidate.job_position_advert.job_position.department.institution    
