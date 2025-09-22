@@ -64,7 +64,7 @@ class Feedback360Serializer(BaseApprovableSerializer):
     reviewer = EmployeeSerializer(read_only=True)
     period = PeriodSerializer(read_only=True)
     given_by_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='given_by', write_only=True
+        queryset=Employee.objects.all(), source='given_by', write_only=True, required=False
     )
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='reviewer', write_only=True
@@ -79,7 +79,7 @@ class Feedback360Serializer(BaseApprovableSerializer):
 
 class BonusPointSettingsSerializer(BaseApprovableSerializer):
     content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.filter(model__in=[
-        'period', 'objectives', 'employeeobjectives', 'keyresult', 'feedback360', 'employeebonuspoint', 'questiontemplate', 'meeting'
+        'task', 'objectives', 'project'
     ]))
     content_object = serializers.SerializerMethodField()
 
@@ -87,6 +87,7 @@ class BonusPointSettingsSerializer(BaseApprovableSerializer):
         return str(obj.content_object)
 
     def validate(self, data):
+
         model_name = data['content_type'].model
         allowed_fields = BonusPointSettings.ALLOWED_FIELDS.get(model_name.capitalize(), [])
         if data.get('condition_field') not in allowed_fields:
