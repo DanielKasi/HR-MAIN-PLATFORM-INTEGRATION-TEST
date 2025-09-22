@@ -217,13 +217,13 @@ export default function ProjectDetailsPage() {
 	const [filteredProject, setFilteredProject] = useState<IProject | null>(null);
 
 	// Mock documents
-	const documents = useMemo(
-		() => [
-			{ id: 1, name: "testing-pdf-0001.pdf", created: "Jun 12, 2025" },
-			{ id: 2, name: "design-doc-0002.pdf", created: "Jul 5, 2025" },
-		],
-		[],
-	);
+	// const documents = useMemo(
+	// 	() => [
+	// 		{ id: 1, name: "testing-pdf-0001.pdf", created: "Jun 12, 2025" },
+	// 		{ id: 2, name: "design-doc-0002.pdf", created: "Jul 5, 2025" },
+	// 	],
+	// 	[],
+	// );
 
 	const tabConfig = [
 		{ id: "board" as const, label: "Board" },
@@ -633,7 +633,7 @@ export default function ProjectDetailsPage() {
 					</div>
 
 					{/* Documents */}
-					<div>
+					{/* <div>
 						<h3 className="font-medium mb-4">Documents</h3>
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 							{documents.map((doc) => (
@@ -677,7 +677,7 @@ export default function ProjectDetailsPage() {
 								</div>
 							))}
 						</div>
-					</div>
+					</div> */}
 
 					{/* Custom Tabs */}
 					<div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8 overflow-x-auto border-b border-gray-200">
