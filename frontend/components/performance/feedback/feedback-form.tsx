@@ -33,8 +33,6 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 		if (!initialData) {
 			return {
 				feedback_text: "",
-				strengths: "",
-				areas_for_improvement: "",
 				is_anonymous: false,
 				submission_date: new Date().toISOString().split("T")[0],
 			};
