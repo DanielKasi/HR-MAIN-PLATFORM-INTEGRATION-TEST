@@ -113,14 +113,15 @@ export default function JobPositionsPage() {
 				<Card className="shadow-sm border">
 					<CardContent className="p-4">
 						<div className="text-2xl font-bold">
-							{formatCurrency(
+							--
+							{/* {formatCurrency(
 								jobPositions.reduce((sum, pos) => {
 									const min = Number(pos.salary_min || 0);
 									const max = Number(pos.salary_max || 0);
 
 									return sum + (min + max) / 2; // Use average of min/max for budget calculation
 								}, 0),
-							)}
+							)} */}
 						</div>
 						<p className="text-xs md:text-sm text-muted-foreground">Total Salary Budget</p>
 					</CardContent>
@@ -128,7 +129,8 @@ export default function JobPositionsPage() {
 				<Card className="shadow-sm border">
 					<CardContent className="p-4">
 						<div className="text-2xl font-bold">
-							{formatCurrency(
+							--
+							{/* {formatCurrency(
 								Math.round(
 									jobPositions.reduce((sum, pos) => {
 										const min = Number(pos.salary_min || 0);
@@ -137,7 +139,7 @@ export default function JobPositionsPage() {
 										return sum + (min + max) / 2;
 									}, 0) / jobPositions.length,
 								) || 0,
-							)}
+							)} */}
 						</div>
 						<p className="text-xs md:text-sm text-muted-foreground">Average Salary</p>
 					</CardContent>
