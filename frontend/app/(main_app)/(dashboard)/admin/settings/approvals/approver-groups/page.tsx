@@ -483,8 +483,6 @@ export default function ApproverGroupsPage() {
 									value={selectedUserIds}
 									onValueChange={(values) => setSelectedUserIds(values.map((val) => Number(val)))}
 									placeholder="Select users..."
-									showEmployeeId={false}
-									showDepartment={false}
 									multiple={true}
 								/>
 							</div>

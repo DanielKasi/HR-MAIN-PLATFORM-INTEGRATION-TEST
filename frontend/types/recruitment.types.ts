@@ -1,5 +1,4 @@
 import { IBaseApprovable } from "./approvals.types";
-import { JobApplication } from "./types.utils";
 
 export interface ISkillZoneCategory {
 	id: number;
@@ -18,8 +17,11 @@ export interface ISkillZoneCategoryFormData {
 
 export interface ISkillZone extends IBaseApprovable {
 	id: number;
-	candidate: JobApplication;
-	category: ISkillZoneCategory[];
+	candidate: number;
+	category: number[];
+	applicant_name: string;
+	job_title: string;
+	category_names: string[];
 	notes?: string | null;
 	potential_value?: string | null;
 }

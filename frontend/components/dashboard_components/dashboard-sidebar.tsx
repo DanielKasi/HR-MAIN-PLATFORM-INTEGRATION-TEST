@@ -362,8 +362,8 @@ export default function DashboardSideBar() {
 				<Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />
 			),
 			submenu: [
-				{ title: "FAQs", href: "#" },
-				{ title: "Tickets", href: "#" },
+				{ title: "FAQs", href: "/help-desk/faqs" },
+				{ title: "Tickets", href: "/help-desk/tickets" },
 			],
 			// requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
 		},

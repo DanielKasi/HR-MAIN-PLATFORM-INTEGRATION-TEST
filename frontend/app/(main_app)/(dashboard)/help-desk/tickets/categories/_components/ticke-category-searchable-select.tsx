@@ -6,13 +6,11 @@ import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { ISkillZoneCategory } from "@/types/recruitment.types";
-import { SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
-import { JobApplicationStatus } from "@/types/types.utils";
+import { TicketCategory } from "@/types/help-desk.types";
+import { TICKET_CATEGORIES_API } from "@/lib/api/help-desk.utils";
 
-interface SkillZoneCategoriesSearchableSelectProps {
+interface TicketCategorySearchableSelectProps {
 	value: (string | number)[];
-	defaultLabel?: string;
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
@@ -21,21 +19,19 @@ interface SkillZoneCategoriesSearchableSelectProps {
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
-	setCategories?: (categories: ISkillZoneCategory[]) => void;
 }
 
-export const SkillZoneCategoriesSearchableSelect = ({
+export const TicketCategorySearchableSelect = ({
 	value,
-	defaultLabel,
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
-	placeholder = "Select category",
+	placeholder = "Select category...",
 	className,
 	triggerClassName,
-	multiple = true,
+	multiple = false,
 	hideSelectedFromList = false,
-}: SkillZoneCategoriesSearchableSelectProps) => {
+}: TicketCategorySearchableSelectProps) => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
@@ -47,17 +43,14 @@ export const SkillZoneCategoriesSearchableSelect = ({
 		if (!currentInstitution) {
 			throw new Error("No institution found!");
 		}
-		return await SKILL_ZONE_CATEGORIES_API.getPaginated({ ...query });
+		return await TICKET_CATEGORIES_API.getPaginated({ ...query });
 	};
 
 	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await SKILL_ZONE_CATEGORIES_API.getPaginatedFromUrl({ url });
+		return await TICKET_CATEGORIES_API.getPaginatedFromUrl({ url });
 	};
 
-	const handleSelect = (
-		itemId: string | number,
-		_item: PaginatedSelectItem<ISkillZoneCategory>,
-	) => {
+	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<TicketCategory>) => {
 		if (!selectedItems.includes(itemId)) {
 			if (multiple) {
 				onValueChange([...selectedItems, itemId]);
@@ -67,10 +60,7 @@ export const SkillZoneCategoriesSearchableSelect = ({
 		}
 	};
 
-	const handleRemove = (
-		itemId: string | number,
-		_item: PaginatedSelectItem<ISkillZoneCategory>,
-	) => {
+	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<TicketCategory>) => {
 		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
 		setSelectedItems(newItems);
 		onValueChange(newItems);
@@ -78,7 +68,7 @@ export const SkillZoneCategoriesSearchableSelect = ({
 
 	return (
 		<div className={className}>
-			<PaginatedSearchableSelect<ISkillZoneCategory, { search?: string; page?: number }>
+			<PaginatedSearchableSelect<TicketCategory, { search?: string; page?: number }>
 				paginated
 				fetchFirstPage={fetchFirstPage}
 				fetchFromUrl={fetchFromUrl}
@@ -92,14 +82,13 @@ export const SkillZoneCategoriesSearchableSelect = ({
 				multiple={multiple}
 				disabled={disabled}
 				placeholder={placeholder}
-				searchPlaceholder="Search categories by name..."
-				triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
+				searchPlaceholder="Search categories by name"
+				triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
 				popoverClassName="w-full"
 				hideSelectedFromList={hideSelectedFromList}
-				defaultLabel={defaultLabel}
 			/>
 		</div>
 	);
 };
 
-export default SkillZoneCategoriesSearchableSelect;
+export default TicketCategorySearchableSelect;

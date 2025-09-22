@@ -1,4 +1,4 @@
-import { IPaginatedResponse } from "@/types/types.utils";
+import { IPaginatedResponse, JobApplicationStatus } from "@/types/types.utils";
 import apiRequest from "../apiRequest";
 import {
 	ISkillZone,
