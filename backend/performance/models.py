@@ -198,7 +198,7 @@ class Feedback360(BaseApprovableModel):
         return f"Feedback from {self.reviewer.user.fullname} to {self.given_by.user.fullname}"
     
     def get_institution(self):
-        return self.period.institution
+        return self.reviewer.payroll_branch.institution
 
 
 
@@ -221,7 +221,7 @@ class EmployeeBonusPoint(BaseApprovableModel):
         return f"{self.points} points for {self.employee.user.fullname} - {self.reason}"
 
     def get_institution(self):
-        return self.period.institution
+        return self.employee.payroll_branch.institution
         
 
 class QuestionTemplate(BaseApprovableModel):

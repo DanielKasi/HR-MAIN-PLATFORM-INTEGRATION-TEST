@@ -64,7 +64,7 @@ class Feedback360Serializer(BaseApprovableSerializer):
     reviewer = EmployeeSerializer(read_only=True)
     period = PeriodSerializer(read_only=True)
     given_by_id = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), source='given_by', write_only=True
+        queryset=Employee.objects.all(), source='given_by', write_only=True, required=False
     )
     reviewer_id = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), source='reviewer', write_only=True
