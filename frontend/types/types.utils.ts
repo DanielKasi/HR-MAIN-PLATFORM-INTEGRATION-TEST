@@ -3,6 +3,7 @@ import { IProjectDashboard } from "./project.type";
 import { Branch } from "./branch.types";
 import { IUserInstitution } from "./other";
 import { IUser, Role, UserProfile } from "./user.types";
+import { IAssetCategory, IAssetHistory } from "./assets.types";
 
 export type ContextType = "employee" | "department" | "job_position";
 export type CalculationMethod = "fixed" | "percentage";
@@ -1722,11 +1723,6 @@ export interface ICalendar {
 	updated_at: string;
 }
 
-export interface IAssetCategoryFormData {
-	category_name: string;
-	category_description?: string;
-}
-
 export interface IAsset {
 	id: number;
 	institution: number;
@@ -2478,10 +2474,8 @@ export interface IEmailProviderConfig {
 export interface IAllowanceType extends IBaseApprovable {}
 export interface IAsset extends IBaseApprovable {}
 export interface IAssetAllocation extends IBaseApprovable {}
-export interface IAssetCategory extends IBaseApprovable {}
 export interface IAssetRequest extends IBaseApprovable {}
 export interface IAssetReturn extends IBaseApprovable {}
-export interface IAssetHistory extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}
