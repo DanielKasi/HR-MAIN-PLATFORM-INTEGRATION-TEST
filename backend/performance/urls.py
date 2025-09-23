@@ -25,7 +25,6 @@ urlpatterns = [
     path('analytics/', views.AnalyticsView.as_view(), name='analytics'),
     path('pips/', views.PerformanceImprovementPlanListCreateView.as_view(), name='pip_list_create'),
     path('pips/<int:pk>/', views.PerformanceImprovementPlanDetailView.as_view(), name='pip_detail'),
-    path('pips/<int:pip_id>/document/', views.PIPDocumentGenerateView.as_view(), name='pip_document_generate'),
     path(
         'concern-types/',
         views.PerformanceConcernTypeListCreateView.as_view(),

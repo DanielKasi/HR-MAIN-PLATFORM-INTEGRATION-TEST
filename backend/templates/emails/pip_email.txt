@@ -1,0 +1,23 @@
+{{ salutation }},
+
+We are committed to supporting your professional growth at {{ institution_name | default:"our organization" }}. To assist you in meeting performance expectations, we have developed a Performance Improvement Plan (PIP). The full details of your PIP are included in the attached document, Performance_Improvement_Plan_{{ employee_name | default:"Employee" }}.pdf.
+
+Summary of Your Performance Improvement Plan:
+- Start Date: {{ start_date }}
+- End Date: {{ end_date }}
+- Identified Issues: {{ issues }}
+- Improvement Objectives: {{ objectives }}
+- Consequences of Non-Compliance: {{ consequences }}
+
+Please review the attached PIP document carefully and acknowledge receipt by {{ due_date }}. You are also required to schedule a meeting with your manager to discuss the plan and next steps.
+
+For any questions or to arrange a meeting, please contact HR at {{ hr_email }}.
+
+We are here to support you throughout this process and look forward to your progress.
+
+Best regards,
+Human Resources
+{{ institution_name | default:"Our Organization" }}
+
+---
+This is an automated message. Please do not reply directly to this email. Contact {{ hr_email }} for assistance.

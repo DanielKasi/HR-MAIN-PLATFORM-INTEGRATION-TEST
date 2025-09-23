@@ -3,7 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-
+import os
+from performance.models import PerformanceImprovementPlan
 from utilities.sortable_api import SortableAPIMixin
 from .models import DocumentType, DocumentTemplate, Document
 from .serializers import (
@@ -34,6 +35,8 @@ import logging
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
+import subprocess
+import tempfile
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -448,7 +451,7 @@ class BaseDocumentView(APIView):
         return preview
 
 
-class GenerateDocumentView(BaseDocumentView):
+class GenerateDocumentView(BaseDocumentView): 
     @extend_schema(
         tags=["Document Generation"],
         parameters=[
@@ -457,25 +460,59 @@ class GenerateDocumentView(BaseDocumentView):
                 type=str,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                enum=["onboarding", "employee", "leave"],
-                description="The context for document generation (e.g., onboarding, employee, leave)",
+                enum=["onboarding", "employee", "leave", "pip"],
+                description="The context for document generation (e.g., onboarding, employee, leave, pip)",
             ),
             OpenApiParameter(
                 name="context_id",
                 type=int,
                 location=OpenApiParameter.QUERY,
                 required=True,
-                description="The ID of the context record (e.g., OnBoarding ID, Employee ID)",
+                description="The ID of the context record (e.g., OnBoarding ID, Employee ID, PIP ID)",
             ),
         ],
         responses={
             200: GenerateDocumentResponseSerializer,
+            400: {"description": "Invalid input or missing required parameters"},
             404: {"description": "Template or context record not found"},
         },
-        description="Fetches placeholders for a document template with pre-filled values based on context",
+        description="Fetches placeholders for a document template with pre-filled values based on context. If no template_id is provided and context is 'pip', uses default PIP template.",
     )
-    def get(self, request, template_id):
-        template = get_object_or_404(DocumentTemplate, pk=template_id)
+    def get(self, request, template_id=None):
+        context = request.query_params.get("context")
+        context_id = request.query_params.get("context_id")
+        if not context or not context_id:
+            return Response(
+                {"error": "context and context_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Handle template selection
+        if template_id is None and context == "pip":
+            template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+            try:
+                with open(template_file_path, 'r') as file:
+                    template_content = file.read()
+                template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
+                if not template:
+                    template = DocumentTemplate.objects.create(
+                        name="Default PIP Template",
+                        content=template_content,
+                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
+                    )
+            except FileNotFoundError:
+                return Response(
+                    {"error": "Default PIP template file not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        elif template_id is not None:
+            template = get_object_or_404(DocumentTemplate, pk=template_id)
+        else:
+            return Response(
+                {"error": "template_id is required for non-pip contexts"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         template_placeholders = template.placeholders or []
 
         system_config = SystemConfiguration.objects.filter(
@@ -492,14 +529,6 @@ class GenerateDocumentView(BaseDocumentView):
         all_placeholders = list(
             set(clean_template_placeholders + required_placeholders)
         )
-
-        context = request.query_params.get("context")
-        context_id = request.query_params.get("context_id")
-        if not context or not context_id:
-            return Response(
-                {"error": "context and context_id are required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         known_values = {}
         if context == "onboarding":
@@ -528,16 +557,27 @@ class GenerateDocumentView(BaseDocumentView):
                 "salary": str(employee.salary) if hasattr(employee, "salary") else "",
                 "date": str(timezone.now().date()),
             }
-        # elif context == "leave":
-        #     leave = get_object_or_404(Leave, pk=context_id)
-        #     known_values = {
-        #         "fullname": (
-        #             leave.employee.fullname
-        #             if hasattr(leave.employee, "fullname")
-        #             else ""
-        #         ),
-        #         "date": str(timezone.now().date()),
-        #     }
+        elif context == "pip":
+            pip = get_object_or_404(PerformanceImprovementPlan, pk=context_id)
+            known_values = {
+                "fullname": (
+                    pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
+                ),
+                "start_date": str(pip.start_date) if pip.start_date else "",
+                "end_date": str(pip.end_date) if pip.end_date else "",
+                "issues": (
+                    ", ".join([issue.description for issue in pip.issues.all()])
+                    if pip.issues.exists()
+                    else ""
+                ),
+                "objectives": (
+                    ", ".join([objective.description for objective in pip.objectives.all()])
+                    if pip.objectives.exists()
+                    else ""
+                ),
+                "consequences": pip.consequences or "",
+                "date": str(timezone.now().date()),
+            }
         else:
             return Response(
                 {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
@@ -547,7 +587,7 @@ class GenerateDocumentView(BaseDocumentView):
             ph: {"value": known_values.get(ph, "")} for ph in all_placeholders
         }
         serializer = GenerateDocumentResponseSerializer(
-            {"placeholders": placeholder_data, "template_id": template_id}
+            {"placeholders": placeholder_data, "template_id": template.id}
         )
         return Response(serializer.data)
 
@@ -565,18 +605,49 @@ class GenerateDocumentView(BaseDocumentView):
             400: {"description": "Invalid input or missing required placeholders"},
             404: {"description": "Template or context record not found"},
         },
-        description="Creates a new document with provided placeholder values and updates OnBoarding status to contract_review if context is onboarding",
+        description="Creates a new document with provided placeholder values. If no template_id is provided and context is 'pip', uses default PIP template.",
     )
     @transaction.atomic()
-    def post(self, request, template_id):
-        template = get_object_or_404(DocumentTemplate, pk=template_id)
+    def post(self, request, template_id=None):
+        context = request.data.get("context")
+        context_id = request.data.get("context_id")
+        if not context or not context_id:
+            return Response(
+                {"error": "context and context_id are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Handle template selection
+        if template_id is None and context == "pip":
+            template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+            try:
+                with open(template_file_path, 'r') as file:
+                    template_content = file.read()
+                template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
+                if not template:
+                    template = DocumentTemplate.objects.create(
+                        name="Default PIP Template",
+                        content=template_content,
+                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
+                    )
+            except FileNotFoundError:
+                return Response(
+                    {"error": "Default PIP template file not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        elif template_id is not None:
+            template = get_object_or_404(DocumentTemplate, pk=template_id)
+        else:
+            return Response(
+                {"error": "template_id is required for non-pip contexts"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = GenerateDocumentRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         placeholder_values = serializer.validated_data["placeholders"]
-        context = serializer.validated_data.get("context")
-        context_id = serializer.validated_data.get("context_id")
 
         document = Document.objects.create(
             document_template=template,
@@ -606,71 +677,139 @@ class DocumentContentPreviewView(BaseDocumentView):
         tags=["Document Generation"],
         responses={
             200: DocumentContentPreviewSerializer,
-            404: {"description": "Document not found"},
+            404: {"description": "Document or template not found"},
         },
-        description="Generates a preview of the document content by replacing placeholders with stored values",
+        description="Generates a preview of the document content by replacing placeholders with stored values. For PIP documents without an explicit template, uses the default PIP template.",
     )
     def get(self, request, document_id):
         document = get_object_or_404(Document, pk=document_id)
+        
+        # Check if the document is associated with a template
         template = document.document_template
-        template_content = template.content or ""
-        placeholder_values = document.placeholder_values or {}
+        template_content = ""
+        is_pip_context = False
 
+        # Determine if the document is for a PIP context
+        # Assuming placeholder_values may include a 'context' key from GenerateDocumentView
+        placeholder_values = document.placeholder_values or {}
+        context = placeholder_values.get("context", {}).get("value", "") if isinstance(placeholder_values, dict) else ""
+
+        if template:
+            template_content = template.content or ""
+        elif context == "pip":
+            # No explicit template, and context is PIP, so use default PIP template
+            is_pip_context = True
+            template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+            try:
+                with open(template_file_path, 'r') as file:
+                    template_content = file.read()
+                # Optionally, retrieve or create the default template in the database
+                template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
+                if not template:
+                    template = DocumentTemplate.objects.create(
+                        name="Default PIP Template",
+                        content=template_content,
+                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
+                    )
+                    document.document_template = template
+                    document.save()
+            except FileNotFoundError:
+                return Response(
+                    {"error": "Default PIP template file not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            return Response(
+                {"error": "No template associated with the document and no PIP context found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Replace placeholders using inherited method
         preview = self._replace_placeholders(template_content, placeholder_values)
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class DocumentStatusUpdateView(BaseDocumentView):
-    def _generate_pdf(self, content, placeholder_values):
-        """Generate a PDF from HTML content using weasyprint, preserving template formatting."""
+    def _generate_pdf(self, content, placeholder_values, context):
+        """Generate a PDF from content, using WeasyPrint for HTML or latexmk for LaTeX based on context."""
         logger.debug(f"Generating PDF with content length: {len(content)}")
         rendered_content = self._replace_placeholders(content, placeholder_values)
 
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8" />
-            <title>Document</title>
-            <style>
-                @page {{
-                    size: A4 portrait;
-                    margin: 2cm 2.5cm 2cm 2.5cm;  /* Standard document margins */
-                }}
-                body {{
-                    font-family: Arial, sans-serif;
-                    font-size: 12pt;
-                    margin: 35px;
-                    text-align: left;
-                }}
-                p {{
-                    text-align: left;
-                    margin: 0 0 10pt 0;
-                }}
-                h1, h2, h3 {{
-                    font-weight: bold;
-                    margin: 12pt 0 6pt 0;
-                    page-break-after: avoid;
-                }}
-                h1 {{ font-size: 14pt; }}
-                h2 {{ font-size: 12pt; }}
-                /* Preserve inline styles; no overrides for text-align, etc. */
-            </style>
-        </head>
-        <body>
-            {rendered_content}
-        </body>
-        </html>
-        """
+        if context == "pip":
+            # Handle LaTeX content for PIP documents
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".tex", delete=False) as temp_tex:
+                    temp_tex.write(rendered_content.encode('utf-8'))
+                    temp_tex_path = temp_tex.name
 
-        try:
-            pdf_file = HTML(string=html_content).write_pdf()
-            logger.info("PDF generated successfully")
-            return pdf_file
-        except Exception as e:
-            logger.error(f"Error generating PDF: {str(e)}")
-            raise
+                # Run latexmk to generate PDF
+                output_dir = tempfile.mkdtemp()
+                pdf_path = os.path.join(output_dir, "output.pdf")
+                cmd = ["latexmk", "-pdf", "-interaction=nonstopmode", f"-output-directory={output_dir}", temp_tex_path]
+                subprocess.run(cmd, check=True, capture_output=True)
+
+                with open(pdf_path, 'rb') as pdf_file:
+                    pdf_content = pdf_file.read()
+                
+                # Clean up temporary files
+                subprocess.run(["latexmk", "-C", "-output-directory={output_dir}"])
+                os.remove(temp_tex_path)
+                os.rmdir(output_dir)
+
+                logger.info("LaTeX PDF generated successfully")
+                return pdf_content
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Error generating LaTeX PDF: {e.stderr.decode()}")
+                raise
+            except Exception as e:
+                logger.error(f"Error generating LaTeX PDF: {str(e)}")
+                raise
+        else:
+            # Handle HTML content for other contexts
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8" />
+                <title>Document</title>
+                <style>
+                    @page {{
+                        size: A4 portrait;
+                        margin: 2cm 2.5cm 2cm 2.5cm;
+                    }}
+                    body {{
+                        font-family: Arial, sans-serif;
+                        font-size: 12pt;
+                        margin: 35px;
+                        text-align: left;
+                    }}
+                    p {{
+                        text-align: left;
+                        margin: 0 0 10pt 0;
+                    }}
+                    h1, h2, h3 {{
+                        font-weight: bold;
+                        margin: 12pt 0 6pt 0;
+                        page-break-after: avoid;
+                    }}
+                    h1 {{ font-size: 14pt; }}
+                    h2 {{ font-size: 12pt; }}
+                </style>
+            </head>
+            <body>
+                {rendered_content}
+            </body>
+            </html>
+            """
+
+            try:
+                pdf_file = HTML(string=html_content).write_pdf()
+                logger.info("HTML PDF generated successfully")
+                return pdf_file
+            except Exception as e:
+                logger.error(f"Error generating HTML PDF: {str(e)}")
+                raise
 
     def _get_email_values(self, placeholder_values, context, context_obj):
         """Derive email values based on context and context object."""
@@ -690,7 +829,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
             elif gender_lower in ['female', 'f']:
                 return f"Dear Ms. {name}" if name else "Dear Madam"
             else:
-                # For non-binary, prefer, or other gender identities
                 return f"Dear {name}" if name else "Dear Sir/Madam"
 
         if context == "onboarding":
@@ -700,13 +838,10 @@ class DocumentStatusUpdateView(BaseDocumentView):
                 and context_obj.application.job_position_advert
                 else None
             )
-            
-            # Get gender for salutation
             gender = None
             employee_name = ""
             if context_obj.application:
                 employee_name = context_obj.application.applicant_name or ""
-                # Try to get gender from applicant profile/user
                 if hasattr(context_obj.application, 'applicant') and context_obj.application.applicant:
                     gender = getattr(context_obj.application.applicant, 'gender', None)
                 elif hasattr(context_obj.application, 'user') and context_obj.application.user:
@@ -727,7 +862,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
-            
         elif context == "employee":
             gender = None
             employee_name = ""
@@ -746,7 +880,32 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     ),
                 }
             )
+        elif context == "pip":
+            gender = None
+            employee_name = ""
+            if hasattr(context_obj, "employee") and hasattr(context_obj.employee, "user"):
+                employee_name = context_obj.employee.user.fullname or ""
+                gender = getattr(context_obj.employee.user, 'gender', None)
             
+            email_values.update(
+                {
+                    "employee_name": employee_name,
+                    "salutation": get_salutation(gender, employee_name.split()[0] if employee_name else ""),
+                    "start_date": str(context_obj.start_date) if context_obj.start_date else "",
+                    "end_date": str(context_obj.end_date) if context_obj.end_date else "",
+                    "issues": (
+                        ", ".join([issue.description for issue in context_obj.issues.all()])
+                        if context_obj.issues.exists()
+                        else ""
+                    ),
+                    "objectives": (
+                        ", ".join([objective.description for objective in context_obj.objectives.all()])
+                        if context_obj.objectives.exists()
+                        else ""
+                    ),
+                    "consequences": context_obj.consequences or "",
+                }
+            )
         elif context == "leave":
             gender = None
             employee_name = ""
@@ -778,7 +937,7 @@ class DocumentStatusUpdateView(BaseDocumentView):
 
         for key in email_values:
             if key in placeholder_values:
-                email_values[key] = placeholder_values[key]
+                email_values[key] = placeholder_values[key].get("value", "") if isinstance(placeholder_values[key], dict) else placeholder_values[key]
         
         logger.debug(f"Email values for {context}: {email_values}")
         return email_values
@@ -789,37 +948,39 @@ class DocumentStatusUpdateView(BaseDocumentView):
             return get_object_or_404(OnBoarding, pk=context_id)
         elif context == "employee":
             return get_object_or_404(Employee, pk=context_id)
-        # elif context == "leave":
-        #     return get_object_or_404(Leave, pk=context_id)
+        elif context == "pip":
+            return get_object_or_404(PerformanceImprovementPlan, pk=context_id)
+
         raise ValueError("Invalid context")
 
     @extend_schema(
-        tags=["Document Generation"],
-        parameters=[
-            OpenApiParameter(
-                name="context",
-                type=str,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                enum=["onboarding", "employee", "leave"],
-                description="The context for document generation",
-            ),
-            OpenApiParameter(
-                name="context_id",
-                type=int,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="The ID of the context record",
-            ),
-        ],
-        request=DocumentStatusUpdateSerializer,
-        responses={
-            200: DocumentContentPreviewSerializer,
-            400: {"description": "Invalid input or missing required placeholders"},
-            404: {"description": "Document or context record not found"},
-        },
-        description="Updates document status, sends PDF email, and creates context-specific records if status is reviewed",
+    tags=["Document Generation"],
+    parameters=[
+        OpenApiParameter(
+            name="context",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            enum=["onboarding", "employee", "leave", "pip"],
+            description="The context for document generation",
+        ),
+        OpenApiParameter(
+            name="context_id",
+            type=int,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="The ID of the context record",
+        ),
+    ],
+    request=DocumentStatusUpdateSerializer,
+    responses={
+        200: DocumentContentPreviewSerializer,
+        400: {"description": "Invalid input or missing required placeholders"},
+        404: {"description": "Document or context record not found"},
+    },
+    description="Updates document status, sends PDF email, and creates context-specific records if status is reviewed. For PIP context, generates LaTeX-based PDF and uses PIP-specific email templates.",
     )
+    @transaction.atomic()
     def patch(self, request, document_id):
         context = request.query_params.get("context")
         context_id = request.query_params.get("context_id")
@@ -853,7 +1014,30 @@ class DocumentStatusUpdateView(BaseDocumentView):
             )
 
         template = document.document_template
+        if not template:
+            return Response(
+                {"error": "No template associated with the document"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         template_content = template.content or ""
+        if not template_content and template.name == "Default PIP Template":
+            template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
+            try:
+                with open(template_file_path, 'r') as file:
+                    template_content = file.read()
+                template.content = template_content
+                template.save()
+            except FileNotFoundError:
+                return Response(
+                    {"error": "Default PIP template file not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        elif not template_content:
+            return Response(
+                {"error": "Template content is empty"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         if (
             context == "onboarding"
@@ -864,14 +1048,14 @@ class DocumentStatusUpdateView(BaseDocumentView):
             template_content = (
                 job_position.contract_template.content
                 if job_position and job_position.contract_template
-                else template.content
+                else template_content
             )
         elif context == "employee" and hasattr(context_obj, "job_position"):
             template_content = (
                 context_obj.job_position.contract_template.content
                 if context_obj.job_position
                 and context_obj.job_position.contract_template
-                else template.content
+                else template_content
             )
 
         if new_status == "reviewed":
@@ -879,8 +1063,13 @@ class DocumentStatusUpdateView(BaseDocumentView):
                 email_values = self._get_email_values(
                     placeholder_values, context, context_obj
                 )
-                pdf_content = self._generate_pdf(template_content, placeholder_values)
-                pdf_filename = f"document_{context}_{document.pk}.pdf"
+                pdf_content = self._generate_pdf(template_content, placeholder_values, context)
+                # Use a descriptive filename for PIP context
+                pdf_filename = (
+                    f"Performance_Improvement_Plan_{email_values.get('employee_name', 'Employee').replace(' ', '_')}.pdf"
+                    if context == "pip"
+                    else f"document_{context}_{document.pk}.pdf"
+                )
                 document_file = ContentFile(pdf_content, name=pdf_filename)
 
                 if context == "onboarding":
@@ -899,6 +1088,9 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     )
                     context_obj.status = "issued_contract"
                     context_obj.save()
+                elif context == "pip":
+                    document.original_file = document_file
+                    document.save()
                 elif context == "leave":
                     pass
 
@@ -909,17 +1101,22 @@ class DocumentStatusUpdateView(BaseDocumentView):
                     )
                 elif context == "employee" and hasattr(context_obj, "email"):
                     recipient_email = context_obj.email
+                elif context == "pip" and hasattr(context_obj.employee, "user"):
+                    recipient_email = getattr(context_obj.employee.user, "email", None)
                 elif context == "leave" and hasattr(context_obj.employee, "email"):
                     recipient_email = context_obj.employee.email
 
                 if recipient_email:
                     try:
-                        html_message = render_to_string(
-                            "emails/contract_email.html", email_values
+                        # Use PIP-specific templates for pip context
+                        email_template_html = (
+                            "emails/pip_email.html" if context == "pip" else "emails/contract_email.html"
                         )
-                        text_message = render_to_string(
-                            "emails/contract_email.txt", email_values
+                        email_template_txt = (
+                            "emails/pip_email.txt" if context == "pip" else "emails/contract_email.txt"
                         )
+                        html_message = render_to_string(email_template_html, email_values)
+                        text_message = render_to_string(email_template_txt, email_values)
                         email = EmailMultiAlternatives(
                             subject=f"Your {context.capitalize()} Document",
                             body=text_message,
