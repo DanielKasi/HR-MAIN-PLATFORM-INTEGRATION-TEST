@@ -2321,21 +2321,36 @@ export default function ApplicationsPage() {
 												className="w-full bg-white border-gray-300 pl-9"
 												placeholder="Search or select job position"
 												type="text"
-												value={
-													jpFilterText ||
-													(formData.job_position_advert
-														? getPositionLabel(
-																jobPositionAdverts.find(
-																	(p) => p.id === formData.job_position_advert,
-																) || ({} as JobPositionAdvert),
-															)
-														: "")
-												}
+												value={(() => {
+													if (jobPositionDropdownOpen && jpFilterText !== "") {
+														return jpFilterText;
+													}
+													if (formData.job_position_advert && jpFilterText === "") {
+														const selectedAdvert = jobPositionAdverts.find(
+															(p) => p.id === formData.job_position_advert,
+														);
+														return selectedAdvert ? getPositionLabel(selectedAdvert) : "";
+													}
+													return jpFilterText;
+												})()}
 												onChange={(e) => {
-													setJpFilterText(e.target.value);
+													const newValue = e.target.value;
+													setJpFilterText(newValue);
 													setJobPositionDropdownOpen(true);
+
+													if (newValue === "") {
+														handleInputChange("job_position_advert", 0);
+													}
 												}}
 												onFocus={handleJobPositionInputFocus}
+												onKeyDown={(e) => {
+													if (
+														(e.key === "Backspace" || e.key === "Delete") &&
+														jpFilterText === ""
+													) {
+														handleInputChange("job_position_advert", 0);
+													}
+												}}
 											/>
 											{jobPositionDropdownOpen && (
 												<div
@@ -2351,7 +2366,7 @@ export default function ApplicationsPage() {
 																	className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
 																	onClick={() => {
 																		handleInputChange("job_position_advert", Number(advert.id));
-																		setJpFilterText(getPositionLabel(advert));
+																		setJpFilterText("");
 																		setJobPositionDropdownOpen(false);
 																	}}
 																>
@@ -2389,7 +2404,6 @@ export default function ApplicationsPage() {
 										</div>
 									</div>
 								</div>
-
 								<div className="space-y-2">
 									<label
 										htmlFor="application_date"
