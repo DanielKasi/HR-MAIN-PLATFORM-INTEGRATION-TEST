@@ -36,7 +36,7 @@ import {
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 
 interface EmployeesTableProps {
 	refreshFunctionRef?: RefObject<(() => void) | null>;

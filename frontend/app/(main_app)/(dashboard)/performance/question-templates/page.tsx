@@ -9,7 +9,7 @@ import Link from "next/link";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { QUESTION_TEMPLATES_API } from "@/lib/utils";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

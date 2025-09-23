@@ -2,20 +2,18 @@ import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { IPaginatedResponse } from "@/types/types.utils";
 
-interface IRecentHireProps {
+interface Props {
 	className?: string;
 }
 
-interface IRecentHire {
+interface IRecentAssets {
 	name: string;
-	role: string;
-	department: string;
+	category: string;
 	status: "active";
-	created_at: string;
 }
 
-export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
-	const columns: ColumnDef<IRecentHire>[] = [
+export default function RecentAssetsTable({ className = "" }: Props) {
+	const columns: ColumnDef<IRecentAssets>[] = [
 		{
 			key: "name",
 			header: <span>Name</span>,
@@ -23,13 +21,8 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 		},
 		{
 			key: "role",
-			header: <span>Role</span>,
-			cell: (props) => <span>{props.role}</span>,
-		},
-		{
-			key: "department",
-			header: <span>Department</span>,
-			cell: (props) => <span>{props.department}</span>,
+			header: <span>Category</span>,
+			cell: (props) => <span>{props.category}</span>,
 		},
 		{
 			key: "status",
@@ -39,11 +32,6 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 					{props.status[0].toLocaleUpperCase() + props.status.slice(1)}
 				</span>
 			),
-		},
-		{
-			key: "date",
-			header: <span>Date</span>,
-			cell: (props) => <span>{props.created_at}</span>,
 		},
 	];
 	return (
@@ -55,17 +43,15 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 					skeletonRows={5}
 					columns={columns}
 					emptyState={[]}
-					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<IRecentHire>> {
+					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<IRecentAssets>> {
 						return Promise.resolve({
 							count: 20,
 							next: "21",
 							previous: "0",
 							results: new Array(5).fill(null).map(() => ({
-								name: "Musoke Paul",
-								role: "Accountant",
-								department: "Finance",
+								name: "John Doe",
+								category: "Finance",
 								status: "active",
-								created_at: new Date().toDateString(),
 							})),
 						});
 					}}

@@ -13,7 +13,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { BonusPointsModal } from "./bonus-points-modal";
 import { Plus } from "lucide-react";

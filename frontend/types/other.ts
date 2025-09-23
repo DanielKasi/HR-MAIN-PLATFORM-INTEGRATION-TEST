@@ -1,5 +1,7 @@
+import { Permission, UserProfile } from "./user.types";
 import { IBaseApprovable } from "./approvals.types";
 import { IInstitutionDocument } from "./types.utils";
+import { Branch } from "./branch.types";
 
 import { PERMISSION_CODES } from "@/constants";
 
@@ -69,91 +71,6 @@ export interface ITask {
 	updated_at: string;
 	comment: string;
 	approved_by: UserProfile | null;
-}
-
-export interface Branch {
-	id: number;
-	institution: number;
-	paying_bank_account: number;
-	branch_name: string;
-	institution_name: string;
-	branch_phone_number?: string;
-	branch_location: string;
-	branch_longitude: string;
-	branch_latitude: string;
-	branch_email?: string;
-	branch_opening_time?: string;
-	branch_closing_time?: string;
-	is_active: boolean;
-}
-
-export interface BranchFormData {
-	institution: number;
-	paying_bank_account: number;
-	branch_name: string;
-	branch_phone_number?: string;
-	branch_location: string;
-	branch_longitude: string;
-	branch_latitude: string;
-	branch_email?: string;
-	branch_opening_time?: string;
-	branch_closing_time?: string;
-	is_active?: boolean;
-}
-
-export enum USER_GENDER {
-	MALE = "male",
-	FEMALE = "female",
-	OTHER = "other",
-}
-
-export enum USER_TYPES {
-	STAFF = "STAFF",
-}
-
-export interface Role {
-	id: number;
-	name: string;
-	description: string;
-	institution: number;
-	permissions_details?: Permission[];
-}
-
-export interface IUser {
-	id: number;
-	fullname: string;
-	email: string;
-	is_active: boolean;
-	is_staff: boolean;
-	is_email_verified: boolean;
-	is_password_verified: boolean;
-	roles: Role[];
-	branches: Branch[];
-	permissions: Record<any, any>;
-	last_login: string | null;
-	is_superuser: boolean;
-	gender?: USER_GENDER;
-	user_type?: USER_TYPES;
-}
-
-export interface UserProfile {
-	fullname: string;
-	id: number;
-	user: IUser;
-	institution: number;
-	bio: string | null;
-}
-
-export interface Permission {
-	id: number;
-	permission_name: string;
-	permission_code: string;
-	permission_description: string;
-	category: {
-		id: number;
-		permission_category_name: string;
-		permission_category_description: string;
-	};
 }
 
 export interface RoleDetail {
@@ -254,6 +171,3 @@ export interface NavItem {
 }
 
 export type MaritalStatus = "single" | "married" | "divorced" | "widowed";
-export interface Role extends IBaseApprovable {}
-export interface Branch extends IBaseApprovable {}
-export interface IUser extends IBaseApprovable {}

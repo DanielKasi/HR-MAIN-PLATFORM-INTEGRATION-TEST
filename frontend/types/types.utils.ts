@@ -1,5 +1,8 @@
-import type { Branch, IUser, IUserInstitution, Role, UserProfile } from ".";
 import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types";
+import { IProjectDashboard } from "./project.type";
+import { Branch } from "./branch.types";
+import { IUserInstitution } from "./other";
+import { IUser, Role, UserProfile } from "./user.types";
 
 export type ContextType = "employee" | "department" | "job_position";
 export type CalculationMethod = "fixed" | "percentage";
@@ -89,26 +92,6 @@ export type OffboardingData = {
 		additional_notes: string;
 	}[];
 };
-
-export interface AssetsData {
-	asset_counts: {
-		available: number;
-		allocated: number;
-		maintenance: number;
-		decommissioned: number;
-		total: number;
-	};
-	category_counts: {
-		[key: string]: number;
-	};
-	pending_counts: {
-		requests: number;
-		allocations: number;
-		returns: number;
-		total: number;
-	};
-	recent_assets: IAsset[];
-}
 
 export interface IReportsToDetails {
 	id: number;
@@ -393,97 +376,10 @@ export interface IRecruitmentDashboard {
 		count: number;
 	}>;
 	applications_over_time: Array<{
-		date: string;
-		count: number;
+		month: string;
+		hired: number;
+		applications: number;
 	}>;
-}
-
-export interface IEmployeeDashboard {
-	total_employees: number;
-	employees_by_gender: Array<{
-		gender: string;
-		count: number;
-	}>;
-	employees_by_employee_type: Array<{
-		employee_type: string;
-		count: number;
-	}>;
-	employees_by_work_type: Array<{
-		work_type: string;
-		count: number;
-	}>;
-	employees_by_department: Array<{
-		department: string;
-		count: number;
-	}>;
-	shift_statuses: Array<{
-		status: string;
-		count: number;
-	}>;
-	average_age: number;
-	average_tenure_years: number;
-	recent_hires: number;
-	employees_by_marital_status: Array<{
-		marital_status: string;
-		count: number;
-	}>;
-}
-
-export interface ILeaveDashboard {
-	total_leave_applications: number;
-	applications_by_status: Array<{
-		status: string;
-		count: number;
-	}>;
-	applications_by_leave_type: Array<{
-		leave_type: string;
-		count: number;
-	}>;
-	leave_balances_by_type: Array<{
-		leave_type: string;
-		total_allocated_days: number;
-		total_used_days: number;
-		total_available_days: number;
-	}>;
-	average_leave_days_taken: number;
-	pending_approvals: number;
-	applications_over_time: Array<{
-		date: string;
-		count: number;
-	}>;
-}
-
-export interface ProjectStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskPriorityCount {
-	priority: string;
-	count: number;
-}
-
-export interface ProjectsAnalytics {
-	total: number;
-	by_status: ProjectStatusCount[];
-}
-
-export interface TasksAnalytics {
-	total: number;
-	by_status: TaskStatusCount[];
-	by_priority: TaskPriorityCount[];
-}
-
-export interface IProjectDashboard {
-	projects: ProjectsAnalytics;
-	tasks: TasksAnalytics;
-	active_projects: number;
-	overdue_tasks: number;
 }
 
 export interface DashboardError {
@@ -506,46 +402,9 @@ export interface IAttendanceDashboard {
 		count: number;
 	}>;
 	attendance_over_time: Array<{
-		date: string;
-		count: number;
-	}>;
-}
-
-export interface IPayrollDashboard {
-	total_payroll_amount: number;
-	total_gross_payroll: number;
-	payroll_by_department: Array<{
-		department: string;
-		total_net: number;
-		total_gross: number;
-		employee_count: number;
-	}>;
-	payroll_over_time: Array<{
 		month: string;
-		total_net: number;
-		total_gross: number;
-		payslips_count: number;
-	}>;
-	allowances_vs_deductions: {
-		total_allowances: number;
-		total_deductions: number;
-		net_difference: number;
-	};
-	average_gross_salary: number;
-	average_net_salary: number;
-	payroll_periods_summary: {
-		total_periods: number;
-		processed_periods: number;
-		pending_periods: number;
-		latest_period: string;
-	};
-	penalty_breakdown: Array<{
-		penalty_type: string;
 		count: number;
-		total_amount: number;
 	}>;
-	total_penalties_amount: number;
-	total_penalties_count: number;
 }
 
 export interface IInterviewStageFormData {
@@ -1779,40 +1638,6 @@ export interface ITaxRuleFormData {
 // Legacy interfaces for backward compatibility
 export interface Itax extends ITax {}
 export interface ItaxRules extends ITaxRule {}
-
-export interface IAssetCategory {
-	id: number;
-	institution: number;
-	category_name: string;
-	category_description: string | null;
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetCategoryFormData {
-	category_name: string;
-	category_description?: string;
-}
-
-export interface IAsset {
-	id: number;
-	institution: number;
-	asset_name: string;
-	batch_number: string;
-	serial_number: string;
-	category: IAssetCategory | null;
-	description: string | null;
-	status: "available" | "allocated" | "maintenance" | "decommissioned";
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-	created_by: number;
-	current_holder: number | UserProfile;
-	current_holder_details?: any; // Employee details
-	asset_histories?: IAssetHistory[];
-}
-
 export interface DashboardCategory {
 	count: number;
 	tasks: ApprovalTask[];
@@ -1832,95 +1657,6 @@ export interface ChangePasswordData {
 	old_password: string;
 	new_password: string;
 	new_password_confirm: string;
-}
-export interface IAssetFormData {
-	asset_name: string;
-	serial_number: string;
-	category: number;
-	description?: string;
-	status?: "available" | "allocated" | "maintenance" | "decommissioned";
-}
-
-export interface IAssetHistory {
-	id: number;
-	asset: IAsset;
-	event_type:
-		| "allocated"
-		| "returned"
-		| "maintenance"
-		| "decommissioned"
-		| "created"
-		| "reassigned";
-	performed_by: UserProfile;
-	affected_user: UserProfile;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetHistoryFormData {
-	id: number;
-	asset: number;
-	event_type:
-		| "allocated"
-		| "returned"
-		| "maintenance"
-		| "decommissioned"
-		| "created"
-		| "reassigned";
-	performed_by: number;
-	affected_user: number;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetRequest {
-	id: number;
-	asset: IAsset;
-	requester: any; // Employee details
-	request_reference_code: string;
-	asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetRequestFormData {
-	asset_id: number;
-	notes?: string;
-}
-
-export interface IAssetAllocation {
-	id: number;
-	asset: IAsset;
-	allocated_to: UserProfile; // Employee details
-	allocated_by: UserProfile; // Employee details
-	responding_to_request?: IAssetRequest | null;
-	allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
-	alloc_code: string;
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetReturn {
-	id: number;
-	asset: IAsset;
-	allocation: IAssetAllocation;
-	condition: "good" | "damaged" | "lost";
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-	is_active: boolean;
-	deleted_at: string | null;
-}
-
-export interface IAssetReturnFormData {
-	asset: number;
-	allocation: number;
-	condition: "good" | "damaged" | "lost";
-	notes?: string;
 }
 
 export interface IEmployeeTax {
