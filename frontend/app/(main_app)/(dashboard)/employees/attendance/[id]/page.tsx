@@ -100,7 +100,7 @@ const EmployeeAttendanceHistory = () => {
 	};
 
 	const formatTime = (timeString: string) => {
-		if (!timeString) return "N/A";
+		if (!timeString) return "Unknown";
 
 		return timeString;
 	};
@@ -126,7 +126,7 @@ const EmployeeAttendanceHistory = () => {
 	};
 
 	const calculateWorkHours = (checkIn: string, checkOut: string | null) => {
-		if (!checkIn || !checkOut) return "N/A";
+		if (!checkIn || !checkOut) return "Unknown";
 
 		const checkInTime = new Date(`2000-01-01T${checkIn}`);
 		const checkOutTime = new Date(`2000-01-01T${checkOut}`);
@@ -403,7 +403,7 @@ const EmployeeAttendanceHistory = () => {
 														record.check_out_time,
 													);
 
-													return secs !== null ? formatDuration(secs) : "N/A";
+													return secs !== null ? formatDuration(secs) : "Unknown";
 												})()}
 											</div>
 											<div className="font-medium">

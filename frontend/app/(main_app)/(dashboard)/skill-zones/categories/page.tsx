@@ -101,7 +101,7 @@ export default function SkillZoneCategoriesPage() {
 		{
 			key: "description",
 			header: "Description",
-			cell: (category) => category.description || "N/A",
+			cell: (category) => category.description || "Unknown",
 		},
 		{
 			key: "actions",

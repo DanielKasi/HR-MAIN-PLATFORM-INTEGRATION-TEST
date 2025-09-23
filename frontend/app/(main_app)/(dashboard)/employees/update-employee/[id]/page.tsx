@@ -474,7 +474,7 @@ export default function UpdateEmployeeForm() {
 			const employee: IEmployee = await getEmployeeById({ employeeId: parseInt(employeeId) });
 			setThisEmployee(employee);
 			setFormData({
-				fullname: employee?.name || "",
+				fullname: employee?.name || employee.user?.fullname || "",
 				email: employee.email,
 				company_email: employee.company_email?.email || "",
 				phone_number: employee.phone_number,

@@ -119,7 +119,7 @@ export default function SkillZonesPage() {
 							)}
 						</>
 					) : (
-						<p className="text-sm text-muted-foreground">N/A</p>
+						<p className="text-sm text-muted-foreground">Unknown</p>
 					)}
 				</div>
 			),
@@ -129,7 +129,7 @@ export default function SkillZonesPage() {
 			header: "Notes",
 			cell: (skillZone) =>
 				skillZone.notes?.substring(0, 50) +
-					(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "N/A",
+					(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "Unknown",
 		},
 		{
 			key: "potential_value",
@@ -137,14 +137,14 @@ export default function SkillZonesPage() {
 			cell: (skillZone) =>
 				skillZone.potential_value?.substring(0, 50) +
 					(skillZone.potential_value && skillZone.potential_value.length > 50 ? "..." : "") ||
-				"N/A",
+				"Unknown",
 		},
 		{
 			key: "approval_status",
 			header: "Approval Status",
 			cell: (skillZone) => (
 				<Badge variant={skillZone.approval_status === "active" ? "default" : "secondary"}>
-					{skillZone.approval_status || "N/A"}
+					{skillZone.approval_status || "Unknown"}
 				</Badge>
 			),
 		},
@@ -256,15 +256,15 @@ export default function SkillZonesPage() {
 						</div>
 						<div>
 							<label className="text-sm font-medium">Categories</label>
-							<p>{selectedSkillZone.category_names.map((cat) => cat).join(", ") || "N/A"}</p>
+							<p>{selectedSkillZone.category_names.map((cat) => cat).join(", ") || "Unknown"}</p>
 						</div>
 						<div>
 							<label className="text-sm font-medium">Notes</label>
-							<p>{selectedSkillZone.notes || "N/A"}</p>
+							<p>{selectedSkillZone.notes || "Unknown"}</p>
 						</div>
 						<div>
 							<label className="text-sm font-medium">Potential Value</label>
-							<p>{selectedSkillZone.potential_value || "N/A"}</p>
+							<p>{selectedSkillZone.potential_value || "Unknown"}</p>
 						</div>
 					</div>
 				</ApprovableDialog>

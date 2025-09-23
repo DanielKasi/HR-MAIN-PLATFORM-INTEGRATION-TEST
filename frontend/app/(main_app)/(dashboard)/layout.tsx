@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import type { IUserInstitution } from "../../../types";
+import { IUserInstitution } from "@/types/other";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";

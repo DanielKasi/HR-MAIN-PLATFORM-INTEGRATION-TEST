@@ -12,7 +12,7 @@ import { useSelector } from "react-redux";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import EmployeeSearchableSelect from "@/components/selects/employee-searchable-select";
-import { ObjectiveSelect } from "@/components/selects/objective-select";
+import { ObjectiveSearchableSelect } from "@/components/selects/objective-select";
 import { KEY_RESULTS_API } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,7 +42,7 @@ export function EmployeeObjectiveForm({
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const [keyResults, setKeyResults] = useState<IKeyResult[]>([]);
 	const [employeeValue, setEmployeeValue] = useState<(string | number)[]>([]);
-	const [objectiveValue, setObjectiveValue] = useState<string>("");
+	const [objectiveValue, setObjectiveValue] = useState<number>(0);
 	const [formData, setFormData] = useState<Record<string, any>>(() => {
 		if (!initialData) {
 			return {
@@ -79,7 +79,7 @@ export function EmployeeObjectiveForm({
 		// Set initial values
 		if (initialData) {
 			setEmployeeValue([initialData.employee.id]);
-			setObjectiveValue(String(initialData.objective.id));
+			setObjectiveValue(Number(initialData.objective.id));
 		}
 	}, [initialData]);
 
@@ -184,11 +184,16 @@ export function EmployeeObjectiveForm({
 					<label className="text-sm font-medium text-slate-700">
 						Objective <span className="text-red-500">*</span>
 					</label>
-					<ObjectiveSelect
-						value={objectiveValue}
-						onValueChange={setObjectiveValue}
+					<ObjectiveSearchableSelect
+						value={[objectiveValue]}
+						onValueChange={(values) => {
+							if (values.length) {
+								setObjectiveValue(Number(values[0]));
+							}
+						}}
 						placeholder="Select objective"
 						disabled={isLoading || !!initialData}
+						multiple={false}
 					/>
 					{!!initialData && (
 						<p className="text-xs text-slate-500">Objective cannot be changed after creation</p>

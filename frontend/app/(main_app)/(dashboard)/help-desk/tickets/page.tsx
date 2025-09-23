@@ -82,7 +82,7 @@ export default function TicketsPage() {
 		{
 			key: "category",
 			header: "Category",
-			cell: (ticket) => ticket.category?.name || "N/A",
+			cell: (ticket) => ticket.category?.name || "Unknown",
 		},
 		{
 			key: "status",
@@ -121,7 +121,7 @@ export default function TicketsPage() {
 		{
 			key: "assigned_to",
 			header: "Assigned To",
-			cell: (ticket) => ticket.assigned_to?.user?.fullname || "N/A",
+			cell: (ticket) => ticket.assigned_to?.user?.fullname || "Unknown",
 		},
 		{
 			key: "actions",
