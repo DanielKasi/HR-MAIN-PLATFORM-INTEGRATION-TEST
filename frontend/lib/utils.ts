@@ -4364,21 +4364,21 @@ export function generatePeriodName(startDate: string, endDate: string): string {
 
 		return `Week ${weekNumber} - ${monthName} ${year}`;
 	} else {
-	const monthDays: Record<string, number> = {};
-	
-	const currentDate = new Date(start);
-	while (currentDate <= end) {
-		const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
-		monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
-		currentDate.setDate(currentDate.getDate() + 1);
+		const monthDays: Record<string, number> = {};
+
+		const currentDate = new Date(start);
+		while (currentDate <= end) {
+			const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
+			monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		const dominantMonth = Object.keys(monthDays).reduce((a, b) =>
+			monthDays[a] > monthDays[b] ? a : b,
+		);
+
+		return dominantMonth;
 	}
-	
-	const dominantMonth = Object.keys(monthDays).reduce((a, b) => 
-		monthDays[a] > monthDays[b] ? a : b
-	);
-	
-	return dominantMonth;
-}
 }
 
 export const checkPeriodOverlap = async ({
@@ -5533,7 +5533,7 @@ export const bankAccountsAPI = {
 			throw error;
 		}
 	},
-	getPaginatedFRomUrl: async ({ url }: { url: string }) => {
+	getPaginatedFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
 
 		return response.data as IPaginatedResponse<IBankAccount>;

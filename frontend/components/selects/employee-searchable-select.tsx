@@ -1,14 +1,13 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
-
-import { IEmployee } from "@/types/types.utils";
+import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { getPaginatedEmployees, getPaginatedEmployeesFromUrl } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { IEmployee } from "@/types/types.utils";
 
 export interface EmployeeSearchableSelectProps {
 	value: (string | number)[];
@@ -25,78 +24,91 @@ export interface EmployeeSearchableSelectProps {
 	id?: string;
 }
 
-export const EmployeeSearchableSelect = ({
-	value,
-	onValueChange,
-	disabled = false,
-	showSelectedItems = true,
-	placeholder = "Select employee(s)",
-	showEmployeeId = true,
-	showDepartment = true,
-	className,
-	triggerClassName,
-	multiple = false,
-	hideSelectedFromList = false,
-	id,
-}: EmployeeSearchableSelectProps) => {
-	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
+export const EmployeeSearchableSelect = memo(
+	({
+		value,
+		onValueChange,
+		disabled = false,
+		showSelectedItems = true,
+		placeholder = "Select employee(s)",
+		showEmployeeId = true,
+		showDepartment = true,
+		className,
+		triggerClassName,
+		multiple = false,
+		hideSelectedFromList = false,
+		id,
+	}: EmployeeSearchableSelectProps) => {
+		const currentInstitution = useSelector(selectSelectedInstitution);
+		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	useEffect(() => {
-		setSelectedItems(value);
-	}, [value]);
+		useEffect(() => {
+			setSelectedItems(value);
+		}, [value]);
 
-	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
-		if (!currentInstitution) {
-			throw new Error("No institution found !");
-		}
+		const fetchFirstPage = useCallback(
+			async (query?: { search?: string; page?: number }) => {
+				if (!currentInstitution) {
+					throw new Error("No institution found!");
+				}
+				return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+			},
+			[currentInstitution],
+		);
 
-		return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
-	};
+		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
+			return await getPaginatedEmployeesFromUrl({ url });
+		}, []);
 
-	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await getPaginatedEmployeesFromUrl({ url });
-	};
+		const handleSelect = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+				if (!selectedItems.includes(itemId)) {
+					if (multiple) {
+						onValueChange([...selectedItems, itemId]);
+					} else {
+						onValueChange([itemId]);
+					}
+				}
+			},
+			[multiple, selectedItems, onValueChange],
+		);
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-		if (!selectedItems.includes(itemId)) {
-			if (multiple) {
-				onValueChange([...selectedItems, itemId]);
-			} else {
-				onValueChange([itemId]);
-			}
-		}
-	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
-		const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
-		setSelectedItems(newItems);
-		onValueChange(newItems);
-	};
+		const handleRemove = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IEmployee>) => {
+				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+				setSelectedItems(newItems);
+				onValueChange(newItems);
+			},
+			[selectedItems, onValueChange],
+		);
 
-	return (
-		<div className={className}>
-			<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
-				id={id}
-				paginated
-				fetchFirstPage={fetchFirstPage}
-				fetchFromUrl={fetchFromUrl}
-				getItemId={(emp) => emp.id}
-				getItemLabel={(emp) => emp.user?.fullname || ""}
-				getItemValue={(emp) => emp.id.toString()}
-				selectedItems={selectedItems}
-				onSelect={handleSelect}
-				onRemove={handleRemove}
-				showSelectedItems={showSelectedItems}
-				multiple={multiple}
-				disabled={disabled}
-				placeholder={placeholder}
-				searchPlaceholder="Search employees by name, email, ID, or department..."
-				triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
-				popoverClassName="w-full"
-				hideSelectedFromList={hideSelectedFromList}
-			/>
-		</div>
-	);
-};
+		return (
+			<div className={className}>
+				<PaginatedSearchableSelect<IEmployee, { search?: string; page?: number }>
+					id={id}
+					paginated
+					fetchFirstPage={fetchFirstPage}
+					fetchFromUrl={fetchFromUrl}
+					getItemId={(emp) => emp.id}
+					getItemLabel={(emp) => emp.user?.fullname || ""}
+					getItemValue={(emp) => emp.id.toString()}
+					selectedItems={selectedItems}
+					onSelect={handleSelect}
+					onRemove={handleRemove}
+					showSelectedItems={showSelectedItems}
+					multiple={multiple}
+					disabled={disabled}
+					placeholder={placeholder}
+					searchPlaceholder="Search employees by name, email, ID, or department..."
+					triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+					popoverClassName="w-full"
+					hideSelectedFromList={hideSelectedFromList}
+				/>
+			</div>
+		);
+	},
+);
+
+EmployeeSearchableSelect.displayName = "EmployeeSearchableSelect";
 
 export default EmployeeSearchableSelect;
