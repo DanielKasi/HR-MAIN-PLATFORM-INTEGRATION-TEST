@@ -511,6 +511,7 @@ class TicketListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print(request.data)
         serializer = TicketSerializer(
             data=request.data, context={"request": request}
         )
@@ -645,6 +646,7 @@ class TicketDetailView(APIView):
     )
     @transaction.atomic()
     def patch(self, request, pk):
+        print(request.data)
         ticket = get_object_or_404(Ticket, pk=pk)
         ticket.approval_status = 'under_update'
         serializer = TicketSerializer(ticket, data=request.data, partial=True)
