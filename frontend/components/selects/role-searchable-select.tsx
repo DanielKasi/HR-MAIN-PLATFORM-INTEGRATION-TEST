@@ -6,7 +6,7 @@ import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { Role } from "@/types";
+import { Role } from "@/types/user.types";
 import { ROLES_API } from "@/lib/utils";
 
 export interface RoleSearchableSelectProps {

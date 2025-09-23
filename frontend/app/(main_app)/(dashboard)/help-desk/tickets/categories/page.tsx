@@ -12,8 +12,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Edit, Eye, Trash2, Plus, Search } from "lucide-react";
-import { ColumnDef } from "@/components/common/tables/paginated-table";
-import { PaginatedTable } from "@/components/common/tables/paginated-table";
+import { ColumnDef } from "@/components/PaginatedTable";
+import { PaginatedTable } from "@/components/PaginatedTable";
 import { TICKET_CATEGORIES_API } from "@/lib/api/help-desk.utils";
 import type { TicketCategory } from "@/types/help-desk.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";

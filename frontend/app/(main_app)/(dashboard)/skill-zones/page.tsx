@@ -12,8 +12,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Edit, Eye, Trash2, Search } from "lucide-react";
-import { ColumnDef } from "@/components/common/tables/paginated-table";
-import { PaginatedTable } from "@/components/common/tables/paginated-table";
+import { ColumnDef } from "@/components/PaginatedTable";
+import { PaginatedTable } from "@/components/PaginatedTable";
 import { SKILL_ZONE_API } from "@/lib/api/recruitment.utils";
 import type { ISkillZone } from "@/types/recruitment.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";

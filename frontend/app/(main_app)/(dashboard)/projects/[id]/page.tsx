@@ -51,7 +51,7 @@ import { toast } from "sonner";
 import { IProjectStatus, IProjectTaskPriority, IProjectTaskStatus } from "@/types/types.utils";
 import { Icon } from "@iconify/react";
 import { getFileUrl } from "@/lib/helpers";
-import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import Calender, { Group, Item } from "@/components/projects/tasks/calender";

@@ -25,7 +25,7 @@ import {
 import { hasPermission } from "@/lib/helpers";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { IEmployee } from "@/types/types.utils";
-import { NavItem } from "@/types";
+import { NavItem } from "@/types/other";
 import { useMobile } from "@/hooks/use-mobile";
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 
