@@ -649,7 +649,7 @@ class TicketDetailView(APIView):
         print(request.data)
         ticket = get_object_or_404(Ticket, pk=pk)
         ticket.approval_status = 'under_update'
-        serializer = TicketSerializer(ticket, data=request.data, partial=True)
+        serializer = TicketSerializer(ticket, data=request.data, partial=True, context={'request': request})  # Add context
         if serializer.is_valid():
             serializer.save()
             ticket.confirm_update()
