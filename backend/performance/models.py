@@ -548,7 +548,9 @@ class Meeting(BaseApprovableModel):
         self._sync_to_calendar()
 
     def get_institution(self):
-        return self.institution     
+        return self.institution  
+        
+           
 
 class PerformanceConcernType(BaseApprovableModel):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
