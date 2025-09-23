@@ -407,13 +407,20 @@ export interface IAttendanceDashboard {
 	}>;
 }
 
+export interface IFeedbackField {
+	label: string;
+	type: "text" | "rating" | "checkbox";
+	required: boolean;
+	options?: number[] | string[];
+}
+
 export interface IInterviewStageFormData {
 	job_position_advert: number;
 	name: string;
 	level: number;
 	interviewers: number[];
+	feedback_fields?: IFeedbackField[];
 }
-
 export interface IInterviewStage {
 	candidates: any[];
 	id: number;

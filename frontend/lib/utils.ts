@@ -1081,6 +1081,10 @@ export const createInterviewStage = async ({
 		formData.append("interviewers", interviewerId.toString());
 	});
 
+	if (stageData.feedback_fields && stageData.feedback_fields.length > 0) {
+		formData.append("feedback_fields", JSON.stringify(stageData.feedback_fields));
+	}
+
 	const response = await apiRequest.post(
 		`recruitment/institution/${institutionId}/interview-stage/`,
 		formData,
