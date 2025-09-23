@@ -19,7 +19,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface AssetHistoriesTableProps {

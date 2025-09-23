@@ -145,7 +145,7 @@ export default function TicketDetailsPage() {
 
 			<div className="space-y-6 max-w-6xl">
 				{/* Ticket Details */}
-				<div className="space-y-4 border rounded-xl p-4 bg-gray-50">
+				<div className="space-y-4 p-4 bg-gray-50">
 					<div>
 						<Label className="text-sm font-medium">Title</Label>
 						<p className="text-sm">{ticket.title}</p>
