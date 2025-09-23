@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.db.models import Q
+from django.apps import apps
+
 
 
 
@@ -212,7 +214,8 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
     def _check_user_is_approver(self, user):
         """Check if user is authorized as an approver for this level"""
         profile = user.profile
-        user_roles = user.roles.all()
+        Role = apps.get_model("users", "Role")
+        user_roles = Role.objects.filter(user_roles__user=user)
         approver_groups = self.level.approvers.filter(
             Q(users=profile) | Q(roles__in=user_roles)
         ).distinct()
@@ -227,7 +230,8 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
     def _check_user_is_overrider(self, user):
         """Check if user is authorized as an overrider for this level"""
         profile = user.profile
-        user_roles = user.roles.all()
+        Role = apps.get_model("users", "Role")
+        user_roles = Role.objects.filter(user_roles__user=user)
         overrider_groups = self.level.overriders.filter(
             Q(users=profile) | Q(roles__in=user_roles)
         ).distinct()
