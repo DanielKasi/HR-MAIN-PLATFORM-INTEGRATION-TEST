@@ -128,7 +128,6 @@ export const ObjectiveForm = forwardRef<HTMLFormElement, ObjectiveFormProps>(
 			} else {
 				const creationDate = new Date(formData.date);
 				const today = new Date();
-				today.setHours(0, 0, 0, 0);
 
 				if (isNaN(creationDate.getTime())) {
 					newErrors.date = "Invalid date format";

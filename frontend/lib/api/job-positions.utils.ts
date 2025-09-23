@@ -1,4 +1,9 @@
-import { IPaginatedResponse, JobApplication, JobApplicationFormData } from "@/types/types.utils";
+import {
+	IPaginatedResponse,
+	JobApplication,
+	JobApplicationFormData,
+	JobApplicationStatus,
+} from "@/types/types.utils";
 import apiRequest from "../apiRequest";
 import { forceUrlToHttps } from "../helpers";
 
@@ -14,7 +19,7 @@ export const JOB_APPLICATIONS_API = {
 		institutionId: number;
 		page?: number;
 		search?: string;
-		status?: string;
+		status?: JobApplicationStatus | "all";
 		jobPositionAdvert?: string;
 		ordering?: string;
 	}) => {

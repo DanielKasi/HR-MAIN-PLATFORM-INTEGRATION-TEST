@@ -22,13 +22,7 @@ import {
 import { getDocumentTypes, createDocumentTemplate } from "@/lib/utils";
 import { IDocumentTemplateFormData, IDocumentType } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { RichEditorField } from "@/components/common/rich-editor";
-// import dynamic from "next/dynamic"
-
-// const QuillRichTextEditor = dynamic(
-//   () => import("@/components/common/rich-editor").then((mod) => mod.RichEditorField),
-//   { ssr: false, loading: () => <p>Loading Text Editor...</p> }
-// );
+import { RichTextEditor } from "@/components/common/rich-editor";
 
 export default function CreateTemplatePage() {
 	const [documentTypes, setDocumentTypes] = useState<IDocumentType[]>([]);
@@ -274,7 +268,7 @@ export default function CreateTemplatePage() {
                 <p className="text-sm text-muted-foreground">
                   Use double curly braces for placeholders, e.g., {"{{employee_name}}"}, {"{{company_name}}"}
                 </p> */}
-								<RichEditorField
+								<RichTextEditor
 									value={formData.content || ""}
 									onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
 								/>

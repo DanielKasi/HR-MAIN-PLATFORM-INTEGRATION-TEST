@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { RichTextEditor } from "@/components/common/rich-editor";
 
 interface FeedbackFormProps {
 	initialData?: IFeedback360;
@@ -29,7 +30,7 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 	const [reviewerValue, setReviewerValue] = useState<(string | number)[]>([]);
 	const [periodValue, setPeriodValue] = useState<string>("");
 	const [rating, setRating] = useState<number[]>([5]);
-	const [formData, setFormData] = useState<Record<string, any>>(() => {
+	const [formData, setFormData] = useState<Partial<IFeedback360FormData>>(() => {
 		if (!initialData) {
 			return {
 				feedback_text: "",
@@ -40,8 +41,6 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 
 		return {
 			feedback_text: initialData.feedback_text || "",
-			strengths: initialData.strengths || "",
-			areas_for_improvement: initialData.areas_for_improvement || "",
 			is_anonymous: initialData.is_anonymous || false,
 			submission_date:
 				initialData.submission_date?.split("T")[0] || new Date().toISOString().split("T")[0],
@@ -75,28 +74,13 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 	const validateForm = () => {
 		const newErrors: Record<string, string> = {};
 
-		// Feedback text validation
-		if (!formData.feedback_text || formData.feedback_text.length < 10) {
-			newErrors.feedback_text = "Feedback must be at least 10 characters";
-		}
-
-		// Strengths validation
-		if (formData.strengths && formData.strengths.length < 5) {
-			newErrors.strengths = "Strengths must be at least 5 characters";
-		}
-
-		// Areas for improvement validation
-		if (formData.areas_for_improvement && formData.areas_for_improvement.length < 5) {
-			newErrors.areas_for_improvement = "Areas for improvement must be at least 5 characters";
-		}
-
 		// Submission date validation
 		if (!formData.submission_date) {
 			newErrors.submission_date = "Submission date is required";
 		}
 
 		// Reviewee and reviewer validation
-		if (revieweeValue.length === 0) {
+		if (revieweeValue.length === 0 && !formData.is_anonymous) {
 			newErrors.reviewee = "Reviewee is required";
 		}
 		if (reviewerValue.length === 0) {
@@ -109,25 +93,19 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (
-			!currentInstitution ||
-			!validateForm() ||
-			revieweeValue.length === 0 ||
-			reviewerValue.length === 0
-		)
-			return;
+		if (!currentInstitution || !validateForm()) return;
 
 		const feedbackData: IFeedback360FormData = {
-			reviewee_id: formData.is_anonymous ? Number(revieweeValue[0]) : null,
 			reviewer_id: Number(reviewerValue[0]),
 			period: periodValue ? Number(periodValue) : undefined,
 			feedback_text: formData.feedback_text,
-			strengths: formData.strengths || undefined,
-			areas_for_improvement: formData.areas_for_improvement || undefined,
 			rating: rating[0],
-			is_anonymous: formData.is_anonymous || false,
 			submission_date: formData.submission_date,
 		};
+
+		if (!formData.is_anonymous && revieweeValue) {
+			feedbackData["given_by"] = Number(revieweeValue[0]);
+		}
 
 		onSubmit(feedbackData);
 	};
@@ -135,27 +113,46 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 	return (
 		<form onSubmit={handleSubmit} className="space-y-6">
 			{/* Employee Selection */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-				<div className="space-y-2">
-					<label className="text-sm font-medium text-slate-700">
-						Given by (Person who gave feedback) <span className="text-red-500">*</span>
-					</label>
-					<EmployeeSearchableSelect
-						value={revieweeValue}
-						onValueChange={setRevieweeValue}
-						placeholder="Select here..."
-						multiple={false}
-						disabled={isLoading || !!initialData}
+
+			{/* Anonymous Feedback */}
+			<div className="space-y-2">
+				<Label htmlFor="is_anonymous" className="text-sm font-medium text-slate-700">
+					Anonymous Feedback
+				</Label>
+				<div className="flex items-center space-x-2">
+					<Switch
+						id="is_anonymous"
+						checked={formData.is_anonymous}
+						onCheckedChange={(checked) => handleChange("is_anonymous", checked)}
+						disabled={isLoading}
 					/>
-					{errors.reviewee && <p className="text-sm text-red-600">{errors.reviewee}</p>}
-					{!!initialData && (
-						<p className="text-xs text-slate-500">Reviewee cannot be changed after creation</p>
-					)}
+					<Label className="text-sm text-slate-600">Submit this feedback anonymously</Label>
 				</div>
+			</div>
+
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+				{!formData.is_anonymous && (
+					<div className="space-y-2">
+						<label className="text-sm font-medium text-slate-700">
+							Given by (Person who gave feedback) <span className="text-red-500">*</span>
+						</label>
+						<EmployeeSearchableSelect
+							value={revieweeValue}
+							onValueChange={setRevieweeValue}
+							placeholder="Select here..."
+							multiple={false}
+							disabled={isLoading || !!initialData}
+						/>
+						{errors.reviewee && <p className="text-sm text-red-600">{errors.reviewee}</p>}
+						{!!initialData && (
+							<p className="text-xs text-slate-500">Reviewee cannot be changed after creation</p>
+						)}
+					</div>
+				)}
 
 				<div className="space-y-2">
 					<label className="text-sm font-medium text-slate-700">
-						Reviewer (Person giving feedback) <span className="text-red-500">*</span>
+						Reviewer (Person to review the feedback) <span className="text-red-500">*</span>
 					</label>
 					<EmployeeSearchableSelect
 						value={reviewerValue}
@@ -214,77 +211,11 @@ export function FeedbackForm({ initialData, onSubmit, onCancel, isLoading }: Fee
 					<Label htmlFor="feedback_text" className="text-sm font-medium text-slate-700">
 						Feedback <span className="text-red-500">*</span>
 					</Label>
-					<Textarea
-						id="feedback_text"
-						value={formData.feedback_text}
-						onChange={(e) => handleChange("feedback_text", e.target.value)}
-						placeholder="Provide detailed feedback..."
-						disabled={isLoading}
-						className={cn(
-							"min-h-[100px] rounded-xl resize-none",
-							errors.feedback_text && "border-red-500",
-						)}
-						rows={3}
+					<RichTextEditor
+						value={formData.feedback_text || ""}
+						onChange={(value) => handleChange("feedback_text", value)}
 					/>
 					{errors.feedback_text && <p className="text-sm text-red-600">{errors.feedback_text}</p>}
-				</div>
-
-				{/* Strengths */}
-				<div className="space-y-2 md:col-span-2">
-					<Label htmlFor="strengths" className="text-sm font-medium text-slate-700">
-						Strengths
-					</Label>
-					<Textarea
-						id="strengths"
-						value={formData.strengths}
-						onChange={(e) => handleChange("strengths", e.target.value)}
-						placeholder="What are this person's key strengths?"
-						disabled={isLoading}
-						className={cn(
-							"min-h-[100px] rounded-xl resize-none",
-							errors.strengths && "border-red-500",
-						)}
-						rows={3}
-					/>
-					{errors.strengths && <p className="text-sm text-red-600">{errors.strengths}</p>}
-				</div>
-
-				{/* Areas for Improvement */}
-				<div className="space-y-2 md:col-span-2">
-					<Label htmlFor="areas_for_improvement" className="text-sm font-medium text-slate-700">
-						Areas for Improvement
-					</Label>
-					<Textarea
-						id="areas_for_improvement"
-						value={formData.areas_for_improvement}
-						onChange={(e) => handleChange("areas_for_improvement", e.target.value)}
-						placeholder="What areas could be improved?"
-						disabled={isLoading}
-						className={cn(
-							"min-h-[100px] rounded-xl resize-none",
-							errors.areas_for_improvement && "border-red-500",
-						)}
-						rows={3}
-					/>
-					{errors.areas_for_improvement && (
-						<p className="text-sm text-red-600">{errors.areas_for_improvement}</p>
-					)}
-				</div>
-
-				{/* Anonymous Feedback */}
-				<div className="space-y-2">
-					<Label htmlFor="is_anonymous" className="text-sm font-medium text-slate-700">
-						Anonymous Feedback
-					</Label>
-					<div className="flex items-center space-x-2">
-						<Switch
-							id="is_anonymous"
-							checked={formData.is_anonymous}
-							onCheckedChange={(checked) => handleChange("is_anonymous", checked)}
-							disabled={isLoading}
-						/>
-						<Label className="text-sm text-slate-600">Submit this feedback anonymously</Label>
-					</div>
 				</div>
 
 				{/* Submission Date */}

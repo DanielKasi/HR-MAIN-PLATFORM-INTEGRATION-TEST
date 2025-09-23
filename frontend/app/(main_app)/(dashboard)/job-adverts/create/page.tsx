@@ -23,7 +23,7 @@ import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/act
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog";
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
-import { RichEditorField } from "@/components/common/rich-editor";
+import { RichTextEditor } from "@/components/common/rich-editor";
 import InterviewStageEditorDialog from "@/components/common/dialogs/interview-stage-editor-dialog";
 import {
 	createInterviewStage,
@@ -1264,7 +1264,7 @@ export default function JobAdvertsPage() {
 							<p className="text-xs text-gray-500 mb-2">
 								Provide a concise summary of the role, including key duties and responsibilities.
 							</p>
-							<RichEditorField
+							<RichTextEditor
 								id="extra_information"
 								placeholder="Add job description..."
 								value={formData.extra_information || ""}

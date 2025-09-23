@@ -6,7 +6,7 @@ import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { JobApplication } from "@/types/types.utils";
+import { JobApplication, JobApplicationStatus } from "@/types/types.utils";
 import { JOB_APPLICATIONS_API } from "@/lib/api/job-positions.utils";
 
 export interface JobApplicationsSearchableSelectProps {
@@ -20,6 +20,7 @@ export interface JobApplicationsSearchableSelectProps {
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
+	filters?: { status: JobApplicationStatus };
 }
 
 export const JobApplicationsSearchableSelect = memo(
@@ -34,6 +35,7 @@ export const JobApplicationsSearchableSelect = memo(
 		triggerClassName,
 		multiple = false,
 		hideSelectedFromList = false,
+		filters,
 	}: JobApplicationsSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -50,6 +52,7 @@ export const JobApplicationsSearchableSelect = memo(
 				return await JOB_APPLICATIONS_API.getPaginated({
 					institutionId: currentInstitution.id,
 					...query,
+					status: filters?.status,
 				});
 			},
 			[currentInstitution],

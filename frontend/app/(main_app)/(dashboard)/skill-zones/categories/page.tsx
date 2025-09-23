@@ -7,15 +7,6 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-	DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -25,32 +16,29 @@ import { MoreVertical, Edit, Eye, Trash2, Plus, Search } from "lucide-react";
 import { ColumnDef } from "@/components/common/tables/paginated-table";
 import { PaginatedTable } from "@/components/common/tables/paginated-table";
 import { SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
-import type { ISkillZoneCategory, ISkillZoneCategoryFormData } from "@/types/recruitment.types"; // Adjust
+import type { ISkillZoneCategory } from "@/types/recruitment.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import FixedLoader from "@/components/fixed-loader";
 import { Icon } from "@iconify/react";
+import SkillZoneCategoryCreateEditDialog from "./_components/skill-zone-category-create-edit-dialog";
+import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function SkillZoneCategoriesPage() {
 	const router = useRouter();
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const tableRefreshRef = useRef<(() => void) | null>(null);
 
-	const [categories, setCategories] = useState<ISkillZoneCategory[]>([]); // Not needed if using PaginatedTable
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [ordering, setOrdering] = useState("");
-	const [saving, setSaving] = useState(false);
 
 	// Dialog states
 	const [openCreateEditDialog, setOpenCreateEditDialog] = useState(false);
 	const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
 	const [selectedCategory, setSelectedCategory] = useState<ISkillZoneCategory | null>(null);
-	const [formData, setFormData] = useState<ISkillZoneCategoryFormData>({
-		institution: currentInstitution?.id || 0,
-		name: "",
-		description: "",
-	});
 
 	// Delete confirmation
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -62,35 +50,8 @@ export default function SkillZoneCategoriesPage() {
 			setLoading(false);
 			return;
 		}
-		setFormData((prev) => ({ ...prev, institution: currentInstitution.id }));
 		setLoading(false);
 	}, [currentInstitution]);
-
-	const handleCreateOrUpdate = async () => {
-		if (!currentInstitution) {
-			showErrorToast({ error: null, defaultMessage: "No institution selected" });
-			return;
-		}
-
-		try {
-			setSaving(true);
-			if (selectedCategory) {
-				// Update
-				await SKILL_ZONE_CATEGORIES_API.update({ categoryId: selectedCategory.id, data: formData });
-				showSuccessToast("Category updated successfully!");
-			} else {
-				// Create
-				await SKILL_ZONE_CATEGORIES_API.create({ data: formData });
-				showSuccessToast("Category created successfully!");
-			}
-			resetDialog();
-			if (tableRefreshRef.current) tableRefreshRef.current();
-		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to save category" });
-		} finally {
-			setSaving(false);
-		}
-	};
 
 	const handleDelete = async () => {
 		if (!categoryToDelete) return;
@@ -109,23 +70,8 @@ export default function SkillZoneCategoriesPage() {
 		}
 	};
 
-	const resetDialog = () => {
-		setOpenCreateEditDialog(false);
-		setSelectedCategory(null);
-		setFormData({
-			institution: currentInstitution?.id || 0,
-			name: "",
-			description: "",
-		});
-	};
-
 	const openEditDialog = (category: ISkillZoneCategory) => {
 		setSelectedCategory(category);
-		setFormData({
-			institution: category.institution,
-			name: category.name,
-			description: category.description || "",
-		});
 		setOpenCreateEditDialog(true);
 	};
 
@@ -191,49 +137,45 @@ export default function SkillZoneCategoriesPage() {
 
 	if (loading) return <FixedLoader />;
 
+	const renderDetailsContent = (category: ISkillZoneCategory) => (
+		<div className="space-y-4">
+			<div>
+				<Label className="text-sm font-medium">Name</Label>
+				<p className="text-sm px-2 rounded-lg  sm:text-base resize-none bg-gray-50 py-6">
+					{category.name || ""}
+				</p>
+			</div>
+			<div>
+				<Label className="text-sm font-medium">Description</Label>
+				<p className="text-sm px-2 rounded-lg sm:text-base resize-none bg-gray-50 py-6">
+					{category.description || ""}
+				</p>
+			</div>
+		</div>
+	);
+
 	return (
-		<div className="p-6 space-y-6">
+		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Skill Zone Categories</h1>
-				<Dialog open={openCreateEditDialog} onOpenChange={setOpenCreateEditDialog}>
-					<DialogTrigger asChild>
-						<Button>
-							<Plus className="h-4 w-4 mr-2" /> Create Category
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>{selectedCategory ? "Edit Category" : "Create Category"}</DialogTitle>
-						</DialogHeader>
-						<div className="space-y-4">
-							<Input
-								placeholder="Name"
-								value={formData.name}
-								onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-							/>
-							<Textarea
-								placeholder="Description"
-								value={formData.description}
-								onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-							/>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={resetDialog}>
-								Cancel
-							</Button>
-							<Button onClick={handleCreateOrUpdate} disabled={saving}>
-								{saving ? "Saving..." : "Save"}
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+				<SkillZoneCategoryCreateEditDialog
+					open={openCreateEditDialog}
+					onOpenChange={(open) => {
+						setOpenCreateEditDialog(open);
+						if (!open) setSelectedCategory(null);
+					}}
+					selectedCategory={selectedCategory}
+					onSuccess={() => {
+						if (tableRefreshRef.current) tableRefreshRef.current();
+					}}
+				/>
 			</div>
 
 			<div className="flex items-center gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
-						className="pl-9"
+						className="pl-9 w-full max-w-md lg:max-w-xl"
 						placeholder="Search categories..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
@@ -265,33 +207,21 @@ export default function SkillZoneCategoriesPage() {
 				}
 			/>
 
-			{/* Details Dialog */}
-			<Dialog open={openDetailsDialog} onOpenChange={setOpenDetailsDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Category Details</DialogTitle>
-					</DialogHeader>
-					{selectedCategory && (
-						<div className="space-y-4">
-							<div>
-								<label className="text-sm font-medium">Name</label>
-								<p>{selectedCategory.name}</p>
-							</div>
-							<div>
-								<label className="text-sm font-medium">Description</label>
-								<p>{selectedCategory.description || "N/A"}</p>
-							</div>
-						</div>
-					)}
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setOpenDetailsDialog(false)}>
-							Close
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{selectedCategory && (
+				<ApprovableDialog
+					isOpen={openDetailsDialog}
+					onOpenChange={(open) => {
+						setOpenDetailsDialog(open);
+						if (!open) setSelectedCategory(null);
+					}}
+					title={`Skill Zone Category Details: ${selectedCategory.name}`}
+					description="View the details for this skill zone category."
+					onRefresh={() => tableRefreshRef.current?.()}
+				>
+					{renderDetailsContent(selectedCategory)}
+				</ApprovableDialog>
+			)}
 
-			{/* Delete Confirmation */}
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}
 				onClose={() => setDeleteConfirmOpen(false)}

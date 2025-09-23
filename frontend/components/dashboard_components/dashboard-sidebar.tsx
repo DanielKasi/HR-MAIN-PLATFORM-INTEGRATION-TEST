@@ -44,6 +44,30 @@ export default function DashboardSideBar() {
 	const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
 	const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [scrollPercentage, setScrollPercentage] = useState(0);
+
+	useEffect(() => {
+		const scrollElement = document.getElementById("mobile-nav-scroll");
+
+		const handleScroll = () => {
+			if (scrollElement) {
+				const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+
+				const scrollableHeight = scrollHeight - clientHeight;
+
+				if (scrollableHeight > 0) {
+					const scrollPercent = (scrollTop / scrollableHeight) * 100;
+					setScrollPercentage(Math.min(Math.max(scrollPercent, 0), 100));
+				}
+			}
+		};
+
+		if (scrollElement) {
+			scrollElement.addEventListener("scroll", handleScroll);
+			setTimeout(handleScroll, 100);
+			return () => scrollElement.removeEventListener("scroll", handleScroll);
+		}
+	}, [mobileMenuOpen, filteredNavItems]);
 
 	useEffect(() => {
 		setMobileMenuOpen(isSideBarOpen);
@@ -124,6 +148,7 @@ export default function DashboardSideBar() {
 	const onCloseSidebar = () => {
 		dispatch(closeSideBar());
 	};
+
 	const navItems: NavItem[] = [
 		{
 			title: "Dashboard",
@@ -337,8 +362,8 @@ export default function DashboardSideBar() {
 				<Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />
 			),
 			submenu: [
-				{ title: "FAQs", href: "#" },
-				{ title: "Tickets", href: "#" },
+				{ title: "FAQs", href: "/help-desk/faqs" },
+				{ title: "Tickets", href: "/help-desk/tickets" },
 			],
 			// requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
 		},
@@ -449,7 +474,7 @@ export default function DashboardSideBar() {
 
 					{/* Drawer */}
 					<div
-						className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
+						className={`mobile-nav-drawer fixed left-0 top-0 h-screen w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] flex flex-col ${
 							mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
 						}`}
 					>
@@ -486,7 +511,7 @@ export default function DashboardSideBar() {
 						</div>
 
 						{/* Navigation Items */}
-						<div className="flex-1 overflow-y-auto p-2 pb-20">
+						<div className="flex-1 overflow-y-auto p-2 pb-20 min-h-[600px]" id="mobile-nav-scroll">
 							{filteredNavItems.map((item, idx) => (
 								<NavItemComponent
 									key={`${item.title}-${idx}`}
@@ -498,6 +523,17 @@ export default function DashboardSideBar() {
 									onToggle={onToggle}
 								/>
 							))}
+						</div>
+
+						{/* Add this after the Navigation Items div */}
+						<div className="absolute right-1 top-32 bottom-8 w-1 bg-gray-200 rounded-full">
+							<div
+								className="w-full bg-gray-500 rounded-full transition-all duration-150"
+								style={{
+									height: "50%",
+									transform: `translateY(${scrollPercentage * 0.7}%)`,
+								}}
+							/>
 						</div>
 					</div>
 				</>

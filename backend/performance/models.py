@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from approval.models import Approval, BaseApprovableModel
+from documents.models import DocumentTemplate
 from performance.teams_api import create_teams_meeting, update_teams_meeting
 from performance.zoom_api import create_zoom_meeting
 from employee.models import Employee
@@ -548,3 +549,98 @@ class Meeting(BaseApprovableModel):
 
     def get_institution(self):
         return self.institution     
+
+class PerformanceConcernType(BaseApprovableModel):
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+    
+    def get_institution(self):
+        return self.institution
+
+class PerformanceConcern(BaseApprovableModel):
+    description = models.TextField(help_text="Detailed description of the performance issue.") 
+    category = models.ForeignKey(PerformanceConcernType, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Issue: {self.description[:50]}..."
+
+    def get_institution(self):
+        return self.category.institution
+    
+class PIPSupportResourceType(BaseApprovableModel):
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+    
+    def get_institution(self):
+        return self.institution
+    
+class PIPSupportResource(BaseApprovableModel):
+    """
+    Model for resources or support provided during the PIP.
+    """
+    name = models.CharField(max_length=255, help_text="Name of the resource (e.g., Training Course).")
+    description = models.TextField(blank=True, null=True)
+    type = models.ForeignKey(PIPSupportResourceType, on_delete=models.CASCADE)
+
+
+    def __str__(self):
+        return self.name
+
+    def get_institution(self):
+        return self.type.institution  
+
+class PerformanceImprovementPlan(BaseApprovableModel):
+    """
+    Main model for Performance Improvement Plan (PIP) with document integration.
+    """
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("active", "Active"),
+        ("under_review", "Under Review"),
+        ("completed_success", "Completed - Successful"),
+        ("completed_failure", "Completed - Unsuccessful"),
+        ("terminated", "Terminated"),
+    ]
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="pips")
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(help_text="Expected end date of the PIP.")
+    issues = models.ManyToManyField(PerformanceConcern, related_name="pips", help_text="Performance issues leading to this PIP.")
+    support_resources = models.ManyToManyField(PIPSupportResource, blank=True, related_name="pips", help_text="Support provided to the employee.")
+    progress_notes = models.TextField(blank=True, null=True, help_text="Ongoing notes on progress.")
+    consequences = models.TextField(blank=True, null=True, help_text="Consequences if improvement goals are not met.")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    final_review_date = models.DateField(null=True, blank=True)
+    outcome = models.TextField(blank=True, null=True, help_text="Final outcome description.")
+    objectives = models.ManyToManyField(Objectives, through='PIPEmployeeObjectives', related_name="pip_objectives", help_text="Specific improvement objectives.")
+    document_template = models.ForeignKey(
+        DocumentTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pips',
+        help_text="Selected template for this PIP. If blank, the default template is used."
+    )
+
+    def __str__(self):
+        return f"PIP for {self.employee.user.fullname} - {self.start_date}"
+    
+    def get_institution(self):
+        return self.employee.payroll_branch.institution
+
+class PIPEmployeeObjectives(EmployeeObjectives):
+    """
+    Extension of EmployeeObjectives specific to PIP.
+    """
+    pip = models.ForeignKey(PerformanceImprovementPlan, on_delete=models.CASCADE, related_name="pip_employee_objectives")
+    milestone_checks = models.JSONField(default=list, blank=True, help_text="List of milestone progress checks in JSON format.")
+
+    def __str__(self):
+        return super().__str__() + f" (PIP: {self.pip.id})"        

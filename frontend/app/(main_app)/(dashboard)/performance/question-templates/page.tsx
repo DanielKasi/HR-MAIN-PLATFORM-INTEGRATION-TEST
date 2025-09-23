@@ -124,7 +124,7 @@ export default function QuestionTemplatesPage({}: QuestionTemplatesPageProps) {
 								Question Templates
 							</h1>
 							<p className="text-slate-600 text-lg">
-								Manage reusable question templates for interviews and reviews
+								Manage reusable question templates for interviews, reviews, feedback and more
 							</p>
 						</div>
 					</div>

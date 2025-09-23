@@ -77,14 +77,14 @@ export default function StaffPage() {
 								/>
 							</div>
 						</div>
-						<div className="flex items-center gap-4">
+						<div className="flex items-center gap-2 sm:gap-4">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
-										className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
+										className="w-[100px] sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none text-xs sm:text-sm px-1 sm:px-3"
 										variant="outline"
 									>
-										{selectedBranch} <ChevronDown className="ml-2 h-4 w-4" />
+										{selectedBranch} <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
@@ -112,7 +112,7 @@ export default function StaffPage() {
 										className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
 										variant="outline"
 									>
-										{selectedRole} <ChevronDown className="ml-2 h-4 w-4" />
+										{selectedRole} <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
@@ -139,7 +139,7 @@ export default function StaffPage() {
 										className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none"
 										variant="outline"
 									>
-										{selectedStatus} <ChevronDown className="ml-2 h-4 w-4" />
+										{selectedStatus} <ChevronDown className="ml-1 h-3 w-2 sm:h-4 sm:w-4" />
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>

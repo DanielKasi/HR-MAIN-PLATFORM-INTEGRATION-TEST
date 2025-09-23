@@ -139,6 +139,7 @@ class ProjectSerializer(BaseApprovableSerializer):
     managers = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), many=True
     )
+    project_documents = serializers.SerializerMethodField()
     assignees = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(), many=True
     )
@@ -155,6 +156,7 @@ class ProjectSerializer(BaseApprovableSerializer):
             "start_date",
             "end_date",
             "project_status",
+            "project_documents",
             "project_tasks",
             "is_active",
         ]
@@ -165,11 +167,16 @@ class ProjectSerializer(BaseApprovableSerializer):
             "created_by",
             "updated_by",
             "project_tasks",
+            "project_documents",
         ]
 
     def get_project_tasks(self, obj):
         tasks = Task.objects.filter(project=obj)
         return TaskSerializer(tasks, many=True).data
+    
+    def get_project_documents(self, obj):
+        documents = ProjectDocument.objects.filter(project=obj)
+        return ProjectDocumentSerializer(documents, many=True).data
 
     def validate(self, data):
         institution = data.get("institution")

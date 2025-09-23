@@ -8,6 +8,7 @@ import PaginatedSearchableSelect, {
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { ISkillZoneCategory } from "@/types/recruitment.types";
 import { SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
+import { JobApplicationStatus } from "@/types/types.utils";
 
 interface SkillZoneCategoriesSearchableSelectProps {
 	value: (string | number)[];
@@ -29,7 +30,7 @@ export const SkillZoneCategoriesSearchableSelect = ({
 	onValueChange,
 	disabled = false,
 	showSelectedItems = true,
-	placeholder = "Select category(s)",
+	placeholder = "Select category",
 	className,
 	triggerClassName,
 	multiple = true,

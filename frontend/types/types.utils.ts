@@ -140,6 +140,8 @@ export interface CreateJobPositionData {
 	salary_max: number;
 }
 
+export type JobApplicationStatus = "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+
 export interface JobApplication {
 	scheduled_by: any;
 	application: any;
@@ -162,7 +164,7 @@ export interface JobApplication {
 	resume: string;
 	cover_letter: string;
 	application_date: string;
-	status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status: JobApplicationStatus;
 	gender: "male" | "female";
 	state: string;
 	address: string;
@@ -179,7 +181,7 @@ export interface JobApplicationFormData {
 	resume: File | null;
 	cover_letter?: File | null;
 	application_date?: string;
-	status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status?: JobApplicationStatus;
 	gender: "male" | "female";
 	state?: string;
 	address: string;
@@ -2257,20 +2259,16 @@ export interface IFeedback360 {
 	rating?: number | null;
 	is_anonymous: boolean;
 	submission_date: string;
-	strengths?: string | null;
-	areas_for_improvement?: string | null;
 }
 
 export interface IFeedback360FormData {
-	reviewee_id: number | null;
+	given_by?: number | null;
 	reviewer_id: number | null;
 	period?: number;
 	feedback_text?: string;
 	rating?: number;
 	is_anonymous?: boolean;
 	submission_date?: string;
-	strengths?: string;
-	areas_for_improvement?: string;
 }
 
 export interface IEmployeeBonusPoint {

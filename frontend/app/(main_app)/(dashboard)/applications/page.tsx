@@ -655,7 +655,7 @@ export default function ApplicationsPage() {
 
 	// Helper to format job position label
 	const getPositionLabel = useCallback((advert: JobPositionAdvert): string => {
-		return `${advert.job_position_details?.name || `Job Opening `} - ${advert.job_position_advert_status}`;
+		return `${advert.job_position_details?.name || `Job Opening `}`;
 	}, []);
 
 	// Fetch job positions paginated with optional server-side search

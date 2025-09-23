@@ -10,13 +10,11 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { UserProfile } from "@/types";
 import { PROFILES_API } from "@/lib/utils";
 
-export interface UserProfileSearchableSelectProps {
+interface UserProfileSearchableSelectProps {
 	value: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
-	showEmployeeId?: boolean;
-	showDepartment?: boolean;
 	className?: string;
 	triggerClassName?: string;
 	multiple?: boolean;
@@ -30,8 +28,6 @@ export const UserProfileSearchableSelect = ({
 	disabled = false,
 	showSelectedItems = true,
 	placeholder = "Select employee(s)",
-	showEmployeeId = true,
-	showDepartment = true,
 	className,
 	triggerClassName,
 	multiple = false,
