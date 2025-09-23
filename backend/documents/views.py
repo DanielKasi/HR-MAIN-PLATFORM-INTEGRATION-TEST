@@ -451,7 +451,7 @@ class BaseDocumentView(APIView):
         return preview
 
 
-class GenerateDocumentView(BaseDocumentView): 
+class GenerateDocumentView(BaseDocumentView):
     @extend_schema(
         tags=["Document Generation"],
         parameters=[
@@ -498,8 +498,24 @@ class GenerateDocumentView(BaseDocumentView):
                     template = DocumentTemplate.objects.create(
                         name="Default PIP Template",
                         content=template_content,
-                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
+                        placeholders=[
+                            "employee_name", "position", "department", "supervisor",
+                            "date_issued", "review_period", "concern_1", "concern_2",
+                            "support_resource_1", "support_resource_2", "support_resource_3",
+                            "reviewer_role"
+                        ],
+                        template_type="text"
                     )
+                elif not template.content:
+                    template.content = template_content
+                    template.placeholders = [
+                        "employee_name", "position", "department", "supervisor",
+                        "date_issued", "review_period", "concern_1", "concern_2",
+                        "support_resource_1", "support_resource_2", "support_resource_3",
+                        "reviewer_role"
+                    ]
+                    template.template_type = "text"
+                    template.save()
             except FileNotFoundError:
                 return Response(
                     {"error": "Default PIP template file not found"},
@@ -559,24 +575,28 @@ class GenerateDocumentView(BaseDocumentView):
             }
         elif context == "pip":
             pip = get_object_or_404(PerformanceImprovementPlan, pk=context_id)
+            issues = [issue.description for issue in pip.issues.all()] if pip.issues.exists() else ["", ""]
             known_values = {
-                "fullname": (
+                "employee_name": (
                     pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
                 ),
-                "start_date": str(pip.start_date) if pip.start_date else "",
-                "end_date": str(pip.end_date) if pip.end_date else "",
-                "issues": (
-                    ", ".join([issue.description for issue in pip.issues.all()])
-                    if pip.issues.exists()
-                    else ""
+                "position": (
+                    pip.employee.job_position.title if hasattr(pip.employee, "job_position") else ""
                 ),
-                "objectives": (
-                    ", ".join([objective.description for objective in pip.objectives.all()])
-                    if pip.objectives.exists()
-                    else ""
+                "department": (
+                    pip.employee.department.name if hasattr(pip.employee, "department") else ""
                 ),
-                "consequences": pip.consequences or "",
-                "date": str(timezone.now().date()),
+                "supervisor": (
+                    pip.employee.supervisor.user.fullname if hasattr(pip.employee, "supervisor") else ""
+                ),
+                "date_issued": str(pip.start_date) if pip.start_date else "",
+                "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
+                "concern_1": issues[0] if len(issues) > 0 else "",
+                "concern_2": issues[1] if len(issues) > 1 else "",
+                "support_resource_1": "Access to training materials",
+                "support_resource_2": "Weekly coaching sessions",
+                "support_resource_3": "Performance tracking software",
+                "reviewer_role": "Supervisor",
             }
         else:
             return Response(
@@ -628,8 +648,24 @@ class GenerateDocumentView(BaseDocumentView):
                     template = DocumentTemplate.objects.create(
                         name="Default PIP Template",
                         content=template_content,
-                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
+                        placeholders=[
+                            "employee_name", "position", "department", "supervisor",
+                            "date_issued", "review_period", "concern_1", "concern_2",
+                            "support_resource_1", "support_resource_2", "support_resource_3",
+                            "reviewer_role"
+                        ],
+                        template_type="text"
                     )
+                elif not template.content:
+                    template.content = template_content
+                    template.placeholders = [
+                        "employee_name", "position", "department", "supervisor",
+                        "date_issued", "review_period", "concern_1", "concern_2",
+                        "support_resource_1", "support_resource_2", "support_resource_3",
+                        "reviewer_role"
+                    ]
+                    template.template_type = "text"
+                    template.save()
             except FileNotFoundError:
                 return Response(
                     {"error": "Default PIP template file not found"},
@@ -648,10 +684,14 @@ class GenerateDocumentView(BaseDocumentView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         placeholder_values = serializer.validated_data["placeholders"]
+        # Flatten placeholder_values for compatibility with _replace_placeholders
+        flattened_placeholders = {k: v.get("value", "") for k, v in placeholder_values.items()}
+        flattened_placeholders["context"] = context
 
+        # Create document with the selected template
         document = Document.objects.create(
             document_template=template,
-            placeholder_values=placeholder_values,
+            placeholder_values=flattened_placeholders,
             status="pending",
         )
 
@@ -672,6 +712,7 @@ class GenerateDocumentView(BaseDocumentView):
         )
 
 
+
 class DocumentContentPreviewView(BaseDocumentView):
     @extend_schema(
         tags=["Document Generation"],
@@ -679,52 +720,45 @@ class DocumentContentPreviewView(BaseDocumentView):
             200: DocumentContentPreviewSerializer,
             404: {"description": "Document or template not found"},
         },
-        description="Generates a preview of the document content by replacing placeholders with stored values. For PIP documents without an explicit template, uses the default PIP template.",
+        description="Generates a preview of the document content by replacing placeholders with stored values, using the document's associated template.",
     )
     def get(self, request, document_id):
         document = get_object_or_404(Document, pk=document_id)
-        
-        # Check if the document is associated with a template
         template = document.document_template
-        template_content = ""
-        is_pip_context = False
-
-        # Determine if the document is for a PIP context
-        # Assuming placeholder_values may include a 'context' key from GenerateDocumentView
-        placeholder_values = document.placeholder_values or {}
-        context = placeholder_values.get("context", {}).get("value", "") if isinstance(placeholder_values, dict) else ""
-
-        if template:
-            template_content = template.content or ""
-        elif context == "pip":
-            # No explicit template, and context is PIP, so use default PIP template
-            is_pip_context = True
+        
+        if not template:
+            return Response(
+                {"error": "No template associated with the document"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        template_content = template.content or ""
+        if not template_content and template.name == "Default PIP Template":
             template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
             try:
                 with open(template_file_path, 'r') as file:
                     template_content = file.read()
-                # Optionally, retrieve or create the default template in the database
-                template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
-                if not template:
-                    template = DocumentTemplate.objects.create(
-                        name="Default PIP Template",
-                        content=template_content,
-                        placeholders=["fullname", "start_date", "end_date", "issues", "objectives", "consequences", "date"],
-                    )
-                    document.document_template = template
-                    document.save()
+                template.content = template_content
+                template.placeholders = [
+                    "employee_name", "position", "department", "supervisor",
+                    "date_issued", "review_period", "concern_1", "concern_2",
+                    "support_resource_1", "support_resource_2", "support_resource_3",
+                    "reviewer_role"
+                ]
+                template.template_type = "text"
+                template.save()
             except FileNotFoundError:
                 return Response(
                     {"error": "Default PIP template file not found"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
-        else:
+        elif not template_content:
             return Response(
-                {"error": "No template associated with the document and no PIP context found"},
+                {"error": "Template content is empty"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Replace placeholders using inherited method
+        placeholder_values = document.placeholder_values or {}
         preview = self._replace_placeholders(template_content, placeholder_values)
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
