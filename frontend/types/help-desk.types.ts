@@ -58,6 +58,7 @@ export interface TicketCategory extends IBaseApprovable {
 	institution_details?: IInstitution | null;
 	name: string;
 	description: string;
+	created_by: number;
 }
 
 export interface TicketCategoryFormData {
@@ -75,6 +76,7 @@ export interface Ticket extends IBaseApprovable {
 	assigned_to: IEmployee | null;
 	comments: TicketComment[];
 	attachments: TicketAttachment[];
+	created_by: number;
 }
 
 export interface TicketFormData {
@@ -95,6 +97,7 @@ export interface TicketComment {
 	created_at: string;
 	updated_at: string;
 	is_active: boolean;
+	created_by: number;
 }
 
 export interface TicketCommentFormData {
@@ -110,6 +113,7 @@ export interface TicketAttachment {
 	created_at: string;
 	updated_at: string;
 	is_active: boolean;
+	created_by: number;
 }
 
 export interface TicketAttachmentFormData {
