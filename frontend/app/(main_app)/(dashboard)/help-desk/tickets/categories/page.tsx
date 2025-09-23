@@ -99,7 +99,7 @@ export default function TicketCategoriesPage() {
 		{
 			key: "description",
 			header: "Description",
-			cell: (category) => category.description || "N/A",
+			cell: (category) => category.description || "Unknown",
 		},
 		{
 			key: "actions",
@@ -148,7 +148,7 @@ export default function TicketCategoriesPage() {
 			<div>
 				<Label className="text-sm font-medium">Description</Label>
 				<Textarea
-					value={category.description || "N/A"}
+					value={category.description || "Unknown"}
 					disabled
 					rows={4}
 					className="rounded-xl border-gray-200 text-sm sm:text-base resize-none bg-gray-50"

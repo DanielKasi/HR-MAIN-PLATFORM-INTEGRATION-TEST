@@ -128,7 +128,7 @@ export function AssetReturnDialog({ asset, onReturn, trigger }: AssetReturnDialo
 							</Label>
 							<Input
 								id="serial_number"
-								value={asset.serial_number || "N/A"}
+								value={asset.serial_number || "Unknown"}
 								disabled
 								className="col-span-3"
 							/>

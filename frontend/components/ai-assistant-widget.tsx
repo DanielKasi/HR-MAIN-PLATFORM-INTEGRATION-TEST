@@ -163,7 +163,7 @@ export default function AIAssistantWidget() {
 				payload.chat_id = currentChatId;
 			}
 
-			const response: ApiResponse = await apiPost(`/institution/ai-assistant/`, payload);
+			const response: ApiResponse = await apiPost(`/institutioUnknowni-assistant/`, payload);
 
 			if (response.data.chat_id && response.data.chat_id !== currentChatId) {
 				setCurrentChatId(response.data.chat_id);

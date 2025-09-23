@@ -1,6 +1,6 @@
 "use client";
 
-import type { IAssetReturn, IAssetReturnFormData } from "@/types/types.utils";
+import { IAssetReturn, IAssetReturnFormData } from "@/types/assets.types";
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";

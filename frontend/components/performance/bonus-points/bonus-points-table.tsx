@@ -59,7 +59,7 @@ export function EmployeeBonusPointsTable({
 		{
 			key: "bonus_point_setting",
 			header: "Bonus Type",
-			cell: (bonusPoint) => bonusPoint.bonus_point_setting?.bonus_for || "N/A",
+			cell: (bonusPoint) => bonusPoint.bonus_point_setting?.bonus_for || "Unknown",
 		},
 		{
 			key: "points",

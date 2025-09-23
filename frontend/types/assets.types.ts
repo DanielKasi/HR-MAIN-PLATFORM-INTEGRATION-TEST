@@ -1,3 +1,4 @@
+import { IBaseApprovable } from "./approvals.types";
 import { UserProfile } from "./user.types";
 
 export interface AssetsData {
@@ -142,3 +143,10 @@ export interface IAssetReturnFormData {
 	condition: "good" | "damaged" | "lost";
 	notes?: string;
 }
+
+export interface IAsset extends IBaseApprovable {}
+export interface IAssetAllocation extends IBaseApprovable {}
+export interface IAssetCategory extends IBaseApprovable {}
+export interface IAssetRequest extends IBaseApprovable {}
+export interface IAssetReturn extends IBaseApprovable {}
+export interface IAssetHistory extends IBaseApprovable {}

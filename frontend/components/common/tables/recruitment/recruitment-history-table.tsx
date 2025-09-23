@@ -48,28 +48,28 @@ export function RecruitmentHistoryTable({ searchTerm }: RecruitmentHistoryTableP
 
 		if (!applicationData) {
 			return {
-				applicantName: "N/A",
-				applicantEmail: "N/A",
-				jobDesc: "N/A",
-				applicantPhone: "N/A",
-				applicantAddress: "N/A",
-				applicantPositions: "N/A",
-				department: "N/A",
+				applicantName: "Unknown",
+				applicantEmail: "Unknown",
+				jobDesc: "Unknown",
+				applicantPhone: "Unknown",
+				applicantAddress: "Unknown",
+				applicantPositions: "Unknown",
+				department: "Unknown",
 			};
 		}
 
 		const jobDetails = applicationData.job_position_advert_job_details;
-		const jobName = jobDetails?.name || "N/A";
-		const jobDescription = jobDetails?.description || "N/A";
-		const department = jobDetails?.department || "N/A";
+		const jobName = jobDetails?.name || "Unknown";
+		const jobDescription = jobDetails?.description || "Unknown";
+		const department = jobDetails?.department || "Unknown";
 
 		return {
-			applicantName: applicationData.applicant_name || "N/A",
-			applicantEmail: applicationData.applicant_email || "N/A",
-			jobDesc: jobName !== "N/A" ? jobName : jobDescription,
-			applicantPhone: applicationData.applicant_phone || "N/A",
-			applicantAddress: applicationData.address || "N/A",
-			applicantPositions: applicationData.positions?.toString() || "N/A",
+			applicantName: applicationData.applicant_name || "Unknown",
+			applicantEmail: applicationData.applicant_email || "Unknown",
+			jobDesc: jobName !== "Unknown" ? jobName : jobDescription,
+			applicantPhone: applicationData.applicant_phone || "Unknown",
+			applicantAddress: applicationData.address || "Unknown",
+			applicantPositions: applicationData.positions?.toString() || "Unknown",
 			department: department,
 		};
 	};

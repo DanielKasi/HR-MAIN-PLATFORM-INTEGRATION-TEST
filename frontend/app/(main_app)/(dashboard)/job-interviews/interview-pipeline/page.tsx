@@ -1880,7 +1880,7 @@ export default function JobSpecificInterviewPipeline() {
 											</div>
 											<div className="flex justify-between">
 												<span className="text-sm">Average Rating</span>
-												<span className="font-medium">{candidate.overall_rating || "N/A"}</span>
+												<span className="font-medium">{candidate.overall_rating || "Unknown"}</span>
 											</div>
 											<div className="flex justify-between">
 												<span className="text-sm">Completion Rate</span>

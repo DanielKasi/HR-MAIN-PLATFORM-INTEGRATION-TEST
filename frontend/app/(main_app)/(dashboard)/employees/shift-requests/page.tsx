@@ -318,7 +318,7 @@ const EmployeeShiftsPage = () => {
 													return (
 														<TableRow key={shift.id}>
 															<TableCell className="font-medium">
-																{shift.employee?.user?.fullname || "N/A"}
+																{shift.employee?.user?.fullname || "Unknown"}
 															</TableCell>
 															<TableCell>
 																<div>
