@@ -12,8 +12,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Edit, Eye, Trash2, Plus, Search } from "lucide-react";
-import { ColumnDef } from "@/components/common/tables/paginated-table";
-import { PaginatedTable } from "@/components/common/tables/paginated-table";
+import { ColumnDef } from "@/components/PaginatedTable";
+import { PaginatedTable } from "@/components/PaginatedTable";
 import { FAQ_CATEGORIES_API } from "@/lib/api/help-desk.utils";
 import type { FAQCategory } from "@/types/help-desk.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
@@ -99,7 +99,7 @@ export default function FAQCategoriesPage() {
 		{
 			key: "description",
 			header: "Description",
-			cell: (category) => category.description || "N/A",
+			cell: (category) => category.description || "Unknown",
 		},
 		{
 			key: "actions",
@@ -148,7 +148,7 @@ export default function FAQCategoriesPage() {
 			<div>
 				<Label className="text-sm font-medium">Description</Label>
 				<Textarea
-					value={category.description || "N/A"}
+					value={category.description || "Unknown"}
 					disabled
 					rows={4}
 					className="rounded-xl border-gray-200 text-sm sm:text-base resize-none bg-gray-50"
