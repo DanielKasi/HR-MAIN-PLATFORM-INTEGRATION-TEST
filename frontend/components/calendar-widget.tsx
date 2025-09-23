@@ -82,7 +82,11 @@ const getEventModeIcon = (mode: string) => {
 	}
 };
 
-export function SimpleCalendarWidget() {
+interface CalendarWidgetProps {
+	className?: string;
+}
+
+export function SimpleCalendarWidget({ className = "" }: CalendarWidgetProps) {
 	const [calendar, setCalendar] = useState<ICalendar | null>(null);
 	const [currentDate, setCurrentDate] = useState(new Date());
 	const [loading, setLoading] = useState(true);
@@ -247,8 +251,8 @@ export function SimpleCalendarWidget() {
 	}
 
 	return (
-		<div className="relative">
-			<Card className="w-full h-full shadow-sm border-none rounded-3xl">
+		<div className={`relative`}>
+			<Card className={`w-full shadow-sm border-none !rounded-xl ${className}`}>
 				<CardHeader className="pb-3">
 					<div className="flex items-center justify-between">
 						<Button variant="ghost" size="sm" onClick={() => navigateMonth("prev")}>

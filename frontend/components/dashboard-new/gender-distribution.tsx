@@ -29,7 +29,7 @@ export function GenderDistribution({ data, onRefresh, loading }: GenderDistribut
 	const otherPercentage = data ? Math.round((data.other / data.employees_count) * 100) : 0;
 
 	return (
-		<Card className="shadow-sm border-none rounded-3xl">
+		<Card className="shadow-sm border-none rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle className="text-base font-medium">Gender Distribution</CardTitle>
 			</CardHeader>
