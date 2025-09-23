@@ -167,7 +167,22 @@ class TicketSerializer(serializers.ModelSerializer):
         new_attachments = validated_data.pop('new_attachments', [])
         instance = super().update(instance, validated_data)
 
+<<<<<<< Updated upstream
         # Rest of the method remains unchanged
+=======
+        # Check if the user is the assigned employee for comments
+        # user_employee = self.context['request'].user.employees.first()
+        # if new_comments and not user_employee:
+        #     raise serializers.ValidationError(
+        #         {"error": "User must be linked to an Employee to add comments."}
+        #     )
+        # if new_comments and instance.assigned_to != user_employee:
+        #     raise serializers.ValidationError(
+        #         {"error": "Only the assigned employee can add comments."}
+        #     )
+
+        # Add new comments if provided
+>>>>>>> Stashed changes
         for comment_text in new_comments:
             try:
                 comment = TicketComment.objects.create(

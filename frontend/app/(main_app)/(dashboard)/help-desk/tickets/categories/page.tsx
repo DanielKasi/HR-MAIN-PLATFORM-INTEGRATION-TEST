@@ -163,7 +163,6 @@ export default function TicketCategoriesPage() {
 				<h1 className="text-2xl font-bold">Ticket Categories</h1>
 				<div className="flex items-center justify-end gap-4">
 					<Button
-						className="rounded-xl"
 						onClick={() => {
 							setSelectedCategory(null);
 							setOpenCreateEditDialog(true);

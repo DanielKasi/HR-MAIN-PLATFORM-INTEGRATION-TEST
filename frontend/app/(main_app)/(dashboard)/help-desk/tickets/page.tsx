@@ -20,12 +20,8 @@ import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import FixedLoader from "@/components/fixed-loader";
 import { Icon } from "@iconify/react";
-import TicketCreateEditDialog from "./_components/ticket-create-edit-dialog";
-import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { format } from "date-fns";
 
 export default function TicketsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -34,11 +30,6 @@ export default function TicketsPage() {
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [ordering, setOrdering] = useState("");
-
-	// Dialog states
-	const [openCreateEditDialog, setOpenCreateEditDialog] = useState(false);
-	const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
-	const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
 	// Delete confirmation
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -68,16 +59,6 @@ export default function TicketsPage() {
 			setDeleteConfirmOpen(false);
 			setTicketToDelete(null);
 		}
-	};
-
-	const openEditDialog = (ticket: Ticket) => {
-		setSelectedTicket(ticket);
-		setOpenCreateEditDialog(true);
-	};
-
-	const openDetails = (ticket: Ticket) => {
-		setSelectedTicket(ticket);
-		setOpenDetailsDialog(true);
 	};
 
 	const columns: ColumnDef<Ticket>[] = [
@@ -153,11 +134,15 @@ export default function TicketsPage() {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
-						<DropdownMenuItem onClick={() => openDetails(ticket)}>
-							<Eye className="h-4 w-4 mr-2" /> View Details
+						<DropdownMenuItem asChild>
+							<Link href={`/help-desk/tickets/${ticket.id}`}>
+								<Eye className="h-4 w-4 mr-2" /> View Details
+							</Link>
 						</DropdownMenuItem>
-						<DropdownMenuItem onClick={() => openEditDialog(ticket)}>
-							<Edit className="h-4 w-4 mr-2" /> Edit
+						<DropdownMenuItem asChild>
+							<Link href={`/help-desk/tickets/${ticket.id}/edit`}>
+								<Edit className="h-4 w-4 mr-2" /> Edit
+							</Link>
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() => {
@@ -176,122 +161,21 @@ export default function TicketsPage() {
 
 	if (loading) return <FixedLoader />;
 
-	const renderDetailsContent = (ticket: Ticket) => (
-		<div className="space-y-4">
-			<div>
-				<Label className="text-sm font-medium">Title</Label>
-				<Input
-					value={ticket.title}
-					disabled
-					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
-				/>
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Category</Label>
-				<Input
-					value={ticket.category?.name || "N/A"}
-					disabled
-					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
-				/>
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Status</Label>
-				<Input
-					value={TICKET_STATUS_LABELS[ticket.status]}
-					disabled
-					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
-				/>
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Priority</Label>
-				<Input
-					value={TICKET_PRIORITY_LABELS[ticket.priority]}
-					disabled
-					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
-				/>
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Assigned To</Label>
-				<Input
-					value={ticket.assigned_to?.user?.fullname || "N/A"}
-					disabled
-					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
-				/>
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Comments</Label>
-				{ticket.comments.length > 0 ? (
-					<div className="space-y-2">
-						{ticket.comments.map((comment) => (
-							<div key={comment.id} className="border rounded-xl p-2 bg-gray-50">
-								<p className="text-sm">{comment.comment}</p>
-								<p className="text-xs text-muted-foreground">
-									Created: {format(new Date(comment.created_at), "PPp")}
-								</p>
-							</div>
-						))}
-					</div>
-				) : (
-					<p className="text-sm text-muted-foreground">No comments</p>
-				)}
-			</div>
-			<div>
-				<Label className="text-sm font-medium">Attachments</Label>
-				{ticket.attachments.length > 0 ? (
-					<div className="space-y-2">
-						{ticket.attachments.map((attachment) => (
-							<div key={attachment.id} className="flex items-center gap-2">
-								<a
-									href={attachment.file}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-sm text-blue-600 hover:underline"
-								>
-									{attachment.file.split("/").pop()}
-								</a>
-								<p className="text-xs text-muted-foreground">
-									Created: {format(new Date(attachment.created_at), "PPp")}
-								</p>
-							</div>
-						))}
-					</div>
-				) : (
-					<p className="text-sm text-muted-foreground">No attachments</p>
-				)}
-			</div>
-		</div>
-	);
-
 	return (
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Tickets</h1>
 				<div className="flex items-center justify-end gap-4">
-					<Link href={"/help-desk/tickets/categories"}>
+					<Link href={"/help-desk/ticket-categories"}>
 						<Button variant="outline" className="rounded-xl">
 							Categories
 						</Button>
 					</Link>
-					<Button
-						className="rounded-xl"
-						onClick={() => {
-							setSelectedTicket(null);
-							setOpenCreateEditDialog(true);
-						}}
-					>
-						<Plus className="h-4 w-4 mr-2" /> Create Ticket
-					</Button>
-					<TicketCreateEditDialog
-						open={openCreateEditDialog}
-						onOpenChange={(open) => {
-							setOpenCreateEditDialog(open);
-							if (!open) setSelectedTicket(null);
-						}}
-						selectedTicket={selectedTicket}
-						onSuccess={() => {
-							if (tableRefreshRef.current) tableRefreshRef.current();
-						}}
-					/>
+					<Link href={"/help-desk/tickets/create"}>
+						<Button className="rounded-xl">
+							<Plus className="h-4 w-4 mr-2" /> Create Ticket
+						</Button>
+					</Link>
 				</div>
 			</div>
 
@@ -328,23 +212,6 @@ export default function TicketsPage() {
 					</div>
 				}
 			/>
-
-			{selectedTicket && (
-				<ApprovableDialog
-					isOpen={openDetailsDialog}
-					onOpenChange={(open) => {
-						setOpenDetailsDialog(open);
-						if (!open) setSelectedTicket(null);
-					}}
-					title={`Ticket Details: ${selectedTicket.title}`}
-					description="View the details for this ticket."
-					approvals={selectedTicket.approvals}
-					instanceApprovalStatus={selectedTicket.approval_status}
-					onRefresh={() => tableRefreshRef.current?.()}
-				>
-					{renderDetailsContent(selectedTicket)}
-				</ApprovableDialog>
-			)}
 
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}
