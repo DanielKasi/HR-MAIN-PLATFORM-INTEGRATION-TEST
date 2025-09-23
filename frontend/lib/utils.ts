@@ -1081,6 +1081,10 @@ export const createInterviewStage = async ({
 		formData.append("interviewers", interviewerId.toString());
 	});
 
+	if (stageData.feedback_fields && stageData.feedback_fields.length > 0) {
+		formData.append("feedback_fields", JSON.stringify(stageData.feedback_fields));
+	}
+
 	const response = await apiRequest.post(
 		`recruitment/institution/${institutionId}/interview-stage/`,
 		formData,
@@ -4364,21 +4368,21 @@ export function generatePeriodName(startDate: string, endDate: string): string {
 
 		return `Week ${weekNumber} - ${monthName} ${year}`;
 	} else {
-	const monthDays: Record<string, number> = {};
-	
-	const currentDate = new Date(start);
-	while (currentDate <= end) {
-		const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
-		monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
-		currentDate.setDate(currentDate.getDate() + 1);
+		const monthDays: Record<string, number> = {};
+
+		const currentDate = new Date(start);
+		while (currentDate <= end) {
+			const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
+			monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		const dominantMonth = Object.keys(monthDays).reduce((a, b) =>
+			monthDays[a] > monthDays[b] ? a : b,
+		);
+
+		return dominantMonth;
 	}
-	
-	const dominantMonth = Object.keys(monthDays).reduce((a, b) => 
-		monthDays[a] > monthDays[b] ? a : b
-	);
-	
-	return dominantMonth;
-}
 }
 
 export const checkPeriodOverlap = async ({
