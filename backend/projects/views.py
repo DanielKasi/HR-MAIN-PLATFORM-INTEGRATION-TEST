@@ -18,6 +18,7 @@ from django.db.models import Count, Q
 from django.db import transaction
 from utilities.sortable_api import SortableAPIMixin
 from django.utils import timezone
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class ProjectListCreateView(APIView, SortableAPIMixin):
@@ -111,6 +112,7 @@ class ProjectDetailView(APIView):
     )
     @transaction.atomic
     def patch(self, request, project_id):
+        print(request.data)
         project = Project.objects.filter(id=project_id, deleted_at__isnull=True).first()
         if not project:
             return Response(
