@@ -177,7 +177,7 @@ export const PenaltyConfigurations = () => {
 				return "Unknown";
 			}
 
-			return `$${value.toFixed(2)}`;
+			return `${value.toFixed(2)}`;
 		} else if (config.penalty_value_type === "percentage") {
 			let percentage: number;
 
