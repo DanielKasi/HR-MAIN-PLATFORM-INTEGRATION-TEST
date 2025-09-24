@@ -26,7 +26,7 @@ interface Props {
 	title: string;
 	label: string;
 	labelList?: boolean;
-	data: Record<string, Entry[]>;
+	data: Record<string, Entry[]> | Entry[];
 	dataKey: string;
 	nameKey: string;
 	colors: string[];
@@ -51,17 +51,33 @@ export default function Piechart({
 	className,
 	select = true,
 }: Props) {
-	const [groups] = React.useState(Object.keys(data).sort().reverse());
+	const isArrayData = Array.isArray(data);
 
-	const [category, setCategory] = React.useState(groups[0]);
+	const [groups] = React.useState(
+		isArrayData
+			? []
+			: Object.keys(data as Record<string, Entry[]>)
+					.sort()
+					.reverse(),
+	);
 
-	const [items, setItems] = React.useState(data[groups[0]] || ([] as Entry[]));
+	const [category, setCategory] = React.useState(groups[0] || "");
+
+	const [items, setItems] = React.useState(() => {
+		if (isArrayData) {
+			return data as Entry[];
+		}
+		const dataObj = data as Record<string, Entry[]>;
+		return dataObj[groups[0]] || [];
+	});
 
 	const total = React.useMemo(() => {
+		if (!Array.isArray(items)) return 0;
 		return items.reduce((acc, curr) => acc + (curr[dataKey] as number), 0);
-	}, []);
+	}, [items, dataKey]);
 
 	const chartConfig = React.useMemo(() => {
+		if (!Array.isArray(items)) return {};
 		return items.reduce((acc, curr, index) => {
 			if (index == 0) acc[dataKey] = { label };
 			acc[curr[nameKey]] = {
@@ -71,19 +87,19 @@ export default function Piechart({
 			};
 			return acc;
 		}, {} as any);
-	}, []);
+	}, [items, dataKey, nameKey, label, colors]);
 
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
 				<CardTitle className="text-xl flex-grow">{title}</CardTitle>
-				{select && groups?.length && (
+				{select && groups?.length > 0 && !isArrayData && (
 					<div className="flex items-center gap-4">
 						<Select
 							defaultValue={category}
 							onValueChange={(d) => {
 								setCategory(d);
-								setItems(data[d]);
+								setItems((data as Record<string, Entry[]>)[d]);
 							}}
 						>
 							<SelectTrigger className="text-slate-900">

@@ -15,6 +15,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import LeaveTable from "./leave.table";
+import { getLeaveDashboard } from "@/lib/utils";
 
 export default function AttendanceDashboard() {
 	const initialData: ILeaveDashboard = {
@@ -91,8 +92,7 @@ export default function AttendanceDashboard() {
 	return (
 		<LoadingComponent
 			initialData={initialData}
-			// fetchData={getAttendanceDashboard}
-			fetchData={() => Promise.resolve(initialData)}
+			fetchData={getLeaveDashboard}
 			content={(data) => (
 				<div className="min-h-screen bg-gray-50 p-6">
 					<div className="space-y-8">
