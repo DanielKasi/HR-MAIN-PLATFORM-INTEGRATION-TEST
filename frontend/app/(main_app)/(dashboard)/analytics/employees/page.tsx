@@ -31,14 +31,7 @@ export default function EmployeePage() {
 				count: 0,
 			},
 		],
-		employees_by_department: [
-			{ department: "Accounting 1", count: 23 },
-			{ department: "Accounting 2", count: 43 },
-			{ department: "Accounting 3", count: 11 },
-			{ department: "Accounting 4", count: 5 },
-			{ department: "Accounting 5", count: 32 },
-			{ department: "Accounting 6", count: 10 },
-		],
+		employees_by_department: [],
 		shift_statuses: [
 			{
 				status: "string",
@@ -48,11 +41,7 @@ export default function EmployeePage() {
 		average_age: 0,
 		average_tenure_years: 0,
 		recent_hires: 0,
-		employees_by_marital_status: [
-			{ marital_status: "single", count: 17 },
-			{ marital_status: "married", count: 23 },
-			{ marital_status: "divorced", count: 5 },
-		],
+		employees_by_marital_status: [],
 	};
 
 	const getCards = (data: IEmployeeDashboard) => [
@@ -66,7 +55,7 @@ export default function EmployeePage() {
 		},
 		{
 			title: "Average Tenure",
-			value: `${data?.total_employees ?? 0} years`,
+			value: `${data?.average_tenure_years ?? 0} years`,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:calendar-02",
@@ -93,8 +82,7 @@ export default function EmployeePage() {
 	return (
 		<LoadingComponent
 			initialData={initialData}
-			// fetchData={getEmployeeDashboard}
-			fetchData={() => Promise.resolve(initialData)}
+			fetchData={getEmployeeDashboard}
 			content={(data) => (
 				<div className="bg-background p-6 min-h-screen">
 					<div className="space-y-8">
@@ -124,16 +112,7 @@ export default function EmployeePage() {
 							<DonutChart
 								title="Gender Distribution"
 								totalStr="Total Employees"
-								data={{
-									"2025": [
-										{ gender: "Female", count: 12 },
-										{ gender: "Male", count: 8 },
-									],
-									"2024": [
-										{ gender: "Female", count: 10 },
-										{ gender: "Male", count: 18 },
-									],
-								}}
+								data={data.employees_by_gender}
 								colors={["#415180", "#FF3403"]}
 								label={"Gender"}
 								dataKey={"count"}

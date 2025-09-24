@@ -21,7 +21,7 @@ interface Props {
 	label: string;
 	data: Record<string, Entry[]>;
 	dataKey1: string;
-	dataKey2: string;
+	dataKey2?: string;
 	nameKey: string;
 	colors: string[];
 	rounded?: boolean;
@@ -52,11 +52,11 @@ export default function BarSChart({
 	const chartConfig = React.useMemo(() => {
 		return items.reduce((acc, curr, index) => {
 			if (index == 0) acc[dataKey1] = { color: colors[index] };
-			if (index == 1) acc[dataKey2] = { label, color: colors[index] };
+			if (index == 1 && dataKey2) acc[dataKey2] = { label, color: colors[index] };
 			acc[curr[nameKey]] = { label: sentenceCase(curr[nameKey] as string), color: colors[index] };
 			return acc;
 		}, {} as any);
-	}, []);
+	}, [dataKey2]);
 
 	return (
 		<Card className={`flex flex-col shadow-none border ${className}`}>
@@ -111,13 +111,15 @@ export default function BarSChart({
 							content={<ChartTooltipContent hideLabel hideIndicator />}
 						/>
 						<Bar legendType="circle" dataKey={dataKey1} stackId="a" fill={colors[0]} />
-						<Bar
-							legendType="circle"
-							dataKey={dataKey2}
-							stackId="a"
-							fill={colors[1]}
-							radius={rounded ? [10, 10, 0, 0] : 0}
-						/>
+						{dataKey2 && (
+							<Bar
+								legendType="circle"
+								dataKey={dataKey2}
+								stackId="a"
+								fill={colors[1]}
+								radius={rounded ? [10, 10, 0, 0] : 0}
+							/>
+						)}
 					</BarChart>
 				</ChartContainer>
 			</CardContent>

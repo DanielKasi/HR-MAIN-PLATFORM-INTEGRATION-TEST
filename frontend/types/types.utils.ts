@@ -377,9 +377,8 @@ export interface IRecruitmentDashboard {
 		count: number;
 	}>;
 	applications_over_time: Array<{
-		month: string;
-		hired: number;
-		applications: number;
+		date: string;
+		count: number;
 	}>;
 }
 
@@ -389,6 +388,7 @@ export interface DashboardError {
 
 export type DashboardResponse = IProjectDashboard | DashboardError;
 export interface IAttendanceDashboard {
+	spot_checks_by_status: { [key: string]: number } | { [key: string]: number }[];
 	total_attendance_records: number;
 	attendance_by_status: Array<{
 		status: string;
@@ -398,10 +398,6 @@ export interface IAttendanceDashboard {
 	average_late_minutes: number;
 	average_early_checkout_minutes: number;
 	spot_check_response_rate: number;
-	spot_checks_by_status: Array<{
-		status: string;
-		count: number;
-	}>;
 	attendance_over_time: Array<{
 		month: string;
 		count: number;

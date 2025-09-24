@@ -87,7 +87,6 @@ import {
 	ITaxFormData,
 	ITaxRule,
 	ITaxRuleFormData,
-	IAssetCategoryFormData,
 	IAsset,
 	IAssetFormData,
 	IAssetRequest,
@@ -180,6 +179,7 @@ import {
 	IAssetHistory,
 	IAssetReturnFormData,
 	IAssetCategory,
+	IAssetCategoryFormData,
 } from "@/types/assets.types";
 
 import { IPayrollDashboard } from "@/types/payroll.types";

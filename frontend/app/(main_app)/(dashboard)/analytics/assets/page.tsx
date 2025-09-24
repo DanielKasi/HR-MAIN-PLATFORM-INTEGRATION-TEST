@@ -66,13 +66,13 @@ export default function AssetsDashboard() {
 			title: "Allocated Assets",
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
-			value: data.category_counts.total,
+			value: data.asset_counts.allocated,
 			icon: "hugeicons:safe-delivery-01",
 			link: "#",
 		},
 		{
 			title: "Unallocated Assets",
-			value: data.pending_counts.total,
+			value: data.asset_counts.available,
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
 			icon: "hugeicons:laptop-issue",
@@ -80,7 +80,7 @@ export default function AssetsDashboard() {
 		},
 		{
 			title: "Decomissioned ",
-			value: data.recent_assets.length,
+			value: data.asset_counts.decommissioned,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:laptop-remove",
@@ -90,8 +90,8 @@ export default function AssetsDashboard() {
 	return (
 		<LoadingComponent
 			initialData={initialData}
-			// fetchData={getAssetDashboard}
-			fetchData={() => Promise.resolve(initialData)}
+			fetchData={getAssetDashboard}
+			//fetchData={() => Promise.resolve(initialData)}
 			content={(data) => (
 				<div className="min-h-screen bg-background p-6">
 					<div className="space-y-6">
@@ -139,13 +139,10 @@ export default function AssetsDashboard() {
 							<BarHChart
 								title={"Assets by Category"}
 								data={{
-									"2025": [
-										{ category: "Laptop", count: 12 },
-										{ category: "Mobile phones", count: 42 },
-										{ category: "Furniture", count: 20 },
-										{ category: "Vechiles", count: 14 },
-										{ category: "Buildings", count: 2 },
-									],
+									categories: Object.entries(data.category_counts).map(([category, count]) => ({
+										category,
+										count,
+									})),
 								}}
 								dataKey={"count"}
 								nameKey={"category"}
@@ -172,7 +169,7 @@ export default function AssetsDashboard() {
 							/>
 
 							{/* Recent Assets */}
-							{data?.recent_assets?.length && <RecentAssetsTable />}
+							{data?.recent_assets?.length && <RecentAssetsTable data={data.recent_assets} />}
 						</div>
 					</div>
 				</div>
