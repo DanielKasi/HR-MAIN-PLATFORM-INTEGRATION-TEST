@@ -685,7 +685,11 @@ class GenerateDocumentView(BaseDocumentView):
 
         placeholder_values = serializer.validated_data["placeholders"]
         # Flatten placeholder_values for compatibility with _replace_placeholders
-        flattened_placeholders = {k: v.get("value", "") for k, v in placeholder_values.items()}
+        flattened_placeholders = {
+                k: v.get("value", "") if isinstance(v, dict) else v
+                for k, v in placeholder_values.items()
+            }
+
         flattened_placeholders["context"] = context
 
         # Create document with the selected template
