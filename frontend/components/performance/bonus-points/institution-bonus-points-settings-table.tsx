@@ -71,7 +71,7 @@ export function InstitutionBonusPointSettingsTable() {
 			key: "condition",
 			header: "Condition",
 			cell: (setting) =>
-				`${setting.condition_field} ${setting.condition_operator} ${setting.condition_value}`,
+				`${setting.condition_field} ${setting.condition_operator} ${setting.condition_value.replace("_", " ")}`,
 		},
 		{
 			key: "actions",

@@ -1,4 +1,4 @@
-import { Role, UserProfile } from ".";
+import { UserProfile, Role } from "./user.types";
 
 export interface ApproverGroup {
 	id: number;
