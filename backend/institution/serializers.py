@@ -825,19 +825,19 @@ class BranchShiftSerializer(BaseApprovableSerializer):
 
         if start_time >= end_time:
             raise serializers.ValidationError(
-                {"detail": "Shift end time must be after start time."}
+                {"error": "Shift end time must be after start time."}
             )
 
         if start_time < branch.branch_opening_time:
             raise serializers.ValidationError(
                 {
-                    "detail": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
+                    "error": f"Start time cannot be before branch opening time ({branch.branch_opening_time})."
                 }
             )
         if end_time > branch.branch_closing_time:
             raise serializers.ValidationError(
                 {
-                    "detail": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
+                    "error": f"End time cannot be after branch closing time ({branch.branch_closing_time})."
                 }
             )
 
