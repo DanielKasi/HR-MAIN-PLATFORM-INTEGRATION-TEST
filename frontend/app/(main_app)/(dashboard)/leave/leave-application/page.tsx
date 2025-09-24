@@ -1338,7 +1338,7 @@ const LeaveApplicationComponent = () => {
 										{calculateDaysBetween(
 											viewingApplication.start_date,
 											viewingApplication.end_date,
-										) || "N/A"}
+										) || "Unknown"}
 									</p>
 								</div>
 							</div>

@@ -87,7 +87,6 @@ import {
 	ITaxFormData,
 	ITaxRule,
 	ITaxRuleFormData,
-	IAssetCategory,
 	IAssetCategoryFormData,
 	IAsset,
 	IAssetFormData,
@@ -95,8 +94,6 @@ import {
 	IAssetRequestFormData,
 	IAssetAllocation,
 	IAssetAllocationFormData,
-	IAssetReturn,
-	IAssetReturnFormData,
 	AttendanceResponse,
 	IEmployeeTaxFormData,
 	IEmployeeTax,
@@ -121,13 +118,9 @@ import {
 	IPenaltyType,
 	IEmployeePenaltyFormData,
 	IRecruitmentDashboard,
-	IEmployeeDashboard,
-	ILeaveDashboard,
 	IAttendanceDashboard,
-	IPayrollDashboard,
 	IBranchWorkingDays,
 	OffboardingData,
-	AssetsData,
 	ChangePasswordData,
 	ApprovalTasksDashboardResponse,
 	IBranchSpotCheckSettingFormData,
@@ -145,7 +138,6 @@ import {
 	IProject,
 	IProjectFormData,
 	IEmployeeBankAccountFormData,
-	IProjectDashboard,
 	IProjectTaskFormData,
 	IProjectTask,
 	IEmployeeObjective,
@@ -174,7 +166,6 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
-	IAssetHistory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -182,9 +173,23 @@ import {
 	IKYCDocument,
 	IUserInstitution,
 	IUserInstitutionFormData,
-	Role,
-	UserProfile,
-} from "@/types";
+} from "@/types/other";
+
+import {
+	IAssetReturn,
+	IAssetHistory,
+	IAssetReturnFormData,
+	IAssetCategory,
+} from "@/types/assets.types";
+
+import { IPayrollDashboard } from "@/types/payroll.types";
+import { ILeaveDashboard } from "@/types/leave.types";
+import { IEmployeeDashboard } from "@/types/employee.types";
+import { IProjectDashboard } from "@/types/project.type";
+import { AssetsData } from "@/types/assets.types";
+
+import { Role, UserProfile } from "@/types/user.types";
+
 import { MAIN_DOMAIN_URL } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {

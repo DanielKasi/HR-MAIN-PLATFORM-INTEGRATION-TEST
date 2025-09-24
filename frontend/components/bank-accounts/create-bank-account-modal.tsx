@@ -6,7 +6,7 @@ import type { IBankAccount, IBankAccountFormData } from "@/types/types.utils";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-import { BankTypeSelect } from "../bank-types/bank-types-select";
+import { BankTypeSearchableSelect } from "../bank-types/bank-types-select";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import BankAccountSearchableSelect from "../selects/bank-accounts-select";
 
 interface BankAccountFormModalProps {
 	isOpen: boolean;
@@ -139,10 +140,13 @@ export function BankAccountFormModal({
 
 				<form onSubmit={handleSubmit} className="space-y-6">
 					<div className="space-y-4">
-						<BankTypeSelect
-							value={formData.institution_bank}
-							onValueChange={handleBankTypeChange}
-							error={errors.institution_bank}
+						<BankAccountSearchableSelect
+							value={[formData.institution_bank]}
+							onValueChange={(values) => {
+								if (values.length) {
+									handleBankTypeChange(Number(values[0]));
+								}
+							}}
 							disabled={isSubmitting}
 							required
 						/>

@@ -41,7 +41,7 @@ export function PayrollChart({
 	};
 
 	return (
-		<Card className="shadow-sm border-none bg-white rounded-3xl">
+		<Card className="shadow-sm border-none bg-white rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between">
 				<div>
 					<CardTitle className="text-base font-medium text-gray-600">Payroll Over Years</CardTitle>

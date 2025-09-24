@@ -1,6 +1,6 @@
 "use client";
 
-import type { IAssetReturn } from "@/types/types.utils";
+import { IAssetReturn } from "@/types/assets.types";
 
 import { useState } from "react";
 import { toast } from "sonner";

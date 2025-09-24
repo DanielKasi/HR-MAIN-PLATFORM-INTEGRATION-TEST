@@ -11,7 +11,7 @@ interface PayrollByDepartmentProps {
 
 export function PayrollByDepartment({ data, onRefresh, loading }: PayrollByDepartmentProps) {
 	return (
-		<Card className="shadow-sm border-none rounded-3xl">
+		<Card className="shadow-sm border-none rounded-xl">
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle className="text-base font-medium">Payroll by Department</CardTitle>
 			</CardHeader>

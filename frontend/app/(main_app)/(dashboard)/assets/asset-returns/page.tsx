@@ -1,6 +1,6 @@
 "use client";
 
-import type { IAssetReturn } from "@/types/types.utils";
+import { IAssetReturn } from "@/types/assets.types";
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -328,7 +328,7 @@ const AssetReturnsComponent = () => {
 															{assetReturn.asset?.asset_name || "Unknown Asset"}
 														</TableCell>
 														<TableCell className="font-mono text-sm">
-															{assetReturn.asset?.serial_number || "N/A"}
+															{assetReturn.asset?.serial_number || "Unknown"}
 														</TableCell>
 														<TableCell>
 															<div className="flex items-center space-x-2">
@@ -397,10 +397,10 @@ const AssetReturnsComponent = () => {
 														</div>
 														<div className="space-y-1 mb-2">
 															<p className="text-sm text-gray-600 font-mono">
-																Serial: {assetReturn.asset?.serial_number || "N/A"}
+																Serial: {assetReturn.asset?.serial_number || "Unknown"}
 															</p>
 															<p className="text-sm text-gray-600">
-																Batch: {assetReturn.asset?.batch_number || "N/A"}
+																Batch: {assetReturn.asset?.batch_number || "Unknown"}
 															</p>
 															<div className="flex items-center gap-2">
 																<div className="flex items-center space-x-2">

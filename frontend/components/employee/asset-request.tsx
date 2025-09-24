@@ -531,7 +531,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
 															<span
 																className={isEmployeeView ? "font-mono text-xs text-gray-800" : ""}
 															>
-																{request.request_reference_code || "N/A"}
+																{request.request_reference_code || "Unknown"}
 															</span>
 														</TableCell>
 														<TableCell className={isEmployeeView ? "py-3 px-4" : "font-medium"}>
@@ -621,7 +621,7 @@ const AssetRequests: React.FC<AssetRequestsProps> = ({
 														<p
 															className={`font-mono ${isEmployeeView ? "text-xs text-[#848496]" : "text-sm text-gray-600"}`}
 														>
-															Ref: {request.request_reference_code || "N/A"}
+															Ref: {request.request_reference_code || "Unknown"}
 														</p>
 														{!isEmployeeView && (
 															<p className="text-sm text-gray-600">

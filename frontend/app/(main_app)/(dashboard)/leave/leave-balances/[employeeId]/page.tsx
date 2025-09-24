@@ -169,7 +169,7 @@ export default function EmployeeLeaveBalanceDetails() {
 			return employee.employee_id;
 		}
 		const emp = employees.find((emp) => emp.id === employee);
-		//return emp?.employee_id || "N/A";
+		//return emp?.employee_id || "Unknown";
 	};
 
 	const getLeaveTypeName = (leaveType: any) => {

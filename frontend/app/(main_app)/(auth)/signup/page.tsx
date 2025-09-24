@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import apiRequest from "@/lib/apiRequest";
 import { handleApiError } from "@/lib/apiErrorHandler";
-import { USER_GENDER } from "@/types";
+import { USER_GENDER } from "@/types/user.types";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { logoutStart } from "@/store/auth/actions";
 

@@ -152,7 +152,7 @@ export default function TicketDetailsPage() {
 					</div>
 					<div>
 						<Label className="text-sm font-medium">Category</Label>
-						<p className="text-sm">{ticket.category?.name || "N/A"}</p>
+						<p className="text-sm">{ticket.category?.name || "Unknown"}</p>
 					</div>
 					<div>
 						<Label className="text-sm font-medium">Status</Label>
@@ -184,7 +184,7 @@ export default function TicketDetailsPage() {
 					</div>
 					<div>
 						<Label className="text-sm font-medium">Assigned To</Label>
-						<p className="text-sm">{ticket.assigned_to?.user?.fullname || "N/A"}</p>
+						<p className="text-sm">{ticket.assigned_to?.user?.fullname || "Unknown"}</p>
 					</div>
 				</div>
 

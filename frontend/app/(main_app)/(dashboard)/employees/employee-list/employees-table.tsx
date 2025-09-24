@@ -108,7 +108,7 @@ export function EmployeesTable({
 					<span>Name</span>
 				</div>
 			),
-			cell: (employee) => employee?.user?.fullname || "N/A",
+			cell: (employee) => employee?.user?.fullname || "Unknown",
 		},
 		{
 			key: "email",

@@ -71,7 +71,7 @@ export function AssetHistoriesTable({
 					</Button>
 				</div>
 			),
-			cell: (history) => history.asset?.asset_name || "N/A",
+			cell: (history) => history.asset?.asset_name || "Unknown",
 		},
 		{
 			key: "event_type",
@@ -97,7 +97,7 @@ export function AssetHistoriesTable({
 					</Button>
 				</div>
 			),
-			cell: (history) => history.performed_by?.fullname || "N/A",
+			cell: (history) => history.performed_by?.fullname || "Unknown",
 		},
 		{
 			key: "affected_user",
@@ -118,7 +118,7 @@ export function AssetHistoriesTable({
 					</Button>
 				</div>
 			),
-			cell: (history) => history.affected_user?.fullname || "N/A",
+			cell: (history) => history.affected_user?.fullname || "Unknown",
 		},
 		{
 			key: "created_at",
@@ -140,7 +140,7 @@ export function AssetHistoriesTable({
 		{
 			key: "notes",
 			header: "Notes",
-			cell: (history) => history.notes || "N/A",
+			cell: (history) => history.notes || "Unknown",
 		},
 		{
 			key: "actions",

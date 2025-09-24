@@ -759,14 +759,14 @@ export default function ApplicationViewPage() {
 																	Position Name
 																</label>
 																<p className="text-sm mt-1 font-medium">
-																	{application.job_position_advert_job_details?.name || "N/A"}
+																	{application.job_position_advert_job_details?.name || "Unknown"}
 																</p>
 															</div>
 															<div>
 																<label className="text-sm font-medium text-muted-foreground">
 																	Available Positions
 																</label>
-																<p className="text-sm mt-1">{application.positions || "N/A"}</p>
+																<p className="text-sm mt-1">{application.positions || "Unknown"}</p>
 															</div>
 														</div>
 

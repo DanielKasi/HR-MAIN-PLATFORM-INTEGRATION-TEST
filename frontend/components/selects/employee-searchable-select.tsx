@@ -31,8 +31,6 @@ export const EmployeeSearchableSelect = memo(
 		disabled = false,
 		showSelectedItems = true,
 		placeholder = "Select employee(s)",
-		showEmployeeId = true,
-		showDepartment = true,
 		className,
 		triggerClassName,
 		multiple = false,

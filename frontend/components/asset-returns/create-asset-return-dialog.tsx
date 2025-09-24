@@ -24,7 +24,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { assetsAPI } from "@/lib/utils";
-import { IAssetReturnFormData } from "@/types/types.utils";
+import { IAssetReturnFormData } from "@/types/assets.types";
 
 interface CreateAssetReturnDialogProps {
 	open: boolean;
@@ -49,7 +49,6 @@ export function CreateAssetReturnDialog({
 		notes: "",
 	});
 
-	// Fetch assets and allocations
 	useEffect(() => {
 		if (open) {
 			fetchAssets();

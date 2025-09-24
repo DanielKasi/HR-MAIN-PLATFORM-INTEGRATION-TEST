@@ -1,6 +1,5 @@
 "use client";
-
-import type { Branch } from "@/types";
+import { Branch } from "@/types/branch.types";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -180,15 +179,6 @@ export default function AdminPage() {
 										<span>Branch Shifts</span>
 									</Link>
 								</div>
-								<div className="space-y-4">
-									<Link
-										href="/admin/settings/approvals"
-										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
-									>
-										<Icon icon="hugeicons:computer-check" className="!w-5 !h-5" />
-										<span>Organization Approvals</span>
-									</Link>
-								</div>
 
 								<div className="">
 									<Link
@@ -252,6 +242,31 @@ export default function AdminPage() {
 									>
 										<Mail className="w-5 h-5 text-gray-500" />
 										<span>Taxes</span>
+									</Link>
+								</div>
+							</div>
+						</div>
+						<div>
+							<h2 className="text-lg font-semibold mb-6">Approvals Management</h2>
+							<Separator className="my-6" />
+
+							<div className="space-y-4">
+								<div className="space-y-4">
+									<Link
+										href="/admin/settings/approvals"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:computer-check" className="!w-5 !h-5" />
+										<span>Approval Objects</span>
+									</Link>
+								</div>
+								<div className="space-y-4">
+									<Link
+										href="/admin/settings/approvals/approver-groups"
+										className="flex items-center gap-3 text-gray-700 hover:text-gray-900"
+									>
+										<Icon icon="hugeicons:validation-approval" className="!w-5 !h-5" />
+										<span>Approver groups</span>
 									</Link>
 								</div>
 							</div>

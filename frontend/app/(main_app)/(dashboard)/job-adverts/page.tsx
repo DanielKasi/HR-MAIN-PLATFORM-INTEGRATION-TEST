@@ -325,7 +325,7 @@ export default function JobAdvertsPage() {
 													<TableRow key={advert.id}>
 														<TableCell className="font-medium">
 															<div className="font-medium text-gray-900">
-																{advert.job_position_details?.name || "N/A"}
+																{advert.job_position_details?.name || "Unknown"}
 															</div>
 														</TableCell>
 														<TableCell>

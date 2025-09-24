@@ -21,6 +21,7 @@ export interface BankAccountSearchableSelectProps {
 	showSelectedItems?: boolean;
 	defaultLabel?: string;
 	setAccounts?: (accounts: IBankAccount[]) => void;
+	required?: boolean;
 }
 
 export const BankAccountSearchableSelect = memo(
@@ -36,6 +37,7 @@ export const BankAccountSearchableSelect = memo(
 		hideSelectedFromList = false,
 		defaultLabel,
 		setAccounts,
+		required = false,
 	}: BankAccountSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -102,6 +104,7 @@ export const BankAccountSearchableSelect = memo(
 					hideSelectedFromList={hideSelectedFromList}
 					setParentItems={setAccounts}
 					defaultLabel={defaultLabel}
+					required={required}
 				/>
 			</div>
 		);

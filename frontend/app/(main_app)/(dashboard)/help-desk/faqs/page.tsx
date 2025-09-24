@@ -100,13 +100,14 @@ export default function FAQsPage() {
 		{
 			key: "category",
 			header: "Category",
-			cell: (faq) => faq.category.name || "N/A",
+			cell: (faq) => faq.category.name || "Unknown",
 		},
 		{
 			key: "answer",
 			header: "Answer",
 			cell: (faq) =>
-				faq.answer?.substring(0, 50) + (faq.answer && faq.answer.length > 50 ? "..." : "") || "N/A",
+				faq.answer?.substring(0, 50) + (faq.answer && faq.answer.length > 50 ? "..." : "") ||
+				"Unknown",
 		},
 		{
 			key: "actions",
@@ -155,7 +156,7 @@ export default function FAQsPage() {
 			<div>
 				<Label className="text-sm font-medium">Category</Label>
 				<Input
-					value={faq.category.name || "N/A"}
+					value={faq.category.name || "Unknown"}
 					disabled
 					className="h-10 sm:h-12 rounded-xl border-gray-200 text-sm sm:text-base bg-gray-50"
 				/>
@@ -163,7 +164,7 @@ export default function FAQsPage() {
 			<div>
 				<Label className="text-sm font-medium">Answer</Label>
 				<Textarea
-					value={faq.answer || "N/A"}
+					value={faq.answer || "Unknown"}
 					disabled
 					rows={4}
 					className="rounded-xl border-gray-200 text-sm sm:text-base resize-none bg-gray-50"

@@ -195,6 +195,11 @@ class PerformanceConcernSerializer(BaseApprovableSerializer):
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'approval_status']   
 
+    def to_representation(self, instance):
+        repr =  super().to_representation(instance)
+        repr["category"] = PerformanceConcernTypeSerializer(instance.category).data
+        return repr
+
 
 class PIPSupportResourceTypeSerializer(BaseApprovableSerializer):
     institution = serializers.PrimaryKeyRelatedField(read_only=True)
