@@ -242,7 +242,15 @@ class PerformanceImprovementPlanSerializer(BaseApprovableSerializer):
     class Meta:
         model = PerformanceImprovementPlan
         fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at', 'approval_status']    
+        read_only_fields = ['created_at', 'updated_at', 'approval_status']  
+
+    def to_representation(self, instance):
+        repr =  super().to_representation(instance) 
+        repr["employee"] = EmployeeSerializer(instance.employee).data
+        repr["issues"] = PerformanceConcernSerializer(instance.issues, many=True).data
+        repr["support_resources"] = PIPSupportResourceSerializer(instance.support_resources, many=True).data
+        repr["objectives"] = ObjectivesSerializer(instance.objectives, many=True).data
+        return repr 
         
     def create(self, validated_data):
         issues = validated_data.pop('issues', [])

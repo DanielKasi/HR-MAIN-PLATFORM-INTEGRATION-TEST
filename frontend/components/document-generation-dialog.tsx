@@ -39,7 +39,7 @@ interface DocumentGenerationDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	contextId: number;
-	context: "onboarding" | "employee" | "leave";
+	context: "onboarding" | "employee" | "leave" | "pip";
 }
 
 export function DocumentGenerationDialog({
@@ -58,7 +58,7 @@ export function DocumentGenerationDialog({
 	const [generatedDocumentId, setGeneratedDocumentId] = useState<number | null>(null);
 	const [previewContent, setPreviewContent] = useState<string | null>(null);
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [canSendDocument, setCanSendDocument] = useState(false);
+	const [canSendDocument, setCanSendDocument] = useState(context === "pip");
 
 	useEffect(() => {
 		if (open) {
@@ -70,7 +70,7 @@ export function DocumentGenerationDialog({
 			setGeneratedTemplate(null);
 			setGeneratedDocumentId(null);
 			setPreviewContent(null);
-			setCanSendDocument(false);
+			setCanSendDocument(context === "pip");
 		}
 	}, [open]);
 
@@ -121,7 +121,7 @@ export function DocumentGenerationDialog({
 		setCanSendDocument(false);
 		try {
 			const response = await generateDocument(
-				parseInt(selectedTemplate),
+				selectedTemplate ? parseInt(selectedTemplate) : null,
 				context,
 				contextId,
 				placeholders,
@@ -172,10 +172,15 @@ export function DocumentGenerationDialog({
 				<DialogHeader>
 					<DialogTitle>Generate Document</DialogTitle>
 					<DialogDescription>
-						Select a template and fill in the required information.
+						Select a template and fill in the required information.{" "}
+						{context === "pip" ? (
+							<span className="!text-sm font-semibold text-gray-600">(Optional)</span>
+						) : (
+							<></>
+						)}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4  p-8 overflow-y-auto max-h-[70svh]">
+				<div className="space-y-4  py-8 px-2 overflow-y-auto max-h-[70svh]">
 					<div className="space-y-2">
 						<Label>Template</Label>
 						<Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
@@ -251,10 +256,15 @@ export function DocumentGenerationDialog({
 				</div>
 				<DialogFooter>
 					<div className="flex items-center justify-end gap-8">
-						<Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
+						<Button
+							onClick={handleGenerateDocument}
+							className="rounded-full"
+							disabled={loading || (context !== "pip" && !selectedTemplate)}
+						>
 							{"Generate Document"}
 						</Button>
 						<Button
+							className="rounded-full"
 							onClick={handleSendDocument}
 							disabled={loading || !generatedDocumentId || !canSendDocument}
 						>
