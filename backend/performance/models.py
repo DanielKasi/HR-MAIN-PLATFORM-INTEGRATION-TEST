@@ -196,7 +196,7 @@ class Feedback360(BaseApprovableModel):
 
 
     def __str__(self):
-        return f"Feedback from {self.reviewer.user.fullname} to {self.given_by.user.fullname}"
+        return f"Feedback from {self.reviewer.user.fullname}"
     
     def get_institution(self):
         return self.reviewer.payroll_branch.institution

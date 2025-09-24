@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Period, KeyResult, BonusPointSettings, EmployeeObjectives, EmployeeBonusPoint, Objectives, QuestionTemplate, Meeting, PerformanceConcern, PerformanceConcernType, PerformanceImprovementPlan, PIPEmployeeObjectives, PIPSupportResource, PIPSupportResourceType
+from .models import Period, KeyResult, BonusPointSettings, EmployeeObjectives, EmployeeBonusPoint, Objectives, QuestionTemplate, Meeting, PerformanceConcern, PerformanceConcernType, PerformanceImprovementPlan, PIPEmployeeObjectives, PIPSupportResource, PIPSupportResourceType, Feedback360
 
 admin.site.register(Period)
 admin.site.register(KeyResult)
@@ -15,3 +15,4 @@ admin.site.register(PerformanceImprovementPlan)
 admin.site.register(PIPEmployeeObjectives)
 admin.site.register(PIPSupportResource)
 admin.site.register(PIPSupportResourceType)
+admin.site.register(Feedback360)

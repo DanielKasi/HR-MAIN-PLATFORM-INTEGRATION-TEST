@@ -522,7 +522,7 @@ class Feedback360ListCreateView(APIView, SortableAPIMixin):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        feedback = Feedback360.objects.filter(period__institution=institution, deleted_at__isnull=True)
+        feedback = Feedback360.objects.filter(deleted_at__isnull=True)
         search_query = request.query_params.get("search", None)
         rating = request.query_params.get("rating", None)
 
