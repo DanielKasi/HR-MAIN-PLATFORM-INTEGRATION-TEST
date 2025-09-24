@@ -68,7 +68,7 @@ export const EmployeeSearchableSelect = memo(
 					}
 				}
 			},
-			[multiple, selectedItems, onValueChange],
+			[multiple, selectedItems],
 		);
 
 		const handleRemove = useCallback(

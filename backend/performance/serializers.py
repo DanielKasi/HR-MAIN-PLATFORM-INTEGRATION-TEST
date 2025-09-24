@@ -222,6 +222,11 @@ class PIPSupportResourceSerializer(BaseApprovableSerializer):
         model = PIPSupportResource
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at', 'approval_status', 'institution']
+    
+    def  to_representation(self, instance):
+        repr =  super().to_representation(instance) 
+        repr["type"] = PIPSupportResourceTypeSerializer(instance.type).data
+        return repr
 
 class PIPEmployeeObjectivesSerializer(serializers.ModelSerializer):
     pip = serializers.PrimaryKeyRelatedField(queryset=PerformanceImprovementPlan.objects.all())
