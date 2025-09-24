@@ -207,7 +207,7 @@ export default function QuestionTemplateCreatePage({
 							</SelectContent>
 						</Select>
 					</div>
-					<div className="md:col-span-2">
+					<div className="">
 						<Label htmlFor="description" className="text-sm font-medium">
 							Description
 						</Label>

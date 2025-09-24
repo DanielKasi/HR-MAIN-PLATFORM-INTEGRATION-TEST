@@ -119,9 +119,7 @@ export default function EditTerminationPage() {
 				<CardContent>
 					<div className="mb-6">
 						<h3 className="font-medium mb-2">Employee</h3>
-						<p className="text-muted-foreground">
-							{termination.separation.employee.user?.fullname}
-						</p>
+						<p className="text-muted-foreground">{termination.separation.employee?.name}</p>
 					</div>
 
 					<Form {...form}>

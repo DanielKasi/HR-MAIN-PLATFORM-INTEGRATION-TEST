@@ -67,7 +67,7 @@ const VirtualizedEmployeeList: React.FC<{
 
 		return employees.filter(
 			(employee) =>
-				employee.user?.fullname.toLowerCase().includes(searchLower) ||
+				employee?.name.toLowerCase().includes(searchLower) ||
 				employee.email.toLowerCase().includes(searchLower) ||
 				employee.department.name.toLowerCase().includes(searchLower),
 		);
@@ -115,7 +115,7 @@ const VirtualizedEmployeeList: React.FC<{
 									<div className="flex items-center justify-between">
 										<div className="min-w-0 flex-1">
 											<Label className="font-medium cursor-pointer block truncate text-sm">
-												{employee.user?.fullname}
+												{employee?.name}
 											</Label>
 											<p className="text-xs text-muted-foreground truncate">
 												{employee.department.name} • {employee.email}
@@ -172,7 +172,7 @@ const EmployeeSelectionModal: React.FC<{
 
 		return employees.filter(
 			(employee) =>
-				employee.user?.fullname.toLowerCase().includes(searchLower) ||
+				employee?.name.toLowerCase().includes(searchLower) ||
 				employee.email.toLowerCase().includes(searchLower) ||
 				employee.department.name.toLowerCase().includes(searchLower),
 		);
@@ -395,7 +395,7 @@ const EmployeeSelectionModal: React.FC<{
 																}
 															/>
 															<Label className="text-sm cursor-pointer flex-1">
-																{employee.user?.fullname}
+																{employee?.name}
 															</Label>
 														</div>
 													))}

@@ -310,7 +310,7 @@ export default function EmployeeAllowancesPage() {
 													{filteredResults.map((allowance) => (
 														<TableRow key={allowance.id}>
 															<TableCell className="font-medium">
-																{allowance.employee.user?.fullname || "Unknown Employee"}
+																{allowance.employee?.name || "Unknown Employee"}
 															</TableCell>
 															<TableCell>{allowance.allowance_type.name}</TableCell>
 															<TableCell>

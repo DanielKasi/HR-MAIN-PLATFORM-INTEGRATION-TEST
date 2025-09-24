@@ -1,177 +1,242 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { Icon } from "@iconify/react";
-import { ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import { Calendar, Target, Users, MessageSquare, Video } from "lucide-react";
+import Link from "next/link";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MetricCards } from "@/components/dashboard-new/metric-cards";
-import { PayrollChart } from "@/components/dashboard-new/payroll-chart";
-import { DepartmentTreemap } from "@/components/dashboard-new/department-treemap";
-import { PayrollByDepartment } from "@/components/dashboard-new/payroll-by-department";
-import { EmployeeCountChart } from "@/components/dashboard-new/employee-count-chart";
-import { GenderDistribution } from "@/components/dashboard-new/gender-distribution";
-import { institutionAPI, showErrorToast } from "@/lib/utils";
-import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
-import { IInstitutionAnalytics } from "@/types/types.utils";
-import EmployeeAttendance from "@/components/attendance/employee-attendance";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { PERFORMANCE_ANALYTICS_API } from "@/lib/utils";
+import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
+import { Button } from "@/components/ui/button";
+import PieChart from "../_components/pie.chart";
+import colors from "../_components/colors";
 
-export default function Dashboard() {
-	const [data, setData] = useState<IInstitutionAnalytics | null>(null);
-	const [loading, setLoading] = useState(false);
+export default function PerformancePage() {
+	const [analytics, setAnalytics] = useState<any>({
+		periods: {
+			total: 0,
+			closed: 0,
+			open: 0,
+		},
+		objectives: {
+			total: 0,
+			average_duration_days: 0,
+		},
+		employee_objectives: {
+			total: 0,
+			status_distribution: {
+				not_sarted: 0,
+				on_track: 0,
+				closed: 0,
+			},
+		},
+		key_results: {
+			total: 0,
+			average_target_value: 0,
+		},
+		feedback_360: {
+			total: 0,
+			average_rating: 0,
+		},
+		employee_bonus_points: {
+			total: 0,
+			total_points: 0,
+			redeemed: 0,
+		},
+		question_templates: {
+			total: 0,
+			category_distribution: {
+				general: 0,
+				performance_review: 0,
+			},
+		},
+		bonus_point_settings: {
+			total: 0,
+			average_points: 0,
+		},
+		meetings: {
+			total: 0,
+			mode_distribution: {
+				online: 0,
+				hybrid: 0,
+				physical: 0,
+			},
+		},
+	});
+	const [loading, setLoading] = useState(true);
+
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [currentPayroll, setCurrentPayroll] = useState(0);
-	const [totalCurrentYear, setTotalCurrentYear] = useState(0);
-	const [pastYearTotal, setPastYearTotal] = useState(0);
-	const [growthPercentage, setGrowthPercentage] = useState(0);
-	const currentUser = useSelector(selectUser);
 
-	useEffect(() => {
-		const percentage =
-			pastYearTotal > 0 ? ((totalCurrentYear - pastYearTotal) / pastYearTotal) * 100 : 0;
-
-		setGrowthPercentage(percentage);
-	}, [pastYearTotal, totalCurrentYear]);
-
-	useEffect(() => {
-		setCurrentPayroll(
-			data?.payroll_summary?.current?.find((item: any) => item.month === "Sep")?.payroll || 0,
-		);
-		setTotalCurrentYear(
-			data?.payroll_summary?.current?.reduce((sum: number, item: any) => sum + item.payroll, 0) ||
-				0,
-		);
-		setPastYearTotal(data?.payroll_summary?.past?.total || 0);
-	}, [data]);
-
-	useEffect(() => {
-		refreshData();
-	}, []);
-
-	const refreshData = useCallback(async () => {
-		if (!currentInstitution) {
-			return;
-		}
+	const fetchAnalytics = async () => {
+		if (!currentInstitution) return;
 
 		setLoading(true);
 		try {
-			const newData = await institutionAPI.getDasboardAnalytics({
-				institutionId: currentInstitution?.id,
-			});
+			const data = await PERFORMANCE_ANALYTICS_API.get();
 
-			setData(newData);
+			setAnalytics(data);
 		} catch (error) {
-			showErrorToast({ error, defaultMessage: "Failed to fetch data !" });
+			toast.error("Failed to fetch performance analytics");
+			console.error("Error fetching analytics:", error);
 		} finally {
 			setLoading(false);
 		}
-	}, []);
-
-	const now = new Date();
-	const hour = now.getHours();
-
-	const capitalizeFirstLetter = (str: string) => {
-		if (!str) return "";
-
-		return str.charAt(0).toUpperCase() + str.slice(1);
 	};
 
-	let greeting = "Hello";
+	useEffect(() => {
+		fetchAnalytics();
+	}, [currentInstitution]);
 
-	if (hour >= 5 && hour < 12) {
-		greeting = "Good morning";
-	} else if (hour >= 12 && hour < 17) {
-		greeting = "Good afternoon";
-	} else if (hour >= 17 && hour < 22) {
-		greeting = "Good evening";
-	}
+	const cards = [
+		{
+			title: "Active Periods",
+			value: analytics.periods?.active || 0,
+			icon: <Calendar className="h-5 w-5" />,
+			description: "Current review cycles",
+			link: "/performance/periods",
+		},
+		{
+			title: "Total Objectives",
+			value: analytics.objectives?.total || 0,
+			icon: <Target className="h-5 w-5" />,
+			description: "Defined goals",
+			link: "/performance/objectives",
+		},
+		{
+			title: "Employee Assignments",
+			value: analytics.employee_objectives?.total || 0,
+			icon: <Users className="h-5 w-5" />,
+			description: "Active assignments",
+			link: "/performance/employee-objectives",
+		},
+		{
+			title: "Feedback Entries",
+			value: analytics.feedback?.total || 0,
+			icon: <MessageSquare className="h-5 w-5" />,
+			description: "360° feedback",
+			link: "/performance/feedback",
+		},
+	];
+
+	const graphs = [
+		{
+			title: "Employee Objectives",
+			description: "Assign and track individual employee objectives",
+			icon: <Users className="h-6 w-6" />,
+			href: "/performance/employee-objectives",
+			color: "bg-purple-500",
+			stats: analytics?.employee_objectives?.status_distribution || {
+				not_started: 0,
+				on_track: 0,
+				closed: 0,
+			},
+		},
+		{
+			title: "Meetings",
+			description: "Schedule and manage performance review meetings",
+			icon: <Video className="h-6 w-6" />,
+			href: "/performance/meetings",
+			color: "bg-indigo-500",
+			stats: analytics?.meetings?.mode_distribution || {
+				online: 0,
+				hybrid: 0,
+				physical: 0,
+			},
+		},
+		{
+			title: "Question Templates",
+			description: "",
+			href: "#",
+			color: "bg-purple-500",
+			stats: analytics?.question_templates?.category_distribution || {
+				general: 0,
+				performance_review: 0,
+			},
+		},
+	];
 
 	return (
-		<div className="min-h-screen bg-gray-50 p-6">
+		<div className="min-h-screen bg-white p-6">
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="flex items-center justify-between" />
-
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-					{/* Main Content */}
-					<div className="lg:col-span-3 space-y-6">
-						{/* Metrics and Calendar Row */}
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-							<div className="md:col-span-4">
-								<MetricCards data={data?.basic_counts} onRefresh={refreshData} loading={loading} />
+				<div className="mb-8">
+					<div className="flex items-center justify-between mb-4">
+						<div>
+							<h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+								Performance Management
+							</h1>
+							<p className="text-slate-600 text-lg mt-2">
+								Comprehensive OKR and 360-degree feedback system with gamification
+							</p>
+						</div>
+						<div className="flex-grow flex items-center justify-end">
+							{/* Quick Actions */}
+							<div>
+								<h2 className="text-xl text-right font-semibold text-slate-900 mb-4">
+									Quick Actions
+								</h2>
+								<div className="flex flex-wrap gap-3 justify-end">
+									<Link href="/performance/periods">
+										<Button variant="outline" className="flex items-center gap-2">
+											<Calendar className="h-4 w-4" />
+											Create Period
+										</Button>
+									</Link>
+									<Link href="/performance/objectives">
+										<Button variant="outline" className="flex items-center gap-2">
+											<Target className="h-4 w-4" />
+											Add Objective
+										</Button>
+									</Link>
+									<Link href="/performance/feedback">
+										<Button variant="outline" className="flex items-center gap-2">
+											<MessageSquare className="h-4 w-4" />
+											Give Feedback
+										</Button>
+									</Link>
+									<Link href="/performance/meetings">
+										<Button variant="outline" className="flex items-center gap-2">
+											<Video className="h-4 w-4" />
+											Schedule Meeting
+										</Button>
+									</Link>
+								</div>
 							</div>
 						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<Card className="bg-primary/10 shadow-sm border-none">
-								<CardContent className="p-6">
-									<div className="flex items-center gap-3 mb-2">
-										<div className="w-8 h-8 text-primary/80 rounded-lg flex items-center justify-center">
-											<Icon icon="hugeicons:payment-success-02" className="!w-7 !h-7" />
-										</div>
-										<span className="text-xs md:text-sm text-gray-600">Payroll this Month</span>
-									</div>
-									<p className="text-2xl font-bold text-gray-900">
-										{currentPayroll.toLocaleString()}
-									</p>
-								</CardContent>
-							</Card>
-
-							<Card className="md:col-span-2 shadow-sm border-none bg-white">
-								<CardHeader className="flex flex-row items-center justify-between py-2">
-									<CardTitle className="text-lg md:text-xl font-medium">Announcements</CardTitle>
-									<ChevronRight className="w-4 h-4 text-gray-400" />
-								</CardHeader>
-							</Card>
-						</div>
-
-						{/* Payroll Chart */}
-						<PayrollChart
-							data={data?.payroll_summary}
-							totalCurrentYear={totalCurrentYear}
-							growthPercentage={growthPercentage}
-							onRefresh={refreshData}
-							loading={loading}
-						/>
-
-						{/* Charts Grid */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							<DepartmentTreemap
-								data={data?.employees_per_department}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-							<PayrollByDepartment
-								data={data?.payroll_by_department}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-						</div>
-
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							<EmployeeCountChart
-								data={data?.employees_per_department}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-							<GenderDistribution
-								data={data?.gender_distribution}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-						</div>
-
-						{/* Projects */}
-						{/* <ProjectCards /> */}
-						<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
 					</div>
+				</div>
 
-					{/* Sidebar */}
-					{/* <div className="flex flex-col gap-4 lg:col-span-1">
-            <SimpleCalendarWidget />
-            <EventsAndHolidaysWidget />
-          </div> */}
+				{/* Overview Stats */}
+				{analytics && (
+					<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+						{cards.map((c, idx) => (
+							<PerformanceStatsCard
+								key={idx}
+								title={c.title}
+								link={c.link}
+								value={c.value}
+								icon={c.icon}
+								description={c.description}
+							/>
+						))}
+					</div>
+				)}
+
+				{/* Module Cards */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{graphs.map((g) => (
+						<PieChart
+							title={g.title}
+							data={g.stats}
+							colors={colors}
+							totalStr={""}
+							label={""}
+							dataKey={""}
+							nameKey={""}
+						></PieChart>
+					))}
 				</div>
 			</div>
 		</div>

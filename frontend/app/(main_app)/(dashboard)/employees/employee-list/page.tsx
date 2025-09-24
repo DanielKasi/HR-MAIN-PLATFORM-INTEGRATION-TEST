@@ -25,8 +25,13 @@ import { IJobPosition } from "@/types/types.utils";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
 import FormatNumberInput from "@/components/format-number-input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Icon } from '@iconify/react';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Icon } from "@iconify/react";
 
 export default function EmployeesPage() {
 	const [isBulkUploadDialogOpen, setIsBulkUploadDialogOpen] = useState(false);
@@ -97,7 +102,7 @@ export default function EmployeesPage() {
 	return (
 		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_EMPLOYEES}>
 			<div className="flex flex-col w-full h-full p-4 bg-white rounded-lg min-h-screen">
-				<CardHeader className="space-y-4">
+				<CardHeader className="space-y-4 mb-4">
 					<CardTitle className="flex flex-row items-center justify-between">
 						<h1 className="text-xl md:text-2xl font-bold">Employees</h1>
 
@@ -105,8 +110,7 @@ export default function EmployeesPage() {
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_EMPLOYEES}>
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button>
-											<Plus className="h-4 w-4 md:mr-2" />
+										<Button className="rounded-2xl">
 											<span className="hidden md:inline">Add Employee</span>
 											<UserPlus className="md:hidden" />
 											<ChevronDown className="h-4 w-4 ml-2" />
@@ -144,7 +148,7 @@ export default function EmployeesPage() {
 						</div>
 					</CardTitle>
 
-					<div className="flex flex-col md:grid md:grid-cols-3 lg:flex lg:flex-row gap-4 items-start lg:items-center mt-12 overflow-visible">
+					<div className="flex flex-col md:grid md:grid-cols-3 lg:flex lg:flex-row gap-4 items-start lg:items-end mt-12 overflow-visible">
 						<div className="relative w-full md:max-w-lg lg:max-w-xl ">
 							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
@@ -154,7 +158,7 @@ export default function EmployeesPage() {
 								className="pl-10 text-sm"
 							/>
 						</div>
-						<div className="flex gap-1 sm:gap-2 w-full overflow-visible md:contents">
+						<div className="grid grid-cols-2 items-end gap-3 px-4 min-w-fit">
 							<JobPositionSearchableSelect
 								value={positionSearchTerm}
 								onValueChange={setPositionSearchTerm}

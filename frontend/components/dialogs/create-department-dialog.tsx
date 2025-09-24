@@ -6,7 +6,7 @@ import { Building2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
-import { RichEditorField } from "../common/rich-editor";
+import { RichTextEditor } from "../common/rich-editor";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +148,7 @@ export function CreateDepartmentDialog({
                 onChange={(e) => updateFormData("description", e.target.value)}
                 className={errors.description ? "border-destructive" : ""}
               /> */}
-							<RichEditorField
+							<RichTextEditor
 								id="description"
 								placeholder="Describe the department's role, responsibilities, and objectives..."
 								value={formData.description}

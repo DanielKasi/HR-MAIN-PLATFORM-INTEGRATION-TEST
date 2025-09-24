@@ -134,13 +134,33 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
         return instance
 
 
+
 class ProjectSerializer(BaseApprovableSerializer):
     project_tasks = serializers.SerializerMethodField()
-    managers = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), many=True
+    managers = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="List of manager IDs"
     )
-    assignees = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), many=True
+    project_documents = serializers.SerializerMethodField()
+    assignees = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="List of assignee IDs"
+    )
+    documents = serializers.ListField(
+        child=serializers.FileField(),
+        write_only=True,
+        required=False,
+        help_text="List of documents to upload with the project"
+    )
+    # Explicit field definitions to enforce string conversion
+    project_name = serializers.CharField(max_length=255, allow_blank=False)
+    project_status = serializers.ChoiceField(
+        choices=Project.PROJECT_STATUS_CHOICES,
+        default="not_started"
     )
 
     class Meta:
@@ -155,7 +175,9 @@ class ProjectSerializer(BaseApprovableSerializer):
             "start_date",
             "end_date",
             "project_status",
+            "project_documents",
             "project_tasks",
+            "documents",
             "is_active",
         ]
         read_only_fields = [
@@ -165,61 +187,172 @@ class ProjectSerializer(BaseApprovableSerializer):
             "created_by",
             "updated_by",
             "project_tasks",
+            "project_documents",
         ]
 
     def get_project_tasks(self, obj):
         tasks = Task.objects.filter(project=obj)
         return TaskSerializer(tasks, many=True).data
+    
+    def get_project_documents(self, obj):
+        documents = ProjectDocument.objects.filter(project=obj, deleted_at__isnull=True)
+        return ProjectDocumentSerializer(documents, many=True).data
+
+    def to_internal_value(self, data):
+        data_copy = dict(data)   
+        documents = data_copy.pop('documents', [])  
+
+        if 'managers' in data_copy:
+            data_copy['managers'] = self._parse_array_field(data_copy['managers'])
+        if 'assignees' in data_copy:
+            data_copy['assignees'] = self._parse_array_field(data_copy['assignees'])
+
+        single_value_fields = [
+            'project_name', 'description', 'start_date', 'end_date', 
+            'project_status', 'institution'
+        ]
+        
+        for field in single_value_fields:
+            if field in data_copy:
+                value = data_copy[field]
+                if isinstance(value, list):
+                    if len(value) == 1:
+                        data_copy[field] = value[0]
+                    elif len(value) > 1:
+                        raise serializers.ValidationError(
+                            {field: f"Expected a single value for {field}, got multiple: {value}"}
+                        )
+                    else:
+                        data_copy[field] = None
+                elif isinstance(value, str) and value.startswith('[') and value.endswith(']'):
+                    try:
+                        import json
+                        parsed_value = json.loads(value)
+                        if isinstance(parsed_value, list) and len(parsed_value) == 1:
+                            data_copy[field] = parsed_value[0]
+                        else:
+                            raise serializers.ValidationError(
+                                {field: f"Invalid stringified list for {field}: {value}"}
+                            )
+                    except json.JSONDecodeError:
+                        data_copy[field] = value
+
+        if documents:
+            data_copy['documents'] = documents
+
+        return super().to_internal_value(data_copy)
+
+    def _parse_array_field(self, field_value):
+        if isinstance(field_value, str):
+            if field_value:
+                try:
+                    return [int(x.strip()) for x in field_value.split(',') if x.strip()]
+                except ValueError:
+                    return []
+            return []
+        elif isinstance(field_value, list):
+            result = []
+            for item in field_value:
+                if isinstance(item, str) and ',' in item:
+                    try:
+                        result.extend([int(x.strip()) for x in item.split(',') if x.strip()])
+                    except ValueError:
+                        continue
+                else:
+                    try:
+                        result.append(int(item))
+                    except (ValueError, TypeError):
+                        continue
+            return result
+        return []
 
     def validate(self, data):
         institution = data.get("institution")
         managers = data.get("managers", [])
         assignees = data.get("assignees", [])
+        documents = data.get("documents", [])
+        project_status = data.get("project_status")
 
-        manager_ids = [manager.id for manager in managers]
-        assignee_ids = [assignee.id for assignee in assignees]
+        managers = self._parse_array_field(managers)
+        assignees = self._parse_array_field(assignees)
+        data['managers'] = managers
+        data['assignees'] = assignees
 
         if not institution:
             raise serializers.ValidationError({"error": "Institution is required"})
 
-        from employee.models import Employee
+        if project_status and project_status not in dict(Project.PROJECT_STATUS_CHOICES):
+            raise serializers.ValidationError(
+                {"project_status": f"'{project_status}' is not a valid choice."}
+            )
 
+        manager_objects = []
         if managers:
-            valid_managers = Employee.objects.filter(
-                id__in=manager_ids, department__institution=institution
-            ).values_list("id", flat=True)
+            for manager_id in managers:
+                try:
+                    manager = Employee.objects.get(id=manager_id, department__institution=institution)
+                    manager_objects.append(manager)
+                except Employee.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {"managers": f"Manager with ID {manager_id} does not belong to the selected institution"}
+                    )
+            data['managers'] = manager_objects
 
-            invalid_managers = set(manager_ids) - set(valid_managers)
-            if invalid_managers:
-                raise serializers.ValidationError(
-                    {"error": f"Managers with IDs {list(invalid_managers)} do not belong to the selected institution"}
-                )
-
+        assignee_objects = []
         if assignees:
-            valid_assignees = Employee.objects.filter(
-                id__in=assignee_ids, department__institution=institution
-            ).values_list("id", flat=True)
+            for assignee_id in assignees:
+                try:
+                    assignee = Employee.objects.get(id=assignee_id, department__institution=institution)
+                    assignee_objects.append(assignee)
+                except Employee.DoesNotExist:
+                    raise serializers.ValidationError(
+                        {"assignees": f"Assignee with ID {assignee_id} does not belong to the selected institution"}
+                    )
+            data['assignees'] = assignee_objects
 
-            invalid_assignees = set(assignee_ids) - set(valid_assignees)
-            if invalid_assignees:
-                raise serializers.ValidationError(
-                    {"error": f"Assignees with IDs {list(invalid_assignees)} do not belong to the selected institution"}
-                )
+        if documents:
+            for document in documents:
+                if not isinstance(document, (str, bytes)) and hasattr(document, 'size'):
+                    if document.size > 10 * 1024 * 1024:  # 10MB limit
+                        raise serializers.ValidationError(
+                            {"documents": f"File {document.name} exceeds maximum size of 10MB"}
+                        )
+                else:
+                    raise serializers.ValidationError(
+                        {"documents": f"Invalid file format for {document}"}
+                    )
 
         return data
+
+    def _create_project_documents(self, project, documents):
+        """Helper method to create project documents."""
+        for document_file in documents:
+            ProjectDocument.objects.create(
+                project=project,
+                document=document_file,
+            )
 
     @transaction.atomic
     def create(self, validated_data):
         managers = validated_data.pop("managers", [])
         assignees = validated_data.pop("assignees", [])
+        documents = validated_data.pop("documents", [])
 
-        project = Project.objects.create(**validated_data)
 
+        # Create project
+        project = Project.objects.create(
+            **validated_data,
+        )
+
+        # Set managers and assignees
         if managers:
             project.managers.set(managers)
-
         if assignees:
             project.assignees.set(assignees)
+
+        # Handle document creation
+        if documents:
+            self._create_project_documents(project, documents)
 
         return project
 
@@ -227,26 +360,31 @@ class ProjectSerializer(BaseApprovableSerializer):
     def update(self, instance, validated_data):
         managers = validated_data.pop("managers", None)
         assignees = validated_data.pop("assignees", None)
+        documents = validated_data.pop("documents", [])
 
+
+        # Update project fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
+        # Update managers and assignees if provided
         if managers is not None:
             instance.managers.set(managers)
         if assignees is not None:
             instance.assignees.set(assignees)
 
+        # Handle document creation
+        if documents:
+            self._create_project_documents(instance, documents)
+
         return instance
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-
         from employee.serializers import EmployeeSerializer
-
         rep["managers"] = EmployeeSerializer(instance.managers.all(), many=True).data
         rep["assignees"] = EmployeeSerializer(instance.assignees.all(), many=True).data
-
         return rep
 
 

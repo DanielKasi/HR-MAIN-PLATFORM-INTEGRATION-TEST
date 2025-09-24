@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -129,18 +130,23 @@
   .bg-myOrange {
     background-color: var(--myOrange);
   }
+
   .text-myOrange {
     color: var(--myOrange);
   }
+
   .border-myOrange {
     border-color: var(--myOrange);
   }
+
   .hover\:bg-myOrange:hover {
     background-color: var(--myOrange);
   }
+
   .hover\:text-myOrange:hover {
     color: var(--myOrange);
   }
+
   .hover\:border-myOrange:hover {
     border-color: var(--myOrange);
   }

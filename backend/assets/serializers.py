@@ -48,23 +48,40 @@ class AssetCategorySerializer(BaseApprovableSerializer):
 
 
 class AssetHistorySerializer(serializers.ModelSerializer):
+    performed_by = serializers.SerializerMethodField()
+    asset = serializers.SerializerMethodField()
+    affected_user = serializers.SerializerMethodField()
+
     class Meta:
         model = AssetHistory
         fields = "__all__"
 
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        if instance.performed_by:
-            rep["performed_by"] = ProfileSerializer(instance.performed_by).data
-        else:
-            rep["performed_by"] = None
+    def get_performed_by(self, obj):
+        if obj.performed_by:
+            return {
+                'id': obj.performed_by.id,
+                'fullname': obj.performed_by.user.fullname,
+                'email': obj.performed_by.user.email,
+            }
+        return None
 
-        if instance.affected_user:
-            rep["affected_user"] = ProfileSerializer(instance.affected_user).data
-        else:
-            rep["affected_user"] = None
+    def get_asset(self, obj):
+        if obj.asset:
+            return {
+                'id': obj.asset.id,
+                'asset_name': obj.asset.asset_name,
+                'serial_number': obj.asset.serial_number,
+            }
+        return None
 
-        return rep
+    def get_affected_user(self, obj):
+        if obj.affected_user:
+            return {
+                'id': obj.affected_user.id,
+                'fullname': obj.affected_user.user.fullname,
+                'email': obj.affected_user.user.email,
+            }
+        return None
 
 
 class AssetSerializer(BaseApprovableSerializer):

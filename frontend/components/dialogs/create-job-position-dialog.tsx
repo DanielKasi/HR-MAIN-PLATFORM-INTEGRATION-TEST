@@ -8,7 +8,7 @@ import { Briefcase, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
-import { RichEditorField } from "../common/rich-editor";
+import { RichTextEditor } from "../common/rich-editor";
 
 import { CreateDepartmentDialog } from "./create-department-dialog";
 
@@ -122,14 +122,13 @@ export function CreateJobPositionDialog({
 		if (!formData.department) {
 			newErrors.department = "Please select a department";
 		}
-
-		if (!formData.salary_min.trim()) {
+		if (!formData.salary_min) {
 			newErrors.salary_min = "Minimum Salary is required";
 		} else if (isNaN(Number(formData.salary_min)) || Number(formData.salary_min) <= 0) {
 			newErrors.salary_min = "Please enter a valid salary amount";
 		}
 
-		if (!formData.salary_max.trim()) {
+		if (!formData.salary_max) {
 			newErrors.salary_max = "Maximum Salary is required";
 		} else if (isNaN(Number(formData.salary_max)) || Number(formData.salary_max) <= 0) {
 			newErrors.salary_max = "Please enter a valid salary amount";
@@ -309,7 +308,7 @@ export function CreateJobPositionDialog({
 							<div className="space-y-2">
 								<Label htmlFor="description">Job Description</Label>
 
-								<RichEditorField
+								<RichTextEditor
 									id="description"
 									placeholder="Describe the job responsibilities, requirements, and qualifications..."
 									value={formData.description}

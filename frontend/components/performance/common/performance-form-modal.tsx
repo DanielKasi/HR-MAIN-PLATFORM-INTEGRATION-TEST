@@ -55,7 +55,11 @@ export function PerformanceFormModal<T = any>({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className={cn("p-0 rounded-xl overflow-hidden", sizeClasses[size])}>
+			<DialogContent
+				className={cn(
+					"p-0 rounded-xl overflow-hidden max-w-md sm:max-w-lg md:!max-w-2xl lg:!max-w-4xl",
+				)}
+			>
 				<DialogHeader className="px-6 py-4 border-b">
 					<div className="flex items-center justify-between">
 						<DialogTitle className="text-xl font-semibold text-slate-900">{title}</DialogTitle>

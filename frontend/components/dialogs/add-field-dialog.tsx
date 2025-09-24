@@ -84,7 +84,6 @@ export function AddFieldDialog({
 			isOpen={isOpen}
 			onClose={handleCancel}
 			title="Add Question"
-			className="sm:max-w-md"
 			onConfirm={handleConfirm}
 			confirmText="Add Question"
 			cancelText="Cancel"

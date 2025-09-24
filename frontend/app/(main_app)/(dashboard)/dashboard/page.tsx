@@ -20,7 +20,7 @@ import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { USER_GENDER } from "@/types";
+import { USER_GENDER } from "@/types/user.types";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 
 export default function Dashboard() {

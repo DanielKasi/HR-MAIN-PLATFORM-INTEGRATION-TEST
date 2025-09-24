@@ -32,6 +32,11 @@ urlpatterns = [
         name="document-template-detail",
     ),
     path(
+        "generate-document/",
+        GenerateDocumentView.as_view(),
+        name="generate-document-default",
+    ),
+    path(
         "generate-document/<int:template_id>/",
         GenerateDocumentView.as_view(),
         name="generate-document",

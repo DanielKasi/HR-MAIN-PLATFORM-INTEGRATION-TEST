@@ -59,7 +59,7 @@ export function ContractsTable({ searchTerm, scope }: ContractsTableProps) {
 
 	const getContractName = (contract: IContract) => {
 		if (contract.employee) {
-			return contract.employee.user?.fullname || "—";
+			return contract.employee?.name || "—";
 		}
 		if (contract.applicant) {
 			return contract.applicant.applicant_name || "—";

@@ -52,8 +52,8 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
 		const newErrors: Record<string, string> = {};
 
 		// Name validation
-		if (!formData.name || formData.name.length < 3) {
-			newErrors.name = "Period name must be at least 3 characters";
+		if (!formData.name) {
+			newErrors.name = "Period name is required";
 		}
 
 		// Start date validation
@@ -108,7 +108,7 @@ export function PeriodForm({ initialData, onSubmit, onCancel, isLoading }: Perio
 
 	return (
 		<form onSubmit={handleSubmit} className="space-y-6">
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 				{/* Name */}
 				<div className="space-y-2">
 					<Label htmlFor="name" className="text-sm font-medium text-slate-700">

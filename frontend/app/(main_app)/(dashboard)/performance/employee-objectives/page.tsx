@@ -111,7 +111,7 @@ export default function EmployeeObjectivesPage() {
 				{/* Header */}
 				<div className="mb-8">
 					<div className="flex items-center gap-4 mb-4">
-						<Link href="/performance">
+						<Link href="/analytics/performance">
 							<Button
 								variant="outline"
 								size="sm"
@@ -181,7 +181,7 @@ export default function EmployeeObjectivesPage() {
 					<ConfirmationDialog
 						description="Are you sure you want to delete this employee objective? This action cannot be undone."
 						isOpen={!!objectiveToDelete}
-						title={`Delete objective ${objectiveToDelete.objective.name} on ${objectiveToDelete.employee.user?.fullname}`}
+						title={`Delete objective ${objectiveToDelete.objective.name} on ${objectiveToDelete.employee?.name}`}
 						onConfirm={() => handleDelete(objectiveToDelete)}
 						onClose={() => {
 							setObjectiveToDelete(null);

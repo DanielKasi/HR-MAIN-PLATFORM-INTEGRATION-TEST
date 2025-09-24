@@ -1,17 +1,16 @@
 "use client";
 
 import { useSelector } from "react-redux";
-
-import { IBankAccount } from "@/types/types.utils";
+import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { bankAccountsAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { useMemo } from "react";
+import { IBankAccount } from "@/types/types.utils";
 
 export interface BankAccountSearchableSelectProps {
-	selectedItems: (string | number)[];
+	value: (string | number)[];
 	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
 	placeholder?: string;
@@ -24,80 +23,91 @@ export interface BankAccountSearchableSelectProps {
 	setAccounts?: (accounts: IBankAccount[]) => void;
 }
 
-export const BankAccountSearchableSelect = ({
-	selectedItems,
-	onValueChange,
-	disabled = false,
-	showSelectedItems = true,
-	placeholder = "Select Account(s)",
-	className,
-	triggerClassName,
-	multiple = false,
-	hideSelectedFromList = false,
-	defaultLabel,
-	setAccounts,
-}: BankAccountSearchableSelectProps) => {
-	const currentInstitution = useSelector(selectSelectedInstitution);
-	// const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value)
+export const BankAccountSearchableSelect = memo(
+	({
+		value,
+		onValueChange,
+		disabled = false,
+		showSelectedItems = true,
+		placeholder = "Select Account(s)",
+		className,
+		triggerClassName,
+		multiple = false,
+		hideSelectedFromList = false,
+		defaultLabel,
+		setAccounts,
+	}: BankAccountSearchableSelectProps) => {
+		const currentInstitution = useSelector(selectSelectedInstitution);
+		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	// useEffect(() => {
-	//   setSelectedItems(value);
-	// }, [value])
+		useEffect(() => {
+			setSelectedItems(value);
+		}, [value]);
 
-	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
-		if (!currentInstitution) {
-			throw new Error("No institution found !");
-		}
+		const fetchFirstPage = useCallback(
+			async (query?: { search?: string; page?: number }) => {
+				if (!currentInstitution) {
+					throw new Error("No institution found!");
+				}
+				return await bankAccountsAPI.getAll(query?.search);
+			},
+			[currentInstitution],
+		);
 
-		return await bankAccountsAPI.getAll(query?.search);
-	};
+		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
+			return await bankAccountsAPI.getPaginatedFromUrl({ url });
+		}, []);
 
-	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await bankAccountsAPI.getPaginatedFRomUrl({ url });
-	};
+		const handleSelect = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
+				if (!selectedItems.includes(itemId)) {
+					if (multiple) {
+						onValueChange([...selectedItems, itemId]);
+					} else {
+						onValueChange([itemId]);
+					}
+				}
+			},
+			[multiple, selectedItems, onValueChange],
+		);
 
-	const handleSelect = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
-		// console.log("\n\n Selecting account : ", itemId)
-		if (!selectedItems.includes(itemId)) {
-			if (multiple) {
-				// console.log("\n\n Value changed with mutliple and selected items : ", selectedItems)
-				onValueChange([...selectedItems, itemId]);
-			} else {
-				// console.log("\n\n Value change with single value  : ", itemId)
-				onValueChange([itemId]);
-				// console.log("\n\n On value change called with : ", [itemId])
-			}
-		}
-	};
-	const handleRemove = (itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
-	};
+		const handleRemove = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBankAccount>) => {
+				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+				setSelectedItems(newItems);
+				onValueChange(newItems);
+			},
+			[selectedItems, onValueChange],
+		);
 
-	return (
-		<div className={className}>
-			<PaginatedSearchableSelect<IBankAccount, { search?: string; page?: number }>
-				paginated
-				fetchFirstPage={fetchFirstPage}
-				fetchFromUrl={fetchFromUrl}
-				getItemId={(account) => account.id}
-				getItemLabel={(account) => account.account_name || ""}
-				getItemValue={(account) => account.id.toString()}
-				selectedItems={selectedItems || [""]}
-				onSelect={handleSelect}
-				onRemove={handleRemove}
-				showSelectedItems={showSelectedItems}
-				multiple={multiple}
-				disabled={disabled}
-				placeholder={placeholder}
-				searchPlaceholder="Search bank accounts by name..."
-				triggerClassName={`w-full justify-between focus:ring-primary  ${triggerClassName || ""}`}
-				popoverClassName="w-full"
-				hideSelectedFromList={hideSelectedFromList}
-				setParentItems={setAccounts}
-				defaultLabel={defaultLabel}
-			/>
-		</div>
-	);
-};
+		return (
+			<div className={className}>
+				<PaginatedSearchableSelect<IBankAccount, { search?: string; page?: number }>
+					paginated
+					fetchFirstPage={fetchFirstPage}
+					fetchFromUrl={fetchFromUrl}
+					getItemId={(account) => account.id}
+					getItemLabel={(account) => account.account_name || ""}
+					getItemValue={(account) => account.id.toString()}
+					selectedItems={selectedItems}
+					onSelect={handleSelect}
+					onRemove={handleRemove}
+					showSelectedItems={showSelectedItems}
+					multiple={multiple}
+					disabled={disabled}
+					placeholder={placeholder}
+					searchPlaceholder="Search bank accounts by name..."
+					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
+					popoverClassName="w-full"
+					hideSelectedFromList={hideSelectedFromList}
+					setParentItems={setAccounts}
+					defaultLabel={defaultLabel}
+				/>
+			</div>
+		);
+	},
+);
+
+BankAccountSearchableSelect.displayName = "BankAccountSearchableSelect";
+
+export default BankAccountSearchableSelect;

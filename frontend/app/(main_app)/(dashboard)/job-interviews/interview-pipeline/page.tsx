@@ -31,7 +31,9 @@ import {
 	Building2,
 } from "lucide-react";
 import { toast } from "sonner";
-
+import { InterviewStagesPanel } from "@/components/common/interview-stages";
+import { InterviewStageDetailsDialog } from "@/components/interview/interview-stage-details-dialog";
+import { EditInterviewStageDialog } from "@/components/interview/edit-interview-stage-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,11 +79,13 @@ import {
 	updateInterview,
 	createInterview,
 	bulkCreateOnBoarding,
+	upddateInterviewStage,
 } from "@/lib/utils";
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 
 interface InterviewHistoryEntry {
 	stage_id: number;
@@ -776,6 +780,11 @@ export default function JobSpecificInterviewPipeline() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCandidates, setSelectedCandidates] = useState<number[]>([]);
 
+	const [isStageDetailsDialogOpen, setIsStageDetailsDialogOpen] = useState(false);
+	const [selectedStageForDetails, setSelectedStageForDetails] = useState<ProcessedStage | null>(
+		null,
+	);
+
 	// Dialog states
 	const [isCreateStageDialogOpen, setIsCreateStageDialogOpen] = useState(false);
 	const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
@@ -788,16 +797,11 @@ export default function JobSpecificInterviewPipeline() {
 	const [selectedCandidateWithHistory, setSelectedCandidateWithHistory] =
 		useState<InterviewCandidateWithHistory | null>(null);
 
+	const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
+	const [selectedStageForEdit, setSelectedStageForEdit] = useState<ProcessedStage | null>(null);
+
 	// Form states
-	const [isCreatingStage, setIsCreatingStage] = useState(false);
 	const [isProcessingProgression, setIsProcessingProgression] = useState(false);
-	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-		name: "",
-		level: 1,
-		interviewers: [],
-		job_position_advert: 0,
-	});
-	const [stageErrors, setStageErrors] = useState<any>({});
 
 	// Computed values
 	const activeStage = processedStages.find((stage) => stage.id === activeStageId);
@@ -888,6 +892,27 @@ export default function JobSpecificInterviewPipeline() {
 			(candidate) => selectedCandidates.includes(candidate.id) && canCandidateBeMoved(candidate),
 		);
 	}, [filteredCandidates, selectedCandidates]);
+
+	const handleSaveStageEdit = async (stageId: string, formData: IInterviewStageFormData) => {
+		try {
+			const result = await upddateInterviewStage({
+				stageId: parseInt(stageId),
+				stageData: {
+					...formData,
+					job_position_advert: selectedJobPosition?.id ?? 0,
+				},
+			});
+
+			if (result) {
+				await fetchData();
+			} else {
+				throw new Error("Failed to update stage");
+			}
+		} catch (error) {
+			console.error("Update stage error:", error);
+			throw error;
+		}
+	};
 
 	// Data fetching
 	const fetchData = async () => {
@@ -1008,91 +1033,6 @@ export default function JobSpecificInterviewPipeline() {
 			fetchData();
 		}
 	}, [selectedInstitution]);
-
-	// Stage management functions
-	const updateStageFormData = (field: string, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
-
-	const handleCreateStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (!selectedInstitution) {
-			toast.error("Missing organization information");
-
-			return;
-		}
-
-		if (!selectedJobPosition) {
-			toast.error("Please select a job position/title first");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const stageDataWithJob = {
-				...stageFormData,
-				job_position_advert: selectedJobPosition.id,
-			};
-
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageDataWithJob,
-			});
-
-			if (newStage) {
-				setStageFormData({
-					name: "",
-					level: 1,
-					interviewers: [],
-					job_position_advert: selectedJobPosition.id,
-				});
-				setStageErrors({});
-				setIsCreateStageDialogOpen(false);
-
-				toast.success("Interview stage created successfully!");
-				await fetchData(); // Refresh data
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
-		} finally {
-			setIsCreatingStage(false);
-		}
-	};
-
-	// Auto-fill the next level for new stage
-	useEffect(() => {
-		if (isCreateStageDialogOpen && processedStages.length > 0) {
-			const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
-			const nextLevel = maxLevel + 1;
-
-			setStageFormData((prev) => ({ ...prev, level: nextLevel }));
-		} else if (isCreateStageDialogOpen) {
-			setStageFormData((prev) => ({ ...prev, level: 1 }));
-		}
-	}, [isCreateStageDialogOpen, processedStages]);
 
 	// Candidate management functions
 	const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
@@ -2039,87 +1979,21 @@ export default function JobSpecificInterviewPipeline() {
 								</SelectContent>
 							</Select>
 						</div>
-
 						{selectedJobPosition && (
-							<Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
-								<DialogTrigger asChild>
+							<CreateInterviewStageDialog
+								isOpen={isCreateStageDialogOpen}
+								onOpenChange={setIsCreateStageDialogOpen}
+								jobPositionId={selectedJobPosition.id}
+								jobPositionName={selectedJobPosition.name}
+								existingStagesCount={processedStages.length}
+								onSuccess={fetchData}
+								triggerButton={
 									<Button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600">
 										<Plus className="h-4 w-4" />
 										Add Interview Stage
 									</Button>
-								</DialogTrigger>
-								<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-									<DialogHeader>
-										<DialogTitle>Create Interview Stage</DialogTitle>
-										<DialogDescription>
-											Create a new interview stage for {selectedJobPosition.name}.
-										</DialogDescription>
-									</DialogHeader>
-
-									<form onSubmit={handleCreateStage} className="space-y-4">
-										<div className="space-y-2">
-											<Label htmlFor="stage_name">Stage Name *</Label>
-											<Input
-												id="stage_name"
-												value={stageFormData.name}
-												onChange={(e) => updateStageFormData("name", e.target.value)}
-												placeholder="e.g., Technical Interview, HR Round"
-												className={stageErrors.name ? "border-destructive" : ""}
-											/>
-											{stageErrors.name && (
-												<p className="text-sm text-destructive">{stageErrors.name}</p>
-											)}
-										</div>
-
-										<div className="space-y-2">
-											<Label htmlFor="stage_interviewer">Interviewers *</Label>
-											<EmployeeSearchableSelect
-												value={stageFormData.interviewers.map((id) => id.toString())}
-												onValueChange={(values) => {
-													const numberValues = Array.isArray(values)
-														? values.map((v) => Number(v))
-														: [Number(values)];
-													const uniqueValues = [...new Set(numberValues)];
-
-													updateStageFormData("interviewers", uniqueValues);
-												}}
-												disabled={isCreatingStage}
-												placeholder="Search and select interviewers"
-												showEmployeeId={false}
-												showDepartment={false}
-												multiple={true}
-											/>
-											{stageErrors.interviewers && (
-												<p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-											)}
-										</div>
-
-										<div className="flex justify-end gap-2 pt-4">
-											<Button
-												type="button"
-												variant="outline"
-												onClick={() => setIsCreateStageDialogOpen(false)}
-												disabled={isCreatingStage}
-											>
-												Cancel
-											</Button>
-											<Button type="submit" disabled={isCreatingStage}>
-												{isCreatingStage ? (
-													<>
-														<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-														Creating...
-													</>
-												) : (
-													<>
-														<Check className="h-4 w-4 mr-2" />
-														Create Stage
-													</>
-												)}
-											</Button>
-										</div>
-									</form>
-								</DialogContent>
-							</Dialog>
+								}
+							/>
 						)}
 					</div>
 				</CardContent>
@@ -2253,64 +2127,30 @@ export default function JobSpecificInterviewPipeline() {
 								<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
 									{/* Left Panel - Stages List */}
 									<div className="lg:col-span-1">
-										<Card className="h-full">
-											<CardHeader>
-												<CardTitle className="flex items-center gap-2">
-													<Briefcase className="h-5 w-5" />
-													Interview Stages ({processedStages.length})
-												</CardTitle>
-											</CardHeader>
-											<CardContent className="p-0">
-												<div className="space-y-1 max-h-[500px] overflow-y-auto">
-													{processedStages.map((stage) => (
-														<div
-															key={stage.id}
-															className={`p-4 cursor-pointer transition-all duration-200 border-l-4 hover:bg-gray-50 ${
-																activeStageId === stage.id
-																	? "bg-blue-50 border-l-blue-500 shadow-sm"
-																	: "border-l-transparent hover:border-l-gray-300"
-															}`}
-															onClick={() => {
-																setActiveStageId(stage.id);
-																setSelectedCandidates([]);
-																setSearchTerm("");
-															}}
-														>
-															<div className="flex items-center justify-between mb-2">
-																<div className="flex items-center space-x-3">
-																	<div className={`p-2 rounded-lg ${stage.bgColor}`}>
-																		<div className={stage.color}>{stage.icon}</div>
-																	</div>
-																	<div>
-																		<h4 className="font-semibold text-sm">{stage.name}</h4>
-																		<p className="text-xs text-gray-500">Level {stage.level}</p>
-																	</div>
-																</div>
-																<Badge
-																	variant="secondary"
-																	className={`font-bold ${
-																		stage.count > 0
-																			? "bg-green-100 text-green-700"
-																			: "bg-gray-100 text-gray-500"
-																	}`}
-																>
-																	{stage.count}
-																</Badge>
-															</div>
-															<div className="text-xs text-gray-500 ml-11">
-																Interviewer: {stage.interviewer}
-															</div>
-															{activeStageId === stage.id && (
-																<div className="text-xs text-blue-600 ml-11 mt-1 flex items-center gap-1">
-																	<Eye className="h-3 w-3" />
-																	<span>Currently viewing</span>
-																</div>
-															)}
-														</div>
-													))}
-												</div>
-											</CardContent>
-										</Card>
+										<InterviewStagesPanel
+											stages={processedStages}
+											activeStageId={activeStageId}
+											onStageSelect={(stageId) => {
+												setActiveStageId(stageId);
+												setSelectedCandidates([]);
+												setSearchTerm("");
+											}}
+											onViewStageDetails={(stage) => {
+												setSelectedStageForDetails({
+													...stage,
+													candidates: (stage.candidates as InterviewCandidate[]) ?? [],
+												});
+												setIsStageDetailsDialogOpen(true);
+											}}
+											onEditStage={(stage) => {
+												setSelectedStageForEdit({
+													...stage,
+													candidates: stage.candidates ?? [],
+												});
+												setIsEditStageDialogOpen(true);
+											}}
+											showDropdownActions={true}
+										/>
 									</div>
 
 									{/* Right Panel - Candidates for Selected Stage */}
@@ -3207,6 +3047,26 @@ export default function JobSpecificInterviewPipeline() {
 					setSelectedCandidateWithHistory(null);
 				}}
 				stages={processedStages}
+			/>
+			<InterviewStageDetailsDialog
+				isOpen={isStageDetailsDialogOpen}
+				onClose={() => {
+					setIsStageDetailsDialogOpen(false);
+					setSelectedStageForDetails(null);
+				}}
+				stage={selectedStageForDetails}
+				candidate={null}
+				size="lg"
+			/>
+			<EditInterviewStageDialog
+				isOpen={isEditStageDialogOpen}
+				onClose={() => {
+					setIsEditStageDialogOpen(false);
+					setSelectedStageForEdit(null);
+				}}
+				stage={selectedStageForEdit}
+				onSave={handleSaveStageEdit}
+				size="md"
 			/>
 		</div>
 	);

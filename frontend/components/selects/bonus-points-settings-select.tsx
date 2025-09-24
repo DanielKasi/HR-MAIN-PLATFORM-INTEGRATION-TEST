@@ -1,7 +1,7 @@
 "use client";
 
 import { useSelector } from "react-redux";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
@@ -21,80 +21,87 @@ export interface BonusPointSettingsSelectProps {
 	showSelectedItems?: boolean;
 }
 
-export const BonusPointSettingsSelect = ({
-	value,
-	onValueChange,
-	disabled = false,
-	showSelectedItems = true,
-	placeholder = "Select bonus point setting",
-	className,
-	triggerClassName,
-	multiple = false,
-	hideSelectedFromList = false,
-}: BonusPointSettingsSelectProps) => {
-	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
+export const BonusPointSettingsSelect = memo(
+	({
+		value,
+		onValueChange,
+		disabled = false,
+		showSelectedItems = true,
+		placeholder = "Select bonus point setting",
+		className,
+		triggerClassName,
+		multiple = false,
+		hideSelectedFromList = false,
+	}: BonusPointSettingsSelectProps) => {
+		const currentInstitution = useSelector(selectSelectedInstitution);
+		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-	useEffect(() => {
-		setSelectedItems(value);
-	}, [value]);
+		useEffect(() => {
+			setSelectedItems(value);
+		}, [value]);
 
-	const fetchFirstPage = async (query?: { search?: string; page?: number }) => {
-		if (!currentInstitution) {
-			throw new Error("No institution found!");
-		}
-		return await BONUS_POINT_SETTINGS_API.getPaginated({ page: query?.page || 1 });
-	};
+		const fetchFirstPage = useCallback(
+			async (query?: { search?: string; page?: number }) => {
+				if (!currentInstitution) {
+					throw new Error("No institution found!");
+				}
+				return await BONUS_POINT_SETTINGS_API.getPaginated({ page: query?.page || 1 });
+			},
+			[currentInstitution],
+		);
 
-	const fetchFromUrl = async ({ url }: { url: string }) => {
-		return await BONUS_POINT_SETTINGS_API.getPaginatedFromUrl({ url });
-	};
+		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
+			return await BONUS_POINT_SETTINGS_API.getPaginatedFromUrl({ url });
+		}, []);
 
-	const handleSelect = (
-		itemId: string | number,
-		_item: PaginatedSelectItem<IBonusPointSettings>,
-	) => {
-		if (!selectedItems.includes(itemId)) {
-			if (multiple) {
-				onValueChange([...selectedItems, itemId]);
-			} else {
-				onValueChange([itemId]);
-			}
-		}
-	};
+		const handleSelect = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBonusPointSettings>) => {
+				if (!selectedItems.includes(itemId)) {
+					if (multiple) {
+						onValueChange([...selectedItems, itemId]);
+					} else {
+						onValueChange([itemId]);
+					}
+				}
+			},
+			[multiple, selectedItems, onValueChange],
+		);
 
-	const handleRemove = (
-		itemId: string | number,
-		_item: PaginatedSelectItem<IBonusPointSettings>,
-	) => {
-		if (multiple) {
-			onValueChange(selectedItems.filter((id) => String(id) !== String(itemId)));
-		}
-	};
+		const handleRemove = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBonusPointSettings>) => {
+				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+				setSelectedItems(newItems);
+				onValueChange(newItems);
+			},
+			[selectedItems, onValueChange],
+		);
 
-	return (
-		<div className={className}>
-			<PaginatedSearchableSelect<IBonusPointSettings, { search?: string; page?: number }>
-				paginated
-				fetchFirstPage={fetchFirstPage}
-				fetchFromUrl={fetchFromUrl}
-				getItemId={(setting) => setting.id}
-				getItemLabel={(setting) => `${setting.bonus_for} (${setting.points} points)`}
-				getItemValue={(setting) => setting.id.toString()}
-				selectedItems={selectedItems}
-				onSelect={handleSelect}
-				onRemove={handleRemove}
-				showSelectedItems={showSelectedItems}
-				multiple={multiple}
-				disabled={disabled}
-				placeholder={placeholder}
-				searchPlaceholder="Search bonus point settings"
-				triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
-				popoverClassName="w-full"
-				hideSelectedFromList={hideSelectedFromList}
-			/>
-		</div>
-	);
-};
+		return (
+			<div className={className}>
+				<PaginatedSearchableSelect<IBonusPointSettings, { search?: string; page?: number }>
+					paginated
+					fetchFirstPage={fetchFirstPage}
+					fetchFromUrl={fetchFromUrl}
+					getItemId={(setting) => setting.id}
+					getItemLabel={(setting) => `${setting.bonus_for} (${setting.points} points)`}
+					getItemValue={(setting) => setting.id.toString()}
+					selectedItems={selectedItems}
+					onSelect={handleSelect}
+					onRemove={handleRemove}
+					showSelectedItems={showSelectedItems}
+					multiple={multiple}
+					disabled={disabled}
+					placeholder={placeholder}
+					searchPlaceholder="Search bonus point settings"
+					triggerClassName={`w-full justify-between focus:ring-orange-500 focus:border-orange-500 ${triggerClassName || ""}`}
+					popoverClassName="w-full"
+					hideSelectedFromList={hideSelectedFromList}
+				/>
+			</div>
+		);
+	},
+);
+
+BonusPointSettingsSelect.displayName = "BonusPointSettingsSelect";
 
 export default BonusPointSettingsSelect;

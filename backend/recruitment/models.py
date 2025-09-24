@@ -720,3 +720,30 @@ class JobInterview(BaseApprovableModel):
 
     def get_institution(self):
         return self.job_position_application.job_position_advert.job_position.department.institution       
+
+
+class SkillZoneCategory(SoftDeletableTimeStampedModel):
+    institution = models.ForeignKey("institution.Institution", on_delete=models.CASCADE)
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return self.name
+    
+class SkillZone(BaseApprovableModel):
+    candidate = models.OneToOneField(JobAdvertApplication, on_delete=models.CASCADE, related_name="skill_zone_entry")
+    category = models.ManyToManyField(SkillZoneCategory, related_name="skill_zone_entries", blank=True)    
+    notes = models.TextField(blank=True, null=True)
+    potential_value = models.TextField(
+    blank=True, null=True,
+    help_text="Description of potential future value (e.g., skills, experience)"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def str(self):
+        return f"SkillZone: {self.candidate.applicant_name} ({self.candidate.job_position_advert.job_position.name})"
+    
+    def get_institution(self):
+        return self.candidate.job_position_advert.job_position.department.institution    

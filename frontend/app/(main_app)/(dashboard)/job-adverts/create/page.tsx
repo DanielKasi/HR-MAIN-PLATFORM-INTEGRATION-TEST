@@ -23,7 +23,7 @@ import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/act
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog";
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
-import { RichEditorField } from "@/components/common/rich-editor";
+import { RichTextEditor } from "@/components/common/rich-editor";
 import InterviewStageEditorDialog from "@/components/common/dialogs/interview-stage-editor-dialog";
 import {
 	createInterviewStage,
@@ -662,7 +662,7 @@ export default function JobAdvertsPage() {
 		if (employee && !selectedInterviewers.some((i) => i.id === interviewerId)) {
 			const interviewer: Interviewer = {
 				id: interviewerId,
-				name: employee.user?.fullname || `Employee ${employee.id}`,
+				name: employee?.name || `Employee ${employee.id}`,
 				role: employee.user?.user_type || "Staff",
 			};
 			const updatedSelectedInterviewers = [...selectedInterviewers, interviewer];
@@ -1264,7 +1264,7 @@ export default function JobAdvertsPage() {
 							<p className="text-xs text-gray-500 mb-2">
 								Provide a concise summary of the role, including key duties and responsibilities.
 							</p>
-							<RichEditorField
+							<RichTextEditor
 								id="extra_information"
 								placeholder="Add job description..."
 								value={formData.extra_information || ""}
@@ -1325,9 +1325,9 @@ export default function JobAdvertsPage() {
 										<SearchableSelect
 											items={employees.map((employee) => ({
 												id: employee.id.toString(),
-												label: `${employee.user?.fullname || `Employee ${employee.id}`} (${employee.user?.user_type || "Staff"})`,
+												label: `${employee?.name || `Employee ${employee.id}`} (${employee.user?.user_type || "Staff"})`,
 												value:
-													`${employee.user?.fullname || `Employee ${employee.id}`} ${employee.user?.user_type || "Staff"}`.toLowerCase(),
+													`${employee?.name || `Employee ${employee.id}`} ${employee.user?.user_type || "Staff"}`.toLowerCase(),
 											}))}
 											selectedItems={selectedInterviewers.map((interviewer) => interviewer.id)}
 											placeholder="Select Interviewers"

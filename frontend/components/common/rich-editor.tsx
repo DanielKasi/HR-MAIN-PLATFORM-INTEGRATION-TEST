@@ -6,7 +6,7 @@ import ReactQuill from "react-quill-new";
 
 const ReactQuillInstance = dynamic(() => import("react-quill-new"), { ssr: false });
 
-interface IRichEditorFieldProps extends ReactQuill.ReactQuillProps {
+interface IRichTextEditorFieldProps extends ReactQuill.ReactQuillProps {
 	placeholder?: string;
 	value: string;
 	onChange: (value: string) => void;
@@ -14,7 +14,7 @@ interface IRichEditorFieldProps extends ReactQuill.ReactQuillProps {
 	maxLength?: number;
 }
 
-export const RichEditorField = (props: IRichEditorFieldProps) => {
+export const RichTextEditor = (props: IRichTextEditorFieldProps) => {
 	const { placeholder, value, onChange, disabled, maxLength } = props;
 
 	const modules = {
