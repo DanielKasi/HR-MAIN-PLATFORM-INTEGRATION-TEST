@@ -173,14 +173,14 @@ export const BranchPenaltyConfigurations = () => {
 			} else if (typeof config.penalty_value === "number") {
 				value = config.penalty_value;
 			} else {
-				return "N/A";
+				return "Unknown";
 			}
 
 			if (isNaN(value)) {
-				return "N/A";
+				return "Unknown";
 			}
 
-			return `$${value.toFixed(2)}`;
+			return `${value.toFixed(2)}`;
 		} else if (config.penalty_value_type === "percentage") {
 			let percentage: number;
 
@@ -189,17 +189,17 @@ export const BranchPenaltyConfigurations = () => {
 			} else if (typeof config.percentage === "number") {
 				percentage = config.percentage;
 			} else {
-				return "N/A";
+				return "Unknown";
 			}
 
 			if (isNaN(percentage)) {
-				return "N/A";
+				return "Unknown";
 			}
 
 			return `${percentage}%`;
 		}
 
-		return "N/A";
+		return "Unknown";
 	};
 
 	return (

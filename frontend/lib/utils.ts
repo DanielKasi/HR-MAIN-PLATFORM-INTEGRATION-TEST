@@ -87,7 +87,6 @@ import {
 	ITaxFormData,
 	ITaxRule,
 	ITaxRuleFormData,
-	IAssetCategory,
 	IAssetCategoryFormData,
 	IAsset,
 	IAssetFormData,
@@ -95,8 +94,6 @@ import {
 	IAssetRequestFormData,
 	IAssetAllocation,
 	IAssetAllocationFormData,
-	IAssetReturn,
-	IAssetReturnFormData,
 	AttendanceResponse,
 	IEmployeeTaxFormData,
 	IEmployeeTax,
@@ -121,13 +118,9 @@ import {
 	IPenaltyType,
 	IEmployeePenaltyFormData,
 	IRecruitmentDashboard,
-	IEmployeeDashboard,
-	ILeaveDashboard,
 	IAttendanceDashboard,
-	IPayrollDashboard,
 	IBranchWorkingDays,
 	OffboardingData,
-	AssetsData,
 	ChangePasswordData,
 	ApprovalTasksDashboardResponse,
 	IBranchSpotCheckSettingFormData,
@@ -145,7 +138,6 @@ import {
 	IProject,
 	IProjectFormData,
 	IEmployeeBankAccountFormData,
-	IProjectDashboard,
 	IProjectTaskFormData,
 	IProjectTask,
 	IEmployeeObjective,
@@ -174,7 +166,6 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
-	IAssetHistory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -182,9 +173,23 @@ import {
 	IKYCDocument,
 	IUserInstitution,
 	IUserInstitutionFormData,
-	Role,
-	UserProfile,
-} from "@/types";
+} from "@/types/other";
+
+import {
+	IAssetReturn,
+	IAssetHistory,
+	IAssetReturnFormData,
+	IAssetCategory,
+} from "@/types/assets.types";
+
+import { IPayrollDashboard } from "@/types/payroll.types";
+import { ILeaveDashboard } from "@/types/leave.types";
+import { IEmployeeDashboard } from "@/types/employee.types";
+import { IProjectDashboard } from "@/types/project.type";
+import { AssetsData } from "@/types/assets.types";
+
+import { Role, UserProfile } from "@/types/user.types";
+
 import { MAIN_DOMAIN_URL } from "@/constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -1080,6 +1085,10 @@ export const createInterviewStage = async ({
 	stageData.interviewers.forEach((interviewerId) => {
 		formData.append("interviewers", interviewerId.toString());
 	});
+
+	if (stageData.feedback_fields && stageData.feedback_fields.length > 0) {
+		formData.append("feedback_fields", JSON.stringify(stageData.feedback_fields));
+	}
 
 	const response = await apiRequest.post(
 		`recruitment/institution/${institutionId}/interview-stage/`,
@@ -4364,21 +4373,21 @@ export function generatePeriodName(startDate: string, endDate: string): string {
 
 		return `Week ${weekNumber} - ${monthName} ${year}`;
 	} else {
-	const monthDays: Record<string, number> = {};
-	
-	const currentDate = new Date(start);
-	while (currentDate <= end) {
-		const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
-		monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
-		currentDate.setDate(currentDate.getDate() + 1);
+		const monthDays: Record<string, number> = {};
+
+		const currentDate = new Date(start);
+		while (currentDate <= end) {
+			const monthYear = `${monthFormatter.format(currentDate)} ${currentDate.getFullYear()}`;
+			monthDays[monthYear] = (monthDays[monthYear] || 0) + 1;
+			currentDate.setDate(currentDate.getDate() + 1);
+		}
+
+		const dominantMonth = Object.keys(monthDays).reduce((a, b) =>
+			monthDays[a] > monthDays[b] ? a : b,
+		);
+
+		return dominantMonth;
 	}
-	
-	const dominantMonth = Object.keys(monthDays).reduce((a, b) => 
-		monthDays[a] > monthDays[b] ? a : b
-	);
-	
-	return dominantMonth;
-}
 }
 
 export const checkPeriodOverlap = async ({
@@ -5533,7 +5542,7 @@ export const bankAccountsAPI = {
 			throw error;
 		}
 	},
-	getPaginatedFRomUrl: async ({ url }: { url: string }) => {
+	getPaginatedFromUrl: async ({ url }: { url: string }) => {
 		const response = await apiRequest.get(forceUrlToHttps(url));
 
 		return response.data as IPaginatedResponse<IBankAccount>;

@@ -47,8 +47,8 @@ export const SkillZoneCreateEditDialog = ({
 	useEffect(() => {
 		if (selectedSkillZone) {
 			setFormData({
-				candidate: selectedSkillZone.candidate.id,
-				category: selectedSkillZone.category.map((cat) => cat.id),
+				candidate: selectedSkillZone.candidate,
+				category: selectedSkillZone.category.map((cat) => cat),
 				notes: selectedSkillZone.notes || "",
 				potential_value: selectedSkillZone.potential_value || "",
 			});
@@ -115,6 +115,7 @@ export const SkillZoneCreateEditDialog = ({
 								}
 								placeholder="Select candidate..."
 								multiple={false}
+								filters={{ status: "rejected" }}
 							/>
 						</div>
 						<div>

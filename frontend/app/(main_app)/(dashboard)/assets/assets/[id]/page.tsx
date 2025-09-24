@@ -417,12 +417,12 @@ const AssetDetailPage = () => {
 																	<div className="min-w-0">
 																		<p className="text-sm font-medium text-gray-900 truncate">
 																			{typeof item.affected_user === "object"
-																				? item.affected_user?.user?.fullname
+																				? item.affected_user?.fullname
 																				: item.affected_user}
 																		</p>
 																		<p className="text-xs text-gray-500 truncate">
 																			{typeof item.affected_user === "object"
-																				? item.affected_user?.user?.roles
+																				? item.affected_user?.roles
 																						?.map((role: any) => role.role_name)
 																						.join(", ")
 																				: item.affected_user}
@@ -440,12 +440,12 @@ const AssetDetailPage = () => {
 																<div className="min-w-0">
 																	<p className="text-sm font-medium text-gray-900 truncate">
 																		{typeof item.performed_by === "object"
-																			? item.performed_by?.user?.fullname
+																			? item.performed_by?.fullname
 																			: item.performed_by}
 																	</p>
 																	<p className="text-xs text-gray-500 truncate">
 																		{typeof item.performed_by === "object"
-																			? item.performed_by?.user?.roles
+																			? item.performed_by?.roles
 																					?.map((role: any) => role.role_name)
 																					.join(", ")
 																			: item.performed_by}

@@ -163,7 +163,7 @@ export default function AIAssistantWidget() {
 				payload.chat_id = currentChatId;
 			}
 
-			const response: ApiResponse = await apiPost(`/institution/ai-assistant/`, payload);
+			const response: ApiResponse = await apiPost(`/institutioUnknowni-assistant/`, payload);
 
 			if (response.data.chat_id && response.data.chat_id !== currentChatId) {
 				setCurrentChatId(response.data.chat_id);
@@ -313,7 +313,7 @@ export default function AIAssistantWidget() {
 			<div className="fixed bottom-6 right-6 z-50">
 				{showTooltip && !isOpen && (
 					<div className="absolute bottom-16 right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg animate-in fade-in duration-200 whitespace-nowrap">
-						AI Assistant
+						Baisoft Ai
 						<div className="absolute bottom-0 right-6 transform translate-y-full">
 							<div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900" />
 						</div>
@@ -349,7 +349,7 @@ export default function AIAssistantWidget() {
 											<Sparkles className="h-3 w-3 text-white" />
 										</div>
 										<h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-											Peracosoft AI Assistant
+											Baisoft Ai
 										</h3>
 									</div>
 									<Button

@@ -487,7 +487,7 @@ class JobInterview(BaseApprovableModel):
     interview_date = models.DateTimeField(default=timezone.now)
     interview_time = models.TimeField()
     location = models.CharField(max_length=255)
-    feedback = models.TextField(blank=True, null=True)
+    feedback = models.JSONField(blank=True, null=True)    
     rating = models.PositiveIntegerField(blank=True, null=True)
     additional_notes = models.TextField(blank=True, null=True)
     status = models.CharField(
@@ -500,26 +500,21 @@ class JobInterview(BaseApprovableModel):
         return f"{self.job_position_application.applicant_name} - {self.interview_stage.name} ({self.status})"
 
     def save(self, *args, **kwargs):
-        # Check if this is a new record or status change to scheduled
         is_new = self.pk is None
         send_email = False
         create_event = False
 
         if is_new and self.status == "scheduled":
-            # New interview being created with scheduled status
             send_email = True
             create_event = True
         elif not is_new:
-            # Existing interview - check if status changed to scheduled
             old_instance = JobInterview.objects.get(pk=self.pk)
             if old_instance.status != "scheduled" and self.status == "scheduled":
                 send_email = True
                 create_event = True
 
-        # Call the parent save method first
         super().save(*args, **kwargs)
 
-        # Send email after saving
         if send_email:
             self.send_interview_scheduled_email()
 

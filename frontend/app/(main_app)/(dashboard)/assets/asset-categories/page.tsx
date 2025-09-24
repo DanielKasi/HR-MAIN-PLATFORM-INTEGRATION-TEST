@@ -1,7 +1,7 @@
 "use client";
 
-import type { IAssetCategory, IAsset } from "@/types/types.utils";
-
+import type { IAsset } from "@/types/types.utils";
+import { IAssetCategory } from "@/types/assets.types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { MoreVertical, Edit, Trash2, Search, Eye } from "lucide-react";

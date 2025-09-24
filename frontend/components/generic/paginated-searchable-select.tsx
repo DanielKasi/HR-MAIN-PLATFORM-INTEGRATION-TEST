@@ -50,6 +50,7 @@ export interface PaginatedSearchableSelectProps<T, Q = unknown> {
 	hideSelectedFromList?: boolean;
 	setParentItems?: (items: PaginatedSelectItem<T>[]) => void;
 	id?: string;
+	required?: boolean;
 }
 
 export function PaginatedSearchableSelect<T, Q = unknown>({
@@ -79,6 +80,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 	hideSelectedFromList = false,
 	id,
 	setParentItems,
+	required,
 }: PaginatedSearchableSelectProps<T, Q>) {
 	const [open, setOpen] = React.useState(false);
 	const [loading, setLoading] = React.useState(false);

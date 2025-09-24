@@ -1,6 +1,6 @@
 "use client";
 
-import type { IAssetReturn } from "@/types/types.utils";
+import { IAssetReturn } from "@/types/assets.types";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -228,7 +228,7 @@ const AssetReturnDetailPage = () => {
 												{assetReturn.allocation?.allocated_to?.user?.fullname || "Unknown User"}
 											</p>
 											<p className="text-sm text-gray-500">
-												EMP-{assetReturn.allocation?.allocated_to?.user?.id || "N/A"}
+												EMP-{assetReturn.allocation?.allocated_to?.user?.id || "Unknown"}
 											</p>
 										</div>
 									</div>

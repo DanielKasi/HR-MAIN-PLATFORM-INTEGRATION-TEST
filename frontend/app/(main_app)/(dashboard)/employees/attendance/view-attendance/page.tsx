@@ -588,7 +588,7 @@ export default function AttendanceTable() {
 													{emp.summary.total_working_days}
 												</TableCell>
 												{dateRange.map((date) => {
-													const status = emp.daily_statuses[date] || "N/A";
+													const status = emp.daily_statuses[date] || "Unknown";
 													const statusConfig =
 														attendanceCodes[status as keyof typeof attendanceCodes] ||
 														attendanceCodes["ERR"];

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AssetHistoriesTable } from "./asset-histories-table"; 
+import { AssetHistoriesTable } from "./asset-histories-table";
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Select,

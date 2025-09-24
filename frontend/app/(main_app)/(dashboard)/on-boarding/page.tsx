@@ -267,26 +267,26 @@ export default function OnboardPage() {
 
 		if (!applicationData) {
 			return {
-				applicantName: "N/A",
-				applicantEmail: "N/A",
-				jobDesc: "N/A",
-				applicantPhone: "N/A",
-				applicantAddress: "N/A",
-				applicantPositions: "N/A",
+				applicantName: "Unknown",
+				applicantEmail: "Unknown",
+				jobDesc: "Unknown",
+				applicantPhone: "Unknown",
+				applicantAddress: "Unknown",
+				applicantPositions: "Unknown",
 			};
 		}
 
 		const jobDetails = applicationData.job_position_advert_job_details;
-		const jobName = jobDetails?.name || "N/A";
-		const jobDescription = jobDetails?.description || "N/A";
+		const jobName = jobDetails?.name || "Unknown";
+		const jobDescription = jobDetails?.description || "Unknown";
 
 		const result = {
-			applicantName: applicationData.applicant_name || "N/A",
-			applicantEmail: applicationData.applicant_email || "N/A",
-			jobDesc: jobName !== "N/A" ? jobName : jobDescription,
-			applicantPhone: applicationData.applicant_phone || "N/A",
-			applicantAddress: applicationData.address || "N/A",
-			applicantPositions: applicationData.positions?.toString() || "N/A",
+			applicantName: applicationData.applicant_name || "Unknown",
+			applicantEmail: applicationData.applicant_email || "Unknown",
+			jobDesc: jobName !== "Unknown" ? jobName : jobDescription,
+			applicantPhone: applicationData.applicant_phone || "Unknown",
+			applicantAddress: applicationData.address || "Unknown",
+			applicantPositions: applicationData.positions?.toString() || "Unknown",
 		};
 
 		return result;
@@ -322,7 +322,7 @@ export default function OnboardPage() {
 	};
 
 	const formatDate = (dateString: string) => {
-		if (!dateString) return "N/A";
+		if (!dateString) return "Unknown";
 		try {
 			return new Date(dateString).toLocaleDateString("en-US", {
 				year: "numeric",
@@ -330,12 +330,12 @@ export default function OnboardPage() {
 				day: "numeric",
 			});
 		} catch {
-			return "N/A";
+			return "Unknown";
 		}
 	};
 
 	const getInitials = (name: string) => {
-		if (!name || name === "N/A") return "NA";
+		if (!name || name === "Unknown") return "NA";
 
 		return name
 			.split(" ")

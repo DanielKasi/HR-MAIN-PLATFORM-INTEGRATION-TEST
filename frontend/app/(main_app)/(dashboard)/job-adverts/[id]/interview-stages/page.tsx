@@ -87,6 +87,7 @@ import {
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import type { ProcessedStage } from "@/components/common/interview-stages";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 interface UnifiedInterviewPipelineProps {
 	params: Promise<{
 		id: string;
@@ -661,7 +662,7 @@ const CandidateHistoryDialog = ({
 										</div>
 										<div className="flex justify-between">
 											<span className="text-sm">Average Rating</span>
-											<span className="font-medium">{candidate.overall_rating || "N/A"}</span>
+											<span className="font-medium">{candidate.overall_rating || "Unknown"}</span>
 										</div>
 										<div className="flex justify-between">
 											<span className="text-sm">Completion Rate</span>
@@ -1177,15 +1178,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 	const [candidatesToSchedule, setCandidatesToSchedule] = useState<Candidate[]>([]);
 
 	// Form states
-	const [isCreatingStage, setIsCreatingStage] = useState(false);
 	const [isProcessingProgression, setIsProcessingProgression] = useState(false);
-	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-		name: "",
-		level: 1,
-		interviewers: [],
-		job_position_advert: parseInt(resolvedParams.id),
-	});
-	const [stageErrors, setStageErrors] = useState<any>({});
 
 	// Enhanced computed values with validation logic
 	const activeStage = processedStages.find((stage) => stage.id === activeStageId);
@@ -1442,80 +1435,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			fetchData();
 		}
 	}, [resolvedParams.id, selectedInstitution]);
-
-	// Stage management functions
-	const updateStageFormData = (field: string, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
-
-	const handleCreateStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (!selectedInstitution) {
-			toast.error("Missing organization information");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageFormData,
-			});
-
-			if (newStage) {
-				setStageFormData({
-					name: "",
-					level: 1,
-					interviewers: [],
-					job_position_advert: parseInt(resolvedParams.id),
-				});
-				setStageErrors({});
-				setIsCreateStageDialogOpen(false);
-
-				toast.success("Interview stage created successfully!");
-				await fetchData(); // Refresh data
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
-		} finally {
-			setIsCreatingStage(false);
-		}
-	};
-
-	// Auto-fill the next level for new stage
-	useEffect(() => {
-		if (isCreateStageDialogOpen && processedStages.length > 0) {
-			const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
-			const nextLevel = maxLevel + 1;
-
-			setStageFormData((prev) => ({ ...prev, level: nextLevel }));
-		} else if (isCreateStageDialogOpen) {
-			setStageFormData((prev) => ({ ...prev, level: 1 }));
-		}
-	}, [isCreateStageDialogOpen, processedStages]);
 
 	// Candidate management functions
 	const handleSelectCandidate = (candidateId: number, checked: boolean) => {
@@ -2050,86 +1969,14 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 						</p>
 					</div>
 				</div>
-				<Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
-					<DialogTrigger asChild>
-						<Button className="flex items-center gap-2">
-							<Plus className="h-4 w-4" />
-							Add Interview Stage
-						</Button>
-					</DialogTrigger>
-					<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-						<DialogHeader>
-							<DialogTitle>Create Interview Stage</DialogTitle>
-							<DialogDescription>
-								Create a new interview stage for{" "}
-								{jobPositionAdvert.job_position_details?.name || "this position"}.
-							</DialogDescription>
-						</DialogHeader>
-
-						<form onSubmit={handleCreateStage} className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="stage_name">Stage Name *</Label>
-								<Input
-									id="stage_name"
-									value={stageFormData.name}
-									onChange={(e) => updateStageFormData("name", e.target.value)}
-									placeholder="e.g., Technical Interview, HR Round"
-									className={stageErrors.name ? "border-destructive" : ""}
-								/>
-								{stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="stage_interviewer">Interviewers *</Label>
-								<div className="w-full max-w-full overflow-hidden">
-									<EmployeeSearchableSelect
-										value={stageFormData.interviewers.map((id) => id.toString())}
-										onValueChange={(values) => {
-											const numberValues = Array.isArray(values)
-												? values.map((v) => Number(v))
-												: [Number(values)];
-											const uniqueValues = [...new Set(numberValues)];
-
-											updateStageFormData("interviewers", uniqueValues);
-										}}
-										disabled={isCreatingStage}
-										placeholder="Search and select interviewers"
-										showEmployeeId={false}
-										showDepartment={false}
-										multiple={true}
-									/>
-								</div>
-								{stageErrors.interviewers && (
-									<p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-								)}
-							</div>
-
-							<div className="flex justify-end gap-2 pt-4">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setIsCreateStageDialogOpen(false)}
-									disabled={isCreatingStage}
-								>
-									Cancel
-								</Button>
-								<Button type="submit" disabled={isCreatingStage}>
-									{isCreatingStage ? (
-										<>
-											<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-											Creating...
-										</>
-									) : (
-										<>
-											<Check className="h-4 w-4 mr-2" />
-											Create Stage
-										</>
-									)}
-								</Button>
-							</div>
-						</form>
-					</DialogContent>
-				</Dialog>
+				<CreateInterviewStageDialog
+					isOpen={isCreateStageDialogOpen}
+					onOpenChange={setIsCreateStageDialogOpen}
+					jobPositionId={parseInt(resolvedParams.id)}
+					jobPositionName={jobPositionAdvert?.job_position_details?.name}
+					existingStagesCount={processedStages.length}
+					onSuccess={fetchData}
+				/>
 			</div>
 
 			{/* Summary Stats */}

@@ -116,30 +116,17 @@ class InterviewStageSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InterviewStage
-        fields = [
-            "id",
-            "job_position_advert",
-            "name",
-            "level",
-            "interviewers",
-            "interviewers_details",
-            "candidates_count",
-            "candidates",
-            'feedback_fields',
-        ]
+        fields = '__all__'
 
     def get_candidates(self, obj):
-        # Get interviews scheduled for this stage
         scheduled_interviews = JobInterview.objects.filter(
             interview_stage=obj, status="scheduled"
         ).select_related("job_position_application")
 
-        # Get corresponding job applications from the interviews
         applications = [
             interview.job_position_application for interview in scheduled_interviews
         ]
 
-        # Serialize the job applications
         return JobAdvertApplicationSerializer(
             applications, many=True, context=self.context
         ).data
@@ -156,15 +143,12 @@ class InterviewStageSerializer(BaseApprovableSerializer):
         if not isinstance(value, list):
             raise ValidationError({"error": "feedback_fields must be a list of objects."})
 
-        # Define valid field types
         valid_types = ["text", "rating", "checkbox"]
 
         for field in value:
-            # Check if each item is a dictionary
             if not isinstance(field, dict):
                 raise ValidationError({"error": "Each feedback field must be an object."})
 
-            # Check for required properties in each field
             required_props = ["label", "type", "required"]
             if not all(prop in field for prop in required_props):
                 missing_props = [prop for prop in required_props if prop not in field]
@@ -172,13 +156,11 @@ class InterviewStageSerializer(BaseApprovableSerializer):
                     {"error": f"Missing required properties in a feedback field: {', '.join(missing_props)}."}
                 )
 
-            # Validate the type of the field
             if field["type"] not in valid_types:
                 raise ValidationError(
                     {"error": f"Invalid field type '{field['type']}'. Must be one of: {', '.join(valid_types)}."}
                 )
 
-            # Specific validation for 'rating' type
             if field["type"] == "rating":
                 if "options" not in field:
                     raise ValidationError(
@@ -189,7 +171,6 @@ class InterviewStageSerializer(BaseApprovableSerializer):
                         {"error": "'options' for a 'rating' type must be a list of integers."}
                     )
 
-            # Ensure 'required' is a boolean
             if not isinstance(field["required"], bool):
                 raise ValidationError(
                     {"error": "'required' property must be a boolean."}
@@ -209,21 +190,7 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = JobPositionAdvert
-        fields = [
-            "id",
-            "job_position",
-            "job_position_details",
-            "job_position_advert_status",
-            "published_date",
-            "expiry_date",
-            "number_of_employees_expected",
-            "extra_information",
-            "applications",
-            "interview_stages",
-            "work_type",
-            "employee_type",
-            "institution"
-        ]
+        fields = '__all__'
 
     def get_institution(self, obj):
         department = getattr(obj.job_position, "department", None)
@@ -309,26 +276,7 @@ class JobPositionSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = JobPosition
-        fields = [
-            "id",
-            "name",
-            "description",
-            "department",
-            "department_details",
-            "reports_to",
-            "reports_to_details",
-            "offer_letter_template",
-            "salary_min",
-            "salary_max",  # Fixed typo: was "salery_max"
-            "salary_range_display",
-            "salary_midpoint",
-            "job_adverts",
-            "employees",
-            "apply_salary_to_employees",
-            "job_position_status",
-            "is_active",
-            "required_documents",
-        ]
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -431,6 +379,7 @@ class JobPositionSerializer(BaseApprovableSerializer):
         return instance
 
 
+
 class JobInterviewSerializer(BaseApprovableSerializer):
     job_position_application_details = JobAdvertApplicationSerializer(
         source="job_position_application", read_only=True
@@ -441,35 +390,96 @@ class JobInterviewSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = JobInterview
-        fields = [
-            "id",
-            "job_position_application",
-            "job_position_application_details",
-            "interview_stage",
-            "interview_stage_details",
-            "interview_date",
-            "status",
-            "feedback",
-            "rating",
-            "interview_type",
-            "location",
-            "interview_time",
-            "additional_notes",
-            "created_at",
-            "updated_at",
-            "created_by",
-        ]
+        fields = '__all__'
 
     def validate(self, attrs):
-
         if self.instance is None or self.partial is False or "rating" in attrs:
             rating = attrs.get("rating")
-
             if rating is not None and (rating < 1 or rating > 10):
                 raise serializers.ValidationError(
                     {"error": "Rating must be between 1 and 10."}
                 )
+
+        interview_stage = None
+        if self.instance:
+            interview_stage = self.instance.interview_stage
+        if "interview_stage" in attrs:
+            interview_stage = attrs["interview_stage"]
+
+        if interview_stage and "feedback" in attrs:
+            feedback = attrs.get("feedback")
+            feedback_fields = interview_stage.feedback_fields or []
+            status = attrs.get("status", self.instance.status if self.instance else "scheduled")
+
+            if feedback is not None:
+                if not isinstance(feedback, dict):
+                    raise serializers.ValidationError(
+                        {"error": "Feedback must be a JSON object."}
+                    )
+
+                self._validate_feedback(feedback, feedback_fields, status)
+
         return attrs
+
+    def _validate_feedback(self, feedback, feedback_fields, status):
+        """
+        Validates the feedback field against the feedback_fields structure.
+        """
+        if not feedback_fields:
+            if feedback:
+                raise serializers.ValidationError(
+                    {"error": "No feedback fields defined for this interview stage, so feedback should be empty."}
+                )
+            return
+
+        expected_labels = {field["label"] for field in feedback_fields}
+        provided_labels = set(feedback.keys())
+
+        unexpected_labels = provided_labels - expected_labels
+        if unexpected_labels:
+            raise serializers.ValidationError(
+                {"error": f"Unexpected feedback fields provided: {', '.join(unexpected_labels)}."}
+            )
+
+        for field in feedback_fields:
+            label = field["label"]
+            field_type = field["type"]
+            required = field["required"]
+
+            if required and status == "completed" and label not in feedback:
+                raise serializers.ValidationError(
+                    {"error": f"Missing required feedback field: {label}."}
+                )
+
+            if label in feedback:
+                value = feedback[label]
+                if field_type == "text" and not isinstance(value, str):
+                    raise serializers.ValidationError(
+                        {"error": f"Feedback field '{label}' must be a string."}
+                    )
+                elif field_type == "rating":
+                    if not isinstance(value, int):
+                        raise serializers.ValidationError(
+                            {"error": f"Feedback field '{label}' must be an integer."}
+                        )
+                    if "options" in field and value not in field["options"]:
+                        raise serializers.ValidationError(
+                            {"error": f"Feedback field '{label}' value must be one of: {field['options']}."}
+                        )
+                elif field_type == "checkbox" and not isinstance(value, bool):
+                    raise serializers.ValidationError(
+                        {"error": f"Feedback field '{label}' must be a boolean."}
+                    )
+
+    def create(self, validated_data):
+        if "feedback" not in validated_data and validated_data.get("interview_stage"):
+            validated_data["feedback"] = {}
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if "feedback" not in validated_data and validated_data.get("interview_stage"):
+            validated_data["feedback"] = instance.feedback or {}
+        return super().update(instance, validated_data)
     
     
 class SkillZoneCategorySerializer(serializers.ModelSerializer):

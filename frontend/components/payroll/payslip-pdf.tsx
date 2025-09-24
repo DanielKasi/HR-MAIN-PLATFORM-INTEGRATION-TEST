@@ -127,7 +127,7 @@ const PayslipPDF = ({ payslip }: PayslipPDFProps) => {
 					<View style={styles.tableRow}>
 						<View style={styles.tableCellLeft}>
 							<Text style={styles.bold}>Department:</Text>
-							<Text>{payslip.employee.department?.name || "N/A"}</Text>
+							<Text>{payslip.employee.department?.name || "Unknown"}</Text>
 						</View>
 						<View style={styles.tableCellLeft}>
 							<Text style={styles.bold}>Days Worked:</Text>

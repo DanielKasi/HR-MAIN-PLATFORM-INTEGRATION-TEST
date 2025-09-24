@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { Button } from "@/components/ui/button";
@@ -12,19 +12,18 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Edit, Eye, Trash2, Search } from "lucide-react";
-import { ColumnDef } from "@/components/common/tables/paginated-table";
-import { PaginatedTable } from "@/components/common/tables/paginated-table";
-import { SKILL_ZONE_API, SKILL_ZONE_CATEGORIES_API } from "@/lib/api/recruitment.utils";
-import type { ISkillZone, ISkillZoneCategory } from "@/types/recruitment.types";
-import { JobApplication } from "@/types/types.utils";
+import { ColumnDef } from "@/components/PaginatedTable";
+import { PaginatedTable } from "@/components/PaginatedTable";
+import { SKILL_ZONE_API } from "@/lib/api/recruitment.utils";
+import type { ISkillZone } from "@/types/recruitment.types";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import FixedLoader from "@/components/fixed-loader";
 import { SkillZoneCreateEditDialog } from "./_components/skill-zone-create-edit-dialog";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Link from "next/link";
+import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 
 export default function SkillZonesPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -92,19 +91,45 @@ export default function SkillZonesPage() {
 					</Button>
 				</div>
 			),
-			cell: (skillZone) => skillZone.candidate.applicant_name,
+			cell: (skillZone) => skillZone.applicant_name,
 		},
 		{
 			key: "categories",
 			header: "Categories",
-			cell: (skillZone) => skillZone.category.map((cat) => cat.name).join(", ") || "N/A",
+			cell: (skillZone) => (
+				<div className="flex items-center justify-start gap-2">
+					{skillZone.category_names.length > 0 ? (
+						<>
+							<p className="text-sm font-semibold">{skillZone.category_names[0]}</p>
+							{skillZone.category_names.length > 1 && (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Badge variant={"secondary"} className="cursor-pointer">
+											+{skillZone.category_names.length - 1}
+										</Badge>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="start" className="max-h-[200px] overflow-y-auto">
+										{skillZone.category_names.map((cat_name, idx) => (
+											<DropdownMenuItem key={idx} className="text-sm">
+												{cat_name}
+											</DropdownMenuItem>
+										))}
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+						</>
+					) : (
+						<p className="text-sm text-muted-foreground">Unknown</p>
+					)}
+				</div>
+			),
 		},
 		{
 			key: "notes",
 			header: "Notes",
 			cell: (skillZone) =>
 				skillZone.notes?.substring(0, 50) +
-					(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "N/A",
+					(skillZone.notes && skillZone.notes.length > 50 ? "..." : "") || "Unknown",
 		},
 		{
 			key: "potential_value",
@@ -112,14 +137,14 @@ export default function SkillZonesPage() {
 			cell: (skillZone) =>
 				skillZone.potential_value?.substring(0, 50) +
 					(skillZone.potential_value && skillZone.potential_value.length > 50 ? "..." : "") ||
-				"N/A",
+				"Unknown",
 		},
 		{
 			key: "approval_status",
 			header: "Approval Status",
 			cell: (skillZone) => (
 				<Badge variant={skillZone.approval_status === "active" ? "default" : "secondary"}>
-					{skillZone.approval_status || "N/A"}
+					{skillZone.approval_status || "Unknown"}
 				</Badge>
 			),
 		},
@@ -159,22 +184,22 @@ export default function SkillZonesPage() {
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Skill Zones</h1>
-				<div className="flex items-center justify-end gap-8">
+				<div className="flex items-center justify-end gap-4">
 					<Link href={"/skill-zones/categories"}>
 						<Button variant={"outline"} className="rounded-xl">
 							Categories
 						</Button>
 					</Link>
+					<SkillZoneCreateEditDialog
+						open={openCreateEditDialog}
+						onOpenChange={setOpenCreateEditDialog}
+						selectedSkillZone={selectedSkillZone}
+						onSuccess={() => {
+							if (tableRefreshRef.current) tableRefreshRef.current();
+							setSelectedSkillZone(null);
+						}}
+					/>
 				</div>
-				<SkillZoneCreateEditDialog
-					open={openCreateEditDialog}
-					onOpenChange={setOpenCreateEditDialog}
-					selectedSkillZone={selectedSkillZone}
-					onSuccess={() => {
-						if (tableRefreshRef.current) tableRefreshRef.current();
-						setSelectedSkillZone(null);
-					}}
-				/>
 			</div>
 
 			<div className="flex items-center gap-4">
@@ -213,45 +238,37 @@ export default function SkillZonesPage() {
 				}
 			/>
 
-			<Dialog open={openDetailsDialog} onOpenChange={setOpenDetailsDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Skill Zone Details</DialogTitle>
-					</DialogHeader>
-					{selectedSkillZone && (
-						<div className="space-y-4 overflow-y-auto max-h-[60svh]">
-							<div>
-								<label className="text-sm font-medium">Candidate</label>
-								<p>{selectedSkillZone.candidate.applicant_name}</p>
-							</div>
-							<div>
-								<label className="text-sm font-medium">Categories</label>
-								<p>{selectedSkillZone.category.map((cat) => cat.name).join(", ") || "N/A"}</p>
-							</div>
-							<div>
-								<label className="text-sm font-medium">Notes</label>
-								<p>{selectedSkillZone.notes || "N/A"}</p>
-							</div>
-							<div>
-								<label className="text-sm font-medium">Potential Value</label>
-								<p>{selectedSkillZone.potential_value || "N/A"}</p>
-							</div>
-							<div>
-								<label className="text-sm font-medium">Approval Status</label>
-								<p>
-									<Badge
-										variant={
-											selectedSkillZone.approval_status === "active" ? "default" : "secondary"
-										}
-									>
-										{selectedSkillZone.approval_status || "N/A"}
-									</Badge>
-								</p>
-							</div>
+			{selectedSkillZone && (
+				<ApprovableDialog
+					isOpen={openDetailsDialog}
+					onOpenChange={(open) => {
+						setOpenDetailsDialog(open);
+						if (!open) setSelectedSkillZone(null);
+					}}
+					title={`Skill Zone Details: ${selectedSkillZone.job_title}`}
+					description="View the details for this skill zone category."
+					onRefresh={() => tableRefreshRef.current?.()}
+				>
+					<div className="space-y-4 overflow-y-auto max-h-[60svh]">
+						<div>
+							<label className="text-sm font-medium">Candidate</label>
+							<p>{selectedSkillZone.applicant_name}</p>
 						</div>
-					)}
-				</DialogContent>
-			</Dialog>
+						<div>
+							<label className="text-sm font-medium">Categories</label>
+							<p>{selectedSkillZone.category_names.map((cat) => cat).join(", ") || "Unknown"}</p>
+						</div>
+						<div>
+							<label className="text-sm font-medium">Notes</label>
+							<p>{selectedSkillZone.notes || "Unknown"}</p>
+						</div>
+						<div>
+							<label className="text-sm font-medium">Potential Value</label>
+							<p>{selectedSkillZone.potential_value || "Unknown"}</p>
+						</div>
+					</div>
+				</ApprovableDialog>
+			)}
 
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}

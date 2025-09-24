@@ -1,66 +1,113 @@
 "use client";
 
-import type { IBankType } from "@/types/types.utils";
-
-import { Label } from "@/components/ui/label";
-import { SearchableSelectInfinite } from "@/components/ui/scroll-searchable-select";
+import { useSelector } from "react-redux";
+import { useEffect, useState, useCallback, memo } from "react";
+import PaginatedSearchableSelect, {
+	PaginatedSelectItem,
+} from "@/components/generic/paginated-searchable-select";
 import { bankTypesAPI } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { IBankType } from "@/types/types.utils";
 
-interface BankTypeSelectProps {
-	value?: string | number;
-	onValueChange: (value: string | number) => void;
-	error?: string;
+export interface BankTypeSearchableSelectProps {
+	value: (string | number)[];
+	onValueChange: (value: (string | number)[]) => void;
 	disabled?: boolean;
-	required?: boolean;
+	placeholder?: string;
+	className?: string;
+	triggerClassName?: string;
+	multiple?: boolean;
+	hideSelectedFromList?: boolean;
+	showSelectedItems?: boolean;
+	defaultLabel?: string;
+	setAccounts?: (accounts: IBankType[]) => void;
 }
 
-export function BankTypeSelect({
-	value,
-	onValueChange,
-	error,
-	disabled = false,
-	required = false,
-}: BankTypeSelectProps) {
-	const fetchBankTypes = async (searchTerm: string, pageUrl?: string | null) => {
-		let searchParams = "";
+export const BankTypeSearchableSelect = memo(
+	({
+		value,
+		onValueChange,
+		disabled = false,
+		showSelectedItems = true,
+		placeholder = "Select Account(s)",
+		className,
+		triggerClassName,
+		multiple = false,
+		hideSelectedFromList = false,
+		defaultLabel,
+		setAccounts,
+	}: BankTypeSearchableSelectProps) => {
+		const currentInstitution = useSelector(selectSelectedInstitution);
+		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
 
-		if (pageUrl) {
-			const url = new URL(pageUrl);
+		useEffect(() => {
+			setSelectedItems(value);
+		}, [value]);
 
-			searchParams = url.search;
-		} else if (searchTerm) {
-			searchParams = `?search=${encodeURIComponent(searchTerm)}`;
-		}
+		const fetchFirstPage = useCallback(
+			async (query?: { search?: string; page?: number }) => {
+				if (!currentInstitution) {
+					throw new Error("No institution found!");
+				}
+				return await bankTypesAPI.getAll(query?.search);
+			},
+			[currentInstitution],
+		);
 
-		return await bankTypesAPI.getAll(searchParams);
-	};
+		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
+			return await bankTypesAPI.getPaginatedFromUrl({ url });
+		}, []);
 
-	const getItemValue = (bankType: IBankType) => bankType.id;
-	const getItemLabel = (bankType: IBankType) => `${bankType.bank_fullname} (${bankType.bank_code})`;
-	const getItemSearchText = (bankType: IBankType) =>
-		`${bankType.bank_fullname} ${bankType.bank_code} ${bankType.br_code}`;
+		const handleSelect = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
+				if (!selectedItems.includes(itemId)) {
+					if (multiple) {
+						onValueChange([...selectedItems, itemId]);
+					} else {
+						onValueChange([itemId]);
+					}
+				}
+			},
+			[multiple, selectedItems, onValueChange],
+		);
 
-	return (
-		<div className="space-y-2">
-			<Label htmlFor="institution_bank">
-				Bank Type {required && <span className="text-red-500">*</span>}
-			</Label>
-			<SearchableSelectInfinite<IBankType>
-				value={value}
-				onValueChange={onValueChange}
-				placeholder="Select a bank type..."
-				searchPlaceholder="Search attached banks ..."
-				emptyText="No attached banks  found"
-				loadingText="Loading attached banks ..."
-				fetchData={fetchBankTypes}
-				getItemValue={getItemValue}
-				getItemLabel={getItemLabel}
-				getItemSearchText={getItemSearchText}
-				disabled={disabled}
-				error={!!error}
-				className="w-full"
-			/>
-			{error && <p className="text-sm text-red-500">{error}</p>}
-		</div>
-	);
-}
+		const handleRemove = useCallback(
+			(itemId: string | number, _item: PaginatedSelectItem<IBankType>) => {
+				const newItems = selectedItems.filter((id) => String(id) !== String(itemId));
+				setSelectedItems(newItems);
+				onValueChange(newItems);
+			},
+			[selectedItems, onValueChange],
+		);
+
+		return (
+			<div className={className}>
+				<PaginatedSearchableSelect<IBankType, { search?: string; page?: number }>
+					paginated
+					fetchFirstPage={fetchFirstPage}
+					fetchFromUrl={fetchFromUrl}
+					getItemId={(account) => account.id}
+					getItemLabel={(account) => account.bank_fullname || ""}
+					getItemValue={(account) => account.id.toString()}
+					selectedItems={selectedItems}
+					onSelect={handleSelect}
+					onRemove={handleRemove}
+					showSelectedItems={showSelectedItems}
+					multiple={multiple}
+					disabled={disabled}
+					placeholder={placeholder}
+					searchPlaceholder="Search bank accounts by name..."
+					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
+					popoverClassName="w-full"
+					hideSelectedFromList={hideSelectedFromList}
+					setParentItems={setAccounts}
+					defaultLabel={defaultLabel}
+				/>
+			</div>
+		);
+	},
+);
+
+BankTypeSearchableSelect.displayName = "BankTypeSearchableSelect";
+
+export default BankTypeSearchableSelect;

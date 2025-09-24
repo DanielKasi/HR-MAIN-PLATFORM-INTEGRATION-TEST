@@ -221,9 +221,9 @@ export default function SeparationPoliciesPage() {
 											<TableBody>
 												{data.results.map((policy) => (
 													<TableRow key={policy.id}>
-														<TableCell>{policy.policy_name || "N/A"}</TableCell>
+														<TableCell>{policy.policy_name || "Unknown"}</TableCell>
 														<TableCell>
-															{policy.separation_type?.separation_type || "N/A"}
+															{policy.separation_type?.separation_type || "Unknown"}
 														</TableCell>
 														<TableCell>
 															{policy.min_notice_days} - {policy.max_notice_days} days
