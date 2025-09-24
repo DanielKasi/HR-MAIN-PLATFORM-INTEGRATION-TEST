@@ -15,14 +15,7 @@ export default function Modules() {
 	const [isHovered, setIsHovered] = useState(false);
 	const router = useRouter();
 
-	// Main modules data with icons matching the reference image
 	const modules = [
-		{
-			id: "hr",
-			name: "HR",
-			link: "/hrms/dashboard",
-			icon: <Icon icon="hugeicons:user-settings-01" width="24" height="24" />,
-		},
 		{
 			id: "accounting",
 			name: "Accounting",
@@ -30,10 +23,10 @@ export default function Modules() {
 			icon: <Icon icon="hugeicons:bitcoin-graph" width="24" height="24" />,
 		},
 		{
-			id: "crm",
-			name: "CRM",
-			link: "/crm/dashboard",
-			icon: <Icon icon="hugeicons:user-multiple-02" width="24" height="24" />,
+			id: "task_mgmt",
+			name: "Tasks",
+			link: "https://hrms.supraledger.com",
+			icon: <Icon icon="hugeicons:gitbook" width="24" height="24" />,
 		},
 	];
 
@@ -72,12 +65,12 @@ export default function Modules() {
 
 			<DropdownMenuContent
 				align="end"
-				className="bg-white p-4 rounded-2xl shadow-lg w-64"
+				className="bg-white p-4 rounded-2xl shadow-lg w-fit min-w-48"
 				sideOffset={5}
 			>
 				{/* This is the card that exactly matches your reference image */}
 				<div className="b">
-					<div className="flex justify-between items-center">
+					<div className="flex justify-center gap-4 items-center">
 						{modules.map((module) => (
 							<div
 								role="module-click-handler"
