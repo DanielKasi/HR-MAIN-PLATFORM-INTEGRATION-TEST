@@ -232,13 +232,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-from django.db.models import Q
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-from datetime import datetime, date
+
 
 
 class EmployeeListAPIView(APIView, SortableAPIMixin):
