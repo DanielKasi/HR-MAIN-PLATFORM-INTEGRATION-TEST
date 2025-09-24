@@ -1723,11 +1723,6 @@ export interface ICalendar {
 	updated_at: string;
 }
 
-export interface IAssetCategoryFormData {
-	category_name: string;
-	category_description?: string;
-}
-
 export interface IAsset {
 	id: number;
 	institution: number;
@@ -2477,6 +2472,10 @@ export interface IEmailProviderConfig {
 
 // Apply approvals to existing READ interfaces via declaration merging
 export interface IAllowanceType extends IBaseApprovable {}
+export interface IAsset extends IBaseApprovable {}
+export interface IAssetAllocation extends IBaseApprovable {}
+export interface IAssetRequest extends IBaseApprovable {}
+export interface IAssetReturn extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}

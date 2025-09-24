@@ -1,5 +1,5 @@
 import { IBaseApprovable } from "./approvals.types";
-import { UserProfile } from "./user.types";
+import { IUser, UserProfile } from "./user.types";
 
 export interface AssetsData {
 	asset_counts: {
@@ -63,6 +63,7 @@ export interface IAssetFormData {
 }
 
 export interface IAssetHistory {
+	is_active: any;
 	id: number;
 	asset: IAsset;
 	event_type:
@@ -72,8 +73,8 @@ export interface IAssetHistory {
 		| "decommissioned"
 		| "created"
 		| "reassigned";
-	performed_by: UserProfile;
-	affected_user: UserProfile;
+	performed_by: IUser;
+	affected_user: IUser;
 	notes: string | null;
 	created_at: string;
 	updated_at: string;
