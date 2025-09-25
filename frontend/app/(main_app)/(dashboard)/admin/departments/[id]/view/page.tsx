@@ -185,7 +185,7 @@ export default function DepartmentDetailView() {
 														? "text-muted-foreground py-2"
 														: ""
 												}
-												htmlContent={department.description || "No description"}
+												content={department.description || "No description"}
 											/>
 										</div>
 									)}
@@ -258,7 +258,7 @@ export default function DepartmentDetailView() {
 															? "text-muted-foreground italic"
 															: ""
 													}
-													htmlContent={department.description || "No description"}
+													content={department.description || "No description"}
 												/>
 											</div>
 										)}

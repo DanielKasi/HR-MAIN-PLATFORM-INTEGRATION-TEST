@@ -264,7 +264,7 @@ export default function JobPositionDetailsPage() {
 										<div className="bg-muted/50 p-4 rounded-lg">
 											<RichTextDisplay
 												className="text-sm leading-relaxed whitespace-pre-wrap"
-												htmlContent={jobPosition.description || "No description provided"}
+												content={jobPosition.description || "No description provided"}
 											/>
 										</div>
 									</div>

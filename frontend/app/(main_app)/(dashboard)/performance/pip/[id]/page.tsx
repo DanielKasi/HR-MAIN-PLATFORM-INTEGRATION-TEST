@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	FileText,
+	Trash2,
+	Calendar,
+	User,
+	Target,
+	FileCheck,
+	AlertCircle,
+	CheckCircle2,
+	Clock,
+} from "lucide-react";
 import { PERFORMANCE_IMPROVEMENT_PLAN_API } from "@/lib/api/performance.utils";
 import type {
 	IPerformanceConcern,
@@ -20,6 +31,7 @@ import { format } from "date-fns";
 import { IObjective } from "@/types/types.utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function PerformanceImprovementPlanDetailPage() {
 	const router = useRouter();
@@ -70,10 +82,32 @@ export default function PerformanceImprovementPlanDetailPage() {
 		}
 	};
 
+	const getStatusBadge = (status: string | undefined) => {
+		const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
+			active: { color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock },
+			completed: { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
+			pending: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: AlertCircle },
+		};
+
+		const statusKey = status?.toLowerCase() || "pending";
+		const config = statusConfig[statusKey] || statusConfig.pending;
+		const IconComponent = config.icon;
+
+		return (
+			<span
+				className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}
+			>
+				<IconComponent className="h-3.5 w-3.5" />
+				{status || "Unknown"}
+			</span>
+		);
+	};
+
 	if (loading || !plan) return <FixedLoader />;
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
+		<div className="p-6 space-y-8 bg-white rounded-lg min-h-screen">
+			{/* Header - keeping as requested */}
 			<div className="flex justify-between items-center">
 				<div className="flex items-center justify-start gap-4">
 					<Link href="/performance/pip">
@@ -113,55 +147,170 @@ export default function PerformanceImprovementPlanDetailPage() {
 				</div>
 			</div>
 
-			<div className="space-y-4">
-				<div>
-					<label className="text-sm font-medium">Employee</label>
-					<p>{plan.employee?.name || plan.employee.user?.fullname || "Unknown"}</p>
+			{/* Improved Details Section */}
+			<div className="space-y-8">
+				{/* Employee Information Card */}
+				<div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
+					<div className="flex items-center gap-3 mb-4">
+						<div className="p-2 bg-blue-100 rounded-lg">
+							<User className="h-5 w-5 text-blue-600" />
+						</div>
+						<h2 className="text-lg font-semibold text-gray-900">Employee Information</h2>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<label className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+								Employee Name
+							</label>
+							<p className="mt-1 text-base font-medium text-gray-900">
+								{plan.employee?.name || plan.employee.user?.fullname || "Unknown"}
+							</p>
+						</div>
+						<div>
+							<label className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+								Status
+							</label>
+							<div className="mt-2">{getStatusBadge(plan.status)}</div>
+						</div>
+					</div>
 				</div>
-				<div>
-					<label className="text-sm font-medium">Start Date</label>
-					<p>{plan.start_date ? format(new Date(plan.start_date), "PPP") : "Unknown"}</p>
+
+				{/* Timeline Information */}
+				<div className="bg-white rounded-xl p-6">
+					<div className="flex items-center gap-3 mb-6">
+						<div className="p-2 bg-orange-100 rounded-lg">
+							<Calendar className="h-5 w-5 text-orange-600" />
+						</div>
+						<h2 className="text-lg font-semibold text-gray-900">Timeline</h2>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<div className="text-center md:text-left">
+							<label className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+								Start Date
+							</label>
+							<p className="mt-2 text-base font-semibold text-gray-900">
+								{plan.start_date
+									? format(new Date(plan.start_date), "MMM dd, yyyy")
+									: "Not specified"}
+							</p>
+						</div>
+						<div className="text-center md:text-left">
+							<label className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+								End Date
+							</label>
+							<p className="mt-2 text-base font-semibold text-gray-900">
+								{plan.end_date ? format(new Date(plan.end_date), "MMM dd, yyyy") : "Not specified"}
+							</p>
+						</div>
+						<div className="text-center md:text-left">
+							<label className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+								Final Review
+							</label>
+							<p className="mt-2 text-base font-semibold text-gray-900">
+								{plan.final_review_date
+									? format(new Date(plan.final_review_date), "MMM dd, yyyy")
+									: "Not scheduled"}
+							</p>
+						</div>
+					</div>
 				</div>
-				<div>
-					<label className="text-sm font-medium">End Date</label>
-					<p>{plan.end_date ? format(new Date(plan.end_date), "PPP") : "Unknown"}</p>
+
+				{/* Objectives */}
+				<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+					<div className="flex items-center gap-3 mb-6">
+						<div className="p-2 bg-green-100 rounded-lg">
+							<Target className="h-5 w-5 text-green-600" />
+						</div>
+						<h2 className="text-lg font-semibold text-gray-900">Objectives</h2>
+					</div>
+					<div className="space-y-3">
+						{plan.objectives && plan.objectives.length > 0 ? (
+							plan.objectives.map((obj, index) => (
+								<div
+									key={index}
+									className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100"
+								>
+									<div className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-700 text-sm font-medium rounded-full flex items-center justify-center">
+										{index + 1}
+									</div>
+									<p className="text-gray-900 font-medium">{obj.name}</p>
+								</div>
+							))
+						) : (
+							<p className="text-gray-500 italic">No objectives specified</p>
+						)}
+					</div>
 				</div>
-				<div>
-					<label className="text-sm font-medium">Support Resources</label>
-					<p>{plan.support_resources?.map((res) => res.name).join(", ") || "Unknown"}</p>
+
+				{/* Support & Resources */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+						<div className="flex items-center gap-3 mb-4">
+							<div className="p-2 bg-purple-100 rounded-lg">
+								<FileCheck className="h-5 w-5 text-purple-600" />
+							</div>
+							<h2 className="text-lg font-semibold text-gray-900">Support Resources</h2>
+						</div>
+						<div className="space-y-2">
+							{plan.support_resources && plan.support_resources.length > 0 ? (
+								plan.support_resources.map((resource, index) => (
+									<div key={index} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+										<div className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></div>
+										<p className="text-gray-900">{resource.name}</p>
+									</div>
+								))
+							) : (
+								<p className="text-gray-500 italic">No support resources specified</p>
+							)}
+						</div>
+					</div>
+
+					<div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+						<div className="flex items-center gap-3 mb-4">
+							<div className="p-2 bg-amber-100 rounded-lg">
+								<AlertCircle className="h-5 w-5 text-amber-600" />
+							</div>
+							<h2 className="text-lg font-semibold text-gray-900">Consequences</h2>
+						</div>
+						<div className="bg-amber-50 rounded-lg p-4">
+							<p className="text-gray-900">{plan.consequences || "No consequences specified"}</p>
+						</div>
+					</div>
 				</div>
-				<div>
-					<label className="text-sm font-medium">Progress Notes</label>
-					<p>{plan.progress_notes || "Unknown"}</p>
+
+				{/* Progress & Outcome */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<div className="bg-white border border-gray-200 rounded-xl p-6">
+						<h2 className="text-lg font-semibold text-gray-900 mb-4">Progress Notes</h2>
+						<div className="bg-gray-50 rounded-lg p-4 min-h-[100px]">
+							<p className="text-gray-900 whitespace-pre-wrap">
+								{plan.progress_notes || "No progress notes available"}
+							</p>
+						</div>
+					</div>
+
+					<div className="bg-white border border-gray-200 rounded-xl p-6 ">
+						<h2 className="text-lg font-semibold text-gray-900 mb-4">Final Outcome</h2>
+						<div className="bg-gray-50  rounded-lg p-4 min-h-[100px]">
+							<p className="text-gray-900 whitespace-pre-wrap">
+								{plan.outcome || "Outcome not yet determined"}
+							</p>
+						</div>
+					</div>
 				</div>
-				<div>
-					<label className="text-sm font-medium">Consequences</label>
-					<p>{plan.consequences || "Unknown"}</p>
-				</div>
-				<div>
-					<label className="text-sm font-medium">Status</label>
-					<p>{plan.status || "Unknown"}</p>
-				</div>
-				<div>
-					<label className="text-sm font-medium">Final Review Date</label>
-					<p>
-						{plan.final_review_date ? format(new Date(plan.final_review_date), "PPP") : "Unknown"}
-					</p>
-				</div>
-				<div>
-					<label className="text-sm font-medium">Outcome</label>
-					<p>{plan.outcome || "Unknown"}</p>
-				</div>
-				<div>
-					<label className="text-sm font-medium">Objectives</label>
-					<p>{plan.objectives?.map((obj) => obj.name).join(", ") || "Unknown"}</p>
-				</div>
-				<div>
-					<label className="text-sm font-medium">Document Template</label>
-					<p>{plan.document_template || "Unknown"}</p>
+
+				{/* Document Template */}
+				<div className="bg-white border border-gray-200 rounded-xl p-6 ">
+					<h2 className="text-lg font-semibold text-gray-900 mb-4">Document Template</h2>
+					<div className="bg-blue-50 rounded-lg p-4">
+						<p className="text-gray-900 font-mono text-sm">
+							{plan.document_template || "No document template specified"}
+						</p>
+					</div>
 				</div>
 			</div>
 
+			{/* Dialogs - keeping as requested */}
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}
 				onClose={() => setDeleteConfirmOpen(false)}

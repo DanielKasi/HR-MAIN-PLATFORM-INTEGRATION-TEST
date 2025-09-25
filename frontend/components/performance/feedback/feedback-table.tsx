@@ -127,7 +127,7 @@ export function FeedbackTable({
 				<div className="max-w-xs">
 					<RichTextDisplay
 						className="text-sm text-muted-foreground line-clamp-2"
-						htmlContent={item.feedback_text || ""}
+						content={item.feedback_text || ""}
 					/>
 				</div>
 			),
