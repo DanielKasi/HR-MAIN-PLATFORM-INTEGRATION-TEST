@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-// Using Blocks icon for the dropdown trigger
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -19,13 +18,13 @@ export default function Modules() {
 		{
 			id: "accounting",
 			name: "Accounting",
-			link: "/accounting/dashboard",
+			link: "#",
 			icon: <Icon icon="hugeicons:bitcoin-graph" width="24" height="24" />,
 		},
 		{
 			id: "task_mgmt",
 			name: "Tasks",
-			link: "https://hrms.supraledger.com",
+			link: "https://hrms.baifamgroup.co.ug",
 			icon: <Icon icon="hugeicons:gitbook" width="24" height="24" />,
 		},
 	];

@@ -34,9 +34,8 @@ class DocumentType(BaseApprovableModel):
     def get_institution(self):
         return self.institution     
 
-
 class DocumentTemplate(BaseApprovableModel):
-    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
+    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE, blank=True, null=True)
     name = models.CharField(max_length=255)
     template_type = models.CharField(max_length=50, choices=[
         ('pdf', 'PDF'),
