@@ -120,7 +120,6 @@ export default function PayrollPeriodDetails() {
 		}
 		try {
 			const fetchedPeriod = await getPayrollPeriod({ payrollPeriodId });
-
 			setPayrollPeriod(fetchedPeriod);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load payroll period" });

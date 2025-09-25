@@ -227,6 +227,16 @@ export default function DocumentTemplatesPage() {
 												permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TEMPLATES}
 											>
 												<DropdownMenuItem
+													onClick={() => router.push(`templates/${template.id}/view`)}
+												>
+													<Edit className="h-4 w-4 mr-2" />
+													View Details
+												</DropdownMenuItem>
+											</ProtectedComponent>
+											<ProtectedComponent
+												permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TEMPLATES}
+											>
+												<DropdownMenuItem
 													onClick={() => router.push(`templates/${template.id}/edit`)}
 												>
 													<Edit className="h-4 w-4 mr-2" />

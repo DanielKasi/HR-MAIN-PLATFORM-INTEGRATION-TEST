@@ -17,20 +17,27 @@ const PATH_MAP: { [key: string]: string } = {
 	branchshift: "/approvals/branch-shifts",
 	branchspotchecksetting: "/approvals/branch-spot-check-settings",
 	branchworkingdays: "/approvals/branch-working-days",
-	deductiontype: "/approvals/deduction-types",
-	department: "/approvals/departments",
-	disciplinaryaction: "/approvals/disciplinary-actions",
+	//deductiontype: "/approvals/deduction-types",
+	deductiontype: "/payroll/deduction-types",
+	//department: "/approvals/departments",
+	department: "admin/departments",
+	//disciplinaryaction: "/approvals/disciplinary-actions",
+	disciplinaryaction: "/employees/discipline",
 	document: "/approvals/documents",
-	documenttemplate: "/approvals/document-templates",
-	documenttype: "/approvals/document-types",
+	//documenttemplate: "/approvals/document-templates",
+	documenttemplate: "/documents/document-templates",
+	//documenttype: "/approvals/document-types",
+	documenttype: "documents/document-types",
 	emmployeeobjectives: "/approvals/employee-objectives", // Note: Typo in model name
 	employee: "/approvals/employees",
-	employeeallowance: "/approvals/employee-allowances",
+	//employeeallowance: "/approvals/employee-allowances",
+	employeeallowance: "/payroll/employee-allowances",
 	employeeattendance: "/approvals/employee-attendances",
 	employeebonuspoint: "/approvals/employee-bonus-points",
 	employeecontract: "/approvals/employee-contracts",
 	employeeday: "/approvals/employee-days",
-	employeededuction: "/approvals/employee-deductions",
+	//employeededuction: "/approvals/employee-deductions",
+	employeededuction: "/payroll/employee-deductions",
 	employeeobjectives: "/approvals/employee-objectives",
 	employeepenalty: "/approvals/employee-penalties",
 	employeeshift: "/approvals/employee-shifts",
@@ -96,6 +103,10 @@ export const getNotificationPath = (notification: INotification): string => {
 		return basePath;
 	}
 
+	if (model_name.toLowerCase() === "department") {
+		return `${basePath}/${object_id}/view`;
+	}
+
 	// Construct the full URL
 	return `${basePath}/${object_id}`;
 };
@@ -110,6 +121,10 @@ export const getApprovalTaskPath = (task: ApprovalTask): string => {
 		console.warn(`Invalid object_id for notification: ${model_name}, id: ${object_id}`);
 
 		return basePath;
+	}
+
+	if (model_name.toLowerCase() === "department") {
+		return `${basePath}/${object_id}/view`;
 	}
 
 	// Construct the full URL

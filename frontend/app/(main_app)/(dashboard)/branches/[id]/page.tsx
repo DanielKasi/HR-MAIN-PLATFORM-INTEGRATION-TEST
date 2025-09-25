@@ -256,9 +256,8 @@ export default function BranchDetailPage() {
 					{branch.is_active ? "Active" : "Inactive"}
 				</Badge>
 			</div>
-
 			<div
-				className={` gap-6 ${branch?.approval_status !== "active" && branch?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+				className={`${branch?.approval_status !== "active" && branch?.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6" : ""}`}
 			>
 				{branch?.approvals && branch.approvals.length > 0 && (
 					<div className="order-1 lg:order-2">
@@ -271,7 +270,7 @@ export default function BranchDetailPage() {
 				)}
 
 				<div
-					className={`${branch?.approval_status !== "active" && branch?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
+					className={`${branch?.approval_status !== "active" && branch?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""} space-y-6`}
 				>
 					<Card className="shadow-none border-none">
 						<CardHeader>

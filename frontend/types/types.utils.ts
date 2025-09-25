@@ -1,4 +1,9 @@
-import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types";
+import type {
+	ApprovableEntityStatus,
+	Approval,
+	ApprovalTask,
+	IBaseApprovable,
+} from "@/types/approvals.types";
 import { IProjectDashboard } from "./project.type";
 import { Branch } from "./branch.types";
 import { IUserInstitution } from "./other";
@@ -915,6 +920,8 @@ export function convertDisciplineTypeFormToApiRequest(
 }
 
 export interface IDisciplinaryAction {
+	approvals: any;
+	approval_status: boolean;
 	id: number;
 	discipline_type?: {
 		id: number;
@@ -1159,6 +1166,7 @@ export interface IEmployeeAllowanceFormData {
 }
 
 export interface IEmployeeDeduction {
+	updated_at: string | number | Date;
 	id: number;
 	employee: IEmployee;
 	deduction_type: IDeductionType;
@@ -1169,6 +1177,8 @@ export interface IEmployeeDeduction {
 	effective_from: string;
 	effective_to: string | null;
 	created_at: string;
+	approval_status_display?: ApprovableEntityStatus;
+	approvals?: Approval[];
 }
 
 export interface IEmployeeDeductionFormData {
@@ -1260,6 +1270,10 @@ export interface IDocumentType {
 	name: string;
 	description: string;
 	code: string;
+	is_active: boolean;
+	approval_status?: boolean;
+	approval_status_display?: ApprovableEntityStatus;
+	approvals?: Approval[];
 }
 
 export interface IDocumentTypeFormData {
@@ -1268,6 +1282,7 @@ export interface IDocumentTypeFormData {
 }
 
 export interface IDocumentTemplate {
+	is_active: any;
 	id: number;
 	name: string;
 	document_type: IDocumentType;
@@ -1277,6 +1292,8 @@ export interface IDocumentTemplate {
 	placeholders: string[] | null;
 	created_at: string;
 	updated_at: string;
+	approval_status_display?: ApprovableEntityStatus;
+	approvals?: Approval[];
 }
 
 export type DocumentGenerationContext = "employee" | "leave" | "onboarding";
@@ -2225,8 +2242,8 @@ export interface IEmployeeObjective {
 }
 
 export interface IEmployeeObjectiveFormData {
-	employee: number;
-	objective: number;
+	employee_id: number;
+	objective_id: number;
 	status: IObjectiveStatus;
 	start_date: string;
 	end_date: string;

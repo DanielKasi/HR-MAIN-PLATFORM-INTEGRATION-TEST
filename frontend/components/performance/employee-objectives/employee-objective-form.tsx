@@ -149,8 +149,8 @@ export function EmployeeObjectiveForm({
 			return;
 
 		const employeeObjectiveData: IEmployeeObjectiveFormData = {
-			employee: Number(employeeValue[0]),
-			objective: Number(objectiveValue),
+			employee_id: Number(employeeValue[0]),
+			objective_id: Number(objectiveValue),
 			status: formData.status as IObjectiveStatus,
 			start_date: formData.start_date,
 			end_date: formData.end_date,

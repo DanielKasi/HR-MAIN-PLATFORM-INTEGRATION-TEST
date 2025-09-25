@@ -4872,6 +4872,17 @@ export const getDocumentTypes = async ({
 	}
 };
 
+export const getDocumentTypeDetails = async (
+	documentTypeId: number,
+): Promise<IDocumentType | null> => {
+	try {
+		const response = await apiRequest.get(`documents/types/${documentTypeId}/`);
+		return response.data;
+	} catch (error) {
+		return null;
+	}
+};
+
 export const updateDocumentType = async ({
 	institutionId,
 	documentTypeId,
@@ -4988,6 +4999,17 @@ export const getDocumentTemplates = async ({
 		return data.results;
 	} catch (error) {
 		return [];
+	}
+};
+
+export const getDocumentTemplateDetails = async (
+	documentTemplateId: number,
+): Promise<IDocumentTemplate | null> => {
+	try {
+		const response = await apiRequest.get(`documents/templates/${documentTemplateId}/`);
+		return response.data;
+	} catch (error) {
+		return null;
 	}
 };
 
