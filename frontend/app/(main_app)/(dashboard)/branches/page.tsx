@@ -1,9 +1,19 @@
 "use client";
 
-import type { Branch, BranchFormData } from "@/types";
+import type { Branch, BranchFormData } from "@/types/branch.types";
 
 import { useEffect, useState } from "react";
-import { Edit, MapPin, Plus, Search, Trash, Loader2, MoreVertical, ArrowLeft } from "lucide-react";
+import {
+	Edit,
+	MapPin,
+	Plus,
+	Search,
+	Trash,
+	Loader2,
+	MoreVertical,
+	ArrowLeft,
+	Eye,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -544,16 +554,16 @@ export default function BranchesPage() {
 														</Button>
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
-														{/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  router.push(`/branches/${branch.id}`);
-                                }}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                            </ProtectedComponent> */}
+														<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+															<DropdownMenuItem
+																onClick={() => {
+																	router.push(`/branches/${branch.id}`);
+																}}
+															>
+																<Eye className="mr-2 h-4 w-4" />
+																View Details
+															</DropdownMenuItem>
+														</ProtectedComponent>
 														<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
 															<DropdownMenuItem
 																onClick={() => {

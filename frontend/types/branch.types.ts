@@ -16,4 +16,17 @@ export interface Branch {
 	is_active: boolean;
 }
 
+export interface BranchFormData {
+	branch_name: string;
+	branch_location: string;
+	branch_latitude: string;
+	branch_longitude: string;
+	branch_phone_number: string;
+	branch_email: string;
+	branch_opening_time: string;
+	branch_closing_time: string;
+	institution: number;
+	paying_bank_account: number;
+}
+
 export interface Branch extends IBaseApprovable {}
