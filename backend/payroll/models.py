@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig
+from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig, InstitutionTaxRule
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel

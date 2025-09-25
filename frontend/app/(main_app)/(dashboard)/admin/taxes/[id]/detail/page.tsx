@@ -210,15 +210,8 @@ const TaxDetailComponent = () => {
 	const hasFilters = searchTerm || statusFilter !== "all";
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-6 bg-white rounded-xl border shadow-sm">
 			{/* Header */}
-			<div className="flex items-center gap-4">
-				<Button variant="outline" onClick={handleBack}>
-					<ArrowLeft className="h-4 w-4 mr-2" />
-					Back to Taxes
-				</Button>
-			</div>
-
 			<div
 				className={` gap-6 ${tax?.approval_status !== "active" && tax?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
 			>
@@ -236,11 +229,21 @@ const TaxDetailComponent = () => {
 					className={`${tax?.approval_status !== "active" && tax?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
 				>
 					{tax && (
-						<div className="bg-white rounded-lg border shadow-sm">
+						<div className="">
 							<div className="p-6 border-b border-gray-200">
 								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 									<div>
-										<h1 className="text-3xl font-bold text-gray-900">{tax.tax_name}</h1>
+										<div className="flex items-center justify-start gap-4">
+											<Button
+												variant="outline"
+												className="w-10 h-10 rounded-full aspect-square"
+												onClick={handleBack}
+											>
+												<ArrowLeft className="h-4 w-4" />
+											</Button>
+											<h1 className="text-3xl font-bold text-gray-900">{tax.tax_name}</h1>
+										</div>
+
 										<div className="flex items-center gap-2 mt-2">
 											<Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
 												{tax.tax_status ? "Active" : "Inactive"}
@@ -256,8 +259,8 @@ const TaxDetailComponent = () => {
 					)}
 
 					{/* Tax Rules Section */}
-					<div className="bg-white rounded-lg border shadow-sm">
-						<div className="p-6 border-b border-gray-200">
+					<div className="bg-white">
+						<div className="p-6 border-gray-200">
 							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
 								<div>
 									<h2 className="text-xl font-semibold text-gray-900">Tax Rules</h2>
@@ -325,7 +328,7 @@ const TaxDetailComponent = () => {
 							) : (
 								<>
 									{/* Desktop Table */}
-									<div className="rounded-md">
+									<div className="rounded-xl">
 										<Table>
 											<TableHeader>
 												<TableRow>

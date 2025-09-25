@@ -1621,6 +1621,7 @@ export interface ITaxRule {
 	tax_rule_description?: string;
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
+	tax_rule_formula?: string;
 	salary_from?: number;
 	salary_to?: number;
 	created_by: number;
@@ -1629,12 +1630,16 @@ export interface ITaxRule {
 	updated_at: string;
 }
 
+export type TaxableIncomeSource = "taxable_gross_salary" | "gross_salary" | "basic_salary";
+
 export interface ITaxRuleFormData {
 	institution_tax: number;
 	tax_rule_name: string;
 	tax_rule_description?: string;
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
+	tax_rule_formula?: string;
+	taxable_income_source?: TaxableIncomeSource;
 	salary_from?: number;
 	salary_to?: number;
 }
