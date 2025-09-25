@@ -29,7 +29,9 @@ class DocumentTypeSerializer(BaseApprovableSerializer):
 
 class DocumentTemplateSerializer(BaseApprovableSerializer):
     document_type = serializers.PrimaryKeyRelatedField(
-        queryset=DocumentType.objects.all()
+        queryset=DocumentType.objects.all(),
+        required=False,
+        allow_null=True,
     )
 
     class Meta:
@@ -225,20 +227,15 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         cleaned_html = str(soup).strip()
         return cleaned_html if cleaned_html else "<p></p>"
 
-    def _extract_placeholders(self, content):
+    def _extract_placeholders(self, content, template_type="text"):
         """
-        Extract placeholders from HTML content in various formats: {}, {{}}, [], [[]], <>, <<>>.
+        Extract placeholders from HTML or LaTeX content in various formats: {}, {{}}, [], [[]], <>, <<>>.
         Handles multiple formats in the same document and normalizes to {{}} format.
         """
         if not content:
             return []
 
         placeholders = set()
-
-
-        # Parse HTML with BeautifulSoup
-        soup = BeautifulSoup(content, "html.parser")
-        text_content = soup.get_text(separator=" ", strip=True)
 
         # Define placeholder patterns
         placeholder_patterns = [
@@ -248,8 +245,16 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
             r"\[[\w\s\'-]*\w+\]",         # [variable_name] or [Parent]
             r"<<[\w\s\'-]+>>",            # <<variable_name>> or <<Employee's Name>>
             r"<[\w\s\'-]+>",              # <variable_name> or <Employee's Name>
-            r"_{10,}"                     # ___________________
+            r"([\w\s\'-]+?)\s*:?\s*_{10,}",  # Phrase: __________
         ]
+
+        if template_type == "text":
+            # For LaTeX or plain text, process content directly
+            text_content = content
+        else:
+            # For HTML (from PDF/Word), parse with BeautifulSoup
+            soup = BeautifulSoup(content, "html.parser")
+            text_content = soup.get_text(separator=" ", strip=True)
 
         # Extract placeholders from text content
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
@@ -257,16 +262,27 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         matches = [match for group in matches for match in group if match]
 
         # Process underscore placeholders
-        for tag in soup.find_all(["p", "div", "li", "span"]):
-            line = tag.get_text(separator=" ", strip=True)
-            if not line:
-                continue
-            # Match text before underscores (e.g., "Name: ________")
-            match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line, re.IGNORECASE)
-            if match:
-                phrase = match.group(1).strip()
-                placeholder_name = "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
-                placeholders.add(placeholder_name)
+        if template_type != "text":
+            # Only parse HTML tags for non-text templates
+            soup = BeautifulSoup(content, "html.parser")
+            for tag in soup.find_all(["p", "div", "li", "span"]):
+                line = tag.get_text(separator=" ", strip=True)
+                if not line:
+                    continue
+                match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line, re.IGNORECASE)
+                if match:
+                    phrase = match.group(1).strip()
+                    placeholder_name = "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
+                    placeholders.add(placeholder_name)
+        else:
+            # For LaTeX, check for underscore placeholders in raw content
+            lines = content.split("\n")
+            for line in lines:
+                match = re.search(r"([\w\s\'-]+)\s*:?\s*_{10,}", line, re.IGNORECASE)
+                if match:
+                    phrase = match.group(1).strip()
+                    placeholder_name = "{{" + re.sub(r"\s+", "_", phrase.replace("'", "")) + "}}"
+                    placeholders.add(placeholder_name)
 
         # Handle special cases
         special_cases = ["initials", "signature", "days", "state"]
@@ -275,16 +291,13 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
                 placeholder_name = f"{{{{{special}}}}}"
                 placeholders.add(placeholder_name)
 
-
         # Process other placeholder formats
         for match in matches:
-            if not re.match(r"_{10,}", match):
-                # Remove delimiters and normalize
+            if not re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
                 cleaned_name = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
                 if cleaned_name:
                     normalized_name = "{{" + re.sub(r"\s+", "_", cleaned_name.replace("'", "")) + "}}"
                     placeholders.add(normalized_name)
-
 
         return list(placeholders)
 
@@ -316,13 +329,13 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         else:
             validated_data["content"] = content or "<p></p>"
 
-        validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
+        # Extract placeholders based on template type
+        validated_data["placeholders"] = self._extract_placeholders(
+            validated_data["content"], template_type
+        )
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        """
-        Update the DocumentTemplate instance, ensuring content and placeholders are extracted.
-        """
         template_type = validated_data.get("template_type", instance.template_type)
         file = validated_data.get("file")
         content = validated_data.get("content")
@@ -334,7 +347,10 @@ class DocumentTemplateSerializer(BaseApprovableSerializer):
         else:
             validated_data["content"] = instance.content
 
-        validated_data["placeholders"] = self._extract_placeholders(validated_data["content"])
+        # Extract placeholders based on template type
+        validated_data["placeholders"] = self._extract_placeholders(
+            validated_data["content"], template_type
+        )
         return super().update(instance, validated_data)
 
 

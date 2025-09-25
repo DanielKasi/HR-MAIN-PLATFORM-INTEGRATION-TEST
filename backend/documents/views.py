@@ -386,8 +386,8 @@ class BaseDocumentView(APIView):
         normalized_name = re.sub(r"\s+", "_", cleaned_name.replace("'", "")).lower()
         return f"{{{{{normalized_name}}}}}" if normalized_name else placeholder
 
-    def _replace_placeholders(self, content, placeholder_values):
-        """Replace all placeholder formats in HTML content with values, preserving structure."""
+    def _replace_placeholders(self, content, placeholder_values, template_type="text"):
+        """Replace all placeholder formats in content with values, supporting HTML and LaTeX."""
         if not content:
             return ""
 
@@ -398,44 +398,44 @@ class BaseDocumentView(APIView):
             if v is not None
         }
 
-        # Define placeholder patterns to match all formats
+        # Define placeholder patterns
         placeholder_patterns = [
             r"\{\{[\w\s\'-]+\}\}",  # {{variable_name}} or {{Employee's Name}}
-            r"\{[\w\s\'-]+\}",  # {variable_name} or {Employee's Name}
+            r"\{[\w\s\'-]+\}",      # {variable_name} or {Employee's Name}
             r"\[\[[\w\s\'-]+\]\]",  # [[variable_name]] or [[Employee's Name]]
-            r"\[[\w\s\'-]*\w+\]",  # [variable_name] or [Parent]
-            r"<<[\w\s\'-]+>>",  # <<variable_name>> or <<Employee's Name>>
-            r"<[\w\s\'-]+>",  # <variable_name> or <Employee's Name>
+            r"\[[\w\s\'-]*\w+\]",   # [variable_name] or [Parent]
+            r"<<[\w\s\'-]+>>",      # <<variable_name>> or <<Employee's Name>>
+            r"<[\w\s\'-]+>",        # <variable_name> or <Employee's Name>
             r"([\w\s\'-]+?)\s*:?\s*_{10,}",  # Phrase: __________
         ]
         combined_pattern = "|".join(f"({pattern})" for pattern in placeholder_patterns)
         all_matches = re.findall(combined_pattern, preview, re.IGNORECASE)
+        matches = [match for match_tuple in all_matches for match in match_tuple if match]
 
         # Process each match
-        for match_tuple in all_matches:
-            match = next(m for m in match_tuple if m)
+        for match in matches:
             if re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE):
                 # Handle underscore placeholders (e.g., "Name: ________")
-                phrase = (
-                    re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE)
-                    .group(1)
-                    .strip()
-                )
+                phrase = re.match(r"([\w\s\'-]+?)\s*:?\s*_{10,}", match, re.IGNORECASE).group(1).strip()
                 normalized_key = re.sub(r"\s+", "_", phrase.replace("'", "")).lower()
                 value = normalized_values.get(normalized_key, "__________")
                 replacement = f"{phrase}: {value}"
                 preview = re.sub(re.escape(match), replacement, preview, count=1)
             else:
                 # Handle other placeholder formats
-                normalized = self._normalize_placeholder(match)
-                normalized_key = normalized.strip("{}").lower()
+                normalized_key = re.sub(r"[\{\}<>\[\]]+", "", match).strip()
+                normalized_key = re.sub(r"\s+", "_", normalized_key.replace("'", "")).lower()
                 value = normalized_values.get(normalized_key, match)
-                # Escape < and > for HTML content to prevent tag confusion
-                if match.startswith("<") and match.endswith(">"):
-                    escaped_match = match.replace("<", "&lt;").replace(">", "&gt;")
+                if template_type == "text":
+                    # For LaTeX, replace directly
                     preview = preview.replace(match, str(value))
                 else:
-                    preview = preview.replace(match, str(value))
+                    # For HTML, escape < and > to prevent tag confusion
+                    if match.startswith("<") and match.endswith(">"):
+                        escaped_match = match.replace("<", "&lt;").replace(">", "&gt;")
+                        preview = preview.replace(match, str(value))
+                    else:
+                        preview = preview.replace(match, str(value))
 
         # Handle special case placeholders (e.g., "initials: __________")
         special_keys = ["initials", "signature", "days", "state"]
@@ -494,26 +494,25 @@ class GenerateDocumentView(BaseDocumentView):
                 with open(template_file_path, 'r') as file:
                     template_content = file.read()
                 template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
+                # Use serializer to extract placeholders
+                serializer = DocumentTemplateSerializer(data={
+                    "name": "Default PIP Template",
+                    "content": template_content,
+                    "template_type": "text",
+                    "document_type": None  # Adjust as needed
+                })
+                serializer.is_valid(raise_exception=True)
+                placeholders = serializer._extract_placeholders(template_content, template_type="text")
                 if not template:
                     template = DocumentTemplate.objects.create(
                         name="Default PIP Template",
                         content=template_content,
-                        placeholders=[
-                            "employee_name", "position", "department", "supervisor",
-                            "date_issued", "review_period", "concern_1", "concern_2",
-                            "support_resource_1", "support_resource_2", "support_resource_3",
-                            "reviewer_role"
-                        ],
+                        placeholders=placeholders,
                         template_type="text"
                     )
-                elif not template.content:
+                else:
                     template.content = template_content
-                    template.placeholders = [
-                        "employee_name", "position", "department", "supervisor",
-                        "date_issued", "review_period", "concern_1", "concern_2",
-                        "support_resource_1", "support_resource_2", "support_resource_3",
-                        "reviewer_role"
-                    ]
+                    template.placeholders = placeholders
                     template.template_type = "text"
                     template.save()
             except FileNotFoundError:
@@ -530,24 +529,41 @@ class GenerateDocumentView(BaseDocumentView):
             )
 
         template_placeholders = template.placeholders or []
-
-        system_config = SystemConfiguration.objects.filter(
-            code="doc_required_fields"
-        ).first()
+        system_config = SystemConfiguration.objects.filter(code="doc_required_fields").first()
         required_placeholders = system_config.content if system_config else []
-        required_placeholders = [
-            ph for ph in required_placeholders if ph in template_placeholders
-        ]
-
-        clean_template_placeholders = [
-            p.strip("{}").lower() for p in template_placeholders
-        ]
-        all_placeholders = list(
-            set(clean_template_placeholders + required_placeholders)
-        )
+        required_placeholders = [ph for ph in required_placeholders if ph in template_placeholders]
+        clean_template_placeholders = [p.strip("{}").lower() for p in template_placeholders]
+        all_placeholders = list(set(clean_template_placeholders + required_placeholders))
 
         known_values = {}
-        if context == "onboarding":
+        if context == "pip":
+            pip = get_object_or_404(PerformanceImprovementPlan, pk=context_id)
+            issues = [issue.description for issue in pip.issues.all()] if pip.issues.exists() else ["", ""]
+            support_resources = [resource.description for resource in pip.support_resources.all()] if pip.support_resources.exists() else ["", ""]
+            known_values = {
+                "employee_name": (
+                    pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
+                ),
+                "position": (
+                    pip.employee.job_position.title if hasattr(pip.employee, "job_position") else ""
+                ),
+                "department": (
+                    pip.employee.department.name if hasattr(pip.employee, "department") else ""
+                ),
+                "supervisor": (
+                    pip.employee.job_position.reports_to.name if hasattr(pip.employee, "supervisor") else ""
+                ),
+                "date_issued": str(pip.start_date) if pip.start_date else "",
+                "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
+                "concern_1": issues[0] if len(issues) > 0 else "",
+                "concern_2": issues[1] if len(issues) > 1 else "",
+                "support_resource_1": support_resources[0] if len(support_resources) > 0 else "",
+                "support_resource_2": support_resources[1] if len(support_resources) > 1 else "",
+                "support_resource_3": support_resources[2] if len(support_resources) > 2 else "",
+                "reviewer_role": "Supervisor",
+                "consequences": "Failure to meet objectives may result in further disciplinary action."
+            }
+        elif context == "onboarding":
             onboarding = get_object_or_404(OnBoarding, pk=context_id)
             known_values = {
                 "fullname": (
@@ -563,7 +579,7 @@ class GenerateDocumentView(BaseDocumentView):
                     else ""
                 ),
                 "date": str(timezone.now().date()),
-            }
+            } 
         elif context == "employee":
             employee = get_object_or_404(Employee, pk=context_id)
             known_values = {
@@ -572,36 +588,7 @@ class GenerateDocumentView(BaseDocumentView):
                 ),
                 "salary": str(employee.salary) if hasattr(employee, "salary") else "",
                 "date": str(timezone.now().date()),
-            }
-        elif context == "pip":
-            pip = get_object_or_404(PerformanceImprovementPlan, pk=context_id)
-            issues = [issue.description for issue in pip.issues.all()] if pip.issues.exists() else ["", ""]
-            known_values = {
-                "employee_name": (
-                    pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
-                ),
-                "position": (
-                    pip.employee.job_position.title if hasattr(pip.employee, "job_position") else ""
-                ),
-                "department": (
-                    pip.employee.department.name if hasattr(pip.employee, "department") else ""
-                ),
-                "supervisor": (
-                    pip.employee.supervisor.user.fullname if hasattr(pip.employee, "supervisor") else ""
-                ),
-                "date_issued": str(pip.start_date) if pip.start_date else "",
-                "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
-                "concern_1": issues[0] if len(issues) > 0 else "",
-                "concern_2": issues[1] if len(issues) > 1 else "",
-                "support_resource_1": "Access to training materials",
-                "support_resource_2": "Weekly coaching sessions",
-                "support_resource_3": "Performance tracking software",
-                "reviewer_role": "Supervisor",
-            }
-        else:
-            return Response(
-                {"error": "Invalid context"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            }       
 
         placeholder_data = {
             ph: {"value": known_values.get(ph, "")} for ph in all_placeholders
@@ -637,33 +624,30 @@ class GenerateDocumentView(BaseDocumentView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Handle template selection
         if template_id is None and context == "pip":
             template_file_path = os.path.join(settings.BASE_DIR, 'templates', 'documents', 'default_pip_template.tex')
             try:
                 with open(template_file_path, 'r') as file:
                     template_content = file.read()
+                serializer = DocumentTemplateSerializer(data={
+                    "name": "Default PIP Template",
+                    "content": template_content,
+                    "template_type": "text",
+                    "document_type": None
+                })
+                serializer.is_valid(raise_exception=True)
+                placeholders = serializer._extract_placeholders(template_content, template_type="text")
                 template = DocumentTemplate.objects.filter(name="Default PIP Template").first()
                 if not template:
                     template = DocumentTemplate.objects.create(
                         name="Default PIP Template",
                         content=template_content,
-                        placeholders=[
-                            "employee_name", "position", "department", "supervisor",
-                            "date_issued", "review_period", "concern_1", "concern_2",
-                            "support_resource_1", "support_resource_2", "support_resource_3",
-                            "reviewer_role"
-                        ],
+                        placeholders=placeholders,
                         template_type="text"
                     )
-                elif not template.content:
+                else:
                     template.content = template_content
-                    template.placeholders = [
-                        "employee_name", "position", "department", "supervisor",
-                        "date_issued", "review_period", "concern_1", "concern_2",
-                        "support_resource_1", "support_resource_2", "support_resource_3",
-                        "reviewer_role"
-                    ]
+                    template.placeholders = placeholders
                     template.template_type = "text"
                     template.save()
             except FileNotFoundError:
@@ -684,15 +668,12 @@ class GenerateDocumentView(BaseDocumentView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         placeholder_values = serializer.validated_data["placeholders"]
-        # Flatten placeholder_values for compatibility with _replace_placeholders
         flattened_placeholders = {
-                k: v.get("value", "") if isinstance(v, dict) else v
-                for k, v in placeholder_values.items()
-            }
-
+            k: v.get("value", "") if isinstance(v, dict) else v
+            for k, v in placeholder_values.items()
+        }
         flattened_placeholders["context"] = context
 
-        # Create document with the selected template
         document = Document.objects.create(
             document_template=template,
             placeholder_values=flattened_placeholders,
@@ -742,13 +723,16 @@ class DocumentContentPreviewView(BaseDocumentView):
             try:
                 with open(template_file_path, 'r') as file:
                     template_content = file.read()
+                serializer = DocumentTemplateSerializer(data={
+                    "name": "Default PIP Template",
+                    "content": template_content,
+                    "template_type": "text",
+                    "document_type": None
+                })
+                serializer.is_valid(raise_exception=True)
+                placeholders = serializer._extract_placeholders(template_content, template_type="text")
                 template.content = template_content
-                template.placeholders = [
-                    "employee_name", "position", "department", "supervisor",
-                    "date_issued", "review_period", "concern_1", "concern_2",
-                    "support_resource_1", "support_resource_2", "support_resource_3",
-                    "reviewer_role"
-                ]
+                template.placeholders = placeholders
                 template.template_type = "text"
                 template.save()
             except FileNotFoundError:
@@ -763,7 +747,7 @@ class DocumentContentPreviewView(BaseDocumentView):
             )
 
         placeholder_values = document.placeholder_values or {}
-        preview = self._replace_placeholders(template_content, placeholder_values)
+        preview = self._replace_placeholders(template_content, placeholder_values, template_type=template.template_type)
         serializer = DocumentContentPreviewSerializer({"preview": preview})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
