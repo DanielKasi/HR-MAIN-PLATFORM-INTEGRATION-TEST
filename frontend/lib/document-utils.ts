@@ -102,21 +102,18 @@ export const sendDocuments = async ({
 	contextId: number | string;
 	documentId: number;
 }): Promise<string | null> => {
-	try {
-		const queryParams = new URLSearchParams({
-			context,
-			context_id: contextId.toString(),
-		});
-		const response = await apiRequest.patch(`documents/${documentId}/status/?${queryParams}`, {
+	const queryParams = new URLSearchParams({
+		context,
+		context_id: contextId.toString(),
+	});
+	const response = await apiRequest.patch(
+		`documents/${documentId}/status/?${queryParams.toString()}`,
+		{
 			status: "reviewed",
 			context,
 			context_id: contextId,
-		});
+		},
+	);
 
-		return (response.data as DocumentPreviewResponse).preview;
-	} catch (error) {
-		console.error("Error fetching document preview:", error);
-
-		return null;
-	}
+	return (response.data as DocumentPreviewResponse).preview;
 };

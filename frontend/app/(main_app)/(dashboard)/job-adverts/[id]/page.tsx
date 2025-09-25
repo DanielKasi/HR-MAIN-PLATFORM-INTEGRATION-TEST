@@ -360,7 +360,7 @@ export default function JobAdvertDetailsPage() {
 													{jobPosition.description && (
 														<RichTextDisplay
 															className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
-															htmlContent={jobPosition.description}
+															content={jobPosition.description}
 														/>
 													)}
 												</div>
@@ -476,7 +476,7 @@ export default function JobAdvertDetailsPage() {
 											<div className="bg-muted/50 p-4 rounded-lg">
 												<RichTextDisplay
 													className="text-sm leading-relaxed whitespace-pre-wrap"
-													htmlContent={jobAdvert.extra_information || "-"}
+													content={jobAdvert.extra_information || "-"}
 												/>
 											</div>
 										</div>

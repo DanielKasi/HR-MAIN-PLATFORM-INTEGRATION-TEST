@@ -228,7 +228,7 @@ export function DocumentGenerationDialog({
 							<div className="border rounded-lg p-4 bg-muted/50 mb-8">
 								<Label className="mb-2 block">Document Preview</Label>
 								<div className="prose prose-sm min-h-32 overflow-y-auto">
-									<RichTextDisplay htmlContent={previewContent} />
+									<RichTextDisplay content={previewContent} />
 								</div>
 							</div>
 							{/* <PDFDownloadLink

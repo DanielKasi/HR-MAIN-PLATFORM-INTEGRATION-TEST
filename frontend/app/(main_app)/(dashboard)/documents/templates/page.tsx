@@ -286,7 +286,7 @@ export default function DocumentTemplatesPage() {
 											{/* <p >{template.content}</p> */}
 											<RichTextDisplay
 												className="text-sm text-muted-foreground line-clamp-2"
-												htmlContent={template.content}
+												content={template.content}
 											/>
 										</div>
 									)}
