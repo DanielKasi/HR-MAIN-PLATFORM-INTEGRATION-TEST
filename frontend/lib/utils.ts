@@ -3446,6 +3446,16 @@ export const updateAllowanceType = async ({
 	}
 };
 
+export const getAllowanceTypeById = async (id: number): Promise<IAllowanceType | null> => {
+	try {
+		const response = await apiRequest.get(`payroll/allowance-types/${id}/`);
+		return response.data as IAllowanceType;
+	} catch (error) {
+		console.error("Failed to fetch allowance type:", error);
+		throw error;
+	}
+};
+
 export const deleteAllowanceType = async (id: number): Promise<boolean> => {
 	try {
 		await apiRequest.delete(`payroll/allowance-types/${id}/`);

@@ -25,7 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn, showErrorToast } from "@/lib/utils";
 import apiRequest from "@/lib/apiRequest";
 import { IBranchWorkingDays, IBranchDay } from "@/types/types.utils";
-import { Branch } from "@/types";
+import { Branch } from "@/types/branch.types";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 
 export default function BranchDetailPage() {
@@ -236,9 +236,14 @@ export default function BranchDetailPage() {
 
 	return (
 		<div className="flex flex-col gap-6 bg-white rounded-xl ">
-			<div className="flex items-center justify-between">
+			<div className="flex items-center justify-between mt-10">
 				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" onClick={() => router.push("/branches")}>
+					<Button
+						variant="outline"
+						size="icon"
+						className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0 ml-4 -mt-5"
+						onClick={() => router.push("/branches")}
+					>
 						<ArrowLeft className="h-4 w-4" />
 					</Button>
 					<div>

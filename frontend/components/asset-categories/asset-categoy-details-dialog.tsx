@@ -1,4 +1,4 @@
-import type { IAssetCategory } from "@/types/types.utils";
+import type { IAssetCategory } from "@/types/assets.types";
 
 import {
 	Dialog,

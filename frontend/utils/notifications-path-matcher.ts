@@ -3,12 +3,12 @@ import { ApprovalTask } from "@/types/approvals.types";
 
 // Map model_name to frontend route
 const PATH_MAP: { [key: string]: string } = {
-	// allowancetype: '/payroll/allowance-types',
 	asset: "/assets/assets",
 	assetallocation: "/assets/asset-allocations",
 	assetcategory: "/assets/asset-categories",
 	assetrequest: "/assets/asset-requests",
 	assetreturn: "/assets/asset-returns",
+	allowancetype: "/payroll/allowance-types",
 	approvergroup: "/admin/settings/approvals/approver-groups",
 	bonuspointsettings: "/approvals/bonus-point-settings",
 	branch: "/branches",

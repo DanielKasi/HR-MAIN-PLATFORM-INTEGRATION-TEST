@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useSelector } from "react-redux";
-import { MoreVertical, Edit, Trash2, Search, Settings, Plus } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Search, Settings, Plus, Eye } from "lucide-react";
 import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { CreateAllowanceTypeDialog } from "@/components/allowance-types/create-a
 import { EditAllowanceTypeDialog } from "@/components/allowance-types/edit-allowance-type-dialog";
 import { DeleteAllowanceTypeDialog } from "@/components/allowance-types/delete-allowance-type-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
+import { useRouter } from "next/navigation";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -69,7 +70,7 @@ const AllowanceTypesComponent = () => {
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const refreshFunctionRef = useRef<(() => void) | null>(null);
 	const [ordering, setOrdering] = useState("");
-
+	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	const handleCreateSuccess = () => {
@@ -92,6 +93,9 @@ const AllowanceTypesComponent = () => {
 		}
 	};
 
+	const handleViewAllowanceType = (allowanceType: IAllowanceType) => {
+		router.push(`/payroll/allowance-types/${allowanceType.id}`);
+	};
 	const handleEditAllowanceType = (allowanceType: IAllowanceType) => {
 		setEditingAllowanceType(allowanceType);
 		setIsEditDialogOpen(true);
@@ -311,6 +315,15 @@ const AllowanceTypesComponent = () => {
 																		</Button>
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end">
+																		<ProtectedComponent
+																			permissionCode={PERMISSION_CODES.CAN_VIEW_ALLOWANCE_TYPES}
+																		>
+																			<DropdownMenuItem
+																				onClick={() => handleViewAllowanceType(allowanceType)}
+																			>
+																				<Eye className="h-4 w-4 mr-2" /> View Details
+																			</DropdownMenuItem>
+																		</ProtectedComponent>
 																		<ProtectedComponent
 																			permissionCode={PERMISSION_CODES.CAN_EDIT_ALLOWANCE_TYPES}
 																		>
