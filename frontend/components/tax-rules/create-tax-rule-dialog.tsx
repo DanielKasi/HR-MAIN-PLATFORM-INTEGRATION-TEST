@@ -1,9 +1,9 @@
 "use client";
 
-import type { ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
+import type { ITaxRule, ITaxRuleFormData, TaxableIncomeSource } from "@/types/types.utils";
 
 import { useState } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import FormattedNumberInput from "../common/inputs/formatted-number-input";
@@ -21,7 +21,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { taxRulesAPI } from "@/lib/utils";
+import { showErrorToast, taxRulesAPI } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
 
 interface CreateTaxRuleDialogProps {
 	taxId: number;
@@ -29,6 +30,21 @@ interface CreateTaxRuleDialogProps {
 	disabled?: boolean;
 	isEmbeded?: boolean;
 }
+
+const incomeSourcesMapper: Array<{ value: TaxableIncomeSource; label: string }> = [
+	{
+		value: "taxable_gross_salary",
+		label: "Taxable Gross Salary",
+	},
+	{
+		value: "gross_salary",
+		label: "Gross Salary",
+	},
+	{
+		value: "basic_salary",
+		label: "Basic Salary",
+	},
+];
 
 export function CreateTaxRuleDialog({
 	taxId,
@@ -38,7 +54,9 @@ export function CreateTaxRuleDialog({
 }: CreateTaxRuleDialogProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [calculationType, setCalculationType] = useState<"percentage" | "fixed">("percentage");
+	const [calculationType, setCalculationType] = useState<"percentage" | "fixed" | "tax_formula">(
+		"percentage",
+	);
 	const [formData, setFormData] = useState<ITaxRuleFormData>({
 		institution_tax: taxId,
 		tax_rule_name: "",
@@ -48,6 +66,12 @@ export function CreateTaxRuleDialog({
 		salary_from: 0,
 		salary_to: 0,
 	});
+
+	type FormulaPart = { op: "+" | "-" | "*" | "/"; value: string };
+	const [formulaSource, setFormulaSource] = useState<
+		"" | "taxable_gross_salary" | "gross_salary" | "basic_salary"
+	>("");
+	const [formulaParts, setFormulaParts] = useState<FormulaPart[]>([]);
 
 	const resetFormData = () => {
 		setFormData({
@@ -60,16 +84,60 @@ export function CreateTaxRuleDialog({
 			salary_to: 0,
 		});
 		setCalculationType("percentage");
+		setFormulaSource("");
+		setFormulaParts([]);
 	};
 
-	const handleCalculationTypeChange = (value: "percentage" | "fixed") => {
+	const handleCalculationTypeChange = (value: "percentage" | "fixed" | "tax_formula") => {
 		setCalculationType(value);
-		// Clear the other field when switching types
 		if (value === "percentage") {
-			setFormData({ ...formData, tax_rule_fixed_amount: undefined });
+			setFormData({
+				...formData,
+				tax_rule_fixed_amount: undefined,
+				tax_rule_formula: undefined,
+				taxable_income_source: undefined,
+			});
+			setFormulaSource("");
+			setFormulaParts([]);
+		} else if (value === "fixed") {
+			setFormData({
+				...formData,
+				tax_rule_percentage: undefined,
+				tax_rule_formula: undefined,
+				taxable_income_source: undefined,
+			});
+			setFormulaSource("");
+			setFormulaParts([]);
 		} else {
-			setFormData({ ...formData, tax_rule_percentage: undefined });
+			// tax_formula selected
+			setFormData({
+				...formData,
+				tax_rule_percentage: undefined,
+				tax_rule_fixed_amount: undefined,
+			});
 		}
+	};
+
+	const buildFormulaString = () => {
+		if (!formulaSource) return "";
+		let res = formulaSource;
+		formulaParts.forEach((p) => {
+			const val = p.value?.toString() || "0";
+			res += ` ${p.op} ${val}`;
+		});
+		return res;
+	};
+
+	const addFormulaPart = () => {
+		setFormulaParts((s) => [...s, { op: "+", value: "" }]);
+	};
+
+	const updateFormulaPart = (index: number, part: Partial<FormulaPart>) => {
+		setFormulaParts((s) => s.map((p, i) => (i === index ? { ...p, ...part } : p)));
+	};
+
+	const removeFormulaPart = (index: number) => {
+		setFormulaParts((s) => s.filter((_, i) => i !== index));
 	};
 
 	const handleSubmit = async () => {
@@ -103,6 +171,20 @@ export function CreateTaxRuleDialog({
 			return;
 		}
 
+		if (calculationType === "tax_formula") {
+			if (!formulaSource) {
+				toast.error("Please select taxable income source for formula");
+				return;
+			}
+			// at least one part is optional, but ensure parts values are valid numbers if present
+			for (const p of formulaParts) {
+				if (!p.value || Number.isNaN(Number(p.value))) {
+					toast.error("Please enter valid numeric values for formula parts");
+					return;
+				}
+			}
+		}
+
 		setIsSubmitting(true);
 		try {
 			// Prepare data based on calculation type
@@ -114,13 +196,21 @@ export function CreateTaxRuleDialog({
 							tax_rule_percentage: formData.tax_rule_percentage,
 							tax_rule_fixed_amount: undefined,
 						}
-					: {
-							tax_rule_fixed_amount: formData.tax_rule_fixed_amount,
-							tax_rule_percentage: undefined,
-						}),
+					: calculationType === "fixed"
+						? {
+								tax_rule_fixed_amount: formData.tax_rule_fixed_amount,
+								tax_rule_percentage: undefined,
+								tax_rule_formula: undefined,
+								taxable_income_source: undefined,
+							}
+						: {
+								tax_rule_formula: buildFormulaString(),
+								taxable_income_source: formulaSource || undefined,
+								tax_rule_fixed_amount: undefined,
+								tax_rule_percentage: undefined,
+							}),
 			};
 
-			// Use actual API call
 			const newTaxRule = await taxRulesAPI.create(createData);
 
 			onSuccess(newTaxRule);
@@ -128,8 +218,7 @@ export function CreateTaxRuleDialog({
 			resetFormData();
 			setIsOpen(false);
 		} catch (error: any) {
-			console.error("Error creating tax rule:", error);
-			toast.error(error.message || "An error occurred while creating the tax rule");
+			showErrorToast({ error, defaultMessage: "An error occurred while creating the tax rule" });
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -147,7 +236,7 @@ export function CreateTaxRuleDialog({
 			<DialogTrigger asChild>
 				<Button
 					variant={isEmbeded ? "outline" : "default"}
-					className="flex items-center gap-2"
+					className="flex items-center gap-2 rounded-xl"
 					disabled={disabled}
 				>
 					<Plus className="h-4 w-4" />
@@ -161,7 +250,7 @@ export function CreateTaxRuleDialog({
 						Create a new tax calculation rule with salary range and calculation method.
 					</DialogDescription>
 				</DialogHeader>
-				<div className="grid grid-cols-1 gap-6 py-6">
+				<div className="grid grid-cols-1 gap-6 py-6 overflow-y-auto h-[70svh] md:h-[60svh]">
 					<div className="space-y-3">
 						<Label htmlFor="tax_rule_name" className="text-sm text-gray-800">
 							Tax Rule Name *
@@ -209,6 +298,12 @@ export function CreateTaxRuleDialog({
 									Fixed Amount
 								</Label>
 							</div>
+							<div className="flex items-center space-x-2">
+								<RadioGroupItem value="tax_formula" id="fixed" />
+								<Label htmlFor="tax_formula" className="text-sm font-medium">
+									Tax rule Formula
+								</Label>
+							</div>
 						</RadioGroup>
 					</div>
 
@@ -253,6 +348,111 @@ export function CreateTaxRuleDialog({
 									disabled={isSubmitting}
 									className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
 								/>
+							</div>
+						</div>
+					)}
+
+					{calculationType === "tax_formula" && (
+						<div className="space-y-4">
+							<Label className="text-sm text-gray-800">Formula Builder *</Label>
+
+							{/* Taxable income source select */}
+							<div className="space-y-2">
+								<Label className="text-sm text-gray-700">Taxable Income Source</Label>
+
+								<Select
+									value={formulaSource}
+									onValueChange={(value) => setFormulaSource(value as TaxableIncomeSource)}
+									disabled={isSubmitting}
+								>
+									<SelectTrigger className="w-full rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2">
+										{incomeSourcesMapper.find((formula) => formula.value === formulaSource)
+											?.label || "Select source "}
+									</SelectTrigger>
+									<SelectContent>
+										{incomeSourcesMapper.map((source, idx) => (
+											<SelectItem key={idx} value={source.value}>
+												{source.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="space-y-2">
+								<Label className="text-sm text-gray-700">Formula Parts</Label>
+								{formulaParts.length === 0 && (
+									<div className="text-sm text-gray-500">
+										No additional parts. You can add operations (e.g. - 235000).
+									</div>
+								)}
+								{formulaParts.map((part, idx) => (
+									<div key={idx} className="flex items-center gap-2">
+										<div className="grid grid-cols-2 gap-2">
+											<Select
+												value={part.op}
+												onValueChange={(value) =>
+													updateFormulaPart(idx, { op: value as FormulaPart["op"] })
+												}
+												disabled={isSubmitting}
+											>
+												<SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2 "></SelectTrigger>
+												<SelectContent>
+													<SelectItem value={"+"}>+</SelectItem>
+													<SelectItem value={"-"}>-</SelectItem>
+													<SelectItem value={"*"}>*</SelectItem>
+													<SelectItem value={"/"}>/</SelectItem>
+												</SelectContent>
+											</Select>
+
+											<div className="flex-1 min-w-20">
+												<FormattedNumberInput
+													value={part.value || ""}
+													onValueChange={(val) => updateFormulaPart(idx, { value: val.toString() })}
+													placeholder="e.g., 235000"
+													disabled={isSubmitting}
+													className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-3 w-full"
+												/>
+											</div>
+										</div>
+
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => removeFormulaPart(idx)}
+											className="ml-2 p-2"
+											disabled={isSubmitting}
+										>
+											<X className="h-4 w-4 text-red-500" />
+										</Button>
+									</div>
+								))}
+
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										className="rounded-xl"
+										onClick={addFormulaPart}
+										disabled={isSubmitting}
+									>
+										Add Part
+									</Button>
+									<div className="text-sm text-gray-500">Parts are applied left-to-right</div>
+								</div>
+							</div>
+
+							{/* Preview */}
+							<div>
+								<Label className="text-sm text-gray-700">Formula Preview</Label>
+								<Input
+									readOnly
+									value={buildFormulaString()}
+									placeholder="e.g., (taxable_gross_salary - 235000) * 0.10"
+									className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+								/>
+								<p className="text-xs text-gray-500 mt-1">
+									Example: '(taxable_gross_salary - 235000) * 0.10' or '(gross_salary - 410000) *
+									0.30 + 25000'
+								</p>
 							</div>
 						</div>
 					)}

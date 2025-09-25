@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-// Using Blocks icon for the dropdown trigger
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -19,7 +18,7 @@ export default function Modules() {
 		{
 			id: "accounting",
 			name: "Accounting",
-			link: "/accounting/dashboard",
+			link: "#",
 			icon: <Icon icon="hugeicons:bitcoin-graph" width="24" height="24" />,
 		},
 		{
