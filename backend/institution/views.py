@@ -1,4 +1,5 @@
 from django.http import Http404
+from recruitment.models import JobPosition
 from employee.service import create_owner_employee
 from employee.models import Employee, WorkType, EmployeeType
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -43,6 +44,7 @@ from .serializers import (
     InstitutionActivationSerializer,
     InstitutionSerializer,
     BranchSerializer,
+    OrganizationChartSerializer,
     SuccessResponseSerializer,
     TaxRuleCategorySerializer,
     UserBranchSerializer,
@@ -874,6 +876,46 @@ class InstitutionDetailAPIView(APIView):
         except Institution.DoesNotExist:
             return Response({"detail": "Institution not found."}, status=404)
 
+class OrganizationChartView(APIView):
+
+    def get(self, request):
+        # Get the user's institution from their profile
+        try:
+            institution = request.user.profile.institution
+        except AttributeError:
+            return Response(
+                {"detail": "User profile or institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Get query parameters for filtering
+        search_query = request.query_params.get("search", None)
+        status_filter = request.query_params.get("status", "active")  # Default to active
+
+        # Base queryset: Filter by institution and active status
+        job_positions = JobPosition.objects.filter(
+            department__institution=institution,
+            job_position_status=status_filter
+        )
+
+        # Apply search filter if provided
+        if search_query:
+            job_positions = job_positions.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        # Get top-level positions (reports_to is null or not in the institution)
+        top_positions = job_positions.filter(reports_to__isnull=True)
+
+        # Serialize the data
+        serializer = OrganizationChartSerializer(top_positions, many=True)
+
+        # Apply pagination
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(top_positions, request)
+        serializer = OrganizationChartSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 class InstitutionBankTypeListAPIView(APIView, SortableAPIMixin):
     allowed_ordering_fields = ["bank_fullname", "created_at", "bank_code", "is_active"]
