@@ -6,6 +6,7 @@ from .models import (
     Department,
     Institution,
     Branch,
+    TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
     InstitutionBankType,
@@ -800,6 +801,11 @@ class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
         model = BranchLocationComparisonConfig
         fields = "__all__"
 
+class TaxRuleCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+         model = TaxRuleCategory
+         fields = '__all__'
 
 class BranchShiftSerializer(BaseApprovableSerializer):
     shift_day = serializers.PrimaryKeyRelatedField(queryset=BranchDay.objects.all())

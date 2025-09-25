@@ -1,5 +1,8 @@
 from django.urls import path
 from .views import (
+    DocumentRequestDetailView,
+    DocumentRequestListCreateView,
+    DocumentUploadView,
     EmployeeAttendanceDetailAPIView,
     EmployeeAttendanceListCreateAPIView,
     EmployeeBranchDetailAPIView,
@@ -168,4 +171,8 @@ urlpatterns = [
         verify_email_and_redirect,
         name="verify-email",
     ),
+
+    path("document-requests/", DocumentRequestListCreateView.as_view(), name="document_request_list_create"),
+    path("document-requests/<int:pk>/", DocumentRequestDetailView.as_view(), name="document_request_detail"),
+    path("document-requests/employee/<int:request_employee_id>/upload/", DocumentUploadView.as_view(), name="document_upload"),
 ]

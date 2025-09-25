@@ -22,6 +22,7 @@ from .models import (
     Department,
     Institution,
     Branch,
+    TaxRuleCategory,
     UserBranch,
     InstitutionBankAccount,
     InstitutionBankType,
@@ -43,6 +44,7 @@ from .serializers import (
     InstitutionSerializer,
     BranchSerializer,
     SuccessResponseSerializer,
+    TaxRuleCategorySerializer,
     UserBranchSerializer,
     InstitutionBankTypeSerializer,
     InstitutionBankAccountSerializer,
@@ -575,6 +577,16 @@ class InstitutionKYCDocumentDetailView(APIView):
         document.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class TaxRuleCategoryList(APIView):
+    @extend_schema(
+        responses={200: TaxRuleCategorySerializer},
+        tags=["Tax Rule Category Management"],
+        summary="Get Tax Rule Category List",
+    )
+    def get(self, request):
+        categories = TaxRuleCategory.objects.all()
+        serializer = TaxRuleCategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class InstitutionListAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]

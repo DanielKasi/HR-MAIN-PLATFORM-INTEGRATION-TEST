@@ -91,22 +91,7 @@ class AssetSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Asset
-        fields = [
-            "id",
-            "institution",
-            "asset_name",
-            "batch_number",
-            "serial_number",
-            "category",
-            "description",
-            "status",
-            "is_active",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "current_holder",
-            "asset_histories",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",
@@ -160,18 +145,7 @@ class AssetRequestSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = AssetRequest
-        fields = [
-            "id",
-            "asset",
-            "asset_id",
-            "requester",
-            "request_reference_code",
-            "asset_request_status",
-            "notes",
-            "created_at",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -226,24 +200,10 @@ class AssetRequestSerializer(BaseApprovableSerializer):
 
 
 class AssetAllocationSerializer(BaseApprovableSerializer):
-    # asset = serializers.IntegerField(write_only=True, required=True)
-    # allocated_to = serializers.IntegerField(write_only=True, required=True)
-    # responding_to_request = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = AssetAllocation
-        fields = [
-            "id",
-            "asset",
-            "allocated_to",
-            "responding_to_request",
-            "allocated_by",
-            "allocation_status",
-            "alloc_code",
-            "is_active",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",
@@ -251,13 +211,7 @@ class AssetAllocationSerializer(BaseApprovableSerializer):
             "alloc_code",
             "allocated_by",
         ]
-        read_only_fields = [
-            "id",
-            "created_at",
-            "updated_at",
-            "alloc_code",
-            "allocated_by",
-        ]
+
 
     def create(self, validated_data):
         request = self.context.get("request")
@@ -382,8 +336,5 @@ class AssetReturnSerializer(BaseApprovableSerializer):
         else:
             rep["allocation"] = None
 
-        
-
-        
 
         return rep
