@@ -194,14 +194,14 @@ export default function Dashboard() {
 
 					{/* Sidebar */}
 					<div className="flex flex-col gap-4 lg:col-span-1">
-						<SimpleCalendarWidget className="!min-h-[24rem] !max-h-[32rem] !h-full" />
-						<Card className="md:col-span-2 shadow-sm border-none bg-white h-[6.5rem]">
+						<Card className="md:col-span-2 shadow-sm border-none bg-white !h-[6.5rem]">
 							<CardHeader className="flex flex-row items-center justify-between py-2">
 								<CardTitle className="text-lg md:text-xl font-medium">Announcements</CardTitle>
 								<ChevronRight className="w-4 h-4 text-gray-400" />
 							</CardHeader>
 						</Card>
-						<EventsAndHolidaysWidget className="!max-h-[24rem] !h-full overflow-y-auto" />
+						<SimpleCalendarWidget className="!min-h-[24rem] !max-h-[32rem] !h-full" />
+						<EventsAndHolidaysWidget className="!max-h-[20rem] !h-full overflow-y-auto" />
 					</div>
 				</div>
 
