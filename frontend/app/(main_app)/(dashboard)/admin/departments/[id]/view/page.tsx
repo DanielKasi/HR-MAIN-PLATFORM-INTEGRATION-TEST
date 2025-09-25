@@ -142,7 +142,7 @@ export default function DepartmentDetailView() {
 	return (
 		<div className="flex flex-col w-full h-full min-h-screen p-3 md:p-6 bg-white rounded-lg py-8">
 			<div
-				className={` gap-6 ${department?.approval_status !== "active" && department?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+				className={`${department?.approval_status !== "active" && department?.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6" : ""}`}
 			>
 				{department?.approvals && department.approvals.length > 0 && (
 					<div className="order-1 lg:order-2">
@@ -155,7 +155,7 @@ export default function DepartmentDetailView() {
 				)}
 
 				<div
-					className={`${department?.approval_status !== "active" && department?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
+					className={`${department?.approval_status !== "active" && department?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""} space-y-6`}
 				>
 					<div className="flex justify-between items-start gap-4">
 						<div className="flex items-center gap-4">

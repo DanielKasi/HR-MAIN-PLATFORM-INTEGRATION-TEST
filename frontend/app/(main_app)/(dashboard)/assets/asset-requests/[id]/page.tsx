@@ -76,7 +76,6 @@ const AssetRequestDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetRequestById(parseInt(requestId));
-
 			setRequest(response);
 		} catch (error) {
 			console.error("Error fetching request details:", error);
@@ -180,7 +179,7 @@ const AssetRequestDetailPage = () => {
 
 			<div className="flex flex-col lg:flex-row justify-between gap-6">
 				<div
-					className={` gap-6 ${request?.approval_status !== "active" && request?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+					className={`${request?.approval_status !== "active" && request?.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "flex flex-col gap-6"}`}
 				>
 					{request?.approvals && request.approvals.length > 0 && (
 						<div className="order-1 lg:order-2">

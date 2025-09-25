@@ -327,6 +327,19 @@ export default function DocumentTypesPage() {
 											<TableCell className="text-right">
 												<div className="flex items-center justify-end gap-2">
 													<ProtectedComponent
+														permissionCode={PERMISSION_CODES.CAN_VIEW_DOCUMENT_TYPES}
+													>
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() =>
+																router.push(`/documents/document_types/${documentType.id}`)
+															}
+														>
+															<FileText className="h-4 w-4" />
+														</Button>
+													</ProtectedComponent>
+													<ProtectedComponent
 														permissionCode={PERMISSION_CODES.CAN_EDIT_DOCUMENT_TYPES}
 													>
 														<Button

@@ -76,10 +76,8 @@ const AssetAllocationDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetAllocationById(parseInt(allocationId));
-
 			setAllocation(response);
 		} catch (error) {
-			console.error("Error fetching allocation details:", error);
 			toast.error("Failed to load allocation details");
 		} finally {
 			setIsLoading(false);
@@ -121,7 +119,6 @@ const AssetAllocationDetailPage = () => {
 
 			toast.success(`Asset allocation ${action}d successfully`);
 		} catch (error) {
-			console.warn(`Error ${action}ing asset allocation:`, error);
 			toast.error(`Failed to ${action} asset allocation`);
 		} finally {
 			setIsApproving(false);
@@ -177,121 +174,112 @@ const AssetAllocationDetailPage = () => {
 					</div>
 				</div>
 			</div>
+			<div
+				className={` gap-6 ${allocation?.approval_status !== "active" && allocation?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+			>
+				{allocation?.approvals && allocation.approvals.length > 0 && (
+					<div className="order-1 lg:order-2">
+						<ApprovalWorkflow
+							approvals={allocation.approvals}
+							instance_approval_status={allocation.approval_status}
+							onRefresh={fetchAllocationDetails}
+						/>
+					</div>
+				)}
 
-			<div className="flex flex-col lg:flex-row justify-between gap-6">
 				<div
-					className={` gap-6 ${allocation?.approval_status !== "active" && allocation?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+					className={`${allocation?.approval_status !== "active" && allocation?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
 				>
-					{allocation?.approvals && allocation.approvals.length > 0 && (
-						<div className="order-1 lg:order-2">
-							<ApprovalWorkflow
-								approvals={allocation.approvals}
-								instance_approval_status={allocation.approval_status}
-								onRefresh={fetchAllocationDetails}
-							/>
+					{/* Main Content */}
+					{/* Asset Card */}
+					<div className="border rounded-[20px] p-4 my-2 lg:my-4">
+						<div className="">
+							<div className="flex items-center justify-between">
+								<h3 className="text-lg font-semibold text-gray-900">Asset</h3>
+							</div>
 						</div>
-					)}
-
-					<div
-						className={`${allocation?.approval_status !== "active" && allocation?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-					>
-						{/* Main Content */}
-						<div className="flex flex-col w-full lg:flex-[0.7] space-y-4 lg:space-y-6">
-							{/* Asset Card */}
-							<div className="border rounded-[20px] p-4 my-2 lg:my-4">
-								<div className="">
-									<div className="flex items-center justify-between">
-										<h3 className="text-lg font-semibold text-gray-900">Asset</h3>
-									</div>
+						<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+							<div>
+								<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+									<p className="text-sm font-medium text-gray-900">
+										{allocation.asset?.asset_name}
+									</p>
+									<Badge className={getStatusColor(allocation.allocation_status)}>
+										{getStatusDisplay(allocation.allocation_status)}
+									</Badge>
 								</div>
-								<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
-									<div>
-										<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-											<p className="text-sm font-medium text-gray-900">
-												{allocation.asset?.asset_name}
-											</p>
-											<Badge className={getStatusColor(allocation.allocation_status)}>
-												{getStatusDisplay(allocation.allocation_status)}
-											</Badge>
-										</div>
 
-										<p className="text-sm text-gray-500">{allocation.asset?.serial_number}</p>
-									</div>
-									<div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-										<div>
-											<p className="text-sm text-gray-500">Batch No</p>
-											<p className="text-base font-mono break-all">
-												{allocation.asset?.batch_number}
-											</p>
-										</div>
-										<div>
-											<p className="text-sm text-gray-500">Category</p>
-											<p className="text-base font-mono break-all">
-												{allocation.asset?.category?.category_name || "Unknown"}
-											</p>
-										</div>
-									</div>
+								<p className="text-sm text-gray-500">{allocation.asset?.serial_number}</p>
+							</div>
+							<div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+								<div>
+									<p className="text-sm text-gray-500">Batch No</p>
+									<p className="text-base font-mono break-all">{allocation.asset?.batch_number}</p>
+								</div>
+								<div>
+									<p className="text-sm text-gray-500">Category</p>
+									<p className="text-base font-mono break-all">
+										{allocation.asset?.category?.category_name || "Unknown"}
+									</p>
 								</div>
 							</div>
+						</div>
+					</div>
 
-							{/* Connection Line - Dotted with Arrow */}
-							<div className="flex justify-center">
-								<div
-									className="w-0.5 h-8 bg-gray-300 relative"
-									style={{
-										backgroundImage:
-											"repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)",
-									}}
-								>
-									<ArrowDown className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-4 w-4 text-gray-400" />
-								</div>
-							</div>
+					{/* Connection Line - Dotted with Arrow */}
+					<div className="flex justify-center">
+						<div
+							className="w-0.5 h-8 bg-gray-300 relative"
+							style={{
+								backgroundImage:
+									"repeating-linear-gradient(0deg, transparent, transparent 2px, #d1d5db 2px, #d1d5db 4px)",
+							}}
+						>
+							<ArrowDown className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-4 w-4 text-gray-400" />
+						</div>
+					</div>
 
-							{/* Allocate to Card */}
-							<div className="border rounded-[20px] p-4 my-2 lg:my-4">
-								<h3 className="text-lg font-semibold text-gray-900">Allocate to</h3>
-								<div className="">
-									<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
-										<div className="flex items-center gap-2 ">
-											<User className="h-5 w-5 text-gray-600" />
-											<div className="flex flex-col">
-												<p className="font-medium text-gray-900">
-													{allocation.allocated_to?.user.fullname}
-												</p>
-												<p className="text-sm text-gray-500">
-													EMP-{allocation.allocated_to?.user.id}
-												</p>
-											</div>
-										</div>
-										<div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-											<div>
-												<p className="text-sm text-gray-500">Position</p>
-												<p className="text-sm text-gray-500">
-													{allocation.allocated_to?.user.roles?.[0]?.name || "Not specified"}
-												</p>
-											</div>
-											<div className="flex flex-col">
-												<p className="text-sm text-gray-500">Department</p>
-												<p className="text-sm text-gray-500">Not specified</p>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							{/* Created By Card */}
-							<div className="rounded-[20px] p-4 my-2 lg:my-4">
-								<h3 className="text-lg font-semibold text-gray-900">Created By</h3>
-								<div className="">
-									<div>
+					{/* Allocate to Card */}
+					<div className="border rounded-[20px] p-4 my-2 lg:my-4">
+						<h3 className="text-lg font-semibold text-gray-900">Allocate to</h3>
+						<div className="">
+							<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+								<div className="flex items-center gap-2 ">
+									<User className="h-5 w-5 text-gray-600" />
+									<div className="flex flex-col">
 										<p className="font-medium text-gray-900">
-											{allocation.allocated_by?.user.fullname}
+											{allocation.allocated_to?.user.fullname}
 										</p>
-										<p className="text-sm text-gray-500">
-											{allocation.allocated_by?.user.roles?.[0]?.name || "Not specified"}
-										</p>
+										<p className="text-sm text-gray-500">EMP-{allocation.allocated_to?.user.id}</p>
 									</div>
 								</div>
+								<div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+									<div>
+										<p className="text-sm text-gray-500">Position</p>
+										<p className="text-sm text-gray-500">
+											{allocation.allocated_to?.user.roles?.[0]?.name || "Not specified"}
+										</p>
+									</div>
+									<div className="flex flex-col">
+										<p className="text-sm text-gray-500">Department</p>
+										<p className="text-sm text-gray-500">Not specified</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					{/* Created By Card */}
+					<div className="rounded-[20px] p-4 my-2 lg:my-4">
+						<h3 className="text-lg font-semibold text-gray-900">Created By</h3>
+						<div className="">
+							<div>
+								<p className="font-medium text-gray-900">
+									{allocation.allocated_by?.user.fullname}
+								</p>
+								<p className="text-sm text-gray-500">
+									{allocation.allocated_by?.user.roles?.[0]?.name || "Not specified"}
+								</p>
 							</div>
 						</div>
 					</div>

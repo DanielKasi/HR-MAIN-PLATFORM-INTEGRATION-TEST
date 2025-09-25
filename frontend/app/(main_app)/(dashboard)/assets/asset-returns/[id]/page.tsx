@@ -72,7 +72,6 @@ const AssetReturnDetailPage = () => {
 		try {
 			setIsLoading(true);
 			const response = await assetsAPI.getAssetReturnById(parseInt(returnId));
-
 			setAssetReturn(response);
 		} catch (error) {
 			console.error("Error fetching return details:", error);
