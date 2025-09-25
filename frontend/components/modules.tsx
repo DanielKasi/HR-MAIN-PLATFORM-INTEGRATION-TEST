@@ -25,7 +25,7 @@ export default function Modules() {
 		{
 			id: "task_mgmt",
 			name: "Tasks",
-			link: "https://hrms.supraledger.com",
+			link: "https://hrms.baifamgroup.co.ug",
 			icon: <Icon icon="hugeicons:gitbook" width="24" height="24" />,
 		},
 	];
