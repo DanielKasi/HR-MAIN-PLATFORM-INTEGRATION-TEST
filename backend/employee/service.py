@@ -442,6 +442,7 @@ def create_owner_employee(institution):
         # Create Employee instance
         employee = Employee.objects.create(
             user=owner,
+            name=owner.fullname,
             position=default_position,
             department=default_dept,
             email=owner.email,

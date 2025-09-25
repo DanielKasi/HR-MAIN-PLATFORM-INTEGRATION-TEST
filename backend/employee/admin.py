@@ -17,8 +17,10 @@ from .models import (
     Child,
     QualificationAward,
     EmployeeCompanyEmail,
+    DocumentRequest,
+    DocumentRequestEmployee,
+    RequestedDocument,
 )
-
 
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
@@ -77,4 +79,7 @@ admin.site.register(WorkExperience)
 admin.site.register(Child)
 admin.site.register(QualificationAward)
 admin.site.register(EmployeeCompanyEmail)
-admin.site.register(Employee, EmployeeAdmin)
+admin.site.register(DocumentRequest)
+admin.site.register(DocumentRequestEmployee)
+admin.site.register(RequestedDocument)
+admin.site.register(Employee)

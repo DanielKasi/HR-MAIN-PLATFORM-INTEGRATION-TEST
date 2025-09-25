@@ -6,6 +6,7 @@ from .models import (
     Department,
     Institution,
     Branch,
+    TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
     InstitutionBankType,
@@ -792,6 +793,16 @@ class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+class OrganizationChartSerializer(BaseApprovableSerializer):
+    subordinates = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JobPosition
+        fields = '__all__'
+
+    def get_subordinates(self, obj):    
+        subordinates = JobPosition.objects.filter(reports_to=obj, job_position_status='active', department__institution=obj.department.institution)
+        return OrganizationChartSerializer(subordinates, many=True, context=self.context).data
 
 class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
     branch_name = serializers.CharField(source="branch.branch_name", read_only=True)
@@ -800,6 +811,11 @@ class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
         model = BranchLocationComparisonConfig
         fields = "__all__"
 
+class TaxRuleCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+         model = TaxRuleCategory
+         fields = '__all__'
 
 class BranchShiftSerializer(BaseApprovableSerializer):
     shift_day = serializers.PrimaryKeyRelatedField(queryset=BranchDay.objects.all())
