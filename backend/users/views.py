@@ -135,7 +135,7 @@ class UserListAPIView(APIView, SortableAPIMixin):
             "user_roles__role__permissions__permission",
             Prefetch(
                 "attached_branches",
-                queryset=UserBranch.objects.select_related("branch__Institution"),
+                queryset=UserBranch.objects.select_related("branch__institution"),
                 to_attr="prefetched_user_branches",
             ),
         )

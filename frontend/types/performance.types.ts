@@ -57,7 +57,7 @@ export interface IPerformanceImprovementPlan extends IBaseApprovable {
 	start_date: string;
 	end_date: string;
 	issues: number[] | IPerformanceConcern[];
-	support_resources: number[] | IPIPSupportResource[];
+	support_resources: IPIPSupportResource[];
 	progress_notes: string | null;
 	consequences: string | null;
 	status:
@@ -69,7 +69,7 @@ export interface IPerformanceImprovementPlan extends IBaseApprovable {
 		| "terminated";
 	final_review_date: string | null;
 	outcome: string | null;
-	objectives: number[] | IObjective[];
+	objectives: IObjective[];
 	document_template: number | null;
 }
 

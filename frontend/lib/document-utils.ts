@@ -11,7 +11,7 @@ export interface DocumentPreviewResponse {
 	preview: string;
 }
 
-import { IPaginatedResponse } from "@/types";
+import { IPaginatedResponse } from "@/types/types.utils";
 
 export const getDocumentTemplates = async ({
 	institutionId,
@@ -52,7 +52,7 @@ export const getGeneratedDocumentTemplate = async (
 };
 
 export const generateDocument = async (
-	templateId: number,
+	templateId: number | null,
 	context: string,
 	contextId: number,
 	placeholders?: Record<string, string>,
@@ -64,8 +64,10 @@ export const generateDocument = async (
 			context,
 			context_id: contextId.toString(),
 		});
-
-		const response = await apiRequest.post(`documents/generate-document/${templateId}/`, {
+		const endpoint = templateId
+			? `documents/generate-document/${templateId}/`
+			: `documents/generate-document/`;
+		const response = await apiRequest.post(endpoint, {
 			context,
 			context_id: contextId,
 			placeholders,
@@ -96,7 +98,7 @@ export const sendDocuments = async ({
 	contextId,
 	documentId,
 }: {
-	context: "employee" | "onboarding" | "leave";
+	context: "employee" | "onboarding" | "leave" | "pip";
 	contextId: number | string;
 	documentId: number;
 }): Promise<string | null> => {

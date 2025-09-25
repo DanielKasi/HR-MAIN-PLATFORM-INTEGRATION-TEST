@@ -1325,9 +1325,8 @@ export default function JobAdvertsPage() {
 										<SearchableSelect
 											items={employees.map((employee) => ({
 												id: employee.id.toString(),
-												label: `${employee?.name || `Employee ${employee.id}`} (${employee.user?.user_type || "Staff"})`,
-												value:
-													`${employee?.name || `Employee ${employee.id}`} ${employee.user?.user_type || "Staff"}`.toLowerCase(),
+												label: `${employee?.name || `${employee.user?.fullname}`}`,
+												value: `${employee?.name || `${employee.user?.fullname}`}`,
 											}))}
 											selectedItems={selectedInterviewers.map((interviewer) => interviewer.id)}
 											placeholder="Select Interviewers"
