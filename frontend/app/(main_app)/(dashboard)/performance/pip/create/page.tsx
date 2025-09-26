@@ -25,6 +25,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
+import DocumentTemplateSearchableSelect from "@/components/selects/document-template-searchable-select";
 
 export default function PerformanceImprovementPlanCreatePage() {
 	const router = useRouter();
@@ -176,6 +177,19 @@ export default function PerformanceImprovementPlanCreatePage() {
 							placeholder="Select objectives..."
 							triggerClassName="h-10 sm:h-12 rounded-2xl text-sm sm:text-base"
 							multiple
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label>Document template</Label>
+						<DocumentTemplateSearchableSelect
+							value={[formData.document_template || ""]}
+							onValueChange={(values) => {
+								if (values.length) {
+									setFormData({ ...formData, document_template: Number(values[0]) });
+								}
+							}}
+							placeholder="Select template..."
+							triggerClassName="h-10 sm:h-12 rounded-2xl text-sm sm:text-base"
 						/>
 					</div>
 					<div className="space-y-2">

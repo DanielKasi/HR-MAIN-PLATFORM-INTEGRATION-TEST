@@ -79,6 +79,7 @@ export function PaginatedTable<T, Q = unknown>({
 }: PaginatedTableProps<T, Q>) {
 	const [data, setData] = useState<IPaginatedResponse<T> | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
+	const [currentPage, setCurrentPage] = useState<number>(1);
 
 	const handleError = (err: unknown) => {
 		if (onError) onError(err);
@@ -92,7 +93,6 @@ export function PaginatedTable<T, Q = unknown>({
 		setLoading(true);
 		try {
 			const res = await fetchFirstPage(query);
-
 			setData(res);
 		} catch (e) {
 			handleError(e);
@@ -111,6 +111,7 @@ export function PaginatedTable<T, Q = unknown>({
 				return;
 			}
 			setData(res);
+			setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
 		} catch (e) {
 			handleError(e);
 		} finally {
@@ -128,6 +129,7 @@ export function PaginatedTable<T, Q = unknown>({
 				return;
 			}
 			setData(res);
+			setCurrentPage((prev) => prev + 1);
 		} catch (e) {
 			handleError(e);
 		} finally {
@@ -149,8 +151,8 @@ export function PaginatedTable<T, Q = unknown>({
 	}, [...deps]);
 
 	return (
-		<div className={cn("space-y-4", className)}>
-			<Table className={cn(tableClassName)}>
+		<div className={cn("space-y-4 h-full !min-h-[60svh]", className)}>
+			<Table className={cn(tableClassName, "mb-auto")}>
 				<TableHeader>
 					<TableRow className="border-b bg-muted/30">
 						{columns.map((col) => (
@@ -192,7 +194,7 @@ export function PaginatedTable<T, Q = unknown>({
 			</Table>
 
 			{showFooter && data && paginated && (
-				<div className={cn("flex items-center justify-between pt-2", footerClassName)}>
+				<div className={cn("flex items-center justify-between pt-2 mt-auto", footerClassName)}>
 					<p className="text-sm text-gray-500">
 						Showing {data.results?.length ?? 0} results of {data.count ?? 0} total
 					</p>
@@ -207,6 +209,11 @@ export function PaginatedTable<T, Q = unknown>({
 							<ChevronLeft className="h-4 w-4" />
 							Previous
 						</Button>
+						{currentPage && (
+							<Button size={"sm"} className="rounded-xl text-sm font-medium">
+								{currentPage}
+							</Button>
+						)}
 						<Button
 							variant="outline"
 							size="sm"

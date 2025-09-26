@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { IObjective } from "@/types/types.utils";
+import DocumentTemplateSearchableSelect from "@/components/selects/document-template-searchable-select";
 
 interface PerformanceImprovementPlanCreateEditDialogProps {
 	open: boolean;
@@ -239,6 +240,19 @@ export function PerformanceImprovementPlanCreateEditDialog({
 								placeholder="Select objectives..."
 								triggerClassName="h-10 rounded-2xl text-sm"
 								multiple
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label>Document template</Label>
+							<DocumentTemplateSearchableSelect
+								value={[formData.document_template || ""]}
+								onValueChange={(values) => {
+									if (values.length) {
+										setFormData({ ...formData, document_template: Number(values[0]) });
+									}
+								}}
+								placeholder="Select template..."
+								triggerClassName="h-10 sm:h-12 rounded-2xl text-sm sm:text-base"
 							/>
 						</div>
 						<div className="space-y-2">

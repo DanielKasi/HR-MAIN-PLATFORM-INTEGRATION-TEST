@@ -1424,7 +1424,7 @@ export default function EmployeeProfile() {
 								open={showDocumentDialog}
 								onOpenChange={setShowDocumentDialog}
 								contextId={Number.parseInt(employeeId)}
-								context="employee"
+								context={{ type: "employee" }}
 							/>
 						</div>
 					</div>

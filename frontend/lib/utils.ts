@@ -969,8 +969,9 @@ export const createInterview = async ({
 		const formData = new FormData();
 
 		Object.entries(interviewData).forEach(([key, value]) => {
-			// Only append defined values
-			if (value !== undefined && value !== null) {
+			if (key == "feedback") {
+				formData.append(key, JSON.stringify(value));
+			} else if (value !== undefined && value !== null) {
 				formData.append(key, value.toString());
 			}
 		});
@@ -1098,7 +1099,7 @@ export const createInterviewStage = async ({
 	return response.data as IInterviewStage;
 };
 
-export const upddateInterviewStage = async ({
+export const updateInterviewStage = async ({
 	stageId,
 	stageData,
 }: {
@@ -1115,9 +1116,18 @@ export const upddateInterviewStage = async ({
 		formData.append("interviewers", interviewerId.toString());
 	});
 
+	if (stageData.feedback_fields && stageData.feedback_fields.length > 0) {
+		formData.append("feedback_fields", JSON.stringify(stageData.feedback_fields));
+	}
+
 	const response = await apiRequest.patch(`recruitment/interview-stage/${stageId}/`, formData);
 
 	return response.data as IInterviewStage;
+};
+
+export const deleteInterviewStage = async ({ stageId }: { stageId: number }) => {
+	const response = await apiRequest.delete(`recruitment/interview-stage/${stageId}/`);
+	return response;
 };
 
 export const getInterviewStageById = async ({

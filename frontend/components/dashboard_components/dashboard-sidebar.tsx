@@ -170,7 +170,7 @@ export default function DashboardSideBar() {
 				{ title: "Interviews", href: "/job-interviews" },
 				{ title: "Recruitment", href: "#" },
 				{ title: "Open Jobs", href: "/job-adverts" },
-				{ title: "Stages", href: "#" },
+				{ title: "Stages", href: "/interview-stages" },
 				{ title: "Skill Zone", href: "/skill-zones" },
 				{ title: "Onboarding", href: "/on-boarding" },
 			],

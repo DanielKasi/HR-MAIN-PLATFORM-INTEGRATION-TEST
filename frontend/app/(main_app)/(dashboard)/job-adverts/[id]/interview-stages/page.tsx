@@ -5,6 +5,7 @@ import type {
 	IInterviewStage,
 	IInterviewStageFormData,
 	IInterview,
+	IFeedbackField,
 } from "@/types/types.utils";
 import { InterviewStagesPanel } from "@/components/common/interview-stages";
 import { InterviewStageDetailsDialog } from "@/components/interview/interview-stage-details-dialog";
@@ -82,7 +83,7 @@ import {
 	updateInterview,
 	createInterview,
 	bulkCreateOnBoarding,
-	upddateInterviewStage,
+	updateInterviewStage,
 } from "@/lib/utils";
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
@@ -92,6 +93,26 @@ interface UnifiedInterviewPipelineProps {
 	params: Promise<{
 		id: string;
 	}>;
+}
+
+interface InterviewCandidate {
+	id: number;
+	applicant_name: string;
+	applicant_email: string;
+	applicant_phone: string;
+	gender: string;
+	state: string;
+	address: string;
+	country: string;
+	source: string;
+	feedback?: Record<string, string> | null;
+	rating?: number;
+	interview_date?: string;
+	interview_time?: string;
+	location?: string;
+	interview_id?: number;
+	interview?: IInterview;
+	status: string;
 }
 
 interface Candidate {
@@ -115,7 +136,7 @@ interface Candidate {
 	country: string;
 	source: string;
 	positions: number;
-	feedback?: string;
+	feedback?: Record<string, any> | null;
 	rating?: number;
 	interview_date?: string;
 	interview_time?: string;
@@ -262,12 +283,15 @@ const buildCandidateHistory = (
 				: 0;
 
 		// Completion rate
-		const feedbacks = interview_history.filter((h) => h.feedback && h.feedback.trim().length > 0);
+		const feedbacks = interview_history.filter((h) => {
+			if (!h.feedback) return false;
+			if (typeof h.feedback === "object") return Object.keys(h.feedback).length > 0;
+			return false;
+		});
 		const completion_rate =
 			interview_history.length > 0
 				? Math.round((feedbacks.length / interview_history.length) * 100)
 				: 0;
-
 		// Get the latest interview status for this candidate
 		const latestInterview = candidateInterviews[candidateInterviews.length - 1];
 		const interview_status = latestInterview?.status || candidate.status;
@@ -583,7 +607,11 @@ const CandidateHistoryDialog = ({
 																		<MessageSquare className="h-4 w-4 text-gray-500" />
 																		<span className="font-medium text-sm">Feedback</span>
 																	</div>
-																	<p className="text-sm text-gray-700">{entry.feedback}</p>
+																	<p className="text-sm text-gray-700">
+																		{typeof entry.feedback === "string"
+																			? entry.feedback
+																			: JSON.stringify(entry.feedback, null, 2)}
+																	</p>
 																</div>
 															)}
 
@@ -706,8 +734,9 @@ const RatingInput = ({
 	);
 };
 
-const FeedbackDialog = ({
+export const FeedbackDialog = ({
 	candidate,
+	feedbackFields,
 	onSave,
 	isOpen,
 	onClose,
@@ -715,8 +744,9 @@ const FeedbackDialog = ({
 	onReject,
 	onScheduleAndMove,
 }: {
-	candidate: Candidate | null;
-	onSave: (feedback: string, rating: number) => void;
+	candidate: Candidate | InterviewCandidate | null;
+	feedbackFields?: IFeedbackField[] | null;
+	onSave: (feedback: Record<string, any>, rating: number) => void;
 	isOpen: boolean;
 	onClose: () => void;
 	nextStage?: ProcessedStage | null;
@@ -724,30 +754,63 @@ const FeedbackDialog = ({
 	onReject?: () => void;
 	onScheduleAndMove?: () => void;
 }) => {
-	const [feedback, setFeedback] = useState("");
+	const [feedbackValues, setFeedbackValues] = useState<Record<string, any>>({});
 	const [rating, setRating] = useState(0);
 	const [isSaving, setIsSaving] = useState(false);
 	const [action, setAction] = useState<"save" | "advance" | "cancel" | "schedule" | null>(null);
 
 	useEffect(() => {
 		if (candidate) {
-			setFeedback(candidate.feedback || "");
+			// initialize feedbackValues with existing structured feedback if present
+			if (candidate.feedback && typeof candidate.feedback === "object") {
+				setFeedbackValues(candidate.feedback as Record<string, any>);
+			} else if (candidate.feedback && typeof candidate.feedback === "string") {
+				// fallback: map existing free-text feedback to a 'notes' field
+				setFeedbackValues({ notes: candidate.feedback });
+			} else {
+				setFeedbackValues({});
+			}
+
 			setRating(candidate.rating || 0);
 		}
 	}, [candidate]);
 
 	if (!candidate) return null;
 
-	const handleSave = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating");
+	const handleFieldChange = (key: string, value: any) => {
+		setFeedbackValues((prev) => ({ ...prev, [key]: value }));
+	};
 
+	const validate = (): { ok: boolean; message?: string } => {
+		// ensure required fields are provided
+		if (feedbackFields && feedbackFields.length > 0) {
+			for (const f of feedbackFields) {
+				const key = f.label.toLowerCase().trim().replace(/\s+/g, "_");
+				const val = feedbackValues[key];
+				if (f.required) {
+					if (val === undefined || val === null || (typeof val === "string" && val.trim() === "")) {
+						return { ok: false, message: `Please provide ${f.label}` };
+					}
+				}
+			}
+		}
+
+		// rating required (business rule kept)
+		if (!rating || rating <= 0) return { ok: false, message: "Please provide a rating" };
+
+		return { ok: true };
+	};
+
+	const handleSave = async () => {
+		const v = validate();
+		if (!v.ok) {
+			toast.error(v.message || "Validation failed");
 			return;
 		}
 
 		setIsSaving(true);
 		try {
-			await onSave(feedback, rating);
+			await onSave(feedbackValues, rating);
 			onClose();
 			toast.success("Feedback updated successfully");
 		} catch (error) {
@@ -759,19 +822,17 @@ const FeedbackDialog = ({
 	};
 
 	const handleScheduleAndMove = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating before scheduling");
-
+		const v = validate();
+		if (!v.ok) {
+			toast.error(v.message || "Validation failed");
 			return;
 		}
 
 		setIsSaving(true);
 		setAction("schedule");
 		try {
-			await onSave(feedback, rating);
-			if (onScheduleAndMove) {
-				onScheduleAndMove();
-			}
+			await onSave(feedbackValues, rating);
+			if (onScheduleAndMove) onScheduleAndMove();
 			onClose();
 		} catch (error) {
 			toast.error("Failed to save feedback");
@@ -780,21 +841,22 @@ const FeedbackDialog = ({
 			setAction(null);
 		}
 	};
-
 	const handleReject = async () => {
-		if (!feedback.trim()) {
+		// require some feedback for rejection
+		const hasText =
+			Object.values(feedbackValues).some((v) =>
+				typeof v === "string" ? v.trim().length > 0 : !!v,
+			) || rating > 0;
+		if (!hasText) {
 			toast.error("Please provide feedback for rejection");
-
 			return;
 		}
 
 		setIsSaving(true);
 		setAction("cancel");
 		try {
-			await onSave(feedback, rating || 1);
-			if (onReject) {
-				await onReject();
-			}
+			await onSave(feedbackValues, rating || 1);
+			if (onReject) await onReject();
 			onClose();
 			toast.success("Candidate rejected");
 		} catch (error) {
@@ -816,20 +878,109 @@ const FeedbackDialog = ({
 				</DialogHeader>
 
 				<div className="space-y-6">
-					<div className="space-y-2">
-						<Label>Rating *</Label>
-						<RatingInput rating={rating} onRatingChange={setRating} />
-					</div>
+					{feedbackFields && feedbackFields.length > 0 ? (
+						feedbackFields.map((field, idx) => {
+							const key = field.label.toLowerCase().trim().replace(/\s+/g, "_");
+							const val = feedbackValues[key];
 
-					<div className="space-y-2">
-						<Label>Feedback *</Label>
-						<Textarea
-							value={feedback}
-							onChange={(e) => setFeedback(e.target.value)}
-							placeholder="Enter your feedback about the candidate's performance..."
-							rows={6}
-						/>
-					</div>
+							if (field.type === "rating") {
+								const max =
+									Array.isArray(field.options) && field.options.length > 0
+										? Math.max(...(field.options as number[]))
+										: 10;
+								return (
+									<div key={key + idx} className="space-y-2">
+										<Label>{field.label}</Label>
+										<div className="flex items-center gap-3">
+											<Input
+												type="number"
+												min={1}
+												max={max}
+												value={String(val ?? rating ?? "")}
+												onChange={(e) => {
+													const num = Number(e.target.value);
+													handleFieldChange(key, num);
+													setRating(num);
+												}}
+												className="w-20"
+											/>
+											<span className="text-xs text-muted-foreground">
+												{field.required ? "required" : "optional"}
+											</span>
+										</div>
+									</div>
+								);
+							}
+							if (field.type === "checkbox") {
+								return (
+									<div key={key + idx} className="space-y-2">
+										<Label>{field.label}</Label>
+										<div className="flex flex-col space-y-2">
+											{(field.options || []).map((opt, oIdx) => {
+												const optVal = String(opt);
+												return (
+													<label key={oIdx} className="flex items-center gap-2">
+														<input
+															type={field.type === "checkbox" ? "checkbox" : "radio"}
+															name={key}
+															checked={
+																field.type === "checkbox"
+																	? Array.isArray(val) && val.includes(opt)
+																	: String(val) === optVal
+															}
+															onChange={(e) => {
+																if (field.type === "checkbox") {
+																	const arr = Array.isArray(val) ? [...val] : [];
+																	if (e.currentTarget.checked) arr.push(opt);
+																	else {
+																		const idxRem = arr.findIndex((x) => x === opt);
+																		if (idxRem >= 0) arr.splice(idxRem, 1);
+																	}
+																	handleFieldChange(key, arr);
+																} else {
+																	handleFieldChange(key, opt);
+																}
+															}}
+														/>
+														<span className="text-sm">{String(opt)}</span>
+													</label>
+												);
+											})}
+										</div>
+									</div>
+								);
+							}
+
+							return (
+								<div key={key + idx} className="space-y-2">
+									<Label>{field.label}</Label>
+									<Textarea
+										value={String(val ?? "")}
+										onChange={(e) => handleFieldChange(key, e.target.value)}
+										placeholder={`Enter ${field.label}`}
+										rows={4}
+									/>
+								</div>
+							);
+						})
+					) : (
+						<>
+							<div className="space-y-2">
+								<Label>Rating *</Label>
+								<RatingInput rating={rating} onRatingChange={setRating} />
+							</div>
+
+							<div className="space-y-2">
+								<Label>Feedback *</Label>
+								<Textarea
+									value={feedbackValues["notes"] ?? ""}
+									onChange={(e) => handleFieldChange("notes", e.target.value)}
+									placeholder="Enter your feedback about the candidate's performance..."
+									rows={6}
+								/>
+							</div>
+						</>
+					)}
 
 					<div className="flex flex-col gap-3">
 						<div className="flex justify-between items-center">
@@ -1257,7 +1408,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
 	const handleSaveStageEdit = async (stageId: string, formData: IInterviewStageFormData) => {
 		try {
-			const result = await upddateInterviewStage({
+			const result = await updateInterviewStage({
 				stageId: parseInt(stageId),
 				stageData: {
 					...formData,
@@ -1639,7 +1790,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 					interview_time: interviewTime, // Extracted time
 					interview_type: interview_type,
 					status: "scheduled",
-					feedback: null,
 					rating: null,
 					created_by: createdBy,
 				};
@@ -1690,7 +1840,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 		}
 	};
 
-	const handleUpdateFeedback = async (feedback: string, rating: number) => {
+	const handleUpdateFeedback = async (feedback: Record<string, any>, rating: number) => {
 		if (!selectedCandidate) return;
 
 		try {
@@ -2306,9 +2456,15 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 																			{candidate.feedback ? (
 																				<p
 																					className="text-sm text-gray-600 truncate"
-																					title={candidate.feedback}
+																					title={
+																						typeof candidate.feedback === "string"
+																							? candidate.feedback
+																							: JSON.stringify(candidate.feedback)
+																					}
 																				>
-																					{candidate.feedback}
+																					{typeof candidate.feedback === "string"
+																						? candidate.feedback
+																						: JSON.stringify(candidate.feedback)}
 																				</p>
 																			) : (
 																				<p className="text-sm text-gray-400 italic">
@@ -2803,6 +2959,13 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			{/* Dialogs */}
 			<FeedbackDialog
 				candidate={selectedCandidate}
+				feedbackFields={
+					selectedCandidate?.interview
+						? (jobPositionAdvert?.interview_stages as IInterviewStage[] | undefined)?.find(
+								(s) => s.id === selectedCandidate.interview.interview_stage,
+							)?.feedback_fields
+						: undefined
+				}
 				onSave={handleUpdateFeedback}
 				isOpen={isFeedbackDialogOpen}
 				onClose={() => {

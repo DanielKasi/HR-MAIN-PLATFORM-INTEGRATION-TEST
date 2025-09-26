@@ -40,6 +40,7 @@ import {
 	Search,
 	CalendarDays,
 	Loader2,
+	Loader,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
@@ -107,11 +108,16 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import CountrySelect from "@/components/common/country-select";
-import { createInterviewStage, getInterviewStages, createInterview } from "@/lib/utils";
+import { getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { getFileUrl } from "@/lib/helpers";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
+import FixedLoader from "@/components/fixed-loader";
+import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 
 const statusColors = {
 	new: "bg-blue-100 text-blue-800",
@@ -152,6 +158,8 @@ export default function ApplicationsPage() {
 		{},
 	);
 
+	const [isFetchingInterviewData, setIsFetchingInterviewData] = useState(false);
+
 	// const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
 	const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
@@ -172,6 +180,7 @@ export default function ApplicationsPage() {
 		status: "scheduled",
 		job_position_application: 0,
 		interview_time: "",
+		feedback: {},
 	});
 	// const [isSchedulingInterview, setisSchedulingInterview] = useState(false);
 	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
@@ -179,9 +188,8 @@ export default function ApplicationsPage() {
 		level: 1,
 		interviewers: [],
 		job_position_advert: 0,
+		feedback_fields: [],
 	});
-
-	const [stageErrors, setStageErrors] = useState<any>({});
 
 	const [interviewFormData, setInterviewFormData] = useState<IInterviewFormData>({
 		interview_stage: 0,
@@ -190,21 +198,13 @@ export default function ApplicationsPage() {
 		location: "",
 		interview_type: "in_person",
 		status: "scheduled",
-		feedback: "",
+		feedback: {},
 		rating: undefined,
 		job_position_application: 0,
 	});
 
 	const [interviewErrors, setInterviewErrors] = useState<any>({});
 	const [ordering, setOrdering] = useState("");
-
-	// Add these helper functions
-	const updateStageFormData = (field: keyof typeof stageFormData, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
 
 	const updateInterviewFormData = (field: string, value: any) => {
 		setInterviewFormData((prev) => ({ ...prev, [field]: value }));
@@ -215,6 +215,7 @@ export default function ApplicationsPage() {
 		if (!selectedInstitution) return;
 
 		try {
+			setIsFetchingInterviewData(true);
 			const stagesResponse = await getInterviewStages({ institutionId: selectedInstitution.id });
 
 			let stagesArray: IInterviewStage[] = [];
@@ -253,67 +254,8 @@ export default function ApplicationsPage() {
 			}));
 		} catch (error) {
 			toast.error("Failed to load interview data");
-		}
-	};
-
-	const handleCreateInterviewStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-
-		if (!selectedInstitution || !selectedApplicationForInterview) {
-			toast.error("Missing organization or application information");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const stageDataWithJobAdvert = {
-				...stageFormData,
-				job_position_advert: selectedApplicationForInterview.job_position_advert,
-				level: interviewStages.length + 1,
-			};
-
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageDataWithJobAdvert,
-			});
-
-			if (newStage) {
-				setStageFormData({
-					name: "",
-					level: 1,
-					interviewers: [],
-					job_position_advert: selectedApplicationForInterview.job_position_advert,
-				});
-				setStageErrors({});
-				clearAllFilters();
-				setShowCreateStageDialog(false);
-				await fetchInterviewData();
-				toast.success("Interview stage created successfully!");
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
 		} finally {
-			setIsCreatingStage(false);
+			setIsFetchingInterviewData(false);
 		}
 	};
 
@@ -396,7 +338,7 @@ export default function ApplicationsPage() {
 					location: "",
 					interview_type: "in_person",
 					status: "scheduled",
-					feedback: "",
+					feedback: {},
 					job_position_application: 0,
 				});
 				setInterviewErrors({});
@@ -1074,13 +1016,6 @@ export default function ApplicationsPage() {
 				selectedApplications.find((s_app) => s_app.id === app?.id) && app?.status === "shortlisted",
 		);
 
-		if (!shortlistedApps.length) {
-			toast.error("No shortlisted applications selected");
-
-			return;
-		}
-
-		// Validate form
 		const errors: any = {};
 
 		if (!bulkInterviewFormData.interview_stage) {
@@ -1109,6 +1044,8 @@ export default function ApplicationsPage() {
 		setIsSchedulingInterview(true);
 
 		try {
+			if (selectedApplicationForInterview) {
+			}
 			const interviewPromises = shortlistedApps
 				.map(async (application, index) => {
 					// Calculate interview time (30 minutes apart)
@@ -1124,6 +1061,15 @@ export default function ApplicationsPage() {
 						interviewTime = `${hours}:${minutes}`;
 					}
 					if (application) {
+						const feedbackPayload =
+							showScheduleInterviewDialog.type === "single"
+								? interviewFormData.feedback || bulkInterviewFormData.feedback || undefined
+								: bulkInterviewFormData.feedback || undefined;
+						const ratingPayload =
+							showScheduleInterviewDialog.type === "single"
+								? (interviewFormData.rating ?? bulkInterviewFormData.rating ?? undefined)
+								: (bulkInterviewFormData.rating ?? undefined);
+
 						const createData: IInterviewFormData = {
 							job_position_application: application.id,
 							interview_stage: bulkInterviewFormData.interview_stage,
@@ -1132,8 +1078,8 @@ export default function ApplicationsPage() {
 							interview_time: interviewTime,
 							interview_type: bulkInterviewFormData.interview_type,
 							status: bulkInterviewFormData.status || "scheduled",
-							feedback: undefined,
-							rating: undefined,
+							feedback: feedbackPayload,
+							rating: ratingPayload,
 							created_by: userData.id,
 						};
 
@@ -1174,7 +1120,7 @@ export default function ApplicationsPage() {
 						job_position_application: 0,
 						interview_time: "",
 						status: "scheduled",
-						feedback: "",
+						feedback: {},
 						rating: undefined,
 					});
 				}
@@ -1561,7 +1507,7 @@ export default function ApplicationsPage() {
 	}
 
 	return (
-		<div className="grid grid-cols-1 w-full h-full bg-white p-3 md:p-4 lg:p-8 gap-4 rounded-lg">
+		<div className="grid grid-cols-1 w-full h-full bg-white p-3 md:p-4 lg:p-8 gap-4 rounded-lg relative">
 			<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ">
 				<div className="flex flex-col">
 					<h1 className="text-lg sm:text-2xl md:text-3xl font-bold whitespace-nowrap">
@@ -1776,7 +1722,11 @@ export default function ApplicationsPage() {
 										onClick={() => handleBulkAction("schedule_interview")}
 										className="text-blue-600 border-blue-200 hover:bg-blue-50"
 									>
-										<Calendar className="h-4 w-4 mr-2" />
+										{isFetchingInterviewData ? (
+											<Loader className="animate-spin" />
+										) : (
+											<Calendar className="h-4 w-4 mr-2" />
+										)}
 										Schedule Interview
 										{selectedApplications.filter((appl) => {
 											const app = applications.find((a) => a.id === appl.id);
@@ -2850,7 +2800,7 @@ export default function ApplicationsPage() {
 
 					{/* Create Interview Stage Button */}
 
-					<form onSubmit={handleSubmitInterviews} className="py-8 space-y-6">
+					<form onSubmit={handleSubmitInterviews} className="py-8 space-y-6 px-3">
 						{/* Form Fields - Responsive Grid */}
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[60svh] overflow-y-auto">
 							{/* Interview Stage */}
@@ -2908,6 +2858,117 @@ export default function ApplicationsPage() {
 										)}
 									</SelectContent>
 								</Select>
+
+								{interviewStages
+									.find((stage) => stage.id === bulkInterviewFormData.interview_stage)
+									?.feedback_fields?.map((field, idx) => {
+										const fieldKey = field.label.toLowerCase().trim().replace(/\s+/g, "_");
+
+										// Helper to read/write nested feedback object
+										const readFeedbackValue = () =>
+											bulkInterviewFormData.feedback
+												? bulkInterviewFormData.feedback[fieldKey]
+												: undefined;
+
+										const writeFeedbackValue = (val: any) => {
+											setBulkInterviewFormData((prev) => ({
+												...prev,
+												feedback: {
+													...(prev.feedback || {}),
+													[fieldKey]: val,
+												},
+											}));
+											setInterviewFormData((prev) => ({
+												...prev,
+												feedback: {
+													...(prev.feedback || {}),
+													[fieldKey]: val,
+												},
+											}));
+										};
+
+										if (field.type === "rating") {
+											const max =
+												Array.isArray(field.options) && field.options.length > 0
+													? Math.max(...(field.options as number[]))
+													: 10;
+											const current = Number(readFeedbackValue() || 1);
+											const ratingValue = [Number(current || 1)];
+
+											return (
+												<div key={field.label + "_rating_" + idx} className="space-y-3">
+													<Label className="text-sm font-medium text-slate-700">
+														{field.label}: {ratingValue[0]}/{max}
+													</Label>
+													<div className="px-3">
+														<Slider
+															key={`rating-slider-${fieldKey}`}
+															value={ratingValue}
+															onValueChange={(val: number[]) => writeFeedbackValue(Number(val[0]))}
+															max={max}
+															min={1}
+															step={1}
+															className="w-full"
+															disabled={isFetchingInterviewData}
+														/>
+														<div className="flex justify-between text-xs text-slate-500 mt-1">
+															<span>Poor (1)</span>
+															<span>Average {Math.ceil(max / 2)}</span>
+															<span>Excellent ({max})</span>
+														</div>
+													</div>
+												</div>
+											);
+										}
+										if (field.type === "checkbox") {
+											// treat 'checkbox' here as single-choice (radio) as previously implemented
+											const selected = String(readFeedbackValue() ?? "");
+											return (
+												<div key={field.label + "_choice_" + idx} className="space-y-4">
+													<Label className="text-sm text-gray-800 capitalize">
+														{field.label.replace("_", " ")}
+													</Label>
+													<RadioGroup
+														value={selected}
+														onValueChange={(val) => writeFeedbackValue(val)}
+														className="flex flex-col space-y-2"
+													>
+														{(field.options || []).map((option, optionIdx) => {
+															const optionId = `option_${fieldKey}_${optionIdx}`;
+															return (
+																<div key={optionId} className="flex items-center space-x-2">
+																	<RadioGroupItem value={String(option)} id={optionId} />
+																	<Label htmlFor={optionId} className="text-sm">
+																		{String(option)}
+																	</Label>
+																</div>
+															);
+														})}
+													</RadioGroup>
+												</div>
+											);
+										}
+
+										if (field.type === "text") {
+											const value = readFeedbackValue() || "";
+											return (
+												<div key={field.label + "_text_" + idx} className="space-y-2">
+													<Label className="block text-sm font-medium text-gray-800">
+														{field.label}
+													</Label>
+													<Input
+														required={field.required}
+														value={value}
+														onChange={(e) => writeFeedbackValue(e.target.value)}
+														className="bg-white border-gray-300"
+													/>
+												</div>
+											);
+										}
+
+										return null;
+									})}
+
 								{interviewErrors.interview_stage && (
 									<p className="text-sm text-destructive">{interviewErrors.interview_stage}</p>
 								)}
@@ -3056,78 +3117,21 @@ export default function ApplicationsPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* Create Interview Stage Dialog */}
-			<Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
-				<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle>Create Interview Stage</DialogTitle>
-						<DialogDescription>
-							Create a new interview stage for the selected applications.
-						</DialogDescription>
-					</DialogHeader>
+			{selectedApplicationForInterview && (
+				<CreateInterviewStageDialog
+					isOpen={showCreateStageDialog}
+					onOpenChange={setShowCreateStageDialog}
+					jobPositionId={selectedApplicationForInterview.job_position_advert}
+					jobPositionName={selectedApplicationForInterview.job_position_advert_job_details.name}
+					existingStagesCount={interviewStages.length}
+					onSuccess={async (newStage) => {
+						await fetchInterviewData();
+					}}
+					showTrigger={false}
+				/>
+			)}
 
-					<form onSubmit={handleCreateInterviewStage} className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="stage_name">Stage Name *</Label>
-							<Input
-								id="stage_name"
-								value={stageFormData.name}
-								onChange={(e) => updateStageFormData("name", e.target.value)}
-								placeholder="e.g., Technical Interview, HR Round"
-								className={stageErrors.name ? "border-destructive" : ""}
-							/>
-							{stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="stage_interviewers">Interviewers *</Label>
-							<div className="w-full max-w-full overflow-hidden">
-								<EmployeeSearchableSelect
-									value={stageFormData.interviewers.map((id) => id.toString())}
-									onValueChange={(values) => {
-										const numberValues = values.map((v) => Number(v));
-										const uniqueValues = [...new Set(numberValues)];
-
-										updateStageFormData("interviewers", uniqueValues);
-									}}
-									disabled={isCreatingStage}
-									placeholder="Search and select interviewers"
-									showEmployeeId={false}
-									showDepartment={false}
-									multiple={true}
-								/>
-							</div>
-							{stageErrors.interviewers && (
-								<p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-							)}
-						</div>
-
-						<div className="flex justify-end gap-2 pt-4">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setShowCreateStageDialog(false)}
-								disabled={isCreatingStage}
-							>
-								Cancel
-							</Button>
-							<Button type="submit" disabled={isCreatingStage}>
-								{isCreatingStage ? (
-									<>
-										<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-										Creating...
-									</>
-								) : (
-									<>
-										<Check className="h-4 w-4 mr-2" />
-										Create Stage
-									</>
-								)}
-							</Button>
-						</div>
-					</form>
-				</DialogContent>
-			</Dialog>
+			{isFetchingInterviewData && <FixedLoader fixed={false} className="!bg-black/5" />}
 		</div>
 	);
 }
