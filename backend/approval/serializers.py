@@ -90,7 +90,6 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
 
 class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
     approver_group = serializers.SerializerMethodField(read_only=True)
-    approver_users = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelApprovers
@@ -99,14 +98,11 @@ class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
     def get_approver_group(self, obj):
         from .serializers import ApproverGroupSerializer
         return ApproverGroupSerializer(obj.approver_group, context=self.context).data
-    
-    def get_approver_user(self, obj):
-        from users.serializers import ProfileSerializer
-        return ProfileSerializer(obj.approver_group.users.all(), many=True, context=self.context).data
+ 
+
 
 class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
     approver_group = serializers.SerializerMethodField(read_only=True)
-    approver_users = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelOverriders
@@ -116,9 +112,7 @@ class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
         from .serializers import ApproverGroupSerializer
         return ApproverGroupSerializer(obj.approver_group, context=self.context).data
     
-    def get_approver_user(self, obj):
-        from users.serializers import ProfileSerializer
-        return ProfileSerializer(obj.approver_group.users.all(), many=True, context=self.context).data
+
 
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
     approvers = serializers.PrimaryKeyRelatedField(
