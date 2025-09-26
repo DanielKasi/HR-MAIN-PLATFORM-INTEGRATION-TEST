@@ -49,6 +49,7 @@ class Institution(SoftDeletableTimeStampedModel):
     setup = models.BooleanField(default=False)
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)
+    country = models.CharField(max_length=255)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     # zoom_account_id = models.CharField(max_length=100, blank=True, null=True)

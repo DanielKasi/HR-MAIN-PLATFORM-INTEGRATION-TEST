@@ -354,7 +354,7 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
 
         announcements = Announcement.objects.filter(
             deleted_at__isnull=True,
-            target_employees__institution=institution
+            target_employees__department__institution=institution
         ).distinct()
 
         search_query = request.query_params.get("search", None)
