@@ -20,6 +20,7 @@ from .models import (
     Employee,
     EmployeeAttendance,
     EmployeeCompanyEmail,
+    EmployeeMonthlyHourAccount,
     EmployeeType,
     NextOfKin,
     WorkType,
@@ -32,6 +33,7 @@ from .serializers import (
     DocumentRequestSerializer,
     EmployeeAttendanceSerializer,
     EmployeeCompanyEmailSerializer,
+    EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
     QualificationAwardSerializer,
@@ -4241,3 +4243,66 @@ class DocumentUploadView(APIView):
             document.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     
+
+
+class EmployeeMonthlyHourAccountListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['year', 'month', 'total_worked_hours', 'total_overtime_hours']
+    default_ordering = ['-year', '-month']
+
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by employee name"},
+            {"name": "year", "type": "int", "description": "Filter by year"},
+            {"name": "month", "type": "int", "description": "Filter by month"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'year,-month,total_worked_hours')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=EmployeeMonthlyHourAccountSerializer(many=True),
+                description="List of employee monthly hour accounts.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Employee Hour Accounts"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        year_filter = request.query_params.get("year", None)
+        month_filter = request.query_params.get("month", None)
+
+        try:
+            institution = user.institution
+        except AttributeError:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        accounts = EmployeeMonthlyHourAccount.objects.filter(
+            employee__institution=institution
+        )
+
+        if search_query:
+            accounts = accounts.filter(
+                Q(employee__user__fullname__icontains=search_query)
+            )
+
+        if year_filter:
+            accounts = accounts.filter(year=year_filter)
+
+        if month_filter:
+            accounts = accounts.filter(month=month_filter)
+
+        try:
+            accounts = self.apply_sorting(accounts, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(accounts, request)
+        serializer = EmployeeMonthlyHourAccountSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)

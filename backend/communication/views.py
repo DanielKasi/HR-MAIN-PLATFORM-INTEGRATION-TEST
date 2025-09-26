@@ -13,8 +13,19 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
 from typing import Optional
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from django.db import transaction
+from django.db.models import Q
 
+from employee.models import Employee
+from institution.models import Institution
+from utilities.sortable_api import SortableAPIMixin
+from .models import Acknowledgment, Announcement
+from .serializers import AcknowledgmentSerializer, AnnouncementSerializer
 from utilities.pagination import CustomPageNumberPagination
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from django.utils import timezone
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -280,3 +291,233 @@ class GetAllNotifications(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AnnouncementListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['title', 'created_at', 'requires_acknowledgment', 'approval_status']
+    default_ordering = ['-created_at']
+
+    @extend_schema(
+        request=AnnouncementSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def post(self, request):
+        serializer = AnnouncementSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            instance = serializer.save()
+            for employee in instance.get_target_employees():
+                Acknowledgment.objects.get_or_create(employee=employee, announcement=instance)
+            instance.confirm_create()  
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by title or content"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "type", "type": "str", "description": "Filter by announcement type (e.g., 'announcementtype')"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'title,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer(many=True),
+                description="List of announcements.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Announcements"],
+    )
+    def get(self, request):
+        user = request.user
+        try:
+            employee = Employee.objects.get(user=user)
+            institution = employee.get_institution()
+        except (Employee.DoesNotExist, Institution.DoesNotExist):
+            return Response(
+                {"detail": "Institution or employee not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        announcements = Announcement.objects.filter(
+            deleted_at__isnull=True,
+            target_employees__institution=institution
+        ).distinct()
+
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        type_filter = request.query_params.get("type", None)
+
+        if search_query:
+            announcements = announcements.filter(
+                Q(title__icontains=search_query) | Q(content__icontains=search_query)
+            )
+
+        if created_at:
+            announcements = announcements.filter(created_at=created_at)
+
+        if type_filter:
+            announcements = announcements.filter(announcement_type__model=type_filter)
+
+        try:
+            announcements = self.apply_sorting(announcements, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(announcements, request)
+        serializer = AnnouncementSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)   
+
+class AnnouncementDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    def get(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        serializer = AnnouncementSerializer(announcement)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def delete(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        announcement.approval_status = 'under_deletion'
+        announcement.save(update_fields=['approval_status'])
+        announcement.confirm_delete()
+        return Response(
+            {"message": "Announcement submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def patch(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        announcement.approval_status = 'under_update'
+        serializer = AnnouncementSerializer(announcement, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            announcement.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AcknowledgmentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            {"name": "acknowledged", "type": "bool", "description": "Filter by acknowledgment status (true/false)"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=AcknowledgmentSerializer(many=True),
+                description="List of acknowledgments for the user.",
+            ),
+            404: OpenApiResponse(description="Employee not found."),
+        },
+        tags=["Acknowledgments"],
+    )
+    def get(self, request):
+        try:
+            employee = Employee.objects.get(user=request.user)
+            acknowledgments = Acknowledgment.objects.filter(
+                employee=employee, deleted_at__isnull=True
+            )
+
+            acknowledged_filter = request.query_params.get("acknowledged", None)
+            if acknowledged_filter is not None:
+                acknowledgments = acknowledgments.filter(acknowledged=acknowledged_filter.lower() == 'true')
+
+            paginator = CustomPageNumberPagination()
+            paginated_qs = paginator.paginate_queryset(acknowledgments, request)
+            serializer = AcknowledgmentSerializer(paginated_qs, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+class AcknowledgeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Acknowledgment recorded.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Invalid acknowledgment.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Employee or acknowledgment not found.",
+            ),
+        },
+        tags=["Acknowledgments"],
+    )
+    @transaction.atomic
+    def post(self, request):
+        ack_id = request.data.get('ack_id')
+        try:
+            employee = Employee.objects.get(user=request.user)
+            acknowledgment = Acknowledgment.objects.get(id=ack_id, employee=employee, deleted_at__isnull=True)
+            acknowledgment.acknowledged = True
+            acknowledgment.acknowledged_at = timezone.now()
+            acknowledgment.save()
+            return Response({"detail": "Acknowledgment recorded"}, status=status.HTTP_200_OK)
+        except (Employee.DoesNotExist, Acknowledgment.DoesNotExist):
+            return Response({"detail": "Invalid acknowledgment"}, status=status.HTTP_400_BAD_REQUEST)

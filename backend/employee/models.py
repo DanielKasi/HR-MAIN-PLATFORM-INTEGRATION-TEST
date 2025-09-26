@@ -919,7 +919,7 @@ class EmployeeShift(BaseApprovableModel):
         return self.employee.get_institution()
 
 
-class EmployeeMonthlyHourAccount(models.Model):
+class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="monthly_hour_accounts"
     )

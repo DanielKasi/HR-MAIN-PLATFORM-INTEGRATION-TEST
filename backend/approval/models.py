@@ -1,5 +1,4 @@
 from django.db import models
-from communication.views import add_notification
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -275,6 +274,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 object_desc = str(content_object) if content_object else "an object"
                 message = f"A new approval task is pending for you: Approve {object_desc} at level {next_task.level.level}."
                 for approver_user in next_task.level.get_approver_users():
+                    from communication.views import add_notification
                     add_notification(
                         user_id=approver_user.id,
                         message=message,
@@ -330,6 +330,8 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             # Notify task rejection and terminated tasks
             object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
+                from communication.views import add_notification
+
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been rejected at level {self.level.level}.",
@@ -375,6 +377,8 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             # Notify approval completion due to override
             object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
+                from communication.views import add_notification
+
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been overridden and completed at level {self.level.level}.",
