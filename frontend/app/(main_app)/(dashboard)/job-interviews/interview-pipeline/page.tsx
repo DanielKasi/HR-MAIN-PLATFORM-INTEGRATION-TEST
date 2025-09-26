@@ -79,13 +79,14 @@ import {
 	updateInterview,
 	createInterview,
 	bulkCreateOnBoarding,
-	upddateInterviewStage,
+	updateInterviewStage,
 } from "@/lib/utils";
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
+import { FeedbackDialog } from "../../job-adverts/[id]/interview-stages/page";
 
 interface InterviewHistoryEntry {
 	stage_id: number;
@@ -95,7 +96,7 @@ interface InterviewHistoryEntry {
 	interview_date?: string;
 	interview_time?: string;
 	location?: string;
-	feedback?: string;
+	feedback?: Record<string, string> | null;
 	rating?: number;
 	status: string;
 	created_at?: string;
@@ -138,7 +139,7 @@ interface InterviewCandidate {
 	address: string;
 	country: string;
 	source: string;
-	feedback?: string;
+	feedback?: Record<string, string> | null;
 	rating?: number;
 	interview_date?: string;
 	interview_time?: string;
@@ -252,7 +253,11 @@ const buildCandidateHistory = (
 				: 0;
 
 		// Completion rate
-		const feedbacks = interview_history.filter((h) => h.feedback && h.feedback.trim().length > 0);
+		const feedbacks = interview_history.filter((h) => {
+			if (!h.feedback) return false;
+			if (typeof h.feedback === "object") return Object.keys(h.feedback).length > 0;
+			return false;
+		});
 		const completion_rate =
 			interview_history.length > 0
 				? Math.round((feedbacks.length / interview_history.length) * 100)
@@ -371,201 +376,6 @@ const RatingInput = ({
 			/>
 			<p className="text-xs text-muted-foreground">Rate 1-10</p>
 		</div>
-	);
-};
-
-const FeedbackDialog = ({
-	candidate,
-	onSave,
-	isOpen,
-	onClose,
-	nextStage,
-	onReject,
-	onScheduleAndMove,
-}: {
-	candidate: InterviewCandidate | null;
-	onSave: (feedback: string, rating: number) => void;
-	isOpen: boolean;
-	onClose: () => void;
-	nextStage?: ProcessedStage | null;
-	onReject?: () => void;
-	onScheduleAndMove?: () => void;
-}) => {
-	const [feedback, setFeedback] = useState("");
-	const [rating, setRating] = useState(0);
-	const [isSaving, setIsSaving] = useState(false);
-	const [action, setAction] = useState<"save" | "cancel" | "schedule" | null>(null);
-
-	useEffect(() => {
-		if (candidate) {
-			setFeedback(candidate.feedback || "");
-			setRating(candidate.rating || 0);
-		}
-	}, [candidate]);
-
-	if (!candidate) return null;
-
-	const handleSave = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating");
-
-			return;
-		}
-
-		setIsSaving(true);
-		try {
-			await onSave(feedback, rating);
-			onClose();
-			toast.success("Feedback updated successfully");
-		} catch (error) {
-			toast.error("Failed to update feedback");
-		} finally {
-			setIsSaving(false);
-			setAction(null);
-		}
-	};
-
-	const handleScheduleAndMove = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating before scheduling");
-
-			return;
-		}
-
-		setIsSaving(true);
-		setAction("schedule");
-		try {
-			await onSave(feedback, rating);
-			if (onScheduleAndMove) {
-				onScheduleAndMove();
-			}
-			onClose();
-		} catch (error) {
-			toast.error("Failed to save feedback");
-		} finally {
-			setIsSaving(false);
-			setAction(null);
-		}
-	};
-
-	const handleReject = async () => {
-		if (!feedback.trim()) {
-			toast.error("Please provide feedback for rejection");
-
-			return;
-		}
-
-		setIsSaving(true);
-		setAction("cancel");
-		try {
-			await onSave(feedback, rating || 1);
-			if (onReject) {
-				await onReject();
-			}
-			onClose();
-			toast.success("Candidate rejected");
-		} catch (error) {
-			toast.error("Failed to reject candidate");
-		} finally {
-			setIsSaving(false);
-			setAction(null);
-		}
-	};
-
-	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="max-w-2xl">
-				<DialogHeader>
-					<DialogTitle>Provide Feedback</DialogTitle>
-					<DialogDescription>
-						Provide feedback and rating for {candidate.applicant_name}
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="space-y-6">
-					<div className="space-y-2">
-						<Label>Rating *</Label>
-						<RatingInput rating={rating} onRatingChange={setRating} />
-					</div>
-
-					<div className="space-y-2">
-						<Label>Feedback *</Label>
-						<Textarea
-							value={feedback}
-							onChange={(e) => setFeedback(e.target.value)}
-							placeholder="Enter your feedback about the candidate's performance..."
-							rows={6}
-						/>
-					</div>
-
-					<div className="flex flex-col gap-3">
-						<div className="flex justify-between items-center">
-							<div className="flex gap-2">
-								<Button variant="outline" onClick={onClose} disabled={isSaving}>
-									Cancel
-								</Button>
-								<Button
-									variant="outline"
-									onClick={() => {
-										setAction("save");
-										handleSave();
-									}}
-									disabled={isSaving}
-								>
-									{isSaving && action === "save" ? (
-										<>
-											<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-											Saving...
-										</>
-									) : (
-										<>
-											<Save className="h-4 w-4 mr-2" />
-											Save Only
-										</>
-									)}
-								</Button>
-							</div>
-
-							<div className="flex gap-2">
-								<Button variant="destructive" onClick={handleReject} disabled={isSaving}>
-									{isSaving && action === "cancel" ? (
-										<>
-											<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-											Rejecting...
-										</>
-									) : (
-										<>
-											<XCircle className="h-4 w-4 mr-2" />
-											Reject
-										</>
-									)}
-								</Button>
-
-								{nextStage && (
-									<Button
-										onClick={handleScheduleAndMove}
-										disabled={isSaving}
-										className="bg-green-600 hover:bg-green-700"
-									>
-										{isSaving && action === "schedule" ? (
-											<>
-												<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-												Processing...
-											</>
-										) : (
-											<>
-												<Calendar className="h-4 w-4 mr-2" />
-												Schedule & Move to {nextStage.name}
-											</>
-										)}
-									</Button>
-								)}
-							</div>
-						</div>
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
 	);
 };
 
@@ -895,7 +705,7 @@ export default function JobSpecificInterviewPipeline() {
 
 	const handleSaveStageEdit = async (stageId: string, formData: IInterviewStageFormData) => {
 		try {
-			const result = await upddateInterviewStage({
+			const result = await updateInterviewStage({
 				stageId: parseInt(stageId),
 				stageData: {
 					...formData,
@@ -1035,24 +845,56 @@ export default function JobSpecificInterviewPipeline() {
 	}, [selectedInstitution]);
 
 	// Candidate management functions
-	const handleSelectCandidate = (candidateKey: string, checked: boolean) => {
-		// Extract candidate ID from the key (format: "candidateId" or "candidateId-interviewId")
-		const candidateId = parseInt(candidateKey.split("-")[0]);
 
-		// Find the candidate to validate
-		const candidate = filteredCandidates.find((c) => c.id === candidateId);
+	const handleSelectCandidate = (candidateKey: number, checked: boolean) => {
+		// Normalize id to number
+		const candidateId = Number(candidateKey);
+
+		// Try to find candidate in visible stage lists first
+		const allStageCandidates: InterviewCandidate[] = processedStages.flatMap((s) =>
+			Array.isArray(s.candidates) ? (s.candidates as InterviewCandidate[]) : [],
+		);
+
+		let candidate = allStageCandidates.find((c) => Number(c.id) === candidateId);
+
+		// Fallback: try to find from interviews array and map to InterviewCandidate shape
+		if (!candidate) {
+			const interview = interviews.find(
+				(i) => Number(i.job_position_application) === candidateId || Number(i.id) === candidateId,
+			);
+
+			if (interview) {
+				candidate = {
+					id: interview.job_position_application,
+					applicant_name: interview.job_position_application_details?.applicant_name || "Unknown",
+					applicant_email: interview.job_position_application_details?.applicant_email || "",
+					applicant_phone: interview.job_position_application_details?.applicant_phone || "",
+					gender: interview.job_position_application_details?.gender || "",
+					state: interview.job_position_application_details?.state || "",
+					address: interview.job_position_application_details?.address || "",
+					country: interview.job_position_application_details?.country || "",
+					source: interview.job_position_application_details?.source || "",
+					feedback: interview.feedback || undefined,
+					rating: interview.rating || undefined,
+					interview_date: interview.interview_date,
+					interview_time: interview.interview_time,
+					location: interview.location,
+					interview_id: interview.id,
+					interview: interview,
+					status: interview.status || "scheduled",
+				};
+			}
+		}
 
 		if (checked) {
 			if (!candidate) {
 				toast.error("Candidate not found");
-
 				return;
 			}
 
 			// Check if candidate is rejected
 			if (isCandidateRejected(candidate)) {
 				toast.error("Cannot select rejected or cancelled candidates");
-
 				return;
 			}
 
@@ -1061,20 +903,21 @@ export default function JobSpecificInterviewPipeline() {
 				toast.error(
 					"This candidate already has feedback and rating. Use individual actions to onboard or move them.",
 				);
-
 				return;
 			}
 
 			// Only allow selection if candidate needs feedback
 			if (!canCandidateBeSelected(candidate)) {
 				toast.error("This candidate cannot be selected for bulk actions");
-
 				return;
 			}
 
-			setSelectedCandidates((prev) => [...prev, candidateId]);
+			setSelectedCandidates((prev) => {
+				if (prev.includes(candidateId)) return prev;
+				return [...prev, candidateId];
+			});
 		} else {
-			setSelectedCandidates((prev) => prev.filter((id) => id !== candidateId));
+			setSelectedCandidates((prev) => prev.filter((id) => Number(id) !== candidateId));
 		}
 	};
 
@@ -1092,7 +935,7 @@ export default function JobSpecificInterviewPipeline() {
 			}
 
 			// Select only candidates who need feedback
-			const candidateIds = candidatesNeedingFeedback.map((candidate) => candidate.id);
+			const candidateIds = candidatesNeedingFeedback.map((candidate) => Number(candidate.id));
 
 			setSelectedCandidates(candidateIds);
 
@@ -1110,7 +953,7 @@ export default function JobSpecificInterviewPipeline() {
 		}
 	};
 
-	const handleUpdateFeedback = async (feedback: string, rating: number) => {
+	const handleUpdateFeedback = async (feedback: Record<string, any>, rating: number) => {
 		if (!selectedCandidate) return;
 
 		try {
@@ -1120,11 +963,11 @@ export default function JobSpecificInterviewPipeline() {
 				throw new Error("No interview found for this candidate");
 			}
 
-			// Only update feedback and rating, keep status as is (should remain "scheduled")
+			// ONLY update feedback and rating, DO NOT change status
 			const interviewData = {
 				feedback: feedback,
 				rating: rating,
-				// DO NOT change status - it should remain "scheduled" until onboarded
+				// DO NOT include status - it remains "scheduled"
 			};
 
 			const result = await updateInterview({
@@ -1136,7 +979,7 @@ export default function JobSpecificInterviewPipeline() {
 				throw new Error("Failed to update interview feedback");
 			}
 
-			// Update local state
+			// Update local state - keep status as scheduled
 			setInterviews((prev) =>
 				prev.map((interview) => {
 					if (interview.id === interviewId) {
@@ -1144,7 +987,7 @@ export default function JobSpecificInterviewPipeline() {
 							...interview,
 							feedback: result.feedback,
 							rating: result.rating,
-							// Keep the original status, don't change it
+							// Keep original status (should be "scheduled")
 							status: interview.status,
 						};
 					}
@@ -1165,7 +1008,7 @@ export default function JobSpecificInterviewPipeline() {
 				};
 			});
 
-			await fetchData(); // Refresh data
+			await fetchData();
 		} catch (error) {
 			throw error;
 		}
@@ -1202,12 +1045,12 @@ export default function JobSpecificInterviewPipeline() {
 		candidates: InterviewCandidate[],
 		scheduleData: InterviewScheduleData,
 	) => {
-		if (!selectedInstitution || !nextStageForActive || !selectedJobPosition) {
-			throw new Error("Missing institution, next stage, or job position/title data");
+		if (!selectedInstitution || !nextStageForActive) {
+			throw new Error("Missing institution or next stage data");
 		}
 
 		try {
-			const interviewPromises = candidates.map(async (candidate) => {
+			const interviewPromises = candidates.map(async (candidate, index) => {
 				// Extract time from datetime-local input
 				let interviewTime = "10:00:00"; // Default fallback
 				let interviewDate = scheduleData.interview_date;
@@ -1217,32 +1060,51 @@ export default function JobSpecificInterviewPipeline() {
 						const dateTime = new Date(scheduleData.interview_date);
 
 						if (!isNaN(dateTime.getTime())) {
+							// Extract time for the interview_time field
 							const hours = dateTime.getHours().toString().padStart(2, "0");
 							const minutes = dateTime.getMinutes().toString().padStart(2, "0");
 
 							interviewTime = `${hours}:${minutes}:00`;
-							interviewDate = dateTime.toISOString();
+
+							// Format date for the interview_date field (might need different format)
+							interviewDate = dateTime.toISOString(); // Full ISO format
 						}
 					} catch (error) {
 						console.error("Error parsing interview date:", error);
 					}
 				}
 
+				// Validate and clean all fields
 				const location = (scheduleData.location || "").trim() || "To be determined";
 				const interview_type = scheduleData.interview_type || "online";
-
 				const createData = {
 					job_position_application: candidate.id,
 					interview_stage: parseInt(nextStageForActive.id),
-					interview_date: interviewDate,
+					interview_date: interviewDate, // Full datetime
 					location: location,
-					interview_time: interviewTime,
+					interview_time: interviewTime, // Extracted time
 					interview_type: interview_type,
-					status: "scheduled", // New interview starts as "scheduled"
-					feedback: null,
+					status: "scheduled",
 					rating: null,
 					created_by: createdBy,
 				};
+
+				// Validation check
+				const validation = {
+					job_position_application: !!createData.job_position_application,
+					interview_stage: !!createData.interview_stage,
+					interview_date: !!createData.interview_date,
+					interview_time: !!createData.interview_time && createData.interview_time !== "",
+					location: !!createData.location && createData.location.trim() !== "",
+					interview_type: ["online", "in_person"].includes(createData.interview_type),
+					status: !!createData.status,
+				};
+
+				const failed = Object.entries(validation).filter(([key, value]) => !value);
+
+				if (failed.length > 0) {
+					throw new Error(`Missing required fields: ${failed.map(([key]) => key).join(", ")}`);
+				}
 
 				try {
 					const result = await createInterview({
@@ -1252,8 +1114,6 @@ export default function JobSpecificInterviewPipeline() {
 
 					return result;
 				} catch (apiError) {
-					console.error("Failed to create interview:", apiError);
-
 					return null;
 				}
 			});
@@ -1801,7 +1661,23 @@ export default function JobSpecificInterviewPipeline() {
 																			<MessageSquare className="h-4 w-4 text-gray-500" />
 																			<span className="font-medium text-sm">Feedback</span>
 																		</div>
-																		<p className="text-sm text-gray-700">{entry.feedback}</p>
+
+																		{typeof entry.feedback === "string" ? (
+																			<p className="text-sm text-gray-700">{entry.feedback}</p>
+																		) : (
+																			<div className="space-y-2 text-sm text-gray-700">
+																				{Object.entries(entry.feedback).map(([key, val]) => (
+																					<div key={key} className="flex justify-between">
+																						<span className="font-medium capitalize">
+																							{key.replace(/_/g, " ")}
+																						</span>
+																						<span className="ml-2 text-right">
+																							{Array.isArray(val) ? val.join(", ") : String(val)}
+																						</span>
+																					</div>
+																				))}
+																			</div>
+																		)}
 																	</div>
 																)}
 
@@ -2338,10 +2214,7 @@ export default function JobSpecificInterviewPipeline() {
 																				<Checkbox
 																					checked={selectedCandidates.includes(candidate.id)}
 																					onCheckedChange={(checked) =>
-																						handleSelectCandidate(
-																							candidate.id.toString(),
-																							checked as boolean,
-																						)
+																						handleSelectCandidate(candidate.id, checked as boolean)
 																					}
 																					disabled={!canCandidateBeSelected(candidate)}
 																					title={
@@ -2388,12 +2261,36 @@ export default function JobSpecificInterviewPipeline() {
 																			<TableCell>
 																				<div className="max-w-xs">
 																					{candidate.feedback ? (
-																						<p
-																							className="text-sm text-gray-600 truncate"
-																							title={candidate.feedback}
-																						>
-																							{candidate.feedback}
-																						</p>
+																						(() => {
+																							const title =
+																								typeof candidate.feedback === "string"
+																									? candidate.feedback
+																									: Object.entries(candidate.feedback)
+																											.map(
+																												([k, v]) =>
+																													`${k.replace(/_/g, " ")}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
+																											)
+																											.join(" • ");
+
+																							const display =
+																								typeof candidate.feedback === "string"
+																									? candidate.feedback
+																									: Object.entries(candidate.feedback)
+																											.map(
+																												([k, v]) =>
+																													`${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`,
+																											)
+																											.join("; ");
+
+																							return (
+																								<p
+																									className="text-sm text-gray-600 truncate"
+																									title={title}
+																								>
+																									{display}
+																								</p>
+																							);
+																						})()
 																					) : (
 																						<p className="text-sm text-gray-400 italic">
 																							No feedback yet
@@ -2787,10 +2684,7 @@ export default function JobSpecificInterviewPipeline() {
 																	<Checkbox
 																		checked={selectedCandidates.includes(candidate.id)}
 																		onCheckedChange={(checked) =>
-																			handleSelectCandidate(
-																				candidate.id.toString(),
-																				checked as boolean,
-																			)
+																			handleSelectCandidate(candidate.id, checked as boolean)
 																		}
 																		disabled={!canCandidateBeSelected(candidate)}
 																		title={

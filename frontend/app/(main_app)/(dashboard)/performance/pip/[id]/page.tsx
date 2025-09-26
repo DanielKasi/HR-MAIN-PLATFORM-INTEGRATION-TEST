@@ -326,7 +326,7 @@ export default function PerformanceImprovementPlanDetailPage() {
 				open={showDocumentDialog}
 				onOpenChange={setShowDocumentDialog}
 				contextId={Number(planId)}
-				context="pip"
+				context={{ type: "pip", defaultTemplate: plan.document_template }}
 			/>
 		</div>
 	);

@@ -52,14 +52,13 @@ import {
 import { SearchableSelect, SearchableSelectItem } from "@/components/searchable-select";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import PaginatedSearchableSelect from "@/components/generic/paginated-searchable-select";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 
 interface MultiInterviewFormData extends Omit<IInterviewFormData, "job_position_application"> {
-	userData: any;
 	selected_applications: number[];
 	interviewers: number[];
 	job_position_advert: number;
 	job_position: number; // Added property to fix the error
-	created_by: number;
 }
 
 interface IInterviewStageFormData {
@@ -87,8 +86,6 @@ export default function CreateInterviewPage() {
 		job_position_advert: 0,
 	});
 	const [stageErrors, setStageErrors] = useState<any>({});
-	const userData = useSelector(selectUser);
-	const createdBy = userData?.id || 0;
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const selectedBranch = useSelector(selectSelectedBranch);
@@ -100,13 +97,11 @@ export default function CreateInterviewPage() {
 		interview_time: "",
 		interview_type: "in_person",
 		status: "scheduled",
-		feedback: "",
+		feedback: {},
 		rating: undefined,
 		interviewers: [],
 		job_position_advert: 0,
-		job_position: 0, // This will be set based on selectedJobPosition
-		created_by: createdBy,
-		userData: {}, // Add the created_by property with a default value
+		job_position: 0,
 	});
 
 	// Memoize filteredInterviewStages to prevent unnecessary re-computation
@@ -381,81 +376,6 @@ export default function CreateInterviewPage() {
 		return await getPaginatedJobAdvertsFromUrl({ url });
 	};
 
-	const handleCreateStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-
-		if (!selectedInstitution) {
-			toast.error("Missing organization information");
-
-			return;
-		}
-		if (!selectedJobPosition) {
-			toast.error("Please select a job position/title first");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-		if (stageFormData.level < 1) {
-			newStageErrors.level = "Level must be at least 1";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const stageDataWithPosition = {
-				...stageFormData,
-				job_position_advert: Number(selectedJobPosition),
-			};
-
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageDataWithPosition,
-			});
-
-			if (newStage) {
-				setInterviewStages((prev) => [...prev, newStage]);
-				updateFormData("interview_stage", newStage.id);
-				setStageFormData({
-					name: "",
-					level: stageFormData.level,
-					interviewers: [],
-					job_position_advert: Number(selectedJobPosition),
-				});
-				setStageErrors({});
-				setIsCreateStageDialogOpen(false);
-				toast.success("Interview stage created successfully!");
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
-		} finally {
-			setIsCreatingStage(false);
-		}
-	};
-
-	const updateStageFormData = (field: string, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -495,7 +415,7 @@ export default function CreateInterviewPage() {
 					status: formData.status || "scheduled",
 					feedback: formData.feedback || undefined,
 					rating: formData.rating || undefined,
-					created_by: formData.created_by, // Ensure this value is set in the formData state
+					created_by: formData.created_by,
 				};
 
 				try {
@@ -801,114 +721,46 @@ export default function CreateInterviewPage() {
 							</div>
 
 							{/* Create Interview Stage Dialog */}
-							<Dialog
-								open={isCreateStageDialogOpen}
-								onOpenChange={(open) => {
-									// console.log("Dialog state changing to:", open);
-									setIsCreateStageDialogOpen(open);
-								}}
-							>
-								<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-									<DialogHeader>
-										<DialogTitle>Create Interview Stage</DialogTitle>
-										<DialogDescription>
-											Create a new interview stage for{" "}
-											{filteredGroupedApplications[Number(selectedJobPosition)]?.jobName ||
-												"the selected position"}
-											.
-										</DialogDescription>
-									</DialogHeader>
-
-									<div onClick={(e) => e.stopPropagation()}>
-										<form onSubmit={handleCreateStage} className="space-y-4">
-											<div className="space-y-2">
-												<Label htmlFor="stage_name">Stage Name *</Label>
-												<Input
-													id="stage_name"
-													value={stageFormData.name}
-													onChange={(e) => updateStageFormData("name", e.target.value)}
-													placeholder="e.g., Technical Interview, HR Round"
-													className={stageErrors.name ? "border-destructive" : ""}
-												/>
-												{stageErrors.name && (
-													<p className="text-sm text-destructive">{stageErrors.name}</p>
-												)}
-											</div>
-
-											<div className="space-y-2">
-												<Label htmlFor="stage_interviewer">Interviewers *</Label>
-												<div className="w-full max-w-full overflow-hidden">
-													<EmployeeSearchableSelect
-														value={stageFormData.interviewers.map((id) => id.toString())}
-														onValueChange={(values) => {
-															const numberValues = Array.isArray(values)
-																? values.map((v) => Number(v))
-																: [Number(values)];
-															const uniqueValues = [...new Set(numberValues)];
-
-															if (uniqueValues.length !== numberValues.length) {
-																toast.info("Duplicate interviewers removed");
-															}
-															updateStageFormData("interviewers", uniqueValues);
-														}}
-														disabled={isCreatingStage}
-														placeholder="Search and select interviewers"
-														showEmployeeId={false}
-														showDepartment={false}
-														multiple={true}
-													/>
-												</div>
-												{stageErrors.interviewers && (
-													<p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-												)}
-
-												<p className="text-xs text-muted-foreground">
-													Search and select multiple interviewers for this stage
-												</p>
-											</div>
-
-											<input
-												type="hidden"
-												value={selectedJobPosition || 0}
-												onChange={(e) =>
-													updateStageFormData("job_position_advert", Number(e.target.value))
-												}
-											/>
-
-											<div className="flex justify-end gap-2 pt-4">
-												<Button
-													type="button"
-													variant="outline"
-													onClick={(e) => {
-														e.stopPropagation();
-														setIsCreateStageDialogOpen(false);
-													}}
-													disabled={isCreatingStage}
-												>
-													Cancel
-												</Button>
-												<Button
-													type="submit"
-													disabled={isCreatingStage}
-													onClick={(e) => e.stopPropagation()}
-												>
-													{isCreatingStage ? (
-														<>
-															<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-															Creating...
-														</>
-													) : (
-														<>
-															<Check className="h-4 w-4 mr-2" />
-															Create Stage
-														</>
-													)}
-												</Button>
-											</div>
-										</form>
-									</div>
-								</DialogContent>
-							</Dialog>
+							{selectedJobPosition && (
+								<CreateInterviewStageDialog
+									isOpen={isCreateStageDialogOpen}
+									onOpenChange={(open) => {
+										setIsCreateStageDialogOpen(open);
+										if (!open) {
+											setStageFormData({
+												name: "",
+												level: filteredInterviewStages.length + 1,
+												interviewers: [],
+												job_position_advert: Number(selectedJobPosition),
+											});
+											setStageErrors({});
+										}
+									}}
+									jobPositionId={Number(selectedJobPosition)}
+									jobPositionName={
+										groupedApplications[Number(selectedJobPosition)]?.jobName || "Unknown Position"
+									}
+									existingStagesCount={filteredInterviewStages.length}
+									showTrigger={false}
+									title="Create Interview Stage"
+									description={`Create a new interview stage for ${
+										groupedApplications[Number(selectedJobPosition)]?.jobName ||
+										"the selected position"
+									}`}
+									onSuccess={(newStage) => {
+										setInterviewStages((prev) => [...prev, newStage]);
+										setStageFormData({
+											name: "",
+											level: filteredInterviewStages.length + 1,
+											interviewers: [],
+											job_position_advert: Number(selectedJobPosition),
+										});
+										setStageErrors({});
+										setIsCreateStageDialogOpen(false);
+										toast.success("Interview stage created successfully!");
+									}}
+								/>
+							)}
 
 							{/* Selected Applications Summary */}
 							{selectedApplications.length > 0 && (

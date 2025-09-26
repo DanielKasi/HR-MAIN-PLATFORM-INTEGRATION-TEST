@@ -117,3 +117,26 @@ export const sendDocuments = async ({
 
 	return (response.data as DocumentPreviewResponse).preview;
 };
+
+export const DOCUMENTS_API = {
+	getPaginatedDocumentTemplates: async (params: {
+		institutionId: number;
+		page?: number;
+		search?: string;
+	}) => {
+		const urlParams = new URLSearchParams();
+		Object.entries(params).forEach(([key, value]) => {
+			urlParams.append(key, value.toString());
+		});
+
+		const response = await apiRequest.get(
+			`documents/institution/${params.institutionId}/templates/?${urlParams.toString()}`,
+		);
+		return response.data as IPaginatedResponse<IDocumentTemplate>;
+	},
+
+	getDocumentsTemplateFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+		return response.data as IPaginatedResponse<IDocumentTemplate>;
+	},
+};

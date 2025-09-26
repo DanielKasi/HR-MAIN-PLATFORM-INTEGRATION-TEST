@@ -151,12 +151,12 @@ export default function CreateTemplatePage() {
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="space-y-6">
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Basic Information</CardTitle>
 						<CardDescription>Provide basic details about your template</CardDescription>
 					</CardHeader>
-					<CardContent className="space-y-4">
+					<CardContent className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 						<div className="space-y-2">
 							<Label htmlFor="name">Template Name</Label>
 							<Input
@@ -192,7 +192,7 @@ export default function CreateTemplatePage() {
 				</Card>
 
 				{/* Rest of the form remains the same */}
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Template Type</CardTitle>
 						<CardDescription>Choose how you want to create your template</CardDescription>
@@ -244,7 +244,7 @@ export default function CreateTemplatePage() {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Template Content</CardTitle>
 						<CardDescription>

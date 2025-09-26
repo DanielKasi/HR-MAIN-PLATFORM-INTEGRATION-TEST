@@ -1,7 +1,9 @@
 import { AuthAction } from "./actions";
 import { AUTH_ACTION_TYPES } from "./types";
-
-import { Branch, Permission, ITill, IUser, IUserInstitution, StoredColorData } from "@/types";
+import { IUser } from "@/types/user.types";
+import { Branch } from "@/types/branch.types";
+import { Permission } from "@/types/user.types";
+import { ITill, IUserInstitution, StoredColorData } from "@/types/other";
 import { CUSTOM_CODES } from "@/constants";
 
 export type AuthError = {

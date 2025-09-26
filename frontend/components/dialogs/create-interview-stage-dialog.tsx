@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Check, Plus, Trash2, GripVertical } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -15,33 +15,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-import { createInterviewStage } from "@/lib/utils";
+import { createInterviewStage, showErrorToast, updateInterviewStage } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import type { IFeedbackField, IInterviewStageFormData } from "@/types/types.utils";
+import type { IInterviewStage, IInterviewStageFormData } from "@/types/types.utils";
 import { FeedbackFieldsModal } from "./feedback-fields-modal";
-import { Settings } from "lucide-react";
 
 interface CreateInterviewStageDialogProps {
 	isOpen: boolean;
 	onOpenChange: (open: boolean) => void;
 	jobPositionId: number;
+	editingStage?: IInterviewStage | null;
 	jobPositionName?: string;
 	existingStagesCount?: number;
-	onSuccess?: () => void;
 	triggerButton?: React.ReactNode;
 	showTrigger?: boolean;
+	onSuccess?: (createdInterviewStage: IInterviewStage) => void;
+	title?: string;
+	description?: string;
 }
 
 export function CreateInterviewStageDialog({
 	isOpen,
 	onOpenChange,
 	jobPositionId,
+	editingStage,
 	jobPositionName,
 	existingStagesCount = 0,
 	onSuccess,
 	triggerButton,
 	showTrigger = true,
+	title,
+	description,
 }: CreateInterviewStageDialogProps) {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const [isCreating, setIsCreating] = useState(false);
@@ -67,8 +72,21 @@ export function CreateInterviewStageDialog({
 		}
 	}, [isOpen, existingStagesCount, jobPositionId]);
 
+	useEffect(() => {
+		if (editingStage) {
+			console.log("\n\n Editing stage with values : ", editingStage);
+			setFormData((prev) => ({
+				...prev,
+				job_position_advert: editingStage.job_position_advert,
+				interviewers: editingStage.interviewers,
+				feedback_fields: editingStage.feedback_fields,
+				name: editingStage.name,
+				level: editingStage.level,
+			}));
+		}
+	}, [editingStage]);
+
 	const updateFormData = (field: string, value: any) => {
-		console.log("Updating field:", field, "with value:", value);
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		if (errors[field]) {
 			setErrors((prev: any) => ({ ...prev, [field]: undefined }));
@@ -88,6 +106,7 @@ export function CreateInterviewStageDialog({
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		e.stopPropagation();
 
 		if (!selectedInstitution) {
 			toast.error("Missing organization information");
@@ -111,14 +130,21 @@ export function CreateInterviewStageDialog({
 		setIsCreating(true);
 
 		try {
-			console.log("Full formData being sent to API:", formData);
-			console.log("Feedback fields specifically:", formData.feedback_fields);
-			const result = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: formData,
-			});
+			let newStage: IInterviewStage | null;
+			console.log("\n\n Sending data on submit : ", formData);
+			if (editingStage) {
+				newStage = await updateInterviewStage({
+					stageId: editingStage.id,
+					stageData: formData,
+				});
+			} else {
+				newStage = await createInterviewStage({
+					institutionId: selectedInstitution.id,
+					stageData: formData,
+				});
+			}
 
-			if (result) {
+			if (newStage) {
 				setFormData({
 					name: "",
 					level: existingStagesCount + 1,
@@ -131,13 +157,13 @@ export function CreateInterviewStageDialog({
 				toast.success("Interview stage created successfully!");
 
 				if (onSuccess) {
-					onSuccess();
+					onSuccess(newStage);
 				}
 			} else {
 				toast.error("Failed to create interview stage");
 			}
 		} catch (error) {
-			toast.error("Failed to create interview stage");
+			showErrorToast({ error, defaultMessage: "Failed to create interview stage" });
 		} finally {
 			setIsCreating(false);
 		}
@@ -146,7 +172,7 @@ export function CreateInterviewStageDialog({
 	const defaultTrigger = (
 		<Button className="flex items-center gap-2">
 			<Plus className="h-4 w-4" />
-			Add Interview Stage
+			{editingStage ? "Edit Interview Stage" : "Add Interview Stage"}
 		</Button>
 	);
 
@@ -156,9 +182,19 @@ export function CreateInterviewStageDialog({
 
 			<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Create Interview Stage</DialogTitle>
+					<DialogTitle>
+						{title ? <>{title}</> : <>{editingStage ? "Edit" : "Create"} Interview Stage</>}
+					</DialogTitle>
 					<DialogDescription>
-						Create a new interview stage{jobPositionName ? ` for ${jobPositionName}` : ""}.
+						{description ? (
+							<>{description}</>
+						) : (
+							<>
+								{editingStage
+									? `Edit interview stage ${editingStage.name}`
+									: `Create a new interview stage${jobPositionName ? `for ${jobPositionName}` : ""}`}
+							</>
+						)}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -261,15 +297,7 @@ export function CreateInterviewStageDialog({
 					</div>
 
 					<div className="flex justify-end gap-2 pt-4">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-							disabled={isCreating}
-						>
-							Cancel
-						</Button>
-						<Button type="submit" disabled={isCreating}>
+						<Button type="submit" className="w-full rounded-full" disabled={isCreating}>
 							{isCreating ? (
 								<>
 									<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
@@ -277,8 +305,8 @@ export function CreateInterviewStageDialog({
 								</>
 							) : (
 								<>
-									<Check className="h-4 w-4 mr-2" />
-									Create Stage
+									{editingStage ? "Update " : "Create"}
+									Stage
 								</>
 							)}
 						</Button>

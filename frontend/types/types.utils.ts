@@ -230,7 +230,7 @@ export interface JobPositionAdvert {
 	number_of_employees_expected?: number | null;
 	extra_information?: string | null;
 	applications: JobApplication[];
-	interview_stages: JobApplication[];
+	interview_stages: IInterviewStage[];
 	advert_type: JobAdvertTypes;
 }
 
@@ -257,11 +257,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 			name: string;
 			role: string;
 		}>;
-		feedbackFields: Array<{
-			id: string;
-			name: string;
-			type: string;
-		}>;
+		feedback_fields?: IFeedbackField[];
 	}>;
 	newStageName: string;
 	selectedInterviewers: Array<{
@@ -410,6 +406,7 @@ export interface IAttendanceDashboard {
 }
 
 export interface IFeedbackField {
+	id: number;
 	label: string;
 	type: "text" | "rating" | "checkbox";
 	required: boolean;
@@ -427,11 +424,13 @@ export interface IInterviewStage {
 	candidates: any[];
 	id: number;
 	job_position_advert: number;
+	// job_position_details:{id:number, name:string, description:string};
 	name: string;
 	level: number;
 	interviewers: number[];
 	interviewers_details?: IEmployee[];
 	candidates_count: number;
+	feedback_fields?: IFeedbackField[];
 }
 
 export type IInterviewType = "online" | "in_person";
@@ -446,7 +445,7 @@ export interface IInterview {
 	interview_stage_details?: IInterviewStage | null;
 	interview_date: string;
 	status: string;
-	feedback?: string | null;
+	feedback?: Record<string, any> | null;
 	rating?: number | null;
 	location: string;
 	interview_time: string;
@@ -457,7 +456,7 @@ export interface IInterviewFormData {
 	job_position_application: number;
 	interview_stage: number;
 	interview_date: string;
-	feedback?: string | null;
+	feedback?: Record<string, any>;
 	rating?: number | null;
 	location: string;
 	interview_time: string;
