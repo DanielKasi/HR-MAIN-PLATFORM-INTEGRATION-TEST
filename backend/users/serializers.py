@@ -295,10 +295,10 @@ class RolePermissionSerializer(BaseApprovableSerializer):
         fields = ["id", "role", "permission"]
 
 
-class SignatureSerializer(serializers.ModelSerializer):
+class SignatureSerializer(BaseApprovableSerializer):
     signature_image_url = serializers.CharField(read_only=True, allow_null=True)
 
     class Meta:
         model = Signature
-        fields = ["id", "user", "signature", "signature_image_url"]
+        fields = '__all__'
         read_only_fields = ["id", "signature_image_url"]
