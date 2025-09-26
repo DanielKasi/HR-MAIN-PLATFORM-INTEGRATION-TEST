@@ -25,75 +25,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { getWorkTypes, getPaginatedWorkTypesFromUrl, deleteWorkType } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";
-
-// Work Type Details Modal
-interface WorkTypeDetailsModalProps {
-	isOpen: boolean;
-	onClose: () => void;
-	employeeType: IWorkType | null;
-}
-
-function WorkTypeDetailsModal({ isOpen, onClose, employeeType }: WorkTypeDetailsModalProps) {
-	if (!employeeType) return null;
-
-	return (
-		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className="sm:max-w-[500px] mx-4 sm:mx-0 max-h-[90vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
-						Work Type Details
-					</DialogTitle>
-					<DialogDescription className="text-sm sm:text-base">
-						View the details of this work type
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="space-y-4 sm:space-y-6">
-					<div className="grid grid-cols-1 gap-4 sm:gap-6">
-						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Name</Label>
-							<div className="p-3 bg-gray-50 rounded-md border">
-								<span className="font-medium text-sm sm:text-base">{employeeType.name}</span>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label className="text-sm font-medium text-gray-700">Description</Label>
-							<div className="p-3 bg-gray-50 rounded-md border min-h-[60px] sm:min-h-[80px]">
-								{employeeType.description ? (
-									<span className="text-gray-700 text-sm sm:text-base">
-										{employeeType.description}
-									</span>
-								) : (
-									<span className="text-gray-400 italic text-sm">No description provided</span>
-								)}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div className="flex justify-end pt-4">
-					<Button onClick={onClose} className="text-sm">
-						Close
-					</Button>
-				</div>
-			</DialogContent>
-		</Dialog>
-	);
-}
+import { useRouter } from "next/navigation";
 
 // Main Component
 export default function WorkTypesPage() {
@@ -104,10 +42,10 @@ export default function WorkTypesPage() {
 	const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
 	const [showFormModal, setShowFormModal] = useState(false);
-	const [showDetailsModal, setShowDetailsModal] = useState(false);
 	const [editingType, setEditingType] = useState<IWorkType | null>(null);
 	const [viewingType, setViewingType] = useState<IWorkType | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const router = useRouter();
 
 	const handleSearchChange = (value: string) => {
 		setSearchTerm(value);
@@ -123,19 +61,9 @@ export default function WorkTypesPage() {
 		setShowFormModal(true);
 	};
 
-	const handleView = (type: IWorkType) => {
-		setViewingType(type);
-		setShowDetailsModal(true);
-	};
-
 	const handleCloseFormModal = () => {
 		setShowFormModal(false);
 		setEditingType(null);
-	};
-
-	const handleCloseDetailsModal = () => {
-		setShowDetailsModal(false);
-		setViewingType(null);
 	};
 
 	if (!selectedInstitution) {
@@ -325,8 +253,10 @@ export default function WorkTypesPage() {
 																			className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
 																		>
 																			<DropdownMenuItem
-																				onClick={() => handleView(type)}
-																				className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm lg:text-base"
+																				onClick={() =>
+																					router.push(`/employees/work-types/${type.id}`)
+																				}
+																				className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																			>
 																				<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
 																				View details
@@ -363,13 +293,6 @@ export default function WorkTypesPage() {
 										editingType={editingType}
 										onSaveSuccess={handleSave}
 										isSubmitting={isSubmitting}
-									/>
-
-									{/* Details Modal */}
-									<WorkTypeDetailsModal
-										isOpen={showDetailsModal}
-										onClose={handleCloseDetailsModal}
-										employeeType={viewingType}
 									/>
 
 									{workTypeToDelete && (

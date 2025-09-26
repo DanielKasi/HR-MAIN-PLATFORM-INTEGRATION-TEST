@@ -1,15 +1,16 @@
 "use client";
 "use client";
 
-import {hasPermission} from "@/lib/helpers";
-import {PerformanceTable, type TableColumn, type TableAction} from "../common/performance-table";
-import {StatusBadge} from "../common/status-badge";
-import type {IPeriod} from "@/types/types.utils";
-import {Edit, Trash2, Calendar} from "lucide-react";
-import {PERMISSION_CODES} from "@/constants";
+import { hasPermission } from "@/lib/helpers";
+import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
+import { StatusBadge } from "../common/status-badge";
+import type { IPeriod } from "@/types/types.utils";
+import { Edit, Trash2, Calendar, Eye } from "lucide-react";
+import { PERMISSION_CODES } from "@/constants";
 
 interface PeriodsTableProps {
 	periods: IPeriod[];
+	onView: (period: IPeriod) => void;
 	onEdit: (period: IPeriod) => void;
 	onDelete: (period: IPeriod) => void;
 	onAdd: () => void;
@@ -19,6 +20,7 @@ interface PeriodsTableProps {
 
 export function PeriodsTable({
 	periods,
+	onView,
 	onEdit,
 	onDelete,
 	onAdd,
@@ -72,6 +74,11 @@ export function PeriodsTable({
 
 	const actions: TableAction<IPeriod>[] = [
 		{
+			label: "View",
+			icon: <Eye className="h-4 w-4" />,
+			onClick: onView,
+		},
+		{
 			label: "Edit",
 			icon: <Edit className="h-4 w-4" />,
 			onClick: onEdit,
@@ -86,17 +93,17 @@ export function PeriodsTable({
 		},
 	];
 
-  return (
-    <PerformanceTable
-      data={periods}
-      columns={columns}
-      actions={actions}
-      onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
-      addLabel="Create Period"
-      searchPlaceholder="Search periods..."
-      onSearch={onSearch}
-      isLoading={isLoading}
-      emptyMessage="No performance periods found"
-    />
-  );
+	return (
+		<PerformanceTable
+			data={periods}
+			columns={columns}
+			actions={actions}
+			onAdd={hasPermission(PERMISSION_CODES.CAN_GIVE_FEEDBACK) ? onAdd : undefined}
+			addLabel="Create Period"
+			searchPlaceholder="Search periods..."
+			onSearch={onSearch}
+			isLoading={isLoading}
+			emptyMessage="No performance periods found"
+		/>
+	);
 }

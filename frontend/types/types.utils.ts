@@ -766,6 +766,8 @@ export interface IWorkType {
 	description?: string;
 	created_at?: string;
 	updated_at?: string;
+	is_active: boolean;
+	created_by?: IUser;
 }
 
 export interface IEmployeeType {
@@ -776,6 +778,8 @@ export interface IEmployeeType {
 	description?: string;
 	created_at?: string;
 	updated_at?: string;
+	is_active: boolean;
+	created_by?: IUser;
 }
 
 export interface BranchSummary {
@@ -1003,6 +1007,7 @@ export interface ILeavePolicy {
 	is_active: boolean;
 	created_at?: string;
 	updated_at?: string;
+	created_by?: IUser;
 }
 
 export interface ILeavePolicyFormData {
@@ -2006,6 +2011,7 @@ export interface IShiftFormData {
 }
 
 export interface IEmployeeShift {
+	updated_at: any;
 	id: string;
 	employee: IEmployee;
 	shift: IBranchShift;
@@ -2186,6 +2192,9 @@ export interface IProjectFormData {
 export type IDurationUnit = "days" | "months" | "years";
 
 export interface IPeriod {
+	updated_at(updated_at: any): import("react").ReactNode;
+	created_at: any;
+	is_active: any;
 	id: number;
 	institution: IUserInstitution;
 	name: string;
@@ -2561,3 +2570,11 @@ export interface IEmployeeBonusPoint extends IBaseApprovable {}
 export interface IQuestionTemplate extends IBaseApprovable {}
 export interface IBonusPointSettings extends IBaseApprovable {}
 export interface IMeeting extends IBaseApprovable {}
+
+export interface IEmployeeType extends IBaseApprovable {}
+export interface IWorkType extends IBaseApprovable {}
+
+export interface ILeaveRequest extends IBaseApprovable {}
+export interface ILeavePolicy extends IBaseApprovable {}
+
+export interface IOffboardingStage extends IBaseApprovable {}

@@ -52,6 +52,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import FormatNumberInput from "@/components/format-number-input";
 import { LeaveTypeDetailsDialog } from "@/components/dialogs/leave-type-details-dilaog";
+import { useRouter } from "next/navigation";
 
 const LEAVE_CATEGORIES = [
 	{ value: "annual", label: "Annual Leave" },
@@ -110,6 +111,7 @@ const LeaveTypesPage = () => {
 	const [viewingLeaveType, setViewingLeaveType] = useState<ILeaveType | null>(null);
 	const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const router = useRouter();
 
 	const [formData, setFormData] = useState<{
 		name: string;
@@ -205,11 +207,6 @@ const LeaveTypesPage = () => {
 		} finally {
 			setIsSubmitting(false);
 		}
-	};
-
-	const handleViewLeaveType = (type: ILeaveType) => {
-		setIsViewDialogOpen(true);
-		setViewingLeaveType(type);
 	};
 
 	const handleUpdateLeaveType = async () => {
@@ -822,10 +819,12 @@ const LeaveTypesPage = () => {
 																</DropdownMenuTrigger>
 																<DropdownMenuContent align="end">
 																	<DropdownMenuItem
-																		onClick={() => handleViewLeaveType(leaveType)}
-																		className="text-xs sm:text-sm"
+																		onClick={() =>
+																			router.push(`/leave/leave-types/${leaveType.id}`)
+																		}
+																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
 																		View Details
 																	</DropdownMenuItem>
 																	<DropdownMenuItem
