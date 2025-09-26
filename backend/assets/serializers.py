@@ -15,6 +15,8 @@ from users.serializers import ProfileSerializer
 from approval.serializers import BaseApprovableSerializer
 
 
+
+
 class AssetCategorySerializer(BaseApprovableSerializer):
     total_assets = serializers.IntegerField(read_only=True)
     total_available_assets = serializers.IntegerField(read_only=True)

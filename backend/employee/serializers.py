@@ -9,6 +9,7 @@ from .models import (
     EmployeeAttendance,
     EmployeeBankAccount,
     EmployeeCompanyEmail,
+    EmployeeMonthlyHourAccount,
     EmployeeType,
     NextOfKin,
     QualificationAward,
@@ -53,6 +54,11 @@ from datetime import date, timedelta, datetime
 from users.models import CustomUser, Profile, UserRole
 from institution.serializers import BranchSerializer
 
+class EmployeeMonthlyHourAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeMonthlyHourAccount
+        fields = '__all__'
+        read_only_fields = ['id']
 class EmployeeTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmployeeType

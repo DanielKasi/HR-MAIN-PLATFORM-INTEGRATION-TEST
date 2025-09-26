@@ -10,6 +10,7 @@ from .views import (
     EmployeeListAPIView,
     EmployeeDetailAPIView,
     EmployeeCreateAPIView,
+    EmployeeMonthlyHourAccountListCreateView,
     EmployeeTypeDetailAPIView,
     EmployeeTypeListCreateAPIView,
     EmployeeUpdateAPIView,
@@ -171,7 +172,7 @@ urlpatterns = [
         verify_email_and_redirect,
         name="verify-email",
     ),
-
+    path('hour-account/', EmployeeMonthlyHourAccountListCreateView.as_view(), name='employee-hour-account-list-create'),
     path("document-requests/", DocumentRequestListCreateView.as_view(), name="document_request_list_create"),
     path("document-requests/<int:pk>/", DocumentRequestDetailView.as_view(), name="document_request_detail"),
     path("document-requests/employee/<int:request_employee_id>/upload/", DocumentUploadView.as_view(), name="document_upload"),

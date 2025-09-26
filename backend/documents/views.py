@@ -992,8 +992,6 @@ class DocumentStatusUpdateView(BaseDocumentView):
             return get_object_or_404(Employee, pk=context_id)
         elif context == "pip":
             return get_object_or_404(PerformanceImprovementPlan, pk=context_id)
-        elif context == "leave":
-            return get_object_or_404(Leave, pk=context_id)
         raise ValueError("Invalid context")
 
     @extend_schema(
