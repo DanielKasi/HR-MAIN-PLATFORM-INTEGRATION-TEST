@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { PIPSupportResourceTypeCreateEditDialog } from "./_components/pip-support-resource-type-create-edit-dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function PIPSupportResourceTypeListPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -39,6 +40,7 @@ export default function PIPSupportResourceTypeListPage() {
 		null,
 	);
 	const [deleting, setDeleting] = useState(false);
+	const router = useRouter();
 
 	const handleDelete = async () => {
 		if (!resourceTypeToDelete) return;
@@ -62,8 +64,7 @@ export default function PIPSupportResourceTypeListPage() {
 	};
 
 	const openDetails = (resourceType: IPIPSupportResourceType) => {
-		setSelectedResourceType(resourceType);
-		setOpenDetailsDialog(true);
+		router.push(`/performance/pip/support-resource-types/${resourceType.id}`);
 	};
 
 	const columns: ColumnDef<IPIPSupportResourceType>[] = [
@@ -181,34 +182,6 @@ export default function PIPSupportResourceTypeListPage() {
 					</div>
 				}
 			/>
-
-			{selectedResourceType && (
-				<ApprovableDialog
-					isOpen={openDetailsDialog}
-					onOpenChange={(open) => {
-						setOpenDetailsDialog(open);
-						if (!open) setSelectedResourceType(null);
-					}}
-					title={`Resource Type Details: ${selectedResourceType.name}`}
-					description="View the details for this support resource type."
-					onRefresh={() => tableRefreshRef.current?.()}
-				>
-					<div className="space-y-4 overflow-y-auto max-h-[60svh]">
-						<div>
-							<label className="text-sm font-medium">Name</label>
-							<p>{selectedResourceType.name}</p>
-						</div>
-						<div>
-							<label className="text-sm font-medium">Description</label>
-							<p>{selectedResourceType.description || "Unknown"}</p>
-						</div>
-						<div>
-							<label className="text-sm font-medium">Approval Status</label>
-							<p>{selectedResourceType.approval_status || "Unknown"}</p>
-						</div>
-					</div>
-				</ApprovableDialog>
-			)}
 
 			<PIPSupportResourceTypeCreateEditDialog
 				open={openCreateEditDialog}

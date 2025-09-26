@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { Plus, MoreVertical, Edit, Trash2, Settings, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Settings, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
 
@@ -50,6 +50,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import FormatNumberInput from "@/components/format-number-input";
+import { useRouter } from "next/navigation";
 
 type LeavePolicy = ILeavePolicyResponse & {
 	leave_type: ILeaveType;
@@ -103,7 +104,7 @@ const LeavePolicyComponent = () => {
 	const [categoryFilter, setCategoryFilter] = useState<string>("all");
 	const [ordering, setOrdering] = useState("");
 	const refreshTableRef = useRef<(() => void) | null>(null);
-
+	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	const [formData, setFormData] = useState({
@@ -878,6 +879,12 @@ const LeavePolicyComponent = () => {
 
 								// Transform the data to include populated leave_type
 								const transformedResults = response.results.map((policy) => {
+									if (typeof policy.leave_type === "object" && policy.leave_type !== null) {
+										return {
+											...policy,
+											leave_type: policy.leave_type,
+										} as LeavePolicy;
+									}
 									const leaveType =
 										leaveTypes.find((lt) => lt.id === policy.leave_type) ||
 										({
@@ -911,6 +918,12 @@ const LeavePolicyComponent = () => {
 
 								// Transform the data to include populated leave_type
 								const transformedResults = response.results.map((policy) => {
+									if (typeof policy.leave_type === "object" && policy.leave_type !== null) {
+										return {
+											...policy,
+											leave_type: policy.leave_type,
+										} as LeavePolicy;
+									}
 									const leaveType =
 										leaveTypes.find((lt) => lt.id === policy.leave_type) ||
 										({
@@ -1092,6 +1105,19 @@ const LeavePolicyComponent = () => {
 																		</Button>
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end">
+																		<ProtectedComponent
+																			permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_POLICIES}
+																		>
+																			<DropdownMenuItem
+																				onClick={() =>
+																					router.push(`/leave/leave-policy/${policy.id}`)
+																				}
+																				className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
+																			>
+																				<Eye className="h-4 w-4 mr-2" />
+																				View details
+																			</DropdownMenuItem>
+																		</ProtectedComponent>
 																		<ProtectedComponent
 																			permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_POLICIES}
 																		>

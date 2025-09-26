@@ -21,8 +21,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { getAllLeaveBalances } from "@/lib/utils";
 import { getPaginatedEmployees, getLeaveTypes } from "@/lib/utils";
 import { IEmployee, ILeaveBalance, ILeaveType } from "@/types/types.utils";
-
-const years = [2023, 2024, 2025, 2026];
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function EmployeeLeaveBalanceDetails() {
 	const params = useParams();
@@ -70,88 +69,88 @@ export default function EmployeeLeaveBalanceDetails() {
 		return id;
 	}, [employeeId]);
 
-	useEffect(() => {
-		const fetchAllData = async () => {
-			if (!selectedInstitution?.id) {
-				setDebugInfo("No institution selected");
-				setIsLoading(false);
+	const fetchAllData = async () => {
+		if (!selectedInstitution?.id) {
+			setDebugInfo("No institution selected");
+			setIsLoading(false);
 
-				return;
-			}
+			return;
+		}
 
-			if (!employeeId) {
-				setDebugInfo("No employeeId in URL");
-				setIsLoading(false);
+		if (!employeeId) {
+			setDebugInfo("No employeeId in URL");
+			setIsLoading(false);
 
-				return;
-			}
+			return;
+		}
 
-			if (!employeeIdNum) {
-				setDebugInfo(`Invalid employeeId: ${employeeId}`);
-				setIsLoading(false);
+		if (!employeeIdNum) {
+			setDebugInfo(`Invalid employeeId: ${employeeId}`);
+			setIsLoading(false);
 
-				return;
-			}
+			return;
+		}
 
-			if (dataFetched) {
-				setDebugInfo("Data already fetched");
+		if (dataFetched) {
+			setDebugInfo("Data already fetched");
 
-				return;
-			}
+			return;
+		}
 
-			setDebugInfo("Starting data fetch...");
-			setIsLoading(true);
+		setDebugInfo("Starting data fetch...");
+		setIsLoading(true);
 
-			try {
-				const [allBalances, allEmployees, allLeaveTypes] = await Promise.all([
-					getAllLeaveBalances({ institutionId: selectedInstitution.id }),
-					getPaginatedEmployees({ institutionId: selectedInstitution.id }),
-					getLeaveTypes({ institutionId: selectedInstitution.id }),
-				]);
+		try {
+			const [allBalances, allEmployees, allLeaveTypes] = await Promise.all([
+				getAllLeaveBalances({ institutionId: selectedInstitution.id }),
+				getPaginatedEmployees({ institutionId: selectedInstitution.id }),
+				getLeaveTypes({ institutionId: selectedInstitution.id }),
+			]);
 
-				setEmployees(allEmployees.results || []);
-				setLeaveTypes(allLeaveTypes || []);
+			setEmployees(allEmployees.results || []);
+			setLeaveTypes(allLeaveTypes || []);
 
-				const foundEmployee = allEmployees.results?.find((emp) => emp.id === employeeIdNum);
+			const foundEmployee = allEmployees.results?.find((emp) => emp.id === employeeIdNum);
 
-				setEmployee(foundEmployee || null);
+			setEmployee(foundEmployee || null);
 
-				const employeeBalances =
-					allBalances?.filter((balance) => {
-						const balanceEmployeeId =
-							typeof balance.employee === "object" ? balance.employee.id : balance.employee;
+			const employeeBalances =
+				allBalances?.filter((balance) => {
+					const balanceEmployeeId =
+						typeof balance.employee === "object" ? balance.employee.id : balance.employee;
 
-						return balanceEmployeeId === employeeIdNum;
-					}) || [];
+					return balanceEmployeeId === employeeIdNum;
+				}) || [];
 
-				setEmployeeLeaveBalances(employeeBalances);
+			setEmployeeLeaveBalances(employeeBalances);
 
-				if (!foundEmployee && employeeBalances.length > 0) {
-					const firstBalance = employeeBalances[0];
+			if (!foundEmployee && employeeBalances.length > 0) {
+				const firstBalance = employeeBalances[0];
 
-					if (typeof firstBalance.employee === "object") {
-						setEmployee(firstBalance.employee as any);
-						setDebugInfo("Employee found from balance data");
-					}
+				if (typeof firstBalance.employee === "object") {
+					setEmployee(firstBalance.employee as any);
+					setDebugInfo("Employee found from balance data");
 				}
-
-				setDataFetched(true);
-				setDebugInfo(
-					`Data loaded successfully. Employee: ${foundEmployee?.user?.fullname || "Not found"}`,
-				);
-
-				toast.dismiss(`loading-${employeeIdNum}`);
-			} catch (error) {
-				setDebugInfo(
-					`Error fetching data: ${error instanceof Error ? error.message : "Unknown error"}`,
-				);
-				toast.error("Failed to load employee data");
-				toast.dismiss(`loading-${employeeIdNum}`);
-			} finally {
-				setIsLoading(false);
 			}
-		};
 
+			setDataFetched(true);
+			setDebugInfo(
+				`Data loaded successfully. Employee: ${foundEmployee?.user?.fullname || "Not found"}`,
+			);
+
+			toast.dismiss(`loading-${employeeIdNum}`);
+		} catch (error) {
+			setDebugInfo(
+				`Error fetching data: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+			toast.error("Failed to load employee data");
+			toast.dismiss(`loading-${employeeIdNum}`);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	useEffect(() => {
 		fetchAllData();
 	}, [selectedInstitution?.id, employeeId, employeeIdNum, dataFetched]);
 
@@ -240,7 +239,7 @@ export default function EmployeeLeaveBalanceDetails() {
 				</div>
 			</div>
 
-			<Card className="mt-6">
+			<ApprovableInstancePageLayout instance={employee} onInstanceRefresh={() => fetchAllData()}>
 				<CardHeader>
 					<CardTitle className="text-gray-900 flex items-center gap-2">
 						<User className="w-5 h-5" />
@@ -274,7 +273,7 @@ export default function EmployeeLeaveBalanceDetails() {
 						</div>
 					</div>
 				</CardContent>
-			</Card>
+			</ApprovableInstancePageLayout>
 
 			<div className="mt-8">
 				<CardHeader className="border-b">

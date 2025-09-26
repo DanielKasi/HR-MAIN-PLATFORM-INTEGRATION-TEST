@@ -1942,6 +1942,15 @@ export const updateWorkType = async ({
 	}
 };
 
+export const viewWorkType = async ({ workTypeId }: { workTypeId: number }): Promise<IWorkType> => {
+	try {
+		const response = await apiRequest.get(`employee/work-types/detail/${workTypeId}/`);
+		return response.data as IWorkType;
+	} catch (error) {
+		throw error;
+	}
+};
+
 export const deleteWorkType = async ({
 	workTypeId,
 }: {
@@ -2029,6 +2038,19 @@ export const updateEmployeeType = async ({
 			employeeTypeData,
 		);
 
+		return response.data as IEmployeeType;
+	} catch (error) {
+		throw error;
+	}
+};
+
+export const viewEmployeeType = async ({
+	employeeTypeId,
+}: {
+	employeeTypeId: number;
+}): Promise<IEmployeeType> => {
+	try {
+		const response = await apiRequest.get(`employee/employee-types/detail/${employeeTypeId}/`);
 		return response.data as IEmployeeType;
 	} catch (error) {
 		throw error;

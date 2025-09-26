@@ -2,6 +2,9 @@ import { IBaseApprovable } from "@/types/approvals.types";
 import { IEmployee, IInstitution, IObjective } from "./types.utils";
 
 export interface IPerformanceConcernType extends IBaseApprovable {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: number | IInstitution;
 	name: string;
@@ -15,6 +18,9 @@ export interface IPerformanceConcernTypeFormData {
 }
 
 export interface IPerformanceConcern extends IBaseApprovable {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	description: string;
 	category: IPerformanceConcernType;
@@ -26,6 +32,9 @@ export interface IPerformanceConcernFormData {
 }
 
 export interface IPIPSupportResourceType extends IBaseApprovable {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: number;
 	name: string;
@@ -43,6 +52,9 @@ export interface IPIPSupportResource extends IBaseApprovable {
 	name: string;
 	description: string | null;
 	type: IPIPSupportResourceType;
+	created_at: string;
+	updated_at: string;
+	is_active: boolean;
 }
 
 export interface IPIPSupportResourceFormData {

@@ -40,6 +40,7 @@ import { formatDate } from "@/lib/helpers";
 import { bankAccountsAPI } from "@/lib/utils";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function PayrollPeriodDetails() {
 	const router = useRouter();

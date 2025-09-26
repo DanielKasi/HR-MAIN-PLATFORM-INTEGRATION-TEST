@@ -76,6 +76,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import { useRouter } from "next/navigation";
 
 const STATUS_CHOICES = [
 	{ value: "pending", label: "Pending" },
@@ -96,9 +97,7 @@ const LeaveApplicationComponent = () => {
 	const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
 	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 	const [editingApplication, setEditingApplication] = useState<ILeaveRequest | null>(null);
-	const [viewingApplication, setViewingApplication] = useState<ILeaveRequest | null>(null);
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [leaveTypeFilter, setLeaveTypeFilter] = useState<string>("all");
 	const [searchTerm, setSearchTerm] = useState("");
@@ -107,6 +106,7 @@ const LeaveApplicationComponent = () => {
 	const [ordering, setOrdering] = useState("");
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const router = useRouter();
 
 	// Success handlers for CRUD operations
 	const handleCreateSuccess = (newApplication: ILeaveRequest) => {
@@ -608,12 +608,6 @@ const LeaveApplicationComponent = () => {
 
 		setIsEditDialogOpen(true);
 	};
-
-	const handleViewApplication = (application: ILeaveRequest) => {
-		setViewingApplication(application);
-		setIsViewDialogOpen(true);
-	};
-
 	const resetForm = () => {
 		setFormData({
 			employee: "",
@@ -1259,10 +1253,13 @@ const LeaveApplicationComponent = () => {
 																	permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_APPLICATIONS}
 																>
 																	<DropdownMenuItem
-																		onClick={() => handleViewApplication(application)}
+																		onClick={() =>
+																			router.push(`/leave/leave-application/${application.id}`)
+																		}
+																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
-																		<Eye className="h-4 w-4 mr-2" />
-																		View Details
+																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
+																		View details
 																	</DropdownMenuItem>
 																</ProtectedComponent>
 															</DropdownMenuContent>
@@ -1278,139 +1275,6 @@ const LeaveApplicationComponent = () => {
 					</PaginatedTableWrapper>
 				</div>
 			</div>
-
-			{/* View Application Dialog */}
-			<Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-				<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle className="text-xl font-semibold">Leave Application Details</DialogTitle>
-						<DialogDescription>Complete information about the leave application.</DialogDescription>
-					</DialogHeader>
-					{viewingApplication && (
-						<div className="space-y-4 py-4">
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Employee</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{getEmployeeName(viewingApplication.employee)}
-									</p>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Leave Type</Label>
-									<Badge
-										className={`${getCategoryColor(
-											typeof viewingApplication.leave_type === "object" &&
-												viewingApplication.leave_type !== null
-												? (viewingApplication.leave_type as ILeaveType).category
-												: leaveTypes.find((type) => type.id === viewingApplication.leave_type)
-														?.category || "annual",
-										)} border font-medium mt-1`}
-									>
-										{getLeaveTypeName(viewingApplication.leave_type)}
-									</Badge>
-								</div>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Start Date</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{new Date(viewingApplication.start_date).toLocaleDateString()}
-									</p>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-gray-600">End Date</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{new Date(viewingApplication.end_date).toLocaleDateString()}
-									</p>
-								</div>
-							</div>
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Duration Type</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{DURATION_TYPES.find((d) => d.value === viewingApplication.duration_type)
-											?.label || viewingApplication.duration_type}
-									</p>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Total Days</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{calculateDaysBetween(
-											viewingApplication.start_date,
-											viewingApplication.end_date,
-										) || "Unknown"}
-									</p>
-								</div>
-							</div>
-							<div>
-								<Label className="text-sm font-medium text-gray-600">Status</Label>
-								<Badge
-									className={`${getStatusColor(viewingApplication.status)} border font-medium flex items-center gap-1 w-fit mt-1`}
-								>
-									{getStatusIcon(viewingApplication.status)}
-									{viewingApplication.status.charAt(0).toUpperCase() +
-										viewingApplication.status.slice(1)}
-								</Badge>
-							</div>
-							<div>
-								<Label className="text-sm font-medium text-gray-600">Reason</Label>
-								<p className="text-sm text-gray-900 mt-1">{viewingApplication.reason}</p>
-							</div>
-							{viewingApplication.handover_notes && (
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Handover Notes</Label>
-									<p className="text-sm text-gray-900 mt-1">{viewingApplication.handover_notes}</p>
-								</div>
-							)}
-							{viewingApplication?.supporting_document && (
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Supporting Document</Label>
-									<div className="flex items-center gap-2 mt-1">
-										<FileText className="h-4 w-4 text-myOrange" />
-										<span className="text-sm text-gray-900">
-											{renderSupportingDocumentName(viewingApplication.supporting_document)}
-										</span>
-										<Button
-											variant="ghost"
-											size="sm"
-											className="h-6 px-2 text-myOrange hover:bg-orange-100"
-											onClick={() =>
-												handleDownload(
-													getFileUrl(viewingApplication.supporting_document as string),
-													getFileName(viewingApplication.supporting_document as string),
-												)
-											}
-										>
-											<Download className="h-3 w-3" />
-										</Button>
-									</div>
-								</div>
-							)}
-							{viewingApplication.approved_by && (
-								<div>
-									<Label className="text-sm font-medium text-gray-600">
-										{viewingApplication.status === "approved" ? "Approved by" : "Processed by"}
-									</Label>
-									<p className="text-sm font-semibold text-gray-900">
-										{getApproverName(viewingApplication.approved_by)}
-									</p>
-									{viewingApplication.approved_by && (
-										<p className="text-xs text-gray-500">
-											{new Date(viewingApplication.approved_by).toLocaleString()}
-										</p>
-									)}
-								</div>
-							)}
-							{viewingApplication.rejection_reason && (
-								<div>
-									<Label className="text-sm font-medium text-gray-600">Rejection Reason</Label>
-									<p className="text-sm text-red-800 mt-1">{viewingApplication.rejection_reason}</p>
-								</div>
-							)}
-						</div>
-					)}
-				</DialogContent>
-			</Dialog>
 
 			{/* Edit Dialog */}
 			<Dialog
