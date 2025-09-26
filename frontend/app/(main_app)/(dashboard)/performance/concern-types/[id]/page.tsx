@@ -1,125 +1,140 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ArrowLeft, Calendar, Clock, FileText, Settings, CheckCircle, XCircle } from "lucide-react";
+import type { IPerformanceConcernType } from "@/types/performance.types";
 import { PERFORMANCE_CONCERN_TYPE_API } from "@/lib/api/performance.utils";
-import type { IPerformanceConcernTypeFormData } from "@/types/performance.types";
-import { showErrorToast, showSuccessToast } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useSelector } from "react-redux";
-import Link from "next/link";
-import FixedLoader from "@/components/fixed-loader";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
-export default function PerformanceConcernTypeEditPage() {
-	const router = useRouter();
-	const { id } = useParams();
-	const concernTypeId = Number(id);
-	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [formData, setFormData] = useState<IPerformanceConcernTypeFormData>({
-		name: "",
-		description: "",
-	});
+export default function ConcernTypeViewPage() {
+	const [performance, setPerformance] = useState<IPerformanceConcernType | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [saving, setSaving] = useState(false);
 
-	useEffect(() => {
-		if (!currentInstitution || !concernTypeId) return;
-		const fetchConcernType = async () => {
-			try {
-				setLoading(true);
-				const concernType = await PERFORMANCE_CONCERN_TYPE_API.getById({ concernTypeId });
-				setFormData({
-					name: concernType.name,
-					description: concernType.description,
-				});
-			} catch (err) {
-				showErrorToast({ error: err, defaultMessage: "Failed to fetch performance concern type" });
-				router.push("/admin/performance/concern-types");
-			} finally {
-				setLoading(false);
-			}
-		};
-		fetchConcernType();
-	}, [currentInstitution, concernTypeId, router]);
+	const params = useParams();
+	const router = useRouter();
+	const concernTypeId = parseInt(params.id as string);
 
-	const handleUpdate = async () => {
-		if (!currentInstitution) {
-			showErrorToast({ error: null, defaultMessage: "No institution selected" });
-			return;
-		}
-		if (!formData.name.trim()) {
-			showErrorToast({ error: null, defaultMessage: "Name is required" });
-			return;
-		}
+	const fetchPerformance = async () => {
 		try {
-			setSaving(true);
-			await PERFORMANCE_CONCERN_TYPE_API.update({ concernTypeId, data: formData });
-			showSuccessToast("Performance concern type updated successfully!");
-			router.push(`/admin/performance/concern-types/${concernTypeId}`);
-		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to update performance concern type" });
+			setLoading(true);
+			const data = await PERFORMANCE_CONCERN_TYPE_API.getById({ concernTypeId });
+			setPerformance(data);
+		} catch (error) {
+			toast.error("Failed to fetch concern type details");
 		} finally {
-			setSaving(false);
+			setLoading(false);
 		}
 	};
 
-	if (loading) return <FixedLoader />;
+	useEffect(() => {
+		if (concernTypeId) {
+			fetchPerformance();
+		}
+	}, [concernTypeId]);
+
+	if (loading) {
+		return <div className="p-6">Loading...</div>;
+	}
+
+	if (!performance) {
+		return <div className="p-6">Period not found</div>;
+	}
+	const formatDateTime = (dateString: string) => {
+		return new Date(dateString).toLocaleString();
+	};
+
+	const getStatusBadgeVariant = (isActive: boolean) => {
+		return isActive ? "default" : "destructive";
+	};
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
-				<div className="flex items-center justify-start gap-4">
-					<Link href={`/admin/performance/concern-types/${concernTypeId}`}>
-						<Button variant="outline" className="rounded-full aspect-square">
-							<ArrowLeft className="h-4 w-4" />
-						</Button>
-					</Link>
-					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">
-						Edit Performance Concern Type
-					</h1>
-				</div>
-			</div>
-
-			<div className="space-y-4">
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-					<div className="space-y-2">
-						<Label>Name *</Label>
-						<Input
-							placeholder="e.g., Attendance Issues"
-							value={formData.name}
-							onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-							className="h-10 sm:h-12 rounded-2xl text-sm sm:text-base"
-						/>
-					</div>
-				</div>
-				<div className="space-y-2 w-full lg:w-1/2">
-					<Label>Description</Label>
-					<Textarea
-						placeholder="Describe the concern type..."
-						value={formData.description}
-						onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-						className="rounded-2xl"
-						rows={4}
-					/>
-				</div>
-				<div className="flex justify-end gap-2">
+		<div className="space-y-6 p-6 bg-white">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center space-x-4">
 					<Button
 						variant="outline"
-						className="rounded-full w-full max-w-xs"
-						onClick={() => router.push(`/admin/performance/concern-types/${concernTypeId}`)}
+						size="sm"
+						className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0"
+						onClick={() => router.back()}
 					>
-						Cancel
+						<ArrowLeft className="mr-2 h-4 w-4" />
 					</Button>
-					<Button className="rounded-full w-full max-w-xs" onClick={handleUpdate} disabled={saving}>
-						{saving ? "Updating..." : "Update Concern Type"}
-					</Button>
+					<div className="mt-4">
+						<h1 className="text-2xl font-semibold tracking-tight">{performance.name}</h1>
+						<p className="text-muted-foreground">Performance Concern Types Details</p>
+					</div>
 				</div>
 			</div>
+			<ApprovableInstancePageLayout instance={performance} onInstanceRefresh={fetchPerformance}>
+				<div className="grid gap-6 md:grid-cols-2 mt-8">
+					{/* Basic Period Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<FileText className="mr-2 h-5 w-5" />
+								Concern Type Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-3">
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Concern Type Name:</span>
+									<span className="text-sm text-gray-700">{performance.name}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Description:</span>
+									<span className="text-sm">{performance.description}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Approval Status:</span>
+									<span className="text-sm">{performance.approval_status}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Status:</span>
+									<Badge variant={getStatusBadgeVariant(performance.is_active)}>
+										{performance.is_active ? "Active" : "Inactive"}
+									</Badge>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* System Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<Calendar className="mr-2 h-5 w-5" />
+								System Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex justify-between">
+								<span className="text-sm font-medium text-gray-600">Created Date:</span>
+								<span className="text-sm">
+									{typeof performance.created_at === "string"
+										? formatDateTime(performance.created_at)
+										: "N/A"}
+								</span>
+							</div>
+							<div className="flex justify-between mt-5">
+								<span className="text-sm font-medium text-gray-600">Updated Date:</span>
+								<span className="text-sm">
+									{typeof performance.updated_at === "string"
+										? formatDateTime(performance.updated_at)
+										: "N/A"}
+								</span>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

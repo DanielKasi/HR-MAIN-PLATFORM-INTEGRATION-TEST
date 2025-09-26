@@ -15,6 +15,7 @@ import { PeriodModal } from "@/components/performance/periods/period-modal";
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function PeriodsPage() {
 	const [periods, setPeriods] = useState<IPeriod[]>([]);
@@ -24,6 +25,7 @@ export default function PeriodsPage() {
 	const [periodToDelete, setPeriodToDelete] = useState<IPeriod | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const router = useRouter();
 
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
@@ -57,6 +59,10 @@ export default function PeriodsPage() {
 	const handleEdit = (period: IPeriod) => {
 		setEditingPeriod(period);
 		setModalOpen(true);
+	};
+
+	const handleView = (period: IPeriod) => {
+		router.push(`/performance/periods/${period.id}`);
 	};
 
 	const handleSubmit = async (data: IPeriodFormData) => {
@@ -166,6 +172,7 @@ export default function PeriodsPage() {
 				{/* Periods Table */}
 				<PeriodsTable
 					periods={periods}
+					onView={handleView}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onAdd={handleCreate}

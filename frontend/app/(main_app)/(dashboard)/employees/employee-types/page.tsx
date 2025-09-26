@@ -45,6 +45,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 interface EmployeeTypeModalProps {
 	isOpen: boolean;
@@ -254,12 +255,11 @@ export default function EmployeeTypeManagement() {
 	const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
 	const [showFormModal, setShowFormModal] = useState(false);
-	const [showDetailsModal, setShowDetailsModal] = useState(false);
 	const [editingType, setEditingType] = useState<IEmployeeType | null>(null);
 	const [viewingType, setViewingType] = useState<IEmployeeType | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [ordering, setOrdering] = useState("");
-
+	const router = useRouter();
 	const handleSearchChange = (value: string) => {
 		setSearchTerm(value);
 	};
@@ -274,19 +274,9 @@ export default function EmployeeTypeManagement() {
 		setShowFormModal(true);
 	};
 
-	const handleView = (type: IEmployeeType) => {
-		setViewingType(type);
-		setShowDetailsModal(true);
-	};
-
 	const handleCloseFormModal = () => {
 		setShowFormModal(false);
 		setEditingType(null);
-	};
-
-	const handleCloseDetailsModal = () => {
-		setShowDetailsModal(false);
-		setViewingType(null);
 	};
 
 	if (!selectedInstitution) {
@@ -484,7 +474,9 @@ export default function EmployeeTypeManagement() {
 																	className="w-40 sm:w-48 bg-white border border-gray-200 shadow-lg"
 																>
 																	<DropdownMenuItem
-																		onClick={() => handleView(type)}
+																		onClick={() =>
+																			router.push(`/employees/employee-types/${type.id}`)
+																		}
 																		className="flex items-center px-2 sm:px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer text-xs sm:text-sm"
 																	>
 																		<Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3 text-gray-500" />
@@ -521,12 +513,6 @@ export default function EmployeeTypeManagement() {
 									onSave={handleSave}
 									isSubmitting={isSubmitting}
 									existingTypes={list}
-								/>
-
-								<EmployeeTypeDetailsModal
-									isOpen={showDetailsModal}
-									onClose={handleCloseDetailsModal}
-									employeeType={viewingType}
 								/>
 
 								{employeeTypeToDelete && (
