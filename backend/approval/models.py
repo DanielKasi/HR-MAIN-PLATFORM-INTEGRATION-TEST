@@ -98,7 +98,9 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
     approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')
+    approver_users = models.ManyToManyField('users.Profile', through='ApprovalDocumentLevelApprovers', related_name='approver_users_levels', blank=True)    
     overriders = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelOverriders', related_name='overrider_levels')
+    overrider_users = models.ManyToManyField('users.Profile', through='ApprovalDocumentLevelOverriders', related_name='overrider_users_levels', blank=True)
     public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
 
@@ -110,37 +112,52 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
         ordering = ['level']
 
     def get_approver_users(self) -> set:
-        """Get all unique users who are approvers for this level (direct users + via roles)"""
+        """Get all unique users who are approvers for this level (direct users + via groups)"""
         from users.models import CustomUser, Profile, Role  # Import as needed
         
         users = set()
         
-        for group in self.approvers.all():
-            # Direct users in group
-            for profile in group.users.all():
+        # From groups and users in ApprovalDocumentLevelApprovers
+        for approver in self.approvers.through.objects.filter(approval_document_level=self):
+            if approver.approver_group:
+                group = approver.approver_group
+                # Direct users in group
+                for profile in group.users.all():
+                    if profile.user and profile.user.is_active:
+                        users.add(profile.user)
+                # Users via roles in group
+                for role in group.roles.all():
+                    for user_role in role.user_roles.all():
+                        if user_role.user and user_role.user.is_active:
+                            users.add(user_role.user)
+            if approver.approver_user:
+                profile = approver.approver_user
                 if profile.user and profile.user.is_active:
                     users.add(profile.user)
-            
-            # Users via roles in group
-            for role in group.roles.all():
-                for user_role in role.user_roles.all():  
-                    if user_role.user and user_role.user.is_active:
-                        users.add(user_role.user)
         
-        return users   
+        return users
 
-    def get_overriders(self) -> set: 
+    def get_overriders(self) -> set:
+        """Get all unique users who are overriders for this level (direct users + via groups)"""
         users = set()
-        for group in self.overriders.all():
-            for profile in group.users.all():
+        
+        # From groups and users in ApprovalDocumentLevelOverriders
+        for overrider in self.overriders.through.objects.filter(approval_document_level=self):
+            if overrider.approver_group:
+                group = overrider.approver_group
+                for profile in group.users.all():
+                    if profile.user and profile.user.is_active:
+                        users.add(profile.user)
+                for role in group.roles.all():
+                    for user_role in role.user_roles.all():
+                        if user_role.user and user_role.user.is_active:
+                            users.add(user_role.user)
+            if overrider.approver_user:
+                profile = overrider.approver_user
                 if profile.user and profile.user.is_active:
                     users.add(profile.user)
-
-            for role in group.roles.all():        
-                for user_role in role.user_roles.all():  
-                    if user_role.user and user_role.user.is_active:
-                        users.add(user_role.user)
-        return users                
+        
+        return users
 
 @receiver(pre_save, sender=ApprovalDocumentLevel)
 def set_approval_level(sender, instance, **kwargs):
@@ -152,19 +169,20 @@ def set_approval_level(sender, instance, **kwargs):
 
 class ApprovalDocumentLevelApprovers(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
-    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
-
+    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE, blank=True, null=True)
+    approver_user = models.ForeignKey('users.Profile', on_delete=models.CASCADE, blank=True, null=True)
     class Meta:
-        unique_together = ('approval_document_level', 'approver_group')
+        unique_together = ('approval_document_level', 'approver_group', 'approver_user')
         verbose_name = "Approval Document Level Approver"
         verbose_name_plural = "Approval Document Level Approvers"
 
 class ApprovalDocumentLevelOverriders(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
+    overrider_user = models.ForeignKey('users.Profile', on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
-        unique_together = ('approval_document_level', 'approver_group')
+        unique_together = ('approval_document_level', 'approver_group', 'overrider_user')
         verbose_name = "Approval Document Level Overrider"
         verbose_name_plural = "Approval Document Level Overriders"
 
@@ -211,36 +229,54 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         ordering = ['level__level']
 
     def _check_user_is_approver(self, user):
-        """Check if user is authorized as an approver for this level"""
+        """Check if user is authorized as an approver for this level (via groups or direct user)"""
         profile = user.profile
         Role = apps.get_model("users", "Role")
         user_roles = Role.objects.filter(user_roles__user=user)
-        approver_groups = self.level.approvers.filter(
-            Q(users=profile) | Q(roles__in=user_roles)
-        ).distinct()
-        
-        if not approver_groups.exists():
-            raise ValidationError({
-                "error": "User is not authorized to approve/reject tasks at this level"
-            })
-        
-        return True
+
+        # Check direct approver users
+        if self.level.approver_users.through.objects.filter(
+            approval_document_level=self.level, approver_user=profile
+        ).exists():
+            return True
+
+        # Check via groups
+        approver_groups = self.level.approvers.through.objects.filter(
+            approval_document_level=self.level, approver_group__isnull=False
+        ).values_list('approver_group', flat=True)
+        if ApproverGroup.objects.filter(
+            pk__in=approver_groups
+        ).filter(Q(users=profile) | Q(roles__in=user_roles)).exists():
+            return True
+
+        raise ValidationError({
+            "error": "User is not authorized to approve/reject tasks at this level"
+        })
 
     def _check_user_is_overrider(self, user):
-        """Check if user is authorized as an overrider for this level"""
+        """Check if user is authorized as an overrider for this level (via groups or direct user)"""
         profile = user.profile
         Role = apps.get_model("users", "Role")
         user_roles = Role.objects.filter(user_roles__user=user)
-        overrider_groups = self.level.overriders.filter(
-            Q(users=profile) | Q(roles__in=user_roles)
-        ).distinct()
-        
-        if not overrider_groups.exists():
-            raise ValidationError({
-                "error": "User is not authorized to override tasks at this level"
-            })
-        
-        return True
+
+        # Check direct overrider users
+        if self.level.overrider_users.through.objects.filter(
+            approval_document_level=self.level, approver_user=profile
+        ).exists():
+            return True
+
+        # Check via groups
+        overrider_groups = self.level.overriders.through.objects.filter(
+            approval_document_level=self.level, approver_group__isnull=False
+        ).values_list('approver_group', flat=True)
+        if ApproverGroup.objects.filter(
+            pk__in=overrider_groups
+        ).filter(Q(users=profile) | Q(roles__in=user_roles)).exists():
+            return True
+
+        raise ValidationError({
+            "error": "User is not authorized to override tasks at this level"
+        })
 
     def mark_completed(self, user, comment: str = None):
         """Mark task as approved - only approvers can do this"""

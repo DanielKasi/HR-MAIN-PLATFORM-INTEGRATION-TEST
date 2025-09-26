@@ -447,7 +447,7 @@ class InterviewStageDetailAPI(APIView):
     def patch(self, request, stage_id):
         try:
             stage = InterviewStage.objects.get(id=stage_id)
-            stage.approval_stage = 'under_update'
+            stage.approval_status = 'under_update'
             serializer = InterviewStageSerializer(
                 stage, data=request.data, partial=True
             )
