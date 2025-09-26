@@ -384,13 +384,11 @@ class InstitutionTaxRule(BaseApprovableModel):
     )
 
     def clean(self):
-        # Ensure only one of percentage, fixed amount, or formula is provided
         count = sum(1 for field in [self.tax_rule_percentage, self.tax_rule_fixed_amount, self.tax_rule_formula] if field is not None)
         if count > 1:
             raise ValidationError("Only one of tax_rule_percentage, tax_rule_fixed_amount, or tax_rule_formula can be specified.")
         if count == 0:
             raise ValidationError("At least one of tax_rule_percentage, tax_rule_fixed_amount, or tax_rule_formula must be specified.")
-        # Ensure taxable_income_source is provided if formula is used
         if self.tax_rule_formula and not self.taxable_income_source:
             raise ValidationError("taxable_income_source must be specified when using a formula.")
 

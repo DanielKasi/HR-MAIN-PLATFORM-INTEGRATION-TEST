@@ -13,7 +13,6 @@ from django.apps import apps
 
 
 
-
 class Action(SoftDeletableTimeStampedModel):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True, editable=False)
@@ -29,22 +28,21 @@ class Action(SoftDeletableTimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name']    
+        ordering = ['name']
 
 class ApproverGroup(SoftDeletableTimeStampedModel):
-    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)   
+    institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     roles = models.ManyToManyField('users.Role', through='ApproverGroupRole', blank=True)
     users = models.ManyToManyField('users.Profile', through='ApproverGroupUser', blank=True)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
-
     def __str__(self):
         return f"{self.name} - {self.institution.institution_name}"
 
     class Meta:
-        unique_together = ['institution', 'name']     
+        unique_together = ['institution', 'name']
 
 class ApproverGroupRole(SoftDeletableTimeStampedModel):
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
@@ -62,21 +60,20 @@ class ApproverGroupUser(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.approver_group.name} - {self.user.user.fullname}"
 
-class ApprovalDocument(SoftDeletableTimeStampedModel):  
+class ApprovalDocument(SoftDeletableTimeStampedModel):
     institution = models.ForeignKey('institution.Institution', on_delete=models.CASCADE)
     public_uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
     actions = models.ManyToManyField('Action', related_name='approval_documents', blank=True)
 
-    def str(self):
+    def __str__(self):
         return f"Approval Document for {self.content_type}"
 
     def clean(self):
         super().clean()
-        if self.pk:  
+        if self.pk:
             current_actions = set(self.actions.values_list('id', flat=True))
-            
             for doc in ApprovalDocument.objects.filter(
                 institution=self.institution,
                 content_type=self.content_type
@@ -84,22 +81,20 @@ class ApprovalDocument(SoftDeletableTimeStampedModel):
                 doc_actions = set(doc.actions.values_list('id', flat=True))
                 if current_actions == doc_actions:
                     raise ValidationError(
-                        {"error":"An approval document with the same content type and actions already exists."}
+                        {"error": "An approval document with the same content type and actions already exists."}
                     )
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
-        
-
 class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
     level = models.PositiveIntegerField(null=True, blank=True)
     approval_document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE, related_name='levels')
     description = models.TextField(blank=True)
-    approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels')
-    approver_users = models.ManyToManyField('users.Profile', through='ApprovalDocumentLevelApprovers', related_name='approver_users_levels', blank=True)    
-    overriders = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelOverriders', related_name='overrider_levels')
+    approvers = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelApprovers', related_name='approver_levels', blank=True)
+    approver_users = models.ManyToManyField('users.Profile', through='ApprovalDocumentLevelApprovers', related_name='approver_users_levels', blank=True)
+    overriders = models.ManyToManyField(ApproverGroup, through='ApprovalDocumentLevelOverriders', related_name='overrider_levels', blank=True)
     overrider_users = models.ManyToManyField('users.Profile', through='ApprovalDocumentLevelOverriders', related_name='overrider_users_levels', blank=True)
     public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -143,8 +138,8 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
         
         # From groups and users in ApprovalDocumentLevelOverriders
         for overrider in self.overriders.through.objects.filter(approval_document_level=self):
-            if overrider.approver_group:
-                group = overrider.approver_group
+            if overrider.overrider_group:
+                group = overrider.overrider_group
                 for profile in group.users.all():
                     if profile.user and profile.user.is_active:
                         users.add(profile.user)
@@ -152,8 +147,8 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
                     for user_role in role.user_roles.all():
                         if user_role.user and user_role.user.is_active:
                             users.add(user_role.user)
-            if overrider.approver_user:
-                profile = overrider.approver_user
+            if overrider.overrider_user:
+                profile = overrider.overrider_user
                 if profile.user and profile.user.is_active:
                     users.add(profile.user)
         
@@ -171,10 +166,16 @@ class ApprovalDocumentLevelApprovers(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
     approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE, blank=True, null=True)
     approver_user = models.ForeignKey('users.Profile', on_delete=models.CASCADE, blank=True, null=True)
+
     class Meta:
         unique_together = ('approval_document_level', 'approver_group', 'approver_user')
         verbose_name = "Approval Document Level Approver"
         verbose_name_plural = "Approval Document Level Approvers"
+
+    def clean(self):
+        super().clean()
+        if self.approver_group is None and self.approver_user is None:
+            raise ValidationError({"error": "At least one of approver_group or approver_user must be set."})
 
 class ApprovalDocumentLevelOverriders(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
@@ -186,6 +187,11 @@ class ApprovalDocumentLevelOverriders(models.Model):
         verbose_name = "Approval Document Level Overrider"
         verbose_name_plural = "Approval Document Level Overriders"
 
+    def clean(self):
+        super().clean()
+        if self.overrider_group is None and self.overrider_user is None:
+            raise ValidationError({"error": "At least one of overrider_group or overrider_user must be set."})
+
 class Approval(models.Model):
     STATUS_CHOICES = [
         ('ongoing', 'Ongoing'),
@@ -196,7 +202,7 @@ class Approval(models.Model):
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ongoing')
     document = models.ForeignKey(ApprovalDocument, on_delete=models.CASCADE)
-    action = models.ForeignKey(Action, on_delete=models.CASCADE)  
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     content_object = GenericForeignKey('content_type', 'object_id')
@@ -229,7 +235,12 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         ordering = ['level__level']
 
     def _check_user_is_approver(self, user):
-        """Check if user is authorized as an approver for this level (via groups or direct user)"""
+        """Check if user is authorized as an approver for this level (via groups, direct user, or institution owner)"""
+        # Check if user is the institution owner of the task's institution
+        institution = self.approval.document.institution
+        if user == institution.institution_owner:
+            return True
+
         profile = user.profile
         Role = apps.get_model("users", "Role")
         user_roles = Role.objects.filter(user_roles__user=user)
@@ -254,21 +265,26 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
         })
 
     def _check_user_is_overrider(self, user):
-        """Check if user is authorized as an overrider for this level (via groups or direct user)"""
+        """Check if user is authorized as an overrider for this level (via groups, direct user, or institution owner)"""
+        # Check if user is the institution owner of the task's institution
+        institution = self.approval.document.institution
+        if user == institution.institution_owner:
+            return True
+
         profile = user.profile
         Role = apps.get_model("users", "Role")
         user_roles = Role.objects.filter(user_roles__user=user)
 
         # Check direct overrider users
         if self.level.overrider_users.through.objects.filter(
-            approval_document_level=self.level, approver_user=profile
+            approval_document_level=self.level, overrider_user=profile
         ).exists():
             return True
 
         # Check via groups
         overrider_groups = self.level.overriders.through.objects.filter(
-            approval_document_level=self.level, approver_group__isnull=False
-        ).values_list('approver_group', flat=True)
+            approval_document_level=self.level, overrider_group__isnull=False
+        ).values_list('overrider_group', flat=True)
         if ApproverGroup.objects.filter(
             pk__in=overrider_groups
         ).filter(Q(users=profile) | Q(roles__in=user_roles)).exists():
@@ -306,7 +322,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if next_task:
                 next_task.status = 'pending'
                 next_task.save(update_fields=["status", "updated_at"])
-                # Notify next approvers 
+                # Notify next approvers
                 object_desc = str(content_object) if content_object else "an object"
                 message = f"A new approval task is pending for you: Approve {object_desc} at level {next_task.level.level}."
                 for approver_user in next_task.level.get_approver_users():
@@ -367,7 +383,6 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 from communication.views import add_notification
-
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been rejected at level {self.level.level}.",
@@ -414,7 +429,6 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             object_desc = str(content_object) if content_object else "an object"
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 from communication.views import add_notification
-
                 add_notification(
                     user_id=self.approval.content_object.created_by.id,
                     message=f"Your approval request for {object_desc} has been overridden and completed at level {self.level.level}.",
@@ -441,11 +455,8 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
     def get_user_permissions(self, user):
         """Get user's permissions for this task"""
         institution = self.approval.document.institution
-        is_institution_owner = (
-            hasattr(user, 'profile') and 
-            institution.institution_owner.filter(id=user.profile.id).exists()
-        )
-        
+        is_institution_owner = (user == institution.institution_owner)
+
         return {
             'can_approve_or_reject': self.can_user_approve_or_reject(user),
             'can_override': self.can_user_override(user),
@@ -493,7 +504,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                 self.is_active = False
                 self.deleted_at = timezone.now()
             self.save(update_fields=['approval_status', 'is_active', 'deleted_at'])
-            
+
             # Simulate finish_workflow for subclass hooks (dummy approval not saved)
             dummy_approval = Approval(
                 status='completed',
@@ -534,6 +545,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                 model_name = content_type.model
                 object_id = str(self.pk)
                 for approver_user in first_task.level.get_approver_users():
+                    from communication.views import add_notification
                     add_notification(
                         user_id=approver_user.id,
                         message=message,
