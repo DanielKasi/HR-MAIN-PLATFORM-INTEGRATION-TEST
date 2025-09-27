@@ -465,21 +465,7 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTaxRule
-        fields = [
-            "id",
-            "institution_tax",
-            "tax_rule_name",
-            "tax_rule_description",
-            "tax_rule_percentage",
-            "tax_rule_fixed_amount",
-            "salary_from",
-            "salary_to",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -506,19 +492,6 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
                 else getattr(instance, "tax_rule_fixed_amount", None)
             )
 
-        if not tax_rule_percentage and not tax_rule_fixed_amount:
-            raise serializers.ValidationError(
-                {
-                    "error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
-                }
-            )
-
-        if tax_rule_percentage and tax_rule_fixed_amount:
-            raise serializers.ValidationError(
-                {
-                    "error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
-                }
-            )
 
         return attrs
 
