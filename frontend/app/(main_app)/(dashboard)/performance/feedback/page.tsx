@@ -15,6 +15,7 @@ import { FeedbackModal } from "@/components/performance/feedback/feedback-modal"
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function FeedbackPage() {
 	const [feedback, setFeedback] = useState<IFeedback360[]>([]);
@@ -24,6 +25,7 @@ export default function FeedbackPage() {
 	const [feedbackToDelete, setFeedbackToDelete] = useState<IFeedback360 | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const router = useRouter();
 
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
@@ -55,7 +57,9 @@ export default function FeedbackPage() {
 		setEditingFeedback(feedbackItem);
 		setModalOpen(true);
 	};
-
+	const handleView = (feedbackItem: IFeedback360) => {
+		router.push(`/performance/feedback/${feedbackItem.id}`);
+	}
 	const handleSubmit = async (data: IFeedback360FormData) => {
 		setSubmitting(true);
 		try {
@@ -159,6 +163,7 @@ export default function FeedbackPage() {
 				{/* Feedback Table */}
 				<FeedbackTable
 					feedback={feedback}
+					onView={handleView}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onAdd={handleCreate}

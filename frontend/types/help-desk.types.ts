@@ -16,6 +16,8 @@ export interface FAQCategoryFormData {
 }
 
 export interface FAQ extends IBaseApprovable {
+    updated_at: any;
+    created_at: any;
 	id: number;
 	question: string;
 	answer: string;

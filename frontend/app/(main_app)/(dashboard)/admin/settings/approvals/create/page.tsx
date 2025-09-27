@@ -9,7 +9,7 @@ import type {
 	ApproverGroup,
 	ApproverGroupFormData,
 } from "@/types/approvals.types";
-import type { Role, UserProfile } from "@/types";
+import type { Role, UserProfile } from "@/types/";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -725,7 +725,7 @@ export default function ApprovalCreatePage() {
 														<div className="mt-1 flex flex-wrap gap-1">
 															{level.approvers_detail.map((approver) => (
 																<Badge key={approver.id} variant="secondary" className="text-xs">
-																	{approver.approver_group.name}
+																	{approver.approver_group?.name}
 																</Badge>
 															))}
 														</div>

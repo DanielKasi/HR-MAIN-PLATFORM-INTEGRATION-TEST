@@ -15,6 +15,7 @@ import { EmployeeObjectiveModal } from "@/components/performance/employee-object
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function EmployeeObjectivesPage() {
 	const [employeeObjectives, setEmployeeObjectives] = useState<IEmployeeObjective[]>([]);
@@ -28,6 +29,7 @@ export default function EmployeeObjectivesPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const currentInstitution = useSelector(selectSelectedInstitution);
+	const router = useRouter();
 
 	const fetchEmployeeObjectives = async () => {
 		if (!currentInstitution) return;
@@ -60,6 +62,10 @@ export default function EmployeeObjectivesPage() {
 		setEditingEmployeeObjective(employeeObjective);
 		setModalOpen(true);
 	};
+
+	const handleView = (employeeObjective: IEmployeeObjective) => {
+		router.push(`/performance/employee-objectives/${employeeObjective.id}`);
+	}
 
 	const handleSubmit = async (data: IEmployeeObjectiveFormData) => {
 		setSubmitting(true);
@@ -162,6 +168,7 @@ export default function EmployeeObjectivesPage() {
 				{/* Employee Objectives Table */}
 				<EmployeeObjectivesTable
 					employeeObjectives={employeeObjectives}
+					onView={handleView}
 					onEdit={handleEdit}
 					onDelete={setObjectiveToDelete}
 					onAdd={handleCreate}

@@ -7486,6 +7486,17 @@ export const penaltyConfigAPI = {
 		}
 	},
 
+	getBranchPenaltyConfigId: async (id: number): Promise<IBranchPenaltyConfig> => {
+		try {
+			const response = await apiRequest.get(`/institution/branch-penalties/${id}/`);
+
+			return response.data;
+		} catch (error) {
+			console.error("Error updating branch penalty config:", error);
+			throw error;
+		}
+	},
+
 	deleteBranchPenaltyConfig: async (id: number): Promise<boolean> => {
 		try {
 			const response = await apiRequest.delete(`/institution/branch-penalties/${id}/`);
@@ -7579,6 +7590,19 @@ export const branchLocationComparisonConfigAPI = {
 				`/institution/branch-location-comparison/${id}/`,
 				data,
 			);
+
+			return response.data as IBranchLocationComparisonConfig;
+		} catch (error) {
+			console.warn("Error updating branch location comparison config:", error);
+			throw error;
+		}
+	},
+
+	getByIdBranchLocationComparisonConfig: async (
+		id: number,
+	): Promise<IBranchLocationComparisonConfig> => {
+		try {
+			const response = await apiRequest.get(`/institution/branch-location-comparison/${id}/`);
 
 			return response.data as IBranchLocationComparisonConfig;
 		} catch (error) {

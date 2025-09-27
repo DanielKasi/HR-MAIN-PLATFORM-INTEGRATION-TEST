@@ -25,11 +25,12 @@ import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
 
 export default function FAQsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
 	const tableRefreshRef = useRef<(() => void) | null>(null);
-
+	const router = useRouter();
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [ordering, setOrdering] = useState("");
@@ -75,10 +76,8 @@ export default function FAQsPage() {
 	};
 
 	const openDetails = (faq: FAQ) => {
-		setSelectedFAQ(faq);
-		setOpenDetailsDialog(true);
+		router.push(`/help-desk/faqs/${faq.id}`);
 	};
-
 	const columns: ColumnDef<FAQ>[] = [
 		{
 			key: "question",
@@ -239,23 +238,6 @@ export default function FAQsPage() {
 					</div>
 				}
 			/>
-
-			{selectedFAQ && (
-				<ApprovableDialog
-					isOpen={openDetailsDialog}
-					onOpenChange={(open) => {
-						setOpenDetailsDialog(open);
-						if (!open) setSelectedFAQ(null);
-					}}
-					title={`FAQ Details: ${selectedFAQ.question}`}
-					description="View the details for this FAQ."
-					approvals={selectedFAQ.approvals}
-					instanceApprovalStatus={selectedFAQ.approval_status}
-					onRefresh={() => tableRefreshRef.current?.()}
-				>
-					{renderDetailsContent(selectedFAQ)}
-				</ApprovableDialog>
-			)}
 
 			<ConfirmationDialog
 				isOpen={deleteConfirmOpen}

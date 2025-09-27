@@ -278,6 +278,7 @@ export interface ICompanyEmail {
 }
 
 export interface IEmployee {
+	position_details: string;
 	id: number;
 	date_of_birth: string;
 	user: IUser | null;
@@ -1516,6 +1517,7 @@ export interface IBankTypeFormData {
 }
 
 export interface IBankAccount {
+	is_active: boolean;
 	id: number | string;
 	institution_bank: number | string;
 	account_name: string;
@@ -1952,6 +1954,7 @@ export interface IInstitutionPenaltyConfigFormData {
 }
 
 export interface IBranchPenaltyConfig {
+	is_active(is_active: any): import("react").ReactNode;
 	id: number;
 	branch: number;
 	penalty_type: string;
@@ -1971,6 +1974,7 @@ export interface IBranchPenaltyConfigFormData {
 }
 
 export interface IBranchLocationComparisonConfig {
+	is_active: string;
 	id: number;
 	branch: number;
 	branch_name: string;
@@ -2010,7 +2014,7 @@ export interface IShiftFormData {
 }
 
 export interface IEmployeeShift {
-	updated_at: any;
+	updated_at: string;
 	id: string;
 	employee: IEmployee;
 	shift: IBranchShift;
@@ -2095,6 +2099,7 @@ export interface IInstitutionSpotCheckSetting extends ISpotCheckSetting {
 }
 
 export interface IBranchSpotCheckSetting extends ISpotCheckSetting {
+	id: any;
 	branch: Branch;
 }
 
@@ -2191,9 +2196,10 @@ export interface IProjectFormData {
 export type IDurationUnit = "days" | "months" | "years";
 
 export interface IPeriod {
-	updated_at(updated_at: any): import("react").ReactNode;
-	created_at: any;
-	is_active: any;
+	description: any;
+	updated_at: string;
+	created_at: string;
+	is_active: string;
 	id: number;
 	institution: IUserInstitution;
 	name: string;
@@ -2213,6 +2219,9 @@ export interface IPeriodFormData {
 export type IObjectiveStatus = "not_started" | "on_track" | "closed" | "at_risk" | "behind";
 
 export interface IObjective {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: IUserInstitution;
 	name: string;
@@ -2240,6 +2249,8 @@ export interface IObjectiveFormData {
 }
 
 export interface IEmployeeObjective {
+	updated_at: string;
+	created_at: string;
 	id: number;
 	employee: IEmployee;
 	objective: IObjective;
@@ -2261,6 +2272,9 @@ export interface IEmployeeObjectiveFormData {
 export type IProgressType = "percentage" | "number";
 
 export interface IKeyResult {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: IUserInstitution;
 	title: string;
@@ -2577,3 +2591,8 @@ export interface ILeaveRequest extends IBaseApprovable {}
 export interface ILeavePolicy extends IBaseApprovable {}
 
 export interface IOffboardingStage extends IBaseApprovable {}
+
+export interface IBranchLocationComparisonConfig extends IBaseApprovable {}
+export interface IEvent extends IBaseApprovable {}
+export interface IBankAccount extends IBaseApprovable {}
+export interface IBankType extends IBaseApprovable {}

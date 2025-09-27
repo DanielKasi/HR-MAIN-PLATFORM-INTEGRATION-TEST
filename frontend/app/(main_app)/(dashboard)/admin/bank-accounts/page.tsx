@@ -18,6 +18,7 @@ import { BankAccountDetailsModal } from "@/components/bank-accounts/bank-account
 import { BankAccountsTable } from "@/components/bank-accounts/bank-accounts-table";
 import { PaginationControls } from "@/components/bank-accounts/pagination-controls";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function BankAccountManagement() {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -41,6 +42,7 @@ export default function BankAccountManagement() {
 	const [editingAccount, setEditingAccount] = useState<IBankAccount | null>(null);
 	const [viewingAccount, setViewingAccount] = useState<IBankAccount | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const router = useRouter();
 
 	// Debounced search
 	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -141,12 +143,9 @@ export default function BankAccountManagement() {
 		setEditingAccount(account);
 		setShowFormModal(true);
 	};
-
 	const handleView = (account: IBankAccount) => {
-		setViewingAccount(account);
-		setShowDetailsModal(true);
+		router.push(`/admin/bank-accounts/${account.id}`);
 	};
-
 	const handleDelete = async (bankAccount: IBankAccount) => {
 		if (!selectedInstitution?.id) return;
 
@@ -268,13 +267,6 @@ export default function BankAccountManagement() {
 				onSave={handleSave}
 				isSubmitting={isSubmitting}
 				existingAccounts={bankAccounts}
-			/>
-
-			{/* Details Modal */}
-			<BankAccountDetailsModal
-				isOpen={showDetailsModal}
-				onClose={handleCloseDetailsModal}
-				bankAccount={viewingAccount}
 			/>
 
 			{bankAccountToDelete && (
