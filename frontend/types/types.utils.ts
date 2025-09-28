@@ -32,7 +32,7 @@ export interface DepartmentFormData {
 	institution: number;
 }
 
-export interface IInstitution {
+export interface IInstitution extends IBaseApprovable {
 	id: number;
 	institution_email: string;
 	institution_name: string;
@@ -44,8 +44,6 @@ export interface IInstitution {
 	location?: string | null;
 	latitude?: number | null;
 	longitude?: number | null;
-	approval_status: string;
-	approval_status_display: string;
 	approval_date?: string | null; // ISO date
 	documents: IInstitutionDocument[]; // Embedded serializer
 	document_files?: File[]; // Write-only field
@@ -658,23 +656,7 @@ export interface IDepartmentResponse {
 	name: string;
 	description: string;
 	institution: number;
-	institution_details: {
-		id: number;
-		institution_email: string;
-		institution_name: string;
-		first_phone_number: string;
-		second_phone_number: string;
-		institution_logo: string;
-		institution_owner_id: number;
-		theme_color: string;
-		location: string;
-		latitude: number;
-		longitude: number;
-		approval_status: string;
-		approval_status_display: string;
-		approval_date: string;
-		documents: any[];
-	};
+	institution_details: IUserInstitution;
 }
 
 export interface IRole {
@@ -922,9 +904,7 @@ export function convertDisciplineTypeFormToApiRequest(
 	};
 }
 
-export interface IDisciplinaryAction {
-	approvals: any;
-	approval_status: boolean;
+export interface IDisciplinaryAction extends IBaseApprovable {
 	id: number;
 	discipline_type?: {
 		id: number;
@@ -1145,7 +1125,7 @@ export interface IDeductionTypeFormData {
 	is_active: boolean;
 }
 
-export interface IEmployeeAllowance {
+export interface IEmployeeAllowance extends IBaseApprovable {
 	id: number;
 	employee: IEmployee;
 	allowance_type: IAllowanceType;
@@ -1269,15 +1249,12 @@ export interface IContractFormData {
 	notes?: string | null;
 }
 
-export interface IDocumentType {
+export interface IDocumentType extends IBaseApprovable {
 	id: number;
 	name: string;
 	description: string;
 	code: string;
 	is_active: boolean;
-	approval_status?: boolean;
-	approval_status_display?: ApprovableEntityStatus;
-	approvals?: Approval[];
 }
 
 export interface IDocumentTypeFormData {
@@ -2175,6 +2152,7 @@ export interface IProject {
 	end_date: string;
 	project_status: IProjectStatus;
 	project_tasks: IProjectTask[];
+	project_documents: string[];
 }
 
 export interface IProjectFormData {
@@ -2446,10 +2424,9 @@ export interface IMeetingIntegrationFormData {
 	tenant_id?: string;
 }
 
-export interface IMeetingIntegration {
+export interface IMeetingIntegration extends IBaseApprovable {
 	id: number;
 	is_active?: boolean;
-	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
 	api_key: string | null;
 	api_secret: string | null;
@@ -2476,9 +2453,8 @@ export interface IEmailProviderConfigFormData {
 	api_token?: string;
 }
 
-export interface IEmailProviderConfig {
+export interface IEmailProviderConfig extends IBaseApprovable {
 	id: number;
-	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	provider: "cpanel" | "google_workspace" | "microsoft_365";
 	domain: string;
 	webmail_url: string | null;

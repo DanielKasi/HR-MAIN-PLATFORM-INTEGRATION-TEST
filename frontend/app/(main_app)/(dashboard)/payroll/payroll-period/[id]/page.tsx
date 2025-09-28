@@ -518,33 +518,20 @@ export default function PayrollPeriodDetails() {
 					</div>
 				</div>
 
-				{/* Results Table */}
-				<div
-					className={`pt-4 ${payrollPeriod?.approval_status !== "active" && payrollPeriod?.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""} `}
-				>
-					{payrollPeriod?.approvals && (
-						<ApprovalWorkflow
-							className="order-1 md:order-2"
-							approvals={payrollPeriod.approvals}
-							instance_approval_status={payrollPeriod.approval_status}
-							onRefresh={fetchData}
-						/>
-					)}
-					<div className="lg:col-span-2 xl:col-span-3 order-2 md:order-1 mx-0 md:mx-2">
-						<>
-							{selectedInstitution && (
-								<EmployeePayrollTable
-									institutionId={selectedInstitution.id}
-									scope={{ type: "default", payrollPeriodId }}
-									setParentPayslips={setDisplayedPayslips}
-									refreshTableRef={refreshFunctionRef}
-									searchTerm={searchTerm}
-									showEmployeeAvatar={false}
-								/>
-							)}
-						</>
-					</div>
-				</div>
+				<ApprovableInstancePageLayout instance={payrollPeriod} onInstanceRefresh={fetchData}>
+					<>
+						{selectedInstitution && (
+							<EmployeePayrollTable
+								institutionId={selectedInstitution.id}
+								scope={{ type: "default", payrollPeriodId }}
+								setParentPayslips={setDisplayedPayslips}
+								refreshTableRef={refreshFunctionRef}
+								searchTerm={searchTerm}
+								showEmployeeAvatar={false}
+							/>
+						)}
+					</>
+				</ApprovableInstancePageLayout>
 			</div>
 		</div>
 	);

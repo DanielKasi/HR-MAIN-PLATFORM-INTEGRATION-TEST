@@ -22,6 +22,7 @@ import { IAsset } from "@/types/types.utils";
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -131,166 +132,148 @@ const AssetCategoryView = () => {
 		);
 	}
 	return (
-		<div
-			className={`p-6 bg-white ${assetCategory?.approval_status !== "active" && assetCategory?.approvals?.length ? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6" : ""}`}
-		>
-			{/* ApprovalWorkflow - will appear on the right */}
-			{assetCategory?.approvals && assetCategory.approvals.length > 0 && (
-				<div className="order-1 lg:order-2">
-					<ApprovalWorkflow
-						approvals={assetCategory.approvals}
-						instance_approval_status={assetCategory.approval_status}
-						onRefresh={fetchAssetCategory}
-					/>
-				</div>
-			)}
-
-			{/* Main content - will take up remaining space on the left */}
-			<div
-				className={`${assetCategory?.approval_status !== "active" && assetCategory?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""} space-y-6`}
-			>
-				{/* Header */}
-				<div className="flex items-center justify-between">
-					<div className="flex items-center space-x-4">
-						<Button
-							variant="outline"
-							className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0 -mt-4"
-							size="sm"
-							onClick={() => router.push("/assets/asset-categories")}
-						>
-							<ArrowLeft className="h-4 w-4 mr-2" />
-						</Button>
-						<div>
-							<h1 className="text-2xl font-bold text-gray-900">{assetCategory.category_name}</h1>
-							<p className="text-muted-foreground">Asset Category Details</p>
-						</div>
+		<ApprovableInstancePageLayout instance={assetCategory} onInstanceRefresh={fetchAssetCategory}>
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center space-x-4">
+					<Button
+						variant="outline"
+						className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0 -mt-4"
+						size="sm"
+						onClick={() => router.push("/assets/asset-categories")}
+					>
+						<ArrowLeft className="h-4 w-4 mr-2" />
+					</Button>
+					<div>
+						<h1 className="text-2xl font-bold text-gray-900">{assetCategory.category_name}</h1>
+						<p className="text-muted-foreground">Asset Category Details</p>
 					</div>
 				</div>
-
-				{/* Basic Information */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center">
-							<FileText className="h-5 w-5 mr-2" />
-							Basic Information
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-muted-foreground">Category Name</label>
-								<p className="text-base font-medium">{assetCategory.category_name}</p>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-muted-foreground">Status</label>
-								<div>
-									<Badge className={getStatusColor(assetCategory.is_active)}>
-										{assetCategory.is_active ? (
-											<>
-												<CheckCircle className="h-3 w-3 mr-1" />
-												Active
-											</>
-										) : (
-											<>
-												<XCircle className="h-3 w-3 mr-1" />
-												Inactive
-											</>
-										)}
-									</Badge>
-								</div>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-muted-foreground">Assets Count</label>
-								<div className="flex items-center">
-									<Package className="h-4 w-4 mr-2 text-muted-foreground" />
-									<span className="text-base font-medium">
-										{getAssetCount()} Asset{getAssetCount() !== 1 ? "s" : ""}
-									</span>
-								</div>
-							</div>
-						</div>
-
-						{assetCategory.category_description && (
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-muted-foreground">Description</label>
-								<div className="p-4">
-									<p className="text-base text-gray-700 leading-relaxed">
-										{assetCategory.category_description}
-									</p>
-								</div>
-							</div>
-						)}
-
-						{!assetCategory.category_description && (
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-muted-foreground">Description</label>
-								<div className="p-4 bg-gray-50 rounded-lg border">
-									<p className="text-base text-gray-400 italic">No description provided</p>
-								</div>
-							</div>
-						)}
-					</CardContent>
-				</Card>
-
-				{/* Category Statistics */}
-				<Card>
-					<CardHeader>
-						<CardTitle>Category Statistics</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
-								<div
-									className={`p-2 rounded-full ${
-										assetCategory.is_active
-											? "bg-green-100 text-green-600"
-											: "bg-gray-100 text-gray-600"
-									}`}
-								>
-									{assetCategory.is_active ? (
-										<CheckCircle className="h-4 w-4" />
-									) : (
-										<XCircle className="h-4 w-4" />
-									)}
-								</div>
-								<div>
-									<p className="font-medium">Status</p>
-									<p className="text-sm text-muted-foreground">
-										{assetCategory.is_active ? "Currently active" : "Currently inactive"}
-									</p>
-								</div>
-							</div>
-
-							<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
-								<div className="p-2 rounded-full bg-blue-100 text-blue-600">
-									<Package className="h-4 w-4" />
-								</div>
-								<div>
-									<p className="font-medium">Assets</p>
-									<p className="text-sm text-muted-foreground">
-										{getAssetCount()} asset{getAssetCount() !== 1 ? "s" : ""} in this category
-									</p>
-								</div>
-							</div>
-
-							<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
-								<div className="p-2 rounded-full bg-purple-100 text-purple-600">
-									<Calendar className="h-4 w-4" />
-								</div>
-								<div>
-									<p className="font-medium">Created</p>
-									<p className="text-sm text-muted-foreground">
-										{formatDate(assetCategory.created_at)}
-									</p>
-								</div>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
 			</div>
-		</div>
+
+			{/* Basic Information */}
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center">
+						<FileText className="h-5 w-5 mr-2" />
+						Basic Information
+					</CardTitle>
+				</CardHeader>
+				<CardContent className="space-y-6">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-muted-foreground">Category Name</label>
+							<p className="text-base font-medium">{assetCategory.category_name}</p>
+						</div>
+
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-muted-foreground">Status</label>
+							<div>
+								<Badge className={getStatusColor(assetCategory.is_active)}>
+									{assetCategory.is_active ? (
+										<>
+											<CheckCircle className="h-3 w-3 mr-1" />
+											Active
+										</>
+									) : (
+										<>
+											<XCircle className="h-3 w-3 mr-1" />
+											Inactive
+										</>
+									)}
+								</Badge>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-muted-foreground">Assets Count</label>
+							<div className="flex items-center">
+								<Package className="h-4 w-4 mr-2 text-muted-foreground" />
+								<span className="text-base font-medium">
+									{getAssetCount()} Asset{getAssetCount() !== 1 ? "s" : ""}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					{assetCategory.category_description && (
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-muted-foreground">Description</label>
+							<div className="p-4">
+								<p className="text-base text-gray-700 leading-relaxed">
+									{assetCategory.category_description}
+								</p>
+							</div>
+						</div>
+					)}
+
+					{!assetCategory.category_description && (
+						<div className="space-y-2">
+							<label className="text-sm font-medium text-muted-foreground">Description</label>
+							<div className="p-4 bg-gray-50 rounded-lg border">
+								<p className="text-base text-gray-400 italic">No description provided</p>
+							</div>
+						</div>
+					)}
+				</CardContent>
+			</Card>
+
+			{/* Category Statistics */}
+			<Card>
+				<CardHeader>
+					<CardTitle>Category Statistics</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
+							<div
+								className={`p-2 rounded-full ${
+									assetCategory.is_active
+										? "bg-green-100 text-green-600"
+										: "bg-gray-100 text-gray-600"
+								}`}
+							>
+								{assetCategory.is_active ? (
+									<CheckCircle className="h-4 w-4" />
+								) : (
+									<XCircle className="h-4 w-4" />
+								)}
+							</div>
+							<div>
+								<p className="font-medium">Status</p>
+								<p className="text-sm text-muted-foreground">
+									{assetCategory.is_active ? "Currently active" : "Currently inactive"}
+								</p>
+							</div>
+						</div>
+
+						<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
+							<div className="p-2 rounded-full bg-blue-100 text-blue-600">
+								<Package className="h-4 w-4" />
+							</div>
+							<div>
+								<p className="font-medium">Assets</p>
+								<p className="text-sm text-muted-foreground">
+									{getAssetCount()} asset{getAssetCount() !== 1 ? "s" : ""} in this category
+								</p>
+							</div>
+						</div>
+
+						<div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30">
+							<div className="p-2 rounded-full bg-purple-100 text-purple-600">
+								<Calendar className="h-4 w-4" />
+							</div>
+							<div>
+								<p className="font-medium">Created</p>
+								<p className="text-sm text-muted-foreground">
+									{formatDate(assetCategory.created_at)}
+								</p>
+							</div>
+						</div>
+					</div>
+				</CardContent>
+			</Card>
+		</ApprovableInstancePageLayout>
 	);
 };
 

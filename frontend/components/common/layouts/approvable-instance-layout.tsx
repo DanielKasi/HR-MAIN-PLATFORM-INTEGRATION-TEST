@@ -24,13 +24,13 @@ export function ApprovableInstancePageLayout<T extends IBaseApprovable>({
 	return (
 		<div
 			className={cn(
-				"gap-6",
+				"",
 				className,
 				hasPendingApprovals && "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3",
 			)}
 		>
 			{hasPendingApprovals && (
-				<div className="order-1 lg:order-2">
+				<div className="order-1 lg:order-2 bg-white px-2 rounded-md">
 					<ApprovalWorkflow
 						approvals={instance.approvals || []}
 						instance_approval_status={instance.approval_status}

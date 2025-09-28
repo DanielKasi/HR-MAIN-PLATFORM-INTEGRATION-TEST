@@ -9,7 +9,7 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedPage from "@/components/ProtectedPage";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import FixedLoader from "@/components/fixed-loader";
-import { employeeAPI, showErrorToast } from "@/lib/utils";
+import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const currentUser = useSelector(selectUser);
@@ -39,7 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		}
 		setLoading(true);
 		try {
-			const employee = await employeeAPI.getByUserId({ user_id: currentUser.id });
+			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
 
 			setRelatedEmployee(employee);
 		} catch (error) {
