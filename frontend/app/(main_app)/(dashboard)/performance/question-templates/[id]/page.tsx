@@ -10,6 +10,7 @@ import type { CustomField } from "@/types/types.utils";
 
 import { QUESTION_TEMPLATES_API, showErrorToast } from "@/lib/utils";
 import type { IQuestionTemplate } from "@/types/types.utils";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 interface ReadOnlyFieldProps {
 	field: CustomField;
@@ -103,21 +104,20 @@ export default function QuestionTemplateDetailPage({}: QuestionTemplateDetailPag
 
 	const templateId = params.id as string;
 
+	const fetchTemplate = async () => {
+		setLoading(true);
+		try {
+			const response = await QUESTION_TEMPLATES_API.getById({ templateId: Number(templateId) });
+			setTemplate(response);
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to fetch question template" });
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		if (!templateId) return;
-
-		const fetchTemplate = async () => {
-			setLoading(true);
-			try {
-				const response = await QUESTION_TEMPLATES_API.getById({ templateId: Number(templateId) });
-				setTemplate(response);
-			} catch (error) {
-				showErrorToast({ error, defaultMessage: "Failed to fetch question template" });
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		fetchTemplate();
 	}, [templateId]);
 
@@ -151,66 +151,68 @@ export default function QuestionTemplateDetailPage({}: QuestionTemplateDetailPag
 	}
 
 	return (
-		<div className="min-h-screen p-6 bg-white">
-			<div className="">
-				{/* Header */}
-				<div className="flex items-center justify-between mb-8">
-					<div className="flex items-center gap-4">
-						<Button
-							variant="outline"
-							className="!h-12 !w-12 !rounded-full !aspect-square"
-							onClick={() => router.back()}
-						>
-							<ArrowLeft className="h-4 w-4" />
-						</Button>
-						<div>
-							<h1 className="text-xl md:text-3xl font-bold text-slate-900">{template.name}</h1>
-							<div className="flex items-center gap-2 mt-2">
-								<Badge variant="secondary" className="capitalize">
-									{template.category.replace(/_/g, " ")}
-								</Badge>
-								<span className="text-sm text-slate-500">
-									{template.questions.length} Questions
-								</span>
+		<div className="min-h-screen p-6 bg-white mt-3">
+			<ApprovableInstancePageLayout instance={template} onInstanceRefresh={fetchTemplate}>
+				<div className="">
+					{/* Header */}
+					<div className="flex items-center justify-between mb-8">
+						<div className="flex items-center gap-4">
+							<Button
+								variant="outline"
+								className="!h-12 !w-12 !rounded-full !aspect-square"
+								onClick={() => router.back()}
+							>
+								<ArrowLeft className="h-4 w-4" />
+							</Button>
+							<div>
+								<h1 className="text-xl md:text-3xl font-bold text-slate-900">{template.name}</h1>
+								<div className="flex items-center gap-2 mt-2">
+									<Badge variant="secondary" className="capitalize">
+										{template.category.replace(/_/g, " ")}
+									</Badge>
+									<span className="text-sm text-slate-500">
+										{template.questions.length} Questions
+									</span>
+								</div>
 							</div>
 						</div>
+						<div className="flex gap-2">
+							<Link href={`/performance/question-templates/${template.id}/edit`}>
+								<Button className="rounded-xl">
+									<Edit className="h-4 w-4 md:mr-2" />
+									<span className="hidden md:inline-block">Edit Template</span>
+								</Button>
+							</Link>
+						</div>
 					</div>
-					<div className="flex gap-2">
-						<Link href={`/performance/question-templates/${template.id}/edit`}>
-							<Button className="rounded-xl">
-								<Edit className="h-4 w-4 md:mr-2" />
-								<span className="hidden md:inline-block">Edit Template</span>
-							</Button>
-						</Link>
-					</div>
-				</div>
 
-				{/* Description */}
-				{template.description && (
-					<div className="mb-8 p-4 bg-slate-50 rounded-xl">
-						<p className="text-slate-700">{template.description}</p>
-					</div>
-				)}
-
-				{/* Questions List */}
-				<div className="space-y-4">
-					<h2 className="text-xl font-semibold text-slate-900 mb-4">Questions</h2>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						{template.questions.map((field: CustomField) => (
-							<div key={field.id} className="p-4 border rounded-xl">
-								<ReadOnlyField field={field} />
-							</div>
-						))}
-					</div>
-					{template.questions.length === 0 && (
-						<div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-200 rounded-xl">
-							<FileText className="mx-auto h-12 w-12 mb-4" />
-							<p className="text-lg">No questions in this template</p>
-							<p className="text-sm">Add questions when editing the template.</p>
+					{/* Description */}
+					{template.description && (
+						<div className="mb-8 p-4 bg-slate-50 rounded-xl">
+							<p className="text-slate-700">{template.description}</p>
 						</div>
 					)}
+
+					{/* Questions List */}
+					<div className="space-y-4">
+						<h2 className="text-xl font-semibold text-slate-900 mb-4">Questions</h2>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							{template.questions.map((field: CustomField) => (
+								<div key={field.id} className="p-4 border rounded-xl">
+									<ReadOnlyField field={field} />
+								</div>
+							))}
+						</div>
+						{template.questions.length === 0 && (
+							<div className="text-center py-12 text-slate-500 border-2 border-dashed border-slate-200 rounded-xl">
+								<FileText className="mx-auto h-12 w-12 mb-4" />
+								<p className="text-lg">No questions in this template</p>
+								<p className="text-sm">Add questions when editing the template.</p>
+							</div>
+						)}
+					</div>
 				</div>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

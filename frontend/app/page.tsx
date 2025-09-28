@@ -231,9 +231,6 @@ export default function HomePage() {
 							<Card className="bg-white border shadow-lg">
 								<CardContent className="p-6">
 									<div className="space-y-4">
-										<div className="inline-flex rounded-full bg-orange-500/10 p-4">
-											<DollarSign className="h-6 w-6 text-primary" />
-										</div>
 										<h3 className="text-xl font-medium text-black">Payroll</h3>
 										<p className="text-gray-600">
 											Ensure accurate, timely payroll processing with tax compliance, automated

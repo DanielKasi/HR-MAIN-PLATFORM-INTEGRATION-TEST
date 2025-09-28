@@ -11,46 +11,22 @@ import colors from "../_components/colors";
 import BarSChart from "../_components/bars.chart";
 import BarVChart from "../_components/barv.chart";
 
-export function RecruitmentDashboard() {
+export default function RecruitmentDashboard() {
 	const [data, setData] = useState<IRecruitmentDashboard | null>({
 		total_job_positions: 0,
 		active_job_positions: 0,
 		total_adverts: 0,
 		active_adverts: 0,
 		total_applications: 0,
-		applications_by_status: [
-			{ status: "applied", count: 20 },
-			{ status: "screened", count: 17 },
-			{ status: "interviewed", count: 14 },
-			{ status: "offered", count: 11 },
-			{ status: "hired", count: 9 },
-		],
+		applications_by_status: [],
 		total_interviews: 0,
 		interviews_by_status: [],
 		upcoming_interviews: 0,
 		total_onboardings: 0,
 		onboardings_by_status: [],
 		average_time_to_hire_days: 0,
-		applications_sources: [
-			{ source: "online", count: 12 },
-			{ source: "newspaper", count: 2 },
-			{ source: "referral", count: 20 },
-			{ source: "internal", count: 20 },
-			{ source: "schools", count: 10 },
-		],
-		applications_over_time: [
-			{ month: "JAN", hired: 20, applications: 100 },
-			{ month: "FEB", hired: 30, applications: 120 },
-			{ month: "MAR", hired: 20, applications: 200 },
-			{ month: "APR", hired: 50, applications: 300 },
-			{ month: "JUN", hired: 50, applications: 400 },
-			{ month: "JUL", hired: 50, applications: 100 },
-			{ month: "AUG", hired: 50, applications: 200 },
-			{ month: "SEP", hired: 50, applications: 300 },
-			{ month: "OCT", hired: 40, applications: 200 },
-			{ month: "NOV", hired: 10, applications: 100 },
-			{ month: "DEC", hired: 50, applications: 200 },
-		],
+		applications_sources: [],
+		applications_over_time: [],
 	});
 	const [loading, setLoading] = useState(true);
 
@@ -59,7 +35,7 @@ export function RecruitmentDashboard() {
 			try {
 				const result = await getRecruitmentDashboard();
 
-				// setData(result);
+				setData(result);
 			} catch (error) {
 				console.error("Failed to fetch recruitment data:", error);
 			} finally {
@@ -131,7 +107,7 @@ export function RecruitmentDashboard() {
 			{/* Key Metrics */}
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 				{cards.map((card, i) => (
-					<StatsCard key={i} {...card} />
+					<StatsCard key={i} index={i} {...card} />
 				))}
 			</div>
 
@@ -139,14 +115,13 @@ export function RecruitmentDashboard() {
 			<div className="grid gap-6 lg:grid-cols-2">
 				{/* Applications by Status */}
 				<BarSChart
-					title={"Applications vs Hires Over Time"}
+					title={"Applications Over Time"}
 					label={""}
 					data={{
 						"2025": data.applications_over_time,
 					}}
-					dataKey1={"applications"}
-					dataKey2={"hired"}
-					nameKey={"month"}
+					dataKey1={"count"}
+					nameKey={"date"}
 					colors={colors}
 					rounded
 				/>

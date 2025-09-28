@@ -5,14 +5,8 @@ import { Button } from "@/components/ui/button";
 import { EmployeesTable } from "./employees-table";
 import { BulkUploadEmployeesDialog } from "@/components/dialogs/bulk-upload-employees-dialog";
 import { CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Plus, UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
+
+import { UserPlus, ChevronDown, Upload, Search, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { PERMISSION_CODES } from "@/constants";
@@ -20,7 +14,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import ProtectedPage from "@/components/ProtectedPage";
 import { useSelector } from "react-redux";
 import { selectAccessToken, selectSelectedInstitution } from "@/store/auth/selectors";
-import { getJobPositions, showErrorToast } from "@/lib/utils";
+import { showErrorToast } from "@/lib/utils";
 import { IJobPosition } from "@/types/types.utils";
 import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
 import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";

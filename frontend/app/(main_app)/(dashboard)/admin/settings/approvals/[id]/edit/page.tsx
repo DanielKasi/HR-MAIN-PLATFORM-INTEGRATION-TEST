@@ -9,7 +9,8 @@ import type {
 	ApproverGroup,
 	ApproverGroupFormData,
 } from "@/types/approvals.types";
-import type { Role, UserProfile } from "@/types";
+
+import { UserProfile, Role } from "@/types/user.types";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -55,6 +56,7 @@ import {
 	APPROVAL_DOCUMENTS_API,
 	APPROVER_GROUPS_API,
 } from "@/lib/api/approvals/utils";
+import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 
 export default function ApprovalEditPage() {
 	const params = useParams();
@@ -90,6 +92,12 @@ export default function ApprovalEditPage() {
 	const [selectedApproverGroupIds, setSelectedApproverGroupIds] = useState<number[]>([]);
 	const [selectedOverriderGroupIds, setSelectedOverriderGroupIds] = useState<number[]>([]);
 
+	const [selectedParticularApproverUsersIds, setSelectedParticularApproverUsersIds] = useState<
+		number[]
+	>([]);
+	const [selectedParticularOverriderUsersIds, setSelectedParticularOverriderUsersIds] = useState<
+		number[]
+	>([]);
 	// ApproverGroup creation dialog states
 	const [openApproverGroupDialog, setOpenApproverGroupDialog] = useState(false);
 	const [newGroupName, setNewGroupName] = useState("");
@@ -235,9 +243,17 @@ export default function ApprovalEditPage() {
 			setEditingLevel(level);
 			setNewLevelName(level.name || "Unknown ");
 			setNewLevelDescription(level.description || "");
-			setSelectedApproverGroupIds(level.approvers_detail?.map((a) => a.approver_group.id) || []);
-			setSelectedOverriderGroupIds(level.overriders_detail?.map((o) => o.approver_group.id) || []);
-		} else {
+			setSelectedApproverGroupIds(
+				level.approvers_detail
+					?.map((approver) => approver.approver_group?.id)
+					.filter((id): id is number => id !== undefined) || [],
+			);
+
+			setSelectedOverriderGroupIds(
+				level.overriders_detail
+					?.map((overrider) => overrider.approver_group?.id)
+					.filter((id): id is number => id !== undefined) || [],
+			);
 			setEditingLevel(null);
 			setNewLevelName("");
 			setNewLevelDescription("");
@@ -275,6 +291,8 @@ export default function ApprovalEditPage() {
 				approvers: selectedApproverGroupIds,
 				overriders: selectedOverriderGroupIds,
 				approval_document: approvalDocument.id,
+				approver_users: selectedParticularApproverUsersIds,
+				overrider_users: selectedParticularOverriderUsersIds,
 			};
 
 			if (editingLevel) {
@@ -523,7 +541,7 @@ export default function ApprovalEditPage() {
 													<div className="mt-1 flex flex-wrap gap-1">
 														{level.approvers_detail.map((approver) => (
 															<Badge key={approver.id} variant="secondary" className="text-xs">
-																{approver.approver_group.name}
+																{approver.approver_group?.name || "Unknown group"}
 															</Badge>
 														))}
 													</div>
@@ -543,7 +561,7 @@ export default function ApprovalEditPage() {
 													<div className="mt-1 flex flex-wrap gap-1">
 														{level.overriders_detail.map((overrider) => (
 															<Badge key={overrider.id} variant="outline" className="text-xs">
-																{overrider.approver_group.name}
+																{overrider.approver_group?.name || "Unknow group"}
 															</Badge>
 														))}
 													</div>
@@ -559,15 +577,24 @@ export default function ApprovalEditPage() {
 			</div>
 
 			{/* Level Dialog */}
-			<Dialog open={openLevelDialog} onOpenChange={setOpenLevelDialog}>
-				<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+			<Dialog
+				open={openLevelDialog}
+				onOpenChange={(open) => {
+					if (!open) {
+						resetLevelDialog();
+					} else {
+						setOpenLevelDialog(false);
+					}
+				}}
+			>
+				<DialogContent className="sm:max-w-2xl">
 					<DialogHeader>
 						<DialogTitle>
 							{editingLevel ? "Edit Approval Level" : "Create Approval Level"}
 						</DialogTitle>
 					</DialogHeader>
 
-					<div className="space-y-6 py-4">
+					<div className="space-y-6 py-4  max-h-[80vh] overflow-y-auto px-2">
 						{/* Basic Info */}
 						<div className="space-y-4">
 							<div>
@@ -701,6 +728,19 @@ export default function ApprovalEditPage() {
 							</div>
 						</div>
 
+						<div>
+							<label className="block text-sm font-medium mb-2">
+								Select Particular Approver Users
+							</label>
+							<UserProfileSearchableSelect
+								value={selectedParticularApproverUsersIds}
+								onValueChange={(values) =>
+									setSelectedParticularApproverUsersIds(values.map((val) => Number(val)))
+								}
+								placeholder="Select particular approver users..."
+								multiple={true}
+							/>
+						</div>
 						<Separator />
 
 						{/* Overrider Groups Section */}
@@ -731,13 +771,23 @@ export default function ApprovalEditPage() {
 								/>
 							</div>
 						</div>
+						<div>
+							<label className="block text-sm font-medium mb-2">
+								Select Particular Overrider Users
+							</label>
+							<UserProfileSearchableSelect
+								value={selectedParticularOverriderUsersIds}
+								onValueChange={(values) =>
+									setSelectedParticularOverriderUsersIds(values.map((val) => Number(val)))
+								}
+								placeholder="Select particular overrider users..."
+								multiple={true}
+							/>
+						</div>
 					</div>
 
 					<DialogFooter>
-						<Button variant="outline" onClick={resetLevelDialog}>
-							Cancel
-						</Button>
-						<Button onClick={saveLevel} disabled={savingLevel}>
+						<Button onClick={saveLevel} className="w-full rounded-full" disabled={savingLevel}>
 							{savingLevel ? "Saving..." : editingLevel ? "Update Level" : "Create Level"}
 						</Button>
 					</DialogFooter>

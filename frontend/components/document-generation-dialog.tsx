@@ -34,12 +34,15 @@ import {
 } from "@/lib/document-utils";
 import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { showErrorToast } from "@/lib/utils";
 
 interface DocumentGenerationDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	contextId: number;
-	context: "onboarding" | "employee" | "leave";
+	context:
+		| { type: "onboarding" | "employee" | "leave" }
+		| { type: "pip"; defaultTemplate: number | null };
 }
 
 export function DocumentGenerationDialog({
@@ -58,11 +61,15 @@ export function DocumentGenerationDialog({
 	const [generatedDocumentId, setGeneratedDocumentId] = useState<number | null>(null);
 	const [previewContent, setPreviewContent] = useState<string | null>(null);
 	const currentInstitution = useSelector(selectSelectedInstitution);
-	const [canSendDocument, setCanSendDocument] = useState(false);
+	const [canSendDocument, setCanSendDocument] = useState(context.type === "pip");
 
 	useEffect(() => {
 		if (open) {
-			loadTemplates();
+			if (context.type === "pip" && context.defaultTemplate) {
+				handleTemplateSelect(context.defaultTemplate.toString());
+			} else {
+				loadTemplates();
+			}
 		} else {
 			setTemplates([]);
 			setSelectedTemplate("");
@@ -70,7 +77,7 @@ export function DocumentGenerationDialog({
 			setGeneratedTemplate(null);
 			setGeneratedDocumentId(null);
 			setPreviewContent(null);
-			setCanSendDocument(false);
+			setCanSendDocument(context.type === "pip");
 		}
 	}, [open]);
 
@@ -96,7 +103,11 @@ export function DocumentGenerationDialog({
 		setSelectedTemplate(templateId);
 		setLoading(true);
 		try {
-			const response = await getGeneratedDocumentTemplate(parseInt(templateId), context, contextId);
+			const response = await getGeneratedDocumentTemplate(
+				parseInt(templateId),
+				context.type,
+				contextId,
+			);
 
 			if (response?.placeholders) {
 				setGeneratedTemplate(response);
@@ -121,8 +132,8 @@ export function DocumentGenerationDialog({
 		setCanSendDocument(false);
 		try {
 			const response = await generateDocument(
-				parseInt(selectedTemplate),
-				context,
+				selectedTemplate ? parseInt(selectedTemplate) : null,
+				context.type,
 				contextId,
 				placeholders,
 			);
@@ -156,11 +167,11 @@ export function DocumentGenerationDialog({
 		}
 		setLoading(true);
 		try {
-			await sendDocuments({ documentId: generatedDocumentId, context, contextId });
+			await sendDocuments({ documentId: generatedDocumentId, context: context.type, contextId });
 			toast.success("Document sent successfully");
 			onOpenChange(false);
 		} catch (error) {
-			toast.error("Failed to send document");
+			showErrorToast({ error, defaultMessage: "Failed to send document" });
 		} finally {
 			setLoading(false);
 		}
@@ -168,29 +179,36 @@ export function DocumentGenerationDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="w-full max-w-[500px] md:max-w-2xl lg:max-w-4xl">
+			<DialogContent className="w-full max-w-[500px] md:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
 				<DialogHeader>
 					<DialogTitle>Generate Document</DialogTitle>
 					<DialogDescription>
-						Select a template and fill in the required information.
+						Select a template and fill in the required information.{" "}
+						{context.type === "pip" ? (
+							<span className="!text-sm font-semibold text-gray-600">(Optional)</span>
+						) : (
+							<></>
+						)}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="space-y-4  p-8 overflow-y-auto max-h-[70svh]">
-					<div className="space-y-2">
-						<Label>Template</Label>
-						<Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
-							<SelectTrigger>
-								<SelectValue placeholder="Select a template" />
-							</SelectTrigger>
-							<SelectContent>
-								{templates.map((template) => (
-									<SelectItem key={template.id} value={template.id.toString()}>
-										{template.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+				<div className="space-y-4  py-8 px-2 overflow-y-auto max-h-[70svh]">
+					{context.type !== "pip" && (
+						<div className="space-y-2">
+							<Label>Template</Label>
+							<Select onValueChange={handleTemplateSelect} value={selectedTemplate}>
+								<SelectTrigger>
+									<SelectValue placeholder="Select a template" />
+								</SelectTrigger>
+								<SelectContent>
+									{templates.map((template) => (
+										<SelectItem key={template.id} value={template.id.toString()}>
+											{template.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					)}
 
 					{loading && (
 						<div className="space-y-3">
@@ -203,7 +221,7 @@ export function DocumentGenerationDialog({
 						<div className="space-y-4">
 							{Object.entries(generatedTemplate.placeholders).map(([key, placeholder]) => (
 								<div key={key} className="space-y-2">
-									<Label>{key}</Label>
+									<Label className="capitalize">{key.replace("_", " ")}</Label>
 									<Input
 										value={placeholders[key] || ""}
 										onChange={(e) =>
@@ -223,7 +241,7 @@ export function DocumentGenerationDialog({
 							<div className="border rounded-lg p-4 bg-muted/50 mb-8">
 								<Label className="mb-2 block">Document Preview</Label>
 								<div className="prose prose-sm min-h-32 overflow-y-auto">
-									<RichTextDisplay htmlContent={previewContent} />
+									<RichTextDisplay content={previewContent} />
 								</div>
 							</div>
 							{/* <PDFDownloadLink
@@ -251,10 +269,15 @@ export function DocumentGenerationDialog({
 				</div>
 				<DialogFooter>
 					<div className="flex items-center justify-end gap-8">
-						<Button onClick={handleGenerateDocument} disabled={loading || !selectedTemplate}>
+						<Button
+							onClick={handleGenerateDocument}
+							className="rounded-full"
+							disabled={loading || (context.type !== "pip" && !selectedTemplate)}
+						>
 							{"Generate Document"}
 						</Button>
 						<Button
+							className="rounded-full"
 							onClick={handleSendDocument}
 							disabled={loading || !generatedDocumentId || !canSendDocument}
 						>

@@ -229,6 +229,7 @@ export default function PerformancePage() {
 					{graphs.map((g) => (
 						<PieChart
 							title={g.title}
+							key={g.title}
 							data={g.stats}
 							colors={colors}
 							totalStr={""}

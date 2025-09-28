@@ -8,7 +8,7 @@ import type {
 import { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useSelector } from "react-redux";
 
 import { ConfirmationDialog } from "../confirmation-dialog";
@@ -35,6 +35,7 @@ import { PaginatedTableWrapper } from "@/components/common/tables/paginated-tabl
 import { TableSkeleton } from "@/components/common/table-skeleton";
 import { branchLocationComparisonConfigAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
 
 export const LocationComparisonConfigurations = () => {
 	const institution = useSelector(selectSelectedInstitution);
@@ -52,6 +53,8 @@ export const LocationComparisonConfigurations = () => {
 			branch: selectedBranch?.id || 0,
 			radius_in_meters: 0,
 		});
+
+	const router = useRouter();
 
 	const locationComparisonRefreshRef = useRef<(() => void) | null>(null);
 
@@ -89,6 +92,10 @@ export const LocationComparisonConfigurations = () => {
 		});
 		setEditingLocationComparisonConfig(config);
 		setIsLocationComparisonFormOpen(true);
+	};
+
+	const handleViewLocationComparisonConfig = (config: IBranchLocationComparisonConfig) => {
+		router.push(`/location-comparison-configurations/${config.id}`);
 	};
 
 	const handleSaveLocationComparisonConfig = async () => {
@@ -261,6 +268,12 @@ export const LocationComparisonConfigurations = () => {
 																		</Button>
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end">
+																		<DropdownMenuItem
+																			onClick={() => handleViewLocationComparisonConfig(config)}
+																		>
+																			<Eye className="h-4 w-4 mr-2" />
+																			View
+																		</DropdownMenuItem>
 																		<DropdownMenuItem
 																			onClick={() => handleEditLocationComparisonConfig(config)}
 																		>

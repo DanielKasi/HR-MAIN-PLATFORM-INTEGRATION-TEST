@@ -4,58 +4,67 @@ import { IPaginatedResponse } from "@/types/types.utils";
 
 interface Props {
 	className?: string;
+	data: IRecentAssets[];
 }
 
 interface IRecentAssets {
-	name: string;
-	category: string;
-	status: "active";
+	id: number;
+	asset_name: string;
+	serial_number: string;
+	batch_number: string;
+	category: {
+		category_name: string;
+	} | null;
+	status: string;
+	description: string | null;
+	created_at: string;
 }
 
-export default function RecentAssetsTable({ className = "" }: Props) {
+export default function RecentAssetsTable({ className = "", data }: Props) {
 	const columns: ColumnDef<IRecentAssets>[] = [
 		{
-			key: "name",
-			header: <span>Name</span>,
-			cell: (props) => <span>{props.name}</span>,
+			key: "asset_name",
+			header: <span>Asset Name</span>,
+			cell: (props) => <span>{props.asset_name}</span>,
 		},
 		{
-			key: "role",
+			key: "category",
 			header: <span>Category</span>,
-			cell: (props) => <span>{props.category}</span>,
+			cell: (props) => <span>{props.category?.category_name || "N/A"}</span>,
 		},
 		{
 			key: "status",
 			header: <span>Status</span>,
 			cell: (props) => (
 				<span className="bg-green-100 text-green-500 rounded-xl px-4 py-2">
-					{props.status[0].toLocaleUpperCase() + props.status.slice(1)}
+					{props.status.charAt(0).toUpperCase() + props.status.slice(1)}
 				</span>
 			),
+		},
+		{
+			key: "serial_number",
+			header: <span>Serial Number</span>,
+			cell: (props) => <span>{props.serial_number}</span>,
 		},
 	];
 	return (
 		<Card className={`${className}`}>
-			<CardTitle className="text-xl flex-grow p-4">Recent Hires</CardTitle>
+			<CardTitle className="text-xl flex-grow p-4">Recent Assets</CardTitle>
 			<CardContent>
 				<PaginatedTable
 					showFooter={false}
 					skeletonRows={5}
 					columns={columns}
 					emptyState={[]}
-					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<IRecentAssets>> {
+					fetchFirstPage={() => {
 						return Promise.resolve({
-							count: 20,
-							next: "21",
-							previous: "0",
-							results: new Array(5).fill(null).map(() => ({
-								name: "John Doe",
-								category: "Finance",
-								status: "active",
-							})),
+							count: data.length,
+							next: null,
+							previous: null,
+							results: data,
 						});
 					}}
-				></PaginatedTable>
+				/>
 			</CardContent>
 		</Card>
 	);

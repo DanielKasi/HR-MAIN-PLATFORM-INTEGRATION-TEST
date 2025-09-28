@@ -15,7 +15,7 @@ import { Button } from "../ui/button";
 import { NavItemComponent } from "./navigation/nav-item";
 
 import { PERMISSION_CODES } from "@/constants";
-import { employeeAPI, showErrorToast } from "@/lib/utils";
+import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
 import {
 	selectAccessToken,
 	selectSelectedInstitution,
@@ -136,7 +136,7 @@ export default function DashboardSideBar() {
 			return;
 		}
 		try {
-			const employee = await employeeAPI.getByUserId({ user_id: currentUser.id });
+			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
 
 			setRelatedEmployee(employee);
 		} catch (error) {
@@ -170,7 +170,7 @@ export default function DashboardSideBar() {
 				{ title: "Interviews", href: "/job-interviews" },
 				{ title: "Recruitment", href: "#" },
 				{ title: "Open Jobs", href: "/job-adverts" },
-				{ title: "Stages", href: "#" },
+				{ title: "Stages", href: "/interview-stages" },
 				{ title: "Skill Zone", href: "/skill-zones" },
 				{ title: "Onboarding", href: "/on-boarding" },
 			],
@@ -263,7 +263,7 @@ export default function DashboardSideBar() {
 				{ title: "Biometric Devices", href: "#" },
 				{ title: "Attendance", href: "/employees/attendance" },
 				{ title: "Attendance Requests", href: "#" },
-				{ title: "Hour Account", href: "#" },
+				{ title: "Hour Account", href: "/employees/hour-count" },
 				{ title: "Work Records", href: "#" },
 				{ title: "Attendance Activities", href: "#" },
 				{ title: "Late Come Early Out", href: "#" },

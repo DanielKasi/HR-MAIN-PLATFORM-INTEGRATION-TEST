@@ -27,6 +27,7 @@ import { JobPositionsTable } from "@/components/common/tables/job-positions/job-
 import { RecruitmentHistoryTable } from "@/components/common/tables/recruitment/recruitment-history-table";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function DepartmentDetailView() {
 	const router = useRouter();
@@ -141,261 +142,243 @@ export default function DepartmentDetailView() {
 
 	return (
 		<div className="flex flex-col w-full h-full min-h-screen p-3 md:p-6 bg-white rounded-lg py-8">
-			<div
-				className={` gap-6 ${department?.approval_status !== "active" && department?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
-			>
-				{department?.approvals && department.approvals.length > 0 && (
-					<div className="order-1 lg:order-2">
-						<ApprovalWorkflow
-							approvals={department.approvals}
-							instance_approval_status={department.approval_status}
-							onRefresh={fetchDepartmentData}
-						/>
-					</div>
-				)}
+			<ApprovableInstancePageLayout instance={department} onInstanceRefresh={fetchDepartmentData}>
+				<div className="flex justify-between items-start gap-4">
+					<div className="flex items-center gap-4">
+						<div className="flex items-center gap-3">
+							{/* Header */}
 
-				<div
-					className={`${department?.approval_status !== "active" && department?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-				>
-					<div className="flex justify-between items-start gap-4">
-						<div className="flex items-center gap-4">
-							<div className="flex items-center gap-3">
-								{/* Header */}
+							<div className="flex flex-col items-start justify-start gap-y-4">
+								<div className="flex items-center justify-start gap-1">
+									<Button
+										variant="ghost"
+										onClick={() => router.push("/admin/departments")}
+										className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
+									>
+										<ArrowLeft className="h-4 w-4" />
+									</Button>
 
-								<div className="flex flex-col items-start justify-start gap-y-4">
-									<div className="flex items-center justify-start gap-1">
-										<Button
-											variant="ghost"
-											onClick={() => router.push("/admin/departments")}
-											className="flex items-center gap-2 text-muted-foreground hover:text-foreground rounded-full aspect-square"
-										>
-											<ArrowLeft className="h-4 w-4" />
-										</Button>
-
-										{department && <h1 className="text-2xl font-bold">{department.name}</h1>}
+									{department && <h1 className="text-2xl font-bold">{department.name}</h1>}
+								</div>
+								{department && (
+									<div className="flex items-start justify-start gap-2">
+										<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+											<Building2 className="h-5 w-5 text-primary" />
+										</div>
+										<RichTextDisplay
+											className={
+												"text-xs md:text-sm" + !department.description
+													? "text-muted-foreground py-2"
+													: ""
+											}
+											content={department.description || "No description"}
+										/>
 									</div>
-									{department && (
-										<div className="flex items-start justify-start gap-2">
-											<div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-												<Building2 className="h-5 w-5 text-primary" />
+								)}
+							</div>
+						</div>
+					</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2  md:flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={fetchDepartmentData}
+							disabled={isRefreshing}
+						>
+							<RefreshCw className={`h-4 w-4 md:mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+							<span className="hidden md:inline">Refresh</span>
+						</Button>
+
+						<Button size="sm" onClick={() => router.push(`/employees/employee-list/`)}>
+							<UserPlus className="h-4 w-4 md:mr-2" />
+							<span className="hidden md:inline">Add Employee</span>
+						</Button>
+					</div>
+				</div>
+
+				{/* Tabs */}
+				<Tabs
+					value={activeTab}
+					onValueChange={(tab) => {
+						setActiveTab(tab);
+						setStatusFilter("all");
+					}}
+					className="space-y-6"
+				>
+					<TabsList className="grid w-full grid-cols-4 lg:w-[500px] mt-12">
+						<TabsTrigger value="overview">Overview</TabsTrigger>
+						<TabsTrigger value="employees">Employees</TabsTrigger>
+						<TabsTrigger value="positions">Job Positions/Titles</TabsTrigger>
+						<TabsTrigger value="recruitment">Recruitment</TabsTrigger>
+					</TabsList>
+
+					{/* Overview Tab */}
+					<TabsContent value="overview" className="space-y-6">
+						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+							<Card className="shadow-sm">
+								<CardHeader>
+									<CardTitle className="flex items-center gap-2">
+										<Building2 className="h-5 w-5" />
+										Department Information
+									</CardTitle>
+								</CardHeader>
+								<CardContent className="space-y-4">
+									{selectedInstitution && selectedBranch && (
+										<div className="grid grid-cols-2 gap-4">
+											<div>
+												<p className="text-sm font-medium text-muted-foreground">Institution</p>
+												<p className="text-sm">{selectedInstitution.institution_name}</p>
 											</div>
+											<div>
+												<p className="text-sm font-medium text-muted-foreground">Branch</p>
+												<p className="text-sm">{selectedBranch.branch_name}</p>
+											</div>
+										</div>
+									)}
+									{department && (
+										<div>
+											<p className="text-sm font-medium text-muted-foreground">Description</p>
 											<RichTextDisplay
 												className={
-													"text-xs md:text-sm" + !department.description
-														? "text-muted-foreground py-2"
-														: ""
+													"text-sm" + !department.description ? "text-muted-foreground italic" : ""
 												}
-												htmlContent={department.description || "No description"}
+												content={department.description || "No description"}
 											/>
 										</div>
 									)}
+								</CardContent>
+							</Card>
+
+							<Card className="shadow-sm">
+								<CardHeader>
+									<CardTitle className="flex items-center gap-2">
+										<Users className="h-5 w-5" />
+										Quick Stats
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className="space-y-3">
+										<div className="flex items-center justify-between text-sm">
+											<span>Total Employees</span>
+											{/* <span className="font-semibold">{departmentEmployees.length}</span> */}
+										</div>
+										<div className="flex items-center justify-between text-sm">
+											<span>Active Employees</span>
+											<span className="font-semibold">
+												{/* {departmentEmployees.filter((e) => e.is_active).length} */}
+											</span>
+										</div>
+										<div className="flex items-center justify-between text-sm">
+											<span>Job Positions/Titles</span>
+											<span className="font-semibold">{currentJobPositions.length}</span>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						</div>
+					</TabsContent>
+
+					{/* Employees Tab */}
+					<TabsContent value="employees" className="space-y-6">
+						<Card className="shadow-sm border-none p-2">
+							<CardHeader>
+								<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+									<div>
+										<CardTitle>Department Employees</CardTitle>
+									</div>
+									<div className="flex items-center gap-2">
+										<div className="relative">
+											<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+											<Input
+												placeholder="Search employees..."
+												value={employeesSearchTerm}
+												onChange={(e) => setEmployeesSearchTerm(e.target.value)}
+												className="pl-10 w-[250px]"
+											/>
+										</div>
+										<Select value={statusFilter} onValueChange={setStatusFilter}>
+											<SelectTrigger className="w-[130px]">
+												<Filter className="h-4 w-4 mr-2" />
+												<SelectValue />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="all">All Status</SelectItem>
+												<SelectItem value="active">Active</SelectItem>
+												<SelectItem value="inactive">Inactive</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
 								</div>
-							</div>
-						</div>
-						<div className="grid grid-cols-1 sm:grid-cols-2  md:flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={fetchDepartmentData}
-								disabled={isRefreshing}
-							>
-								<RefreshCw className={`h-4 w-4 md:mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-								<span className="hidden md:inline">Refresh</span>
-							</Button>
+							</CardHeader>
+							<CardContent className="p-0">
+								<EmployeesTable searchTerm={employeesSearchTerm} />
+							</CardContent>
+						</Card>
+					</TabsContent>
 
-							<Button size="sm" onClick={() => router.push(`/employees/employee-list/`)}>
-								<UserPlus className="h-4 w-4 md:mr-2" />
-								<span className="hidden md:inline">Add Employee</span>
-							</Button>
-						</div>
-					</div>
-
-					{/* Tabs */}
-					<Tabs
-						value={activeTab}
-						onValueChange={(tab) => {
-							setActiveTab(tab);
-							setStatusFilter("all");
-						}}
-						className="space-y-6"
-					>
-						<TabsList className="grid w-full grid-cols-4 lg:w-[500px] mt-12">
-							<TabsTrigger value="overview">Overview</TabsTrigger>
-							<TabsTrigger value="employees">Employees</TabsTrigger>
-							<TabsTrigger value="positions">Job Positions/Titles</TabsTrigger>
-							<TabsTrigger value="recruitment">Recruitment</TabsTrigger>
-						</TabsList>
-
-						{/* Overview Tab */}
-						<TabsContent value="overview" className="space-y-6">
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-								<Card className="shadow-sm">
-									<CardHeader>
-										<CardTitle className="flex items-center gap-2">
-											<Building2 className="h-5 w-5" />
-											Department Information
-										</CardTitle>
-									</CardHeader>
-									<CardContent className="space-y-4">
-										{selectedInstitution && selectedBranch && (
-											<div className="grid grid-cols-2 gap-4">
-												<div>
-													<p className="text-sm font-medium text-muted-foreground">Institution</p>
-													<p className="text-sm">{selectedInstitution.institution_name}</p>
-												</div>
-												<div>
-													<p className="text-sm font-medium text-muted-foreground">Branch</p>
-													<p className="text-sm">{selectedBranch.branch_name}</p>
-												</div>
-											</div>
-										)}
-										{department && (
-											<div>
-												<p className="text-sm font-medium text-muted-foreground">Description</p>
-												<RichTextDisplay
-													className={
-														"text-sm" + !department.description
-															? "text-muted-foreground italic"
-															: ""
-													}
-													htmlContent={department.description || "No description"}
-												/>
-											</div>
-										)}
-									</CardContent>
-								</Card>
-
-								<Card className="shadow-sm">
-									<CardHeader>
-										<CardTitle className="flex items-center gap-2">
-											<Users className="h-5 w-5" />
-											Quick Stats
-										</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<div className="space-y-3">
-											<div className="flex items-center justify-between text-sm">
-												<span>Total Employees</span>
-												{/* <span className="font-semibold">{departmentEmployees.length}</span> */}
-											</div>
-											<div className="flex items-center justify-between text-sm">
-												<span>Active Employees</span>
-												<span className="font-semibold">
-													{/* {departmentEmployees.filter((e) => e.is_active).length} */}
-												</span>
-											</div>
-											<div className="flex items-center justify-between text-sm">
-												<span>Job Positions/Titles</span>
-												<span className="font-semibold">{currentJobPositions.length}</span>
-											</div>
-										</div>
-									</CardContent>
-								</Card>
-							</div>
-						</TabsContent>
-
-						{/* Employees Tab */}
-						<TabsContent value="employees" className="space-y-6">
-							<Card className="shadow-sm border-none p-2">
-								<CardHeader>
-									<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-										<div>
-											<CardTitle>Department Employees</CardTitle>
-										</div>
-										<div className="flex items-center gap-2">
-											<div className="relative">
-												<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-												<Input
-													placeholder="Search employees..."
-													value={employeesSearchTerm}
-													onChange={(e) => setEmployeesSearchTerm(e.target.value)}
-													className="pl-10 w-[250px]"
-												/>
-											</div>
-											<Select value={statusFilter} onValueChange={setStatusFilter}>
-												<SelectTrigger className="w-[130px]">
-													<Filter className="h-4 w-4 mr-2" />
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="all">All Status</SelectItem>
-													<SelectItem value="active">Active</SelectItem>
-													<SelectItem value="inactive">Inactive</SelectItem>
-												</SelectContent>
-											</Select>
+					{/* Job Positions/Titles Tab */}
+					<TabsContent value="positions" className="space-y-6">
+						<Card className="shadow-sm border-none p-2">
+							<CardHeader>
+								<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+									<div>
+										<CardTitle>Job Positions/Titles</CardTitle>
+										<p className="text-sm text-muted-foreground">
+											Manage positions available in this department
+										</p>
+									</div>
+									<div className="flex items-center gap-2">
+										<div className="relative">
+											<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+											<Input
+												placeholder="Search positions..."
+												value={jobPositionsSearchTerm}
+												onChange={(e) => setJobPositionsSearchTerm(e.target.value)}
+												className="pl-10 w-[250px]"
+											/>
 										</div>
 									</div>
-								</CardHeader>
-								<CardContent className="p-0">
-									<EmployeesTable searchTerm={employeesSearchTerm} />
-								</CardContent>
-							</Card>
-						</TabsContent>
+								</div>
+							</CardHeader>
+							<CardContent className="p-0">
+								<div className="">
+									<JobPositionsTable
+										searchTerm={jobPositionsSearchTerm}
+										setCurrentJobPostions={setCurrentJobPostions}
+									/>
+								</div>
+							</CardContent>
+						</Card>
+					</TabsContent>
 
-						{/* Job Positions/Titles Tab */}
-						<TabsContent value="positions" className="space-y-6">
-							<Card className="shadow-sm border-none p-2">
-								<CardHeader>
-									<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-										<div>
-											<CardTitle>Job Positions/Titles</CardTitle>
-											<p className="text-sm text-muted-foreground">
-												Manage positions available in this department
-											</p>
-										</div>
-										<div className="flex items-center gap-2">
-											<div className="relative">
-												<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-												<Input
-													placeholder="Search positions..."
-													value={jobPositionsSearchTerm}
-													onChange={(e) => setJobPositionsSearchTerm(e.target.value)}
-													className="pl-10 w-[250px]"
-												/>
-											</div>
+					{/* Recruitment History Tab */}
+					<TabsContent value="recruitment" className="space-y-6">
+						<Card className="shadow-sm border-none p-2">
+							<CardHeader>
+								<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+									<div>
+										<CardTitle>Recruitment History</CardTitle>
+									</div>
+									<div className="flex items-center gap-2">
+										<div className="relative">
+											<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+											<Input
+												placeholder="Search recruitment history..."
+												value={recruitmentSearchTerm}
+												onChange={(e) => setRecruitmentSearchTerm(e.target.value)}
+												className="pl-10 w-[250px]"
+											/>
 										</div>
 									</div>
-								</CardHeader>
-								<CardContent className="p-0">
-									<div className="">
-										<JobPositionsTable
-											searchTerm={jobPositionsSearchTerm}
-											setCurrentJobPostions={setCurrentJobPostions}
-										/>
-									</div>
-								</CardContent>
-							</Card>
-						</TabsContent>
-
-						{/* Recruitment History Tab */}
-						<TabsContent value="recruitment" className="space-y-6">
-							<Card className="shadow-sm border-none p-2">
-								<CardHeader>
-									<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-										<div>
-											<CardTitle>Recruitment History</CardTitle>
-										</div>
-										<div className="flex items-center gap-2">
-											<div className="relative">
-												<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-												<Input
-													placeholder="Search recruitment history..."
-													value={recruitmentSearchTerm}
-													onChange={(e) => setRecruitmentSearchTerm(e.target.value)}
-													className="pl-10 w-[250px]"
-												/>
-											</div>
-										</div>
-									</div>
-								</CardHeader>
-								<CardContent className="p-0">
-									<RecruitmentHistoryTable searchTerm={recruitmentSearchTerm} />
-								</CardContent>
-							</Card>
-						</TabsContent>
-					</Tabs>
-				</div>
-			</div>
+								</div>
+							</CardHeader>
+							<CardContent className="p-0">
+								<RecruitmentHistoryTable searchTerm={recruitmentSearchTerm} />
+							</CardContent>
+						</Card>
+					</TabsContent>
+				</Tabs>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

@@ -168,3 +168,8 @@ textarea {
 	scrollbar-width: none;
 	/* Firefox */
 }
+
+.latex-content {
+	font-size: 1.2em;
+	line-height: 1.5;
+}

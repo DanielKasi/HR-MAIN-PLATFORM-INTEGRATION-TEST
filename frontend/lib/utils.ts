@@ -87,7 +87,6 @@ import {
 	ITaxFormData,
 	ITaxRule,
 	ITaxRuleFormData,
-	IAssetCategoryFormData,
 	IAsset,
 	IAssetFormData,
 	IAssetRequest,
@@ -180,17 +179,19 @@ import {
 	IAssetHistory,
 	IAssetReturnFormData,
 	IAssetCategory,
+	IAssetCategoryFormData,
 } from "@/types/assets.types";
 
 import { IPayrollDashboard } from "@/types/payroll.types";
 import { ILeaveDashboard } from "@/types/leave.types";
-import { IEmployeeDashboard } from "@/types/employee.types";
+import { IEmployeeDashboard, IWorkHourCount } from "@/types/employee.types";
 import { IProjectDashboard } from "@/types/project.type";
 import { AssetsData } from "@/types/assets.types";
 
 import { Role, UserProfile } from "@/types/user.types";
 
 import { MAIN_DOMAIN_URL } from "@/constants";
+import keys from "@/components/projects/tasks/keys";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -969,8 +970,9 @@ export const createInterview = async ({
 		const formData = new FormData();
 
 		Object.entries(interviewData).forEach(([key, value]) => {
-			// Only append defined values
-			if (value !== undefined && value !== null) {
+			if (key == "feedback") {
+				formData.append(key, JSON.stringify(value));
+			} else if (value !== undefined && value !== null) {
 				formData.append(key, value.toString());
 			}
 		});
@@ -1098,7 +1100,7 @@ export const createInterviewStage = async ({
 	return response.data as IInterviewStage;
 };
 
-export const upddateInterviewStage = async ({
+export const updateInterviewStage = async ({
 	stageId,
 	stageData,
 }: {
@@ -1115,9 +1117,18 @@ export const upddateInterviewStage = async ({
 		formData.append("interviewers", interviewerId.toString());
 	});
 
+	if (stageData.feedback_fields && stageData.feedback_fields.length > 0) {
+		formData.append("feedback_fields", JSON.stringify(stageData.feedback_fields));
+	}
+
 	const response = await apiRequest.patch(`recruitment/interview-stage/${stageId}/`, formData);
 
 	return response.data as IInterviewStage;
+};
+
+export const deleteInterviewStage = async ({ stageId }: { stageId: number }) => {
+	const response = await apiRequest.delete(`recruitment/interview-stage/${stageId}/`);
+	return response;
 };
 
 export const getInterviewStageById = async ({
@@ -1932,6 +1943,15 @@ export const updateWorkType = async ({
 	}
 };
 
+export const viewWorkType = async ({ workTypeId }: { workTypeId: number }): Promise<IWorkType> => {
+	try {
+		const response = await apiRequest.get(`employee/work-types/detail/${workTypeId}/`);
+		return response.data as IWorkType;
+	} catch (error) {
+		throw error;
+	}
+};
+
 export const deleteWorkType = async ({
 	workTypeId,
 }: {
@@ -2019,6 +2039,19 @@ export const updateEmployeeType = async ({
 			employeeTypeData,
 		);
 
+		return response.data as IEmployeeType;
+	} catch (error) {
+		throw error;
+	}
+};
+
+export const viewEmployeeType = async ({
+	employeeTypeId,
+}: {
+	employeeTypeId: number;
+}): Promise<IEmployeeType> => {
+	try {
+		const response = await apiRequest.get(`employee/employee-types/detail/${employeeTypeId}/`);
 		return response.data as IEmployeeType;
 	} catch (error) {
 		throw error;
@@ -3446,6 +3479,16 @@ export const updateAllowanceType = async ({
 	}
 };
 
+export const getAllowanceTypeById = async (id: number): Promise<IAllowanceType | null> => {
+	try {
+		const response = await apiRequest.get(`payroll/allowance-types/${id}/`);
+		return response.data as IAllowanceType;
+	} catch (error) {
+		console.error("Failed to fetch allowance type:", error);
+		throw error;
+	}
+};
+
 export const deleteAllowanceType = async (id: number): Promise<boolean> => {
 	try {
 		await apiRequest.delete(`payroll/allowance-types/${id}/`);
@@ -3679,15 +3722,9 @@ export const getPaginatedEmployeeAllowancesFromUrl = async ({
 	}
 };
 
-export const getEmployeeAllowance = async (id: number): Promise<IEmployeeAllowance | null> => {
-	try {
-		const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
-
-		return response.data.results as IEmployeeAllowance;
-	} catch (error) {
-		// console.error("Failed to get employee allowance:", error);
-		throw error;
-	}
+export const getEmployeeAllowance = async (id: number) => {
+	const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
+	return response.data as IEmployeeAllowance;
 };
 
 export const updateEmployeeAllowance = async ({
@@ -4862,6 +4899,17 @@ export const getDocumentTypes = async ({
 	}
 };
 
+export const getDocumentTypeDetails = async (
+	documentTypeId: number,
+): Promise<IDocumentType | null> => {
+	try {
+		const response = await apiRequest.get(`documents/types/${documentTypeId}/`);
+		return response.data;
+	} catch (error) {
+		return null;
+	}
+};
+
 export const updateDocumentType = async ({
 	institutionId,
 	documentTypeId,
@@ -4978,6 +5026,17 @@ export const getDocumentTemplates = async ({
 		return data.results;
 	} catch (error) {
 		return [];
+	}
+};
+
+export const getDocumentTemplateDetails = async (
+	documentTemplateId: number,
+): Promise<IDocumentTemplate | null> => {
+	try {
+		const response = await apiRequest.get(`documents/templates/${documentTemplateId}/`);
+		return response.data;
+	} catch (error) {
+		return null;
 	}
 };
 
@@ -6705,7 +6764,7 @@ export const assetHistoriesAPI = {
 	},
 };
 
-export const employeeAPI = {
+export const EMPLOYEE_API = {
 	getAll: async (institutionId: number): Promise<IEmployee[]> => {
 		try {
 			const response = await apiRequest.get(`/${institutionId}/employee/`);
@@ -6733,6 +6792,22 @@ export const employeeAPI = {
 			employee: employee_id,
 		});
 		return response as ICompanyEmail;
+	},
+
+	hourAccount: {
+		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
+			const urlParams = new URLSearchParams();
+			Object.entries(params).forEach(([key, value]) => {
+				urlParams.append(key, value.toString());
+			});
+			const response = await apiRequest.get(`employee/hour-account/?${urlParams.toString()}`);
+			return response.data as IPaginatedResponse<IWorkHourCount>;
+		},
+
+		getPaginatedFromUrl: async ({ url }: { url: string }) => {
+			const response = await apiRequest.get(url);
+			return response.data as IPaginatedResponse<IWorkHourCount>;
+		},
 	},
 };
 
@@ -7422,6 +7497,17 @@ export const penaltyConfigAPI = {
 		}
 	},
 
+	getBranchPenaltyConfigId: async (id: number): Promise<IBranchPenaltyConfig> => {
+		try {
+			const response = await apiRequest.get(`/institution/branch-penalties/${id}/`);
+
+			return response.data;
+		} catch (error) {
+			console.error("Error updating branch penalty config:", error);
+			throw error;
+		}
+	},
+
 	deleteBranchPenaltyConfig: async (id: number): Promise<boolean> => {
 		try {
 			const response = await apiRequest.delete(`/institution/branch-penalties/${id}/`);
@@ -7515,6 +7601,19 @@ export const branchLocationComparisonConfigAPI = {
 				`/institution/branch-location-comparison/${id}/`,
 				data,
 			);
+
+			return response.data as IBranchLocationComparisonConfig;
+		} catch (error) {
+			console.warn("Error updating branch location comparison config:", error);
+			throw error;
+		}
+	},
+
+	getByIdBranchLocationComparisonConfig: async (
+		id: number,
+	): Promise<IBranchLocationComparisonConfig> => {
+		try {
+			const response = await apiRequest.get(`/institution/branch-location-comparison/${id}/`);
 
 			return response.data as IBranchLocationComparisonConfig;
 		} catch (error) {

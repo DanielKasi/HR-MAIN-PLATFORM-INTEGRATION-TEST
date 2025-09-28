@@ -1,0 +1,388 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import {
+	ArrowLeft,
+	User,
+	Target,
+	Calendar,
+	Building,
+	TrendingUp,
+	Clock,
+	CheckCircle,
+	AlertTriangle,
+	XCircle,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { EMPLOYEE_OBJECTIVES_API, showErrorToast } from "@/lib/utils";
+import type { IEmployeeObjective } from "@/types/types.utils";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
+
+const EmployeeObjectiveDetailPage = () => {
+	const [employeeObjective, setEmployeeObjective] = useState<IEmployeeObjective | null>(null);
+	const [loading, setLoading] = useState(true);
+	const router = useRouter();
+	const params = useParams();
+	const objectiveId = params?.id as string;
+
+	const fetchEmployeeObjectiveDetail = async () => {
+		if (!objectiveId) return;
+
+		try {
+			setLoading(true);
+			const numericId = Number(objectiveId);
+
+			if (isNaN(numericId)) {
+				throw new Error("Invalid objective ID format");
+			}
+
+			const objectiveData = await EMPLOYEE_OBJECTIVES_API.getById({
+				objectiveId: numericId,
+			});
+			setEmployeeObjective(objectiveData);
+		} catch (error) {
+			showErrorToast({
+				error: error,
+				defaultMessage: "Failed to fetch employee objective details.",
+			});
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchEmployeeObjectiveDetail();
+	}, [objectiveId]);
+
+	const getStatusIcon = (status: string) => {
+		switch (status) {
+			case "on_track":
+				return <TrendingUp className="h-4 w-4 text-green-600" />;
+			case "at_risk":
+				return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+			case "behind":
+				return <XCircle className="h-4 w-4 text-red-600" />;
+			case "closed":
+				return <CheckCircle className="h-4 w-4 text-blue-600" />;
+			default:
+				return <Clock className="h-4 w-4 text-gray-600" />;
+		}
+	};
+
+	const getStatusBadgeVariant = (status: string) => {
+		switch (status) {
+			case "on_track":
+				return "default";
+			case "at_risk":
+				return "secondary";
+			case "behind":
+				return "destructive";
+			case "closed":
+				return "outline";
+			default:
+				return "secondary";
+		}
+	};
+
+	const getStatusText = (status: string) => {
+		switch (status) {
+			case "on_track":
+				return "On Track";
+			case "at_risk":
+				return "At Risk";
+			case "behind":
+				return "Behind";
+			case "closed":
+				return "Closed";
+			case "not_started":
+				return "Not Started";
+			default:
+				return status.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+		}
+	};
+
+	const formatDate = (dateString: string) => {
+		return new Date(dateString).toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+	};
+
+	if (loading) {
+		return (
+			<div className="space-y-6 p-6 bg-white">
+				<div className="animate-pulse">
+					<div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+					<div className="h-4 bg-gray-200 rounded w-1/3 mb-8"></div>
+					<div className="grid gap-6 md:grid-cols-2">
+						<div className="h-64 bg-gray-200 rounded"></div>
+						<div className="h-64 bg-gray-200 rounded"></div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (!employeeObjective) {
+		return (
+			<div className="space-y-6 p-6 bg-white">
+				<div className="text-center py-12">
+					<h2 className="text-lg font-semibold text-gray-900">Employee Objective not found</h2>
+					<p className="text-gray-600 mt-2">
+						The employee objective you're looking for doesn't exist.
+					</p>
+					<Button onClick={() => router.back()} className="mt-4">
+						<ArrowLeft className="mr-2 h-4 w-4" />
+						Go Back
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="space-y-6 p-6 bg-white">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center space-x-4">
+					<Button
+						variant="outline"
+						size="sm"
+						className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0"
+						onClick={() => router.back()}
+					>
+						<ArrowLeft className="mr-2 h-4 w-4" />
+					</Button>
+					<div className="mt-4">
+						<h1 className="text-2xl font-semibold tracking-tight">
+							{employeeObjective.objective.name}
+						</h1>
+						<p className="text-muted-foreground">Employee Objective Assignment</p>
+					</div>
+				</div>
+				<div className="flex items-center space-x-2">
+					{getStatusIcon(employeeObjective.status)}
+					<Badge variant={getStatusBadgeVariant(employeeObjective.status)}>
+						{getStatusText(employeeObjective.status)}
+					</Badge>
+				</div>
+			</div>
+
+			<ApprovableInstancePageLayout
+				instance={employeeObjective}
+				onInstanceRefresh={fetchEmployeeObjectiveDetail}
+			>
+				<div className="grid gap-6 md:grid-cols-2">
+					{/* Employee Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<User className="mr-2 h-5 w-5" />
+								Employee Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Name:</span>
+									<span className="text-sm font-semibold">
+										{employeeObjective.employee?.name || employeeObjective.employee?.user?.fullname}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Email:</span>
+									<span className="text-sm">
+										{employeeObjective.employee?.email || employeeObjective.employee?.user?.email}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Employee ID:</span>
+									<span className="text-sm">
+										{employeeObjective.employee?.employee_id || "N/A"}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Position:</span>
+									<span className="text-sm">
+										{employeeObjective.employee?.position?.name || "N/A"}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Department:</span>
+									<span className="text-sm">
+										{employeeObjective.employee?.department?.name || "N/A"}
+									</span>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Objective Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<Target className="mr-2 h-5 w-5" />
+								Objective Details
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Objective Name:</span>
+									<span className="text-sm font-semibold">{employeeObjective.objective.name}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Duration:</span>
+									<span className="text-sm">
+										{employeeObjective.objective.duration}{" "}
+										{employeeObjective.objective.duration_unit}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Start Date:</span>
+									<span className="text-sm">
+										{employeeObjective.objective.date
+											? formatDate(employeeObjective.objective.date)
+											: "N/A"}
+									</span>
+								</div>
+							</div>
+							<Separator />
+							{employeeObjective.objective.description && (
+								<div className="space-y-2">
+									<span className="text-sm font-medium">Description:</span>
+									<p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-md">
+										{employeeObjective.objective.description}
+									</p>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					{/* Key Result Information */}
+					{employeeObjective.objective.key_result && (
+						<Card className="md:col-span-2">
+							<CardHeader>
+								<CardTitle className="flex items-center">
+									<Building className="mr-2 h-5 w-5" />
+									Key Result
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="grid gap-4 md:grid-cols-2">
+									<div className="space-y-2">
+										<span className="text-sm font-medium">Title:</span>
+										<p className="text-sm font-semibold">
+											{employeeObjective.objective.key_result.title}
+										</p>
+									</div>
+									<div className="space-y-2">
+										<span className="text-sm font-medium">Target Value:</span>
+										<p className="text-sm">{employeeObjective.objective.key_result.target_value}</p>
+									</div>
+									<div className="space-y-2">
+										<span className="text-sm font-medium">Progress Type:</span>
+										<p className="text-sm capitalize">
+											{employeeObjective.objective.key_result.progress_type}
+										</p>
+									</div>
+									<div className="space-y-2">
+										<span className="text-sm font-medium">Duration:</span>
+										<p className="text-sm">{employeeObjective.objective.key_result.duration}</p>
+									</div>
+									{employeeObjective.objective.key_result.description && (
+										<div className="space-y-2 md:col-span-2">
+											<span className="text-sm font-medium">Description:</span>
+											<p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-md">
+												{employeeObjective.objective.key_result.description}
+											</p>
+										</div>
+									)}
+								</div>
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Manager Information */}
+					{employeeObjective.objective.managers && (
+						<Card className="md:col-span-2">
+							<CardHeader>
+								<CardTitle className="flex items-center">
+									<User className="mr-2 h-5 w-5" />
+									Objective Manager
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="flex items-center space-x-4">
+									<div className="flex-1">
+										<p className="font-medium">
+											{employeeObjective.objective.managers.name ||
+												employeeObjective.objective.managers.user?.fullname}
+										</p>
+										<p className="text-sm text-gray-600">
+											{employeeObjective.objective.managers.user?.email ||
+												employeeObjective.objective.managers.email}
+										</p>
+										<p className="text-sm text-gray-600">
+											{employeeObjective.objective.managers.position?.name}
+										</p>
+										<p className="text-sm text-gray-600">
+											{employeeObjective.objective.managers.department?.name}
+										</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					)}
+
+					{/* Assignment Timeline */}
+					<Card className="md:col-span-2">
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<Calendar className="mr-2 h-5 w-5" />
+								Assignment Timeline
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="grid gap-4 md:grid-cols-3">
+								<div className="space-y-2">
+									<span className="text-sm font-medium">Assigned Date:</span>
+									<p className="text-sm">
+										{employeeObjective.created_at
+											? formatDate(employeeObjective.created_at)
+											: "N/A"}
+									</p>
+								</div>
+								<div className="space-y-2">
+									<span className="text-sm font-medium">Last Updated:</span>
+									<p className="text-sm">
+										{employeeObjective.updated_at
+											? formatDate(employeeObjective.updated_at)
+											: "N/A"}
+									</p>
+								</div>
+								<div className="space-y-2">
+									<span className="text-sm font-medium">Current Status:</span>
+									<div className="flex items-center gap-2">
+										{getStatusIcon(employeeObjective.status)}
+										<span className="text-sm font-medium">
+											{getStatusText(employeeObjective.status)}
+										</span>
+									</div>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			</ApprovableInstancePageLayout>
+		</div>
+	);
+};
+
+export default EmployeeObjectiveDetailPage;

@@ -26,9 +26,9 @@ import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { PerformanceImprovementPlanCreateEditDialog } from "./_components/performance-improvement-plan-create-edit-dialog";
-import Link from "next/link";
 import { format } from "date-fns";
 import { IObjective } from "@/types/types.utils";
+import { useRouter } from "next/navigation";
 
 export default function PerformanceImprovementPlanListPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -41,6 +41,8 @@ export default function PerformanceImprovementPlanListPage() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [planToDelete, setPlanToDelete] = useState<IPerformanceImprovementPlan | null>(null);
 	const [deleting, setDeleting] = useState(false);
+
+	const router = useRouter();
 
 	const handleDelete = async () => {
 		if (!planToDelete) return;
@@ -67,8 +69,7 @@ export default function PerformanceImprovementPlanListPage() {
 	};
 
 	const openDetails = (plan: IPerformanceImprovementPlan) => {
-		setSelectedPlan(plan);
-		setOpenDetailsDialog(true);
+		router.push(`/performance/pip/${plan.id}`);
 	};
 
 	const columns: ColumnDef<IPerformanceImprovementPlan>[] = [

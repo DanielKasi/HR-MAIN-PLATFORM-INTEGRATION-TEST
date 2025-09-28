@@ -69,7 +69,7 @@ import {
 	showErrorToast,
 	getEmployeeById,
 	updateEmployee,
-	employeeAPI,
+	EMPLOYEE_API,
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
@@ -583,7 +583,7 @@ export default function UpdateEmployeeForm() {
 			const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
 				getWorkTypes({ institutionId: selectedInstitution.id }),
 				getEmployeeTypes({ institutionId: selectedInstitution.id }),
-				employeeAPI.getQualificationAwards(),
+				EMPLOYEE_API.getQualificationAwards(),
 			]);
 
 			setWorkTypes(workTypesData.results || []);

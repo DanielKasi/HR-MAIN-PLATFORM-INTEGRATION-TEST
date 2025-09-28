@@ -20,7 +20,7 @@ import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
-import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
+import { useRouter } from "next/navigation";
 import { PerformanceConcernTypeCreateEditDialog } from "./_components/performance-concern-type-create-edit-dialog";
 
 export default function PerformanceConcernTypeListPage() {
@@ -38,6 +38,7 @@ export default function PerformanceConcernTypeListPage() {
 		null,
 	);
 	const [deleting, setDeleting] = useState(false);
+	const router = useRouter();
 
 	const handleDelete = async () => {
 		if (!concernTypeToDelete) return;
@@ -61,8 +62,7 @@ export default function PerformanceConcernTypeListPage() {
 	};
 
 	const openDetails = (concernType: IPerformanceConcernType) => {
-		setSelectedConcernType(concernType);
-		setOpenDetailsDialog(true);
+		router.push(`/performance/concern-types/${concernType.id}`);
 	};
 
 	const columns: ColumnDef<IPerformanceConcernType>[] = [
@@ -183,34 +183,6 @@ export default function PerformanceConcernTypeListPage() {
 					</div>
 				}
 			/>
-
-			{selectedConcernType && (
-				<ApprovableDialog
-					isOpen={openDetailsDialog}
-					onOpenChange={(open) => {
-						setOpenDetailsDialog(open);
-						if (!open) setSelectedConcernType(null);
-					}}
-					title={`Concern Type Details: ${selectedConcernType.name}`}
-					description="View the details for this performance concern type."
-					onRefresh={() => tableRefreshRef.current?.()}
-				>
-					<div className="space-y-4 overflow-y-auto max-h-[60svh]">
-						<div>
-							<label className="text-sm font-medium">Name</label>
-							<p>{selectedConcernType.name}</p>
-						</div>
-						<div>
-							<label className="text-sm font-medium">Description</label>
-							<p>{selectedConcernType.description || "Unknown"}</p>
-						</div>
-						<div>
-							<label className="text-sm font-medium">Approval Status</label>
-							<p>{selectedConcernType.approval_status || "Unknown"}</p>
-						</div>
-					</div>
-				</ApprovableDialog>
-			)}
 
 			<PerformanceConcernTypeCreateEditDialog
 				open={openCreateEditDialog}

@@ -13,7 +13,6 @@ from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
 import PyPDF2
 from docx import Document
-
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from users.models import CustomUser
@@ -47,30 +46,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobAdvertApplication
-        fields = [
-            "id",
-            "job_position_advert",
-            "job_position_advert_job_details",
-            "applicant_name",
-            "applicant_email",
-            "applicant_phone",
-            "resume",
-            "cover_letter",
-            "application_date",
-            "status",
-            "gender",
-            "state",
-            "address",
-            "country",
-            "source",
-            "positions",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "reviewed_by",
-            "shortlisted_by",
-            "recommended_by",
-        ]
+        fields = '__all__'
 
     def get_job_position_advert_job_details(self, obj):
         job_position = obj.job_position_advert.job_position

@@ -16,16 +16,13 @@ import OvertimeTable from "./overtime.table";
 export default function AttendanceDashboard() {
 	const initialData: IAttendanceDashboard = {
 		total_attendance_records: 1,
-		attendance_by_status: [{ status: "", count: 3 }],
+		attendance_by_status: [],
 		average_overtime_hours: 3,
 		average_late_minutes: 3,
 		average_early_checkout_minutes: 4,
 		spot_check_response_rate: 5,
-		spot_checks_by_status: [
-			{ status: "Missed", count: 12 },
-			{ status: "Pass", count: 30 },
-		],
-		attendance_over_time: [{ month: "JAN", count: 12 }],
+		attendance_over_time: [],
+		spot_checks_by_status: {},
 	};
 	const getGroupCards1 = (data: IAttendanceDashboard) => [
 		{
@@ -125,8 +122,7 @@ export default function AttendanceDashboard() {
 	return (
 		<LoadingComponent
 			initialData={initialData}
-			// fetchData={getAttendanceDashboard}
-			fetchData={() => Promise.resolve(initialData)}
+			fetchData={getAttendanceDashboard}
 			content={(data) => (
 				<div className="min-h-screen  p-6">
 					<div className="space-y-8">
@@ -191,7 +187,12 @@ export default function AttendanceDashboard() {
 								title={"Spotcheck Rate"}
 								label={""}
 								data={{
-									"2025": data.spot_checks_by_status,
+									"2025": Array.isArray(data.spot_checks_by_status)
+										? data.spot_checks_by_status
+										: Object.entries(data.spot_checks_by_status).map(([status, count]) => ({
+												status,
+												count,
+											})),
 								}}
 								dataKey={"count"}
 								nameKey={"status"}
@@ -216,18 +217,6 @@ export default function AttendanceDashboard() {
 								colors={colors}
 								donut
 								labelList
-							/>
-
-							{/* Spot Check Status */}
-							<BarVChart
-								title={"Spot Check Status"}
-								label={""}
-								data={{
-									"2025": data.spot_checks_by_status,
-								}}
-								dataKey={"count"}
-								nameKey={"status"}
-								colors={colors}
 							/>
 
 							{/* department-wise overtime */}

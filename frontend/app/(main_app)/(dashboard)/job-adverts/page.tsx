@@ -356,7 +356,7 @@ export default function JobAdvertsPage() {
 														</TableCell>
 														<TableCell>
 															<div className="max-w-[200px] truncate text-sm text-muted-foreground">
-																<RichTextDisplay htmlContent={advert.extra_information || "-"} />
+																<RichTextDisplay content={advert.extra_information || "-"} />
 															</div>
 														</TableCell>
 														<TableCell className="text-right">

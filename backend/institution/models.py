@@ -49,6 +49,7 @@ class Institution(SoftDeletableTimeStampedModel):
     setup = models.BooleanField(default=False)
     location = models.CharField(max_length=500, blank=True, null=True)
     country_code = models.CharField(max_length=10, blank=True, null=True)
+    country = models.CharField(max_length=255)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     # zoom_account_id = models.CharField(max_length=100, blank=True, null=True)
@@ -337,6 +338,12 @@ class InstitutionTax(BaseApprovableModel):
         verbose_name_plural = "Institution Taxes"
         verbose_name = "Institution Tax"
 
+class TaxRuleCategory(models.Model):
+    name = models.CharField(max_length=100, blank=False)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
 
 class InstitutionTaxRule(BaseApprovableModel):
     institution_tax = models.ForeignKey(
@@ -344,18 +351,46 @@ class InstitutionTaxRule(BaseApprovableModel):
     )
     tax_rule_name = models.CharField(max_length=100, blank=False)
     tax_rule_description = models.TextField(blank=True, null=True)
-    tax_rule_percentage = models.DecimalField(
-        max_digits=5, decimal_places=2, blank=True, null=True
-    )
-    tax_rule_fixed_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True
-    )
+    tax_rule_category = models.ForeignKey(TaxRuleCategory, null=True, blank=True, on_delete=models.CASCADE)
     salary_from = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True
+        max_digits=15, decimal_places=2, blank=True, null=True,
+        help_text="Lower bound of the taxable income range (in UGX)"
     )
     salary_to = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True
+        max_digits=15, decimal_places=2, blank=True, null=True,
+        help_text="Upper bound of the taxable income range (in UGX, leave null for open-ended upper limit)"
     )
+    tax_rule_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True,
+        help_text="Percentage rate for tax calculation (e.g., 10.00 for 10%)"
+    )
+    tax_rule_fixed_amount = models.DecimalField(
+        max_digits=15, decimal_places=2, blank=True, null=True,
+        help_text="Fixed tax amount (in UGX) if not using percentage or formula"
+    )
+    taxable_income_source = models.CharField(
+        max_length=50,
+        choices=[
+            ('taxable_gross_salary', 'Taxable Gross Salary'),
+            ('gross_salary', 'Gross Salary'),
+            ('basic_salary', 'Basic Salary'),
+        ],
+        blank=True, null=True,
+        help_text="Field from payslip to use as the taxable income base in the formula"
+    )
+    tax_rule_formula = models.TextField(
+        blank=True, null=True,
+        help_text="Formula for tax calculation (e.g., '(taxable_gross_salary - 235000) * 0.10' or '(gross_salary - 410000) * 0.30 + 25000')"
+    )
+
+    def clean(self):
+        count = sum(1 for field in [self.tax_rule_percentage, self.tax_rule_fixed_amount, self.tax_rule_formula] if field is not None)
+        if count > 1:
+            raise ValidationError("Only one of tax_rule_percentage, tax_rule_fixed_amount, or tax_rule_formula can be specified.")
+        if count == 0:
+            raise ValidationError("At least one of tax_rule_percentage, tax_rule_fixed_amount, or tax_rule_formula must be specified.")
+        if self.tax_rule_formula and not self.taxable_income_source:
+            raise ValidationError("taxable_income_source must be specified when using a formula.")
 
      
 

@@ -12,21 +12,21 @@ from users.models import Profile, Role
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Action
-        fields = ['id', 'name', 'code', 'description', 'public_uuid']
+        fields = '__all__'
 
 class ApproverGroupUserSerializer(serializers.ModelSerializer):
     user_fullname = serializers.CharField(source='user.user.fullname', read_only=True)
 
     class Meta:
         model = ApproverGroupUser
-        fields = ['id', 'user', 'user_fullname', 'public_uuid']
+        fields = '__all__'
 
 class ApproverGroupRoleSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source='role.name', read_only=True)
 
     class Meta:
         model = ApproverGroupRole
-        fields = ['id', 'role', 'role_name', 'public_uuid']
+        fields = '__all__'
 
 class ApproverGroupSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
@@ -49,7 +49,7 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApproverGroup
-        fields = ['id', 'institution', 'institution_name', 'name', 'description', 'public_uuid', 'users', 'roles', 'users_display', 'roles_display']
+        fields = '__all__'
         read_only_fields = ['public_uuid', 'institution_name', 'users_display', 'roles_display']
 
     def get_users_display(self, obj):
@@ -93,22 +93,26 @@ class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocumentLevelApprovers
-        fields = ['id', 'approver_group']
+        fields = '__all__'
 
     def get_approver_group(self, obj):
         from .serializers import ApproverGroupSerializer
         return ApproverGroupSerializer(obj.approver_group, context=self.context).data
+ 
+
 
 class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
     approver_group = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelOverriders
-        fields = ['id', 'approver_group']
+        fields = '__all__'
 
     def get_approver_group(self, obj):
         from .serializers import ApproverGroupSerializer
         return ApproverGroupSerializer(obj.approver_group, context=self.context).data
+    
+
 
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
     approvers = serializers.PrimaryKeyRelatedField(
@@ -134,18 +138,7 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocumentLevel
-        fields = [
-            'id',
-            'approval_document',
-            'level',
-            'name',
-            'description',
-            'public_uuid',
-            'approvers',
-            'overriders',
-            'approvers_detail',
-            'overriders_detail',
-        ]
+        fields = '__all__'
         read_only_fields = ['public_uuid', 'level', 'approvers_detail', 'overriders_detail']
 
     def validate(self, data):
@@ -184,7 +177,7 @@ class ApprovalDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocument
-        fields = ['id', 'institution', 'institution_name', 'public_uuid', 'description', 'content_type', 'content_type_name', 'actions', 'levels']
+        fields = '__all__'
 
     def get_content_type_name(self, obj):
         model_class = obj.content_type.model_class()
@@ -210,10 +203,7 @@ class ApprovalTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalTask
-        fields = [
-            'id', 'status', 'comment', 'approved_by', 'approved_by_fullname',
-            'updated_at', 'level', 'level_name', 'approval_document_description'
-        ]
+        fields = '__all__'
         read_only_fields = ['approved_by', 'updated_at']
 
 class ApprovalSerializer(serializers.ModelSerializer):
@@ -223,8 +213,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Approval
-        fields = ['id', 'public_id', 'status', 'document', 'action', 'content_type', 'object_id', 'tasks']
-
+        fields = '__all__'
 class BaseApprovableSerializer(serializers.ModelSerializer):
     approvals = serializers.SerializerMethodField()
 

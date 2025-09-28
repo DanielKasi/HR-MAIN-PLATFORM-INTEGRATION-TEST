@@ -22,6 +22,7 @@ import { Icon } from "@iconify/react";
 import { Badge } from "@/components/ui/badge";
 import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
 import { PerformanceConcernCreateEditDialog } from "./_components/performance-concern-create-edit-dialog";
+import { useRouter } from "next/navigation";
 
 export default function PerformanceConcernListPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -34,6 +35,7 @@ export default function PerformanceConcernListPage() {
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [concernToDelete, setConcernToDelete] = useState<IPerformanceConcern | null>(null);
 	const [deleting, setDeleting] = useState(false);
+	const router = useRouter();
 
 	const handleDelete = async () => {
 		if (!concernToDelete) return;
@@ -56,9 +58,8 @@ export default function PerformanceConcernListPage() {
 		setOpenCreateEditDialog(true);
 	};
 
-	const openDetails = (concern: IPerformanceConcern) => {
-		setSelectedConcern(concern);
-		setOpenDetailsDialog(true);
+	const openDetails = (concerns: IPerformanceConcern) => {
+		router.push(`/performance/concerns/${concerns.id}`);
 	};
 
 	const columns: ColumnDef<IPerformanceConcern>[] = [

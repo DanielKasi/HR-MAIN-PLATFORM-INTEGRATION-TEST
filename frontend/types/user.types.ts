@@ -1,3 +1,4 @@
+import { IBaseApprovable } from "./approvals.types";
 import { Branch } from "./branch.types";
 
 export enum USER_GENDER {
@@ -53,3 +54,5 @@ export interface Permission {
 		permission_category_description: string;
 	};
 }
+
+export interface Role extends IBaseApprovable {}

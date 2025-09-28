@@ -6,7 +6,7 @@ from rest_framework import status, permissions
 from rest_framework_simplejwt.exceptions import TokenError
 from drf_spectacular.utils import extend_schema
 from django.db.models import Prefetch
-from institution.models import UserBranch
+from institution.models import Institution, UserBranch
 from utilities.helpers import (
     build_password_link,
     create_and_institution_otp,
@@ -17,6 +17,8 @@ from utilities.helpers import (
     send_password_reset_link_to_user,
     create_and_institution_token,
 )
+from drf_spectacular.openapi import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 from django.utils import timezone
 from .serializers import (
     CustomUserSerializer,
@@ -25,6 +27,7 @@ from .serializers import (
     RoleSerializer,
     PermissionSerializer,
     PermissionCategorySerializer,
+    SignatureSerializer,
     UserOTPVerificationSerializer,
     UserPasswordResetSerializer,
     UserResendOTPVerificationSerializer,
@@ -40,6 +43,7 @@ from .models import (
     Role,
     Permission,
     PermissionCategory,
+    Signature,
     UserType,
     OTPModel,
     Profile,
@@ -135,7 +139,7 @@ class UserListAPIView(APIView, SortableAPIMixin):
             "user_roles__role__permissions__permission",
             Prefetch(
                 "attached_branches",
-                queryset=UserBranch.objects.select_related("branch__Institution"),
+                queryset=UserBranch.objects.select_related("branch__institution"),
                 to_attr="prefetched_user_branches",
             ),
         )
@@ -452,6 +456,14 @@ class LoginView(APIView):
                         {
                             "detail": "You need to verify your account to be able to login",
                             "custom_code": "SELF_CREATED_UNVERIFIED",
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                
+                if not user_instance.is_active:
+                    return Response(
+                        {
+                            "detail": "Your account is currently inactive. Contact Admin to have it activated"
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
@@ -1188,3 +1200,178 @@ class LogoutView(APIView):
             except (InvalidToken, TokenError) as e:
                 return Response({"detail": "Invalid refresh token."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     
+
+
+class SignatureListCreateView(APIView, SortableAPIMixin):
+    allowed_ordering_fields = ['user__fullname', 'created_at', 'id']
+    default_ordering = ['user__fullname']
+
+    @extend_schema(
+        request=SignatureSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=SignatureSerializer,
+                description="Signature created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Signatures"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = SignatureSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save()
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by user fullname"},
+            {"name": "user", "type": "int", "description": "Filter by user ID"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'user__fullname,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=SignatureSerializer(many=True),
+                description="List of signatures.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+        },
+        tags=["Signatures"],
+    )
+    def get(self, request):
+        search_query = request.query_params.get("search", None)
+        user_filter = request.query_params.get("user", None)
+        user = request.user.profile
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        signatures = Signature.objects.filter(
+            institution=institution, deleted_at__isnull=True
+        )
+        if search_query:
+            signatures = signatures.filter(
+                Q(user__fullname__icontains=search_query)
+            )
+
+        if user_filter:
+            signatures = signatures.filter(user_id=user_filter)
+
+        try:
+            signatures = self.apply_sorting(signatures, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(signatures, request)
+        serializer = SignatureSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
+class SignatureDetailView(APIView):
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=SignatureSerializer,
+                description="Signature details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Signature not found.",
+            ),
+        },
+        tags=["Signatures"],
+    )
+    def get(self, request, pk):
+        signature = get_object_or_404(Signature, pk=pk)
+        serializer = SignatureSerializer(signature)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            204: OpenApiResponse(
+                description="Signature deleted successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Signature not found.",
+            ),
+        },
+        tags=["Signatures"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        signature = get_object_or_404(Signature, pk=pk)
+        signature.approval_status = 'under_deletion'
+        signature.save(update_fields=['approval_status'])   
+        signature.confirm_delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        request=SignatureSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=SignatureSerializer,
+                description="Signature updated successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Signature not found.",
+            ),
+        },
+        tags=["Signatures"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        signature = get_object_or_404(Signature, pk=pk)
+        serializer = SignatureSerializer(signature, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        request=SignatureSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=SignatureSerializer,
+                description="Signature updated successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Signature not found.",
+            ),
+        },
+        tags=["Signatures"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        signature = get_object_or_404(Signature, pk=pk)
+        signature.approval_status = 'under_update'
+        serializer = SignatureSerializer(signature, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            signature.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)    

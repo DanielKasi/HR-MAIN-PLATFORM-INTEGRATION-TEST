@@ -13,6 +13,7 @@ import RichTextDisplay from "@/components/common/rich-text-display";
 
 interface FeedbackTableProps {
 	feedback: IFeedback360[];
+	onView: (feedback: IFeedback360) => void;
 	onEdit: (feedback: IFeedback360) => void;
 	onDelete: (feedback: IFeedback360) => void;
 	onAdd: () => void;
@@ -22,6 +23,7 @@ interface FeedbackTableProps {
 
 export function FeedbackTable({
 	feedback,
+	onView,
 	onEdit,
 	onDelete,
 	onAdd,
@@ -127,7 +129,7 @@ export function FeedbackTable({
 				<div className="max-w-xs">
 					<RichTextDisplay
 						className="text-sm text-muted-foreground line-clamp-2"
-						htmlContent={item.feedback_text || ""}
+						content={item.feedback_text || ""}
 					/>
 				</div>
 			),
@@ -154,6 +156,11 @@ export function FeedbackTable({
 	];
 
 	const actions: TableAction<IFeedback360>[] = [
+		{
+			label: "View",
+			icon: <Eye className="h-4 w-4" />,
+			onClick: onView,
+		},
 		{
 			label: "Edit",
 			icon: <Edit className="h-4 w-4" />,

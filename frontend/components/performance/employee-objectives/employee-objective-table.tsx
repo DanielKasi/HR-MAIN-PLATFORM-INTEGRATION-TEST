@@ -2,7 +2,7 @@
 
 import type { IEmployeeObjective } from "@/types/types.utils";
 
-import { Edit, Trash2, User, Target, Calendar, CheckCircle } from "lucide-react";
+import { Edit, Trash2, User, Target, Calendar, CheckCircle, Eye } from "lucide-react";
 import { formatDate, hasPermission } from "@/lib/helpers";
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
 import { StatusBadge } from "../common/status-badge";
@@ -10,6 +10,7 @@ import { PERMISSION_CODES } from "@/constants";
 
 interface EmployeeObjectivesTableProps {
 	employeeObjectives: IEmployeeObjective[];
+	onView: (employeeObjective: IEmployeeObjective) => void;
 	onEdit: (employeeObjective: IEmployeeObjective) => void;
 	onDelete: (employeeObjective: IEmployeeObjective) => void;
 	onAdd: () => void;
@@ -19,6 +20,7 @@ interface EmployeeObjectivesTableProps {
 
 export function EmployeeObjectivesTable({
 	employeeObjectives,
+	onView,
 	onEdit,
 	onDelete,
 	onAdd,
@@ -124,6 +126,11 @@ export function EmployeeObjectivesTable({
 	];
 
 	const actions: TableAction<IEmployeeObjective>[] = [
+		{
+			label: "View",
+			icon: <Eye className="h-4 w-4" />,
+			onClick: onView,
+		},
 		{
 			label: "Edit",
 			icon: <Edit className="h-4 w-4" />,

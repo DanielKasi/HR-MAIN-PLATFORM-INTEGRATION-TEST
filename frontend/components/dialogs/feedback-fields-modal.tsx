@@ -86,6 +86,7 @@ export function FeedbackFieldsModal({
 		}
 
 		const newField: IFeedbackField = {
+			id: new Date().getTime(),
 			label: fieldName.trim(),
 			type: fieldType as IFeedbackField["type"],
 			required: fieldRequired,
@@ -248,8 +249,8 @@ export function FeedbackFieldsModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-6">
-					<div className="space-y-4">
+				<div className="flex flex-col gap-4 py-6 h-full max-h-[70svh] md:max-h-[60svh] overflow-y-auto">
+					<div className="space-y-4 px-2">
 						<div className="space-y-2">
 							<Label htmlFor="field-name">Field Name</Label>
 							<Input
@@ -292,7 +293,7 @@ export function FeedbackFieldsModal({
 					{localFields.length > 0 && (
 						<div className="space-y-3">
 							<h4 className="font-medium">Added Fields ({localFields.length})</h4>
-							<div className="space-y-2 max-h-48 overflow-y-auto">
+							<div className="space-y-2 max-h-48 overflow-y-auto py-6 border-t border-b border-gray-200">
 								{localFields.map((field, index) => (
 									<div
 										key={index}
@@ -331,10 +332,9 @@ export function FeedbackFieldsModal({
 						Add Field
 					</Button>
 					<div className="flex gap-3">
-						<Button variant="outline" onClick={handleCancel}>
-							Cancel
+						<Button onClick={handleSave} className="w-full rounded-full px-12">
+							Save Fields ({localFields.length})
 						</Button>
-						<Button onClick={handleSave}>Save Fields ({localFields.length})</Button>
 					</div>
 				</div>
 			</DialogContent>

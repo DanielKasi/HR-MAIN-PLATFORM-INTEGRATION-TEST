@@ -308,9 +308,12 @@ class System(models.Model):
         return self.code
 
 
-class Signature(models.Model):
+class Signature(BaseApprovableModel):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     signature = JSignatureField(null=True, blank=True)
 
     def __str__(self):
         return f"Signature of {self.user.fullname}"
+
+    def get_institution(self):
+        return self.user.profile.institution

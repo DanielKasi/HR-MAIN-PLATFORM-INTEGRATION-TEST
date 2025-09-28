@@ -6,6 +6,7 @@ from .models import (
     Department,
     Institution,
     Branch,
+    TaxRuleCategory,
     UserBranch,
     InstitutionKYCDocument,
     InstitutionBankType,
@@ -192,18 +193,7 @@ class InstitutionBankTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = InstitutionBankType
 
-        fields = [
-            "id",
-            "institution",
-            "bank_fullname",
-            "bank_code",
-            "br_code",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -243,18 +233,7 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionBankAccount
-        fields = [
-            "id",
-            "institution_bank",
-            "account_name",
-            "account_number",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "updated_by",
-            "paid_branches",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",
@@ -287,15 +266,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionWorkingDays
-        fields = [
-            "id",
-            "institution",
-            "days",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -376,7 +347,7 @@ class BranchWorkingDaysSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = BranchWorkingDays
-        fields = ["id", "branch", "branch_days"]
+        fields = '__all__'
         read_only_fields = ["id", "branch"]
 
     def update(self, instance, validated_data):
@@ -407,17 +378,7 @@ class InstitutionTaxSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTax
-        fields = [
-            "id",
-            "institution",
-            "tax_name",
-            "tax_status",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "institution",
@@ -464,21 +425,7 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTaxRule
-        fields = [
-            "id",
-            "institution_tax",
-            "tax_rule_name",
-            "tax_rule_description",
-            "tax_rule_percentage",
-            "tax_rule_fixed_amount",
-            "salary_from",
-            "salary_to",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -505,19 +452,6 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
                 else getattr(instance, "tax_rule_fixed_amount", None)
             )
 
-        if not tax_rule_percentage and not tax_rule_fixed_amount:
-            raise serializers.ValidationError(
-                {
-                    "error": "Either tax_rule_percentage or tax_rule_fixed_amount must be provided."
-                }
-            )
-
-        if tax_rule_percentage and tax_rule_fixed_amount:
-            raise serializers.ValidationError(
-                {
-                    "error": "Only one of tax_rule_percentage or tax_rule_fixed_amount can be provided."
-                }
-            )
 
         return attrs
 
@@ -571,22 +505,7 @@ class BranchSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Branch
-        fields = [
-            "id",
-            "institution",
-            "paying_bank_account",
-            "institution_name",
-            "institution_logo",
-            "branch_name",
-            "branch_phone_number",
-            "branch_location",
-            "branch_latitude",
-            "branch_longitude",
-            "branch_email",
-            "branch_opening_time",
-            "branch_closing_time",
-            "is_active",
-        ]
+        fields = '__all__'
 
     def get_institution_logo(self, obj):
         if (
@@ -665,15 +584,7 @@ class DepartmentSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Department
-        fields = [
-            "id",
-            "name",
-            "description",
-            "institution",
-            # "head_of_department",
-            # "head_of_department_details",
-            "institution_details",
-        ]
+        fields = '__all__'
 
 
 class OwnerSerializer(serializers.Serializer):
@@ -792,6 +703,16 @@ class BranchPenaltyConfigSerializer(serializers.ModelSerializer):
             )
         return attrs
 
+class OrganizationChartSerializer(BaseApprovableSerializer):
+    subordinates = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JobPosition
+        fields = '__all__'
+
+    def get_subordinates(self, obj):    
+        subordinates = JobPosition.objects.filter(reports_to=obj, job_position_status='active', department__institution=obj.department.institution)
+        return OrganizationChartSerializer(subordinates, many=True, context=self.context).data
 
 class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
     branch_name = serializers.CharField(source="branch.branch_name", read_only=True)
@@ -800,6 +721,11 @@ class BranchLocationComparisonConfigSerializer(BaseApprovableSerializer):
         model = BranchLocationComparisonConfig
         fields = "__all__"
 
+class TaxRuleCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+         model = TaxRuleCategory
+         fields = '__all__'
 
 class BranchShiftSerializer(BaseApprovableSerializer):
     shift_day = serializers.PrimaryKeyRelatedField(queryset=BranchDay.objects.all())

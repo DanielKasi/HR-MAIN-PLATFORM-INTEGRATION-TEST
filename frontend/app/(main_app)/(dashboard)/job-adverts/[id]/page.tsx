@@ -28,6 +28,7 @@ import { getJobPositionAdvertById, getJobPosition, updateJobPositionAdvert } fro
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 const getStatusColor = (status: JobAdvertStatus) => {
 	switch (status) {
@@ -319,219 +320,206 @@ export default function JobAdvertDetailsPage() {
 					</div>
 				</div>
 
-				<div
-					className={`gap-6 ${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
+				<ApprovableInstancePageLayout
+					instance={jobAdvert}
+					onInstanceRefresh={fetchJobAdvertDetails}
 				>
-					{jobAdvert?.approvals && jobAdvert.approvals.length > 0 && (
-						<div className="order-1 lg:order-2">
-							<ApprovalWorkflow
-								approvals={jobAdvert.approvals}
-								instance_approval_status={jobAdvert.approval_status}
-								onRefresh={fetchJobAdvertDetails}
-							/>
-						</div>
-					)}
-
-					<div
-						className={`${jobAdvert?.approval_status !== "active" && jobAdvert?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-					>
-						{/* Main Details Card */}
-						<Card className="bg-transparent shadow-none border-0">
-							<CardHeader className="py-1 my-0">
-								<div className="flex items-start justify-between">
-									{jobPosition && (
-										<>
-											<div className="">
-												<h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-													<Briefcase className="h-5 w-5" />
-													Job Opening Details
-												</h3>
-												<div className="bg-muted/50 py-1 rounded-lg">
-													<div className="flex items-center justify-between">
-														{jobPosition.salary_max || jobPosition.salary_min ? (
-															<p className="flex items-center gap-1 text-lg font-bold text-green-600">
-																{formatCurrency(jobPosition.salary_min || 0)} -{" "}
-																{formatCurrency(jobPosition.salary_max || 0)}
-															</p>
-														) : (
-															<> </>
-														)}
-													</div>
-													{jobPosition.description && (
-														<RichTextDisplay
-															className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
-															htmlContent={jobPosition.description}
-														/>
+					{/* Main Details Card */}
+					<Card className="bg-transparent shadow-none border-0">
+						<CardHeader className="py-1 my-0">
+							<div className="flex items-start justify-between">
+								{jobPosition && (
+									<>
+										<div className="">
+											<h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+												<Briefcase className="h-5 w-5" />
+												Job Opening Details
+											</h3>
+											<div className="bg-muted/50 py-1 rounded-lg">
+												<div className="flex items-center justify-between">
+													{jobPosition.salary_max || jobPosition.salary_min ? (
+														<p className="flex items-center gap-1 text-lg font-bold text-green-600">
+															{formatCurrency(jobPosition.salary_min || 0)} -{" "}
+															{formatCurrency(jobPosition.salary_max || 0)}
+														</p>
+													) : (
+														<> </>
 													)}
 												</div>
+												{jobPosition.description && (
+													<RichTextDisplay
+														className="text-sm text-muted-foreground leading-relaxed py-2 whitespace-pre-wrap"
+														content={jobPosition.description}
+													/>
+												)}
 											</div>
-										</>
-									)}
-									<div className="text-right">
-										<div className="flex items-center gap-1 text-lg font-bold">
-											<Calendar className="h-4 w-4" />
-											{formatDate(jobAdvert.expiry_date)}
 										</div>
-										<p className="text-sm text-muted-foreground">Expiry Date</p>
+									</>
+								)}
+								<div className="text-right">
+									<div className="flex items-center gap-1 text-lg font-bold">
+										<Calendar className="h-4 w-4" />
+										{formatDate(jobAdvert.expiry_date)}
 									</div>
+									<p className="text-sm text-muted-foreground">Expiry Date</p>
 								</div>
-							</CardHeader>
+							</div>
+						</CardHeader>
 
-							<CardContent className="space-y-6 border-none">
-								{/* Advert Details Grid */}
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									{/* Advert Information */}
+						<CardContent className="space-y-6 border-none">
+							{/* Advert Details Grid */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								{/* Advert Information */}
+								<Card className="w-full">
+									<CardHeader className="pb-3">
+										<CardTitle className="text-lg flex items-center gap-2">
+											<Megaphone className="h-5 w-5" />
+											Opening Details
+										</CardTitle>
+									</CardHeader>
+									<CardContent className="space-y-3">
+										<div>
+											<p className="text-sm font-medium">Status</p>
+											<Badge
+												className={`text-xs ${getStatusColor(jobAdvert.job_position_advert_status)}`}
+											>
+												{jobAdvert.job_position_advert_status.toUpperCase()}
+											</Badge>
+										</div>
+										<div>
+											<p className="text-sm font-medium">Published Date</p>
+											<p className="text-sm text-muted-foreground">
+												{formatDate(jobAdvert.published_date)}
+											</p>
+										</div>
+										<div>
+											<p className="text-sm font-medium">Expiry Date</p>
+											<p
+												className={`text-sm ${expired ? "text-red-600 font-medium" : "text-muted-foreground"}`}
+											>
+												{formatDate(jobAdvert.expiry_date)}
+												{expired && " (EXPIRED)"}
+											</p>
+										</div>
+										{jobAdvert.number_of_employees_expected && (
+											<div>
+												<p className="text-sm font-medium">Expected Employees</p>
+												<p className="text-sm text-muted-foreground">
+													{jobAdvert.number_of_employees_expected}
+												</p>
+											</div>
+										)}
+									</CardContent>
+								</Card>
+
+								{/* Department & Reporting */}
+								{jobPosition && (
 									<Card className="w-full">
 										<CardHeader className="pb-3">
 											<CardTitle className="text-lg flex items-center gap-2">
-												<Megaphone className="h-5 w-5" />
-												Opening Details
+												<Building2 className="h-5 w-5" />
+												Department & Reporting
 											</CardTitle>
 										</CardHeader>
 										<CardContent className="space-y-3">
 											<div>
-												<p className="text-sm font-medium">Status</p>
-												<Badge
-													className={`text-xs ${getStatusColor(jobAdvert.job_position_advert_status)}`}
-												>
-													{jobAdvert.job_position_advert_status.toUpperCase()}
-												</Badge>
-											</div>
-											<div>
-												<p className="text-sm font-medium">Published Date</p>
+												<p className="text-sm font-medium">Department</p>
 												<p className="text-sm text-muted-foreground">
-													{formatDate(jobAdvert.published_date)}
+													{jobPosition.department_details?.name}
 												</p>
 											</div>
-											<div>
-												<p className="text-sm font-medium">Expiry Date</p>
-												<p
-													className={`text-sm ${expired ? "text-red-600 font-medium" : "text-muted-foreground"}`}
-												>
-													{formatDate(jobAdvert.expiry_date)}
-													{expired && " (EXPIRED)"}
-												</p>
-											</div>
-											{jobAdvert.number_of_employees_expected && (
-												<div>
-													<p className="text-sm font-medium">Expected Employees</p>
+											{jobPosition.reports_to_details ? (
+												<>
+													<div>
+														<p className="text-sm font-medium">Reports To</p>
+														<p className="text-sm text-muted-foreground">
+															{jobPosition.reports_to_details.name}
+														</p>
+													</div>
+													<div>
+														<p className="text-sm font-medium">Manager Email</p>
+														<p className="text-sm text-muted-foreground">
+															{jobPosition.reports_to_details.email}
+														</p>
+													</div>
+												</>
+											) : (
+												<div className="text-center py-4">
+													<User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
 													<p className="text-sm text-muted-foreground">
-														{jobAdvert.number_of_employees_expected}
+														No direct reporting manager
 													</p>
 												</div>
 											)}
 										</CardContent>
 									</Card>
+								)}
+							</div>
 
-									{/* Department & Reporting */}
-									{jobPosition && (
-										<Card className="w-full">
-											<CardHeader className="pb-3">
-												<CardTitle className="text-lg flex items-center gap-2">
-													<Building2 className="h-5 w-5" />
-													Department & Reporting
-												</CardTitle>
-											</CardHeader>
-											<CardContent className="space-y-3">
-												<div>
-													<p className="text-sm font-medium">Department</p>
-													<p className="text-sm text-muted-foreground">
-														{jobPosition.department_details?.name}
-													</p>
-												</div>
-												{jobPosition.reports_to_details ? (
-													<>
-														<div>
-															<p className="text-sm font-medium">Reports To</p>
-															<p className="text-sm text-muted-foreground">
-																{jobPosition.reports_to_details.name}
-															</p>
-														</div>
-														<div>
-															<p className="text-sm font-medium">Manager Email</p>
-															<p className="text-sm text-muted-foreground">
-																{jobPosition.reports_to_details.email}
-															</p>
-														</div>
-													</>
-												) : (
-													<div className="text-center py-4">
-														<User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-														<p className="text-sm text-muted-foreground">
-															No direct reporting manager
-														</p>
-													</div>
-												)}
-											</CardContent>
-										</Card>
-									)}
-								</div>
+							{/* Extra Information */}
+							{jobAdvert.extra_information && (
+								<>
+									<Separator />
+									<div>
+										<h3 className="text-lg font-semibold mb-3">Additional Information</h3>
+										<div className="bg-muted/50 p-4 rounded-lg">
+											<RichTextDisplay
+												className="text-sm leading-relaxed whitespace-pre-wrap"
+												content={jobAdvert.extra_information || "-"}
+											/>
+										</div>
+									</div>
+								</>
+							)}
 
-								{/* Extra Information */}
-								{jobAdvert.extra_information && (
+							{/* Document Templates */}
+							{jobPosition &&
+								(jobPosition.contract_template || jobPosition.offer_letter_template) && (
 									<>
 										<Separator />
 										<div>
-											<h3 className="text-lg font-semibold mb-3">Additional Information</h3>
-											<div className="bg-muted/50 p-4 rounded-lg">
-												<RichTextDisplay
-													className="text-sm leading-relaxed whitespace-pre-wrap"
-													htmlContent={jobAdvert.extra_information || "-"}
-												/>
+											<h3 className="text-lg font-semibold mb-4">Available Templates</h3>
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+												{jobPosition.contract_template && (
+													<Card>
+														<CardContent className="p-4">
+															<div className="flex items-center gap-3">
+																<FileText className="h-8 w-8 text-primary" />
+																<div>
+																	<p className="font-medium">Contract Template</p>
+																	<p className="text-xs text-muted-foreground">
+																		Employment contract template
+																	</p>
+																</div>
+															</div>
+														</CardContent>
+													</Card>
+												)}
+
+												{jobPosition.offer_letter_template && (
+													<Card>
+														<CardContent className="p-4">
+															<div className="flex items-center gap-3">
+																<FileText className="h-8 w-8 text-primary" />
+																<div>
+																	<p className="font-medium">Offer Letter Template</p>
+																	<p className="text-xs text-muted-foreground">
+																		Job offer letter template
+																	</p>
+																</div>
+															</div>
+														</CardContent>
+													</Card>
+												)}
 											</div>
 										</div>
 									</>
 								)}
 
-								{/* Document Templates */}
-								{jobPosition &&
-									(jobPosition.contract_template || jobPosition.offer_letter_template) && (
-										<>
-											<Separator />
-											<div>
-												<h3 className="text-lg font-semibold mb-4">Available Templates</h3>
-												<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-													{jobPosition.contract_template && (
-														<Card>
-															<CardContent className="p-4">
-																<div className="flex items-center gap-3">
-																	<FileText className="h-8 w-8 text-primary" />
-																	<div>
-																		<p className="font-medium">Contract Template</p>
-																		<p className="text-xs text-muted-foreground">
-																			Employment contract template
-																		</p>
-																	</div>
-																</div>
-															</CardContent>
-														</Card>
-													)}
-
-													{jobPosition.offer_letter_template && (
-														<Card>
-															<CardContent className="p-4">
-																<div className="flex items-center gap-3">
-																	<FileText className="h-8 w-8 text-primary" />
-																	<div>
-																		<p className="font-medium">Offer Letter Template</p>
-																		<p className="text-xs text-muted-foreground">
-																			Job offer letter template
-																		</p>
-																	</div>
-																</div>
-															</CardContent>
-														</Card>
-													)}
-												</div>
-											</div>
-										</>
-									)}
-
-								<Separator />
-							</CardContent>
-						</Card>
-					</div>
-				</div>
+							<Separator />
+						</CardContent>
+					</Card>
+				</ApprovableInstancePageLayout>
 			</div>
 		</div>
 	);

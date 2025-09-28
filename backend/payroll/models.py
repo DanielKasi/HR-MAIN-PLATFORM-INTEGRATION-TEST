@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig
+from institution.models import Institution, PENALTY_TYPES, BranchPenaltyConfig, InstitutionPenaltyConfig, InstitutionTaxRule
 from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
@@ -797,11 +797,12 @@ class Payslip(BaseApprovableModel):
         super().save(*args, **kwargs)
 
     def calculate_totals(self):
-        taxable_allowances = 0
-        non_taxable_allowances = 0
-        total_penalties = 0
 
+        taxable_allowances = Decimal('0')
+        non_taxable_allowances = Decimal('0')
+        total_penalties = Decimal('0')
 
+        # Step 1: Calculate Allowances
         allowances = (
             self.employee.allowances.filter(is_active=True)
             .filter(
@@ -822,6 +823,7 @@ class Payslip(BaseApprovableModel):
             else:
                 non_taxable_allowances += amount
 
+        # Step 2: Calculate Penalties
         penalties = self.employee.penalties.filter(
             status='applied',
             is_active=True,
@@ -832,8 +834,8 @@ class Payslip(BaseApprovableModel):
         for penalty in penalties:
             total_penalties += penalty.amount        
 
-        # Now get total deductions excluding tax (for clarity)
-        deductions = 0
+        # Step 3: Calculate Deductions (excluding tax)
+        deductions = Decimal('0')
         for deduction in (
             self.employee.deductions.filter(is_active=True)
             .filter(
@@ -847,29 +849,80 @@ class Payslip(BaseApprovableModel):
             recurrence = deduction.get_recurrence_count(self.payroll_period)
             deductions += deduction.get_calculated_amount() * recurrence
 
+        # Step 4: Calculate Tax
+        tax_total = Decimal('0')
+        basic_salary = self.basic_salary or self.employee.salary or Decimal('0')
+        taxable_gross = basic_salary + taxable_allowances
+        gross_salary = basic_salary + taxable_allowances + non_taxable_allowances
+        institution = self.get_institution()
+        tax_rules = InstitutionTaxRule.objects.filter(
+            institution_tax__institution=institution,
+            institution_tax__tax_status=True
+        ).order_by('salary_from')
 
-        # Calculate tax from EmployeeTax model (already no recurrence)
-        tax_total = 0
-        for tax in self.employee.taxes.all():
-            if tax.effective_from <= self.payroll_period.end_date and (
-                not tax.effective_to
-                or tax.effective_to >= self.payroll_period.start_date
-            ):
-                tax_total += tax.get_tax_amount()
+        for rule in tax_rules:
+            from_val = Decimal(rule.salary_from) if rule.salary_from is not None else Decimal('0')
+            to_val = Decimal(rule.salary_to) if rule.salary_to is not None else None
 
+            # Map the chosen taxable income source to its value
+            income_value = {
+                'taxable_gross_salary': taxable_gross,
+                'gross_salary': gross_salary,
+                'basic_salary': basic_salary,
+            }.get(rule.taxable_income_source, taxable_gross)  # Default to taxable_gross if not specified
+
+            if to_val is not None:
+                if from_val <= income_value <= to_val:
+                    if rule.tax_rule_formula:
+                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
+                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
+                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
+                        try:
+                            tax_amount = eval(formula, safe_dict, {'income': income_value})
+                            tax_total = Decimal(tax_amount)
+                        except (SyntaxError, NameError, TypeError):
+                            tax_total = Decimal('0')
+                    elif rule.tax_rule_percentage:
+                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
+                        tax_total = tax_amount
+                    elif rule.tax_rule_fixed_amount:
+                        tax_total = rule.tax_rule_fixed_amount
+                    break
+            else:
+                # Handle open-ended range (e.g., above 10,000,000)
+                if income_value >= from_val:
+                    if rule.tax_rule_formula:
+                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
+                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
+                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
+                        try:
+                            # Split and evaluate the two-part formula for progressive tax
+                            parts = formula.split('+')
+                            part1 = parts[0].strip()  # [(taxable_gross_salary – 410000) x 30% + 25000]
+                            part2 = parts[1].strip()  # [(taxable_gross_salary – 10000000) x 10%]
+                            tax_part1 = eval(part1, safe_dict, {'income': income_value})
+                            tax_part2 = eval(part2, safe_dict, {'income': income_value}) if income_value > 10000000 else Decimal('0')
+                            tax_total = Decimal(tax_part1) + Decimal(tax_part2)
+                        except (SyntaxError, NameError, TypeError, IndexError):
+                            tax_total = Decimal('0')
+                    elif rule.tax_rule_percentage:
+                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
+                        tax_total = tax_amount
+                    elif rule.tax_rule_fixed_amount:
+                        tax_total = rule.tax_rule_fixed_amount
+                    break
+
+        # Step 5: Calculate Final Totals
         self.total_allowances = taxable_allowances + non_taxable_allowances
         self.total_deductions = deductions + tax_total
         self.total_penalties = total_penalties
-        self.basic_salary = self.basic_salary or self.employee.salary or 0
 
-        gross = self.basic_salary + taxable_allowances + non_taxable_allowances
-        taxable_gross = self.basic_salary + taxable_allowances
-        net = taxable_gross - tax_total + non_taxable_allowances - deductions - total_penalties
-        
+        gross = basic_salary + taxable_allowances + non_taxable_allowances
+        net = gross - tax_total - deductions - total_penalties
 
         self.gross_salary = gross
+        self.taxable_gross_salary = taxable_gross
         self.net_salary = net
-        self.taxable_gross = taxable_gross
 
         self.save()
 

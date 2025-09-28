@@ -2,20 +2,12 @@
 
 import type { ApprovalDocument, ContentTypeLite } from "@/types/approvals.types";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { Check, ChevronsUpDown, MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -44,6 +36,8 @@ import {
 	CommandList,
 } from "@/components/ui/command";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
+import { RefObject } from "react";
 
 const actionsMapper: Array<{
 	value: string;
@@ -56,9 +50,7 @@ const actionsMapper: Array<{
 
 export default function ApprovalsDocumentsPage() {
 	const router = useRouter();
-	const [docs, setDocs] = useState<ApprovalDocument[]>([]);
 	const [models, setModels] = useState<ContentTypeLite[]>([]);
-	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string>("");
 	const [q, setQ] = useState<string>("");
 
@@ -68,49 +60,21 @@ export default function ApprovalsDocumentsPage() {
 	const [modelsDialogOpen, setModelsDialogOpen] = useState(false);
 	const [modelsInputValue, setModelsInputValue] = useState("");
 	const [documentToDelete, setDocumentToDelete] = useState<ApprovalDocument | null>(null);
+	const tableRefreshRef = useRef<(() => void) | null>(null);
 
-	const refresh = async () => {
-		const [docsRes, modelsRes] = await Promise.all([
-			APPROVAL_DOCUMENTS_API.fetchAll(),
-			APPROVABLE_MODELS_API.fetchAll(),
-		]);
-
-		setDocs(docsRes?.results || []);
-		setModels(modelsRes || []);
-	};
-
-	useEffect(() => {
-		let mounted = true;
-
-		loadData();
-
-		return () => {
-			mounted = false;
-		};
-	}, []);
-
-	const loadData = async () => {
+	const loadModels = async () => {
 		try {
-			setLoading(true);
-			await refresh();
+			const modelsRes = await APPROVABLE_MODELS_API.fetchAll();
+			setModels(modelsRes || []);
 		} catch (e: any) {
-			showErrorToast({ error: e, defaultMessage: "Failed to load approval records" });
-			setError(e?.message || "Failed to load approval records");
-		} finally {
-			setLoading(false);
+			showErrorToast({ error: e, defaultMessage: "Failed to load approvable models" });
+			setError(e?.message || "Failed to load approvable models");
 		}
 	};
 
-	const filteredDocs = useMemo(() => {
-		if (!q) return docs;
-		const s = q.toLowerCase();
-
-		return docs.filter((d) =>
-			[d.description || "", String(d.content_type_name)].some((v) => v.toLowerCase().includes(s)),
-		);
-	}, [docs, q]);
-
-	filteredDocs.sort((a, b) => a.content_type_name.localeCompare(b.content_type_name));
+	useEffect(() => {
+		loadModels();
+	}, []);
 
 	const onCreate = async () => {
 		if (!selectedModelId) return;
@@ -124,14 +88,70 @@ export default function ApprovalsDocumentsPage() {
 	const handleDelete = async (id: number) => {
 		if (!documentToDelete) return;
 		await APPROVAL_DOCUMENTS_API.delete({ id });
-		refresh();
+		tableRefreshRef.current?.();
 	};
+
+	const getActionsDisplay = (actions: ApprovalDocument["actions"]) => {
+		return actions.map((action, idx) => (
+			<Badge variant={"info"} className="capitalize" key={idx}>
+				{actionsMapper.find((mapped_action) => mapped_action.value === action.name)?.label ||
+					action.name}
+			</Badge>
+		));
+	};
+
+	const columns: ColumnDef<ApprovalDocument>[] = [
+		{
+			key: "name",
+			header: "Name",
+			cell: (doc) => (
+				<div className="flex items-center justify-start gap-4">
+					{doc.content_type_name || " -"}
+					{getActionsDisplay(doc.actions)}
+				</div>
+			),
+		},
+		{
+			key: "description",
+			header: "Description",
+			cell: (doc) => <div className="truncate text-xs md:text-sm">{doc.description}</div>,
+		},
+		{
+			key: "levels",
+			header: "Number of Levels",
+			cell: (doc) => <p className="text-center">{doc.levels?.length || 0}</p>,
+		},
+		{
+			key: "actions",
+			header: "Actions",
+			cell: (doc) => (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button size="icon" variant="ghost" className="rounded-full">
+							<MoreVertical className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="rounded-lg">
+						<DropdownMenuItem asChild>
+							<Link href={`/admin/settings/approvals/${doc.id}`}>View details</Link>
+						</DropdownMenuItem>
+						<DropdownMenuItem asChild>
+							<Link href={`/admin/settings/approvals/${doc.id}/edit/`}>Edit</Link>
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => setDocumentToDelete(doc)}>Delete</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			),
+		},
+	];
+
+	const hasFilters = !!q;
 
 	return (
 		<>
 			<div className="p-4 space-y-4 bg-white rounded-xl">
 				<div className="flex items-center justify-between">
-					<h1 className="text-lg font-semibold capitalize">Objects Bearing approvals</h1>
+					<h1 className="text-lg font-semibold capitalize">Configured Approval Workflows</h1>
 					<div className="flex items-center justify-end gap-4">
 						<Button
 							onClick={() => router.push("/admin/settings/approvals/approver-groups/")}
@@ -146,11 +166,11 @@ export default function ApprovalsDocumentsPage() {
 							</DialogTrigger>
 							<DialogContent className="sm:max-w-[520px] rounded-lg">
 								<DialogHeader>
-									<DialogTitle>Select Objects to configure</DialogTitle>
+									<DialogTitle>Select Entities to configure</DialogTitle>
 								</DialogHeader>
 								<div className="space-y-3 py-2">
 									<div className="text-xs text-gray-600">
-										Everything that can bear an approval is listed.
+										All resources that can bear approvals are listed.
 									</div>
 
 									<Popover open={modelsDialogOpen} onOpenChange={setModelsDialogOpen}>
@@ -164,13 +184,13 @@ export default function ApprovalsDocumentsPage() {
 											>
 												<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 												{models.find((m) => m.id === selectedModelId)?.name ||
-													"Select something that can bear an approval"}
+													"Select a resource that can bear an approval"}
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent className={"w-full p-0"}>
 											<Command shouldFilter={false}>
 												<CommandInput
-													placeholder={"Select something that can bear an approval"}
+													placeholder={"Select a resource that can bear an approval"}
 													value={modelsInputValue}
 													onValueChange={(value) => {
 														setModelsInputValue(value);
@@ -234,76 +254,43 @@ export default function ApprovalsDocumentsPage() {
 					/>
 				</div>
 
-				{loading && <div className="text-sm text-gray-600">Loading...</div>}
 				{error && <div className="text-sm text-red-600">{error}</div>}
 
-				<div className="rounded-lg overflow-hidden">
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Name</TableHead>
-								<TableHead>Description</TableHead>
-								<TableHead className="text-center min-w-[10rem]">Number of Levels</TableHead>
-								<TableHead className="text-right">Actions</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredDocs.map((d) => (
-								<TableRow key={d.id}>
-									<TableCell>
-										<div className="flex items-center justify-start gap-4">
-											{d.content_type_name || " -"}
-											{d.actions.map((action, idx) => (
-												<Badge variant={"info"} className="capitalize" key={idx}>
-													{actionsMapper.find(
-														(mapped_action) => mapped_action.value === action.name,
-													)?.label || action.name}
-												</Badge>
-											))}
-										</div>
-									</TableCell>
-									<TableCell>
-										<div className="truncate text-xs md:text-sm">{d.description}</div>{" "}
-									</TableCell>
-									<TableCell className="min-w-[10rem]">
-										<p className="text-center">{d.levels?.length || 0}</p>
-									</TableCell>
-									<TableCell className="text-right">
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button size="icon" variant="ghost" className="rounded-full">
-													<MoreVertical className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent align="end" className="rounded-lg">
-												<DropdownMenuItem asChild>
-													<Link href={`/admin/settings/approvals/${d.id}`}>View details</Link>
-												</DropdownMenuItem>
-												<DropdownMenuItem asChild>
-													<Link href={`/admin/settings/approvals/${d.id}/edit/`}>Edit</Link>
-												</DropdownMenuItem>
-												<DropdownMenuItem onClick={() => setDocumentToDelete(d)}>
-													Delete
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</TableCell>
-								</TableRow>
-							))}
-							{!loading && filteredDocs.length === 0 && (
-								<TableRow>
-									<TableCell colSpan={4} className="text-center text-gray-500">
-										No approval documents found.
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
+				{/* Paginated Table */}
+				<PaginatedTable<ApprovalDocument>
+					fetchFirstPage={async () => {
+						return await APPROVAL_DOCUMENTS_API.fetchAll({
+							search: q || undefined,
+							page: 1,
+						});
+					}}
+					fetchFromUrl={APPROVAL_DOCUMENTS_API.fetchPaginatedFromUrl}
+					deps={[q]}
+					query={q}
+					onError={(err) => {
+						console.error("Error fetching approval documents:", err);
+						showErrorToast({ error: err, defaultMessage: "Failed to load approval documents" });
+					}}
+					className="space-y-4"
+					tableClassName="min-w-[800px]"
+					footerClassName="pt-4"
+					columns={columns}
+					skeletonRows={10}
+					refreshRef={tableRefreshRef}
+					emptyState={
+						<div className="text-center py-12">
+							<p className="text-muted-foreground mb-4">
+								{hasFilters
+									? "No approval documents found matching your search"
+									: "No approval documents found. Create your first approval workflow to get started."}
+							</p>
+						</div>
+					}
+				/>
 			</div>
 			{documentToDelete && (
 				<ConfirmationDialog
-					description="Are you sure you want to delete this approval ? This action cannot be undone."
+					description="Are you sure you want to delete this approval? This action cannot be undone."
 					isOpen={!!documentToDelete}
 					title={`Delete ${documentToDelete.content_type_name}`}
 					onConfirm={() => handleDelete(documentToDelete.id)}

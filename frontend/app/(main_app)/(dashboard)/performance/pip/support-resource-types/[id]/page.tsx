@@ -1,130 +1,140 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2 } from "lucide-react";
-import { PIP_SUPPORT_RESOURCE_TYPE_API } from "@/lib/api/performance.utils";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { ArrowLeft, Calendar, Clock, FileText, Settings, CheckCircle, XCircle } from "lucide-react";
 import type { IPIPSupportResourceType } from "@/types/performance.types";
-import { showErrorToast, showSuccessToast } from "@/lib/utils";
-import { useSelector } from "react-redux";
-import { selectSelectedInstitution } from "@/store/auth/selectors";
-import FixedLoader from "@/components/fixed-loader";
-import { ConfirmationDialog } from "@/components/confirmation-dialog";
-import { ApprovableDialog } from "@/components/approvals/approvable-dialog";
-import Link from "next/link";
+import { PIP_SUPPORT_RESOURCE_TYPE_API } from "@/lib/api/performance.utils";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
-export default function PIPSupportResourceTypeDetailPage() {
-	const router = useRouter();
-	const { id } = useParams();
-	const resourceTypeId = Number(id);
-	const currentInstitution = useSelector(selectSelectedInstitution);
+export default function ResourceTypeViewPage() {
 	const [resourceType, setResourceType] = useState<IPIPSupportResourceType | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [deleting, setDeleting] = useState(false);
-	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-	useEffect(() => {
-		if (!currentInstitution || !resourceTypeId) return;
-		const loadResourceType = async () => {
-			try {
-				setLoading(true);
-				const data = await PIP_SUPPORT_RESOURCE_TYPE_API.getById({ resourceTypeId });
-				setResourceType(data);
-			} catch (err) {
-				showErrorToast({ error: err, defaultMessage: "Failed to fetch support resource type" });
-				router.push("/admin/performance/support-resource-types");
-			} finally {
-				setLoading(false);
-			}
-		};
-		loadResourceType();
-	}, [currentInstitution, resourceTypeId, router]);
+	const params = useParams();
+	const router = useRouter();
+	const resourceTypeId = parseInt(params.id as string);
 
-	const handleDelete = async () => {
+	const fetchResourceType = async () => {
 		try {
-			setDeleting(true);
-			await PIP_SUPPORT_RESOURCE_TYPE_API.delete({ resourceTypeId });
-			showSuccessToast("Support resource type deleted successfully!");
-			router.push("/admin/performance/support-resource-types");
-		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to delete support resource type" });
+			setLoading(true);
+			const data = await PIP_SUPPORT_RESOURCE_TYPE_API.getById({ resourceTypeId: resourceTypeId });
+			setResourceType(data);
+		} catch (error) {
+			toast.error("Failed to fetch concern details");
 		} finally {
-			setDeleting(false);
-			setDeleteConfirmOpen(false);
+			setLoading(false);
 		}
 	};
 
-	if (loading || !resourceType) return <FixedLoader />;
+	useEffect(() => {
+		if (resourceTypeId) {
+			fetchResourceType();
+		}
+	}, [resourceTypeId]);
+
+	if (loading) {
+		return <div className="p-6">Loading...</div>;
+	}
+
+	if (!resourceType) {
+		return <div className="p-6">Period not found</div>;
+	}
+	const formatDateTime = (dateString: string) => {
+		return new Date(dateString).toLocaleString();
+	};
+
+	const getStatusBadgeVariant = (isActive: boolean) => {
+		return isActive ? "default" : "destructive";
+	};
 
 	return (
-		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
-			<div className="flex justify-between items-center">
-				<div className="flex items-center justify-start gap-4">
-					<Link href="/admin/performance/support-resource-types">
-						<Button variant="outline" className="rounded-full aspect-square">
-							<ArrowLeft className="h-4 w-4" />
-						</Button>
-					</Link>
-					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">
-						Resource Type Details: {resourceType.name}
-					</h1>
-				</div>
-				<div className="flex gap-4">
+		<div className="space-y-6 p-6 bg-white">
+			{/* Header */}
+			<div className="flex items-center justify-between">
+				<div className="flex items-center space-x-4">
 					<Button
 						variant="outline"
-						className="rounded-xl"
-						onClick={() =>
-							router.push(`/admin/performance/support-resource-types/edit/${resourceTypeId}`)
-						}
+						size="sm"
+						className="flex items-center gap-2 rounded-full aspect-square flex-shrink-0"
+						onClick={() => router.back()}
 					>
-						Edit
+						<ArrowLeft className="mr-2 h-4 w-4" />
 					</Button>
-					<Button
-						variant="destructive"
-						className="rounded-xl"
-						onClick={() => setDeleteConfirmOpen(true)}
-						disabled={deleting}
-					>
-						<Trash2 className="h-4 w-4 mr-2" />
-						Delete
-					</Button>
+					<div>
+						<p className="text-muted-foreground">Resource Type Details</p>
+					</div>
 				</div>
 			</div>
+			<ApprovableInstancePageLayout instance={resourceType} onInstanceRefresh={fetchResourceType}>
+				<div className="grid gap-6 md:grid-cols-2 mt-8">
+					{/* Basic Period Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<FileText className="mr-2 h-5 w-5" />
+								Resource Type Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="space-y-3">
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Category:</span>
+									<span className="text-sm">{resourceType.name}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Description:</span>
+									<span className="text-sm">{resourceType.description}</span>
+								</div>
 
-			<ApprovableDialog
-				isOpen={true}
-				onOpenChange={(open) => !open && router.push("/admin/performance/support-resource-types")}
-				title={`Resource Type Details: ${resourceType.name}`}
-				description="View the details for this support resource type."
-				onRefresh={() => router.refresh()}
-			>
-				<div className="space-y-4 overflow-y-auto max-h-[60svh]">
-					<div>
-						<label className="text-sm font-medium">Name</label>
-						<p>{resourceType.name}</p>
-					</div>
-					<div>
-						<label className="text-sm font-medium">Description</label>
-						<p>{resourceType.description || "Unknown"}</p>
-					</div>
-					<div>
-						<label className="text-sm font-medium">Approval Status</label>
-						<p>{resourceType.approval_status || "Unknown"}</p>
-					</div>
+								<div className="flex justify-between">
+									<span className="text-sm text-gray-700">Approval Status:</span>
+									<span className="text-sm">{resourceType.approval_status}</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-sm font-medium">Status:</span>
+									<Badge variant={getStatusBadgeVariant(resourceType.is_active)}>
+										{resourceType.is_active ? "Active" : "Inactive"}
+									</Badge>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* System Information */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center">
+								<Calendar className="mr-2 h-5 w-5" />
+								System Information
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="flex justify-between">
+								<span className="text-sm font-medium text-gray-600">Created Date:</span>
+								<span className="text-sm">
+									{typeof resourceType.created_at === "string"
+										? formatDateTime(resourceType.created_at)
+										: "N/A"}
+								</span>
+							</div>
+							<div className="flex justify-between mt-5">
+								<span className="text-sm font-medium text-gray-600">Updated Date:</span>
+								<span className="text-sm">
+									{typeof resourceType.updated_at === "string"
+										? formatDateTime(resourceType.updated_at)
+										: "N/A"}
+								</span>
+							</div>
+						</CardContent>
+					</Card>
 				</div>
-			</ApprovableDialog>
-
-			<ConfirmationDialog
-				isOpen={deleteConfirmOpen}
-				onClose={() => setDeleteConfirmOpen(false)}
-				onConfirm={handleDelete}
-				title="Delete Support Resource Type"
-				description="Are you sure you want to delete this support resource type? This action cannot be undone."
-				confirmText="Delete"
-				cancelText="Cancel"
-				disabled={deleting}
-			/>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }
