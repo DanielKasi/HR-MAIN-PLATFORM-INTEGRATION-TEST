@@ -91,7 +91,7 @@ import string
 import secrets
 from django.db.models import Count, Avg
 import json
-from .utilities import create_company_email, delete_company_email, generate_email, generate_employee_excel, reset_email_password
+from .utilities import activate_employee, create_company_email, deactivate_employee, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
 
@@ -4306,3 +4306,152 @@ class EmployeeMonthlyHourAccountListCreateView(APIView, SortableAPIMixin):
         paginated_qs = paginator.paginate_queryset(accounts, request)
         serializer = EmployeeMonthlyHourAccountSerializer(paginated_qs, many=True)
         return paginator.get_paginated_response(serializer.data)
+    
+
+class DeactivateEmployeeView(APIView):
+    """
+    API endpoint to deactivate an employee and their company email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Deactivate an employee",
+        description="Deactivates an employee by setting their user account to inactive and suspending their company email. Requires admin permissions.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="The ID of the employee to deactivate",
+                required=True
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Employee deactivated successfully",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string", "example": "Employee John Doe deactivated successfully"}
+                    }
+                }
+            ),
+            404: OpenApiResponse(
+                description="Employee not found",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Employee not found"}
+                    }
+                }
+            ),
+            400: OpenApiResponse(
+                description="Bad request due to unexpected error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Invalid operation"}
+                    }
+                }
+            ),
+            401: OpenApiResponse(
+                description="Unauthorized - Authentication credentials were not provided or invalid"
+            ),
+            403: OpenApiResponse(
+                description="Forbidden - User lacks admin permissions"
+            )
+        },
+        tags=["Employee Management"],
+    )
+    def post(self, request, employee_id):
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            deactivate_employee(employee)
+            return Response(
+                {"message": f"Employee {employee.user.fullname} deactivated successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class ActivateEmployeeView(APIView):
+    """
+    API endpoint to activate an employee and their company email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Activate an employee",
+        description="Activates an employee by setting their user account to active and uns suspending their company email. Requires admin permissions.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="The ID of the employee to activate",
+                required=True
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Employee activated successfully",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string", "example": "Employee John Doe activated successfully"}
+                    }
+                }
+            ),
+            404: OpenApiResponse(
+                description="Employee not found",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Employee not found"}
+                    }
+                }
+            ),
+            400: OpenApiResponse(
+                description="Bad request due to unexpected error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Invalid operation"}
+                    }
+                }
+            ),
+            401: OpenApiResponse(
+                description="Unauthorized - Authentication credentials were not provided or invalid"
+            ),
+            403: OpenApiResponse(
+                description="Forbidden - User lacks admin permissions"
+            )
+        },
+        tags=["Employee Management"],
+    )
+    def post(self, request, employee_id):
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            activate_employee(employee)
+            return Response(
+                {"message": f"Employee {employee.user.fullname} activated successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )    

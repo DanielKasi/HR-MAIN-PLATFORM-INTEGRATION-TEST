@@ -193,18 +193,7 @@ class InstitutionBankTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = InstitutionBankType
 
-        fields = [
-            "id",
-            "institution",
-            "bank_fullname",
-            "bank_code",
-            "br_code",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -244,18 +233,7 @@ class InstitutionBankAccountSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionBankAccount
-        fields = [
-            "id",
-            "institution_bank",
-            "account_name",
-            "account_number",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "updated_by",
-            "paid_branches",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",
@@ -288,15 +266,7 @@ class InstitutionWorkingDaysSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionWorkingDays
-        fields = [
-            "id",
-            "institution",
-            "days",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",
@@ -377,7 +347,7 @@ class BranchWorkingDaysSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = BranchWorkingDays
-        fields = ["id", "branch", "branch_days"]
+        fields = '__all__'
         read_only_fields = ["id", "branch"]
 
     def update(self, instance, validated_data):
@@ -408,17 +378,7 @@ class InstitutionTaxSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionTax
-        fields = [
-            "id",
-            "institution",
-            "tax_name",
-            "tax_status",
-            "created_by",
-            "created_at",
-            "updated_by",
-            "updated_at",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "institution",
@@ -545,22 +505,7 @@ class BranchSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Branch
-        fields = [
-            "id",
-            "institution",
-            "paying_bank_account",
-            "institution_name",
-            "institution_logo",
-            "branch_name",
-            "branch_phone_number",
-            "branch_location",
-            "branch_latitude",
-            "branch_longitude",
-            "branch_email",
-            "branch_opening_time",
-            "branch_closing_time",
-            "is_active",
-        ]
+        fields = '__all__'
 
     def get_institution_logo(self, obj):
         if (
@@ -639,15 +584,7 @@ class DepartmentSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Department
-        fields = [
-            "id",
-            "name",
-            "description",
-            "institution",
-            # "head_of_department",
-            # "head_of_department_details",
-            "institution_details",
-        ]
+        fields = '__all__'
 
 
 class OwnerSerializer(serializers.Serializer):
