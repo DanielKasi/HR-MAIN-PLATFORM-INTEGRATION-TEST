@@ -283,8 +283,10 @@ export function ApprovalWorkflow({
 														<div className="flex flex-col sm:grid grid-cols-2 w-full gap-2 sm:gap-4  mt-3">
 															{(task.level.approvers_detail.find(
 																(approver) =>
-																	approver.approver_user === currentUser?.id ||
-																	approver.approver_group?.roles_display.some((role) =>
+																	approver.approver_group?.users_display?.find(
+																		(user) => user.user.id === currentUser?.id,
+																	) ||
+																	approver.approver_group?.roles_display?.some((role) =>
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),
@@ -314,10 +316,10 @@ export function ApprovalWorkflow({
 
 															{(task.level.overriders_detail.find(
 																(approver) =>
-																	approver.approver_group?.users_display.find(
+																	approver.approver_group?.users_display?.find(
 																		(user) => user.user.id === currentUser?.id,
 																	) ||
-																	approver.approver_group?.roles_display.some((role) =>
+																	approver.approver_group?.roles_display?.some((role) =>
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),

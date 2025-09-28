@@ -15,6 +15,7 @@ import { ObjectiveModal } from "@/components/performance/objectives/objective-mo
 import { PerformanceStatsCard } from "@/components/performance/common/performance-stats-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function ObjectivesPage() {
 	const [objectives, setObjectives] = useState<IObjective[]>([]);
@@ -24,6 +25,7 @@ export default function ObjectivesPage() {
 	const [objectiveToDelete, setObjectiveToDelete] = useState<IObjective | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const router = useRouter();
 
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
@@ -57,6 +59,10 @@ export default function ObjectivesPage() {
 	const handleEdit = (objective: IObjective) => {
 		setEditingObjective(objective);
 		setModalOpen(true);
+	};
+
+	const handleView = (objective: IObjective) => {
+		router.push(`/performance/objectives/${objective.id}`);
 	};
 
 	const handleSubmit = async (data: IObjectiveFormData) => {
@@ -158,6 +164,7 @@ export default function ObjectivesPage() {
 				{/* Objectives Table */}
 				<ObjectivesTable
 					objectives={objectives}
+					onView={handleView}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onAdd={handleCreate}

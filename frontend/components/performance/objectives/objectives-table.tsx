@@ -2,7 +2,7 @@
 
 import type { IObjective } from "@/types/types.utils";
 
-import { Edit, Trash2, Target, User, Clock } from "lucide-react";
+import { Edit, Trash2, Target, User, Clock, Eye } from "lucide-react";
 
 import { hasPermission } from "@/lib/helpers";
 import { PerformanceTable, type TableColumn, type TableAction } from "../common/performance-table";
@@ -11,6 +11,7 @@ import { PERMISSION_CODES } from "@/constants";
 
 interface ObjectivesTableProps {
 	objectives: IObjective[];
+	onView: (objective: IObjective) => void;
 	onEdit: (objective: IObjective) => void;
 	onDelete: (objective: IObjective) => void;
 	onAdd: () => void;
@@ -21,6 +22,7 @@ interface ObjectivesTableProps {
 export function ObjectivesTable({
 	objectives,
 	onEdit,
+	onView,
 	onDelete,
 	onAdd,
 	onSearch,
@@ -108,6 +110,11 @@ export function ObjectivesTable({
 	];
 
 	const actions: TableAction<IObjective>[] = [
+		{
+			label: "View",
+			icon: <Eye className="h-4 w-4" />,
+			onClick: onView,
+		},
 		{
 			label: "Edit",
 			icon: <Edit className="h-4 w-4" />,

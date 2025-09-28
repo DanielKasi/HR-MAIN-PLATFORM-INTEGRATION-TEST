@@ -5,7 +5,7 @@ import type { IBranchSpotCheckSetting, IBranchSpotCheckSettingFormData } from "@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useSelector } from "react-redux";
 
 import { ConfirmationDialog } from "../confirmation-dialog";
@@ -30,10 +30,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { spotcheckAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedBranch } from "@/store/auth/selectors";
+import { useRouter } from "next/navigation";
 
 export const BranchSpotcheckConfigurations = () => {
 	const selectedBranch = useSelector(selectSelectedBranch);
-
+	const router = useRouter();
 	const [branchSpotcheckSettings, setBranchSpotcheckSettings] = useState<IBranchSpotCheckSetting[]>(
 		[],
 	);
@@ -92,6 +93,10 @@ export const BranchSpotcheckConfigurations = () => {
 		});
 		setEditingBranchSpotcheckSetting(setting);
 		setIsBranchSpotcheckFormOpen(true);
+	};
+
+	const handleViewBranchSpotcheckConfig = (setting: IBranchSpotCheckSetting) => {
+		router.push(`/branch-spotcheck/${setting.branch.id}`);
 	};
 
 	const handleSaveBranchSpotcheckConfig = async () => {
@@ -226,6 +231,12 @@ export const BranchSpotcheckConfigurations = () => {
 															</Button>
 														</DropdownMenuTrigger>
 														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => handleViewBranchSpotcheckConfig(setting)}
+															>
+																<Eye className="h-4 w-4 mr-2" />
+																View
+															</DropdownMenuItem>
 															<DropdownMenuItem
 																onClick={() => handleEditBranchSpotcheckConfig(setting)}
 															>

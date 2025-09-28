@@ -168,8 +168,7 @@ export default function BankTypeManagement() {
 	};
 
 	const handleView = (type: IBankType) => {
-		setViewingType(type);
-		setShowDetailsModal(true);
+		router.push(`/admin/bank-types/${type.id}`);
 	};
 
 	const handleDelete = async (bankType: IBankType) => {
@@ -441,13 +440,6 @@ export default function BankTypeManagement() {
 				onSave={handleSave}
 				isSubmitting={isSubmitting}
 				existingTypes={bankTypes}
-			/>
-
-			{/* Details Modal */}
-			<BankTypeDetailsModal
-				isOpen={showDetailsModal}
-				onClose={handleCloseDetailsModal}
-				bankType={viewingType}
 			/>
 
 			{bankTypeToDelete && (
