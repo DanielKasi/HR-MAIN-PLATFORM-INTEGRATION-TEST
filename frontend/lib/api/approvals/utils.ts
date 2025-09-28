@@ -180,6 +180,10 @@ export const APPROVAL_DOCUMENTS_API = {
 		return res.data as IPaginatedResponse<ApprovalDocument>;
 	},
 
+	fetchPaginatedFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+		return response.data as IPaginatedResponse<ApprovalDocument>;
+	},
 	fetchById: async ({ id }: { id: number }) => {
 		const res = await apiRequest.get(`${BASE}/approval-documents/${id}/`);
 

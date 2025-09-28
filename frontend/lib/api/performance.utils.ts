@@ -197,7 +197,6 @@ export const PIP_SUPPORT_RESOURCE_TYPE_API = {
 	},
 };
 
-// PIPSupportResource API
 export const PIP_SUPPORT_RESOURCE_API = {
 	getPaginated: async ({
 		page = 1,

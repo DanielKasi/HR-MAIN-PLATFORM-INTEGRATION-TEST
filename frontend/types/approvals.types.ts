@@ -1,4 +1,4 @@
-import { UserProfile, Role } from "./user.types";
+import { UserProfile, Role, IUser } from "./user.types";
 
 export interface ApproverGroup {
 	id: number;
@@ -21,12 +21,14 @@ export interface ApproverGroupFormData {
 
 export interface ApprovalDocumentLevelApprover {
 	id: number;
-	approver_group: ApproverGroup;
+	approval_document_level: number;
+	approver_user: number | null;
+	approver_group?: ApproverGroup;
 }
 
 export interface ApprovalDocumentLevelOverrider {
 	id: number;
-	approver_group: ApproverGroup;
+	approver_group?: ApproverGroup;
 }
 
 export interface ApprovalDocumentLevel {
@@ -38,6 +40,8 @@ export interface ApprovalDocumentLevel {
 	approvers_detail: ApprovalDocumentLevelApprover[];
 	overriders_detail: ApprovalDocumentLevelOverrider[];
 	approval_document: number;
+	approver_users: number[];
+	overrider_users: number[];
 }
 
 export interface ApprovalDocumentLevelFormData {
@@ -46,6 +50,8 @@ export interface ApprovalDocumentLevelFormData {
 	approvers: number[];
 	overriders: number[];
 	approval_document: number;
+	approver_users?: number[];
+	overrider_users?: number[];
 }
 
 export interface ApprovalDocument {

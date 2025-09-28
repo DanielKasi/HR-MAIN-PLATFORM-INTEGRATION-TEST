@@ -21,19 +21,19 @@ import { Badge } from "@/components/ui/badge";
 import { IDisciplinaryAction } from "@/types/types.utils";
 import { getDisciplinaryActionById } from "@/lib/utils";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function ViewDisciplinaryActionPage() {
 	const router = useRouter();
 	const params = useParams();
-	const actionId = params.actionId as string;
+	const actionId = params.id as string;
 	const [disciplinaryAction, setDisciplinaryAction] = useState<IDisciplinaryAction | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	const fetchAction = async () => {
 		try {
 			setLoading(true);
-			const idAsNumber = parseInt(params.id as string, 10);
+			const idAsNumber = parseInt(actionId);
 			const response = await getDisciplinaryActionById(idAsNumber);
 			if (!response) {
 				throw new Error("No disciplinary action found");
@@ -48,14 +48,14 @@ export default function ViewDisciplinaryActionPage() {
 	};
 
 	useEffect(() => {
-		if (params.id && !isNaN(parseInt(params.id as string, 10))) {
+		if (actionId && !isNaN(parseInt(actionId))) {
 			fetchAction();
 		} else {
 			toast.error("Invalid disciplinary action ID");
 			setLoading(false);
 			router.push("/employees/discipline");
 		}
-	}, [params.id, router]);
+	}, [actionId, router]);
 
 	const getSeverityColor = (severity: string) => {
 		switch (severity) {
@@ -157,153 +157,114 @@ export default function ViewDisciplinaryActionPage() {
 				</div>
 			</div>
 
-			<div
-				className={`pt-4 ${
-					disciplinaryAction?.approval_status !== undefined &&
-					disciplinaryAction?.approval_status !== true &&
-					disciplinaryAction?.approvals?.length
-						? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3"
-						: ""
-				}`}
-			>
-				{disciplinaryAction.approvals.length > 0 &&
-					disciplinaryAction?.approval_status !== undefined &&
-					disciplinaryAction?.approval_status !== true && (
-						<ApprovalWorkflow
-							className="order-1 md:order-2"
-							approvals={disciplinaryAction.approvals}
-							instance_approval_status={
-								typeof disciplinaryAction.approval_status === "boolean"
-									? disciplinaryAction.approval_status
-										? "active"
-										: undefined
-									: disciplinaryAction.approval_status
-							}
-							onRefresh={fetchAction}
-						/>
-					)}
-
-				<div
-					className={`${
-						disciplinaryAction?.approval_status !== undefined &&
-						disciplinaryAction?.approval_status !== true &&
-						disciplinaryAction?.approvals?.length
-							? "lg:col-span-2 xl:col-span-3 order-2 md:order-1 mx-0 md:mx-2"
-							: ""
-					}`}
-				>
-					<Card>
-						<CardHeader>
-							<div className="flex items-center gap-2">
-								<FileText className="h-5 w-5 text-green-600" />
-								<CardTitle>Action Details</CardTitle>
-							</div>
-						</CardHeader>
-						<CardContent className="space-y-6">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<div className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Employee</Label>
-										<p className="text-base font-medium">{disciplinaryAction.employee?.name}</p>
-										{disciplinaryAction.employee.department &&
-											disciplinaryAction.employee.department.name.trim() && (
-												<p className="text-sm text-muted-foreground">
-													{disciplinaryAction.employee.department.name}
-												</p>
-											)}
-									</div>
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Discipline Type
-										</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<p className="text-base font-medium">
-												{disciplinaryAction.discipline_type?.name}
+			<ApprovableInstancePageLayout instance={disciplinaryAction} onInstanceRefresh={fetchAction}>
+				<Card className="shadow-none border-none">
+					<CardHeader>
+						<div className="flex items-center gap-2">
+							<FileText className="h-5 w-5 text-green-600" />
+							<CardTitle>Action Details</CardTitle>
+						</div>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							<div className="space-y-4">
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Employee</Label>
+									<p className="text-base font-medium">{disciplinaryAction.employee?.name}</p>
+									{disciplinaryAction.employee.department &&
+										disciplinaryAction.employee.department.name.trim() && (
+											<p className="text-sm text-muted-foreground">
+												{disciplinaryAction.employee.department.name}
 											</p>
-											<Badge
-												className={getSeverityColor(
-													disciplinaryAction.discipline_type?.severity || "Low",
-												)}
-											>
-												{disciplinaryAction.discipline_type?.severity.toUpperCase()}
-											</Badge>
-										</div>
-									</div>
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Status</Label>
+										)}
+								</div>
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">
+										Discipline Type
+									</Label>
+									<div className="flex items-center gap-2 mt-1">
+										<p className="text-base font-medium">
+											{disciplinaryAction.discipline_type?.name}
+										</p>
 										<Badge
-											className={`${getStatusColor(disciplinaryAction.status)} flex items-center gap-1 w-fit mt-1`}
+											className={getSeverityColor(
+												disciplinaryAction.discipline_type?.severity || "Low",
+											)}
 										>
-											{getStatusIcon(disciplinaryAction.status)}
-											{disciplinaryAction.status.replace("_", " ").toUpperCase()}
+											{disciplinaryAction.discipline_type?.severity.toUpperCase()}
 										</Badge>
 									</div>
 								</div>
-								<div className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Incident Date
-										</Label>
-										<p className="text-base font-medium">
-											{new Date(disciplinaryAction.incident_date).toLocaleDateString()}
-										</p>
-									</div>
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Reported By</Label>
-										<p className="text-base font-medium">
-											{disciplinaryAction.reported_by.user?.fullname}
-										</p>
-									</div>
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
-										<p className="text-base font-medium">
-											{disciplinaryAction.assigned_to?.user?.fullname}
-										</p>
-									</div>
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Status</Label>
+									<Badge
+										className={`${getStatusColor(disciplinaryAction.status)} flex items-center gap-1 w-fit mt-1`}
+									>
+										{getStatusIcon(disciplinaryAction.status)}
+										{disciplinaryAction.status.replace("_", " ").toUpperCase()}
+									</Badge>
 								</div>
 							</div>
 							<div className="space-y-4">
 								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Description</Label>
-									<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.description}</p>
+									<Label className="text-sm font-medium text-muted-foreground">Incident Date</Label>
+									<p className="text-base font-medium">
+										{new Date(disciplinaryAction.incident_date).toLocaleDateString()}
+									</p>
 								</div>
-								{disciplinaryAction.evidence && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Evidence</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.evidence}</p>
-									</div>
-								)}
-								{disciplinaryAction.action_taken && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Action Taken
-										</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">
-											{disciplinaryAction.action_taken}
-										</p>
-									</div>
-								)}
-								{disciplinaryAction.notes && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.notes}</p>
-									</div>
-								)}
-								{disciplinaryAction.follow_up_required && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Follow-Up</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">
-											{disciplinaryAction.follow_up_date
-												? new Date(disciplinaryAction.follow_up_date).toLocaleDateString()
-												: "Required"}
-										</p>
-									</div>
-								)}
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Reported By</Label>
+									<p className="text-base font-medium">
+										{disciplinaryAction.reported_by.user?.fullname}
+									</p>
+								</div>
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
+									<p className="text-base font-medium">
+										{disciplinaryAction.assigned_to?.user?.fullname}
+									</p>
+								</div>
 							</div>
-						</CardContent>
-					</Card>
-				</div>
-			</div>
+						</div>
+						<div className="space-y-4">
+							<div>
+								<Label className="text-sm font-medium text-muted-foreground">Description</Label>
+								<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.description}</p>
+							</div>
+							{disciplinaryAction.evidence && (
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Evidence</Label>
+									<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.evidence}</p>
+								</div>
+							)}
+							{disciplinaryAction.action_taken && (
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Action Taken</Label>
+									<p className="mt-1 p-3 bg-gray-50 rounded-md">
+										{disciplinaryAction.action_taken}
+									</p>
+								</div>
+							)}
+							{disciplinaryAction.notes && (
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+									<p className="mt-1 p-3 bg-gray-50 rounded-md">{disciplinaryAction.notes}</p>
+								</div>
+							)}
+							{disciplinaryAction.follow_up_required && (
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Follow-Up</Label>
+									<p className="mt-1 p-3 bg-gray-50 rounded-md">
+										{disciplinaryAction.follow_up_date
+											? new Date(disciplinaryAction.follow_up_date).toLocaleDateString()
+											: "Required"}
+									</p>
+								</div>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

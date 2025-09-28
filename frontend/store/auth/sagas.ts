@@ -14,7 +14,11 @@ import {
 import { Task } from "redux-saga";
 
 import { ActionWithPayLoad, parseJwtLifetime } from "../storeUtils";
-import { clearEmployeeForm, toggleSideBarAction } from "../miscellaneous/actions";
+import {
+	clearEmployeeForm,
+	clearEmployeesCache,
+	toggleSideBarAction,
+} from "../miscellaneous/actions";
 import { selectSideBarOpened } from "../miscellaneous/selectors";
 
 import { AUTH_ACTION_TYPES } from "./types";
@@ -52,7 +56,9 @@ import {
 	LoginResponse,
 	loginWithEmailAndPassword,
 } from "@/utils/auth-utils";
-import { IUser, IUserInstitution } from "@/types";
+
+import { IUserInstitution } from "@/types/other";
+import { IUser } from "@/types/user.types";
 
 interface InactivityRaceResult {
 	timeout?: unknown;
@@ -101,6 +107,7 @@ function* logout() {
 
 	try {
 		yield put(clearEmployeeForm());
+		yield put(clearEmployeesCache());
 		yield put(logoutSuccess());
 		document.documentElement.style.setProperty("--primary", defaultPrimaryColor);
 		document.documentElement.style.setProperty("--ring", defaultRingColor);

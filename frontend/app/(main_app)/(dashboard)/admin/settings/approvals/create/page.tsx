@@ -9,7 +9,7 @@ import type {
 	ApproverGroup,
 	ApproverGroupFormData,
 } from "@/types/approvals.types";
-import type { Role, UserProfile } from "@/types";
+import { UserProfile, Role } from "@/types/user.types";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -46,6 +46,7 @@ import {
 	APPROVAL_DOCUMENTS_API,
 	APPROVER_GROUPS_API,
 } from "@/lib/api/approvals/utils";
+import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
 
 export default function ApprovalCreatePage() {
 	const searchParams = useSearchParams();
@@ -89,6 +90,12 @@ export default function ApprovalCreatePage() {
 	const [newGroupDescription, setNewGroupDescription] = useState("");
 	const [selectedGroupUserIds, setSelectedGroupUserIds] = useState<number[]>([]);
 	const [selectedGroupRoleIds, setSelectedGroupRoleIds] = useState<number[]>([]);
+	const [selectedParticularApproverUsersIds, setSelectedParticularApproverUsersIds] = useState<
+		number[]
+	>([]);
+	const [selectedParticularOverriderUsersIds, setSelectedParticularOverriderUsersIds] = useState<
+		number[]
+	>([]);
 
 	// Confirmation dialog states for delete level
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -279,6 +286,8 @@ export default function ApprovalCreatePage() {
 				approvers: selectedApproverGroupIds,
 				overriders: selectedOverriderGroupIds,
 				approval_document: createdApprovalDocument?.id,
+				approver_users: selectedParticularApproverUsersIds,
+				overrider_users: selectedParticularOverriderUsersIds,
 			};
 
 			await APPROVAL_DOCUMENT_LEVELS_API.create(levelData);
@@ -472,21 +481,30 @@ export default function ApprovalCreatePage() {
 										Create sequential approval levels with approver groups
 									</p>
 								</div>
-								<Dialog open={openLevelDialog} onOpenChange={setOpenLevelDialog}>
+								<Dialog
+									open={openLevelDialog}
+									onOpenChange={(open) => {
+										if (!open) {
+											resetLevelDialog();
+										} else {
+											setOpenLevelDialog(false);
+										}
+									}}
+								>
 									<DialogTrigger asChild>
 										<Button size="sm">
 											<Plus className="h-4 w-4 mr-2" />
 											Add Level
 										</Button>
 									</DialogTrigger>
-									<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+									<DialogContent className="sm:max-w-2xl">
 										<DialogHeader>
 											<DialogTitle>Create Approval Level</DialogTitle>
 										</DialogHeader>
 
-										<div className="space-y-6 py-4">
+										<div className="space-y-6 py-4 ">
 											{/* Basic Info */}
-											<div className="space-y-4">
+											<div className="space-y-4 max-h-[80vh] overflow-y-auto px-2">
 												<div>
 													<label className="block text-sm font-medium mb-2">
 														Level Name <span className="text-destructive">*</span>
@@ -626,6 +644,21 @@ export default function ApprovalCreatePage() {
 														emptyMessage="No approver groups available. Create one first."
 													/>
 												</div>
+												<div>
+													<label className="block text-sm font-medium mb-2">
+														Select Particular Approver Users
+													</label>
+													<UserProfileSearchableSelect
+														value={selectedParticularApproverUsersIds}
+														onValueChange={(values) =>
+															setSelectedParticularApproverUsersIds(
+																values.map((val) => Number(val)),
+															)
+														}
+														placeholder="Select particular approver users..."
+														multiple={true}
+													/>
+												</div>
 											</div>
 
 											<Separator />
@@ -660,13 +693,28 @@ export default function ApprovalCreatePage() {
 													/>
 												</div>
 											</div>
+
+											<div>
+												<label className="block text-sm font-medium mb-2">
+													Select Particular Overrider Users
+												</label>
+												<UserProfileSearchableSelect
+													value={selectedParticularOverriderUsersIds}
+													onValueChange={(values) =>
+														setSelectedParticularOverriderUsersIds(values.map((val) => Number(val)))
+													}
+													placeholder="Select particular overrider users..."
+													multiple={true}
+												/>
+											</div>
 										</div>
 
 										<DialogFooter>
-											<Button variant="outline" onClick={resetLevelDialog}>
-												Cancel
-											</Button>
-											<Button onClick={addLevel} disabled={savingLevel}>
+											<Button
+												onClick={addLevel}
+												className="w-full rounded-full"
+												disabled={savingLevel}
+											>
 												{savingLevel ? "Creating..." : "Create Level"}
 											</Button>
 										</DialogFooter>
@@ -725,7 +773,7 @@ export default function ApprovalCreatePage() {
 														<div className="mt-1 flex flex-wrap gap-1">
 															{level.approvers_detail.map((approver) => (
 																<Badge key={approver.id} variant="secondary" className="text-xs">
-																	{approver.approver_group.name}
+																	{approver.approver_group?.name || "Unknow group"}
 																</Badge>
 															))}
 														</div>
@@ -745,7 +793,7 @@ export default function ApprovalCreatePage() {
 														<div className="mt-1 flex flex-wrap gap-1">
 															{level.overriders_detail.map((overrider) => (
 																<Badge key={overrider.id} variant="outline" className="text-xs">
-																	{overrider.approver_group.name}
+																	{overrider.approver_group?.name || "Unknow group"}
 																</Badge>
 															))}
 														</div>

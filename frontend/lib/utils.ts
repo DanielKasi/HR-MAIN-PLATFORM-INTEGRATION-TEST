@@ -184,13 +184,14 @@ import {
 
 import { IPayrollDashboard } from "@/types/payroll.types";
 import { ILeaveDashboard } from "@/types/leave.types";
-import { IEmployeeDashboard } from "@/types/employee.types";
+import { IEmployeeDashboard, IWorkHourCount } from "@/types/employee.types";
 import { IProjectDashboard } from "@/types/project.type";
 import { AssetsData } from "@/types/assets.types";
 
 import { Role, UserProfile } from "@/types/user.types";
 
 import { MAIN_DOMAIN_URL } from "@/constants";
+import keys from "@/components/projects/tasks/keys";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -3721,15 +3722,9 @@ export const getPaginatedEmployeeAllowancesFromUrl = async ({
 	}
 };
 
-export const getEmployeeAllowance = async (id: number): Promise<IEmployeeAllowance | null> => {
-	try {
-		const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
-
-		return response.data.results as IEmployeeAllowance;
-	} catch (error) {
-		// console.error("Failed to get employee allowance:", error);
-		throw error;
-	}
+export const getEmployeeAllowance = async (id: number) => {
+	const response = await apiRequest.get(`payroll/employee-allowances/${id}/`);
+	return response.data as IEmployeeAllowance;
 };
 
 export const updateEmployeeAllowance = async ({
@@ -6769,7 +6764,7 @@ export const assetHistoriesAPI = {
 	},
 };
 
-export const employeeAPI = {
+export const EMPLOYEE_API = {
 	getAll: async (institutionId: number): Promise<IEmployee[]> => {
 		try {
 			const response = await apiRequest.get(`/${institutionId}/employee/`);
@@ -6797,6 +6792,22 @@ export const employeeAPI = {
 			employee: employee_id,
 		});
 		return response as ICompanyEmail;
+	},
+
+	hourAccount: {
+		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
+			const urlParams = new URLSearchParams();
+			Object.entries(params).forEach(([key, value]) => {
+				urlParams.append(key, value.toString());
+			});
+			const response = await apiRequest.get(`employee/hour-account/?${urlParams.toString()}`);
+			return response.data as IPaginatedResponse<IWorkHourCount>;
+		},
+
+		getPaginatedFromUrl: async ({ url }: { url: string }) => {
+			const response = await apiRequest.get(url);
+			return response.data as IPaginatedResponse<IWorkHourCount>;
+		},
 	},
 };
 

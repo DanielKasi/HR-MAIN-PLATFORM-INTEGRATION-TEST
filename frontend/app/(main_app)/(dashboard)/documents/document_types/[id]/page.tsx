@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { getDocumentTypeDetails } from "@/lib/utils";
 import { IDocumentType } from "@/types/types.utils";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function DocumentTypeViewPage() {
 	const { id } = useParams();
@@ -22,14 +23,17 @@ export default function DocumentTypeViewPage() {
 
 	useEffect(() => {
 		if (id) {
-			fetchDocumentType(Number(id));
+			fetchDocumentType();
 		}
 	}, [id]);
 
-	const fetchDocumentType = async (docId: number) => {
+	const fetchDocumentType = async () => {
+		if (!id) {
+			return;
+		}
 		setLoading(true);
 		try {
-			const doc = await getDocumentTypeDetails(docId);
+			const doc = await getDocumentTypeDetails(Number(id));
 			if (!doc) {
 				toast({
 					title: "Not Found",
@@ -62,17 +66,7 @@ export default function DocumentTypeViewPage() {
 	if (!documentType) return null;
 
 	return (
-		<div
-			className={`max-w-full bg-white mt-4 pb-12 ${
-				documentType?.approval_status &&
-				documentType?.approval_status_display &&
-				!["active", "approved"].includes(documentType.approval_status_display) &&
-				Array.isArray(documentType?.approvals) &&
-				documentType.approvals.length > 0
-					? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6"
-					: ""
-			}`}
-		>
+		<div className={`max-w-full bg-white mt-4 pb-12`}>
 			{/* Back Button */}
 			<div className="flex items-center gap-3 mb-8 px-6">
 				<Button
@@ -89,31 +83,8 @@ export default function DocumentTypeViewPage() {
 				</div>
 			</div>
 
-			{/* Approval Workflow - Show if approvals exist and status requires approval */}
-			{Array.isArray(documentType?.approvals) &&
-				documentType.approvals.length > 0 &&
-				documentType?.approval_status &&
-				documentType?.approval_status_display &&
-				!["active", "approved"].includes(documentType.approval_status_display) && (
-					<ApprovalWorkflow
-						className="order-1 md:order-2"
-						approvals={documentType.approvals}
-						instance_approval_status={documentType.approval_status_display}
-						onRefresh={() => fetchDocumentType(Number(id))}
-					/>
-				)}
-
-			{/* Document Type Details */}
-			<div
-				className={`${
-					documentType?.approval_status_display !== "active" &&
-					Array.isArray(documentType?.approvals) &&
-					documentType.approvals.length
-						? "lg:col-span-2 xl:col-span-3 order-2 md:order-1"
-						: ""
-				}`}
-			>
-				<Card className="shadow-sm border-0 ring-1 ring-border mx-10">
+			<ApprovableInstancePageLayout instance={documentType} onInstanceRefresh={fetchDocumentType}>
+				<Card className="shadow-none border-none ring-1 ring-border mx-10">
 					<CardHeader className="pb-6">
 						<div className="flex items-start justify-between">
 							<div className="flex items-center gap-3">
@@ -140,23 +111,23 @@ export default function DocumentTypeViewPage() {
 									)}
 									{documentType.is_active ? "Active" : "Inactive"}
 								</Badge>
-								{documentType.approval_status_display && (
+								{documentType.approval_status && (
 									<Badge
 										className={
-											documentType.approval_status_display === "active"
+											documentType.approval_status === "active"
 												? "bg-green-100 text-green-800 border-green-200"
 												: ["under_creation", "under_update", "under_deletion"].includes(
-															documentType.approval_status_display,
+															documentType.approval_status,
 													  )
 													? "bg-yellow-100 text-yellow-800 border-yellow-200"
 													: "bg-gray-100 text-gray-800 border-gray-200"
 										}
 									>
-										{documentType.approval_status_display === "active" && (
+										{documentType.approval_status === "active" && (
 											<CheckCircle className="h-3 w-3 mr-1" />
 										)}
-										{documentType.approval_status_display.charAt(0).toUpperCase() +
-											documentType.approval_status_display.slice(1)}
+										{documentType.approval_status.charAt(0).toUpperCase() +
+											documentType.approval_status.slice(1)}
 									</Badge>
 								)}
 							</div>
@@ -195,14 +166,14 @@ export default function DocumentTypeViewPage() {
 										<span className="text-sm font-medium text-muted-foreground">
 											Approval Status
 										</span>
-										<span className="font-medium">{documentType.approval_status_display}</span>
+										<span className="font-medium">{documentType.approval_status}</span>
 									</div>
 								</div>
 							</div>
 						</div>
 					</CardContent>
 				</Card>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { IDeductionType } from "@/types/types.utils";
 import { getDeductionType } from "@/lib/utils";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -42,7 +43,7 @@ const formatDate = (dateString: string) => {
 	});
 };
 
-const AllowanceTypeView = () => {
+const DeductionTypeView = () => {
 	const params = useParams();
 	const router = useRouter();
 	const [deductionType, setDeductionType] = useState<IDeductionType | null>(null);
@@ -135,37 +136,9 @@ const AllowanceTypeView = () => {
 				</div>
 			</div>
 
-			{/* Main Content with Approval Workflow */}
-			<div
-				className={`${
-					deductionType?.approval_status &&
-					!["active", "approved"].includes(deductionType.approval_status) &&
-					deductionType?.approvals?.length
-						? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-						: ""
-				}`}
-			>
-				{/* Approval Workflow - Show if approvals exist and status requires approval */}
-				{deductionType?.approvals &&
-					deductionType.approvals.length > 0 &&
-					deductionType?.approval_status &&
-					!["active", "approved"].includes(deductionType.approval_status) && (
-						<ApprovalWorkflow
-							className="order-1 md:order-2"
-							approvals={deductionType.approvals}
-							instance_approval_status={deductionType.approval_status}
-							onRefresh={fetchDeductionType}
-						/>
-					)}
-
+			<ApprovableInstancePageLayout instance={deductionType} onInstanceRefresh={fetchDeductionType}>
 				{/* Main Content */}
-				<div
-					className={`${
-						deductionType?.approval_status !== "active" && deductionType?.approvals?.length
-							? "lg:col-span-2 xl:col-span-3 order-2 md:order-1"
-							: ""
-					}`}
-				>
+				<div>
 					{/* Basic Information */}
 					<Card className="mb-6">
 						<CardHeader>
@@ -318,9 +291,9 @@ const AllowanceTypeView = () => {
 						</CardContent>
 					</Card>
 				</div>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 };
 
-export default AllowanceTypeView;
+export default DeductionTypeView;

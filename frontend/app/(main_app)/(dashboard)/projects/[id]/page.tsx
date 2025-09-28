@@ -420,7 +420,6 @@ export default function ProjectDetailsPage() {
 					</div>
 				</div>
 				<div className="space-y-4">
-					<h3 className="font-medium">Documents</h3>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 						{Array.from({ length: 2 }).map((_, i) => (
 							<div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded">
@@ -642,50 +641,50 @@ export default function ProjectDetailsPage() {
 
 						{/* Documents */}
 						{/* <div>
-						<h3 className="font-medium mb-4">Documents</h3>
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-							{documents.map((doc) => (
-								<div
-									key={doc.id}
-									className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-								>
-									<div className="flex items-center gap-3">
-										<div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-											<span className="text-red-600 text-sm font-medium">PDF</span>
+							<h3 className="font-medium mb-4">Documents</h3>
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+								{project.project_documents.map((doc, idx) => (
+									<div
+										key={idx}
+										className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+									>
+										<div className="flex items-center gap-3">
+											<div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+												<span className="text-red-600 text-sm font-medium">PDF</span>
+											</div>
+											<div>
+												<p className="font-medium text-sm">{doc.name}</p>
+												<p className="text-xs text-gray-500">Created: {doc.created}</p>
+											</div>
 										</div>
-										<div>
-											<p className="font-medium text-sm">{doc.name}</p>
-											<p className="text-xs text-gray-500">Created: {doc.created}</p>
-										</div>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button variant="ghost" className="h-8 w-8 p-0">
+													<MoreHorizontal className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuItem onClick={() => handleDocumentAction("view", doc.id)}>
+													<Eye className="h-4 w-4 mr-2" />
+													View
+												</DropdownMenuItem>
+												<DropdownMenuItem onClick={() => handleDocumentAction("edit", doc.id)}>
+													<Edit className="h-4 w-4 mr-2" />
+													Edit
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className="text-red-600"
+													onClick={() => handleDocumentAction("delete", doc.id)}
+												>
+													<Trash2 className="h-4 w-4 mr-2" />
+													Delete
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
 									</div>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button variant="ghost" className="h-8 w-8 p-0">
-												<MoreHorizontal className="h-4 w-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuItem onClick={() => handleDocumentAction("view", doc.id)}>
-												<Eye className="h-4 w-4 mr-2" />
-												View
-											</DropdownMenuItem>
-											<DropdownMenuItem onClick={() => handleDocumentAction("edit", doc.id)}>
-												<Edit className="h-4 w-4 mr-2" />
-												Edit
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												className="text-red-600"
-												onClick={() => handleDocumentAction("delete", doc.id)}
-											>
-												<Trash2 className="h-4 w-4 mr-2" />
-												Delete
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
-							))}
-						</div>
-					</div> */}
+								))}
+							</div>
+						</div> */}
 
 						{/* Custom Tabs */}
 						<div className="flex gap-2 md:gap-4 lg:gap-8 min-w-max px-8 overflow-x-auto border-b border-gray-200">

@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { IAllowanceType } from "@/types/types.utils";
 import { getAllowanceTypeById } from "@/lib/utils";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -135,37 +136,9 @@ const AllowanceTypeView = () => {
 				</div>
 			</div>
 
-			{/* Main Content with Approval Workflow */}
-			<div
-				className={`${
-					allowanceType?.approval_status &&
-					!["active", "approved"].includes(allowanceType.approval_status) &&
-					allowanceType?.approvals?.length
-						? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-						: ""
-				}`}
-			>
-				{/* Approval Workflow - Show if approvals exist and status requires approval */}
-				{allowanceType?.approvals &&
-					allowanceType.approvals.length > 0 &&
-					allowanceType?.approval_status &&
-					!["active", "approved"].includes(allowanceType.approval_status) && (
-						<ApprovalWorkflow
-							className="order-1 md:order-2"
-							approvals={allowanceType.approvals}
-							instance_approval_status={allowanceType.approval_status}
-							onRefresh={fetchAllowanceType}
-						/>
-					)}
-
+			<ApprovableInstancePageLayout instance={allowanceType} onInstanceRefresh={fetchAllowanceType}>
 				{/* Main Content */}
-				<div
-					className={`${
-						allowanceType?.approval_status !== "active" && allowanceType?.approvals?.length
-							? "lg:col-span-2 xl:col-span-3 order-2 md:order-1"
-							: ""
-					}`}
-				>
+				<div>
 					{/* Basic Information */}
 					<Card className="mb-6">
 						<CardHeader>
@@ -232,7 +205,6 @@ const AllowanceTypeView = () => {
 									<label className="text-sm font-medium text-muted-foreground">Tax Status</label>
 									<div>
 										<Badge className={getTaxableColor(allowanceType.is_taxable)}>
-											<DollarSign className="h-3 w-3 mr-1" />
 											{allowanceType.is_taxable ? "Taxable" : "Non-taxable"}
 										</Badge>
 									</div>
@@ -311,9 +283,7 @@ const AllowanceTypeView = () => {
 												? "bg-red-100 text-red-600"
 												: "bg-blue-100 text-blue-600"
 										}`}
-									>
-										<DollarSign className="h-4 w-4" />
-									</div>
+									></div>
 									<div>
 										<p className="font-medium">Tax Treatment</p>
 										<p className="text-sm text-muted-foreground">
@@ -347,7 +317,7 @@ const AllowanceTypeView = () => {
 						</CardContent>
 					</Card>
 				</div>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 };

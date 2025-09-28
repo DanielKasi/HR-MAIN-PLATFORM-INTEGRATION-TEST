@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { getDocumentTemplateDetails } from "@/lib/utils";
 import { IDocumentTemplate } from "@/types/types.utils";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function DocumentTemplateViewPage() {
 	const { id } = useParams();
@@ -31,14 +32,17 @@ export default function DocumentTemplateViewPage() {
 
 	useEffect(() => {
 		if (id) {
-			fetchDocumentTemplate(Number(id));
+			fetchDocumentTemplate();
 		}
 	}, [id]);
 
-	const fetchDocumentTemplate = async (templateId: number) => {
+	const fetchDocumentTemplate = async () => {
+		if (!id) {
+			return;
+		}
 		setLoading(true);
 		try {
-			const template = await getDocumentTemplateDetails(templateId);
+			const template = await getDocumentTemplateDetails(Number(id));
 			if (!template) {
 				toast({
 					title: "Not Found",
@@ -121,27 +125,12 @@ export default function DocumentTemplateViewPage() {
 				</div>
 			</div>
 
-			{/* Results/Details Section */}
-			<div
-				className={`pt-4 ${
-					documentTemplate?.approval_status_display !== "active" &&
-					documentTemplate?.approvals?.length
-						? "grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3"
-						: ""
-				}`}
+			<ApprovableInstancePageLayout
+				instance={documentTemplate}
+				onInstanceRefresh={fetchDocumentTemplate}
 			>
-				{/* Approval Workflow */}
-				{documentTemplate?.approvals && (
-					<ApprovalWorkflow
-						className="order-1 md:order-2"
-						approvals={documentTemplate.approvals}
-						instance_approval_status={documentTemplate.approval_status_display}
-						onRefresh={() => fetchDocumentTemplate(Number(id))}
-					/>
-				)}
-
 				{/* Main Content */}
-				<div className="lg:col-span-2 xl:col-span-3 order-2 md:order-1">
+				<div className="">
 					{/* Document Template Details */}
 					<div className="space-y-6">
 						<Card className="shadow-sm border-0 ring-1 ring-border">
@@ -300,7 +289,7 @@ export default function DocumentTemplateViewPage() {
 						</Card>
 					</div>
 				</div>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

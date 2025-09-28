@@ -38,6 +38,7 @@ import { getJobPosition } from "@/lib/utils";
 import { formatCurrency } from "@/lib/helpers";
 import RichTextDisplay from "@/components/common/rich-text-display";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function JobPositionDetailsPage() {
 	const [jobPosition, setJobPosition] = useState<IJobPosition | null>(null);
@@ -185,22 +186,8 @@ export default function JobPositionDetailsPage() {
 	return (
 		<div className="w-full h-full p-4 rounded-xl bg-white">
 			<div className="w-full space-y-6">
-				<div
-					className={` gap-6 ${jobPosition?.approval_status !== "active" && jobPosition.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
-				>
-					{jobPosition?.approvals && jobPosition.approvals.length > 0 && (
-						<div className="order-1 lg:order-2">
-							<ApprovalWorkflow
-								approvals={jobPosition.approvals}
-								instance_approval_status={jobPosition.approval_status}
-								onRefresh={fetchJobPosition}
-							/>
-						</div>
-					)}
-					{/* Main Details Card */}
-					<Card
-						className={` shadow-none border-none bg-transparent ${jobPosition.approval_status !== "active" && jobPosition.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-					>
+				<ApprovableInstancePageLayout instance={jobPosition} onInstanceRefresh={fetchJobPosition}>
+					<Card className={` shadow-none border-none bg-transparent`}>
 						<CardHeader>
 							<div className="flex items-start justify-between">
 								<div className="flex flex-col gap-4">
@@ -417,9 +404,9 @@ export default function JobPositionDetailsPage() {
 							</Tabs>
 						</CardContent>
 					</Card>
-				</div>
+				</ApprovableInstancePageLayout>
 			</div>
+			//{" "}
 		</div>
-		// </div>
 	);
 }
