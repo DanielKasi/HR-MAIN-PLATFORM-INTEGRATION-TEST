@@ -16,6 +16,7 @@ import { PerformanceStatsCard } from "@/components/performance/common/performanc
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
+import { useRouter } from "next/navigation";
 
 export default function KeyResultsPage() {
 	const [keyResults, setKeyResults] = useState<IKeyResult[]>([]);
@@ -26,6 +27,7 @@ export default function KeyResultsPage() {
 	const [submitting, setSubmitting] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const tableRefreshRef = useRef<(() => void) | null>(null);
+	const router = useRouter();
 
 	const currentInstitution = useSelector(selectSelectedInstitution);
 
@@ -58,6 +60,9 @@ export default function KeyResultsPage() {
 	const handleEdit = (keyResult: IKeyResult) => {
 		setEditingKeyResult(keyResult);
 		setModalOpen(true);
+	};
+	const handleView = (keyResult: IKeyResult) => {
+		router.push(`/performance/key-results/${keyResult.id}`);
 	};
 
 	const handleSubmit = async (data: IKeyResultFormData) => {
@@ -186,6 +191,7 @@ export default function KeyResultsPage() {
 				<KeyResultsTable
 					refreshFunctionRef={tableRefreshRef}
 					searchTerm={searchQuery}
+					onView={handleView}
 					onEdit={handleEdit}
 					onDelete={handleDelete}
 					onAdd={handleCreate}

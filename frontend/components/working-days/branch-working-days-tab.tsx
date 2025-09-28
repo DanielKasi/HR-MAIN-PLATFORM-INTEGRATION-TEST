@@ -15,6 +15,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { WorkingDaysSkeleton } from "@/components/working-days-skeleton";
 import { WorkingDaysManager } from "@/components/working-days-manager";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { branchesAPI, showErrorToast, systemAPI } from "@/lib/utils";
 import { Branch } from "@/types";
@@ -39,7 +40,6 @@ export default function BranchWorkingDaysTab() {
 	const fetchSystemWorkingDays = async () => {
 		try {
 			const systemDays = await systemAPI.getWorkingDays();
-
 			setSystemWorkingDays(systemDays);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load system working days" });
@@ -50,7 +50,6 @@ export default function BranchWorkingDaysTab() {
 	const fetchBranchWorkingDays = async (branchId: number) => {
 		try {
 			const branchDays = await branchesAPI.WORKING_DAYS.getAll({ branchId });
-
 			setBranchWorkingDays(branchDays);
 		} catch (error) {
 			showErrorToast({ error, defaultMessage: "Failed to load branch working days" });
@@ -71,7 +70,6 @@ export default function BranchWorkingDaysTab() {
 	const handleBranchWorkingDaysUpdate = async (args: any) => {
 		if (!selectedBranch) {
 			toast.error("No branch selected");
-
 			return;
 		}
 
@@ -85,7 +83,6 @@ export default function BranchWorkingDaysTab() {
 
 				if (!validDayId) {
 					toast.error("Invalid day selected. Please refresh and try again.");
-
 					return;
 				}
 
@@ -117,7 +114,6 @@ export default function BranchWorkingDaysTab() {
 
 					if (!validDayId) {
 						toast.error(`Invalid day ID ${day.day_id}. Please refresh and try again.`);
-
 						return;
 					}
 				}
@@ -179,7 +175,6 @@ export default function BranchWorkingDaysTab() {
 						if (dayError.day_id && Array.isArray(dayError.day_id)) {
 							return dayError.day_id.join(", ");
 						}
-
 						return JSON.stringify(dayError);
 					})
 					.filter(Boolean);
@@ -249,7 +244,6 @@ export default function BranchWorkingDaysTab() {
 								value={selectedBranch?.id.toString() || ""}
 								onValueChange={(val) => {
 									const branch = branches.find((b) => b.id === Number(val));
-
 									setSelectedBranch(branch || null);
 								}}
 							>
@@ -268,7 +262,24 @@ export default function BranchWorkingDaysTab() {
 					</div>
 				</CardHeader>
 			</Card>
-			{selectedBranch && (
+
+			{selectedBranch && branchWorkingDays && (
+				<ApprovableInstancePageLayout instance={branchWorkingDays} onInstanceRefresh={fetchData}>
+					<WorkingDaysManager
+						scope={{
+							type: "branch",
+							branchId: selectedBranch.id,
+							branchWorkingDays: branchWorkingDays,
+						}}
+						systemWorkingDays={systemWorkingDays}
+						onUpdate={handleBranchWorkingDaysUpdate}
+						isSaving={isSaving}
+					/>
+				</ApprovableInstancePageLayout>
+			)}
+
+			{/* Show WorkingDaysManager without approval wrapper when no working days exist yet */}
+			{selectedBranch && !branchWorkingDays && (
 				<WorkingDaysManager
 					scope={{
 						type: "branch",
