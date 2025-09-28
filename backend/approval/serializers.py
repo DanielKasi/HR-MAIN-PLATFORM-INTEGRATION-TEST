@@ -10,18 +10,47 @@ from users.models import Profile, Role
 from django.db import transaction
 
 class ApprovalProfileSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField(read_only=True)
+    fullname = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Profile
-        fields = ["id", "user", "institution", "bio"]
+        fields = ["id", "fullname", "institution", "bio"]
 
-    def get_user(self, obj):
-        from users.serializers import CustomUserSerializer
-        return CustomUserSerializer(obj.user, context=self.context).data
-
+    def get_fullname(self, obj):
+        return obj.user.fullname
 
 
+class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
+    source_level_id = serializers.IntegerField()
+    target_level_id = serializers.IntegerField()
+
+    def validate(self, data):
+        source_level_id = data.get('source_level_id')
+        target_level_id = data.get('target_level_id')
+
+        # Check if source and target levels exist
+        try:
+            source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
+            target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
+        except ApprovalDocumentLevel.DoesNotExist:
+            raise serializers.ValidationError("Source or target level does not exist.")
+
+        # Ensure both levels belong to the same ApprovalDocument
+        if source_level.approval_document_id != target_level.approval_document_id:
+            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+
+        # Ensure the user has permission to modify levels in this ApprovalDocument
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            institution = request.user.profile.institution
+            if source_level.approval_document.institution != institution:
+                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+
+        # Ensure source and target are not the same
+        if source_level_id == target_level_id:
+            raise serializers.ValidationError("Source and target levels cannot be the same.")
+
+        return data
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
