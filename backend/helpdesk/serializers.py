@@ -48,7 +48,7 @@ class TicketCommentSerializer(serializers.ModelSerializer):
     updated_by = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = TicketComment
-        fields = ['id', 'ticket', 'ticket_detail', 'comment', 'created_at', 'updated_at', 'is_active', 'created_by', 'updated_by']
+        fields = '__all__'
 
     def get_ticket_detail(self, obj):
         if obj.ticket:

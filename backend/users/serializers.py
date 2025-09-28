@@ -51,15 +51,7 @@ class RoleSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Role
-        fields = [
-            "id",
-            "name",
-            "description",
-            "permissions",
-            "institution",
-            "permissions_details",
-            "is_active",
-        ]
+        fields = '__all__'
 
         extra_kwargs = {"institution": {"required": False}}
 
@@ -292,7 +284,7 @@ class RolePermissionSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = RolePermission
-        fields = ["id", "role", "permission"]
+        fields = '__all__'
 
 
 class SignatureSerializer(BaseApprovableSerializer):

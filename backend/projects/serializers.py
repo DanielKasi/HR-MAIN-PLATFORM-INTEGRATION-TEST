@@ -23,18 +23,7 @@ class TaskTimeSheetSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = TaskTimeSheet
-        fields = [
-            "id",
-            "task",
-            "start_time",
-            "end_time",
-            "time_spent",
-            "notes",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "updated_by",
-        ]
+        fields = '__all__'
 
     def get_time_spent(self, obj):
         if obj.timespent:
@@ -165,21 +154,7 @@ class ProjectSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Project
-        fields = [
-            "id",
-            "institution",
-            "project_name",
-            "managers",
-            "assignees",
-            "description",
-            "start_date",
-            "end_date",
-            "project_status",
-            "project_documents",
-            "project_tasks",
-            "documents",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",
@@ -399,20 +374,7 @@ class TaskSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Task
-        fields = [
-            "id",
-            "project",
-            "task_name",
-            "description",
-            "managers",
-            "assignees",
-            "task_status",
-            "start_date",
-            "end_date",
-            "priority",
-            "task_time_sheet",
-            "is_active",
-        ]
+        fields = '__all__'
         read_only_fields = [
             "id",
             "created_at",

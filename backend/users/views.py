@@ -459,6 +459,14 @@ class LoginView(APIView):
                         },
                         status=status.HTTP_403_FORBIDDEN,
                     )
+                
+                if not user_instance.is_active:
+                    return Response(
+                        {
+                            "detail": "Your account is currently inactive. Contact Admin to have it activated"
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
 
                 user = authenticate(email=user_instance.email, password=password)
 

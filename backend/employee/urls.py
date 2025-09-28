@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import (
+    ActivateEmployeeView,
+    DeactivateEmployeeView,
     DocumentRequestDetailView,
     DocumentRequestListCreateView,
     DocumentUploadView,
@@ -176,4 +178,6 @@ urlpatterns = [
     path("document-requests/", DocumentRequestListCreateView.as_view(), name="document_request_list_create"),
     path("document-requests/<int:pk>/", DocumentRequestDetailView.as_view(), name="document_request_detail"),
     path("document-requests/employee/<int:request_employee_id>/upload/", DocumentUploadView.as_view(), name="document_upload"),
+    path('employees/<int:employee_id>/deactivate/', DeactivateEmployeeView.as_view(), name='deactivate-employee'),
+    path('employees/<int:employee_id>/activate/', ActivateEmployeeView.as_view(), name='activate-employee'),
 ]
