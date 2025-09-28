@@ -1,4 +1,4 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from employee.utilities import generate_email
 from .models import (
     Child,

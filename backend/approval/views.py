@@ -414,7 +414,9 @@ class ApprovalDocumentLevelListAPIView(APIView, SortableAPIMixin):
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(tags=['Approval Document Levels'])
+    @transaction.atomic
     def post(self, request):
+        print( request.data)
         serializer = ApprovalDocumentLevelSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

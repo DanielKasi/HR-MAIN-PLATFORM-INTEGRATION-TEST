@@ -1,6 +1,6 @@
 from rest_framework import serializers
 import re
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from utilities.common_serializers import ContentTypeSerializer
 from .models import Announcement, Acknowledgment
 from django.contrib.contenttypes.models import ContentType

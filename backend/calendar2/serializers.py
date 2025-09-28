@@ -1,4 +1,4 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from .models import PublicHoliday, Event, Calendar, EventOccurrence
 from rest_framework import serializers
 
