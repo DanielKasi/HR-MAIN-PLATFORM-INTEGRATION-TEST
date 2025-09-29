@@ -228,3 +228,32 @@ class BaseApprovableSerializer(serializers.ModelSerializer):
     class Meta:
         abstract = True
         fields = ['id', 'approval_status', 'approvals']
+
+
+class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
+    source_level_id = serializers.IntegerField()
+    target_level_id = serializers.IntegerField()
+
+    def validate(self, data):
+        source_level_id = data.get('source_level_id')
+        target_level_id = data.get('target_level_id')
+
+        try:
+            source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
+            target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
+        except ApprovalDocumentLevel.DoesNotExist:
+            raise serializers.ValidationError("Source or target level does not exist.")
+
+        if source_level.approval_document_id != target_level.approval_document_id:
+            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            institution = request.user.profile.institution
+            if source_level.approval_document.institution != institution:
+                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+
+        if source_level_id == target_level_id:
+            raise serializers.ValidationError("Source and target levels cannot be the same.")
+
+        return data        

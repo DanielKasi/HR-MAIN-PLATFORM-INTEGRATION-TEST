@@ -106,6 +106,14 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
         unique_together = ('approval_document', 'level')
         ordering = ['level']
 
+    def clean(self):
+        # Ensure level is unique within the approval_document
+        if ApprovalDocumentLevel.objects.filter(
+            approval_document=self.approval_document,
+            level=self.level
+        ).exclude(id=self.id).exists():
+            raise ValidationError({"error": "Level must be unique within the approval document."})
+
     def get_approver_users(self) -> set:
         """Get all unique users who are approvers for this level (direct users + via groups)"""
         from users.models import CustomUser, Profile, Role  # Import as needed

@@ -40,7 +40,12 @@ def get_employee_working_days(employee: Employee):
 
 def get_employee_day(employee: Employee, day: SystemDay):
     working_days = get_employee_working_days_obj(employee)
-    return working_days.days.get(day_code=day.day_code)
+    
+    if working_days.days.filter(day_code=day.day_code).exists():
+        return working_days.days.get(day_code=day.day_code)
+    
+    return None
+
 
 
 def get_employee_day_working_start_time(employee: Employee, day: SystemDay) -> time:

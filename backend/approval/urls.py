@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ActionListAPIView, ActionDetailAPIView, ApprovableContentTypeDetailAPIView, ApprovalTaskOverrideAPIView,
+    ActionListAPIView, ActionDetailAPIView, ApprovableContentTypeDetailAPIView, ApprovalDocumentLevelReorderAPIView, ApprovalTaskOverrideAPIView,
     ApproverGroupListAPIView, ApproverGroupDetailAPIView,
     ApprovalDocumentListAPIView, ApprovalDocumentDetailAPIView,
     ApprovalDocumentLevelListAPIView, ApprovalDocumentLevelDetailAPIView,
@@ -28,6 +28,7 @@ urlpatterns = [
     # Approval Document Levels URLs
     path('approval-document-levels/', ApprovalDocumentLevelListAPIView.as_view(), name='approval-document-level-list'),
     path('approval-document-levels/<int:pk>/', ApprovalDocumentLevelDetailAPIView.as_view(), name='approval-document-level-detail'),
+    path('levels/reorder/', ApprovalDocumentLevelReorderAPIView.as_view(), name='approval-document-level-reorder'),
     
     # Approvals URLs
     path('approvals/', ApprovalListAPIView.as_view(), name='approval-list'),
