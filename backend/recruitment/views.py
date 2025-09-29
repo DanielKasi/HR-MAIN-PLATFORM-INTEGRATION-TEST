@@ -719,7 +719,18 @@ class RecruitmentDashboardAPIView(APIView):
             department__institution=institution, 
             date_of_joining__gte=thirty_days_ago.date()
         ).select_related('position', 'department').order_by('-date_of_joining')
-        recent_hires_data = EmployeeSerializer(recent_hires, many=True, context={'request': request}).data
+        # recent_hires_data = EmployeeSerializer(recent_hires, many=True, context={'request': request}).data
+        recent_hires_data = []
+        for hire in recent_hires:
+            if hire is not None:
+                data = {
+                    "name" : hire.user.fullname if hasattr(hire, "user") else "",
+                    "position" : hire.position.name if hire.position else "",
+                    "department" : hire.department.name if hire.department else "",
+                    "status" : "Active" if hire.is_active else "Inactive",
+                    "date_of_joining" : hire.date_of_joining
+                }
+                recent_hires_data.append(data)
 
         data = {
             'total_job_positions': total_job_positions,
