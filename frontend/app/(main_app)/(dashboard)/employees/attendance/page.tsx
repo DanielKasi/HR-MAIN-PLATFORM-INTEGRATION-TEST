@@ -24,7 +24,7 @@ const AttendancePage = () => {
 	}, [selectedInstitution]);
 
 	const handleViewAttendance = () => {
-		router.push("attendance/view-attendance");
+		router.push("/employees/attendance/work-records");
 	};
 
 	if (loading) {
@@ -96,7 +96,7 @@ const AttendancePage = () => {
 									className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
 								>
 									<Eye className="w-4 h-4" />
-									<span className="hidden sm:inline">View Attendance</span>
+									<span className="hidden sm:inline">View work records</span>
 								</Button>
 							</div>
 						</ProtectedComponent>

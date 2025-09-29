@@ -26,6 +26,7 @@ import {
 	Trash2,
 	Save,
 	Edit,
+	MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,6 +58,14 @@ import {
 	APPROVER_GROUPS_API,
 } from "@/lib/api/approvals/utils";
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
+import ApproverGroupSearchableSelect from "@/components/selects/approver-groups-searchable-select";
+import RoleSearchableSelect from "@/components/selects/role-searchable-select";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ApprovalEditPage() {
 	const params = useParams();
@@ -67,9 +76,6 @@ export default function ApprovalEditPage() {
 	// Data states
 	const [approvalDocument, setApprovalDocument] = useState<ApprovalDocument | null>(null);
 	const [actions, setActions] = useState<Action[]>([]);
-	const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([]);
-	const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-	const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
 
 	// Form states
 	const [documentDescription, setDocumentDescription] = useState("");
@@ -120,12 +126,9 @@ export default function ApprovalEditPage() {
 		}
 		try {
 			setLoading(true);
-			const [documentRes, actionsRes, userProfiles, roles, approverGroupsRes] = await Promise.all([
+			const [documentRes, actionsRes] = await Promise.all([
 				APPROVAL_DOCUMENTS_API.fetchById({ id: Number.parseInt(approvalId) }),
 				ACTIONS_API.fetchActions(),
-				PROFILES_API.getPaginatedUserProfiles({}),
-				getRoles({ institutionId: currentInstitution.id }),
-				APPROVER_GROUPS_API.fetchAll(),
 			]);
 
 			const normalizedActions = Array.isArray(actionsRes)
@@ -138,14 +141,6 @@ export default function ApprovalEditPage() {
 			setActions(normalizedActions);
 			setDocumentDescription(documentRes.description || "");
 			setSelectedActionIds(documentRes.actions?.map((a) => a.id) || []);
-
-			if (userProfiles) {
-				setAvailableUsers(userProfiles.results);
-			}
-			if (roles) {
-				setAvailableRoles(roles);
-			}
-			setApproverGroups(approverGroupsRes.results);
 		} catch (e: any) {
 			showErrorToast({ error: e, defaultMessage: "Failed to load approval data" });
 			setError(e?.message || "Failed to load approval data");
@@ -219,8 +214,6 @@ export default function ApprovalEditPage() {
 			};
 
 			const createdGroup = await APPROVER_GROUPS_API.create(groupData);
-
-			setApproverGroups((prev) => [...prev, createdGroup]);
 			resetApproverGroupDialog();
 			showSuccessToast("Approver group created successfully!");
 		} catch (e: any) {
@@ -254,11 +247,6 @@ export default function ApprovalEditPage() {
 					?.map((overrider) => overrider.approver_group?.id)
 					.filter((id): id is number => id !== undefined) || [],
 			);
-			setEditingLevel(null);
-			setNewLevelName("");
-			setNewLevelDescription("");
-			setSelectedApproverGroupIds([]);
-			setSelectedOverriderGroupIds([]);
 		}
 		setOpenLevelDialog(true);
 	};
@@ -508,22 +496,28 @@ export default function ApprovalEditPage() {
 												)}
 											</div>
 											<div className="flex gap-2">
-												<Button
-													variant="ghost"
-													size="sm"
-													onClick={() => openEditLevelDialog(level)}
-												>
-													<Edit className="h-4 w-4" />
-												</Button>
-												<Button
-													variant="ghost"
-													size="sm"
-													onClick={() => handleDeleteLevel(level.id)}
-													className="text-destructive hover:text-destructive"
-													disabled={deletingLevel}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button className="" variant={"ghost"} size={"icon"}>
+															<MoreHorizontal />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent>
+														<DropdownMenuItem
+															className="cursor-pointer"
+															onClick={() => openEditLevelDialog(level)}
+														>
+															<Edit className="h-4 w-4 mr-2" /> Edit
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className="text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+															onClick={() => handleDeleteLevel(level.id)}
+															disabled={deletingLevel}
+														>
+															<Trash2 className="h-4 w-4 mr-2" /> Delete
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
 											</div>
 										</div>
 
@@ -670,31 +664,29 @@ export default function ApprovalEditPage() {
 											<div className="grid md:grid-cols-2 gap-4">
 												<div>
 													<label className="block text-sm font-medium mb-2">Roles</label>
-													<MultiSelectPopover
-														items={availableRoles.map((role) => ({
-															id: role.id,
-															name: role.name,
-															label: role.name,
-														}))}
-														selectedIds={selectedGroupRoleIds}
-														onSelectionChange={setSelectedGroupRoleIds}
+
+													<RoleSearchableSelect
 														placeholder="Select roles..."
-														emptyMessage="No roles available"
+														value={selectedGroupRoleIds}
+														onValueChange={(values) => {
+															if (values.length) {
+																setSelectedGroupRoleIds(values.map(Number));
+															}
+														}}
 													/>
 												</div>
 
 												<div>
 													<label className="block text-sm font-medium mb-2">Users</label>
-													<MultiSelectPopover
-														items={availableUsers.map((user) => ({
-															id: user.id,
-															name: user.user?.fullname || `User ${user.id}`,
-															label: user.user?.fullname || `User ${user.id}`,
-														}))}
-														selectedIds={selectedGroupUserIds}
-														onSelectionChange={setSelectedGroupUserIds}
+
+													<UserProfileSearchableSelect
 														placeholder="Select users..."
-														emptyMessage="No users available"
+														value={selectedGroupUserIds}
+														onValueChange={(values) => {
+															if (values.length) {
+																setSelectedGroupUserIds(values.map(Number));
+															}
+														}}
 													/>
 												</div>
 											</div>
@@ -714,16 +706,15 @@ export default function ApprovalEditPage() {
 
 							<div>
 								<label className="block text-sm font-medium mb-2">Select Approver Groups</label>
-								<MultiSelectPopover
-									items={approverGroups.map((group) => ({
-										id: group.id,
-										name: group.name,
-										label: `${group.name} (${group.users_display.length} users, ${group.roles_display.length} roles)`,
-									}))}
-									selectedIds={selectedApproverGroupIds}
-									onSelectionChange={setSelectedApproverGroupIds}
+
+								<ApproverGroupSearchableSelect
+									value={selectedApproverGroupIds}
 									placeholder="Select approver groups..."
-									emptyMessage="No approver groups available. Create one first."
+									onValueChange={(values) => {
+										if (values.length) {
+											setSelectedApproverGroupIds(values.map(Number));
+										}
+									}}
 								/>
 							</div>
 						</div>
@@ -758,16 +749,15 @@ export default function ApprovalEditPage() {
 
 							<div>
 								<label className="block text-sm font-medium mb-2">Select Overrider Groups</label>
-								<MultiSelectPopover
-									items={approverGroups.map((group) => ({
-										id: group.id,
-										name: group.name,
-										label: `${group.name} (${group.users_display.length} users, ${group.users_display.length} roles)`,
-									}))}
-									selectedIds={selectedOverriderGroupIds}
-									onSelectionChange={setSelectedOverriderGroupIds}
+
+								<ApproverGroupSearchableSelect
+									value={selectedOverriderGroupIds}
 									placeholder="Select overrider groups..."
-									emptyMessage="No approver groups available. Create one first."
+									onValueChange={(values) => {
+										if (values.length) {
+											setSelectedOverriderGroupIds(values.map(Number));
+										}
+									}}
 								/>
 							</div>
 						</div>

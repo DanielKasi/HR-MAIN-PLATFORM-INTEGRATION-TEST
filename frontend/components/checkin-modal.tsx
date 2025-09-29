@@ -52,7 +52,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 			/>
 
 			{/* Modal Content */}
-			<div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all">
+			<div className="relative bg-white rounded-xl overflow-hidden shadow-xl max-w-md w-full mx-4 transform transition-all">
 				{/* Header */}
 				<div className="flex items-center justify-between p-6 border-b">
 					<h3 className="text-lg font-semibold text-gray-900">Check In - {employeeName}</h3>
@@ -66,21 +66,6 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 					<div className="text-sm text-gray-600 mb-4">
 						Select the check-in date and time or use the current time.
 					</div>
-
-					{/* Date Input */}
-					{/* <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Calendar className="w-4 h-4 mr-2" />
-              Date
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              max={currentDate}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div> */}
 
 					{/* Time Input */}
 					<div className="space-y-2">

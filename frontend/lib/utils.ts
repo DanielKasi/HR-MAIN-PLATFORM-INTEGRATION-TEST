@@ -165,6 +165,7 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
+	ITaxRuleCategory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -5789,6 +5790,13 @@ export const taxRulesAPI = {
 			return response as IPaginatedResponse<ITaxRule>;
 		},
 	},
+
+	categories: {
+		getAll: async () => {
+			const response = await apiRequest.get("/institution/tax-rule-categories");
+			return response.data as ITaxRuleCategory[];
+		},
+	},
 };
 
 export const payrollAPI = {
@@ -7106,7 +7114,15 @@ export const SeparationPoliciesAPI = {
 	},
 };
 
-export async function fetchAttendanceData(startDate?: string, endDate?: string) {
+export async function fetchAttendanceData({
+	startDate,
+	endDate,
+	target_employees,
+}: {
+	startDate?: string;
+	endDate?: string;
+	target_employees?: number[];
+}) {
 	let endpoint = "employee/attendance-data/";
 
 	const params = new URLSearchParams();
@@ -7116,6 +7132,11 @@ export async function fetchAttendanceData(startDate?: string, endDate?: string) 
 	}
 	if (endDate) {
 		params.append("end_date", endDate);
+	}
+	if (target_employees) {
+		target_employees.forEach((emp) => {
+			params.append("target_employees", emp.toString());
+		});
 	}
 
 	if (params.toString()) {

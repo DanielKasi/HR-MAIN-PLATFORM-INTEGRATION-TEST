@@ -24,7 +24,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/common/table-skeleton";
-import { fetchAttendanceData } from "@/lib/utils";
+import { fetchAttendanceData, showErrorToast } from "@/lib/utils";
 import {
 	type AttendanceResponse,
 	type IDepartment,
@@ -36,6 +36,8 @@ import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selec
 import { getDepartments, getJobPositions, fetchEmployees } from "@/lib/utils";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { MAIN_DOMAIN_URL } from "@/constants";
+import JobPositionSearchableSelect from "@/components/selects/job-positions-select";
+import DepartmentSearchableSelect from "@/components/selects/department-searchable-select";
 
 const attendanceCodes = {
 	"P-onT": { label: "Present on Time", color: "bg-green-100 text-green-800" },
@@ -63,7 +65,7 @@ function AttendanceLegend() {
 	const [isExpanded, setIsExpanded] = useState(false);
 
 	return (
-		<div className="bg-white rounded-lg shadow-md border p-4">
+		<div className="bg-white rounded-lg shadow-sm border p-4">
 			<div
 				className="flex items-center justify-between cursor-pointer"
 				onClick={() => setIsExpanded(!isExpanded)}
@@ -99,9 +101,8 @@ export default function AttendanceTable() {
 	const [downloading, setDownloading] = useState(false);
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const accessToken = useSelector(selectAccessToken);
-	const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
-	const [allPositions, setAllPositions] = useState<IJobPosition[]>([]);
-	const [allEmployees, setAllEmployees] = useState<IEmployee[]>([]);
+	const [selectedJobPosition, setSelectedJobPosition] = useState<number | null>(null);
+	const [selectedSearchDepartment, setSelectedSearchDepartment] = useState<number | null>(null);
 
 	const [filters, setFilters] = useState<AttendanceFilters>({
 		startDate: "2025-07-20",
@@ -118,39 +119,6 @@ export default function AttendanceTable() {
 	});
 
 	useEffect(() => {
-		const loadFiltersData = async () => {
-			if (!selectedInstitution) return;
-
-			try {
-				const [departments, positions, employees] = await Promise.all([
-					getDepartments({ institutionId: selectedInstitution.id }),
-					getJobPositions({ institutionId: selectedInstitution.id }),
-					fetchEmployees({ institutionId: selectedInstitution.id }),
-				]);
-
-				setAllDepartments(departments || []);
-				setAllPositions(positions || []);
-
-				let employeesList = [];
-
-				if (Array.isArray(employees)) {
-					employeesList = employees;
-				} else if (employees && typeof employees === "object" && "results" in employees) {
-					employeesList = (employees as any).results || [];
-				} else if (employees && typeof employees === "object" && "data" in employees) {
-					employeesList = (employees as any).data || [];
-				}
-
-				setAllEmployees(employeesList);
-			} catch (err) {
-				//console.error("Failed to load filters data:", err);
-			}
-		};
-
-		loadFiltersData();
-	}, [selectedInstitution]);
-
-	useEffect(() => {
 		if (selectedInstitution) {
 			loadData();
 		}
@@ -162,7 +130,10 @@ export default function AttendanceTable() {
 		try {
 			setLoading(true);
 			setError(null);
-			const attendance = await fetchAttendanceData(filters.startDate, filters.endDate);
+			const attendance = await fetchAttendanceData({
+				startDate: filters.startDate,
+				endDate: filters.endDate,
+			});
 
 			setAttendanceData(attendance);
 		} catch (err) {
@@ -209,6 +180,9 @@ export default function AttendanceTable() {
 		return result;
 	}, [attendanceData]);
 
+	// TODO: This is wrong, since employees are paginated , this filter is inconsistent cause at the frontend we are not able to filter through all employees at one single point in time
+	// It will need to be refactored
+
 	const filteredEmployees = useMemo(() => {
 		return employeesWithAttendance.filter((emp: any) => {
 			if (filters.filterType === "all") return true;
@@ -244,15 +218,17 @@ export default function AttendanceTable() {
 		tempFilters.filterType !== filters.filterType ||
 		tempFilters.filterValue !== filters.filterValue;
 
-	const getFilterOptions = () => {
-		if (tempFilters.filterType === "department") {
-			return allDepartments.map((dept) => ({ value: dept.name, label: dept.name, id: dept.id }));
-		} else if (tempFilters.filterType === "position") {
-			return allPositions.map((pos) => ({ value: pos.name, label: pos.name, id: pos.id }));
-		}
+	// const getFilterOptions = () => {
+	// 	if (tempFilters.filterType === "department") {
+	// 		return allDepartments.map((dept) => ({ value: dept.name, label: dept.name, id: dept.id }));
+	// 	} else if (tempFilters.filterType === "position") {
+	// 		return allPositions.map((pos) => ({ value: pos.name, label: pos.name, id: pos.id }));
+	// 	}
 
-		return [];
-	};
+	// 	return [];
+	// };
+
+	// TODO: Move this function outside of this file
 
 	const handleDirectDownload = async () => {
 		setDownloading(true);
@@ -264,29 +240,10 @@ export default function AttendanceTable() {
 			};
 
 			// Add filter logic based on current applied filters
-			if (filters.filterType === "department" && filters.filterValue !== "all") {
-				// Find department ID by name
-				const department = allDepartments.find((dept) => dept.name === filters.filterValue);
-
-				if (department) {
-					payload.target_departments = [department.id];
-				} else {
-					toast.error("Selected department not found. Please refresh the page and try again.");
-					setDownloading(false);
-
-					return;
-				}
-			} else if (filters.filterType === "position" && filters.filterValue !== "all") {
-				const position = allPositions.find((pos) => pos.name === filters.filterValue);
-
-				if (position) {
-					payload.target_job_positions = [position.id];
-				} else {
-					toast.error("Selected position not found. Please refresh the page and try again.");
-					setDownloading(false);
-
-					return;
-				}
+			if (filters.filterType === "department" && selectedSearchDepartment) {
+				payload.target_departments = [selectedSearchDepartment];
+			} else if (filters.filterType === "position" && selectedJobPosition) {
+				payload.target_job_positions = [selectedJobPosition];
 			} else {
 				const employeeIds = filteredEmployees.map((emp: any) => emp.employee.id);
 
@@ -347,7 +304,7 @@ export default function AttendanceTable() {
 	if (loading) {
 		return (
 			<div className="space-y-6 p-3 sm:p-6 bg-gray-50 min-h-screen">
-				<div className="bg-white rounded-lg shadow-md border p-4">
+				<div className="bg-white rounded-lg shadow-sm border p-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
 							<div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
@@ -366,7 +323,7 @@ export default function AttendanceTable() {
 					))}
 				</div>
 
-				<div className="bg-white rounded-lg shadow-md border">
+				<div className="bg-white rounded-lg shadow-sm border">
 					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
 						<div className="h-6 bg-gray-200 rounded w-48 animate-pulse" />
 						<div className="h-10 bg-gray-200 rounded w-40 animate-pulse" />
@@ -393,10 +350,13 @@ export default function AttendanceTable() {
 	}
 
 	return (
-		<div className="space-y-6 p-3 sm:p-6 bg-gray-50 min-h-screen">
+		<div className="space-y-6 p-2 md:p-4 bg-white rounded-xl min-h-screen">
+			<div className="flex items-center justify-start gap-8">
+				<h1 className="font-semibold text-xl md:text-2xl lg:text-3xl">Work records</h1>
+			</div>
 			<AttendanceLegend />
 
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
 				<div className="space-y-2">
 					<Label htmlFor="start-date" className="text-sm font-medium text-gray-700">
 						Start Date
@@ -461,31 +421,32 @@ export default function AttendanceTable() {
 					</Select>
 				</div>
 
-				{tempFilters.filterType !== "all" && (
-					<div className="space-y-2 sm:col-span-1 lg:col-span-1">
-						<Label className="text-sm font-medium text-gray-700">
-							Select {tempFilters.filterType === "department" ? "Department" : "Position"}
-						</Label>
-						<Select
-							value={tempFilters.filterValue}
-							onValueChange={(value) => handleFilterChange("filterValue", value)}
-						>
-							<SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-								<SelectValue placeholder={`Select ${tempFilters.filterType}`} />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">
-									All {tempFilters.filterType === "department" ? "Departments" : "Positions"}
-								</SelectItem>
-								{getFilterOptions().map((option) => (
-									<SelectItem key={`${tempFilters.filterType}-${option.id}`} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-				)}
+				<div className="space-y-2 ">
+					{tempFilters.filterType === "position" && (
+						<JobPositionSearchableSelect
+							value={[selectedJobPosition || ""]}
+							onValueChange={(values) => setSelectedJobPosition(Number(values[0]))}
+							placeholder="Job positions..."
+							className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+							multiple={false}
+							showSelectedItems={true}
+						/>
+					)}
+					{tempFilters.filterType === "department" && (
+						<DepartmentSearchableSelect
+							value={[selectedSearchDepartment || ""]}
+							onValueChange={(values) => {
+								if (values.length) {
+									setSelectedSearchDepartment(Number(values[0]));
+								}
+							}}
+							placeholder="Departments..."
+							className="flex-1 min-w-[150px] md:max-w-xl lg:max-w-2xl xl:max-w-4xl"
+							multiple={false}
+							showSelectedItems={true}
+						/>
+					)}
+				</div>
 
 				<div className="space-y-2 sm:col-span-2 lg:col-span-1">
 					<Label className="text-sm font-medium text-gray-700 invisible">Apply</Label>
@@ -501,7 +462,7 @@ export default function AttendanceTable() {
 			</div>
 
 			<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
-				<div className="bg-white rounded-lg shadow-md border">
+				<div className="bg-white rounded-lg shadow-sm border">
 					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 border-b border-gray-200 gap-4 sm:gap-0">
 						<h3 className="font-semibold text-gray-900 text-sm sm:text-base">
 							Attendance Records ({filteredEmployees.length} employees)
