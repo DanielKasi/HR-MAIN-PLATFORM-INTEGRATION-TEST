@@ -1390,49 +1390,65 @@ class InstitutionTaxRuleListAPIView(APIView, SortableAPIMixin):
         tags=["Tax Rule Management"],
     )
     def get(self, request):
-        search_query = request.query_params.get("search", None)
-        user = request.user.profile if request.user.is_authenticated else None
-        status = request.query_params.get("status", None)
-        institution_tax = request.query_params.get("institution_tax", None)
+        # Validate user authentication and profile
+        if not request.user.is_authenticated or not hasattr(request.user, 'profile'):
+            return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
 
+        user = request.user.profile
         try:
             institution = Institution.objects.get(id=user.institution_id)
         except Institution.DoesNotExist:
-            return Response({"detail": "Institution not found."}, status=404)
+            return Response({"detail": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Base queryset with optimization
         tax_rules = InstitutionTaxRule.objects.filter(
-            institution_tax__institution=institution, deleted_at__isnull=True
-        )
+            institution_tax__institution=institution, 
+            deleted_at__isnull=True
+        ).select_related('institution_tax', 'tax_rule_category')
 
+        # Search filter
+        search_query = request.query_params.get("search", None)
         if search_query:
             tax_rules = tax_rules.filter(
                 Q(tax_rule_name__icontains=search_query)
-                | Q(institution_tax__name__icontains=search_query)
                 | Q(institution_tax__tax_name__icontains=search_query)
             )
 
+        # Institution tax filter
+        institution_tax = request.query_params.get("institution_tax", None)
         if institution_tax:
-            tax_rules = tax_rules.filter(institution_tax=institution_tax)    
+            try:
+                # Ensure institution_tax belongs to the user's institution
+                InstitutionTax.objects.get(id=institution_tax, institution=institution)
+                tax_rules = tax_rules.filter(institution_tax=institution_tax)
+            except InstitutionTax.DoesNotExist:
+                return Response({"detail": "Invalid institution tax ID."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if status:
-            status = status.lower()
-            if status == "active":
+        # Status filter
+        status_param = request.query_params.get("status", None)
+        if status_param:
+            status_param = status_param.lower()
+            if status_param == "active":
                 tax_rules = tax_rules.filter(is_active=True)
-            elif status == "inactive":
+            elif status_param == "inactive":
                 tax_rules = tax_rules.filter(is_active=False)
-            elif status == "all":
-                pass
+            elif status_param != "all":
+                return Response({"detail": "Invalid status parameter. Use 'active', 'inactive', or 'all'."}, 
+                               status=status.HTTP_400_BAD_REQUEST)
 
+        # Apply sorting
         try:
             tax_rules = self.apply_sorting(tax_rules, request)
         except ValueError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": f"Invalid sorting parameter: {str(e)}"}, 
+                           status=status.HTTP_400_BAD_REQUEST)
 
+        # Paginate and serialize
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(tax_rules, request)
         serializer = InstitutionTaxRuleSerializer(paginated_qs, many=True)
 
-        return Response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         request=InstitutionTaxRuleSerializer,
