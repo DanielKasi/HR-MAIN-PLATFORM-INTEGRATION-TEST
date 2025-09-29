@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from .models import (

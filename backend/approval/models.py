@@ -187,7 +187,7 @@ class ApprovalDocumentLevelApprovers(models.Model):
 
 class ApprovalDocumentLevelOverriders(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
-    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
+    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE, null=True, blank=True)
     overrider_user = models.ForeignKey('users.Profile', on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
@@ -197,7 +197,7 @@ class ApprovalDocumentLevelOverriders(models.Model):
 
     def clean(self):
         super().clean()
-        if self.overrider_group is None and self.overrider_user is None:
+        if self.approver_group is None and self.overrider_user is None:
             raise ValidationError({"error": "At least one of overrider_group or overrider_user must be set."})
 
 class Approval(models.Model):

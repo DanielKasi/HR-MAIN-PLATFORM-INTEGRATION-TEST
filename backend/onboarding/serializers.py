@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
 from employee.serializers import EmployeeSerializer
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 
 
 

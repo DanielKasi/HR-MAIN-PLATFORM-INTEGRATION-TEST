@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from employee.models import Employee
 from .models import LeaveType, LeaveBalance, LeaveApplication, LeavePolicy
 from .utils import LeaveCalculator

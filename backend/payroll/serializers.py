@@ -20,7 +20,7 @@ from recruitment.models import JobPosition
 from institution.serializers import InstitutionSerializer, InstitutionTaxSerializer
 from django.db import transaction
 from employee.serializers import EmployeeAttendanceSerializer
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 
 
 

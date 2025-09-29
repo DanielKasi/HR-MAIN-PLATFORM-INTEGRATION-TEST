@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from .models import EmailProviderConfig, SystemConfiguration, SystemDay, MeetingIntegration
 
 

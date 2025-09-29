@@ -19,7 +19,7 @@ from users.models import CustomUser
 from users.serializers import CustomUserSerializer
 from recruitment.models import RequiredDocument
 from employee.models import Employee, WorkType, EmployeeType
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 
 
 
