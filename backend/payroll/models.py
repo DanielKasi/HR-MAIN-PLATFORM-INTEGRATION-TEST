@@ -11,7 +11,7 @@ from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
 from django.core.exceptions import ValidationError
-
+import re
 
 class BaseModel(models.Model):
     FREQUENCY_CHOICES = [
@@ -855,10 +855,13 @@ class Payslip(BaseApprovableModel):
         taxable_gross = basic_salary + taxable_allowances
         gross_salary = basic_salary + taxable_allowances + non_taxable_allowances
         institution = self.get_institution()
+
+        # Fetch active tax rules for the institution
         tax_rules = InstitutionTaxRule.objects.filter(
             institution_tax__institution=institution,
-            institution_tax__tax_status=True
-        ).order_by('salary_from')
+            institution_tax__tax_status=True,
+            deleted_at__isnull=True
+        ).select_related('institution_tax').order_by('salary_from')
 
         for rule in tax_rules:
             from_val = Decimal(rule.salary_from) if rule.salary_from is not None else Decimal('0')
@@ -869,60 +872,91 @@ class Payslip(BaseApprovableModel):
                 'taxable_gross_salary': taxable_gross,
                 'gross_salary': gross_salary,
                 'basic_salary': basic_salary,
-            }.get(rule.taxable_income_source, taxable_gross)  # Default to taxable_gross if not specified
+            }.get(rule.taxable_income_source, taxable_gross)  # Default to taxable_gross
 
+            # Check if the income falls within the rule's range
             if to_val is not None:
-                if from_val <= income_value <= to_val:
-                    if rule.tax_rule_formula:
-                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
-                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
-                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
-                        try:
-                            tax_amount = eval(formula, safe_dict, {'income': income_value})
-                            tax_total = Decimal(tax_amount)
-                        except (SyntaxError, NameError, TypeError):
-                            tax_total = Decimal('0')
-                    elif rule.tax_rule_percentage:
-                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
-                        tax_total = tax_amount
-                    elif rule.tax_rule_fixed_amount:
-                        tax_total = rule.tax_rule_fixed_amount
-                    break
+                if not (from_val <= income_value <= to_val):
+                    continue
             else:
-                # Handle open-ended range (e.g., above 10,000,000)
-                if income_value >= from_val:
-                    if rule.tax_rule_formula:
-                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
-                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
-                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
+                if income_value < from_val:
+                    continue
+
+            # Handle tax calculation
+            if rule.tax_rule_formula:
+                formula = rule.tax_rule_formula.strip()
+                # Replace 'Taxable Income' or taxable_income_source with actual value
+                formula = formula.replace(
+                    'Taxable Income', str(income_value)
+                ).replace(
+                    rule.taxable_income_source or 'taxable_gross_salary', str(income_value)
+                )
+                # Normalize operators: replace × with *, % with /100, remove UGX
+                formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '').replace(',', '')
+
+                # Handle multi-part formulas like [(x - a) * b/100 + c] + [(x - d) * e/100]
+                if '[' in formula and ']' in formula:
+                    # Split into parts based on '] + ['
+                    parts = formula.split('] + [')
+                    tax_total_for_rule = Decimal('0')
+                    for part in parts:
+                        part = part.strip('[]').strip()
+                        # Parse single-part formula: (income - X) * Y/100 + Z or (income - X) * Y/100
+                        match = re.match(
+                            r'^\s*\(\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)\s*\)\s*\*\s*(\d+\.?\d*)\s*/\s*100(\s*\+\s*(\d+\.?\d*))?\s*$',
+                            part
+                        )
+                        if match:
+                            try:
+                                income = Decimal(match.group(1))  # Should match income_value
+                                deduction = Decimal(match.group(2))  # e.g., 410000
+                                rate = Decimal(match.group(3)) / Decimal('100')  # e.g., 0.30
+                                fixed_amount = Decimal(match.group(5)) if match.group(5) else Decimal('0')
+                                # Only apply if income exceeds the deduction
+                                if income > deduction:
+                                    tax_total_for_rule += (income - deduction) * rate + fixed_amount
+                            except (ValueError, TypeError):
+                                logger.warning(f"Invalid formula part: {part}")
+                                continue
+                        else:
+                            logger.warning(f"Unsupported formula part: {part}")
+                            continue
+                    tax_total = tax_total_for_rule
+                else:
+                    # Parse single-part formula: (income - X) * Y/100 + Z or (income - X) * Y/100
+                    match = re.match(
+                        r'^\s*\(\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)\s*\)\s*\*\s*(\d+\.?\d*)\s*/\s*100(\s*\+\s*(\d+\.?\d*))?\s*$',
+                        formula
+                    )
+                    if match:
                         try:
-                            # Split and evaluate the two-part formula for progressive tax
-                            parts = formula.split('+')
-                            part1 = parts[0].strip()  # [(taxable_gross_salary – 410000) x 30% + 25000]
-                            part2 = parts[1].strip()  # [(taxable_gross_salary – 10000000) x 10%]
-                            tax_part1 = eval(part1, safe_dict, {'income': income_value})
-                            tax_part2 = eval(part2, safe_dict, {'income': income_value}) if income_value > 10000000 else Decimal('0')
-                            tax_total = Decimal(tax_part1) + Decimal(tax_part2)
-                        except (SyntaxError, NameError, TypeError, IndexError):
+                            income = Decimal(match.group(1))  # Should match income_value
+                            deduction = Decimal(match.group(2))  # e.g., 410000
+                            rate = Decimal(match.group(3)) / Decimal('100')  # e.g., 0.30
+                            fixed_amount = Decimal(match.group(5)) if match.group(5) else Decimal('0')
+                            if income > deduction:
+                                tax_total = (income - deduction) * rate + fixed_amount
+                            else:
+                                tax_total = Decimal('0')
+                        except (ValueError, TypeError):
+                            logger.warning(f"Invalid formula: {formula}")
                             tax_total = Decimal('0')
-                    elif rule.tax_rule_percentage:
-                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
-                        tax_total = tax_amount
-                    elif rule.tax_rule_fixed_amount:
-                        tax_total = rule.tax_rule_fixed_amount
-                    break
+                    else:
+                        logger.warning(f"Unsupported formula format: {formula}")
+                        tax_total = Decimal('0')
+            elif rule.tax_rule_percentage:
+                tax_total = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
+            elif rule.tax_rule_fixed_amount:
+                tax_total = rule.tax_rule_fixed_amount
+            break  # Apply only the first matching rule
 
         # Step 5: Calculate Final Totals
         self.total_allowances = taxable_allowances + non_taxable_allowances
         self.total_deductions = deductions + tax_total
         self.total_penalties = total_penalties
-
-        gross = basic_salary + taxable_allowances + non_taxable_allowances
-        net = gross - tax_total - deductions - total_penalties
-
-        self.gross_salary = gross
+        self.gross_salary = gross_salary
         self.taxable_gross_salary = taxable_gross
-        self.net_salary = net
+        self.net_salary = gross_salary - tax_total - deductions - total_penalties
 
         self.save()
 
