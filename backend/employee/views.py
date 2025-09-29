@@ -4283,7 +4283,7 @@ class EmployeeMonthlyHourAccountListCreateView(APIView, SortableAPIMixin):
             )
 
         accounts = EmployeeMonthlyHourAccount.objects.filter(
-            employee__institution=institution
+            employee__department__institution=institution
         )
 
         if search_query:
