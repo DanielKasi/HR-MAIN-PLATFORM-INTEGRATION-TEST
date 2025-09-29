@@ -18,13 +18,13 @@ export default function Modules() {
 		{
 			id: "accounting",
 			name: "Accounting",
-			link: "#",
+			link: "http://accounting.baisoftglobal.com",
 			icon: <Icon icon="hugeicons:bitcoin-graph" width="24" height="24" />,
 		},
 		{
 			id: "task_mgmt",
 			name: "Tasks",
-			link: "https://hrms.baifamgroup.co.ug",
+			link: "http://tasks.baisoftglobal.com",
 			icon: <Icon icon="hugeicons:gitbook" width="24" height="24" />,
 		},
 	];
