@@ -701,13 +701,17 @@ class GenerateDocumentView(BaseDocumentView):
                     pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
                 ),
                 "position": (
-                    pip.employee.job_position.title if hasattr(pip.employee, "job_position") else ""
+                    pip.employee.position.name if hasattr(pip.employee, "position") else ""
                 ),
                 "department": (
                     pip.employee.department.name if hasattr(pip.employee, "department") else ""
                 ),
                 "supervisor": (
-                    pip.employee.positions.reports_to.name if hasattr(pip.employee, "supervisor") else ""                ),
+                    pip.employee.position.reports_to.name
+                        if getattr(pip.employee, "position", None)
+                        and getattr(pip.employee.position, "reports_to", None)
+                        else ""                
+                        ),
                 "date_issued": str(pip.start_date) if pip.start_date else "",
                 "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
                 "concerns": concerns,
@@ -827,13 +831,13 @@ class DocumentContentPreviewView(BaseDocumentView):
                         pip.employee.user.fullname if hasattr(pip.employee.user, "fullname") else ""
                     ),
                     "position": (
-                        pip.employee.job_position.title if hasattr(pip.employee, "job_position") else ""
+                        pip.employee.position.nam if hasattr(pip.employee, "position") else ""
                     ),
                     "department": (
                         pip.employee.department.name if hasattr(pip.employee, "department") else ""
                     ),
                     "supervisor": (
-                        pip.employee.positions.reports_to.name if hasattr(pip.employee, "positions") and hasattr(pip.employee.positions, "reports_to") else ""
+                        pip.employee.position.reports_to.name if hasattr(pip.employee, "position") and hasattr(pip.employee.position, "reports_to") else ""
                     ),
                     "date_issued": str(pip.start_date) if pip.start_date else "",
                     "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
