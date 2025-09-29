@@ -40,7 +40,13 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { AttendanceAPI, EMPLOYEE_API, getEmployeeById, spotcheckAPI } from "@/lib/utils";
+import {
+	AttendanceAPI,
+	EMPLOYEE_API,
+	getEmployeeById,
+	showErrorToast,
+	spotcheckAPI,
+} from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import type {
 	IEmployee,
@@ -51,7 +57,7 @@ import { toast } from "sonner";
 import { EmployeePayrollTable } from "@/components/employee/employee-payroll";
 import ContractsTable from "@/components/contracts/contracts-table";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { formatCurrency, getFileUrl } from "@/lib/helpers";
+import { formatCurrency, getCurrentUserLocation, getFileUrl } from "@/lib/helpers";
 import { useMobile } from "@/hooks/use-mobile";
 import EmployeeSpotchecks from "@/components/common/tables/spotchecks/employee-spotchecks";
 import EmployeeShifts from "@/components/common/tables/shifts/employee-shifts";
@@ -61,6 +67,9 @@ import { EmployeeBonusPointsTable } from "@/components/performance/bonus-points/
 import FixedLoader from "@/components/fixed-loader";
 import { Skeleton } from "@/components/ui/skeleton";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
+import { CheckInModal } from "@/components/checkin-modal";
+import { CheckOutModal } from "@/components/checkout-modal";
+import SingleEmployeeAttendance from "@/components/attendance/single-employee-attendance";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -108,6 +117,7 @@ export default function EmployeeProfile() {
 	const [loadingSpotcheckConfig, setLoadingSpotcheckConfig] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [generatingEmail, setGeneratingEmail] = useState(false);
+
 	// Company Email state
 	const [companyEmail, setCompanyEmail] = useState<{
 		id: number;
@@ -124,9 +134,6 @@ export default function EmployeeProfile() {
 
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
-	// console.log("Spot check setting", spotcheckSetting);
-
-	// Memoized utility functions
 	const formatDate = useCallback((dateString: string | null) => {
 		if (!dateString) return null;
 		return new Date(dateString).toLocaleDateString("en-US", {
@@ -433,12 +440,10 @@ export default function EmployeeProfile() {
 		<div className="w-full h-full rounded-lg relative">
 			{loading ? (
 				<div className="w-full h-full min-h-screen p-6 bg-white animate-pulse">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-4 mb-8">
+					<div className="flex items-center justify-between mb-8 gap-8">
+						<div className="flex items-center justify-start gap-4">
 							<Skeleton className="h-10 w-10 rounded bg-gray-200 " />
-							<div className="space-y-2">
-								<Skeleton className="h-10 w-96 bg-gray-200 " />
-							</div>
+							<Skeleton className="h-10 w-96 bg-gray-200 " />
 						</div>
 						<div className="flex items-end gap-8">
 							<Skeleton className="h-10 w-48 bg-gray-200 " />
@@ -651,7 +656,9 @@ export default function EmployeeProfile() {
 
 											<CardContent className="p-4 md:p-6">
 												{activeTab === "attendance" && (
-													<EmployeeAttendance scope={{ type: "employee", employee }} />
+													<>
+														<SingleEmployeeAttendance employee={employee} />
+													</>
 												)}
 
 												{activeTab === "general_info" && (

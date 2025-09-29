@@ -262,8 +262,9 @@ export function AttendanceRecordsTable({
 												<TableHead>Date</TableHead>
 												<TableHead>Name</TableHead>
 												<TableHead>Email</TableHead>
-												<TableHead>Check In</TableHead>
-												<TableHead>Check Out</TableHead>
+												<TableHead>Early checkout</TableHead>
+												<TableHead>Late</TableHead>
+												<TableHead>Worked hours</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
@@ -274,59 +275,30 @@ export function AttendanceRecordsTable({
 													</TableCell>
 												</TableRow>
 											) : (
-												employees.map((emp) => {
-													const record = (attendanceData?.results || []).find(
-														(r) => r.employee.id === emp.id,
-													);
-
+												attendanceData?.results.map((att, idx) => {
 													return (
-														<TableRow key={emp.id} className="hover:bg-gray-50">
+														<TableRow key={idx} className="hover:bg-gray-50">
 															<TableCell>{selectedDate}</TableCell>
 															<TableCell>
 																<div className="flex flex-col">
 																	<Link
-																		href={`/employees/attendance/${emp.id}`}
+																		href={`/employees/attendance/${att.employee.id}`}
 																		className="font-semibold text-blue-600 hover:underline"
 																	>
-																		{emp.user?.fullname || "Unknown"}
+																		{att.employee.name || att.employee.user?.fullname || "Unknown"}
 																	</Link>
 																	<span className="text-xs text-gray-400" />
 																</div>
 															</TableCell>
-															<TableCell>{emp.email || ""}</TableCell>
+															<TableCell>{att.employee.email || ""}</TableCell>
 															<TableCell className="min-w-[6rem]">
-																{record?.check_in_time ? (
-																	<span className="text-sm text-gray-700">
-																		{record.check_in_time}
-																	</span>
-																) : isToday(selectedDate) ? (
-																	<button
-																		onClick={() => openCheckInModal(emp)}
-																		className="text-sm text-blue-600"
-																	>
-																		Check In
-																	</button>
-																) : (
-																	<span className="text-sm text-gray-400">-</span>
-																)}
+																<span>{att?.early_checkout_minutes || 0} minutes</span>
 															</TableCell>
 															<TableCell className="min-w-[6rem]">
-																{record ? (
-																	record?.check_out_time ? (
-																		<span className="text-sm text-gray-700">
-																			{record.check_out_time}
-																		</span>
-																	) : isToday(selectedDate) ? (
-																		<button
-																			onClick={() => openCheckOutModal(record)}
-																			className="text-sm text-blue-600"
-																		>
-																			Check Out
-																		</button>
-																	) : (
-																		<span className="text-sm text-gray-400">-</span>
-																	)
-																) : null}
+																<span>{att?.late_minutes || 0} minutes</span>
+															</TableCell>
+															<TableCell className="min-w-[6rem]">
+																<span>{att?.worked_hours || 0} hours</span>
 															</TableCell>
 														</TableRow>
 													);

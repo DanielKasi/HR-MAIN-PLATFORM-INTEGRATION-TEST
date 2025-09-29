@@ -89,10 +89,10 @@ export const configureAppStore = () => {
 	// Run the root saga
 	(store as AppStore).sagaTask = sagaMiddleware.run(rootSaga);
 
-	store.subscribe(() => {
-		const state = store.getState();
-		console.log("\n\n Current miscellaneous : ", state.miscellaneous);
-	});
+	// store.subscribe(() => {
+	// 	const state = store.getState();
+	// 	console.log("\n\n Current miscellaneous : ", state.miscellaneous);
+	// });
 
 	return store;
 };

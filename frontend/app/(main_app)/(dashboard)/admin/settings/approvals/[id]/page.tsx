@@ -174,21 +174,43 @@ export default function ApprovalDetailsPage() {
 												{level.approvers_detail && level.approvers_detail.length > 0 ? (
 													<div className="space-y-2">
 														{level.approvers_detail.map((approver) => (
-															<div
-																key={approver.id}
-																className="flex items-center justify-between p-2 bg-muted/50 rounded"
-															>
-																<span className="font-medium">{approver.approver_group.name}</span>
-																<div className="text-xs text-muted-foreground">
-																	{approver.approver_group.users_display.length} users,{" "}
-																	{approver.approver_group.roles_display.length} roles
-																</div>
-															</div>
+															<Fragment key={approver.id}>
+																{" "}
+																{approver.approver_group ? (
+																	<div
+																		key={approver.id}
+																		className="flex items-center justify-between p-2 bg-muted/50 rounded"
+																	>
+																		<span className="font-medium">
+																			{approver.approver_group?.name}
+																		</span>
+																		<div className="text-xs text-muted-foreground">
+																			{approver.approver_group?.users_display.length} users,{" "}
+																			{approver.approver_group?.roles_display.length} roles
+																		</div>
+																	</div>
+																) : (
+																	<></>
+																)}
+															</Fragment>
 														))}
 													</div>
 												) : (
 													<p className="text-muted-foreground">No approver groups assigned</p>
 												)}
+												<div className="flex items-center gap-2 mb-2">
+													{
+														<div className="text-xs flex items-center justify-between gap-8 w-full ">
+															<span className="font-semibold text-base px-2">
+																{
+																	level.approvers_detail.map((approver) => approver.approver_user)
+																		.length
+																}
+															</span>
+															<span className="text-muted-foreground">Specific single users </span>
+														</div>
+													}
+												</div>
 											</div>
 
 											<div>
@@ -199,21 +221,41 @@ export default function ApprovalDetailsPage() {
 												{level.overriders_detail && level.overriders_detail.length > 0 ? (
 													<div className="space-y-2">
 														{level.overriders_detail.map((overrider) => (
-															<div
-																key={overrider.id}
-																className="flex items-center justify-between p-2 bg-muted/50 rounded"
-															>
-																<span className="font-medium">{overrider.approver_group.name}</span>
-																<div className="text-xs text-muted-foreground">
-																	{overrider.approver_group.users_display.length} users,{" "}
-																	{overrider.approver_group.roles_display.length} roles
-																</div>
-															</div>
+															<Fragment key={overrider.id}>
+																{overrider.approver_group ? (
+																	<div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+																		<span className="font-medium">
+																			{overrider.approver_group?.name}
+																		</span>
+																		<div className="text-xs text-muted-foreground">
+																			{overrider.approver_group?.users_display.length} users,{" "}
+																			{overrider.approver_group?.roles_display.length} roles
+																		</div>
+																	</div>
+																) : (
+																	<></>
+																)}
+															</Fragment>
 														))}
 													</div>
 												) : (
 													<p className="text-muted-foreground">No overrider groups assigned</p>
 												)}
+
+												<div className="flex items-center gap-2 mb-2">
+													{
+														<div className="text-xs flex items-center justify-between gap-8 w-full ">
+															<span className="font-semibold text-base px-2">
+																{
+																	level.overriders_detail.map(
+																		(overrider) => overrider.overrider_user,
+																	).length
+																}
+															</span>
+															<span className="text-muted-foreground">Specific single users </span>
+														</div>
+													}
+												</div>
 											</div>
 										</div>
 									</div>

@@ -264,7 +264,7 @@ export default function DashboardSideBar() {
 				{ title: "Attendance", href: "/employees/attendance" },
 				// { title: "Attendance Requests", href: "#" },
 				{ title: "Hour Account", href: "/employees/hour-count" },
-				{ title: "Work Records", href: "#" },
+				{ title: "Work Records", href: "/employees/attendance/work-records" },
 				// { title: "Attendance Activities", href: "#" },
 				{ title: "Late Come Early Out", href: "#" },
 				{ title: "My Attendances", href: "#" },

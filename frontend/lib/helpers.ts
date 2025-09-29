@@ -336,3 +336,12 @@ export const showBrowserNotification = ({ notification }: { notification: INotif
 	btn.click();
 	document.body.removeChild(btn);
 };
+
+export function isToday(dateString: string) {
+	const today = new Date();
+	const yyyy = today.getFullYear();
+	const mm = String(today.getMonth() + 1).padStart(2, "0");
+	const dd = String(today.getDate()).padStart(2, "0");
+
+	return dateString === `${yyyy}-${mm}-${dd}`;
+}

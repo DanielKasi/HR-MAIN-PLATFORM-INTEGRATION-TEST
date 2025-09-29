@@ -1,6 +1,11 @@
 "use client";
 
-import type { ITaxRule, ITaxRuleFormData, TaxableIncomeSource } from "@/types/types.utils";
+import type {
+	ITaxRule,
+	ITaxRuleCategory,
+	ITaxRuleFormData,
+	TaxableIncomeSource,
+} from "@/types/types.utils";
 import { useState, useEffect, useRef } from "react";
 import { Plus, Loader2, X, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -83,6 +88,7 @@ export function TaxRuleCreateEditDialog({
 	const [calculationType, setCalculationType] = useState<"percentage" | "fixed" | "tax_formula">(
 		"percentage",
 	);
+	const [taxRuleCategories, setTaxRuleCatgories] = useState<ITaxRuleCategory[]>([]);
 	const [formData, setFormData] = useState<ITaxRuleFormData>({
 		institution_tax: taxId,
 		tax_rule_name: "",
@@ -111,6 +117,21 @@ export function TaxRuleCreateEditDialog({
 		});
 		setCalculationType("percentage");
 		setTokens([]);
+	};
+
+	useEffect(() => {
+		fetchTaxRuleCategories();
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
+
+	const fetchTaxRuleCategories = async () => {
+		try {
+			const categories = await taxRulesAPI.categories.getAll();
+			setTaxRuleCatgories(categories);
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to fetch tax rule categories" });
+		}
 	};
 
 	useEffect(() => {
@@ -147,15 +168,11 @@ export function TaxRuleCreateEditDialog({
 		}
 	}, [taxRule, isEditMode]);
 
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (tokenMenuRef.current && !tokenMenuRef.current.contains(event.target as Node)) {
-				setShowTokenMenu(false);
-			}
-		};
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, []);
+	const handleClickOutside = (event: MouseEvent) => {
+		if (tokenMenuRef.current && !tokenMenuRef.current.contains(event.target as Node)) {
+			setShowTokenMenu(false);
+		}
+	};
 
 	const handleCalculationTypeChange = (value: "percentage" | "fixed" | "tax_formula") => {
 		setCalculationType(value);
@@ -219,11 +236,11 @@ export function TaxRuleCreateEditDialog({
 			toast.error("Please enter a tax rule name");
 			return;
 		}
-		if (!formData.salary_from || !formData.salary_to) {
-			toast.error("Please enter salary range");
+		if (!formData.salary_from) {
+			toast.error("You must provide a salary lower bound");
 			return;
 		}
-		if (formData.salary_from >= formData.salary_to) {
+		if (formData.salary_to && formData.salary_from >= formData.salary_to) {
 			toast.error("Salary 'from' must be less than salary 'to'");
 			return;
 		}
@@ -646,6 +663,31 @@ export function TaxRuleCreateEditDialog({
 						</div>
 					</div>
 				)}
+
+				<div className="space-y-3">
+					<Label htmlFor="tax_tule_category" className="text-sm text-gray-800">
+						Tax rule category (optional)
+					</Label>
+
+					<Select
+						value={formData.tax_rule_category?.toString() || ""}
+						onValueChange={(value) => {
+							setFormData({ ...formData, tax_rule_category: parseInt(value) });
+						}}
+					>
+						<SelectTrigger className="w-full min-w-[150px] max-w-[180px] rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base p-2">
+							<SelectValue placeholder="Select tax rule category" />
+						</SelectTrigger>
+						<SelectContent>
+							{taxRuleCategories.map((category) => (
+								<SelectItem key={category.id} value={category.id.toString()}>
+									{category.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+
 				<div className="grid grid-cols-2 gap-4">
 					<div className="space-y-3">
 						<Label htmlFor="salary_from" className="text-sm text-gray-800">
@@ -667,7 +709,7 @@ export function TaxRuleCreateEditDialog({
 					</div>
 					<div className="space-y-3">
 						<Label htmlFor="salary_to" className="text-sm text-gray-800">
-							Salary To *
+							Salary To (optional)
 						</Label>
 						<div className="relative">
 							<FormattedNumberInput

@@ -1,13 +1,13 @@
 "use client";
 
-import type { UserProfile } from "@/types";
+import { UserProfile } from "@/types/user.types";
 
 import { useEffect, useState } from "react";
 import { ChevronDown, Eye, Trash2, MoreVertical, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
-import { AddUserForm } from "./addUser";
+import { CreateEditUserDialog } from "./addUser";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,8 @@ export default function StaffPage() {
 	const [selectedRole, setSelectedRole] = useState("All Roles");
 	const [selectedStatus, setSelectedStatus] = useState("All status");
 	const [allUserProfiles, setAllUserProfiles] = useState<UserProfile[]>([]);
+	const [userProfileToEdit, setUserProfileToEdit] = useState<UserProfile | null>(null);
+	const [showEditUserDialog, setShowEditUserDialog] = useState(false);
 	const router = useRouter();
 
 	// Function to get the first role name or "No Role Assigned".
@@ -157,7 +159,7 @@ export default function StaffPage() {
 						</div>
 						<div className="flex items-center gap-2">
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_USERS}>
-								<AddUserForm onAddSuccess={() => window.location.reload()} />
+								<CreateEditUserDialog onAddSuccess={() => window.location.reload()} />
 							</ProtectedComponent>
 						</div>
 					</div>
@@ -309,7 +311,12 @@ export default function StaffPage() {
 																		<Eye className="h-4 w-4 mr-2" />
 																		View Details
 																	</DropdownMenuItem>
-																	<DropdownMenuItem>
+																	<DropdownMenuItem
+																		onClick={() => {
+																			setShowEditUserDialog(true);
+																			setUserProfileToEdit(userProfile);
+																		}}
+																	>
 																		<Edit className="h-4 w-4 mr-2" />
 																		Edit
 																	</DropdownMenuItem>
@@ -383,7 +390,12 @@ export default function StaffPage() {
 																<Eye className="h-4 w-4 mr-2" />
 																View Details
 															</DropdownMenuItem>
-															<DropdownMenuItem>
+															<DropdownMenuItem
+																onClick={() => {
+																	setShowEditUserDialog(true);
+																	setUserProfileToEdit(userProfile);
+																}}
+															>
 																<Edit className="h-4 w-4 mr-2" />
 																Edit
 															</DropdownMenuItem>
@@ -403,6 +415,21 @@ export default function StaffPage() {
 					</PaginatedTableWrapper>
 				</div>
 			</div>
+			{userProfileToEdit && (
+				<CreateEditUserDialog
+					showDialogTrigger={false}
+					openState={{
+						open: showEditUserDialog,
+						onOpenChange: (open) => {
+							if (!open) {
+								setShowEditUserDialog(false);
+								setUserProfileToEdit(null);
+							}
+						},
+					}}
+					userProfileToEdit={userProfileToEdit}
+				/>
+			)}
 		</div>
 	);
 }
