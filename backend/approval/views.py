@@ -10,8 +10,9 @@ from .models import (
     Action, ApproverGroup, ApprovalDocument, ApprovalDocumentLevel,
     Approval, ApprovalTask, BaseApprovableModel
 )
+from django.db.utils import IntegrityError
 from .serializers import (
-    ActionSerializer, ApproverGroupSerializer, ApprovalDocumentSerializer,
+    ActionSerializer, ApprovalDocumentLevelReorderSerializer, ApproverGroupSerializer, ApprovalDocumentSerializer,
     ApprovalDocumentLevelSerializer, ApprovalSerializer, ApprovalTaskSerializer
 )
 from django.urls import reverse, NoReverseMatch
@@ -24,7 +25,7 @@ from users.models import Role
 from rest_framework import serializers
 from django.utils import timezone
 from datetime import timedelta
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -1002,3 +1003,69 @@ class ApprovalTaskOverrideAPIView(APIView):
             return Response({'status': 'overridden'}, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)        
+
+
+class ApprovalDocumentLevelReorderAPIView(APIView):
+    @extend_schema(
+        tags=['Approval Document Levels'],
+        request=ApprovalDocumentLevelReorderSerializer,
+        responses={200: ApprovalDocumentLevelSerializer(many=True)},
+        description="Move one approval document level above another, swapping their level numbers."
+    )
+    def post(self, request):
+        serializer = ApprovalDocumentLevelReorderSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            source_level_id = serializer.validated_data['source_level_id']
+            target_level_id = serializer.validated_data['target_level_id']
+
+            try:
+                with transaction.atomic():
+                    # Lock the rows to prevent race conditions
+                    source_level = ApprovalDocumentLevel.objects.select_for_update().get(id=source_level_id)
+                    target_level = ApprovalDocumentLevel.objects.select_for_update().get(id=target_level_id)
+
+                    # Log the action
+                    print(f"Moving level {source_level.id} (level {source_level.level}) above level {target_level.id} (level {target_level.level})")
+
+                    # Get the current level numbers
+                    source_level_number = source_level.level
+                    target_level_number = target_level.level
+
+                    # Use a temporary placeholder value to avoid unique constraint violation
+                    max_level = ApprovalDocumentLevel.objects.filter(
+                        approval_document=source_level.approval_document
+                    ).aggregate(Max('level'))['level__max'] or 0
+                    temp_level = max_level + 1
+
+                    # Step 1: Set source_level to temporary value
+                    source_level.level = temp_level
+                    source_level.save()
+
+                    # Step 2: Set target_level to source_level's original level
+                    target_level.level = source_level_number
+                    target_level.save()
+
+                    # Step 3: Set source_level to target_level's original level
+                    source_level.level = target_level_number
+                    source_level.save()
+
+                    print(f"Updated level {source_level.id} to level {source_level.level}, level {target_level.id} to level {target_level.level}")
+
+                    # Return the updated list of levels for the ApprovalDocument
+                    levels = ApprovalDocumentLevel.objects.filter(
+                        approval_document=source_level.approval_document,
+                        deleted_at__isnull=True
+                    ).order_by('level')
+                    response_serializer = ApprovalDocumentLevelSerializer(levels, many=True, context={'request': request})
+                    return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+            except ApprovalDocumentLevel.DoesNotExist:
+                return Response({"error": "Source or target level does not exist."}, status=status.HTTP_404_NOT_FOUND)
+            except IntegrityError as e:
+                print(f"Database error during reordering: {str(e)}")
+                return Response({"error": f"Database error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception as e:
+                print(f"Unexpected error during reordering: {str(e)}")
+                return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
