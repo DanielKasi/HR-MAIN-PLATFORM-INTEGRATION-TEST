@@ -12,7 +12,7 @@ from .models import (
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from utilities.password_validator import validate_password_strength
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
 

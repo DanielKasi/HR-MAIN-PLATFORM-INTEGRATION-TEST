@@ -6,7 +6,7 @@ from institution.serializers import InstitutionSerializer, BranchSerializer
 from institution.models import Institution, Branch
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 
 
 class InstitutionSpotCheckSettingSerializer(BaseApprovableSerializer):

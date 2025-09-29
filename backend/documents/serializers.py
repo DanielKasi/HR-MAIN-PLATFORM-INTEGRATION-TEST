@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from .models import DocumentType, DocumentTemplate
 from institution.models import Institution
 from institution.serializers import InstitutionSerializer

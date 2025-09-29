@@ -1,4 +1,4 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from rest_framework import serializers
 from django.http import QueryDict
 from employee.models import Employee

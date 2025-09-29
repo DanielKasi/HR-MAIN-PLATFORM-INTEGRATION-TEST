@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Project, Task, TaskDocument, TaskTimeSheet, ProjectDocument
 from django.db import transaction
 from employee.models import Employee
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from django.utils import timezone
 
 
