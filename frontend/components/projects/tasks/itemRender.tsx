@@ -47,7 +47,7 @@ const itemRender = ({ item, itemContext, getItemProps, getResizeProps }: ItemRen
 			{itemContext.useResizeHandle ? <div {...leftResizeProps} /> : null}
 
 			<div
-				className="ripple"
+				className="ripple !z-[40]"
 				title={item.tip || itemContext.title}
 				style={{
 					height: itemContext.dimensions.height,
@@ -57,6 +57,7 @@ const itemRender = ({ item, itemContext, getItemProps, getResizeProps }: ItemRen
 					whiteSpace: "nowrap",
 					fontSize: "1rem",
 					marginLeft: "1rem",
+					zIndex: "40 !important",
 				}}
 			>
 				{itemContext.title}

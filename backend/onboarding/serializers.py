@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from users.serializers import ProfileSerializer
 from employee.serializers import EmployeeSerializer
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 
 
 
@@ -26,31 +26,14 @@ class OnBoardingSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = OnBoarding
-        fields = [
-            "id",
-            "application",
-            "application_details",
-            "remarks",
-            "attended",
-            "status",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = ["created_at", "updated_at"]
 
 
 class OffboardingStageSerializer(BaseApprovableSerializer):
     class Meta:
         model = OffboardingStage
-        fields = [
-            "id",
-            "institution",
-            "stage_name",
-            "stage_description",
-            "is_active",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at", "institution"]
 
     def validate_stage_name(self, value):
@@ -89,17 +72,7 @@ class InstitutionEmployeeSeparationTypesSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionEmployeeSeparationTypes
-        fields = [
-            "id",
-            "institution",
-            "separation_type",
-            "description",
-            "supported_stages",
-            "category",
-            "is_active",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at", "institution"]
 
     def validate_separation_type(self, value):
@@ -143,21 +116,7 @@ class InstitutionSeparationPolicySerializer(BaseApprovableSerializer):
 
     class Meta:
         model = InstitutionSeparationPolicy
-        fields = [
-            "id",
-            "separation_type",
-            "policy_name",
-            "policy_document",
-            "description",
-            "min_notice_days",
-            "max_notice_days",
-            "require_separation_letter",
-            "require_all_stages",
-            "is_active",
-            "enforce_policy",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def to_representation(self, instance):
@@ -193,17 +152,7 @@ class EmployeeSeparationSerializer(serializers.ModelSerializer):
 class ResignationRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = ResignationRequest
-        fields = [
-            "id",
-            "separation",
-            "resignation_letter",
-            "comments",
-            "last_working_day",
-            "request_status",
-            "created_at",
-            "updated_at",
-            "is_active"
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_fields(self):
@@ -310,16 +259,7 @@ class ResignationRequestSerializer(BaseApprovableSerializer):
 class RetirementRequestSerializer(BaseApprovableSerializer):
     class Meta:
         model = RetirementRequest
-        fields = [
-            "id",
-            "separation",
-            "retirement_letter",
-            "comments",
-            "last_working_day",
-            "request_status",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_fields(self):
@@ -416,18 +356,7 @@ class TerminationInitiationSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = TerminationInitiation
-        fields = [
-            "id",
-            "separation",
-            "employee_id",
-            "termination_letter",
-            "comments",
-            "last_working_day",
-            "initiation_status",
-            "created_at",
-            "updated_at",
-            "is_active"
-        ]
+        fields = '__all__'
         read_only_fields = ["id", "created_at", "updated_at", "separation"]
 
     def to_representation(self, instance):

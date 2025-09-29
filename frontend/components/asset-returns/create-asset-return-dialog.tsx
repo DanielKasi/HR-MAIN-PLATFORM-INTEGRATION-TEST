@@ -24,7 +24,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { assetsAPI } from "@/lib/utils";
-import { IAssetReturnFormData } from "@/types/types.utils";
+import { IAssetReturnFormData } from "@/types/assets.types";
 
 interface CreateAssetReturnDialogProps {
 	open: boolean;
@@ -49,7 +49,6 @@ export function CreateAssetReturnDialog({
 		notes: "",
 	});
 
-	// Fetch assets and allocations
 	useEffect(() => {
 		if (open) {
 			fetchAssets();
@@ -60,7 +59,7 @@ export function CreateAssetReturnDialog({
 	const fetchAssets = async () => {
 		try {
 			const data = await assetsAPI.getAll();
-			console.log("Fetched assets:", data)
+			console.log("Fetched assets:", data);
 			setAssets(data);
 		} catch (error) {
 			console.error("Error fetching assets:", error);

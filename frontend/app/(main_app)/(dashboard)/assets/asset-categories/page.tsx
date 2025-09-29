@@ -1,7 +1,7 @@
 "use client";
 
-import type { IAssetCategory, IAsset } from "@/types/types.utils";
-
+import type { IAsset } from "@/types/types.utils";
+import { IAssetCategory } from "@/types/assets.types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { MoreVertical, Edit, Trash2, Search, Eye } from "lucide-react";
@@ -36,7 +36,6 @@ import { PaginatedTableWrapper } from "@/components/common/tables/paginated-tabl
 import { assetCategoriesAPI, assetsAPI } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import ProtectedPage from "@/components/ProtectedPage";
-import AssetCategoryDetailsModal from "@/components/asset-categories/asset-categoy-details-dialog";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -63,9 +62,6 @@ const AssetCategoriesPage = () => {
 	const [searchTerm, setSearchTerm] = useState("");
 	// const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [ordering, setOrdering] = useState("");
-	const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-	const [selectedAssetCategory, setSelectedAssetCategory] = useState<IAssetCategory | null>(null);
-
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const refreshTableRef = useRef<(() => void) | null>(null);
 
@@ -125,10 +121,8 @@ const AssetCategoriesPage = () => {
 	};
 
 	const handleViewAssetCategoryDetails = (assetCategory: IAssetCategory) => {
-		setSelectedAssetCategory(assetCategory);
-		setIsDetailsModalOpen(true);
+		router.push(`/assets/asset-categories/${assetCategory.id}`);
 	};
-
 	return (
 		<div className="space-y-6">
 			{/* Header and Filters */}
@@ -342,18 +336,6 @@ const AssetCategoriesPage = () => {
 						setDeletingAssetCategory(null);
 					}}
 					onSuccess={handleDeleteSuccess}
-				/>
-			)}
-
-			{selectedAssetCategory && (
-				<AssetCategoryDetailsModal
-					isOpen={isDetailsModalOpen}
-					onClose={() => {
-						setIsDetailsModalOpen(false);
-						setSelectedAssetCategory(null);
-					}}
-					assetCategory={selectedAssetCategory}
-					assetCount={getAssetCount(selectedAssetCategory.id)}
 				/>
 			)}
 		</div>

@@ -1,6 +1,6 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from rest_framework import serializers
-
+from django.http import QueryDict
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer
 from .models  import FAQ, FAQCategory, Ticket, TicketAttachment, TicketCategory, TicketComment
@@ -44,13 +44,26 @@ class TicketCategorySerializer(BaseApprovableSerializer):
 class TicketCommentSerializer(serializers.ModelSerializer):
     ticket = serializers.PrimaryKeyRelatedField(queryset=Ticket.objects.all(), write_only=True)
     ticket_detail = serializers.SerializerMethodField(read_only=True)
-
+    created_by = serializers.SerializerMethodField(read_only=True)
+    updated_by = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = TicketComment
-        fields = ['id', 'ticket', 'ticket_detail', 'comment', 'created_at', 'updated_at', 'is_active']
+        fields = '__all__'
 
     def get_ticket_detail(self, obj):
-        return {'id': obj.ticket.id, 'title': obj.ticket.title}
+        if obj.ticket:
+            return {'id': obj.ticket.id, 'title': obj.ticket.title}
+        return None
+
+    def get_created_by(self, obj):
+        if obj.created_by:
+            return {'name': obj.created_by.fullname}
+        return None
+
+    def get_updated_by(self, obj):
+        if obj.updated_by:
+            return {'name': obj.updated_by.fullname}
+        return None
 
     def validate(self, data):
         request = self.context.get('request')
@@ -81,7 +94,7 @@ class TicketAttachmentSerializer(BaseApprovableSerializer):
         validated_data['created_by'] = self.context['request'].user
         return TicketAttachment.objects.create(**validated_data)     
     
-class TicketSerializer(BaseApprovableSerializer):
+class TicketSerializer(serializers.ModelSerializer):
     category = TicketCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=TicketCategory.objects.all(), source='category', write_only=True, allow_null=True
@@ -105,22 +118,26 @@ class TicketSerializer(BaseApprovableSerializer):
         model = Ticket
         fields = '__all__'
 
+    def to_internal_value(self, data):
+        # Handle multipart/form-data parsing for new_comments
+        if isinstance(data, QueryDict):
+            new_comments = []
+            i = 0
+            while f'new_comments[{i}]' in data:
+                new_comments.append(data[f'new_comments[{i}]'])
+                i += 1
+            if new_comments:
+                data = data.copy()  # Make QueryDict mutable
+                data.setlist('new_comments', new_comments)  # Set as list
+        return super().to_internal_value(data)    
+
 
     def create(self, validated_data):
         new_comments = validated_data.pop('new_comments', [])
         new_attachments = validated_data.pop('new_attachments', [])
         ticket = Ticket.objects.create(**validated_data)
 
-        # Check if the user is the assigned employee for comments
-        user_employee = self.context['request'].user.employees.first()
-        if new_comments and not user_employee:
-            raise serializers.ValidationError(
-                {"error": "User must be linked to an Employee to add comments."}
-            )
-        if new_comments and ticket.assigned_to != user_employee:
-            raise serializers.ValidationError(
-                {"error": "Only the assigned employee can add comments."}
-            )
+
 
         # Create comments if provided
         for comment_text in new_comments:
@@ -151,25 +168,29 @@ class TicketSerializer(BaseApprovableSerializer):
         instance = super().update(instance, validated_data)
 
         # Check if the user is the assigned employee for comments
-        user_employee = self.context['request'].user.employees.first()
-        if new_comments and not user_employee:
-            raise serializers.ValidationError(
-                {"error": "User must be linked to an Employee to add comments."}
-            )
-        if new_comments and instance.assigned_to != user_employee:
-            raise serializers.ValidationError(
-                {"error": "Only the assigned employee can add comments."}
-            )
+        # user_employee = self.context['request'].user.employees.first()
+        # if new_comments and not user_employee:
+        #     raise serializers.ValidationError(
+        #         {"error": "User must be linked to an Employee to add comments."}
+        #     )
+        # if new_comments and instance.assigned_to != user_employee:
+        #     raise serializers.ValidationError(
+        #         {"error": "Only the assigned employee can add comments."}
+        #     )
 
         # Add new comments if provided
         for comment_text in new_comments:
-            TicketComment.objects.create(
-                ticket=instance,
-                comment=comment_text,
-                created_by=self.context['request'].user
-            )
+            try:
+                comment = TicketComment.objects.create(
+                    ticket=instance,
+                    comment=comment_text,
+                    created_by=self.context['request'].user
+                )
+            except Exception as e:
+                raise serializers.ValidationError(
+                    {"new_comments": f"Failed to create comment: {str(e)}"}
+                )
 
-        # Add new attachments if provided
         for attachment_file in new_attachments:
             try:
                 attachment = TicketAttachment.objects.create(

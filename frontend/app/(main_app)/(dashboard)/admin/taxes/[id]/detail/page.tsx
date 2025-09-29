@@ -42,6 +42,7 @@ import { useMobile } from "@/hooks/use-mobile";
 import { formatCurrency } from "@/lib/helpers";
 import { CardHeader } from "@/components/ui/card";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -210,220 +211,176 @@ const TaxDetailComponent = () => {
 	const hasFilters = searchTerm || statusFilter !== "all";
 
 	return (
-		<div className="space-y-6">
-			{/* Header */}
-			<div className="flex items-center gap-4">
-				<Button variant="outline" onClick={handleBack}>
-					<ArrowLeft className="h-4 w-4 mr-2" />
-					Back to Taxes
-				</Button>
-			</div>
-
-			<div
-				className={` gap-6 ${tax?.approval_status !== "active" && tax?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
-			>
-				{tax?.approvals && tax.approvals.length > 0 && (
-					<div className="order-1 lg:order-2">
-						<ApprovalWorkflow
-							approvals={tax.approvals}
-							instance_approval_status={tax.approval_status}
-							onRefresh={fetchTaxData}
-						/>
-					</div>
-				)}
-
-				<div
-					className={`${tax?.approval_status !== "active" && tax?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-				>
-					{tax && (
-						<div className="bg-white rounded-lg border shadow-sm">
-							<div className="p-6 border-b border-gray-200">
-								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-									<div>
-										<h1 className="text-3xl font-bold text-gray-900">{tax.tax_name}</h1>
-										<div className="flex items-center gap-2 mt-2">
-											<Badge className={getStatusColor(tax.tax_status ? "active" : "inactive")}>
-												{tax.tax_status ? "Active" : "Inactive"}
-											</Badge>
-											<span className="text-sm text-gray-500">
-												Created: {formatDate(tax.created_at)}
-											</span>
-										</div>
-									</div>
-								</div>
+		<div className="space-y-6 bg-white rounded-xl border shadow-sm">
+			<ApprovableInstancePageLayout instance={tax} onInstanceRefresh={fetchTaxData}>
+				{/* Tax Rules Section */}
+				<div className="bg-white">
+					<div className="p-6 border-gray-200">
+						<div className="flex flex-col sm:flex-row sm:items-center gap-4">
+							<div>
+								<h2 className="text-xl font-semibold text-gray-900">Tax Rules</h2>
 							</div>
-						</div>
-					)}
-
-					{/* Tax Rules Section */}
-					<div className="bg-white rounded-lg border shadow-sm">
-						<div className="p-6 border-b border-gray-200">
-							<div className="flex flex-col sm:flex-row sm:items-center gap-4">
-								<div>
-									<h2 className="text-xl font-semibold text-gray-900">Tax Rules</h2>
-								</div>
-								<div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 justify-center">
-									<div className="relative max-w-sm">
-										<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-										<Input
-											placeholder="Search tax rules..."
-											value={searchTerm}
-											onChange={(e) => setSearchTerm(e.target.value)}
-											className="pl-10"
-										/>
-									</div>
-									<Select value={statusFilter} onValueChange={setStatusFilter}>
-										<SelectTrigger className="w-full sm:w-[180px]">
-											<SelectValue placeholder="All Status" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="all">All Status</SelectItem>
-											<SelectItem value="active">Active</SelectItem>
-											<SelectItem value="inactive">Inactive</SelectItem>
-										</SelectContent>
-									</Select>
-									{hasFilters && (
-										<Button variant="outline" onClick={clearFilters} size="sm">
-											Clear Filters
-										</Button>
-									)}
-								</div>
-								<div className="flex items-center gap-3">
-									<CreateTaxRuleDialog
-										taxId={parseInt(taxId)}
-										onSuccess={handleCreateSuccess}
-										disabled={!selectedInstitution?.id}
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1 justify-center">
+								<div className="relative max-w-sm">
+									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+									<Input
+										placeholder="Search tax rules..."
+										value={searchTerm}
+										onChange={(e) => setSearchTerm(e.target.value)}
+										className="pl-10"
 									/>
 								</div>
+								<Select value={statusFilter} onValueChange={setStatusFilter}>
+									<SelectTrigger className="w-full sm:w-[180px]">
+										<SelectValue placeholder="All Status" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">All Status</SelectItem>
+										<SelectItem value="active">Active</SelectItem>
+										<SelectItem value="inactive">Inactive</SelectItem>
+									</SelectContent>
+								</Select>
+								{hasFilters && (
+									<Button variant="outline" onClick={clearFilters} size="sm">
+										Clear Filters
+									</Button>
+								)}
+							</div>
+							<div className="flex items-center gap-3">
+								<CreateTaxRuleDialog
+									taxId={parseInt(taxId)}
+									onSuccess={handleCreateSuccess}
+									disabled={!selectedInstitution?.id}
+								/>
 							</div>
 						</div>
+					</div>
 
-						{/* Table */}
-						<div className="p-6">
-							{isLoading ? (
-								<div className="p-2 space-y-6 ">
-									<div className="h-[calc(100vh-2rem)]">
-										<CardHeader className="border-b">
-											<div className="flex justify-between gap-8 items-center">
-												<div className="flex items-center justify-start gap-4">
-													<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
-													<div className="space-y-2">
-														<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
-														<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
-													</div>
-												</div>
-												<div className="grid grid-cols-3">
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
-													<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+					{/* Table */}
+					<div className="p-6">
+						{isLoading ? (
+							<div className="p-2 space-y-6 ">
+								<div className="h-[calc(100vh-2rem)]">
+									<CardHeader className="border-b">
+										<div className="flex justify-between gap-8 items-center">
+											<div className="flex items-center justify-start gap-4">
+												<div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
+												<div className="space-y-2">
+													<div className="h-6 bg-gray-200 rounded w-64 animate-pulse" />
+													<div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
 												</div>
 											</div>
-										</CardHeader>
-										<TableSkeleton rows={10} columns={8} />
-									</div>
+											<div className="grid grid-cols-3">
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+												<div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+											</div>
+										</div>
+									</CardHeader>
+									<TableSkeleton rows={10} columns={8} />
 								</div>
-							) : (
-								<>
-									{/* Desktop Table */}
-									<div className="rounded-md">
-										<Table>
-											<TableHeader>
+							</div>
+						) : (
+							<>
+								{/* Desktop Table */}
+								<div className="rounded-xl">
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead>Calculation Type</TableHead>
+												<TableHead>Rate/Amount</TableHead>
+												<TableHead>Salary Range</TableHead>
+												<TableHead>Status</TableHead>
+												<TableHead>Created</TableHead>
+												<TableHead className="w-12">Actions</TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{paginatedTaxRules.length === 0 ? (
 												<TableRow>
-													<TableHead>Calculation Type</TableHead>
-													<TableHead>Rate/Amount</TableHead>
-													<TableHead>Salary Range</TableHead>
-													<TableHead>Status</TableHead>
-													<TableHead>Created</TableHead>
-													<TableHead className="w-12">Actions</TableHead>
+													<TableCell colSpan={6} className="text-center py-8 text-gray-500">
+														{hasFilters
+															? "No tax rules found matching your filters"
+															: "No tax rules found"}
+													</TableCell>
 												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{paginatedTaxRules.length === 0 ? (
-													<TableRow>
-														<TableCell colSpan={6} className="text-center py-8 text-gray-500">
-															{hasFilters
-																? "No tax rules found matching your filters"
-																: "No tax rules found"}
+											) : (
+												paginatedTaxRules.map((rule) => (
+													<TableRow key={rule.id}>
+														<TableCell className="font-medium">{rule.tax_rule_name}</TableCell>
+														<TableCell>
+															{rule.tax_rule_percentage
+																? `${rule.tax_rule_percentage}%`
+																: formatCurrency(rule.tax_rule_fixed_amount || 0)}
+														</TableCell>
+														<TableCell>
+															{formatCurrency(rule.salary_from || 0)} -{" "}
+															{formatCurrency(rule.salary_to || 0)}
+														</TableCell>
+														<TableCell>
+															<Badge className="bg-green-100 text-green-800 border-green-200">
+																Active
+															</Badge>
+														</TableCell>
+														<TableCell>{formatDate(rule.created_at)}</TableCell>
+														<TableCell>
+															<DropdownMenu>
+																<DropdownMenuTrigger asChild>
+																	<Button variant="ghost" size="sm">
+																		<MoreVertical className="h-4 w-4" />
+																	</Button>
+																</DropdownMenuTrigger>
+																<DropdownMenuContent align="end">
+																	<DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
+																		<Edit className="h-4 w-4 mr-2" />
+																		Edit
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
+																		onClick={() => handleDeleteTaxRule(rule)}
+																		className="text-red-600"
+																	>
+																		<Trash2 className="h-4 w-4 mr-2" />
+																		Delete
+																	</DropdownMenuItem>
+																</DropdownMenuContent>
+															</DropdownMenu>
 														</TableCell>
 													</TableRow>
-												) : (
-													paginatedTaxRules.map((rule) => (
-														<TableRow key={rule.id}>
-															<TableCell className="font-medium">{rule.tax_rule_name}</TableCell>
-															<TableCell>
-																{rule.tax_rule_percentage
-																	? `${rule.tax_rule_percentage}%`
-																	: formatCurrency(rule.tax_rule_fixed_amount || 0)}
-															</TableCell>
-															<TableCell>
-																{formatCurrency(rule.salary_from || 0)} -{" "}
-																{formatCurrency(rule.salary_to || 0)}
-															</TableCell>
-															<TableCell>
-																<Badge className="bg-green-100 text-green-800 border-green-200">
-																	Active
-																</Badge>
-															</TableCell>
-															<TableCell>{formatDate(rule.created_at)}</TableCell>
-															<TableCell>
-																<DropdownMenu>
-																	<DropdownMenuTrigger asChild>
-																		<Button variant="ghost" size="sm">
-																			<MoreVertical className="h-4 w-4" />
-																		</Button>
-																	</DropdownMenuTrigger>
-																	<DropdownMenuContent align="end">
-																		<DropdownMenuItem onClick={() => handleEditTaxRule(rule)}>
-																			<Edit className="h-4 w-4 mr-2" />
-																			Edit
-																		</DropdownMenuItem>
-																		<DropdownMenuItem
-																			onClick={() => handleDeleteTaxRule(rule)}
-																			className="text-red-600"
-																		>
-																			<Trash2 className="h-4 w-4 mr-2" />
-																			Delete
-																		</DropdownMenuItem>
-																	</DropdownMenuContent>
-																</DropdownMenu>
-															</TableCell>
-														</TableRow>
-													))
-												)}
-											</TableBody>
-										</Table>
-									</div>
-								</>
-							)}
-						</div>
+												))
+											)}
+										</TableBody>
+									</Table>
+								</div>
+							</>
+						)}
 					</div>
 				</div>
+			</ApprovableInstancePageLayout>
 
-				{/* Dialogs */}
-				{editingTaxRule && (
-					<EditTaxRuleDialog
-						taxRule={editingTaxRule}
-						isOpen={isEditDialogOpen}
-						onClose={() => {
-							setIsEditDialogOpen(false);
-							setEditingTaxRule(null);
-						}}
-						onSuccess={handleUpdateSuccess}
-					/>
-				)}
+			{/* Dialogs */}
+			{editingTaxRule && (
+				<EditTaxRuleDialog
+					taxRule={editingTaxRule}
+					isOpen={isEditDialogOpen}
+					onClose={() => {
+						setIsEditDialogOpen(false);
+						setEditingTaxRule(null);
+					}}
+					onSuccess={handleUpdateSuccess}
+				/>
+			)}
 
-				{deletingTaxRule && (
-					<DeleteTaxRuleDialog
-						taxRule={deletingTaxRule}
-						isOpen={isDeleteDialogOpen}
-						onClose={() => {
-							setIsDeleteDialogOpen(false);
-							setDeletingTaxRule(null);
-						}}
-						onSuccess={handleDeleteSuccess}
-					/>
-				)}
-			</div>
+			{deletingTaxRule && (
+				<DeleteTaxRuleDialog
+					taxRule={deletingTaxRule}
+					isOpen={isDeleteDialogOpen}
+					onClose={() => {
+						setIsDeleteDialogOpen(false);
+						setDeletingTaxRule(null);
+					}}
+					onSuccess={handleDeleteSuccess}
+				/>
+			)}
 		</div>
 	);
 };

@@ -8,7 +8,8 @@ import {
 	ICreateEmployeeForm,
 	JobAdvertCompleteFormData,
 	JobApplicationCompleteFormData,
-	IProjectTask,
+	IEmployee,
+	IPaginatedResponse,
 } from "@/types/types.utils";
 
 type ToggleSideBar = Action<MISC_ACTION_TYPES.TOGGLE_SIDEBAR>;
@@ -33,8 +34,15 @@ type SaveApplicationForm = ActionWithPayLoad<
 >;
 type ClearApplicationForm = Action<MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM>;
 
-type SaveSelectedTask = ActionWithPayLoad<MISC_ACTION_TYPES.SAVE_SELECTED_TASK, IProjectTask>;
-type ClearSelectedTask = Action<MISC_ACTION_TYPES.CLEAR_SELECTED_TASK>;
+type CacheEmployeesPage = ActionWithPayLoad<
+	MISC_ACTION_TYPES.CACHE_EMPLOYEES_PAGE,
+	IPaginatedResponse<IEmployee>
+>;
+type ClearEmployeesCache = Action<MISC_ACTION_TYPES.CLEAR_EMPLOYEES_CACHE>;
+type SetEmployeesCacheTimestamp = ActionWithPayLoad<
+	MISC_ACTION_TYPES.SET_EMPLOYEES_CACHE_TIMESTAMP,
+	number
+>;
 
 export type MiscAction =
 	| ToggleSideBar
@@ -46,8 +54,9 @@ export type MiscAction =
 	| ClearJobAdvertForm
 	| SaveApplicationForm
 	| ClearApplicationForm
-	| SaveSelectedTask
-	| ClearSelectedTask;
+	| CacheEmployeesPage
+	| ClearEmployeesCache
+	| SetEmployeesCacheTimestamp;
 
 export const toggleSideBarAction = () => createAction(MISC_ACTION_TYPES.TOGGLE_SIDEBAR);
 
@@ -71,7 +80,12 @@ export const saveApplicationForm = (
 export const clearApplicationForm = (): ClearApplicationForm =>
 	createAction(MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM);
 
-export const saveSelectedTask = (task: IProjectTask): SaveSelectedTask =>
-	createAction(MISC_ACTION_TYPES.SAVE_SELECTED_TASK, task);
-export const clearSelectedTask = (): ClearSelectedTask =>
-	createAction(MISC_ACTION_TYPES.CLEAR_SELECTED_TASK);
+export const cacheEmployeesPage = (
+	employeesPage: IPaginatedResponse<IEmployee>,
+): CacheEmployeesPage => createAction(MISC_ACTION_TYPES.CACHE_EMPLOYEES_PAGE, employeesPage);
+
+export const clearEmployeesCache = (): ClearEmployeesCache =>
+	createAction(MISC_ACTION_TYPES.CLEAR_EMPLOYEES_CACHE);
+
+export const setEmployeesCacheTimestamp = (timestamp: number): SetEmployeesCacheTimestamp =>
+	createAction(MISC_ACTION_TYPES.SET_EMPLOYEES_CACHE_TIMESTAMP, timestamp);

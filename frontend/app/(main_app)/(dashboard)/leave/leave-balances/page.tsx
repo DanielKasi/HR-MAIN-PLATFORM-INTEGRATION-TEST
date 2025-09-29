@@ -168,7 +168,7 @@ export default function LeaveBalanceComponent() {
 	const getEmployeeName = useCallback(
 		(employee: any) => {
 			if (typeof employee === "object" && employee?.user?.fullname) {
-				return employee.user.fullname;
+				return employee?.name;
 			}
 			const emp = employees.find((emp) => emp.id === employee);
 
@@ -180,11 +180,11 @@ export default function LeaveBalanceComponent() {
 	const getEmployeeCode = useCallback(
 		(employee: any) => {
 			if (typeof employee === "object" && employee?.employee_id !== undefined) {
-				return employee.employee_id || "N/A"; // return here
+				return employee.employee_id || "Unknown"; // return here
 			}
 			const emp = employees.find((emp) => emp.id === employee);
 
-			return emp?.employee_id || "N/A"; // and here
+			return emp?.employee_id || "Unknown"; // and here
 		},
 		[employees],
 	);
@@ -923,7 +923,7 @@ export default function LeaveBalanceComponent() {
 										<SelectContent>
 											{employees.map((employee) => (
 												<SelectItem key={employee.id} value={employee.id.toString()}>
-													{employee.user?.fullname || "Unknown Employee"}
+													{employee?.name || "Unknown Employee"}
 												</SelectItem>
 											))}
 										</SelectContent>

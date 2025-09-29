@@ -5,7 +5,7 @@ import type { IBranchPenaltyConfig, IBranchPenaltyConfigFormData } from "@/types
 import { useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useSelector } from "react-redux";
 
 import { ConfirmationDialog } from "../confirmation-dialog";
@@ -40,6 +40,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton";
 import { penaltyConfigAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import FormatNumberInput from "@/components/format-number-input";
+import { useRouter } from "next/navigation";
 
 export const BranchPenaltyConfigurations = () => {
 	const institution = useSelector(selectSelectedInstitution);
@@ -60,6 +61,7 @@ export const BranchPenaltyConfigurations = () => {
 		percentage: 0,
 		branch: selectedBranch?.id || 0,
 	});
+	const router = useRouter();
 
 	const branchPenaltyRefreshRef = useRef<(() => void) | null>(null);
 
@@ -103,6 +105,10 @@ export const BranchPenaltyConfigurations = () => {
 		});
 		setEditingBranchPenaltyConfig(config);
 		setIsBranchPenaltyFormOpen(true);
+	};
+
+	const handleViewBranchPenaltyConfig = (config: IBranchPenaltyConfig) => {
+		router.push(`/branch-penalty/${config.id}`);
 	};
 
 	const handleSaveBranchPenaltyConfig = async () => {
@@ -173,14 +179,14 @@ export const BranchPenaltyConfigurations = () => {
 			} else if (typeof config.penalty_value === "number") {
 				value = config.penalty_value;
 			} else {
-				return "N/A";
+				return "Unknown";
 			}
 
 			if (isNaN(value)) {
-				return "N/A";
+				return "Unknown";
 			}
 
-			return `$${value.toFixed(2)}`;
+			return `${value.toFixed(2)}`;
 		} else if (config.penalty_value_type === "percentage") {
 			let percentage: number;
 
@@ -189,17 +195,17 @@ export const BranchPenaltyConfigurations = () => {
 			} else if (typeof config.percentage === "number") {
 				percentage = config.percentage;
 			} else {
-				return "N/A";
+				return "Unknown";
 			}
 
 			if (isNaN(percentage)) {
-				return "N/A";
+				return "Unknown";
 			}
 
 			return `${percentage}%`;
 		}
 
-		return "N/A";
+		return "Unknown";
 	};
 
 	return (
@@ -348,6 +354,12 @@ export const BranchPenaltyConfigurations = () => {
 																			</Button>
 																		</DropdownMenuTrigger>
 																		<DropdownMenuContent align="end">
+																			<DropdownMenuItem
+																				onClick={() => handleViewBranchPenaltyConfig(config)}
+																			>
+																				<Eye className="h-4 w-4 mr-2" />
+																				View
+																			</DropdownMenuItem>
 																			<DropdownMenuItem
 																				onClick={() => handleEditBranchPenaltyConfig(config)}
 																			>

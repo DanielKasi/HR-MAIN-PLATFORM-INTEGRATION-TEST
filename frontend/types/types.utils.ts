@@ -1,5 +1,14 @@
-import type { Branch, IUser, IUserInstitution, Role, UserProfile } from ".";
-import type { ApprovalTask, IBaseApprovable } from "@/types/approvals.types";
+import type {
+	ApprovableEntityStatus,
+	Approval,
+	ApprovalTask,
+	IBaseApprovable,
+} from "@/types/approvals.types";
+import { IProjectDashboard } from "./project.type";
+import { Branch } from "./branch.types";
+import { IUserInstitution } from "./other";
+import { IUser, Role, UserProfile } from "./user.types";
+import { IAssetCategory, IAssetHistory } from "./assets.types";
 
 export type ContextType = "employee" | "department" | "job_position";
 export type CalculationMethod = "fixed" | "percentage";
@@ -23,7 +32,7 @@ export interface DepartmentFormData {
 	institution: number;
 }
 
-export interface IInstitution {
+export interface IInstitution extends IBaseApprovable {
 	id: number;
 	institution_email: string;
 	institution_name: string;
@@ -35,8 +44,6 @@ export interface IInstitution {
 	location?: string | null;
 	latitude?: number | null;
 	longitude?: number | null;
-	approval_status: string;
-	approval_status_display: string;
 	approval_date?: string | null; // ISO date
 	documents: IInstitutionDocument[]; // Embedded serializer
 	document_files?: File[]; // Write-only field
@@ -90,26 +97,6 @@ export type OffboardingData = {
 	}[];
 };
 
-export interface AssetsData {
-	asset_counts: {
-		available: number;
-		allocated: number;
-		maintenance: number;
-		decommissioned: number;
-		total: number;
-	};
-	category_counts: {
-		[key: string]: number;
-	};
-	pending_counts: {
-		requests: number;
-		allocations: number;
-		returns: number;
-		total: number;
-	};
-	recent_assets: IAsset[];
-}
-
 export interface IReportsToDetails {
 	id: number;
 	name: string;
@@ -157,6 +144,8 @@ export interface CreateJobPositionData {
 	salary_max: number;
 }
 
+export type JobApplicationStatus = "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+
 export interface JobApplication {
 	scheduled_by: any;
 	application: any;
@@ -179,7 +168,7 @@ export interface JobApplication {
 	resume: string;
 	cover_letter: string;
 	application_date: string;
-	status: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status: JobApplicationStatus;
 	gender: "male" | "female";
 	state: string;
 	address: string;
@@ -196,7 +185,7 @@ export interface JobApplicationFormData {
 	resume: File | null;
 	cover_letter?: File | null;
 	application_date?: string;
-	status?: "new" | "reviewed" | "shortlisted" | "rejected" | "passed";
+	status?: JobApplicationStatus;
 	gender: "male" | "female";
 	state?: string;
 	address: string;
@@ -239,7 +228,7 @@ export interface JobPositionAdvert {
 	number_of_employees_expected?: number | null;
 	extra_information?: string | null;
 	applications: JobApplication[];
-	interview_stages: JobApplication[];
+	interview_stages: IInterviewStage[];
 	advert_type: JobAdvertTypes;
 }
 
@@ -266,11 +255,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 			name: string;
 			role: string;
 		}>;
-		feedbackFields: Array<{
-			id: string;
-			name: string;
-			type: string;
-		}>;
+		feedback_fields?: IFeedbackField[];
 	}>;
 	newStageName: string;
 	selectedInterviewers: Array<{
@@ -291,6 +276,7 @@ export interface ICompanyEmail {
 }
 
 export interface IEmployee {
+	position_details: string;
 	id: number;
 	date_of_birth: string;
 	user: IUser | null;
@@ -396,100 +382,13 @@ export interface IRecruitmentDashboard {
 	}>;
 }
 
-export interface IEmployeeDashboard {
-	total_employees: number;
-	employees_by_gender: Array<{
-		gender: string;
-		count: number;
-	}>;
-	employees_by_employee_type: Array<{
-		employee_type: string;
-		count: number;
-	}>;
-	employees_by_work_type: Array<{
-		work_type: string;
-		count: number;
-	}>;
-	employees_by_department: Array<{
-		department: string;
-		count: number;
-	}>;
-	shift_statuses: Array<{
-		status: string;
-		count: number;
-	}>;
-	average_age: number;
-	average_tenure_years: number;
-	recent_hires: number;
-	employees_by_marital_status: Array<{
-		marital_status: string;
-		count: number;
-	}>;
-}
-
-export interface ILeaveDashboard {
-	total_leave_applications: number;
-	applications_by_status: Array<{
-		status: string;
-		count: number;
-	}>;
-	applications_by_leave_type: Array<{
-		leave_type: string;
-		count: number;
-	}>;
-	leave_balances_by_type: Array<{
-		leave_type: string;
-		total_allocated_days: number;
-		total_used_days: number;
-		total_available_days: number;
-	}>;
-	average_leave_days_taken: number;
-	pending_approvals: number;
-	applications_over_time: Array<{
-		date: string;
-		count: number;
-	}>;
-}
-
-export interface ProjectStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskStatusCount {
-	status: string;
-	count: number;
-}
-
-export interface TaskPriorityCount {
-	priority: string;
-	count: number;
-}
-
-export interface ProjectsAnalytics {
-	total: number;
-	by_status: ProjectStatusCount[];
-}
-
-export interface TasksAnalytics {
-	total: number;
-	by_status: TaskStatusCount[];
-	by_priority: TaskPriorityCount[];
-}
-
-export interface IProjectDashboard {
-	projects: ProjectsAnalytics;
-	tasks: TasksAnalytics;
-	active_projects: number;
-	overdue_tasks: number;
-}
-
 export interface DashboardError {
 	error: string;
 }
 
 export type DashboardResponse = IProjectDashboard | DashboardError;
 export interface IAttendanceDashboard {
+	spot_checks_by_status: { [key: string]: number } | { [key: string]: number }[];
 	total_attendance_records: number;
 	attendance_by_status: Array<{
 		status: string;
@@ -499,51 +398,18 @@ export interface IAttendanceDashboard {
 	average_late_minutes: number;
 	average_early_checkout_minutes: number;
 	spot_check_response_rate: number;
-	spot_checks_by_status: Array<{
-		status: string;
-		count: number;
-	}>;
 	attendance_over_time: Array<{
-		date: string;
+		month: string;
 		count: number;
 	}>;
 }
 
-export interface IPayrollDashboard {
-	total_payroll_amount: number;
-	total_gross_payroll: number;
-	payroll_by_department: Array<{
-		department: string;
-		total_net: number;
-		total_gross: number;
-		employee_count: number;
-	}>;
-	payroll_over_time: Array<{
-		month: string;
-		total_net: number;
-		total_gross: number;
-		payslips_count: number;
-	}>;
-	allowances_vs_deductions: {
-		total_allowances: number;
-		total_deductions: number;
-		net_difference: number;
-	};
-	average_gross_salary: number;
-	average_net_salary: number;
-	payroll_periods_summary: {
-		total_periods: number;
-		processed_periods: number;
-		pending_periods: number;
-		latest_period: string;
-	};
-	penalty_breakdown: Array<{
-		penalty_type: string;
-		count: number;
-		total_amount: number;
-	}>;
-	total_penalties_amount: number;
-	total_penalties_count: number;
+export interface IFeedbackField {
+	id: number;
+	label: string;
+	type: "text" | "rating" | "checkbox";
+	required: boolean;
+	options?: number[] | string[];
 }
 
 export interface IInterviewStageFormData {
@@ -551,17 +417,19 @@ export interface IInterviewStageFormData {
 	name: string;
 	level: number;
 	interviewers: number[];
+	feedback_fields?: IFeedbackField[];
 }
-
 export interface IInterviewStage {
 	candidates: any[];
 	id: number;
 	job_position_advert: number;
+	// job_position_details:{id:number, name:string, description:string};
 	name: string;
 	level: number;
 	interviewers: number[];
 	interviewers_details?: IEmployee[];
 	candidates_count: number;
+	feedback_fields?: IFeedbackField[];
 }
 
 export type IInterviewType = "online" | "in_person";
@@ -576,7 +444,7 @@ export interface IInterview {
 	interview_stage_details?: IInterviewStage | null;
 	interview_date: string;
 	status: string;
-	feedback?: string | null;
+	feedback?: Record<string, any> | null;
 	rating?: number | null;
 	location: string;
 	interview_time: string;
@@ -587,7 +455,7 @@ export interface IInterviewFormData {
 	job_position_application: number;
 	interview_stage: number;
 	interview_date: string;
-	feedback?: string | null;
+	feedback?: Record<string, any>;
 	rating?: number | null;
 	location: string;
 	interview_time: string;
@@ -789,23 +657,7 @@ export interface IDepartmentResponse {
 	name: string;
 	description: string;
 	institution: number;
-	institution_details: {
-		id: number;
-		institution_email: string;
-		institution_name: string;
-		first_phone_number: string;
-		second_phone_number: string;
-		institution_logo: string;
-		institution_owner_id: number;
-		theme_color: string;
-		location: string;
-		latitude: number;
-		longitude: number;
-		approval_status: string;
-		approval_status_display: string;
-		approval_date: string;
-		documents: any[];
-	};
+	institution_details: IUserInstitution;
 }
 
 export interface IRole {
@@ -896,6 +748,8 @@ export interface IWorkType {
 	description?: string;
 	created_at?: string;
 	updated_at?: string;
+	is_active: boolean;
+	created_by?: IUser;
 }
 
 export interface IEmployeeType {
@@ -906,6 +760,8 @@ export interface IEmployeeType {
 	description?: string;
 	created_at?: string;
 	updated_at?: string;
+	is_active: boolean;
+	created_by?: IUser;
 }
 
 export interface BranchSummary {
@@ -1049,7 +905,7 @@ export function convertDisciplineTypeFormToApiRequest(
 	};
 }
 
-export interface IDisciplinaryAction {
+export interface IDisciplinaryAction extends IBaseApprovable {
 	id: number;
 	discipline_type?: {
 		id: number;
@@ -1131,6 +987,7 @@ export interface ILeavePolicy {
 	is_active: boolean;
 	created_at?: string;
 	updated_at?: string;
+	created_by?: IUser;
 }
 
 export interface ILeavePolicyFormData {
@@ -1269,7 +1126,7 @@ export interface IDeductionTypeFormData {
 	is_active: boolean;
 }
 
-export interface IEmployeeAllowance {
+export interface IEmployeeAllowance extends IBaseApprovable {
 	id: number;
 	employee: IEmployee;
 	allowance_type: IAllowanceType;
@@ -1294,6 +1151,7 @@ export interface IEmployeeAllowanceFormData {
 }
 
 export interface IEmployeeDeduction {
+	updated_at: string | number | Date;
 	id: number;
 	employee: IEmployee;
 	deduction_type: IDeductionType;
@@ -1304,6 +1162,8 @@ export interface IEmployeeDeduction {
 	effective_from: string;
 	effective_to: string | null;
 	created_at: string;
+	approval_status_display?: ApprovableEntityStatus;
+	approvals?: Approval[];
 }
 
 export interface IEmployeeDeductionFormData {
@@ -1390,11 +1250,12 @@ export interface IContractFormData {
 	notes?: string | null;
 }
 
-export interface IDocumentType {
+export interface IDocumentType extends IBaseApprovable {
 	id: number;
 	name: string;
 	description: string;
 	code: string;
+	is_active: boolean;
 }
 
 export interface IDocumentTypeFormData {
@@ -1403,6 +1264,7 @@ export interface IDocumentTypeFormData {
 }
 
 export interface IDocumentTemplate {
+	is_active: any;
 	id: number;
 	name: string;
 	document_type: IDocumentType;
@@ -1412,6 +1274,8 @@ export interface IDocumentTemplate {
 	placeholders: string[] | null;
 	created_at: string;
 	updated_at: string;
+	approval_status_display?: ApprovableEntityStatus;
+	approvals?: Approval[];
 }
 
 export type DocumentGenerationContext = "employee" | "leave" | "onboarding";
@@ -1630,6 +1494,7 @@ export interface IBankTypeFormData {
 }
 
 export interface IBankAccount {
+	is_active: boolean;
 	id: number | string;
 	institution_bank: number | string;
 	account_name: string;
@@ -1756,6 +1621,7 @@ export interface ITaxRule {
 	tax_rule_description?: string;
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
+	tax_rule_formula?: string;
 	salary_from?: number;
 	salary_to?: number;
 	created_by: number;
@@ -1764,12 +1630,16 @@ export interface ITaxRule {
 	updated_at: string;
 }
 
+export type TaxableIncomeSource = "taxable_gross_salary" | "gross_salary" | "basic_salary";
+
 export interface ITaxRuleFormData {
 	institution_tax: number;
 	tax_rule_name: string;
 	tax_rule_description?: string;
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
+	tax_rule_formula?: string;
+	taxable_income_source?: TaxableIncomeSource;
 	salary_from?: number;
 	salary_to?: number;
 }
@@ -1777,40 +1647,6 @@ export interface ITaxRuleFormData {
 // Legacy interfaces for backward compatibility
 export interface Itax extends ITax {}
 export interface ItaxRules extends ITaxRule {}
-
-export interface IAssetCategory {
-	id: number;
-	institution: number;
-	category_name: string;
-	category_description: string | null;
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetCategoryFormData {
-	category_name: string;
-	category_description?: string;
-}
-
-export interface IAsset {
-	id: number;
-	institution: number;
-	asset_name: string;
-	batch_number: string;
-	serial_number: string;
-	category: IAssetCategory | null;
-	description: string | null;
-	status: "available" | "allocated" | "maintenance" | "decommissioned";
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-	created_by: number;
-	current_holder: number | UserProfile;
-	current_holder_details?: any; // Employee details
-	asset_histories?: IAssetHistory[];
-}
-
 export interface DashboardCategory {
 	count: number;
 	tasks: ApprovalTask[];
@@ -1830,95 +1666,6 @@ export interface ChangePasswordData {
 	old_password: string;
 	new_password: string;
 	new_password_confirm: string;
-}
-export interface IAssetFormData {
-	asset_name: string;
-	serial_number: string;
-	category: number;
-	description?: string;
-	status?: "available" | "allocated" | "maintenance" | "decommissioned";
-}
-
-export interface IAssetHistory {
-	id: number;
-	asset: IAsset;
-	event_type:
-		| "allocated"
-		| "returned"
-		| "maintenance"
-		| "decommissioned"
-		| "created"
-		| "reassigned";
-	performed_by: UserProfile;
-	affected_user: UserProfile;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetHistoryFormData {
-	id: number;
-	asset: number;
-	event_type:
-		| "allocated"
-		| "returned"
-		| "maintenance"
-		| "decommissioned"
-		| "created"
-		| "reassigned";
-	performed_by: number;
-	affected_user: number;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetRequest {
-	id: number;
-	asset: IAsset;
-	requester: any; // Employee details
-	request_reference_code: string;
-	asset_request_status: "pending" | "approved" | "rejected" | "cancelled";
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetRequestFormData {
-	asset_id: number;
-	notes?: string;
-}
-
-export interface IAssetAllocation {
-	id: number;
-	asset: IAsset;
-	allocated_to: UserProfile; // Employee details
-	allocated_by: UserProfile; // Employee details
-	responding_to_request?: IAssetRequest | null;
-	allocation_status: "pending" | "allocated" | "rejected" | "cancelled";
-	alloc_code: string;
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface IAssetReturn {
-	id: number;
-	asset: IAsset;
-	allocation: IAssetAllocation;
-	condition: "good" | "damaged" | "lost";
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-	is_active: boolean;
-	deleted_at: string | null;
-}
-
-export interface IAssetReturnFormData {
-	asset: number;
-	allocation: number;
-	condition: "good" | "damaged" | "lost";
-	notes?: string;
 }
 
 export interface IEmployeeTax {
@@ -1975,11 +1722,6 @@ export interface ICalendar {
 	event_occurrences: IEventOccurrence[];
 	created_at: string;
 	updated_at: string;
-}
-
-export interface IAssetCategoryFormData {
-	category_name: string;
-	category_description?: string;
 }
 
 export interface IAsset {
@@ -2189,6 +1931,7 @@ export interface IInstitutionPenaltyConfigFormData {
 }
 
 export interface IBranchPenaltyConfig {
+	is_active(is_active: any): import("react").ReactNode;
 	id: number;
 	branch: number;
 	penalty_type: string;
@@ -2208,6 +1951,7 @@ export interface IBranchPenaltyConfigFormData {
 }
 
 export interface IBranchLocationComparisonConfig {
+	is_active: string;
 	id: number;
 	branch: number;
 	branch_name: string;
@@ -2247,6 +1991,7 @@ export interface IShiftFormData {
 }
 
 export interface IEmployeeShift {
+	updated_at: string;
 	id: string;
 	employee: IEmployee;
 	shift: IBranchShift;
@@ -2331,6 +2076,7 @@ export interface IInstitutionSpotCheckSetting extends ISpotCheckSetting {
 }
 
 export interface IBranchSpotCheckSetting extends ISpotCheckSetting {
+	id: any;
 	branch: Branch;
 }
 
@@ -2411,6 +2157,7 @@ export interface IProject {
 	end_date: string;
 	project_status: IProjectStatus;
 	project_tasks: IProjectTask[];
+	project_documents: string[];
 }
 
 export interface IProjectFormData {
@@ -2427,6 +2174,10 @@ export interface IProjectFormData {
 export type IDurationUnit = "days" | "months" | "years";
 
 export interface IPeriod {
+	description: any;
+	updated_at: string;
+	created_at: string;
+	is_active: string;
 	id: number;
 	institution: IUserInstitution;
 	name: string;
@@ -2446,6 +2197,9 @@ export interface IPeriodFormData {
 export type IObjectiveStatus = "not_started" | "on_track" | "closed" | "at_risk" | "behind";
 
 export interface IObjective {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: IUserInstitution;
 	name: string;
@@ -2473,6 +2227,8 @@ export interface IObjectiveFormData {
 }
 
 export interface IEmployeeObjective {
+	updated_at: string;
+	created_at: string;
 	id: number;
 	employee: IEmployee;
 	objective: IObjective;
@@ -2483,8 +2239,8 @@ export interface IEmployeeObjective {
 }
 
 export interface IEmployeeObjectiveFormData {
-	employee: number;
-	objective: number;
+	employee_id: number;
+	objective_id: number;
 	status: IObjectiveStatus;
 	start_date: string;
 	end_date: string;
@@ -2494,6 +2250,9 @@ export interface IEmployeeObjectiveFormData {
 export type IProgressType = "percentage" | "number";
 
 export interface IKeyResult {
+	updated_at: string;
+	created_at: string;
+	is_active: boolean;
 	id: number;
 	institution: IUserInstitution;
 	title: string;
@@ -2521,20 +2280,16 @@ export interface IFeedback360 {
 	rating?: number | null;
 	is_anonymous: boolean;
 	submission_date: string;
-	strengths?: string | null;
-	areas_for_improvement?: string | null;
 }
 
 export interface IFeedback360FormData {
-	reviewee_id: number | null;
+	given_by?: number | null;
 	reviewer_id: number | null;
 	period?: number;
 	feedback_text?: string;
 	rating?: number;
 	is_anonymous?: boolean;
 	submission_date?: string;
-	strengths?: string;
-	areas_for_improvement?: string;
 }
 
 export interface IEmployeeBonusPoint {
@@ -2683,10 +2438,9 @@ export interface IMeetingIntegrationFormData {
 	tenant_id?: string;
 }
 
-export interface IMeetingIntegration {
+export interface IMeetingIntegration extends IBaseApprovable {
 	id: number;
 	is_active?: boolean;
-	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	platform: "zoom" | "google_meet" | "microsoft_teams" | "other";
 	api_key: string | null;
 	api_secret: string | null;
@@ -2713,9 +2467,8 @@ export interface IEmailProviderConfigFormData {
 	api_token?: string;
 }
 
-export interface IEmailProviderConfig {
+export interface IEmailProviderConfig extends IBaseApprovable {
 	id: number;
-	approval_status: "under_creation" | "pending_approval" | "approved" | "rejected";
 	provider: "cpanel" | "google_workspace" | "microsoft_365";
 	domain: string;
 	webmail_url: string | null;
@@ -2737,10 +2490,8 @@ export interface IEmailProviderConfig {
 export interface IAllowanceType extends IBaseApprovable {}
 export interface IAsset extends IBaseApprovable {}
 export interface IAssetAllocation extends IBaseApprovable {}
-export interface IAssetCategory extends IBaseApprovable {}
 export interface IAssetRequest extends IBaseApprovable {}
 export interface IAssetReturn extends IBaseApprovable {}
-export interface IAssetHistory extends IBaseApprovable {}
 
 export interface IBranchPenaltyConfig extends IBaseApprovable {}
 export interface IBranchShift extends IBaseApprovable {}
@@ -2808,3 +2559,16 @@ export interface IEmployeeBonusPoint extends IBaseApprovable {}
 export interface IQuestionTemplate extends IBaseApprovable {}
 export interface IBonusPointSettings extends IBaseApprovable {}
 export interface IMeeting extends IBaseApprovable {}
+
+export interface IEmployeeType extends IBaseApprovable {}
+export interface IWorkType extends IBaseApprovable {}
+
+export interface ILeaveRequest extends IBaseApprovable {}
+export interface ILeavePolicy extends IBaseApprovable {}
+
+export interface IOffboardingStage extends IBaseApprovable {}
+
+export interface IBranchLocationComparisonConfig extends IBaseApprovable {}
+export interface IEvent extends IBaseApprovable {}
+export interface IBankAccount extends IBaseApprovable {}
+export interface IBankType extends IBaseApprovable {}

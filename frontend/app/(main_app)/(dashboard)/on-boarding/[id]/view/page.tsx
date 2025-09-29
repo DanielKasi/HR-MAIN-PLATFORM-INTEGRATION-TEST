@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getOnBoardingById } from "@/lib/utils";
 import { DocumentGenerationDialog } from "@/components/document-generation-dialog";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
+import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 const ONBOARDING_STAGES = [
 	{ value: "initial", label: "Initial", icon: AlertTriangle, color: "text-gray-500" },
@@ -79,26 +80,26 @@ export default function ViewOnboardingDetails() {
 
 		if (!applicationData) {
 			return {
-				applicantName: "N/A",
-				applicantEmail: "N/A",
-				jobDesc: "N/A",
-				applicantPhone: "N/A",
-				applicantAddress: "N/A",
-				applicantPositions: "N/A",
+				applicantName: "Unknown",
+				applicantEmail: "Unknown",
+				jobDesc: "Unknown",
+				applicantPhone: "Unknown",
+				applicantAddress: "Unknown",
+				applicantPositions: "Unknown",
 			};
 		}
 
 		const jobDetails = applicationData.job_position_advert_job_details;
-		const jobName = jobDetails?.name || "N/A";
-		const jobDescription = jobDetails?.description || "N/A";
+		const jobName = jobDetails?.name || "Unknown";
+		const jobDescription = jobDetails?.description || "Unknown";
 
 		return {
-			applicantName: applicationData.applicant_name || "N/A",
-			applicantEmail: applicationData.applicant_email || "N/A",
-			jobDesc: jobName !== "N/A" ? jobName : jobDescription,
-			applicantPhone: applicationData.applicant_phone || "N/A",
-			applicantAddress: applicationData.address || "N/A",
-			applicantPositions: applicationData.positions?.toString() || "N/A",
+			applicantName: applicationData.applicant_name || "Unknown",
+			applicantEmail: applicationData.applicant_email || "Unknown",
+			jobDesc: jobName !== "Unknown" ? jobName : jobDescription,
+			applicantPhone: applicationData.applicant_phone || "Unknown",
+			applicantAddress: applicationData.address || "Unknown",
+			applicantPositions: applicationData.positions?.toString() || "Unknown",
 		};
 	};
 
@@ -140,7 +141,7 @@ export default function ViewOnboardingDetails() {
 	};
 
 	const formatDate = (dateString: string) => {
-		if (!dateString) return "N/A";
+		if (!dateString) return "Unknown";
 		try {
 			return new Date(dateString).toLocaleDateString("en-US", {
 				year: "numeric",
@@ -150,12 +151,12 @@ export default function ViewOnboardingDetails() {
 				minute: "2-digit",
 			});
 		} catch {
-			return "N/A";
+			return "Unknown";
 		}
 	};
 
 	const getInitials = (name: string) => {
-		if (!name || name === "N/A") return "NA";
+		if (!name || name === "Unknown") return "NA";
 
 		return name
 			.split(" ")
@@ -260,218 +261,200 @@ export default function ViewOnboardingDetails() {
 				</div>
 			</div>
 
-			<div
-				className={` gap-6 ${onboarding?.approval_status !== "active" && onboarding?.approvals?.length ? "!grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-3" : ""}`}
-			>
-				{onboarding?.approvals && onboarding.approvals.length > 0 && (
-					<div className="order-1 lg:order-2">
-						<ApprovalWorkflow
-							approvals={onboarding.approvals}
-							instance_approval_status={onboarding.approval_status}
-							onRefresh={fetchOnboarding}
-						/>
+			<ApprovableInstancePageLayout instance={onboarding} onInstanceRefresh={fetchOnboarding}>
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					{/* Main Content */}
+					<div className="lg:col-span-2 space-y-6">
+						{/* Candidate Information */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<User className="h-5 w-5" />
+									Candidate Information
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div className="space-y-4">
+									<div>
+										<Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+										<div className="flex items-center gap-2 mt-1">
+											<User className="h-4 w-4 text-muted-foreground" />
+											<p className="text-sm font-medium">{applicationData.applicantName}</p>
+										</div>
+									</div>
+
+									<div>
+										<Label className="text-sm font-medium text-muted-foreground">
+											Email Address
+										</Label>
+										<div className="flex items-center gap-2 mt-1">
+											<Mail className="h-4 w-4 text-muted-foreground" />
+											<p className="text-sm">{applicationData.applicantEmail}</p>
+										</div>
+									</div>
+								</div>
+
+								<div className="space-y-4">
+									<div>
+										<Label className="text-sm font-medium text-muted-foreground">
+											Phone Number
+										</Label>
+										<div className="flex items-center gap-2 mt-1">
+											<Phone className="h-4 w-4 text-muted-foreground" />
+											<p className="text-sm">{applicationData.applicantPhone}</p>
+										</div>
+									</div>
+
+									<div>
+										<Label className="text-sm font-medium text-muted-foreground">Address</Label>
+										<div className="flex items-center gap-2 mt-1">
+											<MapPin className="h-4 w-4 text-muted-foreground" />
+											<p className="text-sm">{applicationData.applicantAddress}</p>
+										</div>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Position Information */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<Briefcase className="h-5 w-5" />
+									Position Details
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">
+										Job Position/ Title{" "}
+									</Label>
+									<div className="flex items-center gap-2 mt-1">
+										<Briefcase className="h-4 w-4 text-muted-foreground" />
+										<p className="text-sm font-medium">{applicationData.jobDesc}</p>
+									</div>
+								</div>
+
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">
+										Number of Positions
+									</Label>
+									<div className="flex items-center gap-2 mt-1">
+										<FileText className="h-4 w-4 text-muted-foreground" />
+										<p className="text-sm">{applicationData.applicantPositions}</p>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+
+						{/* Remarks */}
+						{onboarding.remarks && (
+							<Card>
+								<CardHeader>
+									<CardTitle className="flex items-center gap-2">
+										<FileText className="h-5 w-5" />
+										Remarks & Notes
+									</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<div className="bg-muted/50 rounded-lg p-4">
+										<p className="text-sm whitespace-pre-wrap">{onboarding.remarks}</p>
+									</div>
+								</CardContent>
+							</Card>
+						)}
 					</div>
-				)}
 
-				<div
-					className={`${onboarding?.approval_status !== "active" && onboarding?.approvals?.length ? "lg:col-span-2 xl:col-span-3 order-2 lg:order-1" : ""}`}
-				>
-					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-						{/* Main Content */}
-						<div className="lg:col-span-2 space-y-6">
-							{/* Candidate Information */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<User className="h-5 w-5" />
-										Candidate Information
-									</CardTitle>
-								</CardHeader>
-								<CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-									<div className="space-y-4">
-										<div>
-											<Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-											<div className="flex items-center gap-2 mt-1">
-												<User className="h-4 w-4 text-muted-foreground" />
-												<p className="text-sm font-medium">{applicationData.applicantName}</p>
-											</div>
-										</div>
-
-										<div>
-											<Label className="text-sm font-medium text-muted-foreground">
-												Email Address
-											</Label>
-											<div className="flex items-center gap-2 mt-1">
-												<Mail className="h-4 w-4 text-muted-foreground" />
-												<p className="text-sm">{applicationData.applicantEmail}</p>
-											</div>
-										</div>
+					{/* Sidebar */}
+					<div className="space-y-6">
+						{/* Status & Progress */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<Clock className="h-5 w-5" />
+									Status & Progress
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">
+										Current Status
+									</Label>
+									<div className="flex items-center gap-2 mt-2">
+										{onboarding.status && getStatusIcon(onboarding.status)}
+										<Badge variant={getStatusBadgeVariant(onboarding.status)}>
+											{formatStatus(onboarding.status)}
+										</Badge>
 									</div>
+								</div>
 
-									<div className="space-y-4">
-										<div>
-											<Label className="text-sm font-medium text-muted-foreground">
-												Phone Number
-											</Label>
-											<div className="flex items-center gap-2 mt-1">
-												<Phone className="h-4 w-4 text-muted-foreground" />
-												<p className="text-sm">{applicationData.applicantPhone}</p>
-											</div>
-										</div>
-
-										<div>
-											<Label className="text-sm font-medium text-muted-foreground">Address</Label>
-											<div className="flex items-center gap-2 mt-1">
-												<MapPin className="h-4 w-4 text-muted-foreground" />
-												<p className="text-sm">{applicationData.applicantAddress}</p>
-											</div>
-										</div>
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">
+										Training Attendance
+									</Label>
+									<div className="flex items-center gap-2 mt-2">
+										{onboarding.attended ? (
+											<CheckCircle className="h-4 w-4 text-green-500" />
+										) : (
+											<XCircle className="h-4 w-4 text-red-500" />
+										)}
+										<span className="text-sm font-medium">
+											{onboarding.attended ? "Attended" : "Not Attended"}
+										</span>
 									</div>
-								</CardContent>
-							</Card>
+								</div>
 
-							{/* Position Information */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<Briefcase className="h-5 w-5" />
-										Position Details
-									</CardTitle>
-								</CardHeader>
-								<CardContent className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Job Position/ Title{" "}
-										</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<Briefcase className="h-4 w-4 text-muted-foreground" />
-											<p className="text-sm font-medium">{applicationData.jobDesc}</p>
-										</div>
+								{onboarding.status === "training" && (
+									<div className="pt-4">
+										<Button
+											variant="outline"
+											onClick={() => setShowDocumentDialog(true)}
+											className="w-full"
+										>
+											<FileText className="h-4 w-4 mr-2" />
+											Generate Document
+										</Button>
 									</div>
+								)}
+							</CardContent>
+						</Card>
 
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Number of Positions
-										</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<FileText className="h-4 w-4 text-muted-foreground" />
-											<p className="text-sm">{applicationData.applicantPositions}</p>
-										</div>
+						<DocumentGenerationDialog
+							open={showDocumentDialog}
+							onOpenChange={setShowDocumentDialog}
+							contextId={onboardingId}
+							context={{ type: "onboarding" }}
+						/>
+
+						{/* Timeline */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<Calendar className="h-5 w-5" />
+									Timeline
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Created</Label>
+									<div className="flex items-center gap-2 mt-1">
+										<Calendar className="h-4 w-4 text-muted-foreground" />
+										<p className="text-sm">{formatDate(onboarding.created_at)}</p>
 									</div>
-								</CardContent>
-							</Card>
+								</div>
 
-							{/* Remarks */}
-							{onboarding.remarks && (
-								<Card>
-									<CardHeader>
-										<CardTitle className="flex items-center gap-2">
-											<FileText className="h-5 w-5" />
-											Remarks & Notes
-										</CardTitle>
-									</CardHeader>
-									<CardContent>
-										<div className="bg-muted/50 rounded-lg p-4">
-											<p className="text-sm whitespace-pre-wrap">{onboarding.remarks}</p>
-										</div>
-									</CardContent>
-								</Card>
-							)}
-						</div>
-
-						{/* Sidebar */}
-						<div className="space-y-6">
-							{/* Status & Progress */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<Clock className="h-5 w-5" />
-										Status & Progress
-									</CardTitle>
-								</CardHeader>
-								<CardContent className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Current Status
-										</Label>
-										<div className="flex items-center gap-2 mt-2">
-											{onboarding.status && getStatusIcon(onboarding.status)}
-											<Badge variant={getStatusBadgeVariant(onboarding.status)}>
-												{formatStatus(onboarding.status)}
-											</Badge>
-										</div>
+								<div>
+									<Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+									<div className="flex items-center gap-2 mt-1">
+										<Clock className="h-4 w-4 text-muted-foreground" />
+										<p className="text-sm">{formatDate(onboarding.updated_at)}</p>
 									</div>
-
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Training Attendance
-										</Label>
-										<div className="flex items-center gap-2 mt-2">
-											{onboarding.attended ? (
-												<CheckCircle className="h-4 w-4 text-green-500" />
-											) : (
-												<XCircle className="h-4 w-4 text-red-500" />
-											)}
-											<span className="text-sm font-medium">
-												{onboarding.attended ? "Attended" : "Not Attended"}
-											</span>
-										</div>
-									</div>
-
-									{onboarding.status === "training" && (
-										<div className="pt-4">
-											<Button
-												variant="outline"
-												onClick={() => setShowDocumentDialog(true)}
-												className="w-full"
-											>
-												<FileText className="h-4 w-4 mr-2" />
-												Generate Document
-											</Button>
-										</div>
-									)}
-								</CardContent>
-							</Card>
-
-							<DocumentGenerationDialog
-								open={showDocumentDialog}
-								onOpenChange={setShowDocumentDialog}
-								contextId={onboardingId}
-								context="onboarding"
-							/>
-
-							{/* Timeline */}
-							<Card>
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<Calendar className="h-5 w-5" />
-										Timeline
-									</CardTitle>
-								</CardHeader>
-								<CardContent className="space-y-4">
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Created</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<Calendar className="h-4 w-4 text-muted-foreground" />
-											<p className="text-sm">{formatDate(onboarding.created_at)}</p>
-										</div>
-									</div>
-
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Last Updated
-										</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<Clock className="h-4 w-4 text-muted-foreground" />
-											<p className="text-sm">{formatDate(onboarding.updated_at)}</p>
-										</div>
-									</div>
-								</CardContent>
-							</Card>
-						</div>
+								</div>
+							</CardContent>
+						</Card>
 					</div>
 				</div>
-			</div>
+			</ApprovableInstancePageLayout>
 		</div>
 	);
 }

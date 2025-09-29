@@ -11,7 +11,7 @@ export interface DocumentPreviewResponse {
 	preview: string;
 }
 
-import { IPaginatedResponse } from "@/types";
+import { IPaginatedResponse } from "@/types/types.utils";
 
 export const getDocumentTemplates = async ({
 	institutionId,
@@ -52,7 +52,7 @@ export const getGeneratedDocumentTemplate = async (
 };
 
 export const generateDocument = async (
-	templateId: number,
+	templateId: number | null,
 	context: string,
 	contextId: number,
 	placeholders?: Record<string, string>,
@@ -64,8 +64,10 @@ export const generateDocument = async (
 			context,
 			context_id: contextId.toString(),
 		});
-
-		const response = await apiRequest.post(`documents/generate-document/${templateId}/`, {
+		const endpoint = templateId
+			? `documents/generate-document/${templateId}/`
+			: `documents/generate-document/`;
+		const response = await apiRequest.post(endpoint, {
 			context,
 			context_id: contextId,
 			placeholders,
@@ -96,25 +98,45 @@ export const sendDocuments = async ({
 	contextId,
 	documentId,
 }: {
-	context: "employee" | "onboarding" | "leave";
+	context: "employee" | "onboarding" | "leave" | "pip";
 	contextId: number | string;
 	documentId: number;
 }): Promise<string | null> => {
-	try {
-		const queryParams = new URLSearchParams({
-			context,
-			context_id: contextId.toString(),
-		});
-		const response = await apiRequest.patch(`documents/${documentId}/status/?${queryParams}`, {
+	const queryParams = new URLSearchParams({
+		context,
+		context_id: contextId.toString(),
+	});
+	const response = await apiRequest.patch(
+		`documents/${documentId}/status/?${queryParams.toString()}`,
+		{
 			status: "reviewed",
 			context,
 			context_id: contextId,
+		},
+	);
+
+	return (response.data as DocumentPreviewResponse).preview;
+};
+
+export const DOCUMENTS_API = {
+	getPaginatedDocumentTemplates: async (params: {
+		institutionId: number;
+		page?: number;
+		search?: string;
+	}) => {
+		const urlParams = new URLSearchParams();
+		Object.entries(params).forEach(([key, value]) => {
+			urlParams.append(key, value.toString());
 		});
 
-		return (response.data as DocumentPreviewResponse).preview;
-	} catch (error) {
-		console.error("Error fetching document preview:", error);
+		const response = await apiRequest.get(
+			`documents/institution/${params.institutionId}/templates/?${urlParams.toString()}`,
+		);
+		return response.data as IPaginatedResponse<IDocumentTemplate>;
+	},
 
-		return null;
-	}
+	getDocumentsTemplateFromUrl: async ({ url }: { url: string }) => {
+		const response = await apiRequest.get(url);
+		return response.data as IPaginatedResponse<IDocumentTemplate>;
+	},
 };

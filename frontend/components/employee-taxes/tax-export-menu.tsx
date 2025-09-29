@@ -29,7 +29,7 @@ export function TaxExportMenu({ taxes, disabled = false }: TaxExportMenuProps) {
 		];
 
 		const csvData = taxes.map((tax) => [
-			tax.employee.user?.fullname || "Unknown",
+			tax.employee?.name || "Unknown",
 			tax.employee.email,
 			tax.institution_tax.tax_name,
 			getStatusText(tax),

@@ -5,6 +5,7 @@ import type {
 	IInterviewStage,
 	IInterviewStageFormData,
 	IInterview,
+	IFeedbackField,
 } from "@/types/types.utils";
 import { InterviewStagesPanel } from "@/components/common/interview-stages";
 import { InterviewStageDetailsDialog } from "@/components/interview/interview-stage-details-dialog";
@@ -82,15 +83,36 @@ import {
 	updateInterview,
 	createInterview,
 	bulkCreateOnBoarding,
-	upddateInterviewStage,
+	updateInterviewStage,
 } from "@/lib/utils";
 import { selectUser, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import type { ProcessedStage } from "@/components/common/interview-stages";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 interface UnifiedInterviewPipelineProps {
 	params: Promise<{
 		id: string;
 	}>;
+}
+
+interface InterviewCandidate {
+	id: number;
+	applicant_name: string;
+	applicant_email: string;
+	applicant_phone: string;
+	gender: string;
+	state: string;
+	address: string;
+	country: string;
+	source: string;
+	feedback?: Record<string, string> | null;
+	rating?: number;
+	interview_date?: string;
+	interview_time?: string;
+	location?: string;
+	interview_id?: number;
+	interview?: IInterview;
+	status: string;
 }
 
 interface Candidate {
@@ -114,7 +136,7 @@ interface Candidate {
 	country: string;
 	source: string;
 	positions: number;
-	feedback?: string;
+	feedback?: Record<string, any> | null;
 	rating?: number;
 	interview_date?: string;
 	interview_time?: string;
@@ -261,12 +283,15 @@ const buildCandidateHistory = (
 				: 0;
 
 		// Completion rate
-		const feedbacks = interview_history.filter((h) => h.feedback && h.feedback.trim().length > 0);
+		const feedbacks = interview_history.filter((h) => {
+			if (!h.feedback) return false;
+			if (typeof h.feedback === "object") return Object.keys(h.feedback).length > 0;
+			return false;
+		});
 		const completion_rate =
 			interview_history.length > 0
 				? Math.round((feedbacks.length / interview_history.length) * 100)
 				: 0;
-
 		// Get the latest interview status for this candidate
 		const latestInterview = candidateInterviews[candidateInterviews.length - 1];
 		const interview_status = latestInterview?.status || candidate.status;
@@ -582,7 +607,11 @@ const CandidateHistoryDialog = ({
 																		<MessageSquare className="h-4 w-4 text-gray-500" />
 																		<span className="font-medium text-sm">Feedback</span>
 																	</div>
-																	<p className="text-sm text-gray-700">{entry.feedback}</p>
+																	<p className="text-sm text-gray-700">
+																		{typeof entry.feedback === "string"
+																			? entry.feedback
+																			: JSON.stringify(entry.feedback, null, 2)}
+																	</p>
 																</div>
 															)}
 
@@ -661,7 +690,7 @@ const CandidateHistoryDialog = ({
 										</div>
 										<div className="flex justify-between">
 											<span className="text-sm">Average Rating</span>
-											<span className="font-medium">{candidate.overall_rating || "N/A"}</span>
+											<span className="font-medium">{candidate.overall_rating || "Unknown"}</span>
 										</div>
 										<div className="flex justify-between">
 											<span className="text-sm">Completion Rate</span>
@@ -705,8 +734,9 @@ const RatingInput = ({
 	);
 };
 
-const FeedbackDialog = ({
+export const FeedbackDialog = ({
 	candidate,
+	feedbackFields,
 	onSave,
 	isOpen,
 	onClose,
@@ -714,8 +744,9 @@ const FeedbackDialog = ({
 	onReject,
 	onScheduleAndMove,
 }: {
-	candidate: Candidate | null;
-	onSave: (feedback: string, rating: number) => void;
+	candidate: Candidate | InterviewCandidate | null;
+	feedbackFields?: IFeedbackField[] | null;
+	onSave: (feedback: Record<string, any>, rating: number) => void;
 	isOpen: boolean;
 	onClose: () => void;
 	nextStage?: ProcessedStage | null;
@@ -723,30 +754,63 @@ const FeedbackDialog = ({
 	onReject?: () => void;
 	onScheduleAndMove?: () => void;
 }) => {
-	const [feedback, setFeedback] = useState("");
+	const [feedbackValues, setFeedbackValues] = useState<Record<string, any>>({});
 	const [rating, setRating] = useState(0);
 	const [isSaving, setIsSaving] = useState(false);
 	const [action, setAction] = useState<"save" | "advance" | "cancel" | "schedule" | null>(null);
 
 	useEffect(() => {
 		if (candidate) {
-			setFeedback(candidate.feedback || "");
+			// initialize feedbackValues with existing structured feedback if present
+			if (candidate.feedback && typeof candidate.feedback === "object") {
+				setFeedbackValues(candidate.feedback as Record<string, any>);
+			} else if (candidate.feedback && typeof candidate.feedback === "string") {
+				// fallback: map existing free-text feedback to a 'notes' field
+				setFeedbackValues({ notes: candidate.feedback });
+			} else {
+				setFeedbackValues({});
+			}
+
 			setRating(candidate.rating || 0);
 		}
 	}, [candidate]);
 
 	if (!candidate) return null;
 
-	const handleSave = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating");
+	const handleFieldChange = (key: string, value: any) => {
+		setFeedbackValues((prev) => ({ ...prev, [key]: value }));
+	};
 
+	const validate = (): { ok: boolean; message?: string } => {
+		// ensure required fields are provided
+		if (feedbackFields && feedbackFields.length > 0) {
+			for (const f of feedbackFields) {
+				const key = f.label.toLowerCase().trim().replace(/\s+/g, "_");
+				const val = feedbackValues[key];
+				if (f.required) {
+					if (val === undefined || val === null || (typeof val === "string" && val.trim() === "")) {
+						return { ok: false, message: `Please provide ${f.label}` };
+					}
+				}
+			}
+		}
+
+		// rating required (business rule kept)
+		if (!rating || rating <= 0) return { ok: false, message: "Please provide a rating" };
+
+		return { ok: true };
+	};
+
+	const handleSave = async () => {
+		const v = validate();
+		if (!v.ok) {
+			toast.error(v.message || "Validation failed");
 			return;
 		}
 
 		setIsSaving(true);
 		try {
-			await onSave(feedback, rating);
+			await onSave(feedbackValues, rating);
 			onClose();
 			toast.success("Feedback updated successfully");
 		} catch (error) {
@@ -758,19 +822,17 @@ const FeedbackDialog = ({
 	};
 
 	const handleScheduleAndMove = async () => {
-		if (!feedback.trim() || !rating) {
-			toast.error("Please provide both feedback and rating before scheduling");
-
+		const v = validate();
+		if (!v.ok) {
+			toast.error(v.message || "Validation failed");
 			return;
 		}
 
 		setIsSaving(true);
 		setAction("schedule");
 		try {
-			await onSave(feedback, rating);
-			if (onScheduleAndMove) {
-				onScheduleAndMove();
-			}
+			await onSave(feedbackValues, rating);
+			if (onScheduleAndMove) onScheduleAndMove();
 			onClose();
 		} catch (error) {
 			toast.error("Failed to save feedback");
@@ -779,21 +841,22 @@ const FeedbackDialog = ({
 			setAction(null);
 		}
 	};
-
 	const handleReject = async () => {
-		if (!feedback.trim()) {
+		// require some feedback for rejection
+		const hasText =
+			Object.values(feedbackValues).some((v) =>
+				typeof v === "string" ? v.trim().length > 0 : !!v,
+			) || rating > 0;
+		if (!hasText) {
 			toast.error("Please provide feedback for rejection");
-
 			return;
 		}
 
 		setIsSaving(true);
 		setAction("cancel");
 		try {
-			await onSave(feedback, rating || 1);
-			if (onReject) {
-				await onReject();
-			}
+			await onSave(feedbackValues, rating || 1);
+			if (onReject) await onReject();
 			onClose();
 			toast.success("Candidate rejected");
 		} catch (error) {
@@ -815,20 +878,109 @@ const FeedbackDialog = ({
 				</DialogHeader>
 
 				<div className="space-y-6">
-					<div className="space-y-2">
-						<Label>Rating *</Label>
-						<RatingInput rating={rating} onRatingChange={setRating} />
-					</div>
+					{feedbackFields && feedbackFields.length > 0 ? (
+						feedbackFields.map((field, idx) => {
+							const key = field.label.toLowerCase().trim().replace(/\s+/g, "_");
+							const val = feedbackValues[key];
 
-					<div className="space-y-2">
-						<Label>Feedback *</Label>
-						<Textarea
-							value={feedback}
-							onChange={(e) => setFeedback(e.target.value)}
-							placeholder="Enter your feedback about the candidate's performance..."
-							rows={6}
-						/>
-					</div>
+							if (field.type === "rating") {
+								const max =
+									Array.isArray(field.options) && field.options.length > 0
+										? Math.max(...(field.options as number[]))
+										: 10;
+								return (
+									<div key={key + idx} className="space-y-2">
+										<Label>{field.label}</Label>
+										<div className="flex items-center gap-3">
+											<Input
+												type="number"
+												min={1}
+												max={max}
+												value={String(val ?? rating ?? "")}
+												onChange={(e) => {
+													const num = Number(e.target.value);
+													handleFieldChange(key, num);
+													setRating(num);
+												}}
+												className="w-20"
+											/>
+											<span className="text-xs text-muted-foreground">
+												{field.required ? "required" : "optional"}
+											</span>
+										</div>
+									</div>
+								);
+							}
+							if (field.type === "checkbox") {
+								return (
+									<div key={key + idx} className="space-y-2">
+										<Label>{field.label}</Label>
+										<div className="flex flex-col space-y-2">
+											{(field.options || []).map((opt, oIdx) => {
+												const optVal = String(opt);
+												return (
+													<label key={oIdx} className="flex items-center gap-2">
+														<input
+															type={field.type === "checkbox" ? "checkbox" : "radio"}
+															name={key}
+															checked={
+																field.type === "checkbox"
+																	? Array.isArray(val) && val.includes(opt)
+																	: String(val) === optVal
+															}
+															onChange={(e) => {
+																if (field.type === "checkbox") {
+																	const arr = Array.isArray(val) ? [...val] : [];
+																	if (e.currentTarget.checked) arr.push(opt);
+																	else {
+																		const idxRem = arr.findIndex((x) => x === opt);
+																		if (idxRem >= 0) arr.splice(idxRem, 1);
+																	}
+																	handleFieldChange(key, arr);
+																} else {
+																	handleFieldChange(key, opt);
+																}
+															}}
+														/>
+														<span className="text-sm">{String(opt)}</span>
+													</label>
+												);
+											})}
+										</div>
+									</div>
+								);
+							}
+
+							return (
+								<div key={key + idx} className="space-y-2">
+									<Label>{field.label}</Label>
+									<Textarea
+										value={String(val ?? "")}
+										onChange={(e) => handleFieldChange(key, e.target.value)}
+										placeholder={`Enter ${field.label}`}
+										rows={4}
+									/>
+								</div>
+							);
+						})
+					) : (
+						<>
+							<div className="space-y-2">
+								<Label>Rating *</Label>
+								<RatingInput rating={rating} onRatingChange={setRating} />
+							</div>
+
+							<div className="space-y-2">
+								<Label>Feedback *</Label>
+								<Textarea
+									value={feedbackValues["notes"] ?? ""}
+									onChange={(e) => handleFieldChange("notes", e.target.value)}
+									placeholder="Enter your feedback about the candidate's performance..."
+									rows={6}
+								/>
+							</div>
+						</>
+					)}
 
 					<div className="flex flex-col gap-3">
 						<div className="flex justify-between items-center">
@@ -1177,15 +1329,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 	const [candidatesToSchedule, setCandidatesToSchedule] = useState<Candidate[]>([]);
 
 	// Form states
-	const [isCreatingStage, setIsCreatingStage] = useState(false);
 	const [isProcessingProgression, setIsProcessingProgression] = useState(false);
-	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-		name: "",
-		level: 1,
-		interviewers: [],
-		job_position_advert: parseInt(resolvedParams.id),
-	});
-	const [stageErrors, setStageErrors] = useState<any>({});
 
 	// Enhanced computed values with validation logic
 	const activeStage = processedStages.find((stage) => stage.id === activeStageId);
@@ -1264,7 +1408,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 
 	const handleSaveStageEdit = async (stageId: string, formData: IInterviewStageFormData) => {
 		try {
-			const result = await upddateInterviewStage({
+			const result = await updateInterviewStage({
 				stageId: parseInt(stageId),
 				stageData: {
 					...formData,
@@ -1442,80 +1586,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			fetchData();
 		}
 	}, [resolvedParams.id, selectedInstitution]);
-
-	// Stage management functions
-	const updateStageFormData = (field: string, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
-
-	const handleCreateStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (!selectedInstitution) {
-			toast.error("Missing organization information");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageFormData,
-			});
-
-			if (newStage) {
-				setStageFormData({
-					name: "",
-					level: 1,
-					interviewers: [],
-					job_position_advert: parseInt(resolvedParams.id),
-				});
-				setStageErrors({});
-				setIsCreateStageDialogOpen(false);
-
-				toast.success("Interview stage created successfully!");
-				await fetchData(); // Refresh data
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
-		} finally {
-			setIsCreatingStage(false);
-		}
-	};
-
-	// Auto-fill the next level for new stage
-	useEffect(() => {
-		if (isCreateStageDialogOpen && processedStages.length > 0) {
-			const maxLevel = Math.max(...processedStages.map((stage) => stage.level));
-			const nextLevel = maxLevel + 1;
-
-			setStageFormData((prev) => ({ ...prev, level: nextLevel }));
-		} else if (isCreateStageDialogOpen) {
-			setStageFormData((prev) => ({ ...prev, level: 1 }));
-		}
-	}, [isCreateStageDialogOpen, processedStages]);
 
 	// Candidate management functions
 	const handleSelectCandidate = (candidateId: number, checked: boolean) => {
@@ -1720,7 +1790,6 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 					interview_time: interviewTime, // Extracted time
 					interview_type: interview_type,
 					status: "scheduled",
-					feedback: null,
 					rating: null,
 					created_by: createdBy,
 				};
@@ -1771,7 +1840,7 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 		}
 	};
 
-	const handleUpdateFeedback = async (feedback: string, rating: number) => {
+	const handleUpdateFeedback = async (feedback: Record<string, any>, rating: number) => {
 		if (!selectedCandidate) return;
 
 		try {
@@ -2050,86 +2119,14 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 						</p>
 					</div>
 				</div>
-				<Dialog open={isCreateStageDialogOpen} onOpenChange={setIsCreateStageDialogOpen}>
-					<DialogTrigger asChild>
-						<Button className="flex items-center gap-2">
-							<Plus className="h-4 w-4" />
-							Add Interview Stage
-						</Button>
-					</DialogTrigger>
-					<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-						<DialogHeader>
-							<DialogTitle>Create Interview Stage</DialogTitle>
-							<DialogDescription>
-								Create a new interview stage for{" "}
-								{jobPositionAdvert.job_position_details?.name || "this position"}.
-							</DialogDescription>
-						</DialogHeader>
-
-						<form onSubmit={handleCreateStage} className="space-y-4">
-							<div className="space-y-2">
-								<Label htmlFor="stage_name">Stage Name *</Label>
-								<Input
-									id="stage_name"
-									value={stageFormData.name}
-									onChange={(e) => updateStageFormData("name", e.target.value)}
-									placeholder="e.g., Technical Interview, HR Round"
-									className={stageErrors.name ? "border-destructive" : ""}
-								/>
-								{stageErrors.name && <p className="text-sm text-destructive">{stageErrors.name}</p>}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="stage_interviewer">Interviewers *</Label>
-								<div className="w-full max-w-full overflow-hidden">
-									<EmployeeSearchableSelect
-										value={stageFormData.interviewers.map((id) => id.toString())}
-										onValueChange={(values) => {
-											const numberValues = Array.isArray(values)
-												? values.map((v) => Number(v))
-												: [Number(values)];
-											const uniqueValues = [...new Set(numberValues)];
-
-											updateStageFormData("interviewers", uniqueValues);
-										}}
-										disabled={isCreatingStage}
-										placeholder="Search and select interviewers"
-										showEmployeeId={false}
-										showDepartment={false}
-										multiple={true}
-									/>
-								</div>
-								{stageErrors.interviewers && (
-									<p className="text-sm text-destructive">{stageErrors.interviewers}</p>
-								)}
-							</div>
-
-							<div className="flex justify-end gap-2 pt-4">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => setIsCreateStageDialogOpen(false)}
-									disabled={isCreatingStage}
-								>
-									Cancel
-								</Button>
-								<Button type="submit" disabled={isCreatingStage}>
-									{isCreatingStage ? (
-										<>
-											<div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-											Creating...
-										</>
-									) : (
-										<>
-											<Check className="h-4 w-4 mr-2" />
-											Create Stage
-										</>
-									)}
-								</Button>
-							</div>
-						</form>
-					</DialogContent>
-				</Dialog>
+				<CreateInterviewStageDialog
+					isOpen={isCreateStageDialogOpen}
+					onOpenChange={setIsCreateStageDialogOpen}
+					jobPositionId={parseInt(resolvedParams.id)}
+					jobPositionName={jobPositionAdvert?.job_position_details?.name}
+					existingStagesCount={processedStages.length}
+					onSuccess={fetchData}
+				/>
 			</div>
 
 			{/* Summary Stats */}
@@ -2459,9 +2456,15 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 																			{candidate.feedback ? (
 																				<p
 																					className="text-sm text-gray-600 truncate"
-																					title={candidate.feedback}
+																					title={
+																						typeof candidate.feedback === "string"
+																							? candidate.feedback
+																							: JSON.stringify(candidate.feedback)
+																					}
 																				>
-																					{candidate.feedback}
+																					{typeof candidate.feedback === "string"
+																						? candidate.feedback
+																						: JSON.stringify(candidate.feedback)}
 																				</p>
 																			) : (
 																				<p className="text-sm text-gray-400 italic">
@@ -2956,6 +2959,13 @@ export default function UnifiedInterviewPipeline({ params }: UnifiedInterviewPip
 			{/* Dialogs */}
 			<FeedbackDialog
 				candidate={selectedCandidate}
+				feedbackFields={
+					selectedCandidate?.interview
+						? (jobPositionAdvert?.interview_stages as IInterviewStage[] | undefined)?.find(
+								(s) => s.id === selectedCandidate.interview.interview_stage,
+							)?.feedback_fields
+						: undefined
+				}
 				onSave={handleUpdateFeedback}
 				isOpen={isFeedbackDialogOpen}
 				onClose={() => {

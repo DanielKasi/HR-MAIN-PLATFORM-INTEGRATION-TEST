@@ -8,7 +8,7 @@ import { Briefcase, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
-import { RichEditorField } from "../common/rich-editor";
+import { RichTextEditor } from "../common/rich-editor";
 
 import { CreateDepartmentDialog } from "./create-department-dialog";
 
@@ -308,7 +308,7 @@ export function CreateJobPositionDialog({
 							<div className="space-y-2">
 								<Label htmlFor="description">Job Description</Label>
 
-								<RichEditorField
+								<RichTextEditor
 									id="description"
 									placeholder="Describe the job responsibilities, requirements, and qualifications..."
 									value={formData.description}

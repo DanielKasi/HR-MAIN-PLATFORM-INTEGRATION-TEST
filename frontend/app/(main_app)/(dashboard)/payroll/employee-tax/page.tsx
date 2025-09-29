@@ -421,18 +421,18 @@ export default function EmployeeTaxesPage() {
 															<TableCell className="font-medium">
 																<div className="flex items-center gap-3">
 																	<div className="font-medium text-gray-900">
-																		{tax.employee?.user?.fullname || "N/A"}
+																		{tax.employee?.user?.fullname || "Unknown"}
 																	</div>
 																</div>
 															</TableCell>
 															<TableCell>
 																<div className="font-medium text-gray-900">
-																	{tax.institution_tax?.tax_name || "N/A"}
+																	{tax.institution_tax?.tax_name || "Unknown"}
 																</div>
 															</TableCell>
 															<TableCell>{formatDate(tax.effective_from)}</TableCell>
 															<TableCell>
-																{tax.effective_to ? formatDate(tax.effective_to) : "N/A"}
+																{tax.effective_to ? formatDate(tax.effective_to) : "Unknown"}
 															</TableCell>
 															<TableCell>
 																<Badge className={getStatusColor(status)}>{status}</Badge>

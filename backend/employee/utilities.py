@@ -40,7 +40,12 @@ def get_employee_working_days(employee: Employee):
 
 def get_employee_day(employee: Employee, day: SystemDay):
     working_days = get_employee_working_days_obj(employee)
-    return working_days.days.get(day_code=day.day_code)
+    
+    if working_days.days.filter(day_code=day.day_code).exists():
+        return working_days.days.get(day_code=day.day_code)
+    
+    return None
+
 
 
 def get_employee_day_working_start_time(employee: Employee, day: SystemDay) -> time:
@@ -277,6 +282,24 @@ class CPanelClient:
             self._make_api_request("Email", "passwd_pop", params)
         except ValidationError as e:
             raise ValidationError(f"Failed to reset password for {email}: {e}")
+        
+    def suspend_email_account(self, email: str) -> None:
+        """Suspend login for an email account"""
+        parts = email.split("@")
+        if len(parts) != 2:
+            raise ValidationError(f"Invalid email format: {email}")
+        username, domain = parts
+        params = {"email": username, "domain": domain}
+        self._make_api_request("Email", "suspend_login", params)
+
+    def unsuspend_email_account(self, email: str) -> None:
+        """Unsuspend login for an email account"""
+        parts = email.split("@")
+        if len(parts) != 2:
+            raise ValidationError(f"Invalid email format: {email}")
+        username, domain = parts
+        params = {"email": username, "domain": domain}
+        self._make_api_request("Email", "unsuspend_login", params)    
 
 
 def generate_email(employee):
@@ -377,20 +400,20 @@ def reset_email_password(employee, new_password=None):
     # TODO: Send new_password to employee
 
 
+@transaction.atomic()
 def delete_company_email(employee):
     """
-    Delete email account via provider's API.
+    Mark the company email account as inactive instead of deleting it via provider's API.
     """
-    config = employee.get_institution().email_config
+    try:
+        email_account = employee.company_email
+        if email_account.status == 'deleted':
+            return  # Already marked as deleted
 
-    if config.provider == "cpanel":
-        _delete_cpanel_email(employee, config)
-    elif config.provider == "google_workspace":
-        _delete_google_email(employee, config)
-    # elif config.provider == 'microsoft_365':
-    #     _delete_microsoft_email(employee, config)
-    else:
-        raise ValidationError(f"Unsupported provider: {config.provider}")
+        email_account.status = 'deleted'
+        email_account.save()
+    except EmployeeCompanyEmail.DoesNotExist:
+        pass
 
 
 def _create_cpanel_email(employee, config, password, quota, email):
@@ -599,3 +622,159 @@ def _delete_google_email(employee, config):
 #         graph_client.users.by_user_id(employee.email).delete()
 #     except Exception as e:
 #         raise ValidationError(f"Microsoft 365 deletion error: {str(e)}")
+
+
+@transaction.atomic()
+def suspend_company_email(employee):
+    """
+    Suspend the company email account via provider's API and update status.
+    """
+    try:
+        email_account = employee.company_email
+        if email_account.status == 'suspended':
+            return  # Already suspended
+
+        config = employee.get_institution().email_config
+
+        if settings.ENVIRONMENT == "production":
+            if config.provider == "cpanel":
+                _suspend_cpanel_email(email_account.email, config)
+            elif config.provider == "google_workspace":
+                _suspend_google_email(email_account.email, config)
+            else:
+                raise ValidationError(f"Unsupported provider: {config.provider}")
+
+        email_account.status = 'suspended'
+        email_account.save()
+    except EmployeeCompanyEmail.DoesNotExist:
+        pass  # No company email to suspend
+
+@transaction.atomic()
+def activate_company_email(employee):
+    """
+    Activate (unsuspend) the company email account via provider's API and update status.
+    """
+    try:
+        email_account = employee.company_email
+        if email_account.status == 'active':
+            return  # Already active
+
+        config = employee.get_institution().email_config
+
+        if settings.ENVIRONMENT == "production":
+            if config.provider == "cpanel":
+                _unsuspend_cpanel_email(email_account.email, config)
+            elif config.provider == "google_workspace":
+                _unsuspend_google_email(email_account.email, config)
+            else:
+                raise ValidationError(f"Unsupported provider: {config.provider}")
+
+        email_account.status = 'active'
+        email_account.save()
+    except EmployeeCompanyEmail.DoesNotExist:
+        pass  # No company email to activate
+
+@transaction.atomic()
+def deactivate_employee(employee):
+    """
+    Deactivate the employee by setting user.is_active to False and suspending company email.
+    """
+    if employee.user:
+        employee.user.is_active = False
+        employee.user.save()
+    suspend_company_email(employee)
+
+@transaction.atomic()
+def activate_employee(employee):
+    """
+    Activate the employee by setting user.is_active to True and activating company email.
+    """
+    if employee.user:
+        employee.user.is_active = True
+        employee.user.save()
+    activate_company_email(employee)
+
+
+def _suspend_cpanel_email(email: str, config) -> None:
+    """
+    Suspend cPanel email account login using CPanelClient.
+    """
+    if not all([config.api_url, config.api_username, config.api_token]):
+        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(config.api_url)
+    host = parsed_url.hostname
+    port = str(parsed_url.port) if parsed_url.port else "2083"
+
+    cpanel_config = Config(
+        host=host, username=config.api_username, token=config.api_token, port=port
+    )
+    client = CPanelClient(cpanel_config)
+    client.suspend_email_account(email)
+
+def _unsuspend_cpanel_email(email: str, config) -> None:
+    """
+    Unsuspend cPanel email account login using CPanelClient.
+    """
+    if not all([config.api_url, config.api_username, config.api_token]):
+        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(config.api_url)
+    host = parsed_url.hostname
+    port = str(parsed_url.port) if parsed_url.port else "2083"
+
+    cpanel_config = Config(
+        host=host, username=config.api_username, token=config.api_token, port=port
+    )
+    client = CPanelClient(cpanel_config)
+    client.unsuspend_email_account(email)
+
+def _suspend_google_email(email: str, config) -> None:
+    """
+    Suspend Google Workspace user account.
+    """
+    if not config.api_token:
+        raise ValidationError(
+            "Google Workspace requires api_token (service account JSON)."
+        )
+
+    try:
+        service_account_data = json.loads(config.api_token)
+        credentials = Credentials.from_service_account_info(
+            service_account_data,
+            scopes=["https://www.googleapis.com/auth/admin.directory.user"],
+        )
+        credentials = credentials.with_subject(config.admin_email)
+        service = build("admin", "directory_v1", credentials=credentials)
+
+        user_update = {"suspended": True}
+        service.users().update(userKey=email, body=user_update).execute()
+    except Exception as e:
+        raise ValidationError(f"Google Workspace suspend error: {str(e)}")
+
+def _unsuspend_google_email(email: str, config) -> None:
+    """
+    Unsuspend Google Workspace user account.
+    """
+    if not config.api_token:
+        raise ValidationError(
+            "Google Workspace requires api_token (service account JSON)."
+        )
+
+    try:
+        service_account_data = json.loads(config.api_token)
+        credentials = Credentials.from_service_account_info(
+            service_account_data,
+            scopes=["https://www.googleapis.com/auth/admin.directory.user"],
+        )
+        credentials = credentials.with_subject(config.admin_email)
+        service = build("admin", "directory_v1", credentials=credentials)
+
+        user_update = {"suspended": False}
+        service.users().update(userKey=email, body=user_update).execute()
+    except Exception as e:
+        raise ValidationError(f"Google Workspace unsuspend error: {str(e)}")    

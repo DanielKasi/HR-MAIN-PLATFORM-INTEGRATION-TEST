@@ -1,4 +1,4 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from .models import PublicHoliday, Event, Calendar, EventOccurrence
 from rest_framework import serializers
 
@@ -6,30 +6,14 @@ from rest_framework import serializers
 class PublicHolidaySerializer(BaseApprovableSerializer):
     class Meta:
         model = PublicHoliday
-        fields = ["id", "institution", "title", "date", "created_at", "updated_at"]
-        read_only_fields = ["id"]
+        fields = '__all__'
 
 
 class EventSerializer(BaseApprovableSerializer):
     class Meta:
         model = Event
-        fields = [
-            "id",
-            "institution",
-            "title",
-            "description",
-            "date",
-            "target_audience",
-            "event_mode",
-            "frequency",
-            "repeat_until",
-            "department",
-            "specific_employees",
-            "created_at",
-            "updated_at",
-            "created_by",
-            "updated_by",
-        ]
+        fields = '__all__'
+ 
 
 
 class EventOccurrenceSerializer(serializers.ModelSerializer):
@@ -39,7 +23,7 @@ class EventOccurrenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EventOccurrence
-        fields = ["id", "event", "date", "is_birthday", "employee_name"]
+        fields = '__all__'
         read_only_fields = ["id"]
 
     def get_employee_name(self, obj):
@@ -55,15 +39,7 @@ class CalendarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Calendar
-        fields = [
-            "id",
-            "institution",
-            "year",
-            "public_holidays",
-            "event_occurrences",
-            "created_at",
-            "updated_at",
-        ]
+        fields = '__all__'
 
         read_only_fields = [
             "id",

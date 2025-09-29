@@ -22,13 +22,7 @@ import {
 import { getDocumentTypes, createDocumentTemplate } from "@/lib/utils";
 import { IDocumentTemplateFormData, IDocumentType } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { RichEditorField } from "@/components/common/rich-editor";
-// import dynamic from "next/dynamic"
-
-// const QuillRichTextEditor = dynamic(
-//   () => import("@/components/common/rich-editor").then((mod) => mod.RichEditorField),
-//   { ssr: false, loading: () => <p>Loading Text Editor...</p> }
-// );
+import { RichTextEditor } from "@/components/common/rich-editor";
 
 export default function CreateTemplatePage() {
 	const [documentTypes, setDocumentTypes] = useState<IDocumentType[]>([]);
@@ -157,12 +151,12 @@ export default function CreateTemplatePage() {
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="space-y-6">
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Basic Information</CardTitle>
 						<CardDescription>Provide basic details about your template</CardDescription>
 					</CardHeader>
-					<CardContent className="space-y-4">
+					<CardContent className="space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
 						<div className="space-y-2">
 							<Label htmlFor="name">Template Name</Label>
 							<Input
@@ -198,7 +192,7 @@ export default function CreateTemplatePage() {
 				</Card>
 
 				{/* Rest of the form remains the same */}
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Template Type</CardTitle>
 						<CardDescription>Choose how you want to create your template</CardDescription>
@@ -250,7 +244,7 @@ export default function CreateTemplatePage() {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="shadow-sm">
 					<CardHeader>
 						<CardTitle>Template Content</CardTitle>
 						<CardDescription>
@@ -274,7 +268,7 @@ export default function CreateTemplatePage() {
                 <p className="text-sm text-muted-foreground">
                   Use double curly braces for placeholders, e.g., {"{{employee_name}}"}, {"{{company_name}}"}
                 </p> */}
-								<RichEditorField
+								<RichTextEditor
 									value={formData.content || ""}
 									onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
 								/>

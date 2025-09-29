@@ -15,7 +15,7 @@ import { Button } from "../ui/button";
 import { NavItemComponent } from "./navigation/nav-item";
 
 import { PERMISSION_CODES } from "@/constants";
-import { employeeAPI, showErrorToast } from "@/lib/utils";
+import { EMPLOYEE_API, showErrorToast } from "@/lib/utils";
 import {
 	selectAccessToken,
 	selectSelectedInstitution,
@@ -25,7 +25,7 @@ import {
 import { hasPermission } from "@/lib/helpers";
 import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
 import { IEmployee } from "@/types/types.utils";
-import { NavItem } from "@/types";
+import { NavItem } from "@/types/other";
 import { useMobile } from "@/hooks/use-mobile";
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 
@@ -44,6 +44,30 @@ export default function DashboardSideBar() {
 	const [InstitutionLogo, setInstitutionLogo] = useState<string | null>(null);
 	const [InstitutionName, setInstitutionName] = useState("PERACOSOFT");
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [scrollPercentage, setScrollPercentage] = useState(0);
+
+	useEffect(() => {
+		const scrollElement = document.getElementById("mobile-nav-scroll");
+
+		const handleScroll = () => {
+			if (scrollElement) {
+				const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+
+				const scrollableHeight = scrollHeight - clientHeight;
+
+				if (scrollableHeight > 0) {
+					const scrollPercent = (scrollTop / scrollableHeight) * 100;
+					setScrollPercentage(Math.min(Math.max(scrollPercent, 0), 100));
+				}
+			}
+		};
+
+		if (scrollElement) {
+			scrollElement.addEventListener("scroll", handleScroll);
+			setTimeout(handleScroll, 100);
+			return () => scrollElement.removeEventListener("scroll", handleScroll);
+		}
+	}, [mobileMenuOpen, filteredNavItems]);
 
 	useEffect(() => {
 		setMobileMenuOpen(isSideBarOpen);
@@ -112,7 +136,7 @@ export default function DashboardSideBar() {
 			return;
 		}
 		try {
-			const employee = await employeeAPI.getByUserId({ user_id: currentUser.id });
+			const employee = await EMPLOYEE_API.getByUserId({ user_id: currentUser.id });
 
 			setRelatedEmployee(employee);
 		} catch (error) {
@@ -124,6 +148,7 @@ export default function DashboardSideBar() {
 	const onCloseSidebar = () => {
 		dispatch(closeSideBar());
 	};
+
 	const navItems: NavItem[] = [
 		{
 			title: "Dashboard",
@@ -140,12 +165,12 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/recruitment" },
 				{ title: "Recruitment Pipeline", href: "/job-interviews/interview-pipeline" },
-				{ title: "Recruitment Survey", href: "#" },
+				// { title: "Recruitment Survey", href: "#" },
 				{ title: "Candidates", href: "/applications" },
 				{ title: "Interviews", href: "/job-interviews" },
-				{ title: "Recruitment", href: "#" },
+				// { title: "Recruitment", href: "#" },
 				{ title: "Open Jobs", href: "/job-adverts" },
-				{ title: "Stages", href: "#" },
+				{ title: "Stages", href: "/interview-stages" },
 				{ title: "Skill Zone", href: "/skill-zones" },
 				{ title: "Onboarding", href: "/on-boarding" },
 			],
@@ -188,26 +213,26 @@ export default function DashboardSideBar() {
 							href: "/employees/work-types",
 							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 						},
-						{
-							title: "Rotating Shift Assign",
-							href: "#",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
-						{
-							title: "Rotating Work Type Assign",
-							href: "#",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
+						// {
+						// 	title: "Rotating Shift Assign",
+						// 	href: "#",
+						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						// },
+						// {
+						// 	title: "Rotating Work Type Assign",
+						// 	href: "#",
+						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						// },
 						{
 							title: "Disciplinary Actions",
 							href: "/employees/discipline",
 							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 						},
-						{
-							title: "Policies",
-							href: "#",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
-						},
+						// {
+						// 	title: "Policies",
+						// 	href: "#",
+						// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+						// },
 						{
 							title: "Organization Chart",
 							href: "#",
@@ -221,10 +246,10 @@ export default function DashboardSideBar() {
 						{ title: "Shifts", href: "/employees/shift-requests" },
 						{ title: "Employee Types", href: "/employees/employee-types" },
 						{ title: "Work Types", href: "/employees/work-types" },
-						{ title: "Rotating Shift Assign", href: "#" },
-						{ title: "Rotating Work Type Assign", href: "#" },
+						// { title: "Rotating Shift Assign", href: "#" },
+						// { title: "Rotating Work Type Assign", href: "#" },
 						{ title: "Disciplinary Actions", href: "/employees/discipline" },
-						{ title: "Policies", href: "#" },
+						// { title: "Policies", href: "#" },
 						{ title: "Organization Chart", href: "#" },
 					],
 			// requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
@@ -235,12 +260,12 @@ export default function DashboardSideBar() {
 			icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: [
 				{ title: "Analytics", href: "/analytics/attendance" },
-				{ title: "Biometric Devices", href: "#" },
+				// { title: "Biometric Devices", href: "#" },
 				{ title: "Attendance", href: "/employees/attendance" },
-				{ title: "Attendance Requests", href: "#" },
-				{ title: "Hour Account", href: "#" },
+				// { title: "Attendance Requests", href: "#" },
+				{ title: "Hour Account", href: "/employees/hour-count" },
 				{ title: "Work Records", href: "#" },
-				{ title: "Attendance Activities", href: "#" },
+				// { title: "Attendance Activities", href: "#" },
 				{ title: "Late Come Early Out", href: "#" },
 				{ title: "My Attendances", href: "#" },
 			],
@@ -254,8 +279,8 @@ export default function DashboardSideBar() {
 				{ title: "Analytics", href: "/analytics/leave" },
 				{ title: "Leave Types", href: "/leave/leave-types" },
 				{ title: "Assigned Leave", href: "#" },
-				{ title: "Leave Allocation Request", href: "#" },
-				{ title: "Compensatory Leave Requests", href: "#" },
+				// { title: "Leave Allocation Request", href: "#" },
+				// { title: "Compensatory Leave Requests", href: "#" },
 				{ title: "Leave Policy", href: "/leave/leave-policy" },
 				{ title: "Leave Balances", href: "/leave/leave-balances" },
 				{ title: "Leave Application", href: "/leave/leave-application" },
@@ -275,10 +300,10 @@ export default function DashboardSideBar() {
 				{ title: "Employee Deductions", href: "/payroll/employee-deductions" },
 				{ title: "Employee Tax", href: "/payroll/employee-tax" },
 				{ title: "Payroll Period", href: "/payroll/payroll-period" },
-				{ title: "Payslips", href: "#" },
-				{ title: "Loan / Advanced Salary", href: "#" },
-				{ title: "Encashments & Reimbursements", href: "#" },
-				{ title: "Federal Tax", href: "#" },
+				// { title: "Payslips", href: "#" },
+				// { title: "Loan / Advanced Salary", href: "#" },
+				// { title: "Encashments & Reimbursements", href: "#" },
+				// { title: "Federal Tax", href: "#" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_PAYROLL_REPORTS,
 		},
@@ -295,6 +320,11 @@ export default function DashboardSideBar() {
 				{ title: "Employee Objectives", href: "/performance/employee-objectives" },
 				{ title: "Period", href: "/performance/periods" },
 				{ title: "Question Template", href: "/performance/question-templates" },
+				{ title: "Concern Types", href: "/performance/concern-types" },
+				{ title: "Concerns", href: "/performance/concerns" },
+				{ title: "Support Resource Types", href: "/performance/pip/support-resource-types" },
+				{ title: "Support Resources", href: "/performance/pip/support-resources" },
+				{ title: "Performance Improvement Plan", href: "/performance/pip/" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_PERFORMANCE_REPORTS,
 		},
@@ -337,43 +367,43 @@ export default function DashboardSideBar() {
 				<Icon icon="hugeicons:customer-service-01" className="!w-6 !h-6" width="28" height="28" />
 			),
 			submenu: [
-				{ title: "FAQs", href: "#" },
-				{ title: "Tickets", href: "#" },
+				{ title: "FAQs", href: "/help-desk/faqs" },
+				{ title: "Tickets", href: "/help-desk/tickets" },
 			],
 			// requiredPermission: PERMISSION_CODES.CAN_MANAGE_COMPANY_ASSETS,
 		},
-		{
-			title: "Project",
-			href: "#1",
-			icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
-			submenu: [
-				{ title: "Analytics", href: "/analytics/project" },
-				{ title: "Projects", href: "/projects" },
-				{ title: "Tasks", href: "#" },
-				{ title: "Timesheet", href: "#" },
-			],
-			requiredPermission: PERMISSION_CODES.CAN_VIEW_PROJECTS,
-		},
-		{
-			title: "Configuration",
-			href: "#1",
-			icon: <Icon icon="hugeicons:configuration-01" className="!w-6 !h-6" width="28" height="28" />,
-			submenu: [
-				{ title: "Multiple Approvals", href: "#" },
-				{ title: "Mail Templates", href: "#" },
-				{ title: "Mail Automation", href: "#" },
-				{ title: "Calendar", href: "/events-holidays" },
-				{ title: "Company Leaves", href: "#" },
-				{ title: "Restrict Leaves", href: "#" },
-			],
-			requiredPermission: PERMISSION_CODES.CAN_MANAGE_APPROVAL_WORKFLOWS,
-		},
 		// {
-		//   title: "Events & Holidays",
-		//   href: "#1",
-		//   icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
-		//   submenu: [{title: "Calendar", href: "/events-holidays"}],
+		// 	title: "Project",
+		// 	href: "#1",
+		// 	icon: <Icon icon="hugeicons:task-done-01" className="!w-6 !h-6" width="28" height="28" />,
+		// 	submenu: [
+		// 		{ title: "Analytics", href: "/analytics/project" },
+		// 		{ title: "Projects", href: "/projects" },
+		// 		// { title: "Tasks", href: "#" },
+		// 		// { title: "Timesheet", href: "#" },
+		// 	],
+		// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_PROJECTS,
 		// },
+		// {
+		// 	title: "Configuration",
+		// 	href: "#1",
+		// 	icon: <Icon icon="hugeicons:configuration-01" className="!w-6 !h-6" width="28" height="28" />,
+		// 	submenu: [
+		// 		// { title: "Multiple Approvals", href: "#" },
+		// 		// { title: "Mail Templates", href: "#" },
+		// 		// { title: "Mail Automation", href: "#" },
+		// 		{ title: "Calendar", href: "/events-holidays" },
+		// 		// { title: "Company Leaves", href: "#" },
+		// 		// { title: "Restrict Leaves", href: "#" },
+		// 	],
+		// 	requiredPermission: PERMISSION_CODES.CAN_MANAGE_APPROVAL_WORKFLOWS,
+		// },
+		{
+			title: "Events & Holidays",
+			href: "#1",
+			icon: <Icon icon="hugeicons:calendar-01" className="!w-6 !h-6" width="28" height="28" />,
+			submenu: [{ title: "Calendar", href: "/events-holidays" }],
+		},
 	];
 
 	const onToggle = () => {
@@ -449,7 +479,7 @@ export default function DashboardSideBar() {
 
 					{/* Drawer */}
 					<div
-						className={`mobile-nav-drawer fixed left-0 top-0 h-full w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] ${
+						className={`mobile-nav-drawer fixed left-0 top-0 h-screen w-80 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out z-[100] flex flex-col ${
 							mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
 						}`}
 					>
@@ -486,7 +516,7 @@ export default function DashboardSideBar() {
 						</div>
 
 						{/* Navigation Items */}
-						<div className="flex-1 overflow-y-auto p-2 pb-20">
+						<div className="flex-1 overflow-y-auto p-2 pb-20 min-h-[600px]" id="mobile-nav-scroll">
 							{filteredNavItems.map((item, idx) => (
 								<NavItemComponent
 									key={`${item.title}-${idx}`}
@@ -498,6 +528,17 @@ export default function DashboardSideBar() {
 									onToggle={onToggle}
 								/>
 							))}
+						</div>
+
+						{/* Add this after the Navigation Items div */}
+						<div className="absolute right-1 top-32 bottom-8 w-1 bg-gray-200 rounded-full">
+							<div
+								className="w-full bg-gray-500 rounded-full transition-all duration-150"
+								style={{
+									height: "50%",
+									transform: `translateY(${scrollPercentage * 0.7}%)`,
+								}}
+							/>
 						</div>
 					</div>
 				</>

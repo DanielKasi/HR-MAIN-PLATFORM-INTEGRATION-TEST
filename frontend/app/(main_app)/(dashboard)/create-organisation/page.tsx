@@ -1010,9 +1010,8 @@ export default function CreateOrganisationWizard() {
 						>
 							{renderStepContent()}
 						</div>
-
 						{/* Navigation */}
-						<div className="flex items-center justify-between p-6 border-t bg-muted/30">
+						<div className="flex items-center justify-between p-6 border-t mt-4">
 							{currentStep !== 1 && (
 								<Button
 									type="button"

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import apiRequest from "./apiRequest";
 import { showErrorToast } from "./utils";
 
-import { Permission, Role } from "@/types";
+import { Role, Permission } from "@/types/user.types";
 import { store } from "@/store";
 import { ICountry } from "@/types/types.utils";
 import { INotification } from "@/store/notifications/types";
@@ -23,6 +23,9 @@ export function capitalizeEachWord(str: string) {
 }
 
 export const formatDate = (dateString: string) => {
+	if (!dateString) {
+		return "Unknown";
+	}
 	return new Date(dateString).toLocaleDateString("en-US", {
 		month: "short",
 		day: "numeric",

@@ -325,7 +325,7 @@ export default function JobAdvertsPage() {
 													<TableRow key={advert.id}>
 														<TableCell className="font-medium">
 															<div className="font-medium text-gray-900">
-																{advert.job_position_details?.name || "N/A"}
+																{advert.job_position_details?.name || "Unknown"}
 															</div>
 														</TableCell>
 														<TableCell>
@@ -356,7 +356,7 @@ export default function JobAdvertsPage() {
 														</TableCell>
 														<TableCell>
 															<div className="max-w-[200px] truncate text-sm text-muted-foreground">
-																<RichTextDisplay htmlContent={advert.extra_information || "-"} />
+																<RichTextDisplay content={advert.extra_information || "-"} />
 															</div>
 														</TableCell>
 														<TableCell className="text-right">

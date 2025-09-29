@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Improvement Plan Notification</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #333333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #f28c38; /* Orange */
+            color: #ffffff;
+            padding: 15px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .content {
+            padding: 20px;
+        }
+        .content p {
+            margin: 10px 0;
+        }
+        .content ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .content li {
+            margin-bottom: 8px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e67e22; /* Orange */
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .button:hover {
+            background-color: #d35400; /* Darker orange for hover */
+        }
+        .footer {
+            font-size: 12px;
+            color: #666666;
+            text-align: center;
+            padding: 10px;
+            border-top: 1px solid #dddddd;
+            margin-top: 20px;
+        }
+        .footer a, .content a {
+            color: #e67e22; /* Orange for links */
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Performance Improvement Plan Notification</h2>
+        </div>
+        <div class="content">
+            <p> {{ salutation }},</p>
+            <p>We are committed to supporting your professional growth at {{ institution_name | default:"our organization" }}. To assist you in meeting performance expectations, we have developed a Performance Improvement Plan (PIP) tailored for you. Please find the full details in the attached document, <strong>Performance_Improvement_Plan_{{ employee_name | default:"Employee" | slugify }}.pdf</strong>.</p>
+            <p><strong>Summary of Your Performance Improvement Plan:</strong></p>
+            <ul>
+                <li><strong>Start Date:</strong> {{ start_date }}</li>
+                <li><strong>End Date:</strong> {{ end_date }}</li>
+            </ul>
+            <p>Please review the attached PIP document carefully and acknowledge receipt by <strong>{{ due_date }}</strong>. We encourage you to schedule a meeting with your manager to discuss the plan and outline the next steps.</p>
+            <p>We are here to support you and look forward to your progress during this period.</p>
+            <p>Best regards,<br>Human Resources Team<br>{{ institution_name | default:"Our Organization" }}</p>
+            <a href="mailto:{{ hr_email }}" class="button">Contact HR</a>
+        </div>
+        <div class="footer">
+            <p>This is an automated message. Please do not reply directly to this email. Contact <a href="mailto:{{ hr_email }}">{{ hr_email }}</a> for assistance.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { MoreVertical, Edit, Trash2, Search, Settings } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Search, Settings, Eye } from "lucide-react";
 import { Icon } from "@iconify/react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import { DeleteDeductionTypeDialog } from "@/components/deduction-types/delete-d
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ALLOWANCE_FREQUENCIES, PERMISSION_CODES } from "@/constants";
 import { useMobile } from "@/hooks/use-mobile";
+import { useRouter } from "next/navigation";
 
 const getStatusColor = (status: boolean) => {
 	return status
@@ -70,6 +71,7 @@ const DeductionTypesComponent = () => {
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const isMobile = useMobile();
 	const [ordering, setOrdering] = useState("");
+	const router = useRouter();
 
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -90,6 +92,10 @@ const DeductionTypesComponent = () => {
 	const handleEditDeductionType = (deductionType: IDeductionType) => {
 		setEditingDeductionType(deductionType);
 		setIsEditDialogOpen(true);
+	};
+
+	const handleViewDeductionType = (deductionType: IDeductionType) => {
+		router.push(`/payroll/deduction-types/${deductionType.id}`);
 	};
 
 	const handleDeleteDeductionType = (deductionType: IDeductionType) => {
@@ -309,6 +315,15 @@ const DeductionTypesComponent = () => {
 																	</Button>
 																</DropdownMenuTrigger>
 																<DropdownMenuContent align="end">
+																	<ProtectedComponent
+																		permissionCode={PERMISSION_CODES.CAN_VIEW_DEDUCTION_TYPES}
+																	>
+																		<DropdownMenuItem
+																			onClick={() => handleViewDeductionType(deductionType)}
+																		>
+																			<Eye className="h-4 w-4 mr-2" /> View Details
+																		</DropdownMenuItem>
+																	</ProtectedComponent>
 																	<ProtectedComponent
 																		permissionCode={PERMISSION_CODES.CAN_EDIT_DEDUCTION_TYPES}
 																	>

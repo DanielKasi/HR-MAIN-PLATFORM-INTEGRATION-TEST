@@ -23,9 +23,10 @@ from settings.models import SystemDay
 from employee.tasks import send_employee_welcome_email
 from employee.views import generate_compliant_password
 from calendar2.models import Calendar, Event
+from performance.models import PerformanceConcernType, PIPSupportResourceType
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, resend welcome emails, and delete inactive employees"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, and delete inactive employees"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -56,9 +57,245 @@ class Command(BaseCommand):
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
+        self.create_default_performance_data()  # Add this new method call
+        self.sync_employee_names()
         self.create_birthday_events()
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
+
+    def sync_employee_names(self):
+        """Sync employee.name with user.fullname for all existing employees"""
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Syncing employee names with user fullnames...\n")
+        )
+        
+        # Get all employees with associated users
+        employees = Employee.objects.filter(
+            user__isnull=False,
+            deleted_at__isnull=True
+        ).select_related('user')
+        
+        if not employees.exists():
+            self.stdout.write(
+                self.style.NOTICE("No employees with users found to sync names.")
+            )
+            return
+        
+        updated_count = 0
+        skipped_count = 0
+        error_count = 0
+        
+        for employee in employees:
+            try:
+                # Check if user has a fullname and if it's different from employee.name
+                if not employee.user.fullname:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  ⏭️ Skipping employee ID {employee.id}: User has no fullname"
+                        )
+                    )
+                    skipped_count += 1
+                    continue
+                
+                # Check if name needs updating
+                if employee.name == employee.user.fullname:
+                    self.stdout.write(
+                        self.style.NOTICE(
+                            f"  ♻️ Employee '{employee.user.fullname}' already has correct name"
+                        )
+                    )
+                    skipped_count += 1
+                    continue
+                
+                # Update the employee name
+                old_name = employee.name
+                employee.name = employee.user.fullname
+                employee.save(update_fields=['name'])
+                
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"  ✅ Updated employee name: '{old_name or 'None'}' → '{employee.name}'"
+                    )
+                )
+                updated_count += 1
+                
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"  ❌ Error updating employee ID {employee.id}: {str(e)}"
+                    )
+                )
+                error_count += 1
+        
+        # Summary
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Employee Names Sync Summary"))
+        self.stdout.write(self.style.NOTICE(f"  ✅ Updated: {updated_count}"))
+        self.stdout.write(self.style.NOTICE(f"  ♻️ Skipped: {skipped_count}"))
+        if error_count > 0:
+            self.stdout.write(self.style.NOTICE(f"  ❌ Errors: {error_count}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Employee names synced successfully!"))
+
+    def create_default_performance_data(self):
+        """Create default PerformanceConcernType and PIPSupportResourceType for all institutions"""
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("\n⏳ Creating default performance data for institutions...\n")
+        )
+        
+        # Default Performance Concern Types
+        default_concern_types = [
+            {
+                "name": "Attendance Issues",
+                "description": "Chronic tardiness, absenteeism, or irregular attendance patterns"
+            },
+            {
+                "name": "Quality of Work",
+                "description": "Work output does not meet expected standards or contains frequent errors"
+            },
+            {
+                "name": "Productivity",
+                "description": "Consistently failing to meet productivity targets or deadlines"
+            },
+            {
+                "name": "Communication Skills",
+                "description": "Poor written or verbal communication affecting work relationships"
+            },
+            {
+                "name": "Team Collaboration",
+                "description": "Difficulty working effectively with team members or colleagues"
+            },
+            {
+                "name": "Customer Service",
+                "description": "Issues with customer interaction, service delivery, or client satisfaction"
+            },
+            {
+                "name": "Technical Skills",
+                "description": "Lack of required technical competencies for the role"
+            },
+            {
+                "name": "Policy Compliance",
+                "description": "Failure to follow company policies, procedures, or guidelines"
+            },
+            {
+                "name": "Initiative and Problem-Solving",
+                "description": "Lack of proactive approach or difficulty in resolving work-related issues"
+            },
+            {
+                "name": "Professional Conduct",
+                "description": "Inappropriate behavior or failure to maintain professional standards"
+            }
+        ]
+        
+        # Default PIP Support Resource Types
+        default_resource_types = [
+            {
+                "name": "Training Programs",
+                "description": "Skills development courses, workshops, and professional training sessions"
+            },
+            {
+                "name": "Mentoring",
+                "description": "One-on-one guidance and support from experienced colleagues or supervisors"
+            },
+            {
+                "name": "Coaching Sessions",
+                "description": "Regular coaching meetings to address specific performance areas"
+            },
+            {
+                "name": "Online Learning Resources",
+                "description": "E-learning platforms, webinars, and digital training materials"
+            },
+            {
+                "name": "Job Shadowing",
+                "description": "Observing and learning from high-performing team members"
+            },
+            {
+                "name": "External Training",
+                "description": "Professional development courses offered by external training providers"
+            },
+            {
+                "name": "Documentation and Guides",
+                "description": "Standard operating procedures, best practice guides, and reference materials"
+            },
+            {
+                "name": "Regular Check-ins",
+                "description": "Scheduled progress review meetings with supervisors or managers"
+            },
+            {
+                "name": "Peer Support Groups",
+                "description": "Support networks with colleagues facing similar challenges"
+            },
+            {
+                "name": "Performance Tools",
+                "description": "Software, templates, or tools to help improve work efficiency and quality"
+            }
+        ]
+        
+        institutions = Institution.objects.all()
+        total_concern_created = 0
+        total_concern_updated = 0
+        total_resource_created = 0
+        total_resource_updated = 0
+        
+        for institution in institutions:
+            self.stdout.write(f"Processing performance data for {institution.institution_name}")
+            
+            # Create Performance Concern Types
+            concern_created = 0
+            concern_updated = 0
+            for concern_data in default_concern_types:
+                concern_type, created = PerformanceConcernType.objects.update_or_create(
+                    institution=institution,
+                    name=concern_data["name"],
+                    defaults={"description": concern_data["description"]}
+                )
+                if created:
+                    concern_created += 1
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  ✅ Created concern type: {concern_type.name}")
+                    )
+                else:
+                    concern_updated += 1
+                    self.stdout.write(
+                        self.style.NOTICE(f"  ♻️ Updated concern type: {concern_type.name}")
+                    )
+            
+            # Create PIP Support Resource Types
+            resource_created = 0
+            resource_updated = 0
+            for resource_data in default_resource_types:
+                resource_type, created = PIPSupportResourceType.objects.update_or_create(
+                    institution=institution,
+                    name=resource_data["name"],
+                    defaults={"description": resource_data["description"]}
+                )
+                if created:
+                    resource_created += 1
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  ✅ Created resource type: {resource_type.name}")
+                    )
+                else:
+                    resource_updated += 1
+                    self.stdout.write(
+                        self.style.NOTICE(f"  ♻️ Updated resource type: {resource_type.name}")
+                    )
+            
+            total_concern_created += concern_created
+            total_concern_updated += concern_updated
+            total_resource_created += resource_created
+            total_resource_updated += resource_updated
+            
+            self.stdout.write(
+                self.style.NOTICE(
+                    f"  📊 {institution.institution_name}: "
+                    f"Concerns (Created: {concern_created}, Updated: {concern_updated}), "
+                    f"Resources (Created: {resource_created}, Updated: {resource_updated})"
+                )
+            )
+        
+        # Summary
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Performance Data Summary"))
+        self.stdout.write(self.style.NOTICE(f"  🎯 Performance Concern Types - Created: {total_concern_created}, Updated: {total_concern_updated}"))
+        self.stdout.write(self.style.NOTICE(f"  🛠️ PIP Support Resource Types - Created: {total_resource_created}, Updated: {total_resource_updated}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Performance data created successfully!"))
 
     def create_birthday_events(self):
         self.stdout.write(
@@ -254,11 +491,11 @@ class Command(BaseCommand):
         )
         default_awards = [
             {"name": "PLE", "description": "Primary Leaving Examination"},
-            {"name": "UCE", "description": "Uganda Certificate of Education (O’Level)"},
-            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A’Level)"},
+            {"name": "UCE", "description": "Uganda Certificate of Education (O'Level)"},
+            {"name": "UACE", "description": "Uganda Advanced Certificate of Education (A'Level)"},
             {"name": "Diploma", "description": "Diploma level qualification"},
-            {"name": "Bachelor’s Degree", "description": "Undergraduate degree"},
-            {"name": "Master’s Degree", "description": "Postgraduate degree"},
+            {"name": "Bachelor's Degree", "description": "Undergraduate degree"},
+            {"name": "Master's Degree", "description": "Postgraduate degree"},
             {"name": "PhD", "description": "Doctor of Philosophy"},
         ]
         valid_award_names = set()

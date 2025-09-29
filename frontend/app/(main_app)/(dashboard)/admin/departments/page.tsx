@@ -300,7 +300,7 @@ export default function DepartmentsPage() {
 													<TableCell>
 														<RichTextDisplay
 															className={`text-sm ${!department.description ? "text-muted-foreground italic" : ""}`}
-															htmlContent={department.description || "No description"}
+															content={department.description || "No description"}
 														/>
 													</TableCell>
 													<TableCell className="text-right">

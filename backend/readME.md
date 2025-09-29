@@ -109,3 +109,7 @@ The project uses [redis](https://redis.io/docs/latest/operate/oss_and_stack/inst
 
 ## to generate a field encryption key
 python -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+
+
+## install latexmk
+sudo apt-get install texlive-latex-extra texlive-fonts-recommended latexmk

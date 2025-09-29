@@ -195,7 +195,7 @@ export default function TerminationInitiationsPage() {
 												{data.results.map((termination) => (
 													<TableRow key={termination.id}>
 														<TableCell className="font-medium">
-															{termination.separation.employee.user?.fullname}
+															{termination.separation.employee?.name}
 														</TableCell>
 														<TableCell>
 															{new Date(termination.last_working_day).toLocaleDateString()}
@@ -296,8 +296,7 @@ export default function TerminationInitiationsPage() {
 						<DialogTitle>Delete Termination</DialogTitle>
 						<DialogDescription>
 							Are you sure you want to delete the termination for{" "}
-							{terminationToDelete?.separation.employee.user?.fullname}? This action cannot be
-							undone.
+							{terminationToDelete?.separation.employee?.name}? This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

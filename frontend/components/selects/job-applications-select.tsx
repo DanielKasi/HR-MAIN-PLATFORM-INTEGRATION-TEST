@@ -1,12 +1,12 @@
 "use client";
 
-import { memo, useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
+import { useEffect, useState, useCallback, memo } from "react";
 import PaginatedSearchableSelect, {
 	PaginatedSelectItem,
 } from "@/components/generic/paginated-searchable-select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { JobApplication } from "@/types/types.utils";
+import { JobApplication, JobApplicationStatus } from "@/types/types.utils";
 import { JOB_APPLICATIONS_API } from "@/lib/api/job-positions.utils";
 
 export interface JobApplicationsSearchableSelectProps {
@@ -20,6 +20,7 @@ export interface JobApplicationsSearchableSelectProps {
 	multiple?: boolean;
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
+	filters?: { status: JobApplicationStatus };
 }
 
 export const JobApplicationsSearchableSelect = memo(
@@ -34,6 +35,7 @@ export const JobApplicationsSearchableSelect = memo(
 		triggerClassName,
 		multiple = false,
 		hideSelectedFromList = false,
+		filters,
 	}: JobApplicationsSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
 		const [selectedItems, setSelectedItems] = useState<Array<string | number>>(value);
@@ -50,9 +52,10 @@ export const JobApplicationsSearchableSelect = memo(
 				return await JOB_APPLICATIONS_API.getPaginated({
 					institutionId: currentInstitution.id,
 					...query,
+					status: filters?.status,
 				});
 			},
-			[currentInstitution],
+			[currentInstitution, filters?.status],
 		);
 
 		const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
@@ -69,7 +72,7 @@ export const JobApplicationsSearchableSelect = memo(
 					}
 				}
 			},
-			[selectedItems, onValueChange, multiple],
+			[multiple, selectedItems, onValueChange],
 		);
 
 		const handleRemove = useCallback(
@@ -98,7 +101,7 @@ export const JobApplicationsSearchableSelect = memo(
 					disabled={disabled}
 					placeholder={placeholder}
 					searchPlaceholder="Search candidates by name..."
-					triggerClassName={`w - full justify - between focus: ring - primary ${triggerClassName || ""} `}
+					triggerClassName={`w-full justify-between focus:ring-primary ${triggerClassName || ""}`}
 					popoverClassName="w-full"
 					hideSelectedFromList={hideSelectedFromList}
 					defaultLabel={defaultLabel}
@@ -106,20 +109,8 @@ export const JobApplicationsSearchableSelect = memo(
 			</div>
 		);
 	},
-	(prevProps, nextProps) => {
-		return (
-			prevProps.value === nextProps.value &&
-			prevProps.onValueChange === nextProps.onValueChange &&
-			prevProps.disabled === nextProps.disabled &&
-			prevProps.showSelectedItems === nextProps.showSelectedItems &&
-			prevProps.placeholder === nextProps.placeholder &&
-			prevProps.className === nextProps.className &&
-			prevProps.triggerClassName === nextProps.triggerClassName &&
-			prevProps.multiple === nextProps.multiple &&
-			prevProps.hideSelectedFromList === nextProps.hideSelectedFromList &&
-			prevProps.defaultLabel === nextProps.defaultLabel
-		);
-	},
 );
+
+JobApplicationsSearchableSelect.displayName = "JobApplicationsSearchableSelect";
 
 export default JobApplicationsSearchableSelect;

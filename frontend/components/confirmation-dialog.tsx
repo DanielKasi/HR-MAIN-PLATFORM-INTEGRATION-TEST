@@ -40,8 +40,14 @@ export function ConfirmationDialog({
 					<AlertDialogDescription>{description}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={disabled}>{cancelText}</AlertDialogCancel>
-					<AlertDialogAction disabled={disabled} onClick={onConfirm}>
+					<AlertDialogCancel className="w-full rounded-full" disabled={disabled}>
+						{cancelText}
+					</AlertDialogCancel>
+					<AlertDialogAction
+						className="w-full rounded-full"
+						disabled={disabled}
+						onClick={onConfirm}
+					>
 						{confirmText}
 					</AlertDialogAction>
 				</AlertDialogFooter>

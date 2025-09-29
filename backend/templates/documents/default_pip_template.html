@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Improvement Plan</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
+            margin: 1in;
+            line-height: 1.6;
+            font-size: 11pt;
+            color: #1a1a1a;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            font-size: 24pt;
+            font-weight: 900;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .subheader {
+            text-align: center;
+            font-size: 11pt;
+            color: #666666;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2c5f8d;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #2c5f8d;
+        }
+        .info-item {
+            display: flex;
+        }
+        .info-label {
+            font-weight: 700;
+            min-width: 140px;
+            color: #2c5f8d;
+        }
+        .info-value {
+            color: #1a1a1a;
+        }
+        .section {
+            margin-top: 25px;
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-size: 15pt;
+            font-weight: 900;
+            margin-bottom: 12px;
+            color: #1a1a1a;
+            text-transform: uppercase;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2c5f8d;
+            letter-spacing: 0.5px;
+        }
+        .section-intro {
+            margin: 12px 0;
+            font-weight: 500;
+            color: #333333;
+        }
+        ul {
+            list-style-type: none;
+            margin-left: 0;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            padding-left: 0;
+        }
+        ul li {
+            padding-left: 25px;
+            position: relative;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        ul li:before {
+            content: "▪";
+            position: absolute;
+            left: 8px;
+            color: #2c5f8d;
+            font-weight: bold;
+            font-size: 14pt;
+        }
+        ul ul {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+        ul ul li:before {
+            content: "◦";
+            font-size: 12pt;
+        }
+        .objective-title {
+            font-weight: 700;
+            color: #1a1a1a;
+            font-size: 11.5pt;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .warning-box p {
+            margin: 0;
+            color: #856404;
+            font-weight: 500;
+        }
+        .signature-section {
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .signature-intro {
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
+        .signature-block {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .signature-label {
+            font-weight: 700;
+            color: #2c5f8d;
+            font-size: 10pt;
+        }
+        .signature-line {
+            border-bottom: 2px solid #000000;
+            height: 40px;
+        }
+        .date-field {
+            border-bottom: 2px solid #000000;
+            width: 150px;
+            display: inline-block;
+            height: 30px;
+        }
+        .employee-ack {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+        .checkbox-line {
+            margin: 12px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #2c5f8d;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 9pt;
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+            color: #666666;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0.75in;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+            .info-grid, .signature-section {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">Performance Improvement Plan</div>
+    <div class="subheader">Confidential Employee Performance Document</div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="info-label">Employee Name:</span>
+            <span class="info-value">{{employee_name}}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Position:</span>
+            <span class="info-value">{{position}}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Department:</span>
+            <span class="info-value">{{department}}</span>
+        </div>
+        {% comment %} <div class="info-item">
+            <span class="info-label">Employee ID:</span>
+            <span class="info-value">{{employee_id}}</span>
+        </div> {% endcomment %}
+        <div class="info-item">
+            <span class="info-label">Supervisor:</span>
+            <span class="info-value">{{supervisor}}</span>
+        </div>
+        {% comment %} <div class="info-item">
+            <span class="info-label">Manager:</span>
+            <span class="info-value">{{manager}}</span>
+        </div> {% endcomment %}
+        <div class="info-item">
+            <span class="info-label">Date Issued:</span>
+            <span class="info-value">{{date_issued}}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Review Period:</span>
+            <span class="info-value">{{review_period}}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">I. Purpose of This Plan</div>
+        <p class="section-intro">This Performance Improvement Plan (PIP) is designed to clearly communicate performance deficiencies, establish specific expectations for improvement, and provide support to help you succeed in your role. This is a formal process to address ongoing performance concerns.</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">II. Performance Concerns</div>
+        <p class="section-intro">The following performance deficiencies have been identified and require immediate attention:</p>
+        <ul>
+            {% for concern in concerns %}
+            <li>{{concern}}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-title">III. Performance Objectives & Success Criteria</div>
+        <p class="section-intro">To successfully complete this PIP, you must demonstrate immediate and sustained improvement in the following areas:</p>
+        <ul>
+            {% for objective in objectives %}
+            <li>
+                <span class="objective-title">{{objective.title}}</span>
+                {% if objective.details %}
+                <ul>
+                    {% for detail in objective.details %}
+                    <li>{{detail}}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-title">IV. Support & Resources Provided</div>
+        <p class="section-intro">To assist you in meeting these objectives, the company will provide the following support:</p>
+        <ul>
+            {% for resource in support_resources %}
+            <li>{{resource}}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-title">V. Monitoring & Review Process</div>
+        <p class="section-intro">Your progress will be monitored and evaluated as follows:</p>
+        <ul>
+            {% for step in review_steps %}
+            <li>{{step}}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section">
+        <div class="section-title">VI. Consequences of Non-Compliance</div>
+        <div class="warning-box">
+            <p>{{consequences}}</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">VII. Employee Rights</div>
+        <ul>
+            <li>You have the right to provide written comments or feedback regarding this PIP</li>
+            <li>You may request clarification on any objectives or expectations outlined in this document</li>
+            <li>You have the right to involve HR in discussions regarding this PIP</li>
+            <li>A copy of this document will be placed in your personnel file</li>
+        </ul>
+    </div>
+
+    <div class="signature-section">
+        <div class="signature-intro">ACKNOWLEDGEMENT OF RECEIPT</div>
+        <p style="margin-bottom: 20px; font-size: 10pt;">By signing below, all parties acknowledge that this Performance Improvement Plan has been reviewed and discussed. The employee's signature does not necessarily indicate agreement with the contents, but confirms receipt and understanding of the expectations outlined herein.</p>
+        
+        <div class="signature-grid">
+            <div class="signature-block">
+                <span class="signature-label">SUPERVISOR SIGNATURE</span>
+                <div class="signature-line"></div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                    <span style="font-size: 9pt; color: #666;">Date:</span>
+                    <div class="date-field"></div>
+                </div>
+            </div>
+            
+            <div class="signature-block">
+                <span class="signature-label">HUMAN RESOURCES SIGNATURE</span>
+                <div class="signature-line"></div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                    <span style="font-size: 9pt; color: #666;">Date:</span>
+                    <div class="date-field"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="employee-ack">
+            <div class="signature-block">
+                <span class="signature-label">EMPLOYEE SIGNATURE</span>
+                <div class="signature-line"></div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                    <span style="font-size: 9pt; color: #666;">Date:</span>
+                    <div class="date-field"></div>
+                </div>
+            </div>
+            
+            <div class="checkbox-line" style="margin-top: 20px;">
+                <div class="checkbox"></div>
+                <span style="font-size: 10pt;">I acknowledge receipt of this Performance Improvement Plan and understand the expectations outlined above.</span>
+            </div>
+            
+            <div class="checkbox-line">
+                <div class="checkbox"></div>
+                <span style="font-size: 10pt;">I would like to submit written comments regarding this PIP (attach additional page if needed).</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <strong>CONFIDENTIAL DOCUMENT</strong> • This Performance Improvement Plan is confidential and should be maintained in the employee's personnel file.<br>
+        Page 1 of 1 • {{company_name}} • Generated {{date_issued}}
+    </div>
+</body>
+</html>

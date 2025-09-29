@@ -100,7 +100,7 @@ const EmployeeAttendanceHistory = () => {
 	};
 
 	const formatTime = (timeString: string) => {
-		if (!timeString) return "N/A";
+		if (!timeString) return "Unknown";
 
 		return timeString;
 	};
@@ -126,7 +126,7 @@ const EmployeeAttendanceHistory = () => {
 	};
 
 	const calculateWorkHours = (checkIn: string, checkOut: string | null) => {
-		if (!checkIn || !checkOut) return "N/A";
+		if (!checkIn || !checkOut) return "Unknown";
 
 		const checkInTime = new Date(`2000-01-01T${checkIn}`);
 		const checkOutTime = new Date(`2000-01-01T${checkOut}`);
@@ -227,9 +227,7 @@ const EmployeeAttendanceHistory = () => {
 						<div className="flex items-center gap-4">
 							<div className="flex items-center gap-2">
 								<User className="w-5 h-5 text-gray-500" />
-								<span className="text-lg font-semibold text-gray-700">
-									{employee.user?.fullname || ""}
-								</span>
+								<span className="text-lg font-semibold text-gray-700">{employee?.name || ""}</span>
 							</div>
 							<Badge variant="outline">{employee.department.name}</Badge>
 							<span className="text-gray-500">{employee.email}</span>
@@ -405,7 +403,7 @@ const EmployeeAttendanceHistory = () => {
 														record.check_out_time,
 													);
 
-													return secs !== null ? formatDuration(secs) : "N/A";
+													return secs !== null ? formatDuration(secs) : "Unknown";
 												})()}
 											</div>
 											<div className="font-medium">

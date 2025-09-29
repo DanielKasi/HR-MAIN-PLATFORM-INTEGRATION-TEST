@@ -74,9 +74,8 @@ export default function DisciplinaryActionsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [severityFilter, setSeverityFilter] = useState("all");
-	const [selectedAction, setSelectedAction] = useState<IDisciplinaryAction | null>(null);
-	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [actionToDelete, setActionToDelete] = useState<IDisciplinaryAction | null>(null);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
 	const getSeverityColor = (severity: string) => {
 		switch (severity) {
@@ -123,11 +122,6 @@ export default function DisciplinaryActionsPage() {
 		}
 	};
 
-	// const openDeleteDialog = (action: IDisciplinaryAction) => {
-	//   setActionToDelete(action);
-	//   setIsDeleteDialogOpen(true);
-	// };
-
 	const handleAddNewAction = () => {
 		router.push("/employees/discipline/create-disciplinary-action");
 	};
@@ -136,6 +130,9 @@ export default function DisciplinaryActionsPage() {
 		router.push(`/employees/discipline/update-disciplinary-action/${actionId}/`);
 	};
 
+	const handleViewDisciplinaryAction = (actionId: string) => {
+		router.push(`/employees/discipline/${actionId}`);
+	};
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
 			<div className="">
@@ -213,7 +210,7 @@ export default function DisciplinaryActionsPage() {
 					const apiResults = data?.results || [];
 					const filteredActions = apiResults.filter((action) => {
 						const matchesSearch =
-							action.employee.user?.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+							action.employee?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
 							action.discipline_type?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 							(action.employee.department.name &&
 								action.employee.department.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -354,6 +351,7 @@ export default function DisciplinaryActionsPage() {
 														</div>
 													</TableHead>
 													<TableHead>Status</TableHead>
+													<TableHead>Follow-up Date</TableHead>
 													<TableHead>Actions</TableHead>
 												</TableRow>
 											</TableHeader>
@@ -362,9 +360,7 @@ export default function DisciplinaryActionsPage() {
 													<TableRow key={action.id} className="hover:bg-gray-50">
 														<TableCell>
 															<div>
-																<div className="font-medium">
-																	{action.employee.user?.fullname || ""}
-																</div>
+																<div className="font-medium">{action.employee?.name || ""}</div>
 																{action.employee.department.name &&
 																	action.employee.department.name.trim() && (
 																		<div className="text-sm text-muted-foreground">
@@ -393,19 +389,21 @@ export default function DisciplinaryActionsPage() {
 															</div>
 														</TableCell>
 														<TableCell>
-															<Badge
-																variant="outline"
-																className={`${getStatusColor(action.status)} flex items-center gap-1 w-fit`}
-															>
-																{getStatusIcon(action.status)}
-																{action.status.replace("_", " ").toUpperCase()}
-															</Badge>
-														</TableCell>
-														<TableCell>
 															<div className="flex items-center gap-2">
 																<User className="h-4 w-4 text-muted-foreground" />
 																{action.assigned_to?.user?.fullname || ""}
 															</div>
+														</TableCell>
+														<TableCell>
+															<Badge
+																variant="outline"
+																className={`${getStatusColor(
+																	action.status,
+																)} flex items-center gap-1 w-fit`}
+															>
+																{getStatusIcon(action.status)}
+																{action.status.replace("_", " ").toUpperCase()}
+															</Badge>
 														</TableCell>
 														<TableCell>
 															{action.follow_up_required ? (
@@ -432,9 +430,12 @@ export default function DisciplinaryActionsPage() {
 																	<ProtectedComponent
 																		permissionCode={PERMISSION_CODES.CAN_VIEW_DISCIPLINE_CASES}
 																	>
-																		<DropdownMenuItem onClick={() => setSelectedAction(action)}>
-																			<Eye className="mr-2 h-4 w-4" />
-																			View Details
+																		<DropdownMenuItem
+																			onClick={() =>
+																				handleViewDisciplinaryAction(action.id.toString())
+																			}
+																		>
+																			<Eye className="h-4 w-4 mr-2" /> View Details
 																		</DropdownMenuItem>
 																	</ProtectedComponent>
 																	<ProtectedComponent
@@ -487,7 +488,7 @@ export default function DisciplinaryActionsPage() {
 											{(
 												actionToDelete &&
 												filteredActions.find((action) => action.id === actionToDelete.id)
-											)?.employee.user?.fullname || "this employee"}{" "}
+											)?.employee?.name || "this employee"}{" "}
 											(
 											{(actionToDelete &&
 												filteredActions.find((action) => action.id === actionToDelete.id)
@@ -522,107 +523,6 @@ export default function DisciplinaryActionsPage() {
 					);
 				}}
 			</PaginatedTableWrapper>
-
-			{selectedAction && (
-				<Dialog open={!!selectedAction} onOpenChange={() => setSelectedAction(null)}>
-					<DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<FileText className="h-5 w-5 text-green-600" />
-								Disciplinary Action Details
-							</DialogTitle>
-							<DialogDescription>
-								Complete information for {selectedAction.employee.user?.fullname || ""}'s
-								disciplinary action
-							</DialogDescription>
-						</DialogHeader>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div className="space-y-4">
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Employee</Label>
-									<p className="text-lg font-semibold">{selectedAction.employee.user?.fullname}</p>
-									{selectedAction.employee.department &&
-										selectedAction.employee.department.name.trim() && (
-											<p className="text-sm text-muted-foreground">
-												{selectedAction.employee.department.name}
-											</p>
-										)}
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">
-										Discipline Type
-									</Label>
-									<div className="flex items-center gap-2 mt-1">
-										<p className="font-medium">{selectedAction.discipline_type?.name}</p>
-										<Badge
-											variant="outline"
-											className={getSeverityColor(
-												selectedAction.discipline_type?.severity || "Low",
-											)}
-										>
-											{selectedAction.discipline_type?.severity.toUpperCase()}
-										</Badge>
-									</div>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Status</Label>
-									<Badge
-										variant="outline"
-										className={`${getStatusColor(selectedAction.status)} flex items-center gap-1 w-fit mt-1`}
-									>
-										{getStatusIcon(selectedAction.status)}
-										{selectedAction.status.replace("_", " ").toUpperCase()}
-									</Badge>
-								</div>
-							</div>
-							<div className="space-y-4">
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Incident Date</Label>
-									<p className="font-medium">
-										{new Date(selectedAction.incident_date).toLocaleDateString()}
-									</p>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Reported By</Label>
-									<p className="font-medium">{selectedAction.reported_by.user?.fullname}</p>
-								</div>
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Assigned To</Label>
-									<p className="font-medium">{selectedAction.assigned_to?.user?.fullname}</p>
-								</div>
-							</div>
-							<div className="md:col-span-2 space-y-4">
-								<div>
-									<Label className="text-sm font-medium text-muted-foreground">Description</Label>
-									<p className="mt-1 p-3 bg-gray-50 rounded-md">{selectedAction.description}</p>
-								</div>
-								{selectedAction.evidence && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Evidence</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">{selectedAction.evidence}</p>
-									</div>
-								)}
-								{selectedAction.action_taken && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">
-											Action Taken
-										</Label>
-										<p className="mt-1 p-3 bg-green-50 rounded-md border border-green-200">
-											{selectedAction.action_taken}
-										</p>
-									</div>
-								)}
-								{selectedAction.notes && (
-									<div>
-										<Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-										<p className="mt-1 p-3 bg-gray-50 rounded-md">{selectedAction.notes}</p>
-									</div>
-								)}
-							</div>
-						</div>
-					</DialogContent>
-				</Dialog>
-			)}
 		</div>
 	);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import type { IUserInstitution } from "../../../types";
+import { IUserInstitution } from "@/types/other";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -56,6 +56,7 @@ import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
 import DashboardSideBar from "@/components/dashboard_components/dashboard-sidebar";
+import Modules from "@/components/modules";
 
 export function hexToHSL(hex: string) {
 	hex = hex.replace("#", "");
@@ -325,9 +326,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						</div>
 
 						<div className="flex items-center gap-4 min-w-0">
-							{/* <ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
-                <Modules />
-              </ProtectedComponent> */}
+							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_MODULES}>
+								<Modules />
+							</ProtectedComponent>
 							<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD}>
 								<Link
 									href={"/admin"}

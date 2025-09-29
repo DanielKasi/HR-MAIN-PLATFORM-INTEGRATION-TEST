@@ -20,7 +20,7 @@ import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
 import { IInstitutionAnalytics } from "@/types/types.utils";
 import EmployeeAttendance from "@/components/attendance/employee-attendance";
-import { USER_GENDER } from "@/types";
+import { USER_GENDER } from "@/types/user.types";
 import { TasksCards } from "@/components/dashboard_components/tasks-cards";
 
 export default function Dashboard() {
@@ -94,7 +94,7 @@ export default function Dashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 p-6">
+		<div className="min-h-screen bg-transparent p-6">
 			<div className="space-y-6">
 				{/* Header */}
 
@@ -144,7 +144,7 @@ export default function Dashboard() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 					{/* Main Content */}
-					<div className="lg:col-span-3 space-y-6">
+					<div className="lg:col-span-3 space-y-4">
 						{/* Metrics and Calendar Row */}
 						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 							<div className="md:col-span-4">
@@ -152,7 +152,7 @@ export default function Dashboard() {
 							</div>
 						</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+						{/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 							<Card className="bg-primary/10 shadow-sm border-none">
 								<CardContent className="p-6">
 									<div className="flex items-center gap-3 mb-2">
@@ -166,14 +166,7 @@ export default function Dashboard() {
 									</p>
 								</CardContent>
 							</Card>
-
-							<Card className="md:col-span-2 shadow-sm border-none bg-white">
-								<CardHeader className="flex flex-row items-center justify-between py-2">
-									<CardTitle className="text-lg md:text-xl font-medium">Announcements</CardTitle>
-									<ChevronRight className="w-4 h-4 text-gray-400" />
-								</CardHeader>
-							</Card>
-						</div>
+						</div> */}
 
 						{/* Payroll Chart */}
 						<PayrollChart
@@ -197,31 +190,34 @@ export default function Dashboard() {
 								loading={loading}
 							/>
 						</div>
-
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							<EmployeeCountChart
-								data={data?.employees_per_department}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-							<GenderDistribution
-								data={data?.gender_distribution}
-								onRefresh={refreshData}
-								loading={loading}
-							/>
-						</div>
-
-						{/* Projects */}
-						{/* <ProjectCards /> */}
-						<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
 					</div>
 
 					{/* Sidebar */}
 					<div className="flex flex-col gap-4 lg:col-span-1">
-						<SimpleCalendarWidget />
-						<EventsAndHolidaysWidget />
+						<Card className="md:col-span-2 shadow-sm border-none bg-white !h-[6.5rem]">
+							<CardHeader className="flex flex-row items-center justify-between py-2">
+								<CardTitle className="text-lg md:text-xl font-medium">Announcements</CardTitle>
+								<ChevronRight className="w-4 h-4 text-gray-400" />
+							</CardHeader>
+						</Card>
+						<SimpleCalendarWidget className="!min-h-[24rem] !max-h-[32rem] !h-full" />
+						<EventsAndHolidaysWidget className="!max-h-[20rem] !h-full overflow-y-auto" />
 					</div>
 				</div>
+
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<EmployeeCountChart
+						data={data?.employees_per_department}
+						onRefresh={refreshData}
+						loading={loading}
+					/>
+					<GenderDistribution
+						data={data?.gender_distribution}
+						onRefresh={refreshData}
+						loading={loading}
+					/>
+				</div>
+				<EmployeeAttendance showingOnDashboard={true} scope={{ type: "default" }} />
 			</div>
 		</div>
 	);

@@ -1,4 +1,4 @@
-import { ColumnDef, PaginatedTable } from "@/components/common/tables/paginated-table";
+import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { IPaginatedResponse } from "@/types/types.utils";
 

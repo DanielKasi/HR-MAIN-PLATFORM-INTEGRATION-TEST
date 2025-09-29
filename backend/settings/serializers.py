@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+
+from general.serializers import BaseApprovableSerializer
 from .models import EmailProviderConfig, SystemConfiguration, SystemDay, MeetingIntegration
 
 
@@ -26,7 +28,7 @@ class SystemDaySerializer(serializers.ModelSerializer):
 
         read_only_fields = ["id", "day_code", "day_name", "level"]
 
-class MeetingIntegrationSerializer(serializers.ModelSerializer):
+class MeetingIntegrationSerializer(BaseApprovableSerializer):
     class Meta:
         model = MeetingIntegration
         fields = '__all__'
@@ -56,7 +58,7 @@ class MeetingIntegrationSerializer(serializers.ModelSerializer):
         return instance
     
 
-class EmailProviderConfigSerializer(serializers.ModelSerializer):
+class EmailProviderConfigSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmailProviderConfig
         fields = '__all__'

@@ -8,7 +8,7 @@ import type {
 } from "@/types/types.utils";
 
 import { useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Icon } from "@iconify/react";
@@ -57,6 +57,7 @@ import apiRequest from "@/lib/apiRequest";
 import { selectSelectedBranch, selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { showErrorToast } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface IAllocationFormData {
 	employee_id: string;
@@ -82,7 +83,7 @@ const EmployeeShiftsPage = () => {
 	});
 
 	const refreshRef = useRef<(() => void) | null>(null);
-
+	const router = useRouter();
 	const selectedBranch = useSelector(selectSelectedBranch);
 	const currentInstitutionId = useSelector(selectSelectedInstitution)?.id;
 
@@ -318,7 +319,7 @@ const EmployeeShiftsPage = () => {
 													return (
 														<TableRow key={shift.id}>
 															<TableCell className="font-medium">
-																{shift.employee?.user?.fullname || "N/A"}
+																{shift.employee?.user?.fullname || "Unknown"}
 															</TableCell>
 															<TableCell>
 																<div>
@@ -362,6 +363,14 @@ const EmployeeShiftsPage = () => {
 																		</Button>
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end">
+																		<DropdownMenuItem
+																			onClick={() =>
+																				router.push(`/employees/shift-requests/${shift.id}`)
+																			}
+																		>
+																			<Eye className="mr-2 h-4 w-4" />
+																			View
+																		</DropdownMenuItem>
 																		<DropdownMenuItem onClick={() => openEditDialog(shift)}>
 																			<Edit className="mr-2 h-4 w-4" />
 																			Edit
@@ -483,7 +492,7 @@ const EmployeeShiftsPage = () => {
 								<SelectContent>
 									{employees.map((employee) => (
 										<SelectItem key={employee.id} value={employee.id.toString()}>
-											{employee.user?.fullname}
+											{employee?.name}
 										</SelectItem>
 									))}
 								</SelectContent>

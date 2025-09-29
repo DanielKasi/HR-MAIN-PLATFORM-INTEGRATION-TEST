@@ -1,15 +1,19 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from employee.utilities import generate_email
 from .models import (
     Child,
+    DocumentRequest,
+    DocumentRequestEmployee,
     Education,
     Employee,
     EmployeeAttendance,
     EmployeeBankAccount,
     EmployeeCompanyEmail,
+    EmployeeMonthlyHourAccount,
     EmployeeType,
     NextOfKin,
     QualificationAward,
+    RequestedDocument,
     Spouse,
     WorkExperience,
     WorkType,
@@ -50,6 +54,11 @@ from datetime import date, timedelta, datetime
 from users.models import CustomUser, Profile, UserRole
 from institution.serializers import BranchSerializer
 
+class EmployeeMonthlyHourAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeMonthlyHourAccount
+        fields = '__all__'
+        read_only_fields = ['id']
 class EmployeeTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmployeeType
@@ -259,15 +268,7 @@ class EmployeeSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Employee
-        fields = [
-            'id', 'approvals', 'date_of_birth', 'user', 'name', 'department_details', 'position_details',
-            'roles', 'selected_branches', 'employee_working_days', 'work_type', 'employee_type',
-            'bank_accounts', 'next_of_kin', 'educations', 'work_experiences', 'children', 'spouse',
-            'created_at', 'updated_at', 'deleted_at', 'is_active', 'approval_status', 'employee_id',
-            'email', 'phone_number', 'gender', 'date_of_joining', 'address', 'country', 'nin',
-            'nssf_no', 'tin', 'skills', 'marital_status', 'has_children', 'employee_profile_picture',
-            'salary', 'position', 'department', 'payroll_branch', 'company_email'
-        ]
+        fields = '__all__'
 
     def get_department_details(self, obj):
         return {"id": obj.department.id, "name": obj.department.name, "institution_id": obj.department.institution.id} if obj.department else None
@@ -538,7 +539,7 @@ class EmployeeDaySerializer(BaseApprovableSerializer):
 
     class Meta:
         model = EmployeeDay
-        fields = ["id", "day", "start_time", "end_time"]
+        fields = '__all__'
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -818,19 +819,7 @@ class EmployeeContractSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = EmployeeContract
-        fields = [
-            "id",
-            "applicant",
-            "employee",
-            "is_active",
-            "contract_reference",
-            "original_contract",
-            "signed_contract",
-            "created_at",
-            "updated_at",
-            "status",
-            "differences",
-        ]
+        fields = '__all__'
         read_only_fields = ["contract_reference", "created_at", "status"]
 
     def create(self, validated_data):
@@ -983,15 +972,7 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = EmployeeShift
-        fields = [
-            "id",
-            "employee",
-            "shift",
-            "context",
-            "date",
-            "created_at",
-            "created_by",
-        ]
+        fields = '__all__'
         read_only_fields = ["created_at", "created_by"]
 
     def validate(self, data):
@@ -1056,3 +1037,60 @@ class EmployeeShiftSerializer(BaseApprovableSerializer):
         rep["shift"] = BranchShiftSerializer(instance.shift).data
         rep["created_by"] = CustomUserSerializer(instance.created_by).data
         return rep
+    
+class DocumentRequestEmployeeSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source="employee.name", read_only=True)
+    document_type = serializers.CharField(source="document_request.document_type", read_only=True)
+    document_format = serializers.CharField(source="document_request.document_format", read_only=True)
+    due_date = serializers.DateField(source="document_request.due_date", read_only=True)
+
+    class Meta:
+        model = DocumentRequestEmployee
+        fields = '__all__'
+
+class RequestedDocumentSerializer(BaseApprovableSerializer):
+    employee_name = serializers.CharField(source="document_request_employee.employee.name", read_only=True)
+    document_type = serializers.CharField(source="document_request_employee.document_request.document_type", read_only=True)
+
+    class Meta:
+        model = RequestedDocument
+        fields = '__all__'    
+
+class DocumentRequestSerializer(BaseApprovableSerializer):
+    requested_by = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all())
+    employees = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), many=True)
+    employee_requests = DocumentRequestEmployeeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DocumentRequest
+        fields = '__all__'
+
+    def validate_employees(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one employee must be selected.")
+        return value
+
+    def create(self, validated_data):
+        employees = validated_data.pop("employees")
+        document_request = DocumentRequest.objects.create(**validated_data)
+        for employee in employees:
+            DocumentRequestEmployee.objects.create(
+                document_request=document_request,
+                employee=employee,
+                status="pending"
+            )
+        return document_request
+
+    def update(self, instance, validated_data):
+        employees = validated_data.pop("employees", None)
+        instance = super().update(instance, validated_data)
+        if employees is not None:
+            instance.employee_requests.all().delete()
+            for employee in employees:
+                DocumentRequestEmployee.objects.create(
+                    document_request=instance,
+                    employee=employee,
+                    status="pending"
+                )
+        return instance          
+

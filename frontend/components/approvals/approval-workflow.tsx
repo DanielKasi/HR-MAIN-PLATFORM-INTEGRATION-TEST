@@ -158,12 +158,12 @@ export function ApprovalWorkflow({
 
 	const totalTasks = approvals.reduce((sum, approval) => sum + approval.tasks.length, 0);
 
-	if (approvals.length === 0 || instance_approval_status === "active") {
+	if (approvals.length === 0 || instance_approval_status === "active" || !currentUser) {
 		return null;
 	}
 
 	return (
-		<div className={`space-y-3 ${className}`}>
+		<div className={`${className}`}>
 			<div className="flex items-center justify-between gap-2 mt-4">
 				<div className="flex items-center justify-start gap-4">
 					<h3 className="text-base font-semibold">Approval Process</h3>
@@ -188,7 +188,7 @@ export function ApprovalWorkflow({
 			</div>
 
 			{isContentRevealead ? (
-				<>
+				<div className="h-full max-h-[70svh] overflow-y-auto">
 					{approvals.map((approval, approvalIndex) => (
 						<div
 							key={approval.id}
@@ -281,17 +281,18 @@ export function ApprovalWorkflow({
 
 													{task.status === "pending" && !showCommentFor && (
 														<div className="flex flex-col sm:grid grid-cols-2 w-full gap-2 sm:gap-4  mt-3">
-															{task.level.approvers_detail.find(
+															{(task.level.approvers_detail.find(
 																(approver) =>
-																	approver.approver_group.users_display.find(
+																	approver.approver_group?.users_display?.find(
 																		(user) => user.user.id === currentUser?.id,
 																	) ||
-																	approver.approver_group.roles_display.some((role) =>
+																	approver.approver_group?.roles_display?.some((role) =>
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),
 																	),
-															) && (
+															) ||
+																task.level.approver_users.includes(currentUser?.id)) && (
 																<>
 																	<Button
 																		size="sm"
@@ -313,17 +314,18 @@ export function ApprovalWorkflow({
 																</>
 															)}
 
-															{task.level.overriders_detail.find(
+															{(task.level.overriders_detail.find(
 																(approver) =>
-																	approver.approver_group.users_display.find(
+																	approver.approver_group?.users_display?.find(
 																		(user) => user.user.id === currentUser?.id,
 																	) ||
-																	approver.approver_group.roles_display.some((role) =>
+																	approver.approver_group?.roles_display?.some((role) =>
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),
 																	),
-															) && (
+															) ||
+																task.level.overrider_users.includes(currentUser?.id)) && (
 																<Button
 																	size="sm"
 																	className="bg-blue-400 hover:bg-blue-700 text-white text-xs !h-8 rounded-full "
@@ -359,7 +361,9 @@ export function ApprovalWorkflow({
 																	className={`text-xs h-8 !rounded-full ${
 																		showCommentFor.action === "approve"
 																			? "bg-green-600 hover:bg-green-700"
-																			: "bg-red-600 hover:bg-red-700"
+																			: showCommentFor.action === "override"
+																				? "bg-blue-600 hover:bg-blue-700"
+																				: "bg-red-600 hover:bg-red-700"
 																	}`}
 																>
 																	{isProcessing ? (
@@ -372,7 +376,7 @@ export function ApprovalWorkflow({
 																					: "Rejecting..."}
 																		</>
 																	) : (
-																		`Confirm ${showCommentFor.action === "approve" ? "Approval" : "Rejection"}`
+																		`Confirm ${showCommentFor.action === "approve" ? "Approval" : showCommentFor.action === "override" ? "Overriding" : "Rejection"}`
 																	)}
 																</Button>
 																<Button
@@ -405,7 +409,7 @@ export function ApprovalWorkflow({
 							</div>
 						</div>
 					))}
-				</>
+				</div>
 			) : (
 				<></>
 			)}

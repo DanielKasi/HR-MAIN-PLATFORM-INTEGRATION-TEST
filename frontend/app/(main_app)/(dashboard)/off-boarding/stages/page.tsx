@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, Search } from "lucide-react";
+import { Edit, Eye, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -48,6 +48,13 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
 	stage_name: z.string().min(2, "Stage name must be at least 2 characters"),
@@ -58,6 +65,7 @@ const formSchema = z.object({
 export default function OffboardingStagesPage() {
 	const [editingStage, setEditingStage] = useState<IOffboardingStage | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [stageToDelete, setStageToDelete] = useState<IOffboardingStage | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
 	const refreshTableRef = useRef<(() => void) | null>(null);
@@ -71,6 +79,7 @@ export default function OffboardingStagesPage() {
 			is_active: true,
 		},
 	});
+	const router = useRouter();
 
 	const handleCreateSuccess = (newStage: IOffboardingStage) => {
 		toast.success("Stage created successfully");
@@ -100,6 +109,10 @@ export default function OffboardingStagesPage() {
 		setIsEditDialogOpen(true);
 	};
 
+	const handleView = (stage: IOffboardingStage) => {
+		router.push(`/off-boarding/stages/${stage.id}`);
+	};
+
 	const handleSubmit = async (values: z.infer<typeof formSchema>) => {
 		if (!selectedInstitution) {
 			return;
@@ -115,7 +128,8 @@ export default function OffboardingStagesPage() {
 				await OffboardingStagesAPI.create({
 					stageData: { ...values, institution: selectedInstitution.id },
 				});
-				handleCreateSuccess({} as IOffboardingStage); // We don't have the created stage here, but the refresh will show it
+				handleCreateSuccess({} as IOffboardingStage);
+				setIsCreateDialogOpen(false);
 			}
 			form.reset();
 			setEditingStage(null);
@@ -171,7 +185,7 @@ export default function OffboardingStagesPage() {
 							)}
 						</div>
 						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_OFFBOARDING_STAGES}>
-							<Dialog>
+							<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
 								<DialogTrigger asChild>
 									<Button>
 										<Plus className="h-4 w-4 mr-2" />
@@ -314,18 +328,43 @@ export default function OffboardingStagesPage() {
 															</Badge>
 														</TableCell>
 														<TableCell className="text-right">
-															<div className="flex justify-end gap-2">
-																<Button size="sm" onClick={() => handleEdit(stage)}>
-																	Edit
-																</Button>
-																<Button
-																	size="sm"
-																	variant="destructive"
-																	onClick={() => setStageToDelete(stage)}
+															<DropdownMenu>
+																<DropdownMenuTrigger asChild>
+																	<Button
+																		variant="ghost"
+																		size="sm"
+																		className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+																	>
+																		<MoreVertical className="h-4 w-4 text-gray-600" />
+																	</Button>
+																</DropdownMenuTrigger>
+																<DropdownMenuContent
+																	align="end"
+																	className="w-48 bg-white border border-gray-200 shadow-lg"
 																>
-																	Delete
-																</Button>
-															</div>
+																	<DropdownMenuItem
+																		onClick={() => handleView(stage)}
+																		className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+																	>
+																		<Eye className="h-4 w-4 mr-3 text-gray-500" />
+																		View Details
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
+																		onClick={() => handleEdit(stage)}
+																		className="flex items-center px-3 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+																	>
+																		<Edit className="h-4 w-4 mr-3 text-gray-500" />
+																		Edit
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
+																		onClick={() => setStageToDelete(stage)}
+																		className="flex items-center px-3 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
+																	>
+																		<Trash2 className="h-4 w-4 mr-3 text-red-500" />
+																		Delete
+																	</DropdownMenuItem>
+																</DropdownMenuContent>
+															</DropdownMenu>
 														</TableCell>
 													</TableRow>
 												))}

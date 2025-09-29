@@ -95,7 +95,10 @@ export function InterviewStageDetailsDialog({
 										<h3 className="text-lg font-semibold text-gray-900">{stage.name}</h3>
 										<p className="text-sm text-gray-600">Level {stage.level}</p>
 									</div>
-									<Badge variant="secondary" className="bg-orange-100 text-orange-700 font-semibold">
+									<Badge
+										variant="secondary"
+										className="bg-orange-100 text-orange-700 font-semibold"
+									>
 										{stage.count} Candidates
 									</Badge>
 								</div>

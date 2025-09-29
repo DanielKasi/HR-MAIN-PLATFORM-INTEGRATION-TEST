@@ -144,7 +144,7 @@ export default function PayslipItems() {
 									<ArrowLeft className="h-4 w-4" />
 								</Button>
 								<h1 className="text-2xl font-bold text-gray-900">
-									{payslipInfo.employee.user?.fullname} - {payslipInfo.payroll_period.name}
+									{payslipInfo.employee?.name} - {payslipInfo.payroll_period.name}
 								</h1>
 							</div>
 							<p className="text-gray-600">

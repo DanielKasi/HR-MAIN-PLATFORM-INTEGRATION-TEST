@@ -42,7 +42,7 @@ $date-header-color: #fff !default;
 
 	.rct-item {
 		&:hover {
-			z-index: 58;
+			z-index: 38 !important;
 		}
 
 		.rct-item-content {
@@ -66,6 +66,7 @@ $date-header-color: #fff !default;
 		box-sizing: border-box;
 		border-right: $border-width solid $border-color;
 		font-size: 0.9rem;
+
 		&.rct-sidebar-right {
 			border-right: 0;
 			border-left: $border-width solid $border-color;
@@ -84,6 +85,7 @@ $date-header-color: #fff !default;
 			&.rct-sidebar-row-odd {
 				background: $row-background-odd;
 			}
+
 			&.rct-sidebar-row-even {
 				background: $row-background-even;
 			}
@@ -96,11 +98,13 @@ $date-header-color: #fff !default;
 		.rct-vl {
 			position: absolute;
 			border-left: 1px solid $border-color;
-			z-index: 10;
+			z-index: 10 !important;
 			background: linear-gradient(#fffcee, #fbfefa, white);
+
 			&.rct-vl-first {
 				border-left-width: 2px;
 			}
+
 			&.rct-day-6,
 			&.rct-day-0 {
 				background: $weekend;
@@ -120,13 +124,20 @@ $date-header-color: #fff !default;
 		.rct-hl-odd {
 			border-bottom: $border-width solid $border-color;
 			box-sizing: border-box;
-			z-index: 15;
+			z-index: 15 !important;
 		}
+
 		.rct-hl-odd {
 			background: $row-background-odd;
 		}
+
 		.rct-hl-even {
-			background: $row-background-even;
+			background: "red";
+			z-index: 30 !important;
+
+			& * {
+				z-index: 30 !important;
+			}
 		}
 	}
 
@@ -134,7 +145,7 @@ $date-header-color: #fff !default;
 		position: absolute;
 		width: 2px;
 		background: $item-background;
-		z-index: 31;
+		z-index: 21 !important;
 		background: #b1b2b3;
 	}
 

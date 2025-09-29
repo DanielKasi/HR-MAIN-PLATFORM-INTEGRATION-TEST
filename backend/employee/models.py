@@ -1,5 +1,5 @@
 from decimal import Decimal
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from calendar2.models import Calendar, Event
 from django.db import models
@@ -18,7 +18,7 @@ from django.db.models import UniqueConstraint, Q, Sum, Count
 import math
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from institution.models import Institution
-from approval.models import BaseApprovableModel
+from approval.models import Approval, BaseApprovableModel
 from django.core.validators import MinValueValidator, MaxValueValidator
 from dateutil.relativedelta import relativedelta
 
@@ -660,7 +660,191 @@ class EmployeeCompanyEmail(BaseApprovableModel):
     def get_institution(self):
         return self.institution
 
+class DocumentRequest(BaseApprovableModel):
 
+    FORMAT_CHOICES = (
+        ("pdf", "PDF"),
+        ("word", "Word"),
+        ("excel", "Excel"),
+        ("jpg", "JPG"),
+        ("any", "Any"),
+        ("jpeg", "JPEG"),
+        ("png", "PNG"),
+    )
+
+    employees = models.ManyToManyField(
+        Employee,
+        through="DocumentRequestEmployee",
+        related_name="document_requests",
+        help_text="Employees to whom the document is requested."
+    )
+    requested_by = models.ForeignKey(
+       'users.CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="requested_documents",
+        help_text="The user who made the document request."
+    )
+    document_type = models.CharField(
+        max_length=100,
+        help_text="Type of document requested (e.g., ID, Certificate, Contract)."
+    )
+    document_format = models.CharField(
+        max_length=100,
+        choices=FORMAT_CHOICES,
+        help_text="Format of the document requested (e.g., PDF, Word)."
+    )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional details about the document request."
+    )
+    due_date = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Due date for submitting the document."
+    )
+
+    def __str__(self):
+        return f"Request for {self.document_type} from {self.employees.name}"
+    
+    def get_institution(self):
+        first_employee = self.employees.first()
+        if first_employee:
+            return first_employee.get_institution()
+        return None
+    
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.is_active = True
+                    self.deleted_at = None
+                    self.employee_requests.update(
+                        status="pending",  
+                        is_active=True
+                    )
+                elif approval.action.name == "update":
+                    self.is_active = True
+                    self.deleted_at = None
+                    self.employee_requests.update(is_active=True)
+                elif approval.action.name == "delete":
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.employee_requests.update(
+                        status="rejected",  
+                        is_active=False,
+                        deleted_at=timezone.now()
+                    )   
+            elif approval.status == "rejected":
+                if approval.action.name == "create":
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.employee_requests.update(
+                        status="rejected",
+                        is_active=False,
+                        deleted_at=timezone.now()
+                    )
+                elif approval.action.name == "update":
+                    self.is_active = True  
+                elif approval.action.name == "delete":
+                    self.is_active = True
+                    self.deleted_at = None
+                    self.employee_requests.update(
+                        is_active=True,
+                        deleted_at=None
+                    )
+            self.save()         
+
+class DocumentRequestEmployee(SoftDeletableTimeStampedModel):
+
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("submitted", "Submitted"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("cancelled", "Cancelled"),
+    )
+
+    document_request = models.ForeignKey(
+        DocumentRequest,
+        on_delete=models.CASCADE,
+        related_name="employee_requests"
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="employee_requests"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+        help_text="Status of the document request for this employee."
+    )
+
+    def __str__(self):
+        return f"{self.document_request.document_type} for {self.employee.name}"
+
+class RequestedDocument(BaseApprovableModel):
+
+    document_request_employee = models.ForeignKey(
+        DocumentRequestEmployee,
+        on_delete=models.CASCADE,
+        related_name="documents",
+        help_text="The document request and employee this file relates to."
+    )
+    file = models.FileField(
+        upload_to="employee_documents/",
+        help_text="The uploaded document file."
+    )
+    remarks = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional remarks about the document."
+    )
+
+    def __str__(self):
+        return f"Document for {self.document_request_employee.document_request.document_type} by {self.document_request_employee.employee.name}"
+    
+    def get_institution(self):
+        return self.employee.get_institution()
+
+    def finish_workflow(self, approval: Approval):
+        with transaction.atomic():
+            if approval.status == "completed":
+                if approval.action.name == "create":
+                    self.is_active = True
+                    self.deleted_at = None
+                    self.document_request_employee.status = "approved"
+                    self.document_request_employee.is_active = True
+                    self.document_request_employee.save(update_fields=["status", "is_active"])   
+                elif approval.action.name == "update":
+                    self.is_active = True
+                    self.deleted_at = None
+                    if self.document_request_employee.status != "approved":
+                        self.document_request_employee.status = "submitted"
+                        self.document_request_employee.is_active = True
+                        self.document_request_employee.save(update_fields=["status", "is_active"])    
+                elif approval.action.name == "delete":
+                    self.is_active = False
+                    self.deleted_at = timezone.now()
+                    self.document_request_employee.status = "rejected"
+                    self.document_request_employee.is_active = False
+                    self.document_request_employee.save(update_fields=["status", "is_active"])   
+            elif approval.action.name == "update":
+                    self.is_active = True
+                    if self.document_request_employee.status == "approved":
+                        self.document_request_employee.is_active = True
+                        self.document_request_employee.save(update_fields=["is_active"])       
+                    elif approval.action.name == "delete":
+                        self.is_active = True
+                        self.deleted_at = None
+                        if self.document_request_employee.status == "rejected":
+                            self.document_request_employee.status = "submitted"
+                            self.document_request_employee.is_active = True
+                            self.document_request_employee.save(update_fields=["status", "is_active"])
+                    self.save()           
 
 class EmployeeWorkingDays(BaseApprovableModel):
     employee = models.OneToOneField(
@@ -738,7 +922,7 @@ class EmployeeShift(BaseApprovableModel):
         return self.employee.get_institution()
 
 
-class EmployeeMonthlyHourAccount(models.Model):
+class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="monthly_hour_accounts"
     )

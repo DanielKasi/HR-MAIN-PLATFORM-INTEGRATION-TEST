@@ -6,6 +6,8 @@ import {
 	JobAdvertCompleteFormData,
 	JobApplicationCompleteFormData,
 	IProjectTask,
+	IPaginatedResponse,
+	IEmployee,
 } from "@/types/types.utils";
 
 export type MiscState = {
@@ -13,7 +15,8 @@ export type MiscState = {
 	employeeCreationForm: Exclude<ICreateEmployeeForm, "employee_profile_picture"> | null;
 	jobAdvertForm: JobAdvertCompleteFormData | null;
 	applicationForm: JobApplicationCompleteFormData | null;
-	selectedTask: IProjectTask | null;
+	cachedEmployeesPage: IPaginatedResponse<IEmployee> | null;
+	employeesCacheTimestamp: number | null;
 };
 
 const intialMiscState: MiscState = {
@@ -21,7 +24,8 @@ const intialMiscState: MiscState = {
 	employeeCreationForm: null,
 	jobAdvertForm: null,
 	applicationForm: null,
-	selectedTask: null,
+	cachedEmployeesPage: null,
+	employeesCacheTimestamp: null,
 };
 
 export const miscReducer = (
@@ -47,10 +51,25 @@ export const miscReducer = (
 			return { ...state, applicationForm: action.payload as JobApplicationCompleteFormData };
 		case MISC_ACTION_TYPES.CLEAR_APPLICATION_FORM:
 			return { ...state, applicationForm: null };
-		case MISC_ACTION_TYPES.SAVE_SELECTED_TASK:
-			return { ...state, selectedTask: action.payload as IProjectTask };
-		case MISC_ACTION_TYPES.CLEAR_SELECTED_TASK:
-			return { ...state, selectedTask: null };
+
+		case MISC_ACTION_TYPES.CACHE_EMPLOYEES_PAGE:
+			return {
+				...state,
+				cachedEmployeesPage: action.payload as IPaginatedResponse<IEmployee>,
+			};
+
+		case MISC_ACTION_TYPES.CLEAR_EMPLOYEES_CACHE:
+			return {
+				...state,
+				cachedEmployeesPage: null,
+				employeesCacheTimestamp: null,
+			};
+
+		case MISC_ACTION_TYPES.SET_EMPLOYEES_CACHE_TIMESTAMP:
+			return {
+				...state,
+				employeesCacheTimestamp: action.payload as number,
+			};
 		default:
 			return state;
 	}

@@ -12,7 +12,7 @@ from .models import (
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from utilities.password_validator import validate_password_strength
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
 
@@ -51,15 +51,7 @@ class RoleSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = Role
-        fields = [
-            "id",
-            "name",
-            "description",
-            "permissions",
-            "institution",
-            "permissions_details",
-            "is_active",
-        ]
+        fields = '__all__'
 
         extra_kwargs = {"institution": {"required": False}}
 
@@ -292,13 +284,13 @@ class RolePermissionSerializer(BaseApprovableSerializer):
 
     class Meta:
         model = RolePermission
-        fields = ["id", "role", "permission"]
+        fields = '__all__'
 
 
-class SignatureSerializer(serializers.ModelSerializer):
+class SignatureSerializer(BaseApprovableSerializer):
     signature_image_url = serializers.CharField(read_only=True, allow_null=True)
 
     class Meta:
         model = Signature
-        fields = ["id", "user", "signature", "signature_image_url"]
+        fields = '__all__'
         read_only_fields = ["id", "signature_image_url"]

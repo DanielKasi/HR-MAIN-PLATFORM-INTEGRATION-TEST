@@ -9,9 +9,11 @@ import { StatusBadge } from "../common/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { hasPermission } from "@/lib/helpers";
 import { PERMISSION_CODES } from "@/constants";
+import RichTextDisplay from "@/components/common/rich-text-display";
 
 interface FeedbackTableProps {
 	feedback: IFeedback360[];
+	onView: (feedback: IFeedback360) => void;
 	onEdit: (feedback: IFeedback360) => void;
 	onDelete: (feedback: IFeedback360) => void;
 	onAdd: () => void;
@@ -21,6 +23,7 @@ interface FeedbackTableProps {
 
 export function FeedbackTable({
 	feedback,
+	onView,
 	onEdit,
 	onDelete,
 	onAdd,
@@ -124,21 +127,10 @@ export function FeedbackTable({
 			label: "Feedback Preview",
 			render: (item) => (
 				<div className="max-w-xs">
-					<div className="text-sm text-slate-600 line-clamp-2">
-						{item.feedback_text || "No feedback text"}
-					</div>
-					<div className="flex gap-1 mt-1">
-						{item.strengths && (
-							<Badge variant="outline" className="text-xs">
-								Strengths
-							</Badge>
-						)}
-						{item.areas_for_improvement && (
-							<Badge variant="outline" className="text-xs">
-								Improvements
-							</Badge>
-						)}
-					</div>
+					<RichTextDisplay
+						className="text-sm text-muted-foreground line-clamp-2"
+						content={item.feedback_text || ""}
+					/>
 				</div>
 			),
 		},
@@ -164,6 +156,11 @@ export function FeedbackTable({
 	];
 
 	const actions: TableAction<IFeedback360>[] = [
+		{
+			label: "View",
+			icon: <Eye className="h-4 w-4" />,
+			onClick: onView,
+		},
 		{
 			label: "Edit",
 			icon: <Edit className="h-4 w-4" />,

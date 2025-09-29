@@ -240,7 +240,7 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 												data?.results.map((allocation) => (
 													<TableRow key={allocation.id} className="hover:bg-[#f7f7fb]/50">
 														<TableCell className="font-mono text-sm">
-															{allocation.alloc_code || "N/A"}
+															{allocation.alloc_code || "Unknown"}
 														</TableCell>
 														<TableCell className="font-medium">
 															{allocation.asset?.asset_name || "Unknown Asset"}
@@ -249,7 +249,9 @@ const EmployeeAssetAllocations: React.FC<EmployeeAssetAllocationsProps> = ({
 															{allocation.allocated_by?.user?.fullname || "Unknown User"}
 														</TableCell>
 														<TableCell className="text-[#848496]">
-															{allocation.created_at ? formatDate(allocation.created_at) : "N/A"}
+															{allocation.created_at
+																? formatDate(allocation.created_at)
+																: "Unknown"}
 														</TableCell>
 														<TableCell>
 															<StatusBadge status={allocation.allocation_status || "unknown"} />

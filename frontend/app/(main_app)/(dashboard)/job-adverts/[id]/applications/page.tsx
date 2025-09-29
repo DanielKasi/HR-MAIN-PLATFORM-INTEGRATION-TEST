@@ -102,6 +102,7 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { createInterviewStage, getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { TableSkeleton } from "@/components/common/table-skeleton";
+import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 
 const statusColors = {
 	new: "bg-blue-100 text-blue-800",
@@ -171,7 +172,7 @@ export default function ApplicationsPage() {
 		interview_time: "",
 		job_position_application: 0,
 		status: "scheduled",
-		feedback: "",
+		feedback: {},
 		rating: undefined,
 	});
 
@@ -223,67 +224,6 @@ export default function ApplicationsPage() {
 			}));
 		} catch (error) {
 			toast.error("Failed to load interview data");
-		}
-	};
-
-	const handleCreateInterviewStage = async (e: React.FormEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
-
-		if (!selectedInstitution || !selectedApplicationForInterview) {
-			toast.error("Missing organization or application information");
-
-			return;
-		}
-
-		const newStageErrors: any = {};
-
-		if (!stageFormData.name.trim()) {
-			newStageErrors.name = "Stage name is required";
-		}
-		if (!stageFormData.interviewers || stageFormData.interviewers.length === 0) {
-			newStageErrors.interviewers = "Please select at least one interviewer";
-		}
-
-		if (Object.keys(newStageErrors).length > 0) {
-			setStageErrors(newStageErrors);
-
-			return;
-		}
-
-		setIsCreatingStage(true);
-
-		try {
-			const stageDataWithJobAdvert = {
-				...stageFormData,
-				job_position_advert: selectedApplicationForInterview.job_position_advert,
-				level: interviewStages.length + 1,
-			};
-
-			const newStage = await createInterviewStage({
-				institutionId: selectedInstitution.id,
-				stageData: stageDataWithJobAdvert,
-			});
-
-			if (newStage) {
-				setStageFormData({
-					name: "",
-					level: 1,
-					interviewers: [],
-					job_position_advert: selectedApplicationForInterview.job_position_advert,
-				});
-				setStageErrors({});
-				clearAllFilters();
-				setShowCreateStageDialog(false);
-				await fetchInterviewData();
-				toast.success("Interview stage created successfully!");
-			} else {
-				toast.error("Failed to create interview stage");
-			}
-		} catch (error) {
-			toast.error("Failed to create interview stage");
-		} finally {
-			setIsCreatingStage(false);
 		}
 	};
 
@@ -367,7 +307,7 @@ export default function ApplicationsPage() {
 					interview_time: "",
 					job_position_application: 0,
 					status: "scheduled",
-					feedback: "",
+					feedback: {},
 					rating: undefined,
 				});
 				setInterviewErrors({});
@@ -2640,13 +2580,11 @@ export default function ApplicationsPage() {
 			</Dialog>
 
 			{/* Create Interview Stage Dialog */}
-			<Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
+			{/* <Dialog open={showCreateStageDialog} onOpenChange={setShowCreateStageDialog}>
 				<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
 					<DialogHeader>
 						<DialogTitle>Create Interview Stage</DialogTitle>
-						<DialogDescription>
-							Create a new interview stage for the selected applications.
-						</DialogDescription>
+						<DialogDescription></DialogDescription>
 					</DialogHeader>
 
 					<form onSubmit={handleCreateInterviewStage} className="space-y-4">
@@ -2715,7 +2653,23 @@ export default function ApplicationsPage() {
 						</div>
 					</form>
 				</DialogContent>
-			</Dialog>
+			</Dialog> */}
+
+			{selectedApplicationForInterview && (
+				<CreateInterviewStageDialog
+					isOpen={showCreateStageDialog}
+					onOpenChange={setShowCreateStageDialog}
+					jobPositionId={selectedApplicationForInterview.job_position_advert}
+					jobPositionName={selectedApplicationForInterview.job_position_advert_job_details.name}
+					existingStagesCount={interviewStages.length}
+					onSuccess={async (newStage) => {
+						await fetchInterviewData();
+					}}
+					showTrigger={false}
+					title="Create Interview Stage"
+					description={`Create a new interview stage for the selected applications`}
+				/>
+			)}
 		</div>
 	);
 }

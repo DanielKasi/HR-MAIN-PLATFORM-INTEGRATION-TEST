@@ -9,7 +9,7 @@ import { Icon } from "@iconify/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IAssetHistory } from "@/types/types.utils";
+import { IAssetHistory } from "@/types/assets.types";
 import { PERMISSION_CODES } from "@/constants";
 import { assetHistoriesAPI, showErrorToast, getPaginatedAssetHistoriesFromUrl } from "@/lib/utils";
 import {
@@ -19,7 +19,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import ProtectedComponent from "@/components/ProtectedComponent";
 
 interface AssetHistoriesTableProps {
@@ -71,7 +71,7 @@ export function AssetHistoriesTable({
 					</Button>
 				</div>
 			),
-			cell: (history) => history.asset?.asset_name || "N/A",
+			cell: (history) => history.asset?.asset_name || "Unknown",
 		},
 		{
 			key: "event_type",
@@ -86,18 +86,18 @@ export function AssetHistoriesTable({
 					<Button
 						onClick={() =>
 							setOrdering((prev) =>
-								prev === "performed_by__user.fullname" ? "" : "performed_by__user.fullname",
+								prev === "performed_by.fullname" ? "" : "performed_by.fullname",
 							)
 						}
 						size="sm"
-						variant={ordering === "performed_by__user.fullname" ? "default" : "outline"}
+						variant={ordering === "performed_by.fullname" ? "default" : "outline"}
 						type="button"
 					>
 						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
 					</Button>
 				</div>
 			),
-			cell: (history) => history.performed_by?.user.fullname || "N/A",
+			cell: (history) => history.performed_by?.fullname || "Unknown",
 		},
 		{
 			key: "affected_user",
@@ -118,7 +118,7 @@ export function AssetHistoriesTable({
 					</Button>
 				</div>
 			),
-			cell: (history) => history.affected_user?.fullname || "N/A",
+			cell: (history) => history.affected_user?.fullname || "Unknown",
 		},
 		{
 			key: "created_at",
@@ -140,7 +140,7 @@ export function AssetHistoriesTable({
 		{
 			key: "notes",
 			header: "Notes",
-			cell: (history) => history.notes || "N/A",
+			cell: (history) => history.notes || "Unknown",
 		},
 		{
 			key: "actions",
@@ -156,21 +156,11 @@ export function AssetHistoriesTable({
 						<DropdownMenuItem className="p-0">
 							<Link
 								className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
-								href={`/asset-histories/view/${history.id}`}
+								href={`asset-histories/${history.id}`}
 							>
 								<Eye className="h-4 w-4 mr-2" /> View Details
 							</Link>
 						</DropdownMenuItem>
-						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_ASSET_HISTORIES}>
-							<DropdownMenuItem className="p-0">
-								<Link
-									className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
-									href={`/asset-histories/update/${history.id}`}
-								>
-									<Edit className="h-4 w-4 mr-2" /> Edit
-								</Link>
-							</DropdownMenuItem>
-						</ProtectedComponent>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			),

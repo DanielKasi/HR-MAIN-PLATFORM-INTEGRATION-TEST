@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, MoreVertical, Edit, Trash2, Search } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Search, Eye } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
@@ -44,6 +44,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/helpers";
+import { useRouter } from "next/navigation";
 
 interface ILocalEmployeeDeduction extends IEmployeeDeduction {
 	context?: "employee" | "department" | "job_position";
@@ -59,7 +60,7 @@ export default function EmployeeDeductionsPage() {
 	const [methodFilter, setMethodFilter] = useState<"all" | "fixed" | "percentage">("all");
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const [ordering, setOrdering] = useState("");
-
+	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
 	useEffect(() => {
@@ -315,7 +316,7 @@ export default function EmployeeDeductionsPage() {
 													{filteredResults.map((deduction) => (
 														<TableRow key={deduction.id}>
 															<TableCell className="font-medium">
-																{deduction.employee.user?.fullname || "Unknown Employee"}
+																{deduction.employee?.name || "Unknown Employee"}
 															</TableCell>
 															<TableCell>{deduction.deduction_type.name}</TableCell>
 															<TableCell>
@@ -358,6 +359,14 @@ export default function EmployeeDeductionsPage() {
 																		</Button>
 																	</DropdownMenuTrigger>
 																	<DropdownMenuContent align="end">
+																		<DropdownMenuItem
+																			onClick={() =>
+																				router.push(`/payroll/employee-deductions/${deduction.id}`)
+																			}
+																		>
+																			<Eye className="h-4 w-4 mr-2" />
+																			View Details
+																		</DropdownMenuItem>
 																		<ProtectedComponent
 																			permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}
 																		>
@@ -397,7 +406,7 @@ export default function EmployeeDeductionsPage() {
 													<div className="flex items-start justify-between mb-3">
 														<div className="flex-1">
 															<h3 className="font-semibold text-gray-900 mb-1">
-																{deduction.employee.user?.fullname || "Unknown Employee"}
+																{deduction.employee?.name || "Unknown Employee"}
 															</h3>
 															<p className="text-sm text-gray-600">
 																Type: {deduction.deduction_type.name}
@@ -435,6 +444,14 @@ export default function EmployeeDeductionsPage() {
 																</Button>
 															</DropdownMenuTrigger>
 															<DropdownMenuContent align="end">
+																<DropdownMenuItem
+																	onClick={() =>
+																		router.push(`/payroll/employee-deductions/${deduction.id}`)
+																	}
+																>
+																	<Eye className="h-4 w-4 mr-2" />
+																	View Details
+																</DropdownMenuItem>
 																<ProtectedComponent
 																	permissionCode={PERMISSION_CODES.CAN_EDIT_EMPLOYEE_DEDUCTIONS}
 																>

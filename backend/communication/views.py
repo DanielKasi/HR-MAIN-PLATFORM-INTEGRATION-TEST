@@ -13,8 +13,19 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.conf import settings
 from typing import Optional
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from django.db import transaction
+from django.db.models import Q
 
+from employee.models import Employee
+from institution.models import Institution
+from utilities.sortable_api import SortableAPIMixin
+from .models import Acknowledgment, Announcement
+from .serializers import AcknowledgmentSerializer, AnnouncementSerializer
 from utilities.pagination import CustomPageNumberPagination
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
+from django.utils import timezone
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -44,9 +55,7 @@ def add_notification(user_id: int, message: str, model_name: str = None, object_
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
         queue_length = redis_client.llen(f"notifications:{user_id}")
-        print(f"📤 Added notification for user {user_id}: {notification}, queue length: {queue_length}")
     except redis.RedisError as e:
-        print(f"❌ Redis error in add_notification: {str(e)}")
         raise
 
 def get_notification(user_id: int) -> Optional[dict]:
@@ -56,25 +65,19 @@ def get_notification(user_id: int) -> Optional[dict]:
         try:
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
             queue_length = len(notifications)
-            print(f"🔎 Checking queue for user {user_id}, queue length: {queue_length}")
             
             read_notifications_key = f"read_notifications:{user_id}"
             read_notifications = redis_client.smembers(read_notifications_key)
-            print(f"📋 Read notifications for user {user_id}: {read_notifications}")
             for notification in notifications:
                 try:
                     notification_data = json.loads(notification)
                     notification_id = str(notification_data['id'])
                     if not redis_client.sismember(read_notifications_key, notification_id):
-                        print(f"📥 Retrieved notification for user {user_id}: {notification}")
                         return notification_data
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
                     continue
-            print(f"❌ No unread notifications for user {user_id}")
             return None
         except redis.RedisError as e:
-            print(f"❌ Redis error in get_notification: {str(e)}")
             return None
 
 def get_unread_count(user_id: int) -> int:
@@ -83,10 +86,8 @@ def get_unread_count(user_id: int) -> int:
     with redis_client.lock(lock_key, timeout=5):
         try:
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
-            print(f"📋 Raw notifications for user {user_id}: {notifications}")
             read_notifications_key = f"read_notifications:{user_id}"
             read_notifications = redis_client.smembers(read_notifications_key)
-            print(f"📋 Read notifications for user {user_id}: {read_notifications}")
             unread_count = 0
             for notification in notifications:
                 try:
@@ -95,12 +96,9 @@ def get_unread_count(user_id: int) -> int:
                     if not redis_client.sismember(read_notifications_key, notification_id):
                         unread_count += 1
                 except (json.JSONDecodeError, KeyError) as e:
-                    print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
                     continue
-            print(f"📊 Unread notification count for user {user_id}: {unread_count}")
             return unread_count
         except redis.RedisError as e:
-            print(f"❌ Redis error in get_unread_count: {str(e)}")
             return 0
 
 def mark_notification_read(user_id: int, notification_id: str) -> None:
@@ -108,18 +106,16 @@ def mark_notification_read(user_id: int, notification_id: str) -> None:
     try:
         read_notifications_key = f"read_notifications:{user_id}"
         redis_client.sadd(read_notifications_key, str(notification_id))
-        print(f"✅ Marked notification {notification_id} as read for user {user_id}")
     except redis.RedisError as e:
-        print(f"❌ Redis error in mark_notification_read: {str(e)}")
+        pass
 
 def cleanup_queue(user_id: int) -> None:
     """Delete the user's notification queue and read notifications in Redis."""
     try:
         redis_client.delete(f"notifications:{user_id}")
         redis_client.delete(f"read_notifications:{user_id}")
-        print(f"🧹 Cleaning up queue for user {user_id}")
     except redis.RedisError as e:
-        print(f"❌ Redis error in cleanup_queue: {str(e)}")
+        pass
 
 @csrf_exempt
 @extend_schema(
@@ -136,23 +132,18 @@ async def sse_notifications(request):
     """Handle SSE connections for real-time notifications."""
     user_id: Optional[int] = None
     try:
-        print("🔍 Starting SSE request processing")
         authenticator = JWTAuthentication()
         start_time = time.time()
         user_auth_tuple = await sync_to_async(authenticator.authenticate)(request)
         auth_time = time.time() - start_time
-        print(f"🔐 Authentication took {auth_time:.2f} seconds")
 
         if user_auth_tuple is None:
-            print("❌ User not authenticated")
             return HttpResponse("Unauthorized", status=401)
 
         user, _ = user_auth_tuple
         user_id = await sync_to_async(lambda: user.id)()
-        print(f"🌐 SSE connection started for user {user_id}")
 
         async def event_stream():
-            print(f"🚀 Initializing event stream for user {user_id}")
             yield "data: {\"message\": \"SSE connection established\", \"unread_count\": 0}\n\n"
             last_heartbeat = time.time()
 
@@ -161,13 +152,11 @@ async def sse_notifications(request):
                 unread_count = await sync_to_async(lambda: get_unread_count(user_id))()
                 if notif:
                     notif['unread_count'] = unread_count
-                    print(f"📤 Sending notification to SSE client {user_id}: {notif}")
                     yield f"data: {json.dumps(notif)}\n\n"
                     # Removed: await sync_to_async(lambda: mark_notification_read(user_id, notif['id']))()
                 
                 current_time = time.time()
                 if current_time - last_heartbeat > 10:
-                    print(f"💓 Sending heartbeat for user {user_id} with unread count: {unread_count}")
                     yield f'data: {{"unread_count": {unread_count}}}\n\n'
                     last_heartbeat = current_time
 
@@ -183,7 +172,6 @@ async def sse_notifications(request):
         return response
 
     except Exception as e:
-        print(f"❌ Error in SSE view: {str(e)}")
         if user_id is not None:
             await sync_to_async(lambda: cleanup_queue(user_id))()
         return HttpResponse(f"Error: {str(e)}", status=500)
@@ -218,26 +206,21 @@ class MarkNotificationRead(APIView):
         try:
             user = request.user
             if not user.is_authenticated:
-                print("❌ User not authenticated")
                 return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
 
             user_id = user.id
             notification_id = request.data.get('notification_id')
             if not notification_id:
-                print("❌ No notification_id provided")
                 return Response({"error": "notification_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
             read_notifications_key = f"read_notifications:{user_id}"
             try:
                 redis_client.sadd(read_notifications_key, str(notification_id))
-                print(f"✅ Notification {notification_id} marked as read for user {user_id}")
                 return Response({"message": f"Notification {notification_id} marked as read"}, status=status.HTTP_200_OK)
             except redis.RedisError as e:
-                print(f"❌ Redis error in mark_notification_read: {str(e)}")
                 return Response({"error": "Failed to mark notification as read"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
-            print(f"❌ Error in MarkNotificationRead: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetAllNotifications(APIView):
@@ -281,7 +264,6 @@ class GetAllNotifications(APIView):
         try:
             user = request.user
             if not user.is_authenticated:
-                print("❌ User not authenticated")
                 return Response({"error": "Unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
 
             user_id = user.id
@@ -298,19 +280,244 @@ class GetAllNotifications(APIView):
                         notification_data['is_read'] = is_read
                         notifications_list.append(notification_data)
                     except (json.JSONDecodeError, KeyError) as e:
-                        print(f"❌ Invalid notification data: {notification}, error: {str(e)}")
                         continue
 
                 paginator = self.pagination_class()
                 paginated_notifications = paginator.paginate_queryset(notifications_list, request)
-                print(f"📋 Retrieved {len(paginated_notifications)} notifications for user {user_id} on page {paginator.page.number}")
-
                 return paginator.get_paginated_response({"notifications": paginated_notifications})
 
             except redis.RedisError as e:
-                print(f"❌ Redis error in get_all_notifications: {str(e)}")
                 return Response({"error": "Failed to fetch notifications"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         except Exception as e:
-            print(f"❌ Error in GetAllNotifications: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AnnouncementListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['title', 'created_at', 'requires_acknowledgment', 'approval_status']
+    default_ordering = ['-created_at']
+
+    @extend_schema(
+        request=AnnouncementSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def post(self, request):
+        serializer = AnnouncementSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            instance = serializer.save()
+            for employee in instance.get_target_employees():
+                Acknowledgment.objects.get_or_create(employee=employee, announcement=instance)
+            instance.confirm_create()  
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by title or content"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "type", "type": "str", "description": "Filter by announcement type (e.g., 'announcementtype')"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'title,-created_at')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer(many=True),
+                description="List of announcements.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Announcements"],
+    )
+    def get(self, request):
+        user = request.user
+        try:
+            employee = Employee.objects.get(user=user)
+            institution = employee.get_institution()
+        except (Employee.DoesNotExist, Institution.DoesNotExist):
+            return Response(
+                {"detail": "Institution or employee not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        announcements = Announcement.objects.filter(
+            deleted_at__isnull=True,
+            target_employees__department__institution=institution
+        ).distinct()
+
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        type_filter = request.query_params.get("type", None)
+
+        if search_query:
+            announcements = announcements.filter(
+                Q(title__icontains=search_query) | Q(content__icontains=search_query)
+            )
+
+        if created_at:
+            announcements = announcements.filter(created_at=created_at)
+
+        if type_filter:
+            announcements = announcements.filter(announcement_type__model=type_filter)
+
+        try:
+            announcements = self.apply_sorting(announcements, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(announcements, request)
+        serializer = AnnouncementSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)   
+
+class AnnouncementDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    def get(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        serializer = AnnouncementSerializer(announcement)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def delete(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        announcement.approval_status = 'under_deletion'
+        announcement.save(update_fields=['approval_status'])
+        announcement.confirm_delete()
+        return Response(
+            {"message": "Announcement submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=AnnouncementSerializer,
+                description="Announcement updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Announcement not found.",
+            ),
+        },
+        tags=["Announcements"],
+    )
+    @transaction.atomic
+    def patch(self, request, pk):
+        announcement = get_object_or_404(Announcement, pk=pk, deleted_at__isnull=True)
+        announcement.approval_status = 'under_update'
+        serializer = AnnouncementSerializer(announcement, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            announcement.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AcknowledgmentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            {"name": "acknowledged", "type": "bool", "description": "Filter by acknowledgment status (true/false)"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=AcknowledgmentSerializer(many=True),
+                description="List of acknowledgments for the user.",
+            ),
+            404: OpenApiResponse(description="Employee not found."),
+        },
+        tags=["Acknowledgments"],
+    )
+    def get(self, request):
+        try:
+            employee = Employee.objects.get(user=request.user)
+            acknowledgments = Acknowledgment.objects.filter(
+                employee=employee, deleted_at__isnull=True
+            )
+
+            acknowledged_filter = request.query_params.get("acknowledged", None)
+            if acknowledged_filter is not None:
+                acknowledgments = acknowledgments.filter(acknowledged=acknowledged_filter.lower() == 'true')
+
+            paginator = CustomPageNumberPagination()
+            paginated_qs = paginator.paginate_queryset(acknowledgments, request)
+            serializer = AcknowledgmentSerializer(paginated_qs, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+class AcknowledgeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Acknowledgment recorded.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Invalid acknowledgment.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Employee or acknowledgment not found.",
+            ),
+        },
+        tags=["Acknowledgments"],
+    )
+    @transaction.atomic
+    def post(self, request):
+        ack_id = request.data.get('ack_id')
+        try:
+            employee = Employee.objects.get(user=request.user)
+            acknowledgment = Acknowledgment.objects.get(id=ack_id, employee=employee, deleted_at__isnull=True)
+            acknowledgment.acknowledged = True
+            acknowledgment.acknowledged_at = timezone.now()
+            acknowledgment.save()
+            return Response({"detail": "Acknowledgment recorded"}, status=status.HTTP_200_OK)
+        except (Employee.DoesNotExist, Acknowledgment.DoesNotExist):
+            return Response({"detail": "Invalid acknowledgment"}, status=status.HTTP_400_BAD_REQUEST)

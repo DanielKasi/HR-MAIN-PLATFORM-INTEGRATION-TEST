@@ -311,6 +311,8 @@ class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
     )
     def get(self, request, institution_id):
         search_query = request.query_params.get('search', None)
+        status_filter = request.query_params.get('status', None)
+        
         applications = JobAdvertApplication.objects.filter(
             job_position_advert__job_position__department__institution_id=institution_id,
             deleted_at__isnull=True
@@ -322,11 +324,16 @@ class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
                 Q(applicant_email__icontains=search_query) |
                 Q(applicant_phone__icontains=search_query)
             )
+        
+        # Add status filtering
+        if status_filter:
+            applications = applications.filter(status=status_filter)
 
         try:
             applications = self.apply_sorting(applications, request)
         except ValueError as e:
-            return Response ({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)      
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(applications, request)
         serializer = JobAdvertApplicationSerializer(paginated_qs, many=True)
@@ -440,7 +447,7 @@ class InterviewStageDetailAPI(APIView):
     def patch(self, request, stage_id):
         try:
             stage = InterviewStage.objects.get(id=stage_id)
-            stage.approval_stage = 'under_update'
+            stage.approval_status = 'under_update'
             serializer = InterviewStageSerializer(
                 stage, data=request.data, partial=True
             )
@@ -919,6 +926,7 @@ class SkillZoneListCreateView(APIView, SortableAPIMixin):
         serializer = SkillZoneSerializer(
             data=request.data, context={"request": request}
         )
+        print("Data", request.data)
         if serializer.is_valid():
             instance = serializer.save()
             instance.confirm_create()

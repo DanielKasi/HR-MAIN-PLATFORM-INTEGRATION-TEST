@@ -1,10 +1,10 @@
 "use client";
 
-import { RefObject, useRef, useState } from "react";
+import { RefObject, useRef, useState, useMemo } from "react";
 import { Eye, Edit, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
 
@@ -36,7 +36,27 @@ import {
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
+import { selectValidCachedEmployeesPage } from "@/store/miscellaneous/selectors";
+import { cacheEmployeesPage } from "@/store/miscellaneous/actions";
+
+const shouldCacheResults = (
+	searchTerm: string | undefined,
+	positionSearchTerm: (string | number)[] | undefined,
+	departmentFilter: string | undefined,
+	minSalary: string | undefined,
+	maxSalary: string | undefined,
+	ordering: string,
+) => {
+	return (
+		!searchTerm &&
+		!positionSearchTerm?.length &&
+		(departmentFilter === "all" || !departmentFilter) &&
+		!minSalary &&
+		!maxSalary &&
+		!ordering
+	);
+};
 
 interface EmployeesTableProps {
 	refreshFunctionRef?: RefObject<(() => void) | null>;
@@ -56,26 +76,57 @@ export function EmployeesTable({
 	maxSalary,
 }: EmployeesTableProps) {
 	const currentInstitution = useSelector(selectSelectedInstitution);
+	const cachedEmployeesPage = useSelector(selectValidCachedEmployeesPage);
+	const dispatch = useDispatch();
+
 	const tableRefreshRef = refreshFunctionRef || useRef<(() => void) | null>(null);
 	const [employeeToDelete, setEmployeeToDelete] = useState<IEmployee | null>(null);
 	const [ordering, setOrdering] = useState("");
+	const [hasUsedCache, setHasUsedCache] = useState(false);
 	const removeCommas = (value: string) => value.replace(/,/g, "");
 	const router = useRouter();
 
-	const departmentSearchTerm =
-		departmentFilter !== "all" && departmentFilter
+	const departmentSearchTerm = useMemo(() => {
+		return departmentFilter !== "all" && departmentFilter
 			? departmentFilter.split(",").map((id) => id.trim())
 			: [];
+	}, [departmentFilter]);
+
+	const positionSearchTermString = useMemo(() => {
+		return positionSearchTerm?.join(",") || "";
+	}, [positionSearchTerm]);
+
+	const shouldUseCache = useMemo(() => {
+		return (
+			!hasUsedCache &&
+			cachedEmployeesPage &&
+			shouldCacheResults(
+				searchTerm,
+				positionSearchTerm,
+				departmentFilter,
+				minSalary,
+				maxSalary,
+				ordering,
+			)
+		);
+	}, [
+		hasUsedCache,
+		cachedEmployeesPage,
+		searchTerm,
+		positionSearchTerm,
+		departmentFilter,
+		minSalary,
+		maxSalary,
+		ordering,
+	]);
 
 	const handleDelete = async () => {
 		if (!currentInstitution) {
 			toast.error("No institution selected");
-
 			return;
 		}
 		if (!employeeToDelete) {
 			toast.error("No employee to delete!");
-
 			return;
 		}
 		try {
@@ -108,7 +159,7 @@ export function EmployeesTable({
 					<span>Name</span>
 				</div>
 			),
-			cell: (employee) => employee.user?.fullname || "N/A",
+			cell: (employee) => employee?.user?.fullname || "Unknown",
 		},
 		{
 			key: "email",
@@ -217,21 +268,21 @@ export function EmployeesTable({
 		},
 	];
 
-	return (
-		<>
-			<PaginatedTable<IEmployee>
-				fetchFirstPage={async () => {
-					if (!currentInstitution) throw new Error("No institution selected");
+	const fetchFirstPageWithCache = async () => {
+		if (!currentInstitution) throw new Error("No institution selected");
 
-					return await getPaginatedEmployees({
+		if (shouldUseCache) {
+			setHasUsedCache(true);
+			const cachedData = cachedEmployeesPage;
+
+			setTimeout(async () => {
+				try {
+					const freshData = await getPaginatedEmployees({
 						institutionId: currentInstitution.id,
 						page: 1,
 						ordering,
 						search: searchTerm || undefined,
-						positionSearch:
-							positionSearchTerm && positionSearchTerm.length > 0
-								? positionSearchTerm.join(",")
-								: undefined,
+						positionSearch: positionSearchTermString || undefined,
 						departmentSearch:
 							departmentSearchTerm && departmentSearchTerm.length > 0
 								? departmentSearchTerm.join(",")
@@ -239,17 +290,81 @@ export function EmployeesTable({
 						minSalary: minSalary ? removeCommas(minSalary) : undefined,
 						maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
 					});
-				}}
+
+					if (
+						shouldCacheResults(
+							searchTerm,
+							positionSearchTerm,
+							departmentFilter,
+							minSalary,
+							maxSalary,
+							ordering,
+						)
+					) {
+						dispatch(cacheEmployeesPage(freshData));
+					}
+
+					// if (tableRefreshRef.current) {
+					// 	tableRefreshRef.current();
+					// }
+				} catch (error) {
+					console.error("Background refresh failed:", error);
+				}
+			}, 0);
+
+			return cachedData!;
+		}
+
+		const result = await getPaginatedEmployees({
+			institutionId: currentInstitution.id,
+			page: 1,
+			ordering,
+			search: searchTerm || undefined,
+			positionSearch: positionSearchTermString || undefined,
+			departmentSearch:
+				departmentSearchTerm && departmentSearchTerm.length > 0
+					? departmentSearchTerm.join(",")
+					: undefined,
+			minSalary: minSalary ? removeCommas(minSalary) : undefined,
+			maxSalary: maxSalary ? removeCommas(maxSalary) : undefined,
+		});
+
+		if (
+			shouldCacheResults(
+				searchTerm,
+				positionSearchTerm,
+				departmentFilter,
+				minSalary,
+				maxSalary,
+				ordering,
+			)
+		) {
+			dispatch(cacheEmployeesPage(result));
+			setHasUsedCache(true);
+		}
+
+		return result;
+	};
+
+	const deps = useMemo(() => {
+		return [
+			currentInstitution?.id,
+			searchTerm || "",
+			positionSearchTermString,
+			departmentFilter || "",
+			minSalary || "",
+			maxSalary || "",
+			ordering,
+			hasUsedCache,
+		];
+	}, []);
+
+	return (
+		<>
+			<PaginatedTable<IEmployee>
+				fetchFirstPage={fetchFirstPageWithCache}
 				fetchFromUrl={getPaginatedEmployeesFromUrl}
-				deps={[
-					currentInstitution?.id,
-					searchTerm,
-					positionSearchTerm,
-					departmentFilter,
-					minSalary,
-					maxSalary,
-					ordering,
-				]}
+				deps={deps}
 				query={searchTerm}
 				onError={(err) =>
 					showErrorToast({ error: err, defaultMessage: "Failed to fetch employees" })

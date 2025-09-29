@@ -87,6 +87,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "easyaudit.middleware.easyaudit.EasyAuditMiddleware",
+    "communication.middleware.AcknowledgmentMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"

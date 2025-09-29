@@ -20,30 +20,54 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import { IProjectTaskFormData } from "@/types/types.utils";
+import { IProjectTask, IProjectTaskFormData } from "@/types/types.utils";
+import { toast } from "sonner";
+import { PROJECTS_TASKS_API, showErrorToast } from "@/lib/utils";
 
 interface TaskDialogProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSave: (data: IProjectTaskFormData) => Promise<void>;
-	initialData: Partial<IProjectTaskFormData>;
-	isEdit?: boolean;
+	onSave: (data: Partial<IProjectTaskFormData>) => Promise<void>;
+	projectId: number;
+	initialData?: IProjectTask | null;
 }
 
 export default function TaskDialog({
 	isOpen,
 	onClose,
 	onSave,
+	projectId,
 	initialData,
-	isEdit = false,
 }: TaskDialogProps) {
-	const [formData, setFormData] = useState<Partial<IProjectTaskFormData>>(initialData);
+	const [formData, setFormData] = useState<Partial<IProjectTaskFormData>>({
+		project: projectId,
+		task_name: initialData?.task_name || "",
+		description: initialData?.description || "",
+		managers: initialData?.managers.map((manager) => manager.id),
+		assigned_to: initialData?.assignees.map((assignee) => assignee.id),
+		start_date: initialData?.start_date || "",
+		end_date: initialData?.end_date || "",
+		task_status: initialData?.task_status || "not_started",
+		priority: initialData?.priority || "medium",
+	});
 	const [errors, setErrors] = useState<Partial<Record<keyof IProjectTaskFormData, string>>>({});
 	const [loading, setLoading] = useState(false);
 	const maxDateToday = new Date().toISOString().split("T")[0];
 
 	useEffect(() => {
-		setFormData(initialData);
+		if (initialData) {
+			setFormData({
+				project: projectId,
+				task_name: initialData?.task_name || "",
+				description: initialData?.description || "",
+				managers: initialData?.managers.map((manager) => manager.id),
+				assigned_to: initialData?.assignees.map((assignee) => assignee.id),
+				start_date: initialData?.start_date || "",
+				end_date: initialData?.end_date || "",
+				task_status: initialData?.task_status || "not_started",
+				priority: initialData?.priority || "medium",
+			});
+		}
 	}, [initialData]);
 
 	const handleInputChange = (
@@ -73,10 +97,26 @@ export default function TaskDialog({
 
 		setLoading(true);
 		try {
-			await onSave(formData as IProjectTaskFormData);
-			onClose();
+			const dataToSubmit = { ...formData, project: projectId };
+			if (!initialData) {
+				await PROJECTS_TASKS_API.create({
+					projectId,
+					data: dataToSubmit,
+				});
+			} else {
+				await PROJECTS_TASKS_API.update({
+					taskId: initialData.id,
+					data: dataToSubmit,
+				});
+			}
+			toast.success(`Task  ${initialData ? "updated " : "created "} successfully`);
+			await onSave(dataToSubmit);
+			await onClose();
 		} catch (err) {
-			// Errors handled by onSave
+			showErrorToast({
+				error: err,
+				defaultMessage: `Failed to ${initialData ? "update " : "create"} task`,
+			});
 		} finally {
 			setLoading(false);
 		}
@@ -86,9 +126,9 @@ export default function TaskDialog({
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className="">
 				<DialogHeader>
-					<DialogTitle>{isEdit ? "Edit Task" : "Add New Task"}</DialogTitle>
+					<DialogTitle>{initialData ? "Edit Task" : "Add New Task"}</DialogTitle>
 					<DialogDescription>
-						{isEdit ? "Update task details" : "Create a new task for the project"}
+						{initialData ? "Update task details" : "Create a new task for the project"}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-6 ">
@@ -143,7 +183,7 @@ export default function TaskDialog({
 								value={formData.task_status || "not_started"}
 								onValueChange={(value) => handleInputChange("task_status", value)}
 							>
-								<SelectTrigger>
+								<SelectTrigger className="rounded-xl">
 									<SelectValue placeholder="Select status" />
 								</SelectTrigger>
 								<SelectContent>
@@ -161,7 +201,7 @@ export default function TaskDialog({
 								value={formData.priority || "medium"}
 								onValueChange={(value) => handleInputChange("priority", value)}
 							>
-								<SelectTrigger>
+								<SelectTrigger className="rounded-xl">
 									<SelectValue placeholder="Select priority" />
 								</SelectTrigger>
 								<SelectContent>
@@ -203,7 +243,7 @@ export default function TaskDialog({
 					</div>
 					<div className="flex justify-end gap-2">
 						<Button type="submit" className="w-full rounded-full" disabled={loading}>
-							{loading ? "Saving..." : isEdit ? "Update Task" : "Create Task"}
+							{loading ? "Saving..." : initialData ? "Update Task" : "Create Task"}
 						</Button>
 					</div>
 				</form>

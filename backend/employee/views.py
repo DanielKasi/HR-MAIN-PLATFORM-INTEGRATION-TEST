@@ -15,9 +15,12 @@ from drf_spectacular.utils import extend_schema
 from datetime import timedelta
 from spotcheck.utilities import create_spotchecks_for_today
 from .models import (
+    DocumentRequest,
+    DocumentRequestEmployee,
     Employee,
     EmployeeAttendance,
     EmployeeCompanyEmail,
+    EmployeeMonthlyHourAccount,
     EmployeeType,
     NextOfKin,
     WorkType,
@@ -27,11 +30,14 @@ from .models import (
     QualificationAward,
 )
 from .serializers import (
+    DocumentRequestSerializer,
     EmployeeAttendanceSerializer,
     EmployeeCompanyEmailSerializer,
+    EmployeeMonthlyHourAccountSerializer,
     EmployeeSerializer,
     EmployeeTypeSerializer,
     QualificationAwardSerializer,
+    RequestedDocumentSerializer,
     WorkTypeSerializer,
     EmployeeContractSerializer,
     EmployeeWorkingDaysSerializer,
@@ -85,7 +91,7 @@ import string
 import secrets
 from django.db.models import Count, Avg
 import json
-from .utilities import create_company_email, delete_company_email, generate_email, generate_employee_excel, reset_email_password
+from .utilities import activate_employee, create_company_email, deactivate_employee, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
 from django.contrib.sites.shortcuts import get_current_site
 
@@ -232,13 +238,7 @@ class EmployeeWorkingDaysDetailAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-from django.db.models import Q
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-from datetime import datetime, date
+
 
 
 class EmployeeListAPIView(APIView, SortableAPIMixin):
@@ -4030,4 +4030,428 @@ def verify_email_and_redirect(request):
     except (BadSignature, SignatureExpired):
         return HttpResponse("Invalid or expired token", status=400)
     except Employee.DoesNotExist:
-        return HttpResponse("Invalid employee", status=400)            
+        return HttpResponse("Invalid employee", status=400)          
+
+
+class DocumentRequestListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ["document_type", "created_at", "due_date", "document_format"]
+    default_ordering = ["-created_at"]
+
+    @extend_schema(
+        request=DocumentRequestSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=DocumentRequestSerializer,
+                description="Document request created successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Document Requests"],
+    )
+    @transaction.atomic()
+    def post(self, request):
+        serializer = DocumentRequestSerializer(
+            data=request.data, context={"request": request}
+        )
+        if serializer.is_valid():
+            instance = serializer.save(requested_by=request.user)
+            instance.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by document type or description"},
+            {"name": "created_at", "type": "date", "description": "Filter by creation date"},
+            {"name": "status", "type": "str", "description": "Filter by status (pending/submitted/approved/rejected)"},
+            {"name": "employee_id", "type": "int", "description": "Filter by employee ID"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'document_type,-created_at,due_date')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=DocumentRequestSerializer(many=True),
+                description="List of document requests.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Document Requests"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        created_at = request.query_params.get("created_at", None)
+        status_filter = request.query_params.get("status", None)
+        employee_id = request.query_params.get("employee_id", None)
+
+        try:
+            institution = Institution.objects.get(id=user.institution.id)
+        except Institution.DoesNotExist:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        requests = DocumentRequest.objects.filter(
+            employee_requests__employee__department__institution=institution,
+            deleted_at__isnull=True
+        ).distinct()
+
+        if search_query:
+            requests = requests.filter(
+                Q(document_type__icontains=search_query)
+                | Q(description__icontains=search_query)
+            )
+
+        if created_at:
+            requests = requests.filter(created_at=created_at)
+
+        if status_filter in ["pending", "submitted", "approved", "rejected"]:
+            requests = requests.filter(employee_requests__status=status_filter)
+
+        if employee_id:
+            requests = requests.filter(employee_requests__employee__id=employee_id)
+
+        try:
+            requests = self.apply_sorting(requests, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(requests, request)
+        serializer = DocumentRequestSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+class DocumentRequestDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=DocumentRequestSerializer,
+                description="Document request details.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document request not found.",
+            ),
+        },
+        tags=["Document Requests"],
+    )
+    def get(self, request, pk):
+        document_request = get_object_or_404(DocumentRequest, pk=pk)
+        serializer = DocumentRequestSerializer(document_request)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={
+            200: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document request marked for deletion and sent for approval.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document request not found.",
+            ),
+        },
+        tags=["Document Requests"],
+    )
+    @transaction.atomic()
+    def delete(self, request, pk):
+        document_request = get_object_or_404(DocumentRequest, pk=pk)
+        document_request.approval_status = "under_deletion"
+        document_request.save(update_fields=["approval_status"])
+        document_request.confirm_delete()
+        return Response(
+            {"message": "Document request submitted for deletion approval."},
+            status=status.HTTP_200_OK
+        )
+
+    @extend_schema(
+        request=DocumentRequestSerializer,
+        responses={
+            200: OpenApiResponse(
+                response=DocumentRequestSerializer,
+                description="Document request updated successfully.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document request not found.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+        },
+        tags=["Document Requests"],
+    )
+    @transaction.atomic()
+    def patch(self, request, pk):
+        document_request = get_object_or_404(DocumentRequest, pk=pk)
+        document_request.approval_status = "under_update"
+        serializer = DocumentRequestSerializer(
+            document_request, data=request.data, partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
+            document_request.confirm_update()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     
+
+class DocumentUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RequestedDocumentSerializer,
+        responses={
+            201: OpenApiResponse(
+                response=RequestedDocumentSerializer,
+                description="Document uploaded successfully.",
+            ),
+            400: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Bad request, validation errors.",
+            ),
+            403: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Not authorized to upload this document.",
+            ),
+            404: OpenApiResponse(
+                response=OpenApiTypes.OBJECT,
+                description="Document request employee not found.",
+            ),
+        },
+        tags=["Document Requests"],
+    )
+    @transaction.atomic()
+    def post(self, request, request_employee_id):
+        document_request_employee = get_object_or_404(DocumentRequestEmployee, pk=request_employee_id)
+        if document_request_employee.employee.user != request.user:
+            return Response(
+                {"detail": "Not authorized to upload this document."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer = RequestedDocumentSerializer(data=request.data, context={"request": request})
+        if serializer.is_valid():
+            document = serializer.save(document_request_employee=document_request_employee)
+            document_request_employee.status = "submitted"
+            document_request_employee.save(update_fields=["status"])
+            document.confirm_create()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)     
+
+
+class EmployeeMonthlyHourAccountListCreateView(APIView, SortableAPIMixin):
+    permission_classes = [IsAuthenticated]
+    allowed_ordering_fields = ['year', 'month', 'total_worked_hours', 'total_overtime_hours']
+    default_ordering = ['-year', '-month']
+
+
+    @extend_schema(
+        parameters=[
+            {"name": "search", "type": "str", "description": "Search by employee name"},
+            {"name": "year", "type": "int", "description": "Filter by year"},
+            {"name": "month", "type": "int", "description": "Filter by month"},
+            {"name": "ordering", "type": "str", "description": "Sort by fields (e.g., 'year,-month,total_worked_hours')"},
+        ],
+        responses={
+            200: OpenApiResponse(
+                response=EmployeeMonthlyHourAccountSerializer(many=True),
+                description="List of employee monthly hour accounts.",
+            ),
+            400: OpenApiResponse(description="Invalid ordering field."),
+            404: OpenApiResponse(description="Institution not found."),
+        },
+        tags=["Employee Hour Accounts"],
+    )
+    def get(self, request):
+        user = request.user.profile
+        search_query = request.query_params.get("search", None)
+        year_filter = request.query_params.get("year", None)
+        month_filter = request.query_params.get("month", None)
+
+        try:
+            institution = user.institution
+        except AttributeError:
+            return Response(
+                {"detail": "Institution not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        accounts = EmployeeMonthlyHourAccount.objects.filter(
+            employee__institution=institution
+        )
+
+        if search_query:
+            accounts = accounts.filter(
+                Q(employee__user__fullname__icontains=search_query)
+            )
+
+        if year_filter:
+            accounts = accounts.filter(year=year_filter)
+
+        if month_filter:
+            accounts = accounts.filter(month=month_filter)
+
+        try:
+            accounts = self.apply_sorting(accounts, request)
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = CustomPageNumberPagination()
+        paginated_qs = paginator.paginate_queryset(accounts, request)
+        serializer = EmployeeMonthlyHourAccountSerializer(paginated_qs, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
+
+class DeactivateEmployeeView(APIView):
+    """
+    API endpoint to deactivate an employee and their company email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Deactivate an employee",
+        description="Deactivates an employee by setting their user account to inactive and suspending their company email. Requires admin permissions.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="The ID of the employee to deactivate",
+                required=True
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Employee deactivated successfully",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string", "example": "Employee John Doe deactivated successfully"}
+                    }
+                }
+            ),
+            404: OpenApiResponse(
+                description="Employee not found",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Employee not found"}
+                    }
+                }
+            ),
+            400: OpenApiResponse(
+                description="Bad request due to unexpected error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Invalid operation"}
+                    }
+                }
+            ),
+            401: OpenApiResponse(
+                description="Unauthorized - Authentication credentials were not provided or invalid"
+            ),
+            403: OpenApiResponse(
+                description="Forbidden - User lacks admin permissions"
+            )
+        },
+        tags=["Employee Management"],
+    )
+    def post(self, request, employee_id):
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            deactivate_employee(employee)
+            return Response(
+                {"message": f"Employee {employee.user.fullname} deactivated successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class ActivateEmployeeView(APIView):
+    """
+    API endpoint to activate an employee and their company email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Activate an employee",
+        description="Activates an employee by setting their user account to active and uns suspending their company email. Requires admin permissions.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="The ID of the employee to activate",
+                required=True
+            )
+        ],
+        responses={
+            200: OpenApiResponse(
+                description="Employee activated successfully",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string", "example": "Employee John Doe activated successfully"}
+                    }
+                }
+            ),
+            404: OpenApiResponse(
+                description="Employee not found",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Employee not found"}
+                    }
+                }
+            ),
+            400: OpenApiResponse(
+                description="Bad request due to unexpected error",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "error": {"type": "string", "example": "Invalid operation"}
+                    }
+                }
+            ),
+            401: OpenApiResponse(
+                description="Unauthorized - Authentication credentials were not provided or invalid"
+            ),
+            403: OpenApiResponse(
+                description="Forbidden - User lacks admin permissions"
+            )
+        },
+        tags=["Employee Management"],
+    )
+    def post(self, request, employee_id):
+        try:
+            employee = Employee.objects.get(id=employee_id)
+            activate_employee(employee)
+            return Response(
+                {"message": f"Employee {employee.user.fullname} activated successfully"},
+                status=status.HTTP_200_OK
+            )
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )    

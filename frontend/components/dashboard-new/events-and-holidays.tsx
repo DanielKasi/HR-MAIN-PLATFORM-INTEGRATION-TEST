@@ -9,9 +9,13 @@ import { ICalendar, IEvent } from "@/types/types.utils";
 
 interface EventsAndHolidaysWidgetProps {
 	onRefresh?: () => void;
+	className?: string;
 }
 
-export function EventsAndHolidaysWidget({ onRefresh }: EventsAndHolidaysWidgetProps) {
+export function EventsAndHolidaysWidget({
+	onRefresh,
+	className = "",
+}: EventsAndHolidaysWidgetProps) {
 	const [calendarData, setCalendarData] = useState<ICalendar | null>(null);
 	const [events, setEvents] = useState<IEvent[]>([]);
 	const [activeTab, setActiveTab] = useState<"holidays" | "events">("holidays");
@@ -77,7 +81,7 @@ export function EventsAndHolidaysWidget({ onRefresh }: EventsAndHolidaysWidgetPr
 			: [...(calendarData?.event_occurrences.map((eo) => eo.event) || []), ...events];
 
 	return (
-		<Card className="h-fit shadow-sm border-none">
+		<Card className={`h-fit shadow-sm border-none ${className}`}>
 			<CardHeader className="pb-2">
 				<div className="flex border-b">
 					<button

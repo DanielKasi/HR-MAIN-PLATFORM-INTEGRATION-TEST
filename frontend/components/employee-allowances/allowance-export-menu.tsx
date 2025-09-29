@@ -38,7 +38,7 @@ export function AllowanceExportMenu({
 				"Effective To",
 			],
 			...allowances.map((allowance) => [
-				allowance.employee.user?.fullname || "",
+				allowance.employee?.name || "",
 				allowance.allowance_type.name,
 				allowance.calculation_method,
 				allowance.amount,
@@ -65,7 +65,7 @@ export function AllowanceExportMenu({
 	const exportToExcel = () => {
 		try {
 			const excelData = allowances.map((allowance) => ({
-				"Employee Name": allowance.employee.user?.fullname || "",
+				"Employee Name": allowance.employee?.name || "",
 				"Employee Email": allowance.employee.email,
 				"Allowance Type": allowance.allowance_type.name,
 				"Calculation Method":

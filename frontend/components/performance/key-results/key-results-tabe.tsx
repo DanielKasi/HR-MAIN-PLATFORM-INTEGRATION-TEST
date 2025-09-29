@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Edit, Eye, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { IKeyResult } from "@/types/types.utils";
@@ -10,12 +10,13 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PaginatedTable, ColumnDef } from "@/components/common/tables/paginated-table";
+import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
 import { KEY_RESULTS_API } from "@/lib/utils";
 
 interface KeyResultsTableProps {
 	refreshFunctionRef?: React.RefObject<(() => void) | null>;
 	searchTerm: string;
+	onView: (keyResult: IKeyResult) => void;
 	onEdit: (keyResult: IKeyResult) => void;
 	onDelete: (keyResult: IKeyResult) => void;
 	onAdd: () => void;
@@ -24,6 +25,7 @@ interface KeyResultsTableProps {
 export function KeyResultsTable({
 	refreshFunctionRef,
 	searchTerm,
+	onView,
 	onEdit,
 	onDelete,
 	onAdd,
@@ -64,6 +66,9 @@ export function KeyResultsTable({
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start">
+						<DropdownMenuItem onClick={() => onView(keyResult)}>
+							<Eye className="h-4 w-4 mr-2" /> View
+						</DropdownMenuItem>
 						<DropdownMenuItem onClick={() => onEdit(keyResult)}>
 							<Edit className="h-4 w-4 mr-2" /> Edit
 						</DropdownMenuItem>

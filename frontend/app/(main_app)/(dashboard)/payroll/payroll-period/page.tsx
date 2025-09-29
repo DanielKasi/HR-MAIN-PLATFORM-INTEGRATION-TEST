@@ -100,6 +100,7 @@ export default function PayrollPeriods() {
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const accessToken = useSelector(selectAccessToken);
 	const [isLoading, setIsLoading] = useState(false);
+	const [isNameEdited, setIsNameEdited] = useState(false);
 	const [isExcelPayslipsReportDownloading, setIsExcelPayslipsReportDownloading] = useState(false);
 	const [periodToDelete, setPeriodToDelete] = useState<IPayrollPeriod | null>(null);
 	const [ordering, setOrdering] = useState("");
@@ -135,9 +136,9 @@ export default function PayrollPeriods() {
 
 	// Auto-generate period name
 	useEffect(() => {
-		if (formData.start_date && formData.end_date && !editingPeriod) {
+		if (formData.start_date && formData.end_date && !editingPeriod && !isNameEdited) {
 			const generatedName = generatePeriodName(formData.start_date, formData.end_date);
-
+			setFormData((prev) => ({ ...prev, name: generatedName }));
 			if (
 				formData.name === "" ||
 				formData.name === generatePeriodName(formData.start_date, formData.end_date)
@@ -152,8 +153,8 @@ export default function PayrollPeriods() {
 		const errors: ValidationResult = {};
 
 		if (isModalOpen) {
-			if (formData.name && formData.name.trim().length < 3) {
-				errors.name = "Period name must be at least 3 characters long";
+			if (!formData.name) {
+				errors.name = "Period name is required";
 			}
 			if (formData.start_date && formData.end_date) {
 				if (new Date(formData.end_date) <= new Date(formData.start_date)) {
@@ -200,6 +201,7 @@ export default function PayrollPeriods() {
 		});
 		setEditingPeriod(null);
 		setValidationErrors({});
+		setIsNameEdited(false);
 	};
 
 	const handleInputChange = (field: string, value: string) => {
@@ -756,9 +758,13 @@ export default function PayrollPeriods() {
 								<Input
 									id="name"
 									type="text"
+									required
 									placeholder="Enter period name"
 									value={formData.name}
-									onChange={(e) => handleInputChange("name", e.target.value)}
+									onChange={(e) => {
+										handleInputChange("name", e.target.value);
+										setIsNameEdited(true);
+									}}
 									disabled={saving}
 									className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
 										validationErrors.name
@@ -785,6 +791,7 @@ export default function PayrollPeriods() {
 									id="start_date"
 									type="date"
 									value={formData.start_date}
+									required
 									onChange={(e) => handleInputChange("start_date", e.target.value)}
 									disabled={saving}
 									className={`h-12 rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base ${
@@ -807,6 +814,7 @@ export default function PayrollPeriods() {
 								<Input
 									id="end_date"
 									type="date"
+									required
 									value={formData.end_date}
 									onChange={(e) => handleInputChange("end_date", e.target.value)}
 									disabled={saving}

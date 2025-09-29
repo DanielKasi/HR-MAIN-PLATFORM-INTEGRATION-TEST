@@ -69,7 +69,7 @@ import {
 	showErrorToast,
 	getEmployeeById,
 	updateEmployee,
-	employeeAPI,
+	EMPLOYEE_API,
 } from "@/lib/utils";
 import { useBranches } from "@/hooks/use-branches";
 import { MultiSelectBranches } from "@/components/multi-select-branches";
@@ -474,7 +474,7 @@ export default function UpdateEmployeeForm() {
 			const employee: IEmployee = await getEmployeeById({ employeeId: parseInt(employeeId) });
 			setThisEmployee(employee);
 			setFormData({
-				fullname: employee.user?.fullname || "",
+				fullname: employee?.name || employee.user?.fullname || "",
 				email: employee.email,
 				company_email: employee.company_email?.email || "",
 				phone_number: employee.phone_number,
@@ -583,7 +583,7 @@ export default function UpdateEmployeeForm() {
 			const [workTypesData, employeeTypesData, qualification_awards] = await Promise.all([
 				getWorkTypes({ institutionId: selectedInstitution.id }),
 				getEmployeeTypes({ institutionId: selectedInstitution.id }),
-				employeeAPI.getQualificationAwards(),
+				EMPLOYEE_API.getQualificationAwards(),
 			]);
 
 			setWorkTypes(workTypesData.results || []);
