@@ -707,8 +707,11 @@ class GenerateDocumentView(BaseDocumentView):
                     pip.employee.department.name if hasattr(pip.employee, "department") else ""
                 ),
                 "supervisor": (
-                    pip.employee.position.reports_to.name if hasattr(pip.employee, "position") and hasattr(pip.employee.position, "reports_to") else ""
-                ),
+                    pip.employee.position.reports_to.name
+                        if getattr(pip.employee, "position", None)
+                        and getattr(pip.employee.position, "reports_to", None)
+                        else ""                
+                        ),
                 "date_issued": str(pip.start_date) if pip.start_date else "",
                 "review_period": f"{pip.start_date} to {pip.end_date}" if pip.start_date and pip.end_date else "",
                 "concerns": concerns,
