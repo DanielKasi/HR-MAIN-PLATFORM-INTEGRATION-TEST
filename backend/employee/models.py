@@ -621,7 +621,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
     class Meta:
         verbose_name = "Employee Email"
         verbose_name_plural = "Employee Emails"
-        unique_together = [['employee', 'email']]
+        unique_together = [['institution', 'email']]
 
     STATUS_CHOICES = (
         ('active', 'Active'),
@@ -630,6 +630,9 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         ('deleted', 'Deleted'),
     )
 
+    institution = models.ForeignKey(
+        "institution.Institution", on_delete=models.CASCADE, related_name="company_emails"
+    )
     employee = models.OneToOneField(
         Employee,
         on_delete=models.CASCADE,
@@ -637,7 +640,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         null=True,
         blank=True
     )
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=False)
     provider = models.CharField(
         max_length=20,
         null=True,
@@ -655,7 +658,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         return f"{self.email} for {self.employee.user.fullname}"
     
     def get_institution(self):
-        return self.employee.department.institution
+        return self.institution
 
 class DocumentRequest(BaseApprovableModel):
 
