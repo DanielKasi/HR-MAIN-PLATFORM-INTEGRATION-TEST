@@ -5771,6 +5771,24 @@ export const taxRulesAPI = {
 			throw error;
 		}
 	},
+
+	byInstitutionTax: {
+		getPaginated: async (params: { institution_tax: number; search?: string; page?: number }) => {
+			const urlParams = new URLSearchParams();
+			Object.entries(params).forEach(([key, value]) => {
+				if (key && value) {
+					urlParams.append(key, value.toString());
+				}
+			});
+			const allRules = await apiRequest.get(`/institution/tax-rule/?${urlParams.toString()}`);
+			return allRules.data as IPaginatedResponse<ITaxRule>;
+		},
+
+		getPaginatedFromUrl: async ({ url }: { url: string }) => {
+			const response = await apiRequest.get(url);
+			return response as IPaginatedResponse<ITaxRule>;
+		},
+	},
 };
 
 export const payrollAPI = {

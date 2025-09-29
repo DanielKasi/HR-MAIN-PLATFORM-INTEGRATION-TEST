@@ -23,7 +23,7 @@ export default function Modules() {
 		},
 		{
 			id: "task_mgmt",
-			name: "Tasks",
+			name: "Task Management",
 			link: "http://tasks.baisoftglobal.com",
 			icon: <Icon icon="hugeicons:gitbook" width="24" height="24" />,
 		},
