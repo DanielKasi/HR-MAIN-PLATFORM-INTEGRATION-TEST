@@ -43,6 +43,7 @@ import { formatCurrency } from "@/lib/helpers";
 import { CardHeader } from "@/components/ui/card";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
+import { TaxRuleCreateEditDialog } from "@/components/tax-rules/tax-rule-create-edit-dialog";
 
 // Use backend types
 export type { ITax, ITaxRule, ITaxRuleFormData } from "@/types/types.utils";
@@ -247,7 +248,7 @@ const TaxDetailComponent = () => {
 								)}
 							</div>
 							<div className="flex items-center gap-3">
-								<CreateTaxRuleDialog
+								<TaxRuleCreateEditDialog
 									taxId={parseInt(taxId)}
 									onSuccess={handleCreateSuccess}
 									disabled={!selectedInstitution?.id}

@@ -281,7 +281,7 @@ export function ApprovalWorkflow({
 
 													{task.status === "pending" && !showCommentFor && (
 														<div className="flex flex-col sm:grid grid-cols-2 w-full gap-2 sm:gap-4  mt-3">
-															{(task.level.approvers_detail.find(
+															{task.level.approvers_detail.find(
 																(approver) =>
 																	approver.approver_group?.users_display?.find(
 																		(user) => user.user.id === currentUser?.id,
@@ -290,9 +290,9 @@ export function ApprovalWorkflow({
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),
-																	),
-															) ||
-																task.level.approver_users.includes(currentUser?.id)) && (
+																	) ||
+																	approver.approver_user === currentUser.id,
+															) && (
 																<>
 																	<Button
 																		size="sm"
@@ -314,7 +314,7 @@ export function ApprovalWorkflow({
 																</>
 															)}
 
-															{(task.level.overriders_detail.find(
+															{task.level.overriders_detail.find(
 																(approver) =>
 																	approver.approver_group?.users_display?.find(
 																		(user) => user.user.id === currentUser?.id,
@@ -323,9 +323,9 @@ export function ApprovalWorkflow({
 																		currentUser?.roles.find(
 																			(user_role) => user_role.id === role.id,
 																		),
-																	),
-															) ||
-																task.level.overrider_users.includes(currentUser?.id)) && (
+																	) ||
+																	approver.overrider_user === currentUser.id,
+															) && (
 																<Button
 																	size="sm"
 																	className="bg-blue-400 hover:bg-blue-700 text-white text-xs !h-8 rounded-full "

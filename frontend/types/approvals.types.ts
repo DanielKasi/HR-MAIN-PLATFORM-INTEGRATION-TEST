@@ -28,6 +28,8 @@ export interface ApprovalDocumentLevelApprover {
 
 export interface ApprovalDocumentLevelOverrider {
 	id: number;
+	approval_document_level: number;
+	overrider_user: number | null;
 	approver_group?: ApproverGroup;
 }
 
@@ -40,8 +42,6 @@ export interface ApprovalDocumentLevel {
 	approvers_detail: ApprovalDocumentLevelApprover[];
 	overriders_detail: ApprovalDocumentLevelOverrider[];
 	approval_document: number;
-	approver_users: number[];
-	overrider_users: number[];
 }
 
 export interface ApprovalDocumentLevelFormData {
