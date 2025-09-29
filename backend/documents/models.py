@@ -9,7 +9,7 @@ from approval.models import Approval, BaseApprovableModel
 from django.utils import timezone
 
 class DocumentType(BaseApprovableModel):
-    institution = models.ForeignKey(Institution, on_delete=models.CASCADE)
+    institution = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50, unique=True, editable=False)
     description = models.TextField(blank=True, null=True)
