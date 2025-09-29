@@ -6798,7 +6798,9 @@ export const EMPLOYEE_API = {
 		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
 			const urlParams = new URLSearchParams();
 			Object.entries(params).forEach(([key, value]) => {
-				urlParams.append(key, value.toString());
+				if (value) {
+					urlParams.append(key, value.toString());
+				}
 			});
 			const response = await apiRequest.get(`employee/hour-account/?${urlParams.toString()}`);
 			return response.data as IPaginatedResponse<IWorkHourCount>;
