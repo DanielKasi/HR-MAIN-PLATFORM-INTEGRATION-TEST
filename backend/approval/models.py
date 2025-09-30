@@ -106,6 +106,14 @@ class ApprovalDocumentLevel(SoftDeletableTimeStampedModel):
         unique_together = ('approval_document', 'level')
         ordering = ['level']
 
+    def clean(self):
+        # Ensure level is unique within the approval_document
+        if ApprovalDocumentLevel.objects.filter(
+            approval_document=self.approval_document,
+            level=self.level
+        ).exclude(id=self.id).exists():
+            raise ValidationError({"error": "Level must be unique within the approval document."})
+
     def get_approver_users(self) -> set:
         """Get all unique users who are approvers for this level (direct users + via groups)"""
         from users.models import CustomUser, Profile, Role  # Import as needed
@@ -179,7 +187,7 @@ class ApprovalDocumentLevelApprovers(models.Model):
 
 class ApprovalDocumentLevelOverriders(models.Model):
     approval_document_level = models.ForeignKey(ApprovalDocumentLevel, on_delete=models.CASCADE)
-    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE)
+    approver_group = models.ForeignKey(ApproverGroup, on_delete=models.CASCADE, null=True, blank=True)
     overrider_user = models.ForeignKey('users.Profile', on_delete=models.CASCADE, blank=True, null=True)
 
     class Meta:
@@ -189,7 +197,7 @@ class ApprovalDocumentLevelOverriders(models.Model):
 
     def clean(self):
         super().clean()
-        if self.overrider_group is None and self.overrider_user is None:
+        if self.approver_group is None and self.overrider_user is None:
             raise ValidationError({"error": "At least one of overrider_group or overrider_user must be set."})
 
 class Approval(models.Model):

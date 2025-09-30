@@ -1,14 +1,15 @@
 "use client";
 
 import type React from "react";
-import type { Role, Branch } from "@/types";
+import { Branch } from "@/types/branch.types";
+import { Role, UserProfile } from "@/types/user.types";
 
 import { useEffect, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import apiRequest, { apiPost } from "@/lib/apiRequest";
+import apiRequest, { apiPatch, apiPost } from "@/lib/apiRequest";
 import {
 	Dialog,
 	DialogContent,
@@ -25,12 +26,24 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { fetchInstitutionBranchesFromAPI, getDefaultInstitutionId } from "@/lib/helpers";
 import { Checkbox } from "@/components/ui/checkbox";
+import { showErrorToast } from "@/lib/utils";
 
 interface AddUserFormProps {
 	onAddSuccess?: () => void;
+	userProfileToEdit?: UserProfile | null;
+	showDialogTrigger?: boolean;
+	openState?: {
+		open: boolean;
+		onOpenChange: (open: boolean) => void;
+	};
 }
 
-export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
+export function CreateEditUserDialog({
+	onAddSuccess,
+	userProfileToEdit,
+	showDialogTrigger = true,
+	openState,
+}: AddUserFormProps) {
 	const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 	const [roles, setRoles] = useState<Role[]>([]);
 	const [branches, setBranches] = useState<Branch[]>([]);
@@ -43,7 +56,6 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 	const [bio, setBio] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const router = useRouter();
 
 	const fetchRoles = async () => {
 		try {
@@ -73,8 +85,25 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 		if (isOpen) {
 			fetchRoles();
 			fetchBranches();
+		} else {
+			resetFormData();
 		}
 	}, [isOpen]);
+
+	useEffect(() => {
+		if (openState) {
+			setIsOpen(openState.open);
+		}
+	}, [openState]);
+
+	useEffect(() => {
+		if (userProfileToEdit) {
+			userProfileToEdit.user.roles.length && setSelectedRoleId(userProfileToEdit.user.roles[0].id);
+			setSelectedBranches(userProfileToEdit.user.branches.map(Number));
+			setEmail(userProfileToEdit.user.email || "");
+			setFullName(userProfileToEdit.user.fullname || "");
+		}
+	}, [userProfileToEdit]);
 
 	const handleBranchChange = (branchId: number, checked: boolean) => {
 		if (checked) {
@@ -144,25 +173,35 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 		};
 
 		try {
-			const response = await apiPost("institution/profile/", userProfile);
-
-			if (response.status === 201) {
-				// Get the user ID from the response
-				const userId = response.data.user.id;
-
-				// If branches are selected, attach them to the user
-				if (selectedBranches.length > 0) {
-					await attachBranchesToUser(userId);
-				}
-
-				toast.success("User created successfully");
+			if (userProfileToEdit) {
+				const response = await apiPatch(`/user/${userProfileToEdit.user.id}/`, userProfile.user);
+				toast.success("User updated successfully");
 				resetFormData();
 				setIsOpen(false);
 				if (onAddSuccess) onAddSuccess();
+			} else {
+				const response = await apiPost("institution/profile/", userProfile);
+
+				if (response.status === 201) {
+					// Get the user ID from the response
+					const userId = response.data.user.id;
+
+					// If branches are selected, attach them to the user
+					if (selectedBranches.length > 0) {
+						await attachBranchesToUser(userId);
+					}
+
+					toast.success("User created successfully");
+					resetFormData();
+					setIsOpen(false);
+					if (onAddSuccess) onAddSuccess();
+				}
 			}
 		} catch (error: any) {
-			console.error("Error creating user:", error);
-			toast.error(error.message || "An error occurred while creating the user");
+			showErrorToast({
+				error,
+				defaultMessage: `An error occurred while ${userProfileToEdit ? "updating" : "creating"} the user`,
+			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -186,21 +225,30 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<Button variant="default" className="flex items-center gap-2 rounded-lg">
-					<Plus className="h-4 w-4" />
-					Add Staff
-				</Button>
-			</DialogTrigger>
+		<Dialog
+			open={openState ? openState.open : isOpen}
+			onOpenChange={openState ? openState.onOpenChange : handleOpenChange}
+		>
+			{showDialogTrigger && (
+				<DialogTrigger asChild>
+					<Button variant="default" className="flex items-center gap-2 rounded-lg">
+						<Plus className="h-4 w-4" />
+						Add Staff
+					</Button>
+				</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-[600px] rounded-2xl border-0 shadow-2xl">
 				<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
-					<DialogTitle className="text-2xl font-bold text-gray-900">Add New User</DialogTitle>
+					<DialogTitle className="text-2xl font-bold text-gray-900">
+						{userProfileToEdit ? "Update User" : "Add New User"}
+					</DialogTitle>
 					<DialogDescription className="text-gray-600 text-base">
-						Create a new user account for your staff.
+						{userProfileToEdit
+							? `Update user : ${userProfileToEdit.user.fullname || ""}`
+							: "Create a new user account for your staff."}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="grid grid-cols-1 gap-6 py-6">
+				<div className="grid grid-cols-1 gap-6 py-6 overflow-y-auto h-full max-h-[70svh]">
 					{errorMessage && (
 						<div className="p-3 text-sm font-medium text-white bg-red-500 rounded-lg">
 							{errorMessage}
@@ -319,6 +367,8 @@ export function AddUserForm({ onAddSuccess }: AddUserFormProps) {
 								<Loader2 className="mr-2 h-5 w-5 animate-spin" />
 								Creating...
 							</>
+						) : userProfileToEdit ? (
+							"Update User"
 						) : (
 							"Create User"
 						)}

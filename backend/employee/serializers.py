@@ -1,4 +1,4 @@
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from employee.utilities import generate_email
 from .models import (
     Child,
@@ -55,10 +55,28 @@ from users.models import CustomUser, Profile, UserRole
 from institution.serializers import BranchSerializer
 
 class EmployeeMonthlyHourAccountSerializer(serializers.ModelSerializer):
+    employee = serializers.SerializerMethodField()
+    month = serializers.SerializerMethodField()
+    
     class Meta:
         model = EmployeeMonthlyHourAccount
         fields = '__all__'
         read_only_fields = ['id']
+    
+    def get_employee(self, obj):
+        if obj.employee:
+            return {
+                'id': obj.employee.id,
+                'name': obj.employee.name,
+                'employee_id': obj.employee.employee_id,
+                'email': obj.employee.email,
+                'gender': obj.employee.gender,
+            }
+        return None
+    
+    def get_month(self, obj):
+        import calendar
+        return calendar.month_name[obj.month]
 class EmployeeTypeSerializer(BaseApprovableSerializer):
     class Meta:
         model = EmployeeType

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from approval.serializers import BaseApprovableSerializer
+from general.serializers import BaseApprovableSerializer
 from documents.models import DocumentTemplate
 from employee.models import Employee
 from employee.serializers import EmployeeSerializer

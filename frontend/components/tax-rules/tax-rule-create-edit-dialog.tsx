@@ -1,13 +1,15 @@
 "use client";
 
-import type { ITaxRule, ITaxRuleFormData, TaxableIncomeSource } from "@/types/types.utils";
-
-import { useState, useEffect } from "react";
-import { Plus, Loader2, X, PlusCircle } from "lucide-react";
+import type {
+	ITaxRule,
+	ITaxRuleCategory,
+	ITaxRuleFormData,
+	TaxableIncomeSource,
+} from "@/types/types.utils";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Loader2, X, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-
 import FormattedNumberInput from "../common/inputs/formatted-number-input";
-
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -22,15 +24,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showErrorToast, taxRulesAPI } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface TaxRuleCreateEditDialogProps {
 	taxId: number;
 	onSuccess: (taxRule: ITaxRule) => void;
 	disabled?: boolean;
 	isEmbeded?: boolean;
-	// For editing
 	taxRule?: ITaxRule | null;
 	isOpen?: boolean;
 	onClose?: () => void;
@@ -54,20 +56,20 @@ const incomeSourcesMapper: Array<{ value: TaxableIncomeSource; label: string }> 
 const OPERATORS = ["+", "-", "*", "/"] as const;
 type Operator = (typeof OPERATORS)[number];
 
-// Enhanced bracket type with configurable operators
-interface TaxBracket {
-	incomeSource: TaxableIncomeSource | "";
-	lowerBound: number | null;
-	lowerBoundOperator: Operator;
-	percentage: number;
-	fixedAmountOperator: Operator;
-	fixedAmount: number;
-}
+type TokenType =
+	| "income_source"
+	| "fixed_amount"
+	| "percentage"
+	| "operator"
+	| "open_paren"
+	| "close_paren"
+	| "open_bracket"
+	| "close_bracket";
 
-// Operator between formula groupings
-interface FormulaGrouping {
-	bracket: TaxBracket;
-	groupOperator: Operator | null;
+interface Token {
+	id: string;
+	type: TokenType;
+	value: string;
 }
 
 export function TaxRuleCreateEditDialog({
@@ -81,12 +83,12 @@ export function TaxRuleCreateEditDialog({
 }: TaxRuleCreateEditDialogProps) {
 	const isEditMode = !!taxRule;
 	const isControlled = externalIsOpen !== undefined && externalOnClose !== undefined;
-
 	const [internalIsOpen, setInternalIsOpen] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [calculationType, setCalculationType] = useState<"percentage" | "fixed" | "tax_formula">(
 		"percentage",
 	);
+	const [taxRuleCategories, setTaxRuleCatgories] = useState<ITaxRuleCategory[]>([]);
 	const [formData, setFormData] = useState<ITaxRuleFormData>({
 		institution_tax: taxId,
 		tax_rule_name: "",
@@ -96,39 +98,12 @@ export function TaxRuleCreateEditDialog({
 		salary_from: 0,
 		salary_to: 0,
 	});
-
-	const [formulaGroupings, setFormulaGroupings] = useState<FormulaGrouping[]>([
-		{
-			bracket: {
-				incomeSource: "",
-				lowerBound: null,
-				lowerBoundOperator: "-",
-				percentage: 0,
-				fixedAmountOperator: "+",
-				fixedAmount: 0,
-			},
-			groupOperator: null,
-		},
-	]);
+	const [tokens, setTokens] = useState<Token[]>([]);
+	const [showTokenMenu, setShowTokenMenu] = useState(false);
+	const tokenMenuRef = useRef<HTMLDivElement>(null);
 
 	const isOpen = isControlled ? externalIsOpen : internalIsOpen;
 	const setIsOpen = isControlled ? externalOnClose : setInternalIsOpen;
-
-	const resetFormulaGroupings = () => {
-		setFormulaGroupings([
-			{
-				bracket: {
-					incomeSource: "",
-					lowerBound: null,
-					lowerBoundOperator: "-",
-					percentage: 0,
-					fixedAmountOperator: "+",
-					fixedAmount: 0,
-				},
-				groupOperator: null,
-			},
-		]);
-	};
 
 	const resetFormData = () => {
 		setFormData({
@@ -141,20 +116,29 @@ export function TaxRuleCreateEditDialog({
 			salary_to: 0,
 		});
 		setCalculationType("percentage");
-		resetFormulaGroupings();
+		setTokens([]);
 	};
 
-	const parseFormulaFromString = (formula: string) => {
-		resetFormData();
+	useEffect(() => {
+		fetchTaxRuleCategories();
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
+
+	const fetchTaxRuleCategories = async () => {
+		try {
+			const categories = await taxRulesAPI.categories.getAll();
+			setTaxRuleCatgories(categories);
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to fetch tax rule categories" });
+		}
 	};
 
 	useEffect(() => {
 		if (isEditMode && taxRule) {
 			let detectedCalculationType: "percentage" | "fixed" | "tax_formula" = "percentage";
-
 			if (taxRule.tax_rule_formula) {
 				detectedCalculationType = "tax_formula";
-				parseFormulaFromString(taxRule.tax_rule_formula);
 			} else if (
 				taxRule.tax_rule_fixed_amount !== null &&
 				taxRule.tax_rule_fixed_amount !== undefined
@@ -166,7 +150,6 @@ export function TaxRuleCreateEditDialog({
 			) {
 				detectedCalculationType = "percentage";
 			}
-
 			setCalculationType(detectedCalculationType);
 			setFormData({
 				institution_tax: taxRule.institution_tax.id,
@@ -177,10 +160,19 @@ export function TaxRuleCreateEditDialog({
 				salary_from: taxRule.salary_from || 0,
 				salary_to: taxRule.salary_to || 0,
 			});
+			if (taxRule.tax_rule_formula) {
+				setTokens([{ id: "1", type: "fixed_amount", value: taxRule.tax_rule_formula }]);
+			}
 		} else {
 			resetFormData();
 		}
 	}, [taxRule, isEditMode]);
+
+	const handleClickOutside = (event: MouseEvent) => {
+		if (tokenMenuRef.current && !tokenMenuRef.current.contains(event.target as Node)) {
+			setShowTokenMenu(false);
+		}
+	};
 
 	const handleCalculationTypeChange = (value: "percentage" | "fixed" | "tax_formula") => {
 		setCalculationType(value);
@@ -191,7 +183,7 @@ export function TaxRuleCreateEditDialog({
 				tax_rule_formula: undefined,
 				taxable_income_source: undefined,
 			});
-			resetFormulaGroupings();
+			setTokens([]);
 		} else if (value === "fixed") {
 			setFormData({
 				...formData,
@@ -199,9 +191,8 @@ export function TaxRuleCreateEditDialog({
 				tax_rule_formula: undefined,
 				taxable_income_source: undefined,
 			});
-			resetFormulaGroupings();
+			setTokens([]);
 		} else {
-			// tax_formula selected
 			setFormData({
 				...formData,
 				tax_rule_percentage: undefined,
@@ -211,91 +202,33 @@ export function TaxRuleCreateEditDialog({
 	};
 
 	const buildFormulaString = () => {
-		if (formulaGroupings.length === 0) return "";
-
-		const parts = formulaGroupings
-			.map((grouping, idx) => {
-				const bracket = grouping.bracket;
-				if (!bracket.incomeSource) return "";
-
-				let expression = "";
-
-				// Handle income source and lower bound
-				if (bracket.lowerBound !== null) {
-					expression = `(${bracket.incomeSource} ${bracket.lowerBoundOperator} ${bracket.lowerBound})`;
-				} else {
-					expression = bracket.incomeSource;
-				}
-
-				// Handle percentage
-				if (bracket.percentage > 0) {
-					expression += ` * ${bracket.percentage / 100}`;
-				}
-
-				// Handle fixed amount
-				if (bracket.fixedAmount !== 0) {
-					const fixedAmountStr =
-						bracket.fixedAmount < 0 ? `(${bracket.fixedAmount})` : bracket.fixedAmount.toString();
-					expression += ` ${bracket.fixedAmountOperator} ${fixedAmountStr}`;
-				}
-
-				const groupingExpression = `[${expression}]`;
-
-				// Add group operator (for groupings after the first)
-				if (idx === 0) {
-					return groupingExpression;
-				} else {
-					return `${grouping.groupOperator} ${groupingExpression}`;
-				}
-			})
-			.filter((part) => part !== "");
-
-		return parts.join(" ");
+		return tokens
+			.map((token) => (token.type != "percentage" ? token.value : `${token.value} %`))
+			.join(" ");
 	};
 
-	const addFormulaGrouping = () => {
-		setFormulaGroupings([
-			...formulaGroupings,
-			{
-				bracket: {
-					incomeSource: "",
-					lowerBound: 0,
-					lowerBoundOperator: "-",
-					percentage: 0,
-					fixedAmountOperator: "+",
-					fixedAmount: 0,
-				},
-				groupOperator: "+",
-			},
-		]);
+	const addToken = (type: TokenType, value: string) => {
+		const newToken: Token = {
+			id: Date.now().toString(),
+			type,
+			value,
+		};
+		setTokens([...tokens, newToken]);
 	};
 
-	const updateBracket = (index: number, field: keyof TaxBracket, value: any) => {
-		setFormulaGroupings(
-			formulaGroupings.map((grouping, i) =>
-				i === index ? { ...grouping, bracket: { ...grouping.bracket, [field]: value } } : grouping,
-			),
-		);
+	const removeToken = (id: string) => {
+		setTokens(tokens.filter((token) => token.id !== id));
 	};
 
-	const updateGroupOperator = (index: number, operator: Operator) => {
-		setFormulaGroupings(
-			formulaGroupings.map((grouping, i) =>
-				i === index ? { ...grouping, groupOperator: operator } : grouping,
-			),
-		);
-	};
-
-	const removeFormulaGrouping = (index: number) => {
-		if (formulaGroupings.length <= 1) return;
-
-		const newGroupings = formulaGroupings.filter((_, i) => i !== index);
-		const updatedGroupings = newGroupings.map((grouping, i) => ({
-			...grouping,
-			groupOperator: i === 0 ? null : grouping.groupOperator,
-		}));
-
-		setFormulaGroupings(updatedGroupings);
+	const insertTokenAt = (index: number, type: TokenType, value: string) => {
+		const newToken: Token = {
+			id: Date.now().toString(),
+			type,
+			value,
+		};
+		const newTokens = [...tokens];
+		newTokens.splice(index, 0, newToken);
+		setTokens(newTokens);
 	};
 
 	const handleSubmit = async () => {
@@ -303,67 +236,26 @@ export function TaxRuleCreateEditDialog({
 			toast.error("Please enter a tax rule name");
 			return;
 		}
-
-		if (!formData.salary_from || !formData.salary_to) {
-			toast.error("Please enter salary range");
+		if (!formData.salary_from) {
+			toast.error("You must provide a salary lower bound");
 			return;
 		}
-
-		if (formData.salary_from >= formData.salary_to) {
+		if (formData.salary_to && formData.salary_from >= formData.salary_to) {
 			toast.error("Salary 'from' must be less than salary 'to'");
 			return;
 		}
-
 		if (calculationType === "percentage" && !formData.tax_rule_percentage) {
 			toast.error("Please enter a percentage rate");
 			return;
 		}
-
 		if (calculationType === "fixed" && !formData.tax_rule_fixed_amount) {
 			toast.error("Please enter a fixed amount");
 			return;
 		}
-
-		if (calculationType === "tax_formula") {
-			// Validate formula groupings
-			for (let i = 0; i < formulaGroupings.length; i++) {
-				const grouping = formulaGroupings[i];
-				const bracket = grouping.bracket;
-
-				if (!bracket.incomeSource) {
-					toast.error(`Grouping ${i + 1} must have a taxable income source`);
-					return;
-				}
-
-				if (i > 0 && (bracket.lowerBound === null || bracket.lowerBound === 0)) {
-					toast.error(`Grouping ${i + 1} must have a valid lower bound`);
-					return;
-				}
-
-				if (bracket.percentage < 0 || bracket.percentage > 100) {
-					toast.error(`Grouping ${i + 1} percentage must be between 0 and 100`);
-					return;
-				}
-
-				if (!OPERATORS.includes(bracket.lowerBoundOperator)) {
-					toast.error(`Grouping ${i + 1} has invalid lower bound operator`);
-					return;
-				}
-				if (!OPERATORS.includes(bracket.fixedAmountOperator)) {
-					toast.error(`Grouping ${i + 1} has invalid fixed amount operator`);
-					return;
-				}
-			}
-
-			for (let i = 1; i < formulaGroupings.length; i++) {
-				const grouping = formulaGroupings[i];
-				if (!grouping.groupOperator || !OPERATORS.includes(grouping.groupOperator)) {
-					toast.error(`Operator before grouping ${i + 1} is invalid`);
-					return;
-				}
-			}
+		if (calculationType === "tax_formula" && tokens.length === 0) {
+			toast.error("Please build a formula");
+			return;
 		}
-
 		setIsSubmitting(true);
 		try {
 			const payload = {
@@ -389,15 +281,12 @@ export function TaxRuleCreateEditDialog({
 								tax_rule_percentage: undefined,
 							}),
 			};
-
 			let resultTaxRule: ITaxRule;
-
 			if (isEditMode) {
 				resultTaxRule = await taxRulesAPI.update(taxRule!.id, payload);
 			} else {
 				resultTaxRule = await taxRulesAPI.create(payload);
 			}
-
 			onSuccess(resultTaxRule);
 			toast.success(isEditMode ? "Tax rule updated successfully" : "Tax rule created successfully");
 			setIsOpen(false);
@@ -419,6 +308,95 @@ export function TaxRuleCreateEditDialog({
 			if (!open) {
 				resetFormData();
 			}
+		}
+	};
+
+	const renderTokenInput = (token: Token, index: number) => {
+		switch (token.type) {
+			case "income_source":
+				return (
+					<Select
+						value={token.value}
+						onValueChange={(value) => {
+							const newTokens = [...tokens];
+							newTokens[index] = { ...token, value };
+							setTokens(newTokens);
+						}}
+					>
+						<SelectTrigger className="w-full min-w-[150px] max-w-[180px] rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base p-2">
+							<SelectValue placeholder="Select income source" />
+						</SelectTrigger>
+						<SelectContent>
+							{incomeSourcesMapper.map((source) => (
+								<SelectItem key={source.value} value={source.value}>
+									{source.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				);
+			case "fixed_amount":
+				return (
+					<FormattedNumberInput
+						value={token.value}
+						onValueChange={(value) => {
+							const newTokens = [...tokens];
+							newTokens[index] = { ...token, value: value.toString() };
+							setTokens(newTokens);
+						}}
+						placeholder="e.g., 235000"
+						className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base max-w-[100px]"
+					/>
+				);
+			case "percentage":
+				return (
+					<div className="relative">
+						<FormattedNumberInput
+							value={token.value}
+							onValueChange={(value) => {
+								const newTokens = [...tokens];
+								newTokens[index] = { ...token, value: value.toString() };
+								setTokens(newTokens);
+							}}
+							placeholder="e.g., 10"
+							min="0"
+							max="100"
+							step="0.01"
+							className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base pr-8 max-w-[100px]"
+						/>
+						<span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+							%
+						</span>
+					</div>
+				);
+			case "operator":
+				return (
+					<Select
+						value={token.value}
+						onValueChange={(value) => {
+							const newTokens = [...tokens];
+							newTokens[index] = { ...token, value };
+							setTokens(newTokens);
+						}}
+					>
+						<SelectTrigger className="w-full min-w-[60px] rounded-xl border-gray-200 focus:border-primary/50 focus:ring-primary/20 text-base p-2">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{OPERATORS.map((op) => (
+								<SelectItem key={op} value={op}>
+									{op}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				);
+			default:
+				return (
+					<Button variant="outline" className="rounded-xl min-w-[40px] h-10" disabled>
+						{token.value}
+					</Button>
+				);
 		}
 	};
 
@@ -445,10 +423,9 @@ export function TaxRuleCreateEditDialog({
 						onChange={(e) => setFormData({ ...formData, tax_rule_name: e.target.value })}
 						placeholder="e.g., Basic Rate, Higher Rate"
 						disabled={isSubmitting}
-						className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+						className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base"
 					/>
 				</div>
-
 				<div className="space-y-3">
 					<Label htmlFor="tax_rule_description" className="text-sm text-gray-800">
 						Description
@@ -459,10 +436,9 @@ export function TaxRuleCreateEditDialog({
 						onChange={(e) => setFormData({ ...formData, tax_rule_description: e.target.value })}
 						placeholder="e.g., Basic income tax rate for low earners"
 						disabled={isSubmitting}
-						className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+						className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base"
 					/>
 				</div>
-
 				<div className="space-y-4">
 					<Label className="text-sm text-gray-800">Calculation Method *</Label>
 					<RadioGroup
@@ -490,7 +466,6 @@ export function TaxRuleCreateEditDialog({
 						</div>
 					</RadioGroup>
 				</div>
-
 				{calculationType === "percentage" && (
 					<div className="space-y-3">
 						<Label htmlFor="tax_rule_percentage" className="text-sm text-gray-800">
@@ -507,7 +482,7 @@ export function TaxRuleCreateEditDialog({
 								onValueChange={(e) => setFormData({ ...formData, tax_rule_percentage: e })}
 								placeholder="e.g., 10.5"
 								disabled={isSubmitting}
-								className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pr-8"
+								className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base pr-8"
 							/>
 							<span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
 								%
@@ -515,7 +490,6 @@ export function TaxRuleCreateEditDialog({
 						</div>
 					</div>
 				)}
-
 				{calculationType === "fixed" && (
 					<div className="space-y-3">
 						<Label htmlFor="tax_rule_fixed_amount" className="text-sm text-gray-800">
@@ -530,190 +504,189 @@ export function TaxRuleCreateEditDialog({
 								onValueChange={(val) => setFormData({ ...formData, tax_rule_fixed_amount: val })}
 								placeholder="e.g., 5000.00"
 								disabled={isSubmitting}
-								className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
+								className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base pl-8"
 							/>
 						</div>
 					</div>
 				)}
-
 				{calculationType === "tax_formula" && (
 					<div className="space-y-4">
-						<Label className="text-sm text-gray-800">Advanced Formula Builder *</Label>
-
+						<Label className="text-sm text-gray-800">Formula Builder *</Label>
 						<div className="space-y-4">
-							<Label className="text-sm text-gray-700">Formula Groupings</Label>
-							{formulaGroupings.map((grouping, idx) => (
-								<div key={idx} className="space-y-3 p-3 border rounded-lg">
-									<div className="flex justify-between items-center">
-										<span className="font-medium text-sm">Grouping {idx + 1}</span>
-										{formulaGroupings.length > 1 && (
-											<Button
-												variant="ghost"
-												size="icon"
-												onClick={() => removeFormulaGrouping(idx)}
-												className="ml-2 p-1 h-6 w-6"
-												disabled={isSubmitting}
-											>
-												<X className="h-4 w-4 text-red-500" />
-											</Button>
-										)}
-									</div>
-
-									{idx > 0 && (
-										<div className="space-y-2">
-											<Label className="text-xs text-gray-600">Operator Before Grouping</Label>
-											<Select
-												value={grouping.groupOperator || "+"}
-												onValueChange={(value) => updateGroupOperator(idx, value as Operator)}
-												disabled={isSubmitting}
-											>
-												<SelectTrigger className="w-full rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2">
-													{grouping.groupOperator}
-												</SelectTrigger>
-												<SelectContent>
-													{OPERATORS.map((op) => (
-														<SelectItem key={op} value={op}>
-															{op}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-									)}
-
-									<div className="space-y-2">
-										<Label className="text-xs text-gray-600">Income Source *</Label>
-										<Select
-											value={grouping.bracket.incomeSource}
-											onValueChange={(value) =>
-												updateBracket(idx, "incomeSource", value as TaxableIncomeSource)
-											}
-											disabled={isSubmitting}
+							<div className="flex flex-wrap gap-2 p-3 border rounded-lg min-h-[60px]">
+								{tokens.map((token, index) => (
+									<div key={token.id} className="flex items-center gap-1">
+										{renderTokenInput(token, index)}
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={() => removeToken(token.id)}
+											className="h-6 w-6 p-0"
 										>
-											<SelectTrigger className="w-full rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2">
-												{incomeSourcesMapper.find(
-													(source) => source.value === grouping.bracket.incomeSource,
-												)?.label || "Select income source"}
-											</SelectTrigger>
-											<SelectContent>
-												{incomeSourcesMapper.map((source, idx) => (
-													<SelectItem key={idx} value={source.value}>
-														{source.label}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
+											<X className="h-3 w-3 text-red-500" />
+										</Button>
 									</div>
-
-									{idx > 0 && (
-										<div className="space-y-2">
-											<Label className="text-xs text-gray-600">Lower Bound & Operator</Label>
-											<div className="grid grid-cols-3 gap-2">
-												<Select
-													value={grouping.bracket.lowerBoundOperator}
-													onValueChange={(value) =>
-														updateBracket(idx, "lowerBoundOperator", value as Operator)
-													}
-													disabled={isSubmitting}
-												>
-													<SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2">
-														{grouping.bracket.lowerBoundOperator}
-													</SelectTrigger>
-													<SelectContent>
-														{OPERATORS.map((op) => (
-															<SelectItem key={op} value={op}>
-																{op}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-												<FormattedNumberInput
-													value={grouping.bracket.lowerBound || ""}
-													onValueChange={(val) =>
-														updateBracket(idx, "lowerBound", !val ? 0 : Number(val))
-													}
-													placeholder="e.g., 410000"
-													disabled={isSubmitting}
-													className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base col-span-2"
-												/>
-											</div>
-										</div>
-									)}
-
-									<div className="space-y-2">
-										<Label className="text-xs text-gray-600">Percentage (%)</Label>
-										<FormattedNumberInput
-											value={grouping.bracket.percentage}
-											onValueChange={(val) => updateBracket(idx, "percentage", Number(val))}
-											placeholder="e.g., 30"
-											min="0"
-											max="100"
-											step="0.01"
-											disabled={isSubmitting}
-											className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
-										/>
+								))}
+								{tokens.length === 0 && (
+									<div className="text-sm text-gray-500">
+										Click "Add" to start building your formula
 									</div>
-
-									<div className="space-y-2">
-										<Label className="text-xs text-gray-600">Fixed Amount</Label>
-										<div className="grid grid-cols-3 gap-2">
-											<Select
-												value={grouping.bracket.fixedAmountOperator}
-												onValueChange={(value) =>
-													updateBracket(idx, "fixedAmountOperator", value as Operator)
-												}
-												disabled={isSubmitting}
+								)}
+							</div>
+							<div className="flex items-center gap-2">
+								<Popover open={showTokenMenu} onOpenChange={setShowTokenMenu}>
+									<PopoverTrigger asChild>
+										<Button className="rounded-xl">
+											<PlusCircle className="h-4 w-4 mr-2" />
+											Add
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent className="w-48 p-2" ref={tokenMenuRef}>
+										<div className="grid grid-cols-2 gap-1">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("open_bracket", "[");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
 											>
-												<SelectTrigger className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base p-2">
-													{grouping.bracket.fixedAmountOperator}
-												</SelectTrigger>
-												<SelectContent>
-													{OPERATORS.map((op) => (
-														<SelectItem key={op} value={op}>
-															{op}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormattedNumberInput
-												value={grouping.bracket.fixedAmount}
-												onValueChange={(val) => updateBracket(idx, "fixedAmount", Number(val))}
-												placeholder="e.g., 48500"
-												step="0.01"
-												disabled={isSubmitting}
-												className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base col-span-2"
-											/>
+												{"[ Group"}
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("open_paren", "(");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
+											>
+												{"( Bracket"}
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("income_source", "");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
+											>
+												Income Source
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("fixed_amount", "");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
+											>
+												Fixed Amount
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("percentage", "");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
+											>
+												Percentage
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													addToken("operator", "+");
+													setShowTokenMenu(false);
+												}}
+												className="text-xs"
+											>
+												Operator
+											</Button>
+											{tokens.some((t) => t.value === "[") && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														addToken("close_bracket", "]");
+														setShowTokenMenu(false);
+													}}
+													className="text-xs"
+												>
+													{"] Close Group"}
+												</Button>
+											)}
+											{tokens.some((t) => t.value === "(") && (
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														addToken("close_paren", ")");
+														setShowTokenMenu(false);
+													}}
+													className="text-xs"
+												>
+													{") Close Bracket"}
+												</Button>
+											)}
 										</div>
-									</div>
-								</div>
-							))}
-
-							<Button
-								variant="outline"
-								className="rounded-xl w-full"
-								onClick={addFormulaGrouping}
-								disabled={isSubmitting}
-							>
-								<PlusCircle className="h-4 w-4 mr-2" />
-								Add Grouping
-							</Button>
+									</PopoverContent>
+								</Popover>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setTokens([])}
+									className="text-xs"
+								>
+									<Trash2 className="h-3 w-3 mr-1" />
+									Clear
+								</Button>
+							</div>
 						</div>
-
 						<div>
 							<Label className="text-sm text-gray-700">Formula Preview</Label>
 							<Input
 								readOnly
 								value={buildFormulaString()}
-								placeholder="e.g., [(gross_salary * 0.1)] + [(basic_salary - 410000) * 0.3 - 48500]"
-								className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base"
+								placeholder="e.g., taxable_gross_salary * 0.1"
+								className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base"
 							/>
 							<p className="text-xs text-gray-500 mt-1">
-								Examples: "[(gross_salary * 0.1)] + [(basic_salary - 410000) * 0.3 - 48500]" or
-								"[taxable_gross_salary + 10000] / [basic_salary * 0.25]"
+								Examples: "taxable_gross_salary * 0.1" or "(taxable_gross_salary - 235000) * 0.1"
 							</p>
 						</div>
 					</div>
 				)}
+
+				<div className="space-y-3">
+					<Label htmlFor="tax_tule_category" className="text-sm text-gray-800">
+						Tax rule category (optional)
+					</Label>
+
+					<Select
+						value={formData.tax_rule_category?.toString() || ""}
+						onValueChange={(value) => {
+							setFormData({ ...formData, tax_rule_category: parseInt(value) });
+						}}
+					>
+						<SelectTrigger className="w-full min-w-[150px] max-w-[180px] rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base p-2">
+							<SelectValue placeholder="Select tax rule category" />
+						</SelectTrigger>
+						<SelectContent>
+							{taxRuleCategories.map((category) => (
+								<SelectItem key={category.id} value={category.id.toString()}>
+									{category.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 
 				<div className="grid grid-cols-2 gap-4">
 					<div className="space-y-3">
@@ -730,14 +703,13 @@ export function TaxRuleCreateEditDialog({
 								onValueChange={(value) => setFormData({ ...formData, salary_from: value })}
 								placeholder="e.g., 0"
 								disabled={isSubmitting}
-								className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
+								className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base pl-8"
 							/>
 						</div>
 					</div>
-
 					<div className="space-y-3">
 						<Label htmlFor="salary_to" className="text-sm text-gray-800">
-							Salary To *
+							Salary To (optional)
 						</Label>
 						<div className="relative">
 							<FormattedNumberInput
@@ -749,7 +721,7 @@ export function TaxRuleCreateEditDialog({
 								onValueChange={(val) => setFormData({ ...formData, salary_to: val })}
 								placeholder="e.g., 50000"
 								disabled={isSubmitting}
-								className="rounded-xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20 text-base pl-8"
+								className="rounded-xl border-gray-200 focus:border-primary focus:ring-primary/20 text-base pl-8"
 							/>
 						</div>
 					</div>
@@ -788,7 +760,6 @@ export function TaxRuleCreateEditDialog({
 			</Dialog>
 		);
 	}
-
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogTrigger asChild>

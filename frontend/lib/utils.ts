@@ -165,6 +165,7 @@ import {
 	IEmailProviderConfig,
 	IEmailProviderConfigFormData,
 	ICompanyEmail,
+	ITaxRuleCategory,
 } from "@/types/types.utils";
 import { IEmployee } from "@/types/types.utils";
 import {
@@ -5771,6 +5772,31 @@ export const taxRulesAPI = {
 			throw error;
 		}
 	},
+
+	byInstitutionTax: {
+		getPaginated: async (params: { institution_tax: number; search?: string; page?: number }) => {
+			const urlParams = new URLSearchParams();
+			Object.entries(params).forEach(([key, value]) => {
+				if (key && value) {
+					urlParams.append(key, value.toString());
+				}
+			});
+			const allRules = await apiRequest.get(`/institution/tax-rule/?${urlParams.toString()}`);
+			return allRules.data as IPaginatedResponse<ITaxRule>;
+		},
+
+		getPaginatedFromUrl: async ({ url }: { url: string }) => {
+			const response = await apiRequest.get(url);
+			return response as IPaginatedResponse<ITaxRule>;
+		},
+	},
+
+	categories: {
+		getAll: async () => {
+			const response = await apiRequest.get("/institution/tax-rule-categories");
+			return response.data as ITaxRuleCategory[];
+		},
+	},
 };
 
 export const payrollAPI = {
@@ -6798,7 +6824,9 @@ export const EMPLOYEE_API = {
 		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
 			const urlParams = new URLSearchParams();
 			Object.entries(params).forEach(([key, value]) => {
-				urlParams.append(key, value.toString());
+				if (value) {
+					urlParams.append(key, value.toString());
+				}
 			});
 			const response = await apiRequest.get(`employee/hour-account/?${urlParams.toString()}`);
 			return response.data as IPaginatedResponse<IWorkHourCount>;
@@ -7086,7 +7114,15 @@ export const SeparationPoliciesAPI = {
 	},
 };
 
-export async function fetchAttendanceData(startDate?: string, endDate?: string) {
+export async function fetchAttendanceData({
+	startDate,
+	endDate,
+	target_employees,
+}: {
+	startDate?: string;
+	endDate?: string;
+	target_employees?: number[];
+}) {
 	let endpoint = "employee/attendance-data/";
 
 	const params = new URLSearchParams();
@@ -7096,6 +7132,11 @@ export async function fetchAttendanceData(startDate?: string, endDate?: string) 
 	}
 	if (endDate) {
 		params.append("end_date", endDate);
+	}
+	if (target_employees) {
+		target_employees.forEach((emp) => {
+			params.append("target_employees", emp.toString());
+		});
 	}
 
 	if (params.toString()) {

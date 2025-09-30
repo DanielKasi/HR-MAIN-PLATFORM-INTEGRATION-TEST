@@ -11,7 +11,7 @@ from django.db.models import UniqueConstraint, Q
 from utilities.utility_base_model import SoftDeletableTimeStampedModel
 from approval.models import BaseApprovableModel
 from django.core.exceptions import ValidationError
-
+import re
 
 class BaseModel(models.Model):
     FREQUENCY_CHOICES = [
@@ -797,27 +797,24 @@ class Payslip(BaseApprovableModel):
         super().save(*args, **kwargs)
 
     def calculate_totals(self):
-
         taxable_allowances = Decimal('0')
         non_taxable_allowances = Decimal('0')
         total_penalties = Decimal('0')
+        deductions = Decimal('0')
+        tax_items = []  # Store individual tax deductions for items
 
         # Step 1: Calculate Allowances
         allowances = (
             self.employee.allowances.filter(is_active=True)
+            .filter(effective_from__lte=self.payroll_period.end_date)
             .filter(
-                effective_from__lte=self.payroll_period.end_date,
-            )
-            .filter(
-                models.Q(effective_to__gte=self.payroll_period.start_date)
-                | models.Q(effective_to__isnull=True)
+                Q(effective_to__gte=self.payroll_period.start_date) |
+                Q(effective_to__isnull=True)
             )
         )
-
         for allowance in allowances:
             recurrence = allowance.get_recurrence_count(self.payroll_period)
             amount = allowance.get_calculated_amount() * recurrence
-
             if allowance.allowance_type.is_taxable:
                 taxable_allowances += amount
             else:
@@ -830,99 +827,139 @@ class Payslip(BaseApprovableModel):
             date__gte=self.payroll_period.start_date,
             date__lte=self.payroll_period.end_date
         )
-
         for penalty in penalties:
-            total_penalties += penalty.amount        
+            total_penalties += penalty.amount
 
-        # Step 3: Calculate Deductions (excluding tax)
-        deductions = Decimal('0')
+        # Step 3: Calculate Non-Tax Deductions
         for deduction in (
             self.employee.deductions.filter(is_active=True)
+            .filter(effective_from__lte=self.payroll_period.end_date)
             .filter(
-                effective_from__lte=self.payroll_period.end_date,
-            )
-            .filter(
-                models.Q(effective_to__gte=self.payroll_period.start_date)
-                | models.Q(effective_to__isnull=True)
+                Q(effective_to__gte=self.payroll_period.start_date) |
+                Q(effective_to__isnull=True)
             )
         ):
             recurrence = deduction.get_recurrence_count(self.payroll_period)
             deductions += deduction.get_calculated_amount() * recurrence
 
-        # Step 4: Calculate Tax
+        # Step 4: Calculate Taxes from all EmployeeTax instances
         tax_total = Decimal('0')
         basic_salary = self.basic_salary or self.employee.salary or Decimal('0')
         taxable_gross = basic_salary + taxable_allowances
         gross_salary = basic_salary + taxable_allowances + non_taxable_allowances
         institution = self.get_institution()
-        tax_rules = InstitutionTaxRule.objects.filter(
+
+
+        # Fetch all applicable EmployeeTax instances
+        employee_taxes = EmployeeTax.objects.filter(
+            employee=self.employee,
             institution_tax__institution=institution,
-            institution_tax__tax_status=True
-        ).order_by('salary_from')
+            institution_tax__tax_status=True,
+            is_active=True,
+            effective_from__lte=self.payroll_period.end_date,
+            deleted_at__isnull=True
+        ).filter(
+            Q(effective_to__gte=self.payroll_period.start_date) | Q(effective_to__isnull=True)
+        ).select_related('institution_tax')
 
-        for rule in tax_rules:
-            from_val = Decimal(rule.salary_from) if rule.salary_from is not None else Decimal('0')
-            to_val = Decimal(rule.salary_to) if rule.salary_to is not None else None
 
-            # Map the chosen taxable income source to its value
-            income_value = {
-                'taxable_gross_salary': taxable_gross,
-                'gross_salary': gross_salary,
-                'basic_salary': basic_salary,
-            }.get(rule.taxable_income_source, taxable_gross)  # Default to taxable_gross if not specified
+        for employee_tax in employee_taxes:
+            rule = employee_tax.rule_fit_employee_salary()
+            if rule:
+                from_val = Decimal(rule.salary_from) if rule.salary_from is not None else Decimal('0')
+                to_val = Decimal(rule.salary_to) if rule.salary_to is not None else None
 
-            if to_val is not None:
-                if from_val <= income_value <= to_val:
-                    if rule.tax_rule_formula:
-                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
-                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
-                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
+                # Map the chosen taxable income source to its value
+                income_value = {
+                    'taxable_gross_salary': taxable_gross,
+                    'gross_salary': gross_salary,
+                    'basic_salary': basic_salary,
+                }.get(rule.taxable_income_source, taxable_gross)  # Default to taxable_gross
+
+
+                # Verify income falls within the rule's range
+                if to_val is not None:
+                    if not (from_val <= income_value <= to_val):
+                        continue
+                else:
+                    if income_value < from_val:
+                        continue
+
+                # Calculate tax for the rule
+                rule_tax = Decimal('0')
+                if rule.tax_rule_formula:
+                    formula = rule.tax_rule_formula.strip()
+                    formula = formula.replace(
+                        rule.taxable_income_source or 'taxable_gross_salary', str(income_value)
+                    )
+                    formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '').replace(',', '')
+                    print(f"Normalized formula: {formula}")
+
+                    # Parse formula: (income - X) * Y/100 or income * Y/100
+                    match = re.match(
+                        r'^\s*(?:\(\s*(\d+\.?\d*)\s*-\s*(\d+\.?\d*)\s*\)\s*\*\s*)?(\d+\.?\d*)\s*/\s*100\s*$',
+                        formula
+                    )
+                    if match:
                         try:
-                            tax_amount = eval(formula, safe_dict, {'income': income_value})
-                            tax_total = Decimal(tax_amount)
-                        except (SyntaxError, NameError, TypeError):
-                            tax_total = Decimal('0')
-                    elif rule.tax_rule_percentage:
-                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
-                        tax_total = tax_amount
-                    elif rule.tax_rule_fixed_amount:
-                        tax_total = rule.tax_rule_fixed_amount
-                    break
-            else:
-                # Handle open-ended range (e.g., above 10,000,000)
-                if income_value >= from_val:
-                    if rule.tax_rule_formula:
-                        formula = rule.tax_rule_formula.replace(rule.taxable_income_source or 'taxable_gross_salary', str(income_value))
-                        formula = formula.replace('×', '*').replace('%', '/100').replace('UGX', '')
-                        safe_dict = {'__builtins__': {}, 'Decimal': Decimal}
-                        try:
-                            # Split and evaluate the two-part formula for progressive tax
-                            parts = formula.split('+')
-                            part1 = parts[0].strip()  # [(taxable_gross_salary – 410000) x 30% + 25000]
-                            part2 = parts[1].strip()  # [(taxable_gross_salary – 10000000) x 10%]
-                            tax_part1 = eval(part1, safe_dict, {'income': income_value})
-                            tax_part2 = eval(part2, safe_dict, {'income': income_value}) if income_value > 10000000 else Decimal('0')
-                            tax_total = Decimal(tax_part1) + Decimal(tax_part2)
-                        except (SyntaxError, NameError, TypeError, IndexError):
-                            tax_total = Decimal('0')
-                    elif rule.tax_rule_percentage:
-                        tax_amount = (income_value - from_val) * (rule.tax_rule_percentage / Decimal('100'))
-                        tax_total = tax_amount
-                    elif rule.tax_rule_fixed_amount:
-                        tax_total = rule.tax_rule_fixed_amount
-                    break
+                            income = Decimal(match.group(1) or income_value)  # Use income_value if no parentheses
+                            deduction = Decimal(match.group(2) or '0')  # Default to 0 if no deduction
+                            rate = Decimal(match.group(3)) / Decimal('100')
+                            if income >= deduction:
+                                rule_tax = (income - deduction) * rate
+                            else:
+                                rule_tax = Decimal('0')
+                        except (ValueError, TypeError) as e:
+                            rule_tax = Decimal('0')
+                    else:
+                        rule_tax = Decimal('0')
+                elif rule.tax_rule_percentage:
+                    rate = rule.tax_rule_percentage / Decimal('100')
+                    rule_tax = income_value * rate
+                elif rule.tax_rule_fixed_amount:
+                    rate = rule.tax_rule_fixed_amount
+                    rule_tax = income_value - rate
 
-        # Step 5: Calculate Final Totals
+                if rule_tax > 0:
+                    tax_total += rule_tax
+                    tax_items.append({
+                        'item_type': 'deduction',
+                        'name': employee_tax.institution_tax.tax_name,
+                        'amount': str(rule_tax.quantize(Decimal('0.01'))),
+                        'description': f"Tax: {employee_tax.institution_tax.tax_name} | Rule: {rule.tax_rule_name}",
+                        'payslip': self
+                    })
+
+        if not employee_taxes.exists():
+            print(f"No active EmployeeTax found for employee {self.employee.id} in payroll period {self.payroll_period.id}. Skipping tax calculation.")
+
+        # Step 5: Update PayslipItem objects
+        self.items.filter(item_type='deduction').delete()
+        for item in tax_items:
+            self.items.create(
+                item_type=item['item_type'],
+                name=item['name'],
+                amount=item['amount'],
+                description=item['description']
+            )
+        print(f"Created {len(tax_items)} deduction items: {[{'name': item['name'], 'amount': item['amount']} for item in tax_items]}")
+
+        # Step 6: Calculate Final Totals
         self.total_allowances = taxable_allowances + non_taxable_allowances
         self.total_deductions = deductions + tax_total
         self.total_penalties = total_penalties
-
-        gross = basic_salary + taxable_allowances + non_taxable_allowances
-        net = gross - tax_total - deductions - total_penalties
-
-        self.gross_salary = gross
+        self.gross_salary = gross_salary
         self.taxable_gross_salary = taxable_gross
-        self.net_salary = net
+        self.net_salary = gross_salary - tax_total - deductions - total_penalties
+
+        print(f"Final totals for payslip {self.id}:")
+        print(f"  total_allowances={self.total_allowances}")
+        print(f"  total_deductions={self.total_deductions} (non-tax deductions={deductions}, tax_total={tax_total})")
+        print(f"  total_penalties={self.total_penalties}")
+        print(f"  gross_salary={self.gross_salary}")
+        print(f"  taxable_gross_salary={self.taxable_gross_salary}")
+        print(f"  net_salary={self.net_salary}")
+        print(f"  items={[{'name': item.name, 'amount': item.amount} for item in self.items.all()]}")
 
         self.save()
 

@@ -1460,6 +1460,9 @@ export interface IAttendance {
 	status: string;
 	date: string;
 	overtime_hours: string;
+	early_checkout_minutes: number;
+	late_minutes: number;
+	worked_hours: number;
 }
 
 export interface IAttendanceFormData {
@@ -1598,6 +1601,12 @@ export interface IWorkingDaysFormData {
 	days: number[];
 }
 
+export interface ITaxRuleCategory {
+	id: number;
+	name: string;
+	description: string;
+}
+
 export interface ITax {
 	id: number;
 	institution: number;
@@ -1622,6 +1631,7 @@ export interface ITaxRule {
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
 	tax_rule_formula?: string;
+	tax_rule_category?: ITaxRuleCategory | null;
 	salary_from?: number;
 	salary_to?: number;
 	created_by: number;
@@ -1639,6 +1649,7 @@ export interface ITaxRuleFormData {
 	tax_rule_percentage?: number;
 	tax_rule_fixed_amount?: number;
 	tax_rule_formula?: string;
+	tax_rule_category?: number;
 	taxable_income_source?: TaxableIncomeSource;
 	salary_from?: number;
 	salary_to?: number;

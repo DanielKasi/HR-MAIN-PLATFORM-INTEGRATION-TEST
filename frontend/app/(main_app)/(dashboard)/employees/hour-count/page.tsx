@@ -49,27 +49,27 @@ export default function HourCountListPage() {
 		{
 			key: "total_worked_hours",
 			header: "Total Worked Hours",
-			cell: (resource) => resource.total_worked_hours || "Unknown",
+			cell: (resource) => resource.total_worked_hours || "0.00",
 		},
 		{
 			key: "total_overtime_hours",
 			header: "Total Overtime Hours",
-			cell: (resource) => resource.total_overtime_hours || "Unknown",
+			cell: (resource) => resource.total_overtime_hours || "0.00",
 		},
 		{
 			key: "total_late_minutes",
 			header: "Total late Minutes",
-			cell: (resource) => resource.total_late_minutes || "Unknown",
+			cell: (resource) => resource.total_late_minutes || "0",
 		},
 		{
 			key: "total_early_checkout_minutes",
 			header: "Total Early Checkout",
-			cell: (resource) => resource.total_early_checkout_minutes || "Unknown",
+			cell: (resource) => resource.total_early_checkout_minutes || "0",
 		},
 		{
 			key: "total_absent_days",
 			header: "Total Absent Days",
-			cell: (resource) => resource.total_absent_days || "Unknown",
+			cell: (resource) => resource.total_absent_days || "0",
 		},
 	];
 
@@ -84,7 +84,7 @@ export default function HourCountListPage() {
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
 						className="pl-9 w-full max-w-md lg:max-w-xl"
-						placeholder="Search resources..."
+						placeholder="Search by employee name..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>

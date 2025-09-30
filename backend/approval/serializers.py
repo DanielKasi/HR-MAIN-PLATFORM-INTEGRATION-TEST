@@ -7,7 +7,50 @@ from approval.models import (
 )
 import re
 from users.models import Profile, Role
+from django.db import transaction
 
+class ApprovalProfileSerializer(serializers.ModelSerializer):
+    fullname = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ["id", "fullname", "institution", "bio"]
+
+    def get_fullname(self, obj):
+        return obj.user.fullname
+
+
+class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
+    source_level_id = serializers.IntegerField()
+    target_level_id = serializers.IntegerField()
+
+    def validate(self, data):
+        source_level_id = data.get('source_level_id')
+        target_level_id = data.get('target_level_id')
+
+        # Check if source and target levels exist
+        try:
+            source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
+            target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
+        except ApprovalDocumentLevel.DoesNotExist:
+            raise serializers.ValidationError("Source or target level does not exist.")
+
+        # Ensure both levels belong to the same ApprovalDocument
+        if source_level.approval_document_id != target_level.approval_document_id:
+            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+
+        # Ensure the user has permission to modify levels in this ApprovalDocument
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            institution = request.user.profile.institution
+            if source_level.approval_document.institution != institution:
+                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+
+        # Ensure source and target are not the same
+        if source_level_id == target_level_id:
+            raise serializers.ValidationError("Source and target levels cannot be the same.")
+
+        return data
 
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,29 +132,20 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
         return group
 
 class ApprovalDocumentLevelApproverSerializer(serializers.ModelSerializer):
-    approver_group = serializers.SerializerMethodField(read_only=True)
+    approver_group = ApproverGroupSerializer(read_only=True)
+    approver_user = ApprovalProfileSerializer(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelApprovers
-        fields = '__all__'
-
-    def get_approver_group(self, obj):
-        from .serializers import ApproverGroupSerializer
-        return ApproverGroupSerializer(obj.approver_group, context=self.context).data
- 
-
+        fields = ['id', 'approval_document_level', 'approver_group', 'approver_user']
 
 class ApprovalDocumentLevelOverriderSerializer(serializers.ModelSerializer):
-    approver_group = serializers.SerializerMethodField(read_only=True)
+    approver_group = ApproverGroupSerializer(read_only=True)
+    overrider_user = ApprovalProfileSerializer(read_only=True)
 
     class Meta:
         model = ApprovalDocumentLevelOverriders
-        fields = '__all__'
-
-    def get_approver_group(self, obj):
-        from .serializers import ApproverGroupSerializer
-        return ApproverGroupSerializer(obj.approver_group, context=self.context).data
-    
+        fields = ['id', 'approval_document_level', 'approver_group', 'overrider_user']
 
 
 class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
@@ -122,8 +156,22 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
         allow_empty=True,
         write_only=True
     )
+    approver_users = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.all(),
+        many=True,
+        required=False,
+        allow_empty=True,
+        write_only=True
+    )
     overriders = serializers.PrimaryKeyRelatedField(
         queryset=ApproverGroup.objects.all(),
+        many=True,
+        required=False,
+        allow_empty=True,
+        write_only=True
+    )
+    overrider_users = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.all(),
         many=True,
         required=False,
         allow_empty=True,
@@ -138,7 +186,12 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApprovalDocumentLevel
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'description', 'approval_document', 'level', 'is_active',
+            'created_at', 'updated_at', 'deleted_at', 'created_by', 'updated_by',
+            'public_uuid', 'approvers', 'approver_users', 'overriders', 'overrider_users',
+            'approvers_detail', 'overriders_detail'
+        ]
         read_only_fields = ['public_uuid', 'level', 'approvers_detail', 'overriders_detail']
 
     def validate(self, data):
@@ -146,29 +199,76 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
             approval_document = data.get('approval_document')
             institution = approval_document.institution
             approvers = data.get('approvers', [])
+            approver_users = data.get('approver_users', [])
             overriders = data.get('overriders', [])
+            overrider_users = data.get('overrider_users', [])
 
             if approvers:
                 invalid_approvers = ApproverGroup.objects.filter(id__in=[a.id for a in approvers]).exclude(institution=institution)
                 if invalid_approvers.exists():
                     raise serializers.ValidationError("All approvers must belong to the same institution as the approval document.")
 
+            if approver_users:
+                invalid_approver_users = Profile.objects.filter(id__in=[u.id for u in approver_users]).exclude(institution=institution)
+                if invalid_approver_users.exists():
+                    raise serializers.ValidationError("All approver users must belong to the same institution as the approval document.")
+
             if overriders:
                 invalid_overriders = ApproverGroup.objects.filter(id__in=[o.id for o in overriders]).exclude(institution=institution)
                 if invalid_overriders.exists():
                     raise serializers.ValidationError("All overriders must belong to the same institution as the approval document.")
 
+            if overrider_users:
+                invalid_overrider_users = Profile.objects.filter(id__in=[u.id for u in overrider_users]).exclude(institution=institution)
+                if invalid_overrider_users.exists():
+                    raise serializers.ValidationError("All overrider users must belong to the same institution as the approval document.")
+
         return data
 
     def create(self, validated_data):
+        import logging
+        logger = logging.getLogger(__name__)
+        print(f"Creating ApprovalDocumentLevel with data: {validated_data}")
         approvers = validated_data.pop('approvers', [])
+        approver_users = validated_data.pop('approver_users', [])
         overriders = validated_data.pop('overriders', [])
-        level = ApprovalDocumentLevel.objects.create(**validated_data)
-        for approver in approvers:
-            ApprovalDocumentLevelApprovers.objects.create(approval_document_level=level, approver_group=approver)
-        for overrider in overriders:
-            ApprovalDocumentLevelOverriders.objects.create(approval_document_level=level, approver_group=overrider)
-        return level
+        overrider_users = validated_data.pop('overrider_users', [])
+        with transaction.atomic():
+            level = ApprovalDocumentLevel.objects.create(**validated_data)
+            print(f"Created level: {level.id}")
+            for approver in approvers:
+                record = ApprovalDocumentLevelApprovers.objects.create(
+                    approval_document_level=level,
+                    approver_group=approver,
+                    approver_user=None
+                )
+                record.clean()
+                print(f"Created approver record: {record.id}, group: {record.approver_group_id}")
+            for user in approver_users:
+                record = ApprovalDocumentLevelApprovers.objects.create(
+                    approval_document_level=level,
+                    approver_group=None,
+                    approver_user=user
+                )
+                record.clean()
+                print(f"Created approver user record: {record.id}, user: {record.approver_user_id}")
+            for overrider in overriders:
+                record = ApprovalDocumentLevelOverriders.objects.create(
+                    approval_document_level=level,
+                    approver_group=overrider,
+                    overrider_user=None
+                )
+                record.clean()
+                print(f"Created overrider record: {record.id}, group: {record.approver_group_id}")
+            for user in overrider_users:
+                record = ApprovalDocumentLevelOverriders.objects.create(
+                    approval_document_level=level,
+                    approver_group=None,
+                    overrider_user=user
+                )
+                record.clean()
+                print(f"Created overrider user record: {record.id}, user: {record.overrider_user_id}")
+            return level
 
 class ApprovalDocumentSerializer(serializers.ModelSerializer):
     institution_name = serializers.CharField(source='institution.institution_name', read_only=True)
@@ -228,3 +328,32 @@ class BaseApprovableSerializer(serializers.ModelSerializer):
     class Meta:
         abstract = True
         fields = ['id', 'approval_status', 'approvals']
+
+
+class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
+    source_level_id = serializers.IntegerField()
+    target_level_id = serializers.IntegerField()
+
+    def validate(self, data):
+        source_level_id = data.get('source_level_id')
+        target_level_id = data.get('target_level_id')
+
+        try:
+            source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
+            target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
+        except ApprovalDocumentLevel.DoesNotExist:
+            raise serializers.ValidationError("Source or target level does not exist.")
+
+        if source_level.approval_document_id != target_level.approval_document_id:
+            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            institution = request.user.profile.institution
+            if source_level.approval_document.institution != institution:
+                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+
+        if source_level_id == target_level_id:
+            raise serializers.ValidationError("Source and target levels cannot be the same.")
+
+        return data        

@@ -265,86 +265,55 @@ def is_non_working_day(date, employee, institution):
 
 
 def get_employee_attendance_status_for_date(
-    employee_id, date, attendance_cache=None, institution=None
+    employee_id, date, attendance_map, leave_map, institution, employee
 ):
     """
     Determine the attendance or leave status for an employee on a specific date.
+    Uses pre-fetched data to avoid database queries.
     Returns a status code compatible with the Excel report (e.g., 'P-on-T', 'A-L', 'N-W-D').
     """
-    if attendance_cache is None:
-        attendance_cache = {}
-
-    cache_key = f"{employee_id}_{date}"
-    if cache_key in attendance_cache:
-        return attendance_cache[cache_key]
-
-    try:
-        # Get the employee
-        employee = Employee.objects.get(id=employee_id)
-
-        # Check for approved leave first
-        leave = (
-            LeaveApplication.objects.filter(
-                employee_id=employee_id,
-                start_date__lte=date,
-                end_date__gte=date,
-                status="approved",
-            )
-            .select_related("leave_type")
-            .first()
-        )
-
-        if leave:
-            leave_type_map = {
-                "annual": "A-L",
-                "sick": "S-L",
-                "maternity": "M-L",
-                "paternity": "P-L",
-                "compassionate": "C-L",
-                "study": "Sty-L",
-                "unpaid": "UN-P-L",
-            }
-            status = leave_type_map.get(leave.leave_type.name.lower(), "ERR")
-            attendance_cache[cache_key] = status
-            return status
-
-        # Check attendance record
-        attendance = EmployeeAttendance.objects.filter(
-            employee_id=employee_id, date=date
-        ).first()
-
-        if not attendance:
-            # Check if it's a non-working day
-            if institution and is_non_working_day(date, employee, institution):
-                status = "N-W-D"
-            else:
-                status = "absent"
-            attendance_cache[cache_key] = status
-            return status
-
-        # Map attendance status to Excel status
-        status_map = {
-            "on_time": "P-on-T",
-            "late": "P-past-T",
-            "early_checkout": "P-past-T",
-            "late_and_early": "P-past-T",
-            "overtime": "P-on-T",
-            "absent": "absent",
-            "pending": "ERR",
+    # Check for leave
+    leave_key = (employee_id, date)
+    if leave_key in leave_map:
+        leave_type_map = {
+            "annual": "A-L",
+            "sick": "S-L",
+            "maternity": "M-L",
+            "paternity": "P-L",
+            "compassionate": "C-L",
+            "study": "Sty-L",
+            "unpaid": "UN-P-L",
         }
-        status = status_map.get(attendance.attendance_status, "ERR")
-        attendance_cache[cache_key] = status
-        return status
+        return leave_type_map.get(leave_map[leave_key], "ERR")
 
-    except Exception as e:
-        attendance_cache[cache_key] = "ERR"
-        return "ERR"
+    # Check attendance
+    attendance_key = (employee_id, date)
+    attendance_status = attendance_map.get(attendance_key)
+    
+    if not attendance_status:
+        # Check if it's a non-working day
+        if institution and is_non_working_day(date, employee, institution):
+            return "N-W-D"
+        return "absent"
+
+    # Map attendance status to Excel status
+    status_map = {
+        "on_time": "P-on-T",
+        "late": "P-past-T",
+        "early_checkout": "P-past-T",
+        "late_and_early": "P-past-T",
+        "overtime": "P-on-T",
+        "absent": "absent",
+        "pending": "ERR",
+    }
+    return status_map.get(attendance_status, "ERR")
 
 
 def build_attendance_report_data(start_date, end_date, context, institution):
+    # Fetch employees with related data in one query
     employee_qs = Employee.objects.filter(
         is_active=True, payroll_branch__institution=institution
-    ).select_related("user")
+    ).select_related("user", "department", "position")
 
     if context.get("target_employees"):
         employee_qs = employee_qs.filter(id__in=context["target_employees"])
@@ -360,9 +329,30 @@ def build_attendance_report_data(start_date, end_date, context, institution):
     num_days = (end_date - start_date).days + 1
     date_list = [start_date + timedelta(days=i) for i in range(num_days)]
 
-    report_data = []
-    attendance_cache = {}  # Cache to reduce database queries
+    # Bulk fetch attendance and leave data
+    employee_ids = [emp.id for emp in employees]
+    attendance_qs = EmployeeAttendance.objects.filter(
+        employee_id__in=employee_ids,
+        date__gte=start_date,
+        date__lte=end_date
+    ).select_related("employee")
+    
+    leave_qs = LeaveApplication.objects.filter(
+        employee_id__in=employee_ids,
+        status="approved",
+        start_date__lte=end_date,
+        end_date__gte=start_date
+    ).select_related("leave_type")
 
+    # Build in-memory lookup tables
+    attendance_map = {(att.employee_id, att.date): att.attendance_status for att in attendance_qs}
+    leave_map = {}
+    for leave in leave_qs:
+        for single_date in [leave.start_date + timedelta(days=i) for i in range((leave.end_date - leave.start_date).days + 1)]:
+            if start_date <= single_date <= end_date:
+                leave_map[(leave.employee_id, single_date)] = leave.leave_type.name.lower()
+
+    report_data = []
     for employee in employees:
         summary = {
             "present": 0,
@@ -374,12 +364,9 @@ def build_attendance_report_data(start_date, end_date, context, institution):
         daily_statuses = {}
 
         for current_date in date_list:
-            try:
-                status = get_employee_attendance_status_for_date(
-                    employee.id, current_date, attendance_cache, institution
-                )
-            except Exception as e:
-                status = "ERR"
+            status = get_employee_attendance_status_for_date(
+                employee.id, current_date, attendance_map, leave_map, institution, employee
+            )
 
             # Tally summary counts
             if status == "P-on-T":
@@ -402,9 +389,7 @@ def build_attendance_report_data(start_date, end_date, context, institution):
                 "employee": {
                     "id": employee.id,
                     "full_name": employee.user.fullname if employee.user else "N/A",
-                    "department": (
-                        employee.department.name if employee.department else None
-                    ),
+                    "department": employee.department.name if employee.department else None,
                     "position": employee.position.name if employee.position else None,
                 },
                 "summary": summary,
