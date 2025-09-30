@@ -618,10 +618,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
     """
     Model to store employee company email accounts.
     """
-    class Meta:
-        verbose_name = "Employee Email"
-        verbose_name_plural = "Employee Emails"
-        unique_together = [['institution', 'email']]
+
 
     STATUS_CHOICES = (
         ('active', 'Active'),
@@ -630,9 +627,6 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         ('deleted', 'Deleted'),
     )
 
-    institution = models.ForeignKey(
-        "institution.Institution", on_delete=models.CASCADE, related_name="company_emails"
-    )
     employee = models.OneToOneField(
         Employee,
         on_delete=models.CASCADE,
@@ -658,7 +652,7 @@ class EmployeeCompanyEmail(BaseApprovableModel):
         return f"{self.email} for {self.employee.user.fullname}"
     
     def get_institution(self):
-        return self.institution
+        return self.employee.get_institution()
 
 class DocumentRequest(BaseApprovableModel):
 

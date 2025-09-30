@@ -174,10 +174,7 @@ export function CreateEditUserDialog({
 
 		try {
 			if (userProfileToEdit) {
-				const response = await apiPatch(
-					`/institution/profile/user/${userProfileToEdit.user.id}/`,
-					userProfile,
-				);
+				const response = await apiPatch(`/user/${userProfileToEdit.user.id}/`, userProfile.user);
 				toast.success("User updated successfully");
 				resetFormData();
 				setIsOpen(false);
