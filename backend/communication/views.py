@@ -314,6 +314,7 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic
     def post(self, request):
+        print(request.data)
         serializer = AnnouncementSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()

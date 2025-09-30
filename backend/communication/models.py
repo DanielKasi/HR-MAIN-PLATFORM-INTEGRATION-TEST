@@ -37,7 +37,7 @@ class Announcement(BaseApprovableModel):
             if job_position.department and job_position.department.institution:
                 return job_position.department.institution
         
-        raise Institution.DoesNotExist("No institution found for this announcement")
+
 
 class Acknowledgment(SoftDeletableTimeStampedModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)

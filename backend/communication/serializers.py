@@ -1,5 +1,8 @@
 from rest_framework import serializers
 import re
+from employee.models import Employee
+from recruitment.models import JobPosition
+from institution.models import Department
 from general.serializers import BaseApprovableSerializer
 from utilities.common_serializers import ContentTypeSerializer
 from .models import Announcement, Acknowledgment
@@ -7,12 +10,22 @@ from django.contrib.contenttypes.models import ContentType
 
 class AnnouncementSerializer(BaseApprovableSerializer):
     content_type_name = serializers.SerializerMethodField()
-    target_employees = serializers.SerializerMethodField()
-    target_departments = serializers.SerializerMethodField()
-    target_job_positions = serializers.SerializerMethodField()
+    target_employees = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(),
+        many=True,
+        required=False
+    )
+    target_departments = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        many=True,
+        required=False
+    )
+    target_job_positions = serializers.PrimaryKeyRelatedField(
+        queryset=JobPosition.objects.all(), 
+        many=True,
+        required=False
+    )
 
-
-  
     class Meta:
         model = Announcement
         fields = '__all__'
@@ -23,11 +36,11 @@ class AnnouncementSerializer(BaseApprovableSerializer):
             return obj.announcement_type.name
         name = model_class.__name__
         name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)
-        return name.strip()    
-    
+        return name.strip()
+
     def get_target_employees(self, obj):
         from employee.models import Employee
-        employees = obj.target_employees.all()
+        employees = obj.get_target_employees()  # Use the model method
         return [
             {
                 'id': emp.id,
