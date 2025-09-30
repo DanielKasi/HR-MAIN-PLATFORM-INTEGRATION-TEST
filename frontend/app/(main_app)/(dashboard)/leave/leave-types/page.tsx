@@ -48,7 +48,7 @@ import { LeaveTypesAPI } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import FormatNumberInput from "@/components/format-number-input";
 import { LeaveTypeDetailsDialog } from "@/components/dialogs/leave-type-details-dilaog";

@@ -83,7 +83,7 @@ import { getOnBoardings, updateOnBoarding } from "@/lib/utils";
 import { IOnBoarding, IOnBoardingFormData } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 
 // Constants matching your exact interface
 const ONBOARDING_STAGES = [

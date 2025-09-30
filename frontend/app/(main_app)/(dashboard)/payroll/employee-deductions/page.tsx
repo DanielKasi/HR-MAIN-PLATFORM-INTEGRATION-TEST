@@ -19,7 +19,7 @@ import { IDeductionType, IEmployeeDeduction } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { EmployeeDeductionFormDialog } from "@/components/employee-deductions/employee-deduction-form-dialog";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import {

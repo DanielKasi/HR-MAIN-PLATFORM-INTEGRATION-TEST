@@ -70,7 +70,7 @@ import { selectSelectedInstitution, selectAccessToken } from "@/store/auth/selec
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { Card, CardHeader } from "@/components/ui/card";
 
 interface ValidationResult {

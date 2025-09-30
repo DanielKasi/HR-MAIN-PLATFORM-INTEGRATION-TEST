@@ -36,7 +36,7 @@ import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { TerminationInitiationsAPI } from "@/lib/utils";
 import { ITermination } from "@/types/types.utils";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { MAIN_DOMAIN_URL } from "@/constants";

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import EmployeeAttendance from "../../../../../components/attendance/employee-attendance";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ProtectedComponent from "@/components/ProtectedComponent";

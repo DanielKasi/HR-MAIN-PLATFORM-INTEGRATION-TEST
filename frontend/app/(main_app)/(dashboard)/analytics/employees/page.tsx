@@ -121,9 +121,9 @@ export default function EmployeePage() {
 								donut
 							/>
 
-							{/* employee count over time */}
+							{/* employee count by department */}
 							<BarVChart
-								title={"Employee Counts Over Time"}
+								title={"Employee By department"}
 								label={""}
 								data={{
 									"2021-2025": [

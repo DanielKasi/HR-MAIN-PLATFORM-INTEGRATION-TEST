@@ -11,7 +11,7 @@ import {
 import { useSelector } from "react-redux";
 
 import { PaginatedTableWrapper } from "../paginated-table-wrapper";
-import { TableSkeleton } from "../../table-skeleton";
+import { TableSkeleton } from "../../skeletons/table-skeleton";
 
 import { IOnBoarding } from "@/types/types.utils";
 import {

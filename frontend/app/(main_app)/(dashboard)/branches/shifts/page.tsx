@@ -39,7 +39,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

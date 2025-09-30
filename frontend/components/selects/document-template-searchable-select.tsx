@@ -7,7 +7,7 @@ import PaginatedSearchableSelect, {
 } from "@/components/generic/paginated-searchable-select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { IDocumentTemplate } from "@/types/types.utils";
-import { DOCUMENTS_API } from "@/lib/document-utils";
+import { DOCUMENTS_API } from "@/lib/api/document-utils";
 
 interface DocumentTemplateSearchableSelectProps {
 	value: (string | number)[];

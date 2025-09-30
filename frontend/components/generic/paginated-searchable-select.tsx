@@ -114,7 +114,7 @@ export function PaginatedSearchableSelect<T, Q = unknown>({
 
 	// Fetch first page for paginated mode
 	React.useEffect(() => {
-		if (!paginated || !fetchFirstPage) return;
+		if (!fetchFirstPage || (!paginated && data?.results)) return;
 		if (data && data.next && !search) return; // Skip if we have a next page and no search
 		setLoading(true);
 		fetchFirstPage({ search, ...query } as Q)

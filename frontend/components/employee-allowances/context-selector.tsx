@@ -32,6 +32,7 @@ interface ContextSelectorProps {
 	selectedItems: ContextItem[];
 	onItemsChange: (items: ContextItem[]) => void;
 	disabled?: boolean;
+	label?: string;
 }
 
 export function ContextSelector({
@@ -40,6 +41,7 @@ export function ContextSelector({
 	selectedItems,
 	onItemsChange,
 	disabled = false,
+	label = "Target Group *",
 }: ContextSelectorProps) {
 	const [contextData, setContextData] = useState<ContextItem[]>([]);
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -186,7 +188,7 @@ export function ContextSelector({
 			{/* Context Type Selection */}
 			<div className="space-y-2">
 				<Label htmlFor="context" className="text-sm font-medium">
-					Target Group *
+					{label}
 				</Label>
 				<Select
 					value={selectedContext}
@@ -248,9 +250,9 @@ export function ContextSelector({
 								</button>
 							</div>
 							<div className="flex flex-wrap gap-2">
-								{selectedItems.map((item) => (
+								{selectedItems.map((item, idx) => (
 									<div
-										key={item.id}
+										key={idx}
 										className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-orange-300 rounded text-xs"
 									>
 										<span>{item.name}</span>
