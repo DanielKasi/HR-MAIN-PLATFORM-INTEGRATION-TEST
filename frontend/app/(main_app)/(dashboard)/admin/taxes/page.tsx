@@ -33,7 +33,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateTaxDialog } from "@/components/taxes/create-tax-dialog";
 import { EditTaxDialog } from "@/components/taxes/edit-tax-dialog";
 import { DeleteTaxDialog } from "@/components/taxes/delete-tax-dialog";

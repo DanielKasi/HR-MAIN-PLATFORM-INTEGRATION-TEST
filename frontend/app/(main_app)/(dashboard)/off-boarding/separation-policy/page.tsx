@@ -30,7 +30,7 @@ import {
 import { ISeparationPolicy } from "@/types/types.utils";
 import { SeparationPoliciesAPI } from "@/lib/utils";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
 	DropdownMenu,

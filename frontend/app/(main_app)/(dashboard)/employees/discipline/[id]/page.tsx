@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { IDisciplinaryAction } from "@/types/types.utils";
 import { getDisciplinaryActionById } from "@/lib/utils";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import ApprovableInstancePageLayout from "@/components/common/layouts/approvable-instance-layout";
 
 export default function ViewDisciplinaryActionPage() {

@@ -80,6 +80,13 @@ export enum PERMISSION_CODES {
 	CAN_TERMINATE_EMPLOYEES = "can_terminate_employees",
 	CAN_EXPORT_EMPLOYEES = "can_export_employees_to_excel",
 
+	// Document requests
+
+	CAN_VIEW_DOCUMENT_REQUESTS = "can_view_document_requests",
+	CAN_CREATE_DOCUMENT_REQUESTS = "can_create_document_requests",
+	CAN_EDIT_DOCUMENT_REQUESTS = "can_edit_document_requests",
+	CAN_DELETE_DOCUMENT_REQUESTS = "can_delete_document_requests",
+
 	// Recruitment & Selection
 	CAN_CREATE_JOB_POSITIONS = "can_create_job_positions",
 	CAN_VIEW_JOB_POSITIONS = "can_view_job_positions",

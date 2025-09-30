@@ -42,7 +42,7 @@ import {
 	getPaginatedEmployeeTypesFromUrl,
 } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { useRouter } from "next/navigation";

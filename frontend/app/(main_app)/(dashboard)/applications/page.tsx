@@ -110,7 +110,7 @@ import { LocationAutocomplete } from "@/components/location-autocomplete";
 import CountrySelect from "@/components/common/country-select";
 import { getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { getFileUrl } from "@/lib/helpers";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";

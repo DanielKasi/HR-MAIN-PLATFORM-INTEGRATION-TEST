@@ -31,7 +31,7 @@ import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { PROFILES_API } from "@/lib/utils";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 
 export default function StaffPage() {
 	const [searchQuery, setSearchQuery] = useState("");

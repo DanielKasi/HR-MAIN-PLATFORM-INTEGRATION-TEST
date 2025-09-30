@@ -14,7 +14,7 @@ import {
 	DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-import { TableSkeleton } from "../common/table-skeleton";
+import { TableSkeleton } from "../common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 import EditPayslipDialog from "../payroll/edit-payslip-dialog";
 import { CardHeader } from "../ui/card";

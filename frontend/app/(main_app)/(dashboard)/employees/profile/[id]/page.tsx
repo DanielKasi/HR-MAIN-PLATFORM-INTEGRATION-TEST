@@ -70,6 +70,8 @@ import ApprovableInstancePageLayout from "@/components/common/layouts/approvable
 import { CheckInModal } from "@/components/checkin-modal";
 import { CheckOutModal } from "@/components/checkout-modal";
 import SingleEmployeeAttendance from "@/components/attendance/single-employee-attendance";
+import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
+import EmployeeSignatures from "@/components/employee/employee-signature";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -99,7 +101,9 @@ export default function EmployeeProfile() {
 	const [loadingAttendance, setLoadingAttendance] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
-	const [documentsSubTab, setDocumentsSubTab] = useState<"contracts">("contracts");
+	const [documentsSubTab, setDocumentsSubTab] = useState<
+		"contracts" | "document_requests" | "signatures"
+	>("contracts");
 	const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
 	const [spotcheckSubTab, setSpotcheckSubTab] = useState<"spotchecks" | "configs">("spotchecks");
 	const [statusFilter, setStatusFilter] = useState("all");
@@ -1071,6 +1075,33 @@ export default function EmployeeProfile() {
 																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																	)}
 																</button>
+
+																<button
+																	onClick={() => setDocumentsSubTab("document_requests")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		documentsSubTab === "document_requests"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	Document requests
+																	{documentsSubTab === "document_requests" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
+																<button
+																	onClick={() => setDocumentsSubTab("signatures")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		documentsSubTab === "signatures"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	Signatures
+																	{documentsSubTab === "document_requests" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
 															</div>
 														</div>
 
@@ -1080,6 +1111,12 @@ export default function EmployeeProfile() {
 																searchTerm={searchTerm}
 																scope={{ type: "employee", employeeId }}
 															/>
+														)}
+														{documentsSubTab === "document_requests" && (
+															<EmployeeDocumentRequestsTable employee={employee} />
+														)}
+														{documentsSubTab === "signatures" && (
+															<EmployeeSignatures employee={employee} />
 														)}
 													</div>
 												)}

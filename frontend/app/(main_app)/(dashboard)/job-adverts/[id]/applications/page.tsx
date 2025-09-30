@@ -101,7 +101,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 import { createInterviewStage, getInterviewStages, createInterview } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
 
 const statusColors = {
