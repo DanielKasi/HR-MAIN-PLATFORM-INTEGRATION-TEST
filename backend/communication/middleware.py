@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.urls import reverse
-from .models import Acknowledgment
+from .models import EmployeeAnnouncementAcknowledgment
 from employee.models import Employee
 from institution.models import Institution
 
@@ -11,11 +11,11 @@ class AcknowledgmentMiddleware:
     def __call__(self, request):
         if request.user.is_authenticated:
             exempt_paths = [
-                reverse('acknowledgment-list'),
+                reverse('employee-announcement-acknowledgment-list'),
                 reverse('acknowledge'),
                 '/admin/',
                 '/logout/',
-                '/login/'  
+                '/login/'
             ]
             if any(request.path.startswith(path) for path in exempt_paths):
                 return self.get_response(request)
@@ -23,12 +23,12 @@ class AcknowledgmentMiddleware:
             try:
                 employee = Employee.objects.get(user=request.user)
                 institution = employee.get_institution()
-                pending = Acknowledgment.objects.filter(
+                pending = EmployeeAnnouncementAcknowledgment.objects.filter(
                     employee=employee,
                     acknowledged=False,
                     announcement__requires_acknowledgment=True,
                     announcement__deleted_at__isnull=True,
-                    announcement__target_employees__institution=institution
+                    announcement__target_employees__department__institution=institution
                 ).exists()
 
                 if pending:

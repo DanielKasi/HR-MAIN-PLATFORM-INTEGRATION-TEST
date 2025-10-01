@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Announcement, Acknowledgment
+from .models import Announcement, EmployeeAnnouncementAcknowledgment
 
 admin.site.register(Announcement)
-admin.site.register(Acknowledgment)
+admin.site.register(EmployeeAnnouncementAcknowledgment)

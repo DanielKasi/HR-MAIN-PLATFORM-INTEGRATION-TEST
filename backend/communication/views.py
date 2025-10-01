@@ -20,8 +20,8 @@ from django.db.models import Q
 from employee.models import Employee
 from institution.models import Institution
 from utilities.sortable_api import SortableAPIMixin
-from .models import Acknowledgment, Announcement
-from .serializers import AcknowledgmentSerializer, AnnouncementSerializer
+from .models import EmployeeAnnouncementAcknowledgment, Announcement
+from .serializers import EmployeeAnnouncementAcknowledgmentSerializer, AnnouncementSerializer
 from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
@@ -44,13 +44,14 @@ except redis.ConnectionError as e:
     logger.error(f"❌ Failed to connect to Redis: {str(e)}")
     raise
 
-def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None) -> None:
+def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None, requires_acknowledgment: bool = False) -> None:
     """Add a notification to the user's Redis queue with optional model and object ID."""
     notification = {
         'id': str(int(time.time() * 1000)),  # Store ID as string
         'message': message,
         'model_name': model_name,
-        'object_id': object_id
+        'object_id': object_id,
+        'requires_acknowledgment': requires_acknowledgment
     }
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
@@ -314,16 +315,26 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic
     def post(self, request):
-        print(request.data)
         serializer = AnnouncementSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()
             for employee in instance.get_target_employees():
-                Acknowledgment.objects.get_or_create(employee=employee, announcement=instance)
-            instance.confirm_create()  
+                EmployeeAnnouncementAcknowledgment.objects.get_or_create(
+                    employee=employee,
+                    announcement=instance
+                )
+                user_id = employee.user.id if employee.user else None
+                if user_id:
+                    add_notification(
+                        user_id=user_id,
+                        message=f"New announcement: {instance.title}",
+                        model_name="announcement",
+                        object_id=str(instance.id),
+                        requires_acknowledgment=instance.requires_acknowledgment
+                    )
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
     @extend_schema(
         parameters=[
@@ -381,7 +392,7 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(announcements, request)
         serializer = AnnouncementSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)   
+        return paginator.get_paginated_response(serializer.data)
 
 class AnnouncementDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -452,7 +463,7 @@ class AnnouncementDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class AcknowledgmentListView(APIView):
+class EmployeeAnnouncementAcknowledgmentListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -461,7 +472,7 @@ class AcknowledgmentListView(APIView):
         ],
         responses={
             200: OpenApiResponse(
-                response=AcknowledgmentSerializer(many=True),
+                response=EmployeeAnnouncementAcknowledgmentSerializer(many=True),
                 description="List of acknowledgments for the user.",
             ),
             404: OpenApiResponse(description="Employee not found."),
@@ -471,7 +482,7 @@ class AcknowledgmentListView(APIView):
     def get(self, request):
         try:
             employee = Employee.objects.get(user=request.user)
-            acknowledgments = Acknowledgment.objects.filter(
+            acknowledgments = EmployeeAnnouncementAcknowledgment.objects.filter(
                 employee=employee, deleted_at__isnull=True
             )
 
@@ -481,7 +492,7 @@ class AcknowledgmentListView(APIView):
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(acknowledgments, request)
-            serializer = AcknowledgmentSerializer(paginated_qs, many=True)
+            serializer = EmployeeAnnouncementAcknowledgmentSerializer(paginated_qs, many=True)
             return paginator.get_paginated_response(serializer.data)
         except Employee.DoesNotExist:
             return Response(
@@ -515,10 +526,12 @@ class AcknowledgeView(APIView):
         ack_id = request.data.get('ack_id')
         try:
             employee = Employee.objects.get(user=request.user)
-            acknowledgment = Acknowledgment.objects.get(id=ack_id, employee=employee, deleted_at__isnull=True)
+            acknowledgment = EmployeeAnnouncementAcknowledgment.objects.get(
+                id=ack_id, employee=employee, deleted_at__isnull=True
+            )
             acknowledgment.acknowledged = True
             acknowledgment.acknowledged_at = timezone.now()
             acknowledgment.save()
             return Response({"detail": "Acknowledgment recorded"}, status=status.HTTP_200_OK)
-        except (Employee.DoesNotExist, Acknowledgment.DoesNotExist):
+        except (Employee.DoesNotExist, EmployeeAnnouncementAcknowledgment.DoesNotExist):
             return Response({"detail": "Invalid acknowledgment"}, status=status.HTTP_400_BAD_REQUEST)

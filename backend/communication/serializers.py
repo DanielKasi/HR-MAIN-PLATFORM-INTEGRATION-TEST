@@ -5,7 +5,7 @@ from recruitment.models import JobPosition
 from institution.models import Department
 from general.serializers import BaseApprovableSerializer
 from utilities.common_serializers import ContentTypeSerializer
-from .models import Announcement, Acknowledgment
+from .models import Announcement, EmployeeAnnouncementAcknowledgment
 from django.contrib.contenttypes.models import ContentType
 
 class AnnouncementSerializer(BaseApprovableSerializer):
@@ -25,6 +25,7 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         many=True,
         required=False
     )
+    target_employees_details = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Announcement
@@ -38,16 +39,14 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)
         return name.strip()
 
-    def get_target_employees(self, obj):
+    def get_target_employees_details(self, obj):
         from employee.models import Employee
-        employees = obj.get_target_employees()  # Use the model method
+        employees = obj.get_target_employees()
         return [
             {
                 'id': emp.id,
                 'name': emp.name,
                 'email': emp.email,
-                'department': emp.department.id if emp.department else None,
-                'position': emp.position.id if emp.position else None
             }
             for emp in employees
         ]
@@ -62,9 +61,9 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         job_positions = obj.target_job_positions.all()
         return [{'id': jp.id, 'title': jp.title} for jp in job_positions]
 
-class AcknowledgmentSerializer(serializers.ModelSerializer):
+class EmployeeAnnouncementAcknowledgmentSerializer(serializers.ModelSerializer):
     announcement = AnnouncementSerializer(read_only=True)
 
     class Meta:
-        model = Acknowledgment
-        fields = '__all__'       
+        model = EmployeeAnnouncementAcknowledgment
+        fields = '__all__'    
