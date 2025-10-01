@@ -10,6 +10,7 @@ import { MAIN_DOMAIN_URL, NOTIFICATIONS_STREAM_BASE_PATH } from "@/constants";
 import { showErrorToast } from "@/lib/utils";
 import { INotification } from "@/store/notifications/types";
 import { getNotificationPath } from "@/utils/notifications-path-matcher";
+import { requireAnnouncementAcknowledgmentStart } from "@/store/miscellaneous/actions";
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dispatch = useDispatch();
@@ -30,7 +31,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				.register("/sw.js")
 				.then((registration) => {
 					serviceWorkerRef.current = registration;
-					console.log("Service Worker registered");
 				})
 				.catch((error) => {
 					console.warn("Service Worker registration failed:", error);
@@ -68,7 +68,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 					throw new Error("No response body");
 				}
 
-				retryCountRef.current = 0; // Reset retry count on successful connection
+				retryCountRef.current = 0;
 				setIsInitialized(true);
 
 				const reader = response.body.getReader();
@@ -90,7 +90,20 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 							try {
 								const data: INotification = JSON.parse(line.slice(6));
 
-								if (data && data.id && !notifications.find((notif) => notif.id === data.id)) {
+								if (data.model_name.toLowerCase().includes("announcement")) {
+									dispatch(requireAnnouncementAcknowledgmentStart(data));
+									return;
+								}
+
+								if (
+									data &&
+									data.id &&
+									!notifications.find(
+										(notif) =>
+											notif.id === data.id &&
+											!data.model_name.toLowerCase().includes("announcement"),
+									)
+								) {
 									dispatch(receiveNotification(data));
 								}
 							} catch (error) {
@@ -178,8 +191,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		if (lastNotification.message) {
 			const url = getNotificationPath(lastNotification);
 
-			await serviceWorkerRef.current.showNotification(`HR System: ${lastNotification.message}`, {
-				body: `${lastNotification.type?.toUpperCase() || "Alert"}:`,
+			await serviceWorkerRef.current.showNotification(`Alert`, {
+				body: `${lastNotification.message}`,
 				icon: "/icon.png",
 				tag: lastNotification.id || (notifications.length - 1).toString(),
 				data: { url },

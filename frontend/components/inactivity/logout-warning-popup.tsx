@@ -39,7 +39,7 @@ const LogoutWarningPopup: React.FC = () => {
 	if (!visible) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[250]">
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[250] pointer-events-none">
 			<div className="bg-white p-6 rounded-lg shadow-lg">
 				<p className="mb-4">
 					You will be logged out in {timer / 1000} seconds due to inactivity. Stay logged in?
