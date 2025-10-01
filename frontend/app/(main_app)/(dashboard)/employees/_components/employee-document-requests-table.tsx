@@ -32,14 +32,17 @@ interface EmployeeDocumentRequestsTableProps {
 	employee: IEmployee;
 	className?: string;
 	documentRequestsTableRefreshRef?: RefObject<(() => void) | null>;
+	context?: "employee_profile" | "general";
 }
 
 export default function EmployeeDocumentRequestsTable({
 	employee,
 	className = "",
 	documentRequestsTableRefreshRef,
+	context,
 }: EmployeeDocumentRequestsTableProps) {
 	const currentInstitution = useSelector(selectSelectedInstitution);
+	const currentUser = useSelector(selectUser);
 	const tableRefreshRef = documentRequestsTableRefreshRef || useRef<(() => void) | null>(null);
 	// const [searchTerm, setSearchTerm] = useState("");
 	const [ordering, setOrdering] = useState("");
@@ -169,15 +172,19 @@ export default function EmployeeDocumentRequestsTable({
 			header: "Due Date",
 			cell: (request) => request.due_date || "Unknown",
 		},
-		{
-			key: "requested_to",
-			header: "Requested to",
-			cell: (request) => (
-				<Badge variant={"secondary"}>
-					{request.employees.length} employee{request.employees.length > 1 ? `s` : ""}
-				</Badge>
-			),
-		},
+		...(context === "general"
+			? [
+					{
+						key: "requested_to",
+						header: "Requested to",
+						cell: (request: IDocumentRequest) => (
+							<Badge variant={"secondary"}>
+								{request.employees.length} employee{request.employees.length > 1 ? `s` : ""}
+							</Badge>
+						),
+					},
+				]
+			: []),
 		{
 			key: "status",
 			header: "Status",
@@ -210,11 +217,14 @@ export default function EmployeeDocumentRequestsTable({
 								<Edit className="h-4 w-4 mr-2" /> Edit
 							</DropdownMenuItem>
 						</ProtectedComponent>
-						{request.employee_requests?.[0]?.status === "pending" && (
-							<DropdownMenuItem onClick={() => openSubmitDialog(request)}>
-								<Upload className="h-4 w-4 mr-2" /> Submit Document
-							</DropdownMenuItem>
-						)}
+						{request.employee_requests?.find((req) => req.employee === employee.id)?.status ===
+							"pending" &&
+							currentUser &&
+							currentUser.id === employee.user?.id && (
+								<DropdownMenuItem onClick={() => openSubmitDialog(request)}>
+									<Upload className="h-4 w-4 mr-2" /> Submit Document
+								</DropdownMenuItem>
+							)}
 						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_DELETE_DOCUMENT_REQUESTS}>
 							<DropdownMenuItem
 								onClick={() => {

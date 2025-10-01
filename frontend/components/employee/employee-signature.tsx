@@ -37,16 +37,15 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 		return response;
 	}, []);
 
-	const handleCreateSignature = async (signatureDataUrl: string) => {
+	const handleCreateSignature = async (signatureDataString: string) => {
 		if (!currentUser) {
 			showErrorToast({ error: null, defaultMessage: "No user found" });
 			return;
 		}
 		try {
-			const blob = await fetch(signatureDataUrl).then((res) => res.blob());
 			const data: ISignatureFormData = {
 				user: currentUser.id,
-				signature: blob,
+				signature: signatureDataString,
 			};
 			await SIGNATURES_API.create({ data });
 			showSuccessToast("Signature created successfully!");
@@ -57,16 +56,15 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 		}
 	};
 
-	const handleUpdateSignature = async (signatureDataUrl: string) => {
+	const handleUpdateSignature = async (signatureDataString: string) => {
 		if (!editingSignature || !currentUser) {
 			showErrorToast({ error: null, defaultMessage: "No signature or user selected" });
 			return;
 		}
 		try {
-			const blob = await fetch(signatureDataUrl).then((res) => res.blob());
 			const data: Partial<ISignatureFormData> = {
 				user: currentUser.id,
-				signature: blob,
+				signature: signatureDataString,
 			};
 			await SIGNATURES_API.update({ id: editingSignature.id, data });
 			showSuccessToast("Signature updated successfully!");
