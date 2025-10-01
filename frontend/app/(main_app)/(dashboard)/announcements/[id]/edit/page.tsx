@@ -52,7 +52,7 @@ export default function AnnouncementEditPage() {
 				title: announcement.title,
 				content: announcement.content,
 				requires_acknowledgment: announcement.requires_acknowledgment,
-				target_employees: announcement.target_employees.map((e) => e.id),
+				target_employees: announcement.target_employees_details.map((e) => e.id),
 				target_departments: announcement.target_departments.map((d) => d.id),
 				target_job_positions: announcement.target_job_positions.map((j) => j.id),
 				announcement_type: announcement.announcement_type,
@@ -63,7 +63,7 @@ export default function AnnouncementEditPage() {
 
 			if (announcement.target_employees.length > 0) {
 				context = "employee";
-				items = announcement.target_employees.map((e) => ({ id: e.id, name: e.name }));
+				items = announcement.target_employees_details.map((e) => ({ id: e.id, name: e.name }));
 			} else if (announcement.target_departments.length > 0) {
 				context = "department";
 				items = announcement.target_departments.map((d) => ({ id: d.id, name: d.name }));

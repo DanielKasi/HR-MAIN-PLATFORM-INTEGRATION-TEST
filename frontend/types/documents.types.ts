@@ -49,5 +49,5 @@ export interface ISignature {
 
 export interface ISignatureFormData {
 	user: number;
-	signature: File | Blob;
+	signature: string;
 }

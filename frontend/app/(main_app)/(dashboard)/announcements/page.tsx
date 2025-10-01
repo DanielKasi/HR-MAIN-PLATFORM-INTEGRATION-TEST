@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CardSkeleton from "@/components/common/skeletons/card-skeleton";
+import ProtectedComponent from "@/components/ProtectedComponent";
+import { PERMISSION_CODES } from "@/constants";
 
 export default function AnnouncementListPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -106,10 +108,12 @@ export default function AnnouncementListPage() {
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Announcements</h1>
 				<div className="flex items-center justify-end gap-4">
-					<Button onClick={() => router.push("/announcements/create")} className="rounded-xl">
-						<Plus className="h-4 w-4 mr-2" />
-						Create Announcement
-					</Button>
+					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_ANNOUNCEMENTS}>
+						<Button onClick={() => router.push("/announcements/create")} className="rounded-xl">
+							<Plus className="h-4 w-4 mr-2" />
+							Create Announcement
+						</Button>
+					</ProtectedComponent>
 				</div>
 			</div>
 
@@ -125,12 +129,26 @@ export default function AnnouncementListPage() {
 				</div>
 				<div className="flex items-center gap-2">
 					<Button
-						onClick={() => setOrdering((prev) => (prev === "title" ? "-title" : "title"))}
+						onClick={() => {
+							if (ordering === "title") {
+								setOrdering("-title");
+							} else if (ordering === "-title") {
+								setOrdering("");
+							} else {
+								setOrdering("title");
+							}
+						}}
 						size="sm"
 						variant={ordering.includes("title") ? "default" : "outline"}
 						type="button"
 					>
-						<Icon icon="hugeicons:sorting-02" className="!h-4 !w-4" />
+						{ordering === "title" ? (
+							<Icon icon="mdi:sort-ascending" className="!h-4 !w-4" />
+						) : ordering === "-title" ? (
+							<Icon icon="mdi:sort-descending" className="!h-4 !w-4" />
+						) : (
+							<Icon icon="mdi:sort" className="!h-4 !w-4" />
+						)}
 						<span className="ml-2">Title</span>
 					</Button>
 				</div>
@@ -171,25 +189,33 @@ export default function AnnouncementListPage() {
 														<Eye className="h-4 w-4 mr-2" /> View Details
 													</Link>
 												</DropdownMenuItem>
-												<DropdownMenuItem className="p-0">
-													<Link
-														className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
-														href={`/announcements/${announcement.id}/edit`}
-													>
-														<Edit className="h-4 w-4 mr-2" /> Edit
-													</Link>
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() => {
-														setAnnouncementToDelete(announcement);
-														setDeleteConfirmOpen(true);
-													}}
-													className="text-red-600 p-0"
+												<ProtectedComponent
+													permissionCode={PERMISSION_CODES.CAN_EDIT_ANNOUNCEMENTS}
 												>
-													<span className="text-red-600 hover:text-red-700 text-xs w-full h-full px-2 py-1.5 flex items-center">
-														<Trash2 className="h-4 w-4 mr-2" /> Delete
-													</span>
-												</DropdownMenuItem>
+													<DropdownMenuItem className="p-0">
+														<Link
+															className="text-xs flex items-center justify-start w-full h-full px-2 py-1.5"
+															href={`/announcements/${announcement.id}/edit`}
+														>
+															<Edit className="h-4 w-4 mr-2" /> Edit
+														</Link>
+													</DropdownMenuItem>
+												</ProtectedComponent>
+												<ProtectedComponent
+													permissionCode={PERMISSION_CODES.CAN_DELETE_ANNOUNCEMENTS}
+												>
+													<DropdownMenuItem
+														onClick={() => {
+															setAnnouncementToDelete(announcement);
+															setDeleteConfirmOpen(true);
+														}}
+														className="text-red-600 p-0"
+													>
+														<span className="text-red-600 hover:text-red-700 text-xs w-full h-full px-2 py-1.5 flex items-center">
+															<Trash2 className="h-4 w-4 mr-2" /> Delete
+														</span>
+													</DropdownMenuItem>
+												</ProtectedComponent>
 											</DropdownMenuContent>
 										</DropdownMenu>
 									</div>

@@ -191,7 +191,7 @@ export function BonusPointSettingsModal({
 							disabled={submitting}
 						>
 							<SelectTrigger className="rounded-2xl border-gray-200 focus:border-orange-500 focus:ring-orange-500/20">
-								<SelectValue placeholder="Select content type" />
+								<SelectValue placeholder="Select resource type" />
 							</SelectTrigger>
 							<SelectContent>
 								{contentTypes.map((ct) => (

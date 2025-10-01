@@ -363,7 +363,7 @@ export default function EmployeeProfile() {
 
 	useEffect(() => {
 		fetchEmployee();
-	}, [fetchEmployee]);
+	}, []);
 
 	useEffect(() => {
 		if (employee && spotcheckSubTab === "configs") {
@@ -1122,7 +1122,10 @@ export default function EmployeeProfile() {
 															/>
 														)}
 														{documentsSubTab === "document_requests" && (
-															<EmployeeDocumentRequestsTable employee={employee} />
+															<EmployeeDocumentRequestsTable
+																context="employee_profile"
+																employee={employee}
+															/>
 														)}
 														{documentsSubTab === "signatures" && (
 															<EmployeeSignatures employee={employee} />
