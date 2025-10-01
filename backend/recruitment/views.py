@@ -164,7 +164,6 @@ class JobPositionDetailAPI(APIView):
 
 
 class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
-    parser_classes = [MultiPartParser, FormParser]
     allowed_ordering_fields = ['job_position', 'created_at', 'advert_type', 'work_type', 'employee_type', 'job_position_advert_status']
     default_ordering = ['job_position']
 
@@ -176,6 +175,7 @@ class JobPositionAdvertListAPI(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request, institution_id):
+        print(request.data)
         serializer = JobPositionAdvertSerializer(data=request.data)
         if serializer.is_valid():
             instance = serializer.save()
@@ -298,9 +298,12 @@ class JobAdvertApplicationListAPI(APIView, SortableAPIMixin):
         tags=["Recruitment"],
     )
     def post(self, request, institution_id):
-        serializer = JobAdvertApplicationSerializer(data=request.data)
+        serializer = JobAdvertApplicationSerializer(
+            data=request.data,
+            context={'request': request, 'institution_id': institution_id}
+        )
         if serializer.is_valid():
-            serializer.save()
+            application = serializer.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
