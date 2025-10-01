@@ -10,7 +10,7 @@ class Announcement(BaseApprovableModel):
     title = models.CharField(max_length=255)
     content = models.TextField()
     requires_acknowledgment = models.BooleanField(default=True)
-    target_employees = models.ManyToManyField(Employee, blank=True, related_name='targeted_announcements')
+    target_employees = models.ManyToManyField(Employee, through='Acknowledgment', blank=True, related_name='targeted_announcements')
     target_departments = models.ManyToManyField(Department, blank=True, related_name='targeted_announcements')
     target_job_positions = models.ManyToManyField(JobPosition, blank=True, related_name='targeted_announcements')
     announcement_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, blank=True, null=True, related_name='announcements')
@@ -46,4 +46,5 @@ class Acknowledgment(SoftDeletableTimeStampedModel):
     acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('employee', 'announcement')        
+        unique_together = ('employee', 'announcement')      
+
