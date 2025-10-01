@@ -51,7 +51,10 @@ import FixedLoader from "@/components/fixed-loader";
 import { hasPermission } from "@/lib/helpers";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import apiRequest from "@/lib/apiRequest";
-import { selectSideBarOpened } from "@/store/miscellaneous/selectors";
+import {
+	selectRequiredAnnouncementAcknowledgment,
+	selectSideBarOpened,
+} from "@/store/miscellaneous/selectors";
 import { closeSideBar, openSideBar } from "@/store/miscellaneous/actions";
 import RedirectsWatcher from "@/components/common/redirects-watcher";
 import AIAssistantWidget from "@/components/ai-assistant-widget";
@@ -118,12 +121,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const accessToken = useSelector(selectAccessToken);
 	const userIsLoading = useSelector(selectUserLoading);
 	const isSideBarOpen = useSelector(selectSideBarOpened);
+	const announcementForAcknowledgment = useSelector(selectRequiredAnnouncementAcknowledgment);
 	const dispatch = useDispatch();
 	const router = useRouter();
 	const appLayoutRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
-		const handleActivity = () => {
+		const handleActivity = (e: MouseEvent) => {
+			if (announcementForAcknowledgment) {
+				console.log("\n\n Announcement requires acknowledgment, ignoring activity");
+				e.stopPropagation();
+				e.preventDefault();
+				return;
+			}
 			if (currentUser && appLayoutRef.current) {
 				dispatch(userActivityDetected());
 			}
@@ -134,12 +144,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		return () => {
 			appLayoutRef.current?.removeEventListener("mousedown", handleActivity);
 		};
-	}, [dispatch, currentUser, appLayoutRef]);
+	}, [dispatch, currentUser, appLayoutRef, announcementForAcknowledgment]);
 
 	useEffect(() => {
 		dispatch(fetchRemoteUserStart());
 		dispatch(fetchUpToDateInstitution());
-	}, [dispatch]);
+	}, []);
 
 	useEffect(() => {
 		if (selectedInstitution) setInstitutionId(selectedInstitution.id.toString());
