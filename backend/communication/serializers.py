@@ -25,6 +25,7 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         many=True,
         required=False
     )
+    target_employees_details = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Announcement
@@ -38,7 +39,7 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)
         return name.strip()
 
-    def get_target_employees(self, obj):
+    def get_target_employees_details(self, obj):
         from employee.models import Employee
         employees = obj.get_target_employees()
         return [
@@ -46,8 +47,6 @@ class AnnouncementSerializer(BaseApprovableSerializer):
                 'id': emp.id,
                 'name': emp.name,
                 'email': emp.email,
-                'department': emp.department.id if emp.department else None,
-                'position': emp.position.id if emp.position else None
             }
             for emp in employees
         ]
