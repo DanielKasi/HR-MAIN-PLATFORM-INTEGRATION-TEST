@@ -12,6 +12,7 @@ import { clearAcknowledgmentRequiredAnnouncement } from "@/store/miscellaneous/a
 
 const AnnouncementAcknowledgementPopup: React.FC = () => {
 	const announcement = useSelector(selectRequiredAnnouncementAcknowledgment);
+	const [isAcknowledging, setIsAcknowledging] = useState(false);
 	const [thisAnnouncementAcknowledgment, setThisAnnouncementAcknowledgment] =
 		useState<IAcknowledgment | null>(null);
 	const dispatch = useDispatch();
@@ -23,9 +24,14 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 	}, [announcement]);
 
 	const fetchAcknowledgment = async () => {
+		if (!announcement) return;
 		try {
-			const response = await ACKNOWLEDGMENTS_API.getOneForLoggedInEmployee();
-			setThisAnnouncementAcknowledgment(response);
+			const response = await ACKNOWLEDGMENTS_API.getOneForLoggedInEmployee({
+				announcement_id: announcement.id,
+			});
+			if (response.length !== 0) {
+				setThisAnnouncementAcknowledgment(response[0]);
+			}
 		} catch (error) {
 			showErrorToast({
 				error,
@@ -34,17 +40,21 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 		}
 	};
 
-	const acknowledgeAnnouncement = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+	const acknowledgeAnnouncement = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
 		e.stopPropagation();
 		if (!thisAnnouncementAcknowledgment) {
 			return;
 		}
 		try {
-			const response = ACKNOWLEDGMENTS_API.acknowledge({
+			setIsAcknowledging(true);
+			const response = await ACKNOWLEDGMENTS_API.acknowledge({
 				ack_id: thisAnnouncementAcknowledgment.id,
 			});
+
+			setIsAcknowledging(false);
 			dispatch(clearAcknowledgmentRequiredAnnouncement());
 		} catch (error) {
+			setIsAcknowledging(false);
 			showErrorToast({
 				error,
 				defaultMessage: "Failed to acknowledge this announcement, reload this page and try again",
@@ -55,12 +65,13 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 	if (!announcement) return null;
 
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] pointer-events-none">
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] pointer-events-auto">
 			<div className="bg-white p-6 rounded-lg shadow-lg">
 				<p className="mb-4">
 					You are required to acknowledge this announcement before you can proceed.
 				</p>
-				<div className="max-h-[50svh] h-full overflow-y-auto">
+				<p className="text-lg text-gray-700 mb-4 font-semibold">{announcement.title}</p>
+				<div className="!max-h-[50svh] !h-full overflow-y-auto">
 					<p className="text-sm text-gray-600 whitespace-pre-wrap">
 						{announcement.content || "No content"}
 					</p>
@@ -68,9 +79,10 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 				<div className="flex justify-end gap-4">
 					<Button
 						className="px-4 py-2 bg-red-500 text-white rounded-full min-w-32 hover:bg-red-600"
-						onClick={(e) => acknowledgeAnnouncement}
+						onClick={acknowledgeAnnouncement}
+						disabled={isAcknowledging}
 					>
-						Acknowledge
+						{isAcknowledging ? "Acknowledging..." : "Acknowledge"}
 					</Button>
 				</div>
 			</div>

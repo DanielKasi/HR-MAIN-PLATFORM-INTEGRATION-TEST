@@ -71,11 +71,14 @@ export const ACKNOWLEDGMENTS_API = {
 	},
 
 	acknowledge: async ({ ack_id }: { ack_id: number }) => {
+		console.log("Acknowledging announcement with ack_id:", ack_id);
 		const res = await apiRequest.post(`/communication/acknowledge/`, { ack_id });
 		return res.data;
 	},
-	getOneForLoggedInEmployee: async () => {
-		const res = await apiRequest.get(`/communication/acknowledgments/`);
-		return res.data as IAcknowledgment;
+	getOneForLoggedInEmployee: async ({ announcement_id }: { announcement_id: number }) => {
+		const res = await apiRequest.get(
+			`/communication/acknowledgments/?announcement_id=${announcement_id}`,
+		);
+		return res.data.results as IAcknowledgment[];
 	},
 };
