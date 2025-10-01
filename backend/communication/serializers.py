@@ -32,12 +32,17 @@ class AnnouncementSerializer(BaseApprovableSerializer):
         fields = '__all__'
 
     def get_content_type_name(self, obj):
+        if not getattr(obj, "announcement_type", None):
+            return None  # or return "" if you prefer empty string instead
+
         model_class = obj.announcement_type.model_class()
         if not model_class:
             return obj.announcement_type.name
+
         name = model_class.__name__
         name = re.sub(r'(?<!^)(?=[A-Z])', ' ', name)
         return name.strip()
+
 
     def get_target_employees_details(self, obj):
         from employee.models import Employee
