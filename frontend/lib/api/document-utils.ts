@@ -94,7 +94,6 @@ export const getDocumentPreview = async (documentId: number): Promise<string | n
 		return (response.data as DocumentPreviewResponse).preview;
 	} catch (error) {
 		console.error("Error fetching document preview:", error);
-
 		return null;
 	}
 };
@@ -221,9 +220,14 @@ export const DOCUMENT_REQUESTS_API = {
 };
 
 export const SIGNATURES_API = {
-	getPaginated: async ({ page = 1, status }: { page?: number; status?: string }) => {
-		const params = new URLSearchParams({ page: page.toString() });
-		const res = await apiRequest.get(`/user/signatures/?${params.toString()}`);
+	getPaginated: async (params: { page?: number; status?: string; user_id?: number }) => {
+		const searchParams = new URLSearchParams({ page: "1" });
+		Object.entries(params).forEach(([key, value]) => {
+			if (value && key !== "page") {
+				searchParams.append(key, value.toString());
+			}
+		});
+		const res = await apiRequest.get(`/user/signatures/?${searchParams.toString()}`);
 		return res.data as IPaginatedResponse<ISignature>;
 	},
 	getPaginatedFromUrl: async ({ url }: { url: string }) => {
@@ -234,18 +238,14 @@ export const SIGNATURES_API = {
 		const formData = new FormData();
 		formData.append("user", data.user.toString());
 		formData.append("signature", data.signature);
-		const res = await apiRequest.post(`/user/signatures/`, formData, {
-			headers: { "Content-Type": "multipart/form-data" },
-		});
+		const res = await apiRequest.post(`/user/signatures/`, formData);
 		return res.data as ISignature;
 	},
 	update: async ({ id, data }: { id: number; data: Partial<ISignatureFormData> }) => {
 		const formData = new FormData();
 		if (data.user) formData.append("user", data.user.toString());
 		if (data.signature) formData.append("signature", data.signature);
-		const res = await apiRequest.patch(`/user/signatures/${id}/`, formData, {
-			headers: { "Content-Type": "multipart/form-data" },
-		});
+		const res = await apiRequest.patch(`/user/signatures/${id}/`, formData);
 		return res.data as ISignature;
 	},
 	delete: async ({ id }: { id: number }) => {

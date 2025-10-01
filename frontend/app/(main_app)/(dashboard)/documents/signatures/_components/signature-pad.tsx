@@ -14,10 +14,11 @@ import { FileSignature } from "lucide-react";
 
 interface SignaturePadProps {
 	onSave?: (dataUrl: string) => void;
+	onOpenChange: (open: boolean) => void;
+	isOpen: boolean;
 }
 
-export default function SignaturePad({ onSave }: SignaturePadProps) {
-	const [showModal, setShowModal] = useState(false);
+export default function SignaturePad({ onSave, isOpen, onOpenChange }: SignaturePadProps) {
 	const sigCanvas = useRef<SignatureCanvas | null>(null);
 	const [penColor, setPenColor] = useState("black");
 	const colors = ["black", "green", "red"];
@@ -28,23 +29,17 @@ export default function SignaturePad({ onSave }: SignaturePadProps) {
 
 	const saveSignature = () => {
 		if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+			console.log("\n\n Saving signature... with data URL:");
 			const dataURL = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
+			console.log("\n\n Saving signature... with data URL:", dataURL);
 			onSave?.(dataURL);
-			setShowModal(false);
+			onOpenChange(false);
 		}
 	};
 
 	return (
 		<>
-			<Button
-				onClick={() => setShowModal(true)}
-				className="rounded-xl bg-primary hover:bg-primary/90"
-			>
-				<FileSignature className="h-4 w-4 mr-2" />
-				Create Signature
-			</Button>
-
-			<Dialog open={showModal} onOpenChange={setShowModal}>
+			<Dialog open={isOpen} onOpenChange={onOpenChange}>
 				<DialogContent className="sm:max-w-[500px] rounded-2xl border-0 shadow-2xl">
 					<DialogHeader className="space-y-3 pb-6 border-b border-gray-100">
 						<DialogTitle className="text-2xl font-bold text-gray-900">Create Signature</DialogTitle>
@@ -84,21 +79,10 @@ export default function SignaturePad({ onSave }: SignaturePadProps) {
 						</div>
 					</div>
 					<DialogFooter className="flex gap-3">
-						<Button variant="outline" onClick={clearSignature} className="rounded-xl flex-1">
+						<Button variant="outline" onClick={clearSignature} className="rounded-full flex-1">
 							Clear
 						</Button>
-						<Button
-							variant="outline"
-							onClick={() => setShowModal(false)}
-							className="rounded-xl flex-1"
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={saveSignature}
-							disabled={!sigCanvas.current || sigCanvas.current.isEmpty()}
-							className="rounded-xl bg-primary flex-1"
-						>
+						<Button onClick={saveSignature} className="rounded-full bg-primary flex-1">
 							Save
 						</Button>
 					</DialogFooter>

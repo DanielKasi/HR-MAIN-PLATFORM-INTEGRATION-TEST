@@ -1222,6 +1222,7 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print(request.data)
         serializer = SignatureSerializer(
             data=request.data, context={"request": request}
         )
@@ -1251,6 +1252,7 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
         user_filter = request.query_params.get("user", None)
         user = request.user.profile
 
+
         try:
             institution = Institution.objects.get(id=user.institution.id)
         except Institution.DoesNotExist:
@@ -1260,7 +1262,7 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
             )
 
         signatures = Signature.objects.filter(
-            institution=institution, deleted_at__isnull=True
+            user__profile__institution=institution, deleted_at__isnull=True
         )
         if search_query:
             signatures = signatures.filter(

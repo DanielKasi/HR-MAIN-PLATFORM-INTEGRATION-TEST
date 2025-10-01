@@ -10,6 +10,8 @@ import { ANNOUNCEMENTS_API } from "@/lib/api/announcements.utils";
 import { IAnnouncement } from "@/types/announcements.types";
 import { showErrorToast } from "@/lib/utils";
 import CardSkeleton from "@/components/common/skeletons/card-skeleton";
+import { Badge } from "../ui/badge";
+import { useRouter } from "next/navigation";
 
 const AnnouncementCarousel: React.FC = () => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -17,6 +19,7 @@ const AnnouncementCarousel: React.FC = () => {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const intervalRef = useRef<NodeJS.Timeout | null>(null);
+	const router = useRouter();
 
 	useEffect(() => {
 		const fetchAnnouncements = async () => {
@@ -94,21 +97,25 @@ const AnnouncementCarousel: React.FC = () => {
 					<ChevronRight className="w-4 h-4 text-gray-400" />
 				</Link>
 			</CardHeader>
-			<div className="relative h-[2.5rem] overflow-hidden">
+			<div
+				className="relative h-[2.5rem] overflow-hidden cursor-pointer"
+				onClick={() => router.push(`/announcements/${announcements[currentIndex].id}`)}
+			>
 				<div
 					className="flex transition-transform duration-500 ease-in-out"
 					style={{ transform: `translateX(-${currentIndex * 100}%)` }}
 				>
 					{announcements.map((announcement) => (
-						<div
-							key={announcement.id}
-							className="min-w-full px-6 text-sm text-gray-600 flex items-center"
-						>
-							<span className="truncate">
-								<strong>{announcement.title}</strong>:{" "}
+						<div key={announcement.id} className="min-w-full px-6 text-sm">
+							<div className="flex items-center justify-between gap-4">
+								<span className="truncate text-gray-600">
+									<strong>{announcement.title}</strong>
+								</span>
+							</div>
+							<p className="truncate text-sm text-gray-600">
 								{announcement.content?.substring(0, 50) +
 									(announcement.content && announcement.content.length > 50 ? "..." : "")}
-							</span>
+							</p>
 						</div>
 					))}
 				</div>

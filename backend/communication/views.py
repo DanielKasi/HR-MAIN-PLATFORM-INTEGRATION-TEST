@@ -39,15 +39,17 @@ try:
         decode_responses=True
     )
     redis_client.ping()
-    logger.info("✅ Successfully connected to Redis")
+    print("✅ Successfully connected to Redis")
+    print("Redis connection established")
 except redis.ConnectionError as e:
-    logger.error(f"❌ Failed to connect to Redis: {str(e)}")
+    print(f"❌ Failed to connect to Redis: {str(e)}")
+    print(f"Redis connection failed: {str(e)}")
     raise
 
 def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None, requires_acknowledgment: bool = False) -> None:
-    """Add a notification to the user's Redis queue with optional model and object ID."""
+    """Add a notification to the user's Redis queue with optional model, object ID, and acknowledgment requirement."""
     notification = {
-        'id': str(int(time.time() * 1000)),  # Store ID as string
+        'id': str(int(time.time() * 1000)),
         'message': message,
         'model_name': model_name,
         'object_id': object_id,
@@ -56,19 +58,23 @@ def add_notification(user_id: int, message: str, model_name: str = None, object_
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
         queue_length = redis_client.llen(f"notifications:{user_id}")
+        print(f"Notification added for user {user_id}, queue length: {queue_length}")
+        print(f"Added notification for user {user_id}: {notification}, queue length: {queue_length}")
     except redis.RedisError as e:
+        print(f"Error adding notification for user {user_id}: {str(e)}")
+        print(f"Error adding notification for user {user_id}: {str(e)}")
         raise
 
 def get_notification(user_id: int) -> Optional[dict]:
     """Retrieve the oldest unread notification for the user."""
     lock_key = f"lock:notifications:{user_id}"
-    with redis_client.lock(lock_key, timeout=50):
+    with redis_client.lock(lock_key, timeout=5):
         try:
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
-            queue_length = len(notifications)
-            
             read_notifications_key = f"read_notifications:{user_id}"
             read_notifications = redis_client.smembers(read_notifications_key)
+            print(f"Retrieved {len(notifications)} notifications for user {user_id}, read: {len(read_notifications)}")
+            print(f"Notifications for user {user_id}: {notifications}, read: {read_notifications}")
             for notification in notifications:
                 try:
                     notification_data = json.loads(notification)
@@ -76,9 +82,13 @@ def get_notification(user_id: int) -> Optional[dict]:
                     if not redis_client.sismember(read_notifications_key, notification_id):
                         return notification_data
                 except (json.JSONDecodeError, KeyError) as e:
+                    print(f"Error parsing notification for user {user_id}: {str(e)}")
+                    print(f"Error parsing notification for user {user_id}: {str(e)}")
                     continue
             return None
         except redis.RedisError as e:
+            print(f"Error retrieving notification for user {user_id}: {str(e)}")
+            print(f"Error retrieving notification for user {user_id}: {str(e)}")
             return None
 
 def get_unread_count(user_id: int) -> int:
@@ -97,9 +107,15 @@ def get_unread_count(user_id: int) -> int:
                     if not redis_client.sismember(read_notifications_key, notification_id):
                         unread_count += 1
                 except (json.JSONDecodeError, KeyError) as e:
+                    print(f"Error counting unread notification for user {user_id}: {str(e)}")
+                    print(f"Error counting unread notification for user {user_id}: {str(e)}")
                     continue
+            print(f"Unread count for user {user_id}: {unread_count}")
+            print(f"Unread count for user {user_id}: {unread_count}")
             return unread_count
         except redis.RedisError as e:
+            print(f"Error counting unread notifications for user {user_id}: {str(e)}")
+            print(f"Error counting unread notifications for user {user_id}: {str(e)}")
             return 0
 
 def mark_notification_read(user_id: int, notification_id: str) -> None:
@@ -107,7 +123,11 @@ def mark_notification_read(user_id: int, notification_id: str) -> None:
     try:
         read_notifications_key = f"read_notifications:{user_id}"
         redis_client.sadd(read_notifications_key, str(notification_id))
+        print(f"Notification {notification_id} marked as read for user {user_id}")
+        print(f"Notification {notification_id} marked as read for user {user_id}")
     except redis.RedisError as e:
+        print(f"Error marking notification as read for user {user_id}: {str(e)}")
+        print(f"Error marking notification as read for user {user_id}: {str(e)}")
         pass
 
 def cleanup_queue(user_id: int) -> None:
@@ -115,7 +135,11 @@ def cleanup_queue(user_id: int) -> None:
     try:
         redis_client.delete(f"notifications:{user_id}")
         redis_client.delete(f"read_notifications:{user_id}")
+        print(f"Notification queue cleaned up for user {user_id}")
+        print(f"Notification queue cleaned up for user {user_id}")
     except redis.RedisError as e:
+        print(f"Error cleaning up notification queue for user {user_id}: {str(e)}")
+        print(f"Error cleaning up notification queue for user {user_id}: {str(e)}")
         pass
 
 @csrf_exempt
@@ -139,10 +163,14 @@ async def sse_notifications(request):
         auth_time = time.time() - start_time
 
         if user_auth_tuple is None:
+            print("SSE: Unauthorized access attempt")
+            print("SSE: Unauthorized access attempt")
             return HttpResponse("Unauthorized", status=401)
 
         user, _ = user_auth_tuple
         user_id = await sync_to_async(lambda: user.id)()
+        print(f"SSE connection established for user {user_id}")
+        print(f"SSE connection established for user {user_id}")
 
         async def event_stream():
             yield "data: {\"message\": \"SSE connection established\", \"unread_count\": 0}\n\n"
@@ -152,16 +180,17 @@ async def sse_notifications(request):
                 notif = await sync_to_async(lambda: get_notification(user_id))()
                 unread_count = await sync_to_async(lambda: get_unread_count(user_id))()
                 if notif:
+                    print(f"Sending notification to user {user_id}: {notif}")
+                    print(f"Sending notification to user {user_id}: {notif}")
                     notif['unread_count'] = unread_count
                     yield f"data: {json.dumps(notif)}\n\n"
-                    # Removed: await sync_to_async(lambda: mark_notification_read(user_id, notif['id']))()
                 
                 current_time = time.time()
                 if current_time - last_heartbeat > 10:
                     yield f'data: {{"unread_count": {unread_count}}}\n\n'
                     last_heartbeat = current_time
 
-                await asyncio.sleep(500)
+                await asyncio.sleep(0.5)
 
         response = StreamingHttpResponse(
             event_stream(),
@@ -173,6 +202,8 @@ async def sse_notifications(request):
         return response
 
     except Exception as e:
+        print(f"SSE error for user {user_id}: {str(e)}")
+        print(f"SSE error for user {user_id}: {str(e)}")
         if user_id is not None:
             await sync_to_async(lambda: cleanup_queue(user_id))()
         return HttpResponse(f"Error: {str(e)}", status=500)
@@ -318,11 +349,22 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
         serializer = AnnouncementSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()
-            for employee in instance.get_target_employees():
+            print(f"Announcement created: ID={instance.id}, Title={instance.title}")
+            print(f"Announcement created: ID={instance.id}, Title={instance.title}")
+            # Get targeted employees
+            targeted_employees = instance.get_target_employees()
+            print(f"Targeted employees: {[emp.id for emp in targeted_employees]}")
+            print(f"Targeted employees: {[emp.id for emp in targeted_employees]}")
+            # Create acknowledgment records and notifications
+            for employee in targeted_employees:
+                print(f"Processing employee {employee.id} ({employee.name})")
+                print(f"Processing employee {employee.id} ({employee.name})")
                 EmployeeAnnouncementAcknowledgment.objects.get_or_create(
                     employee=employee,
                     announcement=instance
                 )
+                print(f"Acknowledgment created for employee {employee.id}, announcement {instance.id}")
+                print(f"Acknowledgment created for employee {employee.id}, announcement {instance.id}")
                 user_id = employee.user.id if employee.user else None
                 if user_id:
                     add_notification(
@@ -332,8 +374,19 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
                         object_id=str(instance.id),
                         requires_acknowledgment=instance.requires_acknowledgment
                     )
+                    print(f"Notification sent for user {user_id}, announcement {instance.id}")
+                    print(f"Notification sent for user {user_id}, announcement {instance.id}")
+                    try:
+                        queue_content = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+                        print(f"Redis queue for user {user_id}: {queue_content}")
+                        print(f"Redis queue for user {user_id}: {queue_content}")
+                    except redis.RedisError as e:
+                        print(f"Error reading Redis queue for user {user_id}: {str(e)}")
+                        print(f"Error reading Redis queue for user {user_id}: {str(e)}")
             instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(f"Serializer errors: {serializer.errors}")
+        print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(

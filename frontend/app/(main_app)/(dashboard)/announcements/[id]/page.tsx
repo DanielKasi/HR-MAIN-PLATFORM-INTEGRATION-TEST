@@ -31,6 +31,7 @@ export default function AnnouncementDetailsPage() {
 			try {
 				setLoading(true);
 				const data = await ANNOUNCEMENTS_API.getById({ id: announcementId });
+				console.log("Announcement data:", data);
 				setAnnouncement(data);
 			} catch (err) {
 				showErrorToast({ error: err, defaultMessage: "Failed to fetch announcement" });
@@ -147,13 +148,15 @@ export default function AnnouncementDetailsPage() {
 
 				<div className="space-y-4">
 					<div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-						<h2 className="text-lg font-medium mb-4">Targets ({targetsCount})</h2>
+						<h2 className="text-lg font-medium mb-4">
+							Targets ({announcement.target_employees.length})
+						</h2>
 						<div className="space-y-3">
-							{announcement.target_employees.length > 0 && (
+							{announcement.target_employees_details.length && (
 								<div>
 									<h3 className="text-sm font-medium text-gray-600 mb-2">Employees</h3>
 									<div className="flex flex-wrap gap-2">
-										{announcement.target_employees.map((employee, idx) => (
+										{announcement.target_employees_details.map((employee, idx) => (
 											<Badge key={employee?.id || idx} variant="secondary" className="text-xs">
 												{employee.name}
 											</Badge>

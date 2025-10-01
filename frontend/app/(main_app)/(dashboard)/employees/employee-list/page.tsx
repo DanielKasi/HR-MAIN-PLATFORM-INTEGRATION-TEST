@@ -142,8 +142,8 @@ export default function EmployeesPage() {
 						</div>
 					</CardTitle>
 
-					<div className="flex flex-col md:grid md:grid-cols-3 lg:flex lg:flex-row gap-4 items-start lg:items-end mt-12 overflow-visible">
-						<div className="relative w-full md:max-w-lg lg:max-w-xl ">
+					<div className="flex flex-col lg:flex lg:flex-row gap-4 items-start lg:items-end mt-12 overflow-visible">
+						<div className="relative w-full lg:max-w-xl ">
 							<Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 							<Input
 								placeholder="Search employees, departments, positions, or emails..."
@@ -185,8 +185,6 @@ export default function EmployeesPage() {
 								onChange={(formatted, numericValue) => setMaxSalary(formatted)}
 							/>
 						</div>
-						{/* Add Employee Dropdown */}
-						<div className="flex-shrink-0 lg:flex-[0.2]"></div>
 					</div>
 				</CardHeader>
 				<EmployeesTable
