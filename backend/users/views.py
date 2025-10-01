@@ -1222,7 +1222,6 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
-        print(request.data)
         serializer = SignatureSerializer(
             data=request.data, context={"request": request}
         )
@@ -1249,8 +1248,9 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
-        user_filter = request.query_params.get("user", None)
+        user_id = request.query_params.get("user_id", None)
         user = request.user.profile
+        
 
 
         try:
@@ -1269,8 +1269,8 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
                 Q(user__fullname__icontains=search_query)
             )
 
-        if user_filter:
-            signatures = signatures.filter(user_id=user_filter)
+        if user_id:
+            signatures = signatures.filter(user_id=user_id)
 
         try:
             signatures = self.apply_sorting(signatures, request)
