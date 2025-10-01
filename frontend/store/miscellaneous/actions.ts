@@ -11,6 +11,8 @@ import {
 	IEmployee,
 	IPaginatedResponse,
 } from "@/types/types.utils";
+import { INotification } from "../notifications/types";
+import { IAnnouncement } from "@/types/announcements.types";
 
 type ToggleSideBar = Action<MISC_ACTION_TYPES.TOGGLE_SIDEBAR>;
 type OpenSideBar = Action<MISC_ACTION_TYPES.OPEN_SIDE_BAR>;
@@ -44,6 +46,19 @@ type SetEmployeesCacheTimestamp = ActionWithPayLoad<
 	number
 >;
 
+type RequireAnnouncementAcknowledgmentStart = ActionWithPayLoad<
+	MISC_ACTION_TYPES.REQUIRE_ANNOUNCEMENT_ACKNOWLDEGMENT_START,
+	INotification
+>;
+
+type ClearAcknowledgmentRequiredAnnouncement =
+	Action<MISC_ACTION_TYPES.CLEAR_ACKNOWLEDGMENT_REQUIRED_ANNOUNCEMENT>;
+
+type RequireAnnouncementAcknowledgmentSuccess = ActionWithPayLoad<
+	MISC_ACTION_TYPES.REQUIRE_ANNOUNCEMENT_ACKNOWLDEGMENT_SUCCESS,
+	IAnnouncement
+>;
+
 export type MiscAction =
 	| ToggleSideBar
 	| OpenSideBar
@@ -56,7 +71,10 @@ export type MiscAction =
 	| ClearApplicationForm
 	| CacheEmployeesPage
 	| ClearEmployeesCache
-	| SetEmployeesCacheTimestamp;
+	| SetEmployeesCacheTimestamp
+	| RequireAnnouncementAcknowledgmentStart
+	| RequireAnnouncementAcknowledgmentSuccess
+	| ClearAcknowledgmentRequiredAnnouncement;
 
 export const toggleSideBarAction = () => createAction(MISC_ACTION_TYPES.TOGGLE_SIDEBAR);
 
@@ -89,3 +107,20 @@ export const clearEmployeesCache = (): ClearEmployeesCache =>
 
 export const setEmployeesCacheTimestamp = (timestamp: number): SetEmployeesCacheTimestamp =>
 	createAction(MISC_ACTION_TYPES.SET_EMPLOYEES_CACHE_TIMESTAMP, timestamp);
+
+export const requireAnnouncementAcknowledgmentStart = (
+	notification: INotification,
+): RequireAnnouncementAcknowledgmentStart => {
+	return createAction(MISC_ACTION_TYPES.REQUIRE_ANNOUNCEMENT_ACKNOWLDEGMENT_START, notification);
+};
+
+export const requireAnnouncementAcknowledgmentSuccess = (
+	announcement: IAnnouncement,
+): RequireAnnouncementAcknowledgmentSuccess => {
+	return createAction(MISC_ACTION_TYPES.REQUIRE_ANNOUNCEMENT_ACKNOWLDEGMENT_SUCCESS, announcement);
+};
+
+export const clearAcknowledgmentRequiredAnnouncement =
+	(): ClearAcknowledgmentRequiredAnnouncement => {
+		return createAction(MISC_ACTION_TYPES.CLEAR_ACKNOWLEDGMENT_REQUIRED_ANNOUNCEMENT);
+	};

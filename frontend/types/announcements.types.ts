@@ -5,13 +5,12 @@ export interface IAnnouncement extends IBaseApprovable {
 	title: string;
 	content: string;
 	requires_acknowledgment: boolean;
-	target_employees: {
+	target_employees: number[];
+	target_employees_details: Array<{
 		id: number;
 		name: string;
 		email: string;
-		department: number | null;
-		position: number | null;
-	}[];
+	}>;
 	target_departments: {
 		id: number;
 		name: string;

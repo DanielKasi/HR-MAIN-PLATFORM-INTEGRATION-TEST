@@ -49,3 +49,8 @@ export const selectValidCachedEmployeesPage = createSelector(
 		return isValid ? cachedPage : null;
 	},
 );
+
+export const selectRequiredAnnouncementAcknowledgment = createSelector(
+	[selectMiscState],
+	(misc) => misc.acknowledgmentRequiredAnnouncement,
+);

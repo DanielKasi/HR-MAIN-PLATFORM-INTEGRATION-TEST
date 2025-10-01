@@ -74,4 +74,8 @@ export const ACKNOWLEDGMENTS_API = {
 		const res = await apiRequest.post(`/communication/acknowledge/`, { ack_id });
 		return res.data;
 	},
+	getOneForLoggedInEmployee: async () => {
+		const res = await apiRequest.get(`/communication/acknowledgments/`);
+		return res.data as IAcknowledgment;
+	},
 };
