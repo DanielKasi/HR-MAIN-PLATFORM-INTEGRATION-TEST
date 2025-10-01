@@ -7,20 +7,13 @@ import { ColumnDef, PaginatedTable } from "../PaginatedTable";
 import { SIGNATURES_API } from "@/lib/api/document-utils";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ISignature, ISignatureFormData } from "@/types/documents.types";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SignaturePad from "@/app/(main_app)/(dashboard)/documents/signatures/_components/signature-pad";
 import { Trash2, Edit, FileSignature, Plus } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { IEmployee } from "@/types/types.utils";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/store/auth/selectors";
-import { th } from "date-fns/locale";
 
 interface EmployeeSignaturesProps {
 	employee: IEmployee;
@@ -42,18 +35,6 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 		}
 		const response = await SIGNATURES_API.getPaginated({ page });
 		return response;
-	}, []);
-
-	const fetchFromUrl = useCallback(async ({ url }: { url: string }) => {
-		try {
-			const response = await SIGNATURES_API.getPaginatedFromUrl({ url });
-			setSignatures(response.results);
-			setTotalSignatures(response.count);
-			return response;
-		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to fetch signatures" });
-			return undefined;
-		}
 	}, []);
 
 	const handleCreateSignature = async (signatureDataUrl: string) => {
@@ -152,33 +133,31 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 		},
 	];
 
-	useEffect(() => {
-		fetchSignatures();
-	}, [fetchSignatures]);
-
 	return (
-		<Card>
+		<Card className="border-none shadow-none">
 			<CardHeader className="flex flex-row items-center justify-between">
 				<CardTitle>Signatures</CardTitle>
-				<Button
-					onClick={() => {
-						setEditingSignature(null);
-						setShowSignaturePad(true);
-					}}
-					className="rounded-xl"
-				>
-					<Plus className="h-4 w-4 mr-2" />
-					Add Signature
-				</Button>
+				{currentUser && employee.user?.id === currentUser.id && (
+					<Button
+						onClick={() => {
+							setEditingSignature(null);
+							setShowSignaturePad(true);
+						}}
+						size={"sm"}
+						className="rounded-full"
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						Add Signature
+					</Button>
+				)}
 			</CardHeader>
 			<CardContent>
 				<PaginatedTable<ISignature>
+					paginated={false}
 					fetchFirstPage={async () => {
 						if (!currentUser) throw new Error("No user found");
-
-						return await SIGNATURES_API.getPaginated({});
+						return await SIGNATURES_API.getPaginated({ user_id: employee.user?.id });
 					}}
-					fetchFromUrl={SIGNATURES_API.getPaginatedFromUrl}
 					columns={columns}
 					emptyState={
 						<div className="text-center py-8">
@@ -193,20 +172,10 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 							<DialogTitle>{editingSignature ? "Edit Signature" : "Create Signature"}</DialogTitle>
 						</DialogHeader>
 						<SignaturePad
+							isOpen={showSignaturePad}
+							onOpenChange={setShowSignaturePad}
 							onSave={editingSignature ? handleUpdateSignature : handleCreateSignature}
 						/>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => {
-									setShowSignaturePad(false);
-									setEditingSignature(null);
-								}}
-								className="rounded-xl"
-							>
-								Cancel
-							</Button>
-						</DialogFooter>
 					</DialogContent>
 				</Dialog>
 				<ConfirmationDialog

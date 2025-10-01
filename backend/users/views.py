@@ -1222,6 +1222,7 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print(request.data)
         serializer = SignatureSerializer(
             data=request.data, context={"request": request}
         )
