@@ -390,6 +390,7 @@ class NotificationMarkReadView(APIView):
         ]
     )
     def post(self, request):
+        print(request.data)
         notification_id = request.query_params.get('id')
         notification = Notification.objects.get(id=notification_id, user_id=request.user)
         notification.is_read = True

@@ -554,7 +554,7 @@ export default function BranchesPage() {
 														</Button>
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
-														<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_EDIT_BRANCH}>
+														<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_BRANCHES}>
 															<DropdownMenuItem
 																onClick={() => {
 																	router.push(`/branches/${branch.id}`);
