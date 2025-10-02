@@ -15,6 +15,8 @@ class Notification(models.Model):
     requires_acknowledgment = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+
     def __str__(self):
         return f"Notification for User {self.user_id}: {self.message[:20]}..."
 
@@ -70,19 +72,28 @@ class Announcement(BaseApprovableModel):
         message = f"New announcement: {self.title}" if is_new else f"Updated announcement: {self.title}"
         print(f"Notification message: {message}")
 
+        from .views import add_notification
         for employee in target_employees:
-            from .views import add_notification
             if employee.user:
                 print(f"Preparing notification for employee {employee.id} (user {employee.user.id})")
                 try:
-                    add_notification(
+                    # Check if an unread notification already exists
+                    if not Notification.objects.filter(
                         user_id=employee.user,
-                        message=message,
                         model_name="Announcement",
                         object_id=str(self.pk),
-                        requires_acknowledgment=self.requires_acknowledgment
-                    )
-                    print(f"Successfully sent notification to employee {employee.id} (user {employee.user.id})")
+                        is_read=False
+                    ).exists():
+                        add_notification(
+                            user_id=employee.user,
+                            message=message,
+                            model_name="Announcement",
+                            object_id=str(self.pk),
+                            requires_acknowledgment=self.requires_acknowledgment
+                        )
+                        print(f"Created new notification for employee {employee.id} (user {employee.user.id})")
+                    else:
+                        print(f"Unread notification already exists for employee {employee.id} (user {employee.user.id}), skipping")
                 except Exception as e:
                     print(f"Failed to send notification to employee {employee.id} (user {employee.user.id}): {str(e)}")
             else:
