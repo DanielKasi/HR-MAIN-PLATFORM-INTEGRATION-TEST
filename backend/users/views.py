@@ -130,11 +130,18 @@ class UserListAPIView(APIView, SortableAPIMixin):
         tags=["User Management"],
     )
     def get(self, request):
-        queryset = CustomUser.objects.all()
+        try:
+            user_institution = request.user.profile.institution
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "Logged-in user does not have a profile."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        if not request.user.is_staff:
-            queryset = queryset.filter(id=request.user.id)
-
+        queryset = CustomUser.objects.filter(
+            profile__institution=user_institution
+        )
+        
         queryset = queryset.prefetch_related(
             "user_roles__role__permissions__permission",
             Prefetch(
