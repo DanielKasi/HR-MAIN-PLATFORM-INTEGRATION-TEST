@@ -181,6 +181,10 @@ async def sse_notifications(request):
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'
         response['Connection'] = 'keep-alive'
+
+        # Below block is expected to fix issues on server deployment
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
         return response
 
     except Exception as e:
