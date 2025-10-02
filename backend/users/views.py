@@ -130,11 +130,18 @@ class UserListAPIView(APIView, SortableAPIMixin):
         tags=["User Management"],
     )
     def get(self, request):
-        queryset = CustomUser.objects.all()
+        try:
+            user_institution = request.user.profile.institution
+        except Profile.DoesNotExist:
+            return Response(
+                {"detail": "Logged-in user does not have a profile."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        if not request.user.is_staff:
-            queryset = queryset.filter(id=request.user.id)
-
+        queryset = CustomUser.objects.filter(
+            profile__institution=user_institution
+        )
+        
         queryset = queryset.prefetch_related(
             "user_roles__role__permissions__permission",
             Prefetch(
@@ -1222,7 +1229,6 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
-        print(request.data)
         serializer = SignatureSerializer(
             data=request.data, context={"request": request}
         )
@@ -1249,8 +1255,9 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
     )
     def get(self, request):
         search_query = request.query_params.get("search", None)
-        user_filter = request.query_params.get("user", None)
+        user_id = request.query_params.get("user_id", None)
         user = request.user.profile
+        
 
 
         try:
@@ -1269,8 +1276,8 @@ class SignatureListCreateView(APIView, SortableAPIMixin):
                 Q(user__fullname__icontains=search_query)
             )
 
-        if user_filter:
-            signatures = signatures.filter(user_id=user_filter)
+        if user_id:
+            signatures = signatures.filter(user_id=user_id)
 
         try:
             signatures = self.apply_sorting(signatures, request)

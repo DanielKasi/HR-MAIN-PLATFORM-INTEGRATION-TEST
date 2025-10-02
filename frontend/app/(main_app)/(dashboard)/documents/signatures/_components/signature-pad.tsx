@@ -10,7 +10,6 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
-import { FileSignature } from "lucide-react";
 
 interface SignaturePadProps {
 	onSave?: (dataUrl: string) => void;
@@ -29,10 +28,8 @@ export default function SignaturePad({ onSave, isOpen, onOpenChange }: Signature
 
 	const saveSignature = () => {
 		if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
-			console.log("\n\n Saving signature... with data URL:");
-			const dataURL = sigCanvas.current.getTrimmedCanvas().toDataURL("image/png");
-			console.log("\n\n Saving signature... with data URL:", dataURL);
-			onSave?.(dataURL);
+			const signatureData = sigCanvas.current.toData();
+			onSave?.(JSON.stringify(signatureData));
 			onOpenChange(false);
 		}
 	};

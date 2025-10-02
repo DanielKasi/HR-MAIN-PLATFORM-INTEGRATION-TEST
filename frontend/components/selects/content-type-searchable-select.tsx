@@ -31,7 +31,7 @@ export const ContentTypeSearchableSelect = memo(
 		className,
 		triggerClassName,
 		multiple = false,
-		placeholder = `Select content_type${multiple ? "s" : ""}`,
+		placeholder = `Select resource type${multiple ? "s" : ""}`,
 		hideSelectedFromList = false,
 	}: ContentTypeSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);

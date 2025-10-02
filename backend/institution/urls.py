@@ -7,6 +7,7 @@ from .views import (
     InstitutionListAPIView,
     InstitutionUserProfileAPIView,
     SystemActivationView,
+    TaxRuleCategoryList,
     UserProfileListAPIView,
     UserProfileDetailAPIView,
     UserBranchListCreateView,
@@ -100,6 +101,11 @@ urlpatterns = [
         "tax-rule/",
         InstitutionTaxRuleListAPIView.as_view(),
         name="institution-tax-rule-list",
+    ),
+    path(
+        "tax-rule-categories/",
+        TaxRuleCategoryList.as_view(),
+        name="institution-tax-rule-categories-list",
     ),
     path(
         "tax-rule/<int:tax_rule_id>/",

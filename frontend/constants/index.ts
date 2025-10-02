@@ -87,6 +87,12 @@ export enum PERMISSION_CODES {
 	CAN_EDIT_DOCUMENT_REQUESTS = "can_edit_document_requests",
 	CAN_DELETE_DOCUMENT_REQUESTS = "can_delete_document_requests",
 
+	// Announcements
+
+	CAN_CREATE_ANNOUNCEMENTS = "can_create_announcements",
+	CAN_EDIT_ANNOUNCEMENTS = "can_edit_announcements",
+	CAN_DELETE_ANNOUNCEMENTS = "can_delete_announcements",
+
 	// Recruitment & Selection
 	CAN_CREATE_JOB_POSITIONS = "can_create_job_positions",
 	CAN_VIEW_JOB_POSITIONS = "can_view_job_positions",
