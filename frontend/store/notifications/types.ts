@@ -1,5 +1,5 @@
 export interface INotification {
-	id?: string;
+	id: number;
 	message: string;
 	timestamp: string;
 	model_name: string;

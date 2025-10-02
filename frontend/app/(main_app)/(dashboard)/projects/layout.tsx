@@ -7,8 +7,6 @@ export default function ProjectsLayout({ children }: { children: React.ReactNode
 	useDocumentTitle("PROJECTS");
 
 	return (
-		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_PAYROLL_DATA}>
-			{children}
-		</ProtectedPage>
+		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_PROJECTS}>{children}</ProtectedPage>
 	);
 }
