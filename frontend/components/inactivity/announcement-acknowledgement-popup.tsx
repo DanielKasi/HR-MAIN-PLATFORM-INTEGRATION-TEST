@@ -74,7 +74,7 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 			}`}
 		>
 			<div
-				className={`bg-gradient-to-br from-white via-white to-blue-50/30 p-8 rounded-2xl shadow-2xl w-full max-w-2xl relative overflow-hidden transition-all duration-500 transform ${
+				className={`bg-gradient-to-br from-white via-white to-blue-50/30 p-8 rounded-2xl shadow-2xl w-full max-w-2xl relative overflow-hidden transition-all duration-500 transform sm:mx-6 md:mx-10 ${
 					isVisible ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
 				}`}
 			>
