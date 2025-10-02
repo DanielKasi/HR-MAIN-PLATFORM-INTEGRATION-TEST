@@ -33,6 +33,18 @@
                 "description": "Hybrid work model",
                 "code": "HY"
             }
+        ],
+        "residency_category": [
+            {
+                "name": "Resident",
+                "description": "Tax rules applicable to resident employees",
+                "code": "RE"
+            },
+            {
+                "name": "Non-Resident",
+                "description": "Tax rules applicable to non-resident employees",
+                "code": "NR"
+            }
         ]
     },
     "UG": {
@@ -46,81 +58,90 @@
                         "tax_rule_description": "Nil rate",
                         "tax_rule_percentage": "0.00",
                         "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": null,
                         "salary_from": "0.00",
                         "salary_to": "235000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
                         "tax_rule_description": "10% on excess over 235,000 UGX",
-                        "tax_rule_percentage": "10.00",
+                        "tax_rule_percentage": "0.00",
                         "tax_rule_fixed_amount": "0.00",
-                        "salary_from": "235000.01",
+                        "tax_rule_formula": "( taxable_gross_salary - 235000 ) * 10%",
+                        "salary_from": "235001.00",
                         "salary_to": "335000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
                         "tax_rule_description": "20% on excess over 335,000 UGX + 10,000 UGX",
-                        "tax_rule_percentage": "20.00",
-                        "tax_rule_fixed_amount": "10000.00",
-                        "salary_from": "335000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "( taxable_gross_salary - 335000 ) * 20% + 10000",
+                        "salary_from": "335001.00",
                         "salary_to": "410000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
                         "tax_rule_description": "30% on excess over 410,000 UGX + 25,000 UGX",
-                        "tax_rule_percentage": "30.00",
-                        "tax_rule_fixed_amount": "25000.00",
-                        "salary_from": "410000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "( taxable_gross_salary - 410000 ) * 30% + 25000",
+                        "salary_from": "410001.00",
                         "salary_to": "10000000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
                         "tax_rule_description": "40% on excess over 10,000,000 UGX + 2,902,000 UGX",
-                        "tax_rule_percentage": "40.00",
-                        "tax_rule_fixed_amount": "2902000.00",
-                        "salary_from": "10000000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "[ ( taxable_gross_salary - 410000 ) * 30% + 25000 ] + [ ( taxable_gross_salary - 10000000 ) * 10% ]",
+                        "salary_from": "10000001.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 1",
                         "tax_rule_description": "10% on taxable income from 0 to 335,000 UGX",
-                        "tax_rule_percentage": "10.00",
+                        "tax_rule_percentage": "0.00",
                         "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "taxable_gross_salary * 10%",
                         "salary_from": "0.00",
                         "salary_to": "335000.00",
-                        "tax_rule_category": "Non-Resident"
+                        "tax_rule_category": "NR"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
                         "tax_rule_description": "20% on excess over 335,000 UGX + 33,500 UGX",
-                        "tax_rule_percentage": "20.00",
-                        "tax_rule_fixed_amount": "33500.00",
-                        "salary_from": "335000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "( taxable_gross_salary - 335000 ) * 20% + 33500",
+                        "salary_from": "335001.00",
                         "salary_to": "410000.00",
-                        "tax_rule_category": "Non-Resident"
+                        "tax_rule_category": "NR"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
                         "tax_rule_description": "30% on excess over 410,000 UGX + 48,500 UGX",
-                        "tax_rule_percentage": "30.00",
-                        "tax_rule_fixed_amount": "48500.00",
-                        "salary_from": "410000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "( taxable_gross_salary - 410000 ) * 30% + 48500",
+                        "salary_from": "410001.00",
                         "salary_to": "10000000.00",
-                        "tax_rule_category": "Non-Resident"
+                        "tax_rule_category": "NR"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
                         "tax_rule_description": "10% on excess over 10,000,000 UGX + tax on first 10,000,000 UGX (2,925,500 UGX)",
-                        "tax_rule_percentage": "10.00",
-                        "tax_rule_fixed_amount": "2925500.00",
-                        "salary_from": "10000000.01",
+                        "tax_rule_percentage": "0.00",
+                        "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": "[ ( taxable_gross_salary - 410000 ) * 30% + 48500 ] + [ ( taxable_gross_salary - 10000000 ) * 10% ]",
+                        "salary_from": "10000001.00",
                         "salary_to": null,
-                        "tax_rule_category": "Non-Resident"
+                        "tax_rule_category": "NR"
                     }
                 ]
             },
@@ -131,11 +152,12 @@
                     {
                         "tax_rule_name": "Standard Rate",
                         "tax_rule_description": "5% of gross monthly salary",
-                        "tax_rule_percentage": "5.00",
+                        "tax_rule_percentage": "0.00",
                         "tax_rule_fixed_amount": null,
+                        "tax_rule_formula": "taxable_gross_salary * 5%",
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -148,99 +170,110 @@
                         "tax_rule_description": "No LST (annual)",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "0.00",
+                        "tax_rule_formula": null,
                         "salary_from": "0.00",
                         "salary_to": "100000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 1",
                         "tax_rule_description": "5,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "5000.00",
-                        "salary_from": "100000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "100001.00",
                         "salary_to": "200000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
                         "tax_rule_description": "10,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "10000.00",
-                        "salary_from": "200000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "200001.00",
                         "salary_to": "300000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
                         "tax_rule_description": "20,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "20000.00",
-                        "salary_from": "300000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "300001.00",
                         "salary_to": "400000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
                         "tax_rule_description": "30,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "30000.00",
-                        "salary_from": "400000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "400001.00",
                         "salary_to": "500000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
                         "tax_rule_description": "40,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "40000.00",
-                        "salary_from": "500000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "500001.00",
                         "salary_to": "600000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 6",
                         "tax_rule_description": "60,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "60000.00",
-                        "salary_from": "600000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "600001.00",
                         "salary_to": "700000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 7",
                         "tax_rule_description": "70,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "70000.00",
-                        "salary_from": "700000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "700001.00",
                         "salary_to": "800000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 8",
                         "tax_rule_description": "80,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "80000.00",
-                        "salary_from": "800000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "800001.00",
                         "salary_to": "900000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 9",
                         "tax_rule_description": "90,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "90000.00",
-                        "salary_from": "900000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "900001.00",
                         "salary_to": "1000000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 10",
                         "tax_rule_description": "100,000 UGX annual",
                         "tax_rule_percentage": null,
                         "tax_rule_fixed_amount": "100000.00",
-                        "salary_from": "1000000.01",
+                        "tax_rule_formula": null,
+                        "salary_from": "1000001.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -259,7 +292,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "288000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -268,7 +301,7 @@
                         "tax_rule_fixed_amount": "28800.00",
                         "salary_from": "288000.01",
                         "salary_to": "388000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -277,7 +310,7 @@
                         "tax_rule_fixed_amount": "53800.00",
                         "salary_from": "388000.01",
                         "salary_to": "6000000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
@@ -286,7 +319,7 @@
                         "tax_rule_fixed_amount": "1737400.00",
                         "salary_from": "6000000.01",
                         "salary_to": "9600000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
@@ -295,7 +328,7 @@
                         "tax_rule_fixed_amount": "2907400.00",
                         "salary_from": "9600000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -310,7 +343,7 @@
                         "tax_rule_fixed_amount": "18000.00",
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -325,7 +358,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -340,7 +373,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -359,7 +392,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "270000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -368,7 +401,7 @@
                         "tax_rule_fixed_amount": "24300.00",
                         "salary_from": "270000.01",
                         "salary_to": "540000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -377,7 +410,7 @@
                         "tax_rule_fixed_amount": "78300.00",
                         "salary_from": "540000.01",
                         "salary_to": "1080000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
@@ -386,7 +419,7 @@
                         "tax_rule_fixed_amount": "213300.00",
                         "salary_from": "1080000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -401,7 +434,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -420,7 +453,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "30000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -429,7 +462,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "30000.01",
                         "salary_to": "50000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -438,7 +471,7 @@
                         "tax_rule_fixed_amount": "4000.00",
                         "salary_from": "50000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -453,7 +486,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -472,7 +505,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "300000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -481,7 +514,7 @@
                         "tax_rule_fixed_amount": "21000.00",
                         "salary_from": "300000.01",
                         "salary_to": "600000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -490,7 +523,7 @@
                         "tax_rule_fixed_amount": "54000.00",
                         "salary_from": "600000.01",
                         "salary_to": "1100000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
@@ -499,7 +532,7 @@
                         "tax_rule_fixed_amount": "129000.00",
                         "salary_from": "1100000.01",
                         "salary_to": "1600000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
@@ -508,7 +541,7 @@
                         "tax_rule_fixed_amount": "224000.00",
                         "salary_from": "1600000.01",
                         "salary_to": "3200000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 6",
@@ -517,7 +550,7 @@
                         "tax_rule_fixed_amount": "560000.00",
                         "salary_from": "3200000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -532,7 +565,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -551,7 +584,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "237100.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -560,7 +593,7 @@
                         "tax_rule_fixed_amount": "42678.00",
                         "salary_from": "237100.01",
                         "salary_to": "370900.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -569,7 +602,7 @@
                         "tax_rule_fixed_amount": "77466.00",
                         "salary_from": "370900.01",
                         "salary_to": "512800.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
@@ -578,7 +611,7 @@
                         "tax_rule_fixed_amount": "125055.00",
                         "salary_from": "512800.01",
                         "salary_to": "673000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
@@ -587,7 +620,7 @@
                         "tax_rule_fixed_amount": "181327.00",
                         "salary_from": "673000.01",
                         "salary_to": "857900.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 6",
@@ -596,7 +629,7 @@
                         "tax_rule_fixed_amount": "253643.00",
                         "salary_from": "857900.01",
                         "sales_to": "1817400.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 7",
@@ -605,7 +638,7 @@
                         "tax_rule_fixed_amount": "647079.00",
                         "salary_from": "1817400.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -620,7 +653,7 @@
                         "tax_rule_fixed_amount": "178.79",
                         "salary_from": "0.00",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -639,7 +672,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "11000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 2",
@@ -648,7 +681,7 @@
                         "tax_rule_fixed_amount": "1100.00",
                         "salary_from": "11000.01",
                         "salary_to": "44725.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 3",
@@ -657,7 +690,7 @@
                         "tax_rule_fixed_amount": "5147.00",
                         "salary_from": "44725.01",
                         "salary_to": "95375.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 4",
@@ -666,7 +699,7 @@
                         "tax_rule_fixed_amount": "16290.00",
                         "salary_from": "95375.01",
                         "salary_to": "198725.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 5",
@@ -675,7 +708,7 @@
                         "tax_rule_fixed_amount": "41094.00",
                         "salary_from": "198725.01",
                         "salary_to": "425275.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 6",
@@ -684,7 +717,7 @@
                         "tax_rule_fixed_amount": "113590.00",
                         "salary_from": "425275.01",
                         "salary_to": "600000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Bracket 7",
@@ -693,7 +726,7 @@
                         "tax_rule_fixed_amount": "174844.00",
                         "salary_from": "600000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -708,7 +741,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": "176100.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             },
@@ -723,7 +756,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "0.00",
                         "salary_to": "200000.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Additional Medicare",
@@ -732,7 +765,7 @@
                         "tax_rule_fixed_amount": null,
                         "salary_from": "200000.01",
                         "salary_to": null,
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
@@ -751,7 +784,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "0.00",
                         "salary_to": "12570.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     },
                     {
                         "tax_rule_name": "Basic Rate",
@@ -760,7 +793,7 @@
                         "tax_rule_fixed_amount": "0.00",
                         "salary_from": "12570.01",
                         "salary_to": "50270.00",
-                        "tax_rule_category": "Resident"
+                        "tax_rule_category": "RE"
                     }
                 ]
             }
