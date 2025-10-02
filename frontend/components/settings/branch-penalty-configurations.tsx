@@ -36,7 +36,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { penaltyConfigAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
 import FormatNumberInput from "@/components/format-number-input";

@@ -330,7 +330,28 @@
     "code": "can_archive_documents",
     "name": "Can Archive Documents",
     "description": "Allows archiving or marking documents as inactive"
+  },
+  {
+    "code": "can_view_document_requests",
+    "name": "Can View Document Requests",
+    "description": "Allows viewing document requests"
+  },
+  {
+    "code": "can_create_document_requests",
+    "name": "Can Create Document Requests",
+    "description": "Allows creating new document requests"
+  },
+  {
+    "code": "can_edit_document_requests",
+    "name": "Can Edit Document Requests",
+    "description": "Allows editing existing document requests"
+  },
+  {
+    "code": "can_delete_document_requests",
+    "name": "Can Delete Document Requests",
+    "description": "Allows deleting document requests"
   }
+
 ],
 
 

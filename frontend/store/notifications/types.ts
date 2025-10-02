@@ -1,10 +1,10 @@
 export interface INotification {
 	id?: string;
 	message: string;
-	type?: "info" | "success" | "error" | "warning";
 	timestamp: string;
 	model_name: string;
 	object_id: number;
+	requires_acknowledgment?: string;
 }
 
 export enum NOTIFICATION_ACTION_TYPES {

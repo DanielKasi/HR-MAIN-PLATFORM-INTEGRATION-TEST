@@ -15,7 +15,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { penaltiesAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

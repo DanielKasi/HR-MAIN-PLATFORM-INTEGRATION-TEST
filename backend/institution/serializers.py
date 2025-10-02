@@ -140,9 +140,6 @@ class InstitutionSerializer(serializers.ModelSerializer):
         institution_owner = validated_data.pop("institution_owner_id")
         departments_data = self.context.get("departments", [])
 
-        # Log departments data for debugging
-        logger.info(f"Creating institution with departments_data: {departments_data}")
-
         with transaction.atomic():
             # Create the Institution
             institution = Institution.objects.create(
@@ -489,6 +486,9 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
         )
         instance.tax_rule_fixed_amount = validated_data.get(
             "tax_rule_fixed_amount", instance.tax_rule_fixed_amount
+        )
+        instance.tax_rule_category = validated_data.get(
+            "tax_rule_category", instance.tax_rule_category
         )
         instance.salary_from = validated_data.get("salary_from", instance.salary_from)
         instance.salary_to = validated_data.get("salary_to", instance.salary_to)

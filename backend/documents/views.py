@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import os
+from communication.models import Announcement, EmployeeAnnouncementAcknowledgment
 from communication.views import add_notification
 from performance.models import PerformanceImprovementPlan
 from utilities.sortable_api import SortableAPIMixin
@@ -1163,16 +1164,33 @@ class DocumentStatusUpdateView(BaseDocumentView):
                         email.attach_alternative(html_message, "text/html")
                         email.attach(pdf_filename, pdf_content, "application/pdf")
                         email.send(fail_silently=False)
-                        logger.info(f"Email sent to {recipient_email} for document {document.pk}")
                         if context == "pip" and hasattr(context_obj.employee, "user"):
                             user_id = context_obj.employee.user.id
                             message = f"You have received a Performance Improvement Plan. Please review and acknowledge by {email_values.get('due_date', 'the specified date')}."
-                            add_notification(
-                                    user_id=user_id,
-                                    message=message,
-                                    model_name="PerformanceImprovementPlan",
-                                    object_id=str(context_obj.id)
+                            try:
+                                pip_content_type = ContentType.objects.get_for_model(PerformanceImprovementPlan)
+                                announcement = Announcement.objects.create(
+                                    title=f"Performance Improvement Plan for {employee_name}",
+                                    content=(
+                                        f"A Performance Improvement Plan has been issued to {employee_name}. "
+                                        f"Issues: {email_values.get('issues', 'Not specified')}. "
+                                        f"Objectives: {email_values.get('objectives', 'Not specified')}. "
+                                        f"Please review and acknowledge by {email_values.get('due_date', 'the specified date')}."
+                                    ),
+                                    requires_acknowledgment=True,
+                                    announcement_type=pip_content_type,
                                 )
+                                announcement.target_employees.set([context_obj.employee])
+                                EmployeeAnnouncementAcknowledgment.objects.get_or_create(
+                                    employee=context_obj.employee,
+                                    announcement=announcement
+                                )
+                            except Exception as e:
+                                logger.error(f"Error creating announcement for PIP ID {context_obj.id}: {str(e)}")
+                                return Response(
+                                    {"error": f"Error creating announcement: {str(e)}"},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                                )    
                     except Exception as e:
                         logger.error(f"Error sending {context} email: {str(e)}")
                         return Response(

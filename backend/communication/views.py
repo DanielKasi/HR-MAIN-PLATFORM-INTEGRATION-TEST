@@ -20,8 +20,8 @@ from django.db.models import Q
 from employee.models import Employee
 from institution.models import Institution
 from utilities.sortable_api import SortableAPIMixin
-from .models import Acknowledgment, Announcement
-from .serializers import AcknowledgmentSerializer, AnnouncementSerializer
+from .models import EmployeeAnnouncementAcknowledgment, Announcement
+from .serializers import EmployeeAnnouncementAcknowledgmentSerializer, AnnouncementSerializer
 from utilities.pagination import CustomPageNumberPagination
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
@@ -39,18 +39,17 @@ try:
         decode_responses=True
     )
     redis_client.ping()
-    logger.info("✅ Successfully connected to Redis")
 except redis.ConnectionError as e:
-    logger.error(f"❌ Failed to connect to Redis: {str(e)}")
     raise
 
-def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None) -> None:
-    """Add a notification to the user's Redis queue with optional model and object ID."""
+def add_notification(user_id: int, message: str, model_name: str = None, object_id: str = None, requires_acknowledgment: bool = False) -> None:
+    """Add a notification to the user's Redis queue with optional model, object ID, and acknowledgment requirement."""
     notification = {
-        'id': str(int(time.time() * 1000)),  # Store ID as string
+        'id': str(int(time.time() * 1000)),
         'message': message,
         'model_name': model_name,
-        'object_id': object_id
+        'object_id': object_id,
+        'requires_acknowledgment': requires_acknowledgment
     }
     try:
         redis_client.rpush(f"notifications:{user_id}", json.dumps(notification))
@@ -61,11 +60,9 @@ def add_notification(user_id: int, message: str, model_name: str = None, object_
 def get_notification(user_id: int) -> Optional[dict]:
     """Retrieve the oldest unread notification for the user."""
     lock_key = f"lock:notifications:{user_id}"
-    with redis_client.lock(lock_key, timeout=50):
+    with redis_client.lock(lock_key, timeout=5):
         try:
             notifications = redis_client.lrange(f"notifications:{user_id}", 0, -1)
-            queue_length = len(notifications)
-            
             read_notifications_key = f"read_notifications:{user_id}"
             read_notifications = redis_client.smembers(read_notifications_key)
             for notification in notifications:
@@ -148,19 +145,34 @@ async def sse_notifications(request):
             last_heartbeat = time.time()
 
             while True:
-                notif = await sync_to_async(lambda: get_notification(user_id))()
-                unread_count = await sync_to_async(lambda: get_unread_count(user_id))()
-                if notif:
+                # Fetch all unread notifications
+                notifications = await sync_to_async(lambda: redis_client.lrange(f"notifications:{user_id}", 0, -1))()
+                read_notifications_key = f"read_notifications:{user_id}"
+                read_notifications = await sync_to_async(lambda: redis_client.smembers(read_notifications_key))()
+                
+                unread_notifications = []
+                for notification in notifications:
+                    try:
+                        notification_data = json.loads(notification)
+                        notification_id = str(notification_data['id'])
+                        if notification_id not in read_notifications:
+                            unread_notifications.append(notification_data)
+                    except (json.JSONDecodeError, KeyError) as e:
+                        continue
+
+                unread_count = len(unread_notifications)
+                # Send all unread notifications
+                for notif in unread_notifications:
                     notif['unread_count'] = unread_count
                     yield f"data: {json.dumps(notif)}\n\n"
-                    # Removed: await sync_to_async(lambda: mark_notification_read(user_id, notif['id']))()
-                
+
+                # Send heartbeat if no notifications or periodically
                 current_time = time.time()
                 if current_time - last_heartbeat > 10:
                     yield f'data: {{"unread_count": {unread_count}}}\n\n'
                     last_heartbeat = current_time
 
-                await asyncio.sleep(500)
+                await asyncio.sleep(0.5)
 
         response = StreamingHttpResponse(
             event_stream(),
@@ -169,6 +181,10 @@ async def sse_notifications(request):
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'
         response['Connection'] = 'keep-alive'
+
+        # Below block is expected to fix issues on server deployment
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
         return response
 
     except Exception as e:
@@ -317,12 +333,28 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
         serializer = AnnouncementSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             instance = serializer.save()
-            for employee in instance.get_target_employees():
-                Acknowledgment.objects.get_or_create(employee=employee, announcement=instance)
-            instance.confirm_create()  
+            targeted_employees = instance.get_target_employees()
+            for employee in targeted_employees:
+                EmployeeAnnouncementAcknowledgment.objects.get_or_create(
+                    employee=employee,
+                    announcement=instance
+                )
+                user_id = employee.user.id if employee.user else None
+                if user_id:
+                    add_notification(
+                        user_id=user_id,
+                        message=f"New announcement: {instance.title}",
+                        model_name="announcement",
+                        object_id=str(instance.id),
+                        requires_acknowledgment=instance.requires_acknowledgment
+                    )
+                    try:
+                        queue_content = redis_client.lrange(f"notifications:{user_id}", 0, -1)
+                    except redis.RedisError as e:
+                        raise
+            instance.confirm_create()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
     @extend_schema(
         parameters=[
@@ -380,7 +412,7 @@ class AnnouncementListCreateView(APIView, SortableAPIMixin):
         paginator = CustomPageNumberPagination()
         paginated_qs = paginator.paginate_queryset(announcements, request)
         serializer = AnnouncementSerializer(paginated_qs, many=True)
-        return paginator.get_paginated_response(serializer.data)   
+        return paginator.get_paginated_response(serializer.data)
 
 class AnnouncementDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -451,7 +483,7 @@ class AnnouncementDetailView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class AcknowledgmentListView(APIView):
+class EmployeeAnnouncementAcknowledgmentListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -460,7 +492,7 @@ class AcknowledgmentListView(APIView):
         ],
         responses={
             200: OpenApiResponse(
-                response=AcknowledgmentSerializer(many=True),
+                response=EmployeeAnnouncementAcknowledgmentSerializer(many=True),
                 description="List of acknowledgments for the user.",
             ),
             404: OpenApiResponse(description="Employee not found."),
@@ -469,10 +501,14 @@ class AcknowledgmentListView(APIView):
     )
     def get(self, request):
         try:
+            announcement_id = request.query_params.get("announcement_id", None)
             employee = Employee.objects.get(user=request.user)
-            acknowledgments = Acknowledgment.objects.filter(
+            acknowledgments = EmployeeAnnouncementAcknowledgment.objects.filter(
                 employee=employee, deleted_at__isnull=True
             )
+
+            if announcement_id:
+                acknowledgments = acknowledgments.filter(announcement__id=announcement_id)
 
             acknowledged_filter = request.query_params.get("acknowledged", None)
             if acknowledged_filter is not None:
@@ -480,7 +516,7 @@ class AcknowledgmentListView(APIView):
 
             paginator = CustomPageNumberPagination()
             paginated_qs = paginator.paginate_queryset(acknowledgments, request)
-            serializer = AcknowledgmentSerializer(paginated_qs, many=True)
+            serializer = EmployeeAnnouncementAcknowledgmentSerializer(paginated_qs, many=True)
             return paginator.get_paginated_response(serializer.data)
         except Employee.DoesNotExist:
             return Response(
@@ -514,10 +550,12 @@ class AcknowledgeView(APIView):
         ack_id = request.data.get('ack_id')
         try:
             employee = Employee.objects.get(user=request.user)
-            acknowledgment = Acknowledgment.objects.get(id=ack_id, employee=employee, deleted_at__isnull=True)
+            acknowledgment = EmployeeAnnouncementAcknowledgment.objects.get(
+                id=ack_id, employee=employee, deleted_at__isnull=True
+            )
             acknowledgment.acknowledged = True
             acknowledgment.acknowledged_at = timezone.now()
             acknowledgment.save()
             return Response({"detail": "Acknowledgment recorded"}, status=status.HTTP_200_OK)
-        except (Employee.DoesNotExist, Acknowledgment.DoesNotExist):
+        except (Employee.DoesNotExist, EmployeeAnnouncementAcknowledgment.DoesNotExist):
             return Response({"detail": "Invalid acknowledgment"}, status=status.HTTP_400_BAD_REQUEST)

@@ -31,7 +31,7 @@ import {
 	getGeneratedDocumentTemplate,
 	getDocumentPreview,
 	sendDocuments,
-} from "@/lib/document-utils";
+} from "@/lib/api/document-utils";
 import { IDocumentTemplate, IGeneratedDocumentTemplate } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { showErrorToast } from "@/lib/utils";

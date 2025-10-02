@@ -37,7 +37,7 @@ import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { EmployeeTaxFormDialog } from "@/components/employee-taxes/employee-tax-form-dialog";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 
 const getStatusColor = (status: string) => {

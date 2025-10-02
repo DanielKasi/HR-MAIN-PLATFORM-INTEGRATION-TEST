@@ -35,7 +35,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateAssetDialog } from "@/components/assets/create-asset-dialog";
 import { EditAssetDialog } from "@/components/assets/edit-asset-dialog";
 import { DeleteAssetDialog } from "@/components/assets/delete-asset-dialog";

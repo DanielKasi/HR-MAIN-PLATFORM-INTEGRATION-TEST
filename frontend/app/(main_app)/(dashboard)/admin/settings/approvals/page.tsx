@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/command";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { PaginatedTable, ColumnDef } from "@/components/PaginatedTable";
-import { RefObject } from "react";
 
 const actionsMapper: Array<{
 	value: string;

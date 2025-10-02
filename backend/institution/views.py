@@ -1459,6 +1459,7 @@ class InstitutionTaxRuleListAPIView(APIView, SortableAPIMixin):
     )
     @transaction.atomic()
     def post(self, request):
+        print(request.data)
         serializer = InstitutionTaxRuleSerializer(
             data=request.data, context={"request": request}
         )

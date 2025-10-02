@@ -63,7 +63,7 @@ import {
 import { IDisciplinaryAction } from "@/types/types.utils";
 import { PERMISSION_CODES } from "@/constants";
 import ProtectedComponent from "@/components/ProtectedComponent";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 

@@ -158,6 +158,12 @@ export default function DashboardSideBar() {
 			),
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
 		},
+		// {
+		// 	title: "Announcements",
+		// 	href: "/announcements",
+		// 	icon: <Icon icon="hugeicons:megaphone-01" className="!w-6 !h-6" width="28" height="28" />,
+		// 	requiredPermission: PERMISSION_CODES.CAN_VIEW_ADMIN_DASHBOARD,
+		// },
 		{
 			title: "Recruitment",
 			href: "#1",
@@ -195,8 +201,8 @@ export default function DashboardSideBar() {
 						},
 						{
 							title: "Document Requests",
-							href: "#",
-							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
+							href: "/employees/document-requests",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
 						},
 						{
 							title: "Shifts",
@@ -242,7 +248,15 @@ export default function DashboardSideBar() {
 				: [
 						{ title: "Analytics", href: "/analytics/employees" },
 						{ title: "Employee Information", href: "/employees/employee-list" },
-						{ title: "Document Requests", href: "#" },
+						{
+							title: "Document Requests",
+							href: "/employees/document-requests",
+							requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
+						},
+						// {
+						// 	title: "Signatures",
+						// 	href: "/documents/signatures",
+						// },
 						{ title: "Shifts", href: "/employees/shift-requests" },
 						{ title: "Employee Types", href: "/employees/employee-types" },
 						{ title: "Work Types", href: "/employees/work-types" },

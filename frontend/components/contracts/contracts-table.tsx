@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { TableSkeleton } from "../common/table-skeleton";
+import { TableSkeleton } from "../common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
 import { Card, CardContent } from "../ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 import { PaginatedTableWrapper } from "../common/tables/paginated-table-wrapper";
-import { TableSkeleton } from "../common/table-skeleton";
+import { TableSkeleton } from "../common/skeletons/table-skeleton";
 
 import { Badge } from "@/components/ui/badge";
 import {

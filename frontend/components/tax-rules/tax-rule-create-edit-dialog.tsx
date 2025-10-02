@@ -95,6 +95,7 @@ export function TaxRuleCreateEditDialog({
 		tax_rule_description: "",
 		tax_rule_percentage: undefined,
 		tax_rule_fixed_amount: undefined,
+		tax_rule_formula: undefined,
 		salary_from: 0,
 		salary_to: 0,
 	});
@@ -161,7 +162,43 @@ export function TaxRuleCreateEditDialog({
 				salary_to: taxRule.salary_to || 0,
 			});
 			if (taxRule.tax_rule_formula) {
-				setTokens([{ id: "1", type: "fixed_amount", value: taxRule.tax_rule_formula }]);
+				const tokenize = (formula: string): Token[] => {
+					const tokens: Token[] = [];
+					// Match: brackets, parens, percentages, numbers, operators, identifiers
+					const regex = /(\[|\]|\(|\)|\d+(?:\.\d+)?%?|[+\-*/]|[a-zA-Z_][a-zA-Z0-9_]*)/g;
+					let match;
+					let idCounter = 0;
+					while ((match = regex.exec(formula)) !== null) {
+						const raw = match[0].trim();
+						if (!raw) continue;
+
+						// Determine token type
+						if (raw === "[") {
+							tokens.push({ id: `t${++idCounter}`, type: "open_bracket", value: "[" });
+						} else if (raw === "]") {
+							tokens.push({ id: `t${++idCounter}`, type: "close_bracket", value: "]" });
+						} else if (raw === "(") {
+							tokens.push({ id: `t${++idCounter}`, type: "open_paren", value: "(" });
+						} else if (raw === ")") {
+							tokens.push({ id: `t${++idCounter}`, type: "close_paren", value: ")" });
+						} else if (OPERATORS.includes(raw as Operator)) {
+							tokens.push({ id: `t${++idCounter}`, type: "operator", value: raw });
+						} else if (raw.endsWith("%")) {
+							const numPart = raw.slice(0, -1);
+							tokens.push({ id: `t${++idCounter}`, type: "percentage", value: numPart });
+						} else if (!isNaN(parseFloat(raw))) {
+							tokens.push({ id: `t${++idCounter}`, type: "fixed_amount", value: raw });
+						} else if (incomeSourcesMapper.some((src) => src.value === raw)) {
+							tokens.push({ id: `t${++idCounter}`, type: "income_source", value: raw });
+						} else {
+							// Fallback: treat as fixed amount (for backward compatibility)
+							tokens.push({ id: `t${++idCounter}`, type: "fixed_amount", value: raw });
+						}
+					}
+					return tokens;
+				};
+
+				setTokens(tokenize(taxRule.tax_rule_formula));
 			}
 		} else {
 			resetFormData();
@@ -203,7 +240,7 @@ export function TaxRuleCreateEditDialog({
 
 	const buildFormulaString = () => {
 		return tokens
-			.map((token) => (token.type != "percentage" ? token.value : `${token.value} %`))
+			.map((token) => (token.type != "percentage" ? token.value : `${token.value}%`))
 			.join(" ");
 	};
 
@@ -236,7 +273,7 @@ export function TaxRuleCreateEditDialog({
 			toast.error("Please enter a tax rule name");
 			return;
 		}
-		if (!formData.salary_from) {
+		if (typeof formData.salary_from === "undefined") {
 			toast.error("You must provide a salary lower bound");
 			return;
 		}
@@ -303,12 +340,11 @@ export function TaxRuleCreateEditDialog({
 	};
 
 	const handleOpenChange = (open: boolean) => {
-		if (!isControlled) {
-			setInternalIsOpen(open);
-			if (!open) {
-				resetFormData();
-			}
+		setInternalIsOpen(open);
+		if (!open) {
+			resetFormData();
 		}
+		setIsOpen(open);
 	};
 
 	const renderTokenInput = (token: Token, index: number) => {
@@ -728,11 +764,6 @@ export function TaxRuleCreateEditDialog({
 				</div>
 			</div>
 			<DialogFooter>
-				{isEditMode && (
-					<Button variant="outline" onClick={() => setIsOpen(false)} disabled={isSubmitting}>
-						Cancel
-					</Button>
-				)}
 				<Button
 					onClick={handleSubmit}
 					disabled={isSubmitting}
@@ -755,7 +786,7 @@ export function TaxRuleCreateEditDialog({
 
 	if (isEditMode) {
 		return (
-			<Dialog open={isOpen} onOpenChange={isControlled ? undefined : handleOpenChange}>
+			<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 				{dialogContent}
 			</Dialog>
 		);

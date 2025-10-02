@@ -70,6 +70,8 @@ import ApprovableInstancePageLayout from "@/components/common/layouts/approvable
 import { CheckInModal } from "@/components/checkin-modal";
 import { CheckOutModal } from "@/components/checkout-modal";
 import SingleEmployeeAttendance from "@/components/attendance/single-employee-attendance";
+import EmployeeDocumentRequestsTable from "../../_components/employee-document-requests-table";
+import EmployeeSignatures from "@/components/employee/employee-signature";
 
 export default function EmployeeProfile() {
 	const params = useParams();
@@ -99,7 +101,9 @@ export default function EmployeeProfile() {
 	const [loadingAttendance, setLoadingAttendance] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [leaveSubTab, setLeaveSubTab] = useState<"balances" | "applications">("balances");
-	const [documentsSubTab, setDocumentsSubTab] = useState<"contracts">("contracts");
+	const [documentsSubTab, setDocumentsSubTab] = useState<
+		"contracts" | "document_requests" | "signatures"
+	>("contracts");
 	const [assetSubTab, setAssetSubTab] = useState<"requests" | "allocations">("requests");
 	const [spotcheckSubTab, setSpotcheckSubTab] = useState<"spotchecks" | "configs">("spotchecks");
 	const [statusFilter, setStatusFilter] = useState("all");
@@ -359,7 +363,7 @@ export default function EmployeeProfile() {
 
 	useEffect(() => {
 		fetchEmployee();
-	}, [fetchEmployee]);
+	}, []);
 
 	useEffect(() => {
 		if (employee && spotcheckSubTab === "configs") {
@@ -439,34 +443,43 @@ export default function EmployeeProfile() {
 	return (
 		<div className="w-full h-full rounded-lg relative">
 			{loading ? (
-				<div className="w-full h-full min-h-screen p-6 bg-white animate-pulse">
-					<div className="flex items-center justify-between mb-8 gap-8">
-						<div className="flex items-center justify-start gap-4">
-							<Skeleton className="h-10 w-10 rounded bg-gray-200 " />
-							<Skeleton className="h-10 w-96 bg-gray-200 " />
+				<div className="w-full h-full min-h-screen p-4 sm:p-6 bg-white animate-pulse">
+					{/* Top Bar */}
+					<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 md:gap-8">
+						{/* Logo + Title */}
+						<div className="flex items-center justify-start gap-3">
+							<Skeleton className="h-10 w-10 rounded bg-gray-200" />
+							<Skeleton className="h-10 w-40 sm:w-60 md:w-96 bg-gray-200" />
 						</div>
-						<div className="flex items-end gap-8">
-							<Skeleton className="h-10 w-48 bg-gray-200 " />
-							<Skeleton className="h-10 w-48 bg-gray-200 " />
-							<Skeleton className="h-10 w-64 bg-gray-200 " />
+
+						{/* Filters/Buttons */}
+						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full md:w-auto">
+							<Skeleton className="h-10 w-full bg-gray-200" />
+							<Skeleton className="h-10 w-full bg-gray-200" />
+							<Skeleton className="h-10 w-full bg-gray-200" />
 						</div>
 					</div>
+
+					{/* Content Section */}
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 						<div
-							className={`${employee?.approval_status !== "active" && employee?.approvals?.length ? "lg:col-span-2" : "lg:col-span-3"}  space-y-6`}
+							className={`${
+								employee?.approval_status !== "active" && employee?.approvals?.length
+									? "lg:col-span-2"
+									: "lg:col-span-3"
+							} space-y-6`}
 						>
-							<Skeleton className="h-64 w-full bg-gray-200 " />
-							<Skeleton className="h-64 w-full bg-gray-200 " />
-							<Skeleton className="h-48 w-full bg-gray-200 mt-8" />
+							<Skeleton className="h-48 sm:h-56 md:h-64 w-full bg-gray-200" />
+							<Skeleton className="h-48 sm:h-56 md:h-64 w-full bg-gray-200" />
+							<Skeleton className="h-40 sm:h-44 md:h-48 w-full bg-gray-200 mt-4 md:mt-8" />
 						</div>
+
 						{employee?.approval_status !== "active" && employee?.approvals?.length ? (
-							<div className={`space-y-6`}>
-								<Skeleton className="h-32 w-full bg-gray-200 " />
-								<Skeleton className="h-32 w-full bg-gray-200 " />
+							<div className="space-y-6">
+								<Skeleton className="h-28 sm:h-32 w-full bg-gray-200" />
+								<Skeleton className="h-28 sm:h-32 w-full bg-gray-200" />
 							</div>
-						) : (
-							<></>
-						)}
+						) : null}
 					</div>
 				</div>
 			) : (
@@ -1071,6 +1084,33 @@ export default function EmployeeProfile() {
 																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
 																	)}
 																</button>
+
+																<button
+																	onClick={() => setDocumentsSubTab("document_requests")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		documentsSubTab === "document_requests"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	Document requests
+																	{documentsSubTab === "document_requests" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
+																<button
+																	onClick={() => setDocumentsSubTab("signatures")}
+																	className={`pb-3 text-sm font-medium transition-colors relative ${
+																		documentsSubTab === "signatures"
+																			? "text-gray-800 font-semibold"
+																			: "text-[#848496] hover:text-gray-800"
+																	}`}
+																>
+																	Signatures
+																	{documentsSubTab === "signatures" && (
+																		<div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#162032]" />
+																	)}
+																</button>
 															</div>
 														</div>
 
@@ -1080,6 +1120,15 @@ export default function EmployeeProfile() {
 																searchTerm={searchTerm}
 																scope={{ type: "employee", employeeId }}
 															/>
+														)}
+														{documentsSubTab === "document_requests" && (
+															<EmployeeDocumentRequestsTable
+																context="employee_profile"
+																employee={employee}
+															/>
+														)}
+														{documentsSubTab === "signatures" && (
+															<EmployeeSignatures employee={employee} />
 														)}
 													</div>
 												)}

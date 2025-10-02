@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getWorkTypes, getPaginatedWorkTypesFromUrl, deleteWorkType } from "@/lib/utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import WorkTypeModal from "@/components/dialogs/work-type-dialog";

@@ -30,7 +30,7 @@ import {
 } from "@/store/auth/selectors";
 import { selectJobAdvertForm } from "@/store/miscellaneous/selectors";
 import { saveJobAdvertForm, clearJobAdvertForm } from "@/store/miscellaneous/actions";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateJobPositionDialog } from "@/components/dialogs/create-job-position-dialog";
 import { SearchableSelect, type SearchableSelectItem } from "@/components/searchable-select";
 import { RichTextEditor } from "@/components/common/rich-editor";

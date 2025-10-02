@@ -8,6 +8,7 @@ from recruitment.models import (
     JobInterview,
     SkillZone,
     SkillZoneCategory,
+    ApplicationDocument,
 )
 from employee.serializers import EmployeeSerializer
 from django.db.models import Q, Count
@@ -17,10 +18,44 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from users.models import CustomUser
 from users.serializers import CustomUserSerializer
-from recruitment.models import RequiredDocument
+from recruitment.models import RequiredDocument, ApplicationDocument
 from employee.models import Employee, WorkType, EmployeeType
 from general.serializers import BaseApprovableSerializer
 
+
+class RequiredDocumentSerializer(serializers.ModelSerializer):
+    content_object = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = RequiredDocument
+        fields = ["id", "document_name", "description", "is_optional", "content_object"]
+
+    def get_content_object(self, obj):
+        if not obj.content_object:
+            return None
+        content_type = obj.content_type
+        model_class = content_type.model_class()
+        obj_instance = obj.content_object
+        representation = {
+            "model": content_type.model,
+            "app_label": content_type.app_label,
+            "id": obj_instance.id,
+        }
+        return representation
+    
+class ApplicationDocumentSerializer(serializers.ModelSerializer):
+    required_document = RequiredDocumentSerializer(read_only=True)
+
+    class Meta:
+        model = ApplicationDocument
+        fields = '__all__'
+
+    def validate_file(self, value):
+        if value.size > 5 * 1024 * 1024:  
+            raise serializers.ValidationError("File size must be under 5MB")
+        if not value.name.lower().endswith(('.pdf', '.doc', '.docx')):
+            raise serializers.ValidationError("Only PDF, DOC, or DOCX files are allowed")
+        return value    
 
 
 
@@ -28,6 +63,7 @@ class JobPositionSerializerWithMinimalData(serializers.ModelSerializer):
     class Meta:
         model = JobPosition
         fields = ["name", "description"]
+
 
 
 class JobAdvertApplicationSerializer(serializers.ModelSerializer):
@@ -43,10 +79,56 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
     recommended_by = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.all(), required=False, allow_null=True
     )
+    documents = ApplicationDocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = JobAdvertApplication
         fields = '__all__'
+
+    def validate(self, data):
+        job_position_advert = data.get("job_position_advert")
+        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+        required_documents = RequiredDocument.objects.filter(
+            content_type=content_type, object_id=job_position_advert.id, is_optional=False
+        )
+        request = self.context.get("request")
+        files = getattr(request, 'FILES', {}) if request else {}
+        post_data = getattr(request, 'POST', {}) if request else {}
+
+        for req_doc in required_documents:
+            file_key = f"document_{req_doc.id}"
+            if file_key not in files:
+                raise serializers.ValidationError(
+                    f"Missing required document: {req_doc.document_name}"
+                )
+
+        return data
+
+    @transaction.atomic
+    def create(self, validated_data):
+        application = JobAdvertApplication.objects.create(**validated_data)
+
+        request = self.context.get("request")
+        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+        if request and hasattr(request, 'FILES'):
+            for key, file in request.FILES.items():
+                if key.startswith("document_"):
+                    try:
+                        doc_id = int(key.split("_")[1])
+                        required_document = RequiredDocument.objects.get(
+                            id=doc_id,
+                            content_type=content_type,
+                            object_id=application.job_position_advert.id
+                        )
+                        ApplicationDocument.objects.create(
+                            job_advert_application=application,
+                            required_document=required_document,
+                            file=file
+                        )
+                    except (ValueError, RequiredDocument.DoesNotExist) as e:
+                        continue
+
+        return application
 
     def get_job_position_advert_job_details(self, obj):
         job_position = obj.job_position_advert.job_position
@@ -64,7 +146,7 @@ class JobAdvertApplicationSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation["created_by"] = CustomUserSerializer(
             instance.created_by, context=self.context
-        ).data
+        ).data if instance.created_by else None
         representation["reviewed_by"] = (
             CustomUserSerializer(instance.reviewed_by, context=self.context).data
             if instance.reviewed_by
@@ -163,10 +245,18 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
     work_type = serializers.PrimaryKeyRelatedField(queryset=WorkType.objects.all(), required=False)
     employee_type = serializers.PrimaryKeyRelatedField(queryset=EmployeeType.objects.all(), required=False)
     institution = serializers.SerializerMethodField()
+    required_documents = RequiredDocumentSerializer(many=True, required=False)
 
     class Meta:
         model = JobPositionAdvert
         fields = '__all__'
+
+    def get_required_documents(self, obj):
+        content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+        documents = RequiredDocument.objects.filter(
+            content_type=content_type, object_id=obj.id
+        )
+        return RequiredDocumentSerializer(documents, many=True, context=self.context).data
 
     def get_institution(self, obj):
         department = getattr(obj.job_position, "department", None)
@@ -179,33 +269,27 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
         return None    
 
     def to_representation(self, instance):
-        """Customize output for work_type and employee_type"""
         representation = super().to_representation(instance)
-
-        # Add work_type details
         if instance.work_type:
             representation["work_type"] = {
                 "id": instance.work_type.id,
                 "name": instance.work_type.name 
             }
-
-        # Add employee_type details
         if instance.employee_type:
             representation["employee_type"] = {
                 "id": instance.employee_type.id,
                 "name": instance.employee_type.name  
             }
-
+        representation["required_documents"] = self.get_required_documents(instance)
         return representation   
-
+    
     def get_applications(self, obj):
         applications = JobAdvertApplication.objects.filter(job_position_advert=obj)
-        return JobAdvertApplicationSerializer(applications, many=True).data
+        return JobAdvertApplicationSerializer(applications, many=True, context=self.context).data
 
     def get_interview_stages(self, obj):
         interview_stages = InterviewStage.objects.filter(job_position_advert=obj)
-        return InterviewStageSerializer(
-            interview_stages, many=True, context=self.context).data
+        return InterviewStageSerializer(interview_stages, many=True, context=self.context).data
 
     def get_job_position_details(self, obj):
         return {
@@ -214,23 +298,47 @@ class JobPositionAdvertSerializer(BaseApprovableSerializer):
             "description": obj.job_position.description,
         }
 
+    def validate(self, data):
+        return data
+
     @transaction.atomic
     def create(self, validated_data):
+        required_documents_data = validated_data.pop("required_documents", [])
 
         advert = JobPositionAdvert.objects.create(**validated_data)
 
-        institution = advert.job_position.department.institution
-
-        
         content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+        for doc_data in required_documents_data:
+            RequiredDocument.objects.create(
+                content_type=content_type,
+                object_id=advert.id,
+                **doc_data
+            )
 
         return advert
+    
+    @transaction.atomic
+    def update(self, validated_data):
+        required_documents_data = validated_data.pop("required_documents", None)
+        
+        instance = super().update(instance, validated_data)
+        
+        if required_documents_data is not None:
+            content_type = ContentType.objects.get_for_model(JobPositionAdvert)
+            RequiredDocument.objects.filter(
+                content_type=content_type, object_id=instance.id
+            ).delete()
+            for doc_data in required_documents_data:
+                RequiredDocument.objects.create(
+                    content_type=content_type,
+                    object_id=instance.id,
+                    document_name=doc_data.get("document_name"),
+                    description=doc_data.get("description", ""),
+                    is_optional=doc_data.get("is_optional", False)
+                )
+        
+        return instance
 
-
-class RequiredDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RequiredDocument
-        fields = ["id", "document_name", "description", "is_optional"]
 
 
 class JobPositionSerializer(BaseApprovableSerializer):
@@ -244,7 +352,6 @@ class JobPositionSerializer(BaseApprovableSerializer):
         help_text="List of employee IDs to apply minimum salary to",
     )
     employees = EmployeeSerializer(many=True, read_only=True)
-    required_documents = RequiredDocumentSerializer(many=True, required=False)
     
     # Add computed salary fields
     salary_range_display = serializers.ReadOnlyField()
@@ -304,44 +411,23 @@ class JobPositionSerializer(BaseApprovableSerializer):
         return attrs
 
     def create(self, validated_data):
-        documents_data = validated_data.pop("required_documents", [])
         validated_data.pop("apply_salary_to_employees", [])  # Remove this from model creation
 
         job_position = JobPosition.objects.create(**validated_data)
 
         institution = job_position.department.institution
-        content_type = ContentType.objects.get_for_model(JobPosition)
-
-        for doc_data in documents_data:
-            RequiredDocument.objects.create(
-                content_type=content_type,
-                object_id=job_position.id,
-                **doc_data
-            )
 
         return job_position
 
     def update(self, instance, validated_data):
 
         employee_ids = validated_data.pop("apply_salary_to_employees", [])
-        documents_data = validated_data.pop("required_documents", None)
         
         # Get old and new salary_min for comparison
         old_salary_min = instance.salary_min
         new_salary_min = validated_data.get("salary_min", old_salary_min)
         
         instance = super().update(instance, validated_data)
-
-        # Update required documents if provided
-        if documents_data is not None:
-            instance.required_documents.all().delete()
-            content_type = ContentType.objects.get_for_model(JobPosition)
-            for doc in documents_data:
-                RequiredDocument.objects.create(
-                    content_type=content_type,
-                    object_id=instance.id,
-                    **doc
-                )
 
         # Apply salary_min to selected employees if it changed
         if (new_salary_min is not None and 

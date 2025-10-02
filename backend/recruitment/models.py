@@ -310,10 +310,6 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
     applicant_name = models.CharField(max_length=255)
     applicant_email = models.EmailField()
     applicant_phone = models.CharField(max_length=20, blank=True, null=True)
-    resume = models.FileField(upload_to="applications/resumes/")
-    cover_letter = models.FileField(
-        upload_to="applications/cover_letters/", blank=True, null=True
-    )
     application_date = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=status_choices, default="new")
     gender = models.CharField(max_length=10, choices=gender_choices)
@@ -431,6 +427,22 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
 
         except Exception as e:
             pass
+
+class ApplicationDocument(SoftDeletableTimeStampedModel):
+    job_advert_application = models.ForeignKey(
+        JobAdvertApplication, on_delete=models.CASCADE, related_name="documents"
+    )
+    required_document = models.ForeignKey(
+        RequiredDocument, on_delete=models.CASCADE, related_name="application_documents"
+    )
+    file = models.FileField(upload_to="application_documents/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["job_advert_application", "required_document"]
+
+    def __str__(self):
+        return f"{self.required_document.document_name} for {self.job_advert_application}"        
 
 class InterviewStage(BaseApprovableModel):
     job_position_advert = models.ForeignKey(

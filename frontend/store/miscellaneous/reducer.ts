@@ -1,3 +1,4 @@
+import { IAnnouncement } from "@/types/announcements.types";
 import { MiscAction } from "./actions";
 import { MISC_ACTION_TYPES } from "./types";
 
@@ -17,6 +18,7 @@ export type MiscState = {
 	applicationForm: JobApplicationCompleteFormData | null;
 	cachedEmployeesPage: IPaginatedResponse<IEmployee> | null;
 	employeesCacheTimestamp: number | null;
+	acknowledgmentRequiredAnnouncement: IAnnouncement | null;
 };
 
 const intialMiscState: MiscState = {
@@ -26,6 +28,7 @@ const intialMiscState: MiscState = {
 	applicationForm: null,
 	cachedEmployeesPage: null,
 	employeesCacheTimestamp: null,
+	acknowledgmentRequiredAnnouncement: null,
 };
 
 export const miscReducer = (
@@ -69,6 +72,18 @@ export const miscReducer = (
 			return {
 				...state,
 				employeesCacheTimestamp: action.payload as number,
+			};
+
+		case MISC_ACTION_TYPES.REQUIRE_ANNOUNCEMENT_ACKNOWLDEGMENT_SUCCESS:
+			return {
+				...state,
+				acknowledgmentRequiredAnnouncement: action.payload as IAnnouncement,
+			};
+
+		case MISC_ACTION_TYPES.CLEAR_ACKNOWLEDGMENT_REQUIRED_ANNOUNCEMENT:
+			return {
+				...state,
+				acknowledgmentRequiredAnnouncement: null,
 			};
 		default:
 			return state;

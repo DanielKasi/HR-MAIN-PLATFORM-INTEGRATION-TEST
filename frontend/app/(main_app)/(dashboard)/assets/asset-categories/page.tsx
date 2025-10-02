@@ -28,7 +28,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { TableSkeleton } from "@/components/common/table-skeleton";
+import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { CreateAssetCategoryDialog } from "@/components/asset-categories/create-asset-category-dialog";
 import { EditAssetCategoryDialog } from "@/components/asset-categories/edit-asset-category-dialog";
 import { DeleteAssetCategoryDialog } from "@/components/asset-categories/delete-asset-category-dialog";
