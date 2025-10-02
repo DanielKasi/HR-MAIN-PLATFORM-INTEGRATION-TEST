@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 import os
-from communication.models import Announcement, EmployeeAnnouncementAcknowledgment
+from communication.models import Announcement, EmployeeAnnouncementAcknowledgment, Notification
 from communication.views import add_notification
 from performance.models import PerformanceImprovementPlan
 from utilities.sortable_api import SortableAPIMixin
@@ -1185,6 +1185,22 @@ class DocumentStatusUpdateView(BaseDocumentView):
                                     employee=context_obj.employee,
                                     announcement=announcement
                                 )
+                                if not Notification.objects.filter(
+                                    user_id=context_obj.employee.user,
+                                    model_name="Announcement",
+                                    object_id=str(announcement.pk),
+                                    is_read=False
+                                ).exists():
+                                    add_notification(
+                                        user_id=context_obj.employee.user,
+                                        message=message,
+                                        model_name="Announcement",
+                                        object_id=str(announcement.pk),
+                                        requires_acknowledgment=True
+                                    )
+                                    print(f"Created notification for user {user_id}, announcement {announcement.pk}")
+                                else:
+                                    print(f"Unread notification already exists for user {user_id}, announcement {announcement.pk}, skipping")
                             except Exception as e:
                                 logger.error(f"Error creating announcement for PIP ID {context_obj.id}: {str(e)}")
                                 return Response(
