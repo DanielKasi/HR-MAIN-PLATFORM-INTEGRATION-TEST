@@ -27,6 +27,7 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiTypes
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 
 User = get_user_model()
 
@@ -390,14 +391,26 @@ class NotificationMarkReadView(APIView):
         ]
     )
     def post(self, request):
-        print(request.data)
-        notification_id = request.query_params.get('id')
-        notification = Notification.objects.get(id=notification_id, user_id=request.user)
-        notification.is_read = True
-        notification.save()
-        # updated_notifications = Notification.objects.filter(user_id=request.user).order_by('-created_at')
-        serializer = NotificationSerializer(notification)
-        return Response(serializer.data, status=status.HTTP_200_OK)        
+        notification_id = request.query_params.get('notification_id')  # Match API call parameter
+
+        if not notification_id:
+            return Response(
+                {"error": "Notification ID is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Fetch the specific notification for the authenticated user
+            notification = Notification.objects.get(id=notification_id, user_id=request.user)
+            notification.is_read = True
+            notification.save()
+            serializer = NotificationSerializer(notification)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response(
+                {"error": "Notification not found or you do not have permission to modify it."},
+                status=status.HTTP_400_BAD_REQUEST
+            )       
 
 
 class AnnouncementListCreateView(APIView, SortableAPIMixin):
