@@ -333,7 +333,7 @@ def send_birthday_notifications():
         # Send SSE notification
         notification_message = f"Happy Birthday, {employee.name}! We celebrate you today! 🎂"
         add_notification(
-            user_id=employee.user.id,
+            user_id=employee.user,
             message=notification_message,
             model_name='Event',
             object_id=str(event.id)

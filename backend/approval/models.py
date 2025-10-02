@@ -336,7 +336,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 for approver_user in next_task.level.get_approver_users():
                     from communication.views import add_notification
                     add_notification(
-                        user_id=approver_user.id,
+                        user_id=approver_user,
                         message=message,
                         model_name=model_name,
                         object_id=object_id
@@ -349,7 +349,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
                 # Notify approval completion
                 if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                     add_notification(
-                        user_id=self.approval.content_object.created_by.id,
+                        user_id=self.approval.content_object.created_by,
                         message=f"Your {self.approval.content_object._meta.verbose_name} has been approved.",
                         model_name=model_name,
                         object_id=object_id
@@ -392,7 +392,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 from communication.views import add_notification
                 add_notification(
-                    user_id=self.approval.content_object.created_by.id,
+                    user_id=self.approval.content_object.created_by,
                     message=f"Your approval request for {object_desc} has been rejected at level {self.level.level}.",
                     model_name=model_name,
                     object_id=object_id
@@ -438,7 +438,7 @@ class ApprovalTask(SoftDeletableTimeStampedModel):
             if hasattr(self.approval.content_object, 'created_by') and self.approval.content_object.created_by:
                 from communication.views import add_notification
                 add_notification(
-                    user_id=self.approval.content_object.created_by.id,
+                    user_id=self.approval.content_object.created_by,
                     message=f"Your approval request for {object_desc} has been overridden and completed at level {self.level.level}.",
                     model_name=model_name,
                     object_id=object_id
@@ -555,7 +555,7 @@ class BaseApprovableModel(SoftDeletableTimeStampedModel):
                 for approver_user in first_task.level.get_approver_users():
                     from communication.views import add_notification
                     add_notification(
-                        user_id=approver_user.id,
+                        user_id=approver_user,
                         message=message,
                         model_name=model_name,
                         object_id=object_id
