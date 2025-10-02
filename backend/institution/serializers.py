@@ -487,6 +487,9 @@ class InstitutionTaxRuleSerializer(BaseApprovableSerializer):
         instance.tax_rule_fixed_amount = validated_data.get(
             "tax_rule_fixed_amount", instance.tax_rule_fixed_amount
         )
+        instance.tax_rule_category = validated_data.get(
+            "tax_rule_category", instance.tax_rule_category
+        )
         instance.salary_from = validated_data.get("salary_from", instance.salary_from)
         instance.salary_to = validated_data.get("salary_to", instance.salary_to)
 

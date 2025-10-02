@@ -273,7 +273,7 @@ export function TaxRuleCreateEditDialog({
 			toast.error("Please enter a tax rule name");
 			return;
 		}
-		if (!formData.salary_from) {
+		if (typeof formData.salary_from === "undefined") {
 			toast.error("You must provide a salary lower bound");
 			return;
 		}
