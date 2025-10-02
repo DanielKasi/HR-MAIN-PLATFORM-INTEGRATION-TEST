@@ -287,13 +287,16 @@ class RolePermissionSerializer(BaseApprovableSerializer):
         fields = '__all__'
 
 
+
+
 class SignatureSerializer(BaseApprovableSerializer):
-    signature_image_url = serializers.CharField(read_only=True, allow_null=True)
 
     class Meta:
         model = Signature
         fields = '__all__'
-        read_only_fields = ["id", "signature_image_url"]
+        read_only_fields = ["id"]
+
+        
 
     def to_representation(self, instance):
         repr =  super().to_representation(instance)
