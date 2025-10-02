@@ -629,31 +629,20 @@ class AcknowledgeView(APIView):
             acknowledgment.acknowledged_at = timezone.now()
             acknowledgment.save()
 
-            # Find the notification ID for this announcement
             try:
-                notifications = redis_client.lrange(f"notifications:{employee.user.id}", 0, -1)
-                notification_id = None
-                for notification in notifications:
-                    try:
-                        notif_data = json.loads(notification)
-                        if (notif_data.get('model_name') == 'Announcement' and 
-                            notif_data.get('object_id') == str(acknowledgment.announcement.id)):
-                            notification_id = notif_data['id']
-                            break
-                    except (json.JSONDecodeError, KeyError) as e:
-                        print(f"Error parsing notification for user {employee.user.id}: {str(e)}")
-                        continue
-
-                if notification_id:
-                    mark_notification_read(
-                        user_id=employee.user.id,
-                        notification_id=notification_id
-                    )
-                    print(f"Marked notification {notification_id} as read for user {employee.user.id}")
-                else:
-                    print(f"No notification found for announcement {acknowledgment.announcement.id} for user {employee.user.id}")
+                notification = Notification.objects.get(
+                    user_id=request.user,
+                    model_name="Announcement",
+                    object_id=str(acknowledgment.announcement.pk),
+                    is_read=False
+                )
+                notification.is_read = True
+                notification.save()
+                print(f"Marked notification {notification.id} as read for user {request.user.id}")
+            except Notification.DoesNotExist:
+                print(f"No unread notification found for user {request.user.id} and announcement {acknowledgment.announcement.pk}")
             except Exception as e:
-                print(f"Failed to mark notification as read for user {employee.user.id}, announcement {acknowledgment.announcement.id}: {str(e)}")
+                print(f"Error marking notification as read: {str(e)}")
 
             return Response({"detail": "Acknowledgment recorded"}, status=status.HTTP_200_OK)
         except (Employee.DoesNotExist, EmployeeAnnouncementAcknowledgment.DoesNotExist):
