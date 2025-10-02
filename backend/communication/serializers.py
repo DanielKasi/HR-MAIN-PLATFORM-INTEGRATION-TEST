@@ -5,8 +5,15 @@ from recruitment.models import JobPosition
 from institution.models import Department
 from general.serializers import BaseApprovableSerializer
 from utilities.common_serializers import ContentTypeSerializer
-from .models import Announcement, EmployeeAnnouncementAcknowledgment
+from .models import Announcement, EmployeeAnnouncementAcknowledgment, Notification
 from django.contrib.contenttypes.models import ContentType
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
 
 class AnnouncementSerializer(BaseApprovableSerializer):
     content_type_name = serializers.SerializerMethodField()

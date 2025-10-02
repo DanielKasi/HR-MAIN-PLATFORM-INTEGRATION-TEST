@@ -1,217 +1,184 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { selectAccessToken, selectUser } from "@/store/auth/selectors";
-import { receiveNotification } from "@/store/notifications/actions";
+import { receiveNotification, removeNotification } from "@/store/notifications/actions";
 import { selectNotifications } from "@/store/notifications/selectors";
 import { MAIN_DOMAIN_URL, NOTIFICATIONS_STREAM_BASE_PATH } from "@/constants";
 import { showErrorToast } from "@/lib/utils";
 import { INotification } from "@/store/notifications/types";
 import { getNotificationPath } from "@/utils/notifications-path-matcher";
 import { requireAnnouncementAcknowledgmentStart } from "@/store/miscellaneous/actions";
+import apiRequest from "@/lib/apiRequest";
+import { IPaginatedResponse } from "@/types/other";
+import { NOTIFICATIONS_API } from "@/lib/api/notifications.utils";
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const dispatch = useDispatch();
 	const currentUser = useSelector(selectUser);
 	const accessToken = useSelector(selectAccessToken);
 	const notifications = useSelector(selectNotifications);
-	const [isInitialized, setIsInitialized] = useState(false);
-	const prevNotificationsRef = useRef(notifications);
+
+	// Refs to avoid stale closures
+	const notificationsRef = useRef(notifications);
+	const isFetchingRef = useRef(false);
 	const serviceWorkerRef = useRef<ServiceWorkerRegistration | null>(null);
-	const retryCountRef = useRef(0);
-	const maxRetries = 3;
-	const retryInterval = 10000; // 10 seconds
+	const lastNotificationIdRef = useRef<number | null>(null);
 
-	// Register Service Worker
+	// Keep notificationsRef in sync
 	useEffect(() => {
-		if ("serviceWorker" in navigator) {
-			navigator.serviceWorker
-				.register("/sw.js")
-				.then((registration) => {
-					serviceWorkerRef.current = registration;
-				})
-				.catch((error) => {
-					console.warn("Service Worker registration failed:", error);
-				});
+		notificationsRef.current = notifications;
+		if (notifications.length > 0) {
+			const latest = Math.max(...notifications.map((n) => n.id));
+			lastNotificationIdRef.current = latest;
 		}
-	}, []);
-
-	// Handle SSE connection with retry mechanism
-	useEffect(() => {
-		if (!currentUser || !accessToken || isInitialized) {
-			return;
-		}
-
-		const baseUrl = process.env.NEXT_PUBLIC_API_URL
-			? process.env.NEXT_PUBLIC_API_URL.endsWith("/")
-				? process.env.NEXT_PUBLIC_API_URL.slice(0, -1)
-				: process.env.NEXT_PUBLIC_API_URL
-			: MAIN_DOMAIN_URL;
-
-		const url = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
-		const controller = new AbortController();
-
-		async function streamNotifications() {
-			try {
-				const response = await fetch(url, {
-					method: "GET",
-					headers: {
-						Authorization: `Bearer ${accessToken}`,
-						Accept: "text/event-stream",
-					},
-					signal: controller.signal,
-				});
-
-				if (!response.body) {
-					throw new Error("No response body");
-				}
-
-				retryCountRef.current = 0;
-				setIsInitialized(true);
-
-				const reader = response.body.getReader();
-				const decoder = new TextDecoder();
-				let buffer = "";
-
-				while (true) {
-					const { done, value } = await reader.read();
-
-					if (done) break;
-
-					buffer += decoder.decode(value, { stream: true });
-					const lines = buffer.split("\n\n");
-
-					buffer = lines.pop() || "";
-
-					for (const line of lines) {
-						if (line.startsWith("data: ")) {
-							try {
-								const data: INotification = JSON.parse(line.slice(6));
-
-								if (data.model_name.toLowerCase().includes("announcement")) {
-									dispatch(requireAnnouncementAcknowledgmentStart(data));
-									return;
-								}
-
-								if (
-									data &&
-									data.id &&
-									!notifications.find(
-										(notif) =>
-											notif.id === data.id &&
-											!data.model_name.toLowerCase().includes("announcement"),
-									)
-								) {
-									dispatch(receiveNotification(data));
-								}
-							} catch (error) {
-								console.warn("Error parsing notification:", error);
-							}
-						}
-					}
-				}
-			} catch (error) {
-				if (error instanceof Error && error.name !== "AbortError") {
-					console.warn("Failed to connect to notification stream:", error);
-
-					if (retryCountRef.current < maxRetries) {
-						retryCountRef.current += 1;
-						console.warn(`Retrying connection (${retryCountRef.current}/${maxRetries})...`);
-						setTimeout(() => {
-							streamNotifications();
-						}, retryInterval);
-					} else {
-						console.warn(
-							`Maximum retry attempts (${maxRetries}) reached. No further retries will be attempted.`,
-						);
-						setIsInitialized(true); // Prevent further attempts
-					}
-				}
-			}
-		}
-
-		streamNotifications();
-
-		return () => {
-			controller.abort();
-		};
-	}, [dispatch, currentUser, accessToken, isInitialized]);
-
-	// Watch notifications and show browser notifications
-	useEffect(() => {
-		showBrowserNotifications();
 	}, [notifications]);
 
-	// Request Notification permission
-	const requestNotificationPermission = async () => {
+	// Compute base URL once
+	const baseUrl = process.env.NEXT_PUBLIC_API_URL
+		? process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "")
+		: MAIN_DOMAIN_URL;
+
+	const apiUrl = `${baseUrl}${NOTIFICATIONS_STREAM_BASE_PATH}`;
+
+	// Register SW and listen for messages
+	useEffect(() => {
+		if (!("serviceWorker" in navigator)) return;
+
+		const registerSW = async () => {
+			try {
+				const registration = await navigator.serviceWorker.register("/sw.js");
+				serviceWorkerRef.current = registration;
+			} catch (error) {
+				console.warn("Service Worker registration failed:", error);
+			}
+		};
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const notificationId = urlParams.get("notificationId");
+		if (notificationId) {
+			markNotificationAsRead({ notificationId: parseInt(notificationId, 10) });
+			window.history.replaceState({}, document.title, window.location.pathname);
+		}
+
+		registerSW();
+	}, []);
+
+	// Poll notifications every 10s (only if authenticated)
+	useEffect(() => {
+		if (!currentUser || !accessToken) return;
+
+		const poll = () => {
+			if (isFetchingRef.current) return;
+			streamNotifications();
+		};
+
+		const intervalId = setInterval(poll, 10_000);
+		poll(); // Fetch immediately on mount/auth
+
+		return () => clearInterval(intervalId);
+	}, [currentUser, accessToken, apiUrl]); // Include apiUrl for safety
+
+	// Request permission only when needed (not on every notification change)
+	const requestNotificationPermission = useCallback(async () => {
 		if (typeof Notification === "undefined") {
 			showErrorToast({
 				error: new Error("Notifications not supported"),
 				defaultMessage: "Browser notifications are not supported",
 			});
-
 			return;
 		}
-		const permission = await Notification.requestPermission();
 
+		const permission = await Notification.requestPermission();
 		if (permission !== "granted") {
 			showErrorToast({
 				error: new Error("Notification permission denied"),
 				defaultMessage: "Notification permission was denied",
 			});
 		}
-	};
+	}, []);
 
-	// Show browser notifications for new notifications
-	const showBrowserNotifications = async () => {
-		if (
-			typeof Notification === "undefined" ||
-			Notification.permission !== "granted" ||
-			!serviceWorkerRef.current
-		) {
-			console.warn("Notifications not supported or permission not granted");
+	// Show browser notification for a single new notification
+	const showSingleBrowserNotification = useCallback(
+		async (notification: INotification) => {
+			if (typeof Notification === "undefined") return;
 
-			return;
-		}
+			if (Notification.permission === "default") {
+				await requestNotificationPermission();
+			}
 
-		if (
-			!notifications ||
-			notifications.length === 0 ||
-			notifications === prevNotificationsRef.current
-		) {
-			console.warn("No notifications to show");
+			if (Notification.permission !== "granted" || !serviceWorkerRef.current) {
+				return;
+			}
 
-			return;
-		}
+			const url = `${getNotificationPath(notification)}?notificationId=${notification.id}`;
+			try {
+				await serviceWorkerRef.current.showNotification("Alert", {
+					body: notification.message || "",
+					icon: "/icon.png",
+					tag: notification.id.toString(),
+					data: { url, notificationId: notification.id },
+				});
+			} catch (err) {
+				console.warn("Failed to show notification", err);
+			}
+		},
+		[requestNotificationPermission],
+	);
 
-		const lastNotification = notifications[notifications.length - 1];
+	// Mark as read API call
+	const markNotificationAsRead = useCallback(
+		async ({ notificationId }: { notificationId: number }) => {
+			try {
+				await NOTIFICATIONS_API.markAsRead({ notificationId });
+			} catch (error) {
+				showErrorToast({
+					error,
+					defaultMessage: "Failed to mark notification as read",
+				});
+			}
+		},
+		[],
+	);
 
-		if (lastNotification.message) {
-			const url = getNotificationPath(lastNotification);
+	// Fetch and process notifications
+	const streamNotifications = useCallback(async () => {
+		if (isFetchingRef.current) return;
+		isFetchingRef.current = true;
 
-			await serviceWorkerRef.current.showNotification(`Alert`, {
-				body: `${lastNotification.message}`,
-				icon: "/icon.png",
-				tag: lastNotification.id || (notifications.length - 1).toString(),
-				data: { url },
+		try {
+			// Always fetch the first page (latest notifications)
+			const response = await apiRequest.get(apiUrl);
+
+			const currentNotifications = notificationsRef.current;
+			const currentIds = new Set(currentNotifications.map((n) => n.id));
+
+			for (const notif of (response.data as IPaginatedResponse<INotification>).results) {
+				if (!currentIds.has(notif.id)) {
+					// New notification!
+					if (notif.model_name?.toLowerCase().includes("announcement")) {
+						dispatch(requireAnnouncementAcknowledgmentStart(notif));
+					} else {
+						dispatch(receiveNotification(notif));
+					}
+
+					// Only show browser notification if it's truly new (and not an announcement?)
+					if (!notif.model_name?.toLowerCase().includes("announcement")) {
+						showSingleBrowserNotification(notif);
+					}
+				}
+			}
+		} catch (error) {
+			showErrorToast({
+				error,
+				defaultMessage: "Failed to fetch notifications",
 			});
+		} finally {
+			isFetchingRef.current = false;
 		}
-
-		prevNotificationsRef.current = notifications;
-	};
-
-	// Monitor new notifications and show permission button if needed
-	useEffect(() => {
-		if (
-			typeof Notification !== "undefined" &&
-			Notification.permission === "default" &&
-			notifications.length > 0
-		) {
-			requestNotificationPermission();
-		}
-	}, [notifications]);
+	}, [apiUrl, dispatch, showSingleBrowserNotification]);
 
 	return <>{children}</>;
 };

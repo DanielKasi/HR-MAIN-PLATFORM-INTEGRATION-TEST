@@ -160,7 +160,7 @@ class ApproverGroupListAPIView(APIView, SortableAPIMixin):
                 # Save the ApproverGroup to get the object ID
                 approver_group = serializer.save()
                 add_notification(
-                    user_id=request.user.id,
+                    user_id=request.user,
                     message="New approver group created successfully.",
                     model_name="ApproverGroup",
                     object_id=str(approver_group.id)  # Pass the ID of the created object
