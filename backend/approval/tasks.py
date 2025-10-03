@@ -28,6 +28,6 @@ def send_overdue_approval_reminders():
 
         for approver_user in task.level.get_approver_users():
             add_notification(
-                user_id=approver_user.id,
+                user_id=approver_user,
                 message=message,
             )

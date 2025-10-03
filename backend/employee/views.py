@@ -4229,6 +4229,7 @@ class DocumentUploadView(APIView):
     )
     @transaction.atomic()
     def post(self, request, request_employee_id):
+        print(request.data)
         document_request_employee = get_object_or_404(DocumentRequestEmployee, pk=request_employee_id)
         if document_request_employee.employee.user != request.user:
             return Response(
