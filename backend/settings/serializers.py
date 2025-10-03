@@ -74,15 +74,15 @@ class EmailProviderConfigSerializer(BaseApprovableSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         if not request or not request.user:
-            raise serializers.ValidationError("No authenticated user found in request context")
+            raise serializers.ValidationError({"error": "No authenticated user found in request context"})
         
         try:
             profile = request.user.profile
             institution = profile.institution
             if not institution:
-                raise serializers.ValidationError("Institution not found for this user's profile")
+                raise serializers.ValidationError({"error": "Institution not found for this user's profile"})
         except AttributeError as e:
-            raise serializers.ValidationError("User profile or institution is not configured")
+            raise serializers.ValidationError({"error": "User profile or institution is not configured"})
 
         validated_data['institution'] = institution
         return super().create(validated_data)
