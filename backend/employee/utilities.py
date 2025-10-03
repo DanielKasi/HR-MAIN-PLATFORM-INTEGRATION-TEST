@@ -677,11 +677,16 @@ def activate_company_email(employee):
 @transaction.atomic()
 def deactivate_employee(employee):
     """
-    Deactivate the employee by setting user.is_active to False and suspending company email.
+    Deactivate the employee by setting both employee.is_active and employee.user.is_active to False,
+    and suspend their company email.
     """
-    if employee.user:
+    if hasattr(employee, "user") and employee.user:
         employee.user.is_active = False
         employee.user.save()
+
+    employee.is_active = False
+    employee.save()
+
     suspend_company_email(employee)
 
 @transaction.atomic()
@@ -689,9 +694,12 @@ def activate_employee(employee):
     """
     Activate the employee by setting user.is_active to True and activating company email.
     """
-    if employee.user:
+    if hasattr(employee, "user") and employee.user:
         employee.user.is_active = True
         employee.user.save()
+
+    employee.is_active = True
+    employee.save()
     activate_company_email(employee)
 
 
