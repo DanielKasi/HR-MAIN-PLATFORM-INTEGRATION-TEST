@@ -75,7 +75,7 @@ const AnnouncementCarousel: React.FC = () => {
 
 	if (announcements.length === 0) {
 		return (
-			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-[6.5rem]">
+			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
 					<CardTitle className="text-lg font-medium">Announcements</CardTitle>
 					<Link href="/announcements">

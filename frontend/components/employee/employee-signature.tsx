@@ -1,19 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColumnDef, PaginatedTable } from "../PaginatedTable";
 import { SIGNATURES_API } from "@/lib/api/document-utils";
 import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ISignature, ISignatureFormData } from "@/types/documents.types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SignaturePad from "@/app/(main_app)/(dashboard)/documents/signatures/_components/signature-pad";
-import { Trash2, Edit, FileSignature, Plus } from "lucide-react";
+import { Trash2, Edit, FileSignature, Plus, MoreHorizontal } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { IEmployee } from "@/types/types.utils";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/store/auth/selectors";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface EmployeeSignaturesProps {
 	employee: IEmployee;
@@ -94,47 +99,52 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 			key: "signature",
 			header: "Signature",
 			cell: (item) => (
-				<img src={item.signature_image_url} alt="Signature" className="max-w-[200px] h-auto" />
+				<div className="flex items-center justify-start">
+					<img src={item.signature_image_url} alt="Signature" className="max-w-[200px] h-auto" />
+				</div>
 			),
 		},
 		{
 			key: "actions",
 			header: "Actions",
 			cell: (item) => (
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							setEditingSignature(item);
-							setShowSignaturePad(true);
-						}}
-						className="rounded-xl"
-					>
-						<Edit className="h-4 w-4 mr-2" />
-						Edit
-					</Button>
-					<Button
-						variant="destructive"
-						size="sm"
-						onClick={() => {
-							setSignatureToDelete(item.id);
-							setDeleteConfirmOpen(true);
-						}}
-						className="rounded-xl"
-					>
-						<Trash2 className="h-4 w-4 mr-2" />
-						Delete
-					</Button>
-				</div>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" className="h-8 w-8 p-0">
+							<MoreHorizontal className="h-4 w-4" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="start">
+						<DropdownMenuItem
+							className=""
+							onClick={() => {
+								setEditingSignature(item);
+								setShowSignaturePad(true);
+							}}
+						>
+							<Edit className="h-4 w-4 mr-2" />
+							Edit
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							className="text-destructive hover::bg-destructive/10"
+							onClick={() => {
+								setSignatureToDelete(item.id);
+								setDeleteConfirmOpen(true);
+							}}
+						>
+							<Trash2 className="h-4 w-4 mr-2" />
+							Delete
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			),
 		},
 	];
 
 	return (
-		<Card className="border-none shadow-none">
-			<CardHeader className="flex flex-row items-center justify-between">
-				<CardTitle>Signatures</CardTitle>
+		<div className="border-none shadow-none">
+			<div className="flex flex-row items-center justify-between">
+				<h1>Signatures</h1>
 				{currentUser && employee.user?.id === currentUser.id && (
 					<Button
 						onClick={() => {
@@ -148,8 +158,8 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 						Add Signature
 					</Button>
 				)}
-			</CardHeader>
-			<CardContent>
+			</div>
+			<div>
 				<PaginatedTable<ISignature>
 					paginated={false}
 					fetchFirstPage={async () => {
@@ -188,7 +198,7 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 					confirmText="Delete"
 					cancelText="Cancel"
 				/>
-			</CardContent>
-		</Card>
+			</div>
+		</div>
 	);
 }

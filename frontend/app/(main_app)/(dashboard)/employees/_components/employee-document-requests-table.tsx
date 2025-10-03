@@ -86,8 +86,7 @@ export default function EmployeeDocumentRequestsTable({
 		try {
 			setUploading(true);
 			await DOCUMENT_REQUESTS_API.uploadDocument({
-				requestEmployeeId: matchingEmployeeRequest.id,
-				thisEmployee: employee.id,
+				matchingEmployeeRequest: matchingEmployeeRequest.id,
 				data: { file, remarks },
 			});
 			showSuccessToast("Document submitted successfully!");
