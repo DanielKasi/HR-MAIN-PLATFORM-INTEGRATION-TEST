@@ -477,6 +477,91 @@ class EmployeeDetailAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+class ResendWelcomeLink(APIView):
+    @extend_schema(
+        tags=["Employee Management"],
+        summary="Resend welcome email to employee",
+        description="Resends the welcome email to an employee. Generates a new password if the user hasn't verified their email yet.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",  # Changed from "id" to match URL parameter
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Employee ID",
+                required=True,
+            )
+        ],
+        request=None,
+        responses={
+            200: {
+                "description": "Welcome email sent successfully",
+                "examples": {
+                    "success": {
+                        "summary": "Email sent",
+                        "value": {
+                            "detail": "Welcome email has been resent successfully.",
+                            "email": "employee@example.com"
+                        }
+                    }
+                }
+            },
+            404: {
+                "description": "Employee not found",
+                "examples": {
+                    "not_found": {
+                        "summary": "Employee doesn't exist",
+                        "value": {"detail": "Employee not found."}
+                    }
+                }
+            },
+            400: {
+                "description": "Bad request",
+                "examples": {
+                    "already_verified": {
+                        "summary": "Email already verified",
+                        "value": {"detail": "Employee has already verified their email."}
+                    }
+                }
+            },
+            500: {"description": "Server error"},
+        },
+    )
+    def post(self, request, employee_id):  # Added 'self' here
+        try:
+            employee = Employee.objects.select_related('user').get(id=employee_id)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )   
+        
+        user = employee.user
+
+        # Generate new password
+        new_password = generate_compliant_password()
+        user.set_password(new_password)
+        user.welcome_email_sent = True
+        user.save()
+
+        # Get company name
+        company_name = request.user.profile.institution.institution_name
+
+        # Send welcome email
+        send_employee_welcome_email.delay_on_commit(
+            request.get_host(),
+            user.email,
+            user.fullname,
+            new_password,
+            company_name=company_name,
+        )
+
+        return Response(
+            {
+                "detail": "Welcome email has been resent successfully.",
+                "email": user.email
+            },
+            status=status.HTTP_200_OK
+        )
 
 class EmployeeCreateAPIView(APIView):
     def parse_nested_multipart(self, query_dict):
@@ -769,11 +854,6 @@ class EmployeeCreateAPIView(APIView):
 
     @transaction.atomic
     def handle_bulk_upload(self, request):
-        import logging
-        import pandas as pd
-        from datetime import date, datetime
-        from django.core.exceptions import ValidationError
-        from django.core.validators import validate_email
 
         logger = logging.getLogger(__name__)
 
