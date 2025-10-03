@@ -236,7 +236,7 @@ class Employee(BaseApprovableModel):
     country = models.CharField(max_length=50, blank=True, null=True)
     nin = models.CharField(max_length=20, blank=True, null=True)
     nssf_no = models.CharField(max_length=20, blank=True, null=True)
-    tin = models.CharField(max_length=12, blank=True, null=True)
+    tin = models.CharField(max_length=20, blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     marital_status = models.CharField(max_length=10, choices=choices, default="single")
     has_children = models.BooleanField(default=False)

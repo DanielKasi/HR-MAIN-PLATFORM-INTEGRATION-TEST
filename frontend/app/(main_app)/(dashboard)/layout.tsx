@@ -109,8 +109,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const [canViewSettings, setCanViewSettings] = useState(false);
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
 	const [InstitutionId, setInstitutionId] = useState<string | null>(null);
 	// const [isPathLoading, setIsPathLoading] = useState(false);
 

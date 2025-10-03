@@ -19,6 +19,12 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 	const dispatch = useDispatch();
 
 	useEffect(() => {
+		return () => {
+			dispatch(clearAcknowledgmentRequiredAnnouncement());
+		};
+	}, []);
+
+	useEffect(() => {
 		if (announcement) {
 			fetchAcknowledgment();
 			// Trigger animation after mount

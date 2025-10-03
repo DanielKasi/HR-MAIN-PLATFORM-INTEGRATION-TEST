@@ -121,15 +121,7 @@ export default function EmployeeProfile() {
 	const [loadingSpotcheckConfig, setLoadingSpotcheckConfig] = useState(false);
 	const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 	const [generatingEmail, setGeneratingEmail] = useState(false);
-
-	// Company Email state
-	const [companyEmail, setCompanyEmail] = useState<{
-		id: number;
-		employee: number;
-		email: string;
-		provider: string;
-		status: string;
-	} | null>(null);
+	const [resendingEmail, setResendingEmail] = useState(false);
 
 	// Cache for tab data to prevent re-fetching
 	const [tabDataCache, setTabDataCache] = useState<Record<string, any>>({});
@@ -415,6 +407,25 @@ export default function EmployeeProfile() {
 		}
 	}, [employeeId, generatingEmail]);
 
+	const handleResendWelcomeEmail = useCallback(async () => {
+		if (!employeeId || resendingEmail) return;
+		setResendingEmail(true);
+		try {
+			const company_email = await EMPLOYEE_API.resendWelcomeEmail({
+				employee_id: Number(employeeId),
+			});
+			toast.success("Welcome email resent successfully!");
+		} catch (error: any) {
+			let errorMessage = "Failed to resend welcome email";
+			if (error?.message || error?.detail) {
+				errorMessage = error.message || error.detail;
+			}
+			toast.error(`${errorMessage}`);
+		} finally {
+			setResendingEmail(false);
+		}
+	}, [employeeId, resendingEmail]);
+
 	if (error) {
 		return (
 			<div className="min-h-screen bg-[#f7f7fb] flex items-center justify-center px-4">
@@ -487,7 +498,7 @@ export default function EmployeeProfile() {
 					{employee && (
 						<div className="w-full md:px-4 md:pb-8">
 							{/* Header section with back arrow, name, and action buttons */}
-							<div className="flex flex-row md:flex-row md:items-center justify-between py-4 mt-6 mb-2 gap-4">
+							<div className="flex flex-row md:flex-row md:items-center justify-between py-4 mb-2 gap-4">
 								<div className="flex items-center justify-start gap-4">
 									<Link href="/employees/employee-list">
 										<Button variant="outline" className="!h-10 !w-10 !rounded-full !aspect-square">
@@ -595,6 +606,17 @@ export default function EmployeeProfile() {
 														</div>
 													)}
 												</div>
+												<div className="!flex !items-center justify-start">
+													<Button
+														variant={"link"}
+														onClick={handleResendWelcomeEmail}
+														disabled={resendingEmail}
+														size={"sm"}
+														className="underline-offset-4 underline font-semibold !pl-0 mt-2"
+													>
+														{resendingEmail ? "Sending..." : "Send reset password link"}
+													</Button>
+												</div>
 											</div>
 
 											{/* Right side - Job info and badges - show below on mobile, beside on desktop */}
@@ -677,8 +699,8 @@ export default function EmployeeProfile() {
 												{activeTab === "general_info" && (
 													<Card className=" bg-white border-none p-0 shadow-none md:shadow-sm md:border md:border-[#e8e8f2] ">
 														<CardContent className="p-4 md:p-6 space-y-6">
-															<div className="space-y-6 !flex !items-center ">
-																<div className="flex items-center gap-8">
+															<div className="!flex flex-col md:flex-row !items-center justify-between">
+																<div className="flex items-center  gap-8">
 																	<p className="flex items-center font-semibold gap-2">
 																		<Mail className="w-5 h-5" />
 																		Company Email
@@ -697,7 +719,6 @@ export default function EmployeeProfile() {
 																		</Button>
 																	)}
 																</div>
-																<div className="!flex !items-center justify-start"></div>
 															</div>
 															<div>
 																<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

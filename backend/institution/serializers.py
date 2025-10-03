@@ -73,7 +73,7 @@ class InstitutionKYCDocumentBulkCreateSerializer(serializers.Serializer):
 
     def validate(self, data):
         if len(data["document_file"]) != len(data["document_title"]):
-            raise serializers.ValidationError("Mismatched file and title counts.")
+            raise serializers.ValidationError({"error": "Mismatched file and title counts."})
         return data
 
     def create(self, validated_data):
