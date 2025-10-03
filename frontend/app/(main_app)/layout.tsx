@@ -18,12 +18,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
 			if (intent && intent_id) {
 				dispatch(setRedirect({ intent: intent as RedirectIntent, intent_id }));
-
-				// params.delete('intent');
-				// params.delete('intent_id');
-				// const newSearch = params.toString();
-				// const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash || ''}`;
-				// window.history.replaceState({}, document.title, newUrl);
 			}
 		} catch (e) {
 			// console.log("Error setting redirect from URL params");

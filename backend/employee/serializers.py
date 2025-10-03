@@ -120,7 +120,7 @@ class EducationSerializer(serializers.ModelSerializer):
         queryset=QualificationAward.objects.all(),
         source='qualification',
         write_only=True,
-        required=True
+        required=False
     )
     employee = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(),
@@ -174,7 +174,7 @@ class SpouseSerializer(serializers.ModelSerializer):
             today = date.today()
             age = relativedelta(today, value).years
             if value > today:
-                raise serializers.ValidationError("Spouse's date of birth cannot be in the future.")
+                raise serializers.ValidationError({"error": "Spouse's date of birth cannot be in the future."})
         return value 
 
 class BankAccountSerializer(serializers.ModelSerializer):
@@ -1086,7 +1086,7 @@ class DocumentRequestSerializer(BaseApprovableSerializer):
 
     def validate_employees(self, value):
         if not value:
-            raise serializers.ValidationError("At least one employee must be selected.")
+            raise serializers.ValidationError({"error": "At least one employee must be selected."})
         return value
 
     def create(self, validated_data):

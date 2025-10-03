@@ -421,7 +421,7 @@ def _create_cpanel_email(employee, config, password, quota, email):
     Create cPanel email account using CPanelClient.
     """
     if not all([config.api_url, config.api_username, config.api_token]):
-        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+        raise ValidationError({"error": "cPanel requires api_url, api_username, and api_token."})
 
     from urllib.parse import urlparse
 
@@ -441,7 +441,7 @@ def _reset_cpanel_email_password(employee, config, new_password):
     Reset cPanel email account password using CPanelClient.
     """
     if not all([config.api_url, config.api_username, config.api_token]):
-        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+        raise ValidationError({"error": "cPanel requires api_url, api_username, and api_token."})
 
     host = config.api_url.replace("https://", "").rstrip("/")
     cpanel_config = Config(
@@ -456,7 +456,7 @@ def _delete_cpanel_email(employee, config):
     Delete cPanel email account using CPanelClient.
     """
     if not all([config.api_url, config.api_username, config.api_token]):
-        raise ValidationError("cPanel requires api_url, api_username, and api_token.")
+        raise ValidationError({"error": "cPanel requires api_url, api_username, and api_token."})
 
     host = config.api_url.replace("https://", "").rstrip("/")
     cpanel_config = Config(
@@ -471,9 +471,8 @@ def _create_google_email(employee, config, password):
     Create Google Workspace user account.
     """
     if not config.api_token:
-        raise ValidationError(
-            "Google Workspace requires api_token (service account JSON)."
-        )
+        raise ValidationError({"error": "Google Workspace requires api_token (service account JSON)."
+        })
 
     try:
         service_account_data = json.loads(config.api_token)
@@ -496,7 +495,7 @@ def _create_google_email(employee, config, password):
         }
         service.users().insert(body=user).execute()
     except Exception as e:
-        raise ValidationError(f"Google Workspace error: {str(e)}")
+        raise ValidationError({"error": f"Google Workspace error: {str(e)}"})
 
 
 def _reset_google_email_password(employee, config, new_password):
@@ -504,9 +503,8 @@ def _reset_google_email_password(employee, config, new_password):
     Reset Google Workspace user password.
     """
     if not config.api_token:
-        raise ValidationError(
-            "Google Workspace requires api_token (service account JSON)."
-        )
+        raise ValidationError({"error": "Google Workspace requires api_token (service account JSON)."
+        })
 
     try:
         service_account_data = json.loads(config.api_token)
@@ -520,7 +518,7 @@ def _reset_google_email_password(employee, config, new_password):
         user_update = {"password": new_password, "changePasswordAtNextLogin": True}
         service.users().update(userKey=employee.email, body=user_update).execute()
     except Exception as e:
-        raise ValidationError(f"Google Workspace password reset error: {str(e)}")
+        raise ValidationError({"error": f"Google Workspace password reset error: {str(e)}"})
 
 
 def _delete_google_email(employee, config):
@@ -528,9 +526,8 @@ def _delete_google_email(employee, config):
     Delete Google Workspace user account.
     """
     if not config.api_token:
-        raise ValidationError(
-            "Google Workspace requires api_token (service account JSON)."
-        )
+        raise ValidationError({"error": "Google Workspace requires api_token (service account JSON)."
+        })
 
     try:
         service_account_data = json.loads(config.api_token)
@@ -542,7 +539,7 @@ def _delete_google_email(employee, config):
         service = build("admin", "directory_v1", credentials=credentials)
         service.users().delete(userKey=employee.email).execute()
     except Exception as e:
-        raise ValidationError(f"Google Workspace deletion error: {str(e)}")
+        raise ValidationError({"error": f"Google Workspace deletion error: {str(e)}"})
 
 
 # def _create_microsoft_email(employee, config, password):
@@ -642,7 +639,7 @@ def suspend_company_email(employee):
             elif config.provider == "google_workspace":
                 _suspend_google_email(email_account.email, config)
             else:
-                raise ValidationError(f"Unsupported provider: {config.provider}")
+                raise ValidationError({"error": f"Unsupported provider: {config.provider}"})
 
         email_account.status = 'suspended'
         email_account.save()
@@ -667,7 +664,7 @@ def activate_company_email(employee):
             elif config.provider == "google_workspace":
                 _unsuspend_google_email(email_account.email, config)
             else:
-                raise ValidationError(f"Unsupported provider: {config.provider}")
+                raise ValidationError({"error": f"Unsupported provider: {config.provider}"})
 
         email_account.status = 'active'
         email_account.save()
@@ -677,11 +674,16 @@ def activate_company_email(employee):
 @transaction.atomic()
 def deactivate_employee(employee):
     """
-    Deactivate the employee by setting user.is_active to False and suspending company email.
+    Deactivate the employee by setting both employee.is_active and employee.user.is_active to False,
+    and suspend their company email.
     """
-    if employee.user:
+    if hasattr(employee, "user") and employee.user:
         employee.user.is_active = False
         employee.user.save()
+
+    employee.is_active = False
+    employee.save()
+
     suspend_company_email(employee)
 
 @transaction.atomic()
@@ -689,9 +691,12 @@ def activate_employee(employee):
     """
     Activate the employee by setting user.is_active to True and activating company email.
     """
-    if employee.user:
+    if hasattr(employee, "user") and employee.user:
         employee.user.is_active = True
         employee.user.save()
+
+    employee.is_active = True
+    employee.save()
     activate_company_email(employee)
 
 
@@ -754,7 +759,7 @@ def _suspend_google_email(email: str, config) -> None:
         user_update = {"suspended": True}
         service.users().update(userKey=email, body=user_update).execute()
     except Exception as e:
-        raise ValidationError(f"Google Workspace suspend error: {str(e)}")
+        raise ValidationError({"error": f"Google Workspace suspend error: {str(e)}"})
 
 def _unsuspend_google_email(email: str, config) -> None:
     """
@@ -762,7 +767,7 @@ def _unsuspend_google_email(email: str, config) -> None:
     """
     if not config.api_token:
         raise ValidationError(
-            "Google Workspace requires api_token (service account JSON)."
+            {"error": "Google Workspace requires api_token (service account JSON)."}
         )
 
     try:
@@ -777,4 +782,4 @@ def _unsuspend_google_email(email: str, config) -> None:
         user_update = {"suspended": False}
         service.users().update(userKey=email, body=user_update).execute()
     except Exception as e:
-        raise ValidationError(f"Google Workspace unsuspend error: {str(e)}")    
+        raise ValidationError({"error": f"Google Workspace unsuspend error: {str(e)}"})

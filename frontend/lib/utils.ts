@@ -6820,6 +6820,11 @@ export const EMPLOYEE_API = {
 		return response as ICompanyEmail;
 	},
 
+	resendWelcomeEmail: async ({ employee_id }: { employee_id: number }) => {
+		await apiRequest.post(`/employee/resend-welcome-email/${employee_id}/`, {
+			employee: employee_id,
+		});
+	},
 	hourAccount: {
 		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
 			const urlParams = new URLSearchParams();

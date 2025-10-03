@@ -52,9 +52,9 @@ class ApplicationDocumentSerializer(serializers.ModelSerializer):
 
     def validate_file(self, value):
         if value.size > 5 * 1024 * 1024:  
-            raise serializers.ValidationError("File size must be under 5MB")
+            raise serializers.ValidationError({"error": "File size must be under 5MB"})
         if not value.name.lower().endswith(('.pdf', '.doc', '.docx')):
-            raise serializers.ValidationError("Only PDF, DOC, or DOCX files are allowed")
+            raise serializers.ValidationError({"error": "Only PDF, DOC, or DOCX files are allowed"})
         return value    
 
 
