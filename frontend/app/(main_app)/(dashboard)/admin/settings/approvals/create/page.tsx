@@ -487,7 +487,7 @@ export default function ApprovalCreatePage() {
 										if (!open) {
 											resetLevelDialog();
 										} else {
-											setOpenLevelDialog(false);
+											setOpenLevelDialog(open);
 										}
 									}}
 								>
@@ -502,7 +502,7 @@ export default function ApprovalCreatePage() {
 											<DialogTitle>Create Approval Level</DialogTitle>
 										</DialogHeader>
 
-										<div className="space-y-6 py-4 ">
+										<div className="space-y-6 py-4 overflow-y-auto max-h-[70vh]">
 											{/* Basic Info */}
 											<div className="space-y-4 max-h-[80vh] overflow-y-auto px-2">
 												<div>

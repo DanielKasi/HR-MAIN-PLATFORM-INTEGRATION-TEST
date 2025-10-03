@@ -577,7 +577,7 @@ export default function ApprovalEditPage() {
 					if (!open) {
 						resetLevelDialog();
 					} else {
-						setOpenLevelDialog(false);
+						setOpenLevelDialog(true);
 					}
 				}}
 			>
