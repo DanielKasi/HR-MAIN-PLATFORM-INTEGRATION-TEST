@@ -33,22 +33,22 @@ class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
             source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
             target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
         except ApprovalDocumentLevel.DoesNotExist:
-            raise serializers.ValidationError("Source or target level does not exist.")
+            raise serializers.ValidationError({"error": "Source or target level does not exist."})
 
         # Ensure both levels belong to the same ApprovalDocument
         if source_level.approval_document_id != target_level.approval_document_id:
-            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+            raise serializers.ValidationError({"error": "Source and target levels must belong to the same approval document."})
 
         # Ensure the user has permission to modify levels in this ApprovalDocument
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             institution = request.user.profile.institution
             if source_level.approval_document.institution != institution:
-                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+                raise serializers.ValidationError({"error": "You do not have permission to modify levels in this approval document."})
 
         # Ensure source and target are not the same
         if source_level_id == target_level_id:
-            raise serializers.ValidationError("Source and target levels cannot be the same.")
+            raise serializers.ValidationError({"error": "Source and target levels cannot be the same."})
 
         return data
 
@@ -112,12 +112,12 @@ class ApproverGroupSerializer(serializers.ModelSerializer):
             if users:
                 invalid_users = Profile.objects.filter(id__in=[u.id for u in users]).exclude(institution=institution)
                 if invalid_users.exists():
-                    raise serializers.ValidationError("All users must belong to the same institution as the group.")
+                    raise serializers.ValidationError({"error": "All users must belong to the same institution as the group."})
 
             if roles:
                 invalid_roles = Role.objects.filter(id__in=[r.id for r in roles]).exclude(institution=institution)
                 if invalid_roles.exists():
-                    raise serializers.ValidationError("All roles must be associated with the same institution as the group.")
+                    raise serializers.ValidationError({"error": "All roles must be associated with the same institution as the group."})
 
         return data
 
@@ -206,22 +206,22 @@ class ApprovalDocumentLevelSerializer(serializers.ModelSerializer):
             if approvers:
                 invalid_approvers = ApproverGroup.objects.filter(id__in=[a.id for a in approvers]).exclude(institution=institution)
                 if invalid_approvers.exists():
-                    raise serializers.ValidationError("All approvers must belong to the same institution as the approval document.")
+                    raise serializers.ValidationError({"error": "All approvers must belong to the same institution as the approval document."})
 
             if approver_users:
                 invalid_approver_users = Profile.objects.filter(id__in=[u.id for u in approver_users]).exclude(institution=institution)
                 if invalid_approver_users.exists():
-                    raise serializers.ValidationError("All approver users must belong to the same institution as the approval document.")
+                    raise serializers.ValidationError({"error": "All approver users must belong to the same institution as the approval document."})
 
             if overriders:
                 invalid_overriders = ApproverGroup.objects.filter(id__in=[o.id for o in overriders]).exclude(institution=institution)
                 if invalid_overriders.exists():
-                    raise serializers.ValidationError("All overriders must belong to the same institution as the approval document.")
+                    raise serializers.ValidationError({"error": "All overriders must belong to the same institution as the approval document."})
 
             if overrider_users:
                 invalid_overrider_users = Profile.objects.filter(id__in=[u.id for u in overrider_users]).exclude(institution=institution)
                 if invalid_overrider_users.exists():
-                    raise serializers.ValidationError("All overrider users must belong to the same institution as the approval document.")
+                    raise serializers.ValidationError({"error": "All overrider users must belong to the same institution as the approval document."})
 
         return data
 
@@ -342,18 +342,18 @@ class ApprovalDocumentLevelReorderSerializer(serializers.Serializer):
             source_level = ApprovalDocumentLevel.objects.get(id=source_level_id)
             target_level = ApprovalDocumentLevel.objects.get(id=target_level_id)
         except ApprovalDocumentLevel.DoesNotExist:
-            raise serializers.ValidationError("Source or target level does not exist.")
+            raise serializers.ValidationError({"error": "Source or target level does not exist."})
 
         if source_level.approval_document_id != target_level.approval_document_id:
-            raise serializers.ValidationError("Source and target levels must belong to the same approval document.")
+            raise serializers.ValidationError({"error": "Source and target levels must belong to the same approval document."})
 
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             institution = request.user.profile.institution
             if source_level.approval_document.institution != institution:
-                raise serializers.ValidationError("You do not have permission to modify levels in this approval document.")
+                raise serializers.ValidationError({"error": "You do not have permission to modify levels in this approval document."})
 
         if source_level_id == target_level_id:
-            raise serializers.ValidationError("Source and target levels cannot be the same.")
+            raise serializers.ValidationError({"error": "Source and target levels cannot be the same."})
 
         return data        
