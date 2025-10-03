@@ -704,15 +704,15 @@ export default function AddEmployeeForm() {
 				const DOB = new Date(formData.date_of_birth);
 
 				return !!(
-					formData.fullname &&
-					formData.email &&
-					formData.country &&
+					(formData.fullname && formData.email)
+					// &&
+					// formData.country &&
 					// formData.marital_status &&
-					formData.address &&
-					formData.date_of_birth &&
-					formData.nin &&
-					formData.phone_number &&
-					currentDate.getFullYear() - DOB.getFullYear() >= 18
+					// formData.address &&
+					// formData.date_of_birth &&
+					// formData.nin &&
+					// formData.phone_number &&
+					// currentDate.getFullYear() - DOB.getFullYear() >= 18
 				);
 			case 2:
 				return !!(
@@ -722,14 +722,16 @@ export default function AddEmployeeForm() {
 					formData.employee_type &&
 					formData.employee_type
 				);
+			// return true
 			case 3:
-				return !!(
-					bankAccountFormData.account_name.trim() &&
-					bankAccountFormData.account_number.trim() &&
-					bankAccountFormData.bank_id &&
-					formData.tin.trim() &&
-					formData.nssf_no.trim()
-				);
+				// return !!(
+				// 	bankAccountFormData.account_name.trim() &&
+				// 	bankAccountFormData.account_number.trim() &&
+				// 	bankAccountFormData.bank_id &&
+				// 	formData.tin.trim() &&
+				// 	formData.nssf_no.trim()
+				// );
+				return true;
 			default:
 				return false;
 		}
@@ -1788,11 +1790,11 @@ export default function AddEmployeeForm() {
 									placeholder="Enter NSSF"
 									className="h-12 rounded-2xl"
 								/>
-								{!formData.nssf_no && (
+								{/* {!formData.nssf_no && (
 									<p className="text-red-400 text-xs">
 										A National Social Security Fund number is required
 									</p>
-								)}
+								)} */}
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="tin" className="text-sm font-medium text-gray-700">
@@ -1806,14 +1808,14 @@ export default function AddEmployeeForm() {
 									className="h-12 rounded-2xl"
 									max={12}
 								/>
-								{!formData.tin && (
+								{/* {!formData.tin && (
 									<p className="text-red-400 text-xs">
 										A Tax Identification Number number is required
 									</p>
-								)}
-								{formData.tin.length > 12 && (
+								)} */}
+								{formData.tin && formData.tin.length > 15 && (
 									<p className="text-red-400 text-xs">
-										Tax Identification Number number cannot exceed 12 characters
+										Tax Identification Number number cannot exceed 15 characters
 									</p>
 								)}
 							</div>

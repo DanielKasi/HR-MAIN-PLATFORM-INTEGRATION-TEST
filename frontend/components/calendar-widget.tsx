@@ -69,19 +69,6 @@
 
 // const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// const getEventModeIcon = (mode: string) => {
-// 	switch (mode) {
-// 		case "online":
-// 			return <Video className="h-3 w-3" />;
-// 		case "physical":
-// 			return <MapPin className="h-3 w-3" />;
-// 		case "hybrid":
-// 			return <Users className="h-3 w-3" />;
-// 		default:
-// 			return null;
-// 	}
-// };
-
 // interface CalendarWidgetProps {
 // 	className?: string;
 // }
@@ -147,22 +134,6 @@
 // 		}
 
 // 		return days;
-// 	};
-
-// 	const getEventsForDate = (date: Date) => {
-// 		if (!calendar) return { events: [], holidays: [] };
-
-// 		// Create a date string in YYYY-MM-DD format using local date components
-// 		// This avoids timezone issues when comparing dates
-// 		const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-// 		const events = calendar.event_occurrences
-// 			.filter((occurrence) => occurrence.date === dateStr)
-// 			.map((occurrence) => occurrence.event);
-
-// 		const holidays = calendar.public_holidays.filter((holiday) => holiday.date === dateStr);
-
-// 		return { events, holidays };
 // 	};
 
 // 	const navigateMonth = (direction: "prev" | "next") => {
@@ -411,13 +382,40 @@
 
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { CALENDAR_API } from "@/lib/api/calendar.utils";
+import { showErrorToast } from "@/lib/utils";
+import { selectSelectedInstitution } from "@/store/auth/selectors";
+import { ICalendar } from "@/types/types.utils";
+import { current } from "@reduxjs/toolkit";
+import { ChevronLeft, ChevronRight, MapPin, Star, Users, Video } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const getEventModeIcon = (mode: string) => {
+	switch (mode) {
+		case "online":
+			return <Video className="h-3 w-3" />;
+		case "physical":
+			return <MapPin className="h-3 w-3" />;
+		case "hybrid":
+			return <Users className="h-3 w-3" />;
+		default:
+			return null;
+	}
+};
+
 export function MinimalCalendar() {
 	const [currentDate, setCurrentDate] = useState(new Date());
+	const [calendar, setCalendar] = useState<ICalendar | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+	const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+	const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+	const tooltipRef = useRef<HTMLDivElement>(null);
+	const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const currentInstitution = useSelector(selectSelectedInstitution);
 
 	const getWeekDays = (date: Date) => {
 		const dayOfWeek = date.getDay();
@@ -443,6 +441,34 @@ export function MinimalCalendar() {
 		setCurrentDate(newDate);
 	};
 
+	const handleMouseEnter = (day: Date, event: React.MouseEvent) => {
+		// Clear any existing timeout
+		if (hoverTimeoutRef.current) {
+			clearTimeout(hoverTimeoutRef.current);
+		}
+
+		const rect = event.currentTarget.getBoundingClientRect();
+		const containerRect = event.currentTarget.closest(".relative")?.getBoundingClientRect();
+
+		if (containerRect) {
+			// Position tooltip relative to the container
+			const x = rect.left - containerRect.left + rect.width / 2;
+			const y = rect.top - containerRect.top - 10; // 10px above the day cell
+
+			setTooltipPosition({ x, y });
+			setHoveredDay(day);
+			setIsTooltipVisible(true);
+		}
+	};
+
+	const handleMouseLeave = () => {
+		// Add a small delay before hiding to prevent flickering
+		hoverTimeoutRef.current = setTimeout(() => {
+			setIsTooltipVisible(false);
+			setHoveredDay(null);
+		}, 100);
+	};
+
 	const isToday = (date: Date) => {
 		const today = new Date();
 		return (
@@ -450,6 +476,54 @@ export function MinimalCalendar() {
 			date.getMonth() === today.getMonth() &&
 			date.getDate() === today.getDate()
 		);
+	};
+
+	const getEventsForDate = (date: Date) => {
+		if (!calendar) return { events: [], holidays: [] };
+
+		// Create a date string in YYYY-MM-DD format using local date components
+		// This avoids timezone issues when comparing dates
+		const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+		const events = calendar.event_occurrences
+			.filter((occurrence) => occurrence.date === dateStr)
+			.map((occurrence) => occurrence.event);
+
+		const holidays = calendar.public_holidays.filter((holiday) => holiday.date === dateStr);
+
+		return { events, holidays };
+	};
+
+	const fetchCalendar = async (year: number) => {
+		try {
+			setLoading(true);
+			const response = await CALENDAR_API.getCalendar({ year });
+
+			setCalendar(response);
+		} catch (error) {
+			showErrorToast({ error, defaultMessage: "Failed to fetch calendar" });
+			setCalendar(null);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		if (currentInstitution) {
+			fetchCalendar(currentDate.getFullYear());
+		}
+	}, [currentInstitution, currentDate.getFullYear()]);
+
+	const handleTooltipMouseEnter = () => {
+		// Clear the timeout if mouse enters tooltip
+		if (hoverTimeoutRef.current) {
+			clearTimeout(hoverTimeoutRef.current);
+		}
+	};
+
+	const handleTooltipMouseLeave = () => {
+		setIsTooltipVisible(false);
+		setHoveredDay(null);
 	};
 
 	const weekDays = getWeekDays(currentDate);
@@ -480,7 +554,7 @@ export function MinimalCalendar() {
 	};
 
 	return (
-		<div className="w-full max-w-md mx-auto bg-card border rounded-xl p-6 shadow-sm">
+		<div className="w-full lg:max-w-md mx-auto bg-card border rounded-xl p-6 shadow-sm">
 			{/* Header */}
 			<div className="flex items-center justify-between mb-6">
 				<button
@@ -510,17 +584,112 @@ export function MinimalCalendar() {
 			</div>
 
 			<div className="grid grid-cols-7 gap-2">
-				{weekDays.map((day) => (
-					<button
-						key={day.toISOString()}
-						className={`
-              h-10 rounded-lg text-sm flex items-center justify-center transition-colors
-              ${isToday(day) ? "bg-primary text-primary-foreground font-semibold" : "hover:bg-muted"}
-            `}
-					>
-						{day.getDate()}
-					</button>
-				))}
+				{weekDays.map((day) => {
+					const { events, holidays } = getEventsForDate(day);
+					const hasEvents = events.length > 0 || holidays.length > 0;
+					return (
+						<button
+							key={day.toISOString()}
+							className={`
+				  h-10 rounded-lg text-sm flex items-center justify-center transition-colors relative
+				  ${isToday(day) ? "bg-primary text-primary-foreground font-semibold" : "hover:bg-muted"}
+				`}
+							onMouseEnter={(e) => handleMouseEnter(day, e)}
+							onMouseLeave={handleMouseLeave}
+						>
+							{day.getDate()}
+
+							{hasEvents && (
+								<div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+									{holidays.length > 0 && <div className="w-1 h-1 bg-red-500 rounded-full" />}
+									{events.slice(0, 2).map((event, idx) => (
+										<div
+											key={idx}
+											className={`w-1 h-1 rounded-full ${
+												event.event_mode === "online"
+													? "bg-blue-500"
+													: event.event_mode === "physical"
+														? "bg-green-500"
+														: "bg-purple-500"
+											}`}
+										/>
+									))}
+									{events.length > 2 && <div className="w-1 h-1 bg-slate-400 rounded-full" />}
+								</div>
+							)}
+							{/* Hover Tooltip */}
+							{hoveredDay?.getDate().toString().toLowerCase() ===
+								day?.getDate().toString().toLowerCase() &&
+								isTooltipVisible && (
+									<div
+										ref={tooltipRef}
+										className="absolute z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-3 min-w-36 transition-all duration-200 ease-out"
+										style={{
+											left: `${tooltipPosition.x}px`,
+											top: `${tooltipPosition.y}px`,
+											transform: ` ${day.getDay() === 6 ? "translateX(-70%)" : "translateX(-50%)"} translateY(-100%)`,
+										}}
+										onMouseEnter={handleTooltipMouseEnter}
+										onMouseLeave={handleTooltipMouseLeave}
+									>
+										{/* Tooltip Arrow */}
+										<div
+											className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"} transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-200`}
+										/>
+										<div
+											className={`absolute top-full ${day.getDay() === 6 ? "left-[80%]" : "left-1/2"}  transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white`}
+											style={{ marginTop: "-1px" }}
+										/>
+										<div className="text-xs font-medium text-slate-900 mb-2">
+											{hoveredDay.toLocaleDateString("en-US", {
+												weekday: "long",
+												month: "long",
+												day: "numeric",
+											})}
+										</div>
+										{(() => {
+											const { events, holidays } = getEventsForDate(hoveredDay);
+											if (events.length === 0 && holidays.length === 0) {
+												return <p className="text-xs text-slate-500">No events or holidays</p>;
+											}
+											return (
+												<div className="space-y-2">
+													{holidays.map((holiday) => (
+														<div key={holiday.id} className="flex items-center gap-2 text-xs">
+															<Star className="h-3 w-3 text-red-500 flex-shrink-0" />
+															<span className="text-red-700 font-medium">{holiday.title}</span>
+														</div>
+													))}
+													{events.slice(0, 3).map((event) => (
+														<div key={event.id} className="flex items-start gap-2 text-xs">
+															<div className="flex-shrink-0 mt-0.5">
+																{getEventModeIcon(event.event_mode)}
+															</div>
+															<div className="flex-1 min-w-0">
+																<div className="font-medium text-slate-900 truncate">
+																	{event.title}
+																</div>
+																{event.description && (
+																	<div className="text-slate-600 line-clamp-2 mt-1">
+																		{event.description}
+																	</div>
+																)}
+															</div>
+														</div>
+													))}
+													{events.length > 3 && (
+														<div className="text-xs text-slate-500 font-medium">
+															+{events.length - 3} more events
+														</div>
+													)}
+												</div>
+											);
+										})()}
+									</div>
+								)}
+						</button>
+					);
+				})}
 			</div>
 		</div>
 	);

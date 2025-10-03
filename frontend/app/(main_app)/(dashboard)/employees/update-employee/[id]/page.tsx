@@ -733,41 +733,43 @@ export default function UpdateEmployeeForm() {
 				const currentDate = new Date();
 				const DOB = new Date(formData.date_of_birth);
 				return !!(
-					formData.fullname &&
-					formData.email &&
-					formData.country &&
-					formData.marital_status &&
-					formData.address &&
-					formData.date_of_birth &&
-					formData.nin &&
-					formData.phone_number &&
-					currentDate.getFullYear() - DOB.getFullYear() >= 18
+					(formData.fullname && formData.email)
+					// &&
+					// formData.country &&
+					// formData.marital_status &&
+					// formData.address &&
+					// formData.date_of_birth &&
+					// formData.nin &&
+					// formData.phone_number &&
+					// currentDate.getFullYear() - DOB.getFullYear() >= 18
 				);
 			case 2:
-				return !!(
-					formData.department &&
-					formData.position &&
-					formData.date_of_joining &&
-					formData.employee_type &&
-					formData.employee_type &&
-					selectedPayrollBranch
-				);
+				// return !!(
+				// 	formData.department &&
+				// 	formData.position &&
+				// 	formData.date_of_joining &&
+				// 	formData.employee_type &&
+				// 	formData.employee_type &&
+				// 	selectedPayrollBranch
+				// );
+				return true;
 			case 3:
-				return !!(
-					// bankAccountFormData.account_name.trim() &&
-					// bankAccountFormData.account_number &&
-					// bankAccountFormData.account_number.trim() &&
-					// bankAccountFormData.account_number.length <= 20 &&
-					// bankAccountFormData.bank_id &&
-					(
-						formData.tin &&
-						formData.tin.trim() &&
-						formData.nssf_no &&
-						formData.nssf_no.trim() &&
-						formData.salary &&
-						formData.salary > 0
-					)
-				);
+				// return !!(
+				// bankAccountFormData.account_name.trim() &&
+				// bankAccountFormData.account_number &&
+				// bankAccountFormData.account_number.trim() &&
+				// bankAccountFormData.account_number.length <= 20 &&
+				// bankAccountFormData.bank_id &&
+				// (
+				// 	formData.tin &&
+				// 	formData.tin.trim() &&
+				// 	formData.nssf_no &&
+				// 	formData.nssf_no.trim() &&
+				// 	formData.salary &&
+				// 	formData.salary > 0
+				// )
+				// );
+				return true;
 			default:
 				return false;
 		}
@@ -1872,14 +1874,14 @@ export default function UpdateEmployeeForm() {
 									placeholder="Enter NSSF"
 									className="h-12 rounded-2xl"
 								/>
-								{!formData.nssf_no && (
+								{/* {!formData.nssf_no && (
 									<p className="text-red-400 text-xs">
 										A National Social Security Fund number is required
 									</p>
-								)}
-								{formData.nssf_no?.length >= 13 && (
+								)} */}
+								{formData.nssf_no && formData.nssf_no?.length >= 20 && (
 									<p className="text-red-400 text-xs">
-										National Social Security Fund number can not exceed 12 characters
+										National Social Security Fund number can not exceed 20 characters
 									</p>
 								)}
 							</div>
@@ -1895,14 +1897,14 @@ export default function UpdateEmployeeForm() {
 									className="h-12 rounded-2xl"
 									max={12}
 								/>
-								{!formData.tin && (
+								{/* {!formData.tin && (
 									<p className="text-red-400 text-xs">
 										A Tax Identification Number number is required
 									</p>
-								)}
-								{formData.tin?.length > 12 && (
+								)} */}
+								{formData.tin && formData.tin?.length > 15 && (
 									<p className="text-red-400 text-xs">
-										Tax Identification Number number cannot exceed 12 characters
+										Tax Identification Number number cannot exceed 15 characters
 									</p>
 								)}
 							</div>
