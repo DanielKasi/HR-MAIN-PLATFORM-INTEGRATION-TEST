@@ -182,22 +182,47 @@ export interface JobApplicationFormData {
 	applicant_name: string;
 	applicant_email: string;
 	applicant_phone?: string;
-	resume: File | null;
-	cover_letter?: File | null;
-	application_date?: string;
-	status?: JobApplicationStatus;
+	resume?: File | undefined;
+	cover_letter?: File | undefined;
+	status: string;
 	gender: "male" | "female";
 	state?: string;
 	address: string;
+	address_latitude?: string;
+	address_longitude?: string;
 	country: string;
-	source?: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
-	created_by?: number;
+	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
+	recommended_by?: number;
+	application_date: string;
+	created_by: number;
+	required_document_files: Record<string, File>;
+	selectedJobRequiredDocuments?: RequiredDocument[];
+	// Add missing fields from backend schema
+	positions?: string;
+	job_position_advert_job_details?: string;
 	reviewed_by?: number;
 	shortlisted_by?: number;
+}
+
+export interface FormDataState {
+	job_position_advert: number;
+	applicant_name: string;
+	applicant_email: string;
+	applicant_phone: string;
+	resume: File | null;
+	cover_letter?: File | null;
+	status: "new";
+	gender: "male" | "female";
+	state: string;
+	address: string;
+	address_latitude: string;
+	address_longitude: string;
+	country: string;
+	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
 	recommended_by?: number;
-	reviewed_by_name?: string;
-	shortlisted_by_name?: string;
-	recommended_by_name?: string;
+	application_date: string;
+	created_by: number;
+	required_document_files: Record<string, File>;
 }
 
 // Extended application form data that includes additional fields
@@ -221,32 +246,37 @@ export interface JobPositionAdvert {
 	data: any;
 	job_position_details: IJobPosition;
 	id: number;
-	job_position: number; // Foreign key to JobPosition
-	job_position_advert_status: JobAdvertStatus;
-	published_date: string; // ISO datetime string
-	expiry_date: string; // ISO datetime string
+	job_position: number;
+	// job_position_advert_status: JobAdvertStatus;
+	published_date: string;
+	expiry_date: string;
 	number_of_employees_expected?: number | null;
 	extra_information?: string | null;
 	applications: JobApplication[];
 	interview_stages: IInterviewStage[];
 	advert_type: JobAdvertTypes;
+	job_position_advert_status: string;
+	required_documents?: RequiredDocument[];
 }
-
 // For creating/updating job openings
 export interface JobPositionAdvertFormData {
 	level: number;
 	interviewers: any;
 	job_position: number;
 	job_position_advert_status?: JobAdvertStatus;
-	expiry_date: string; // ISO datetime string
+	expiry_date: string;
 	number_of_employees_expected?: number;
 	extra_information?: string;
 	advert_type?: JobAdvertTypes;
+	required_documents?: Array<{
+		document_name: string;
+		description: string;
+		is_optional: boolean;
+	}>;
 }
 
 // Extended form data that includes interview stages setup
 export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
-	// Interview stages setup data
 	stages: Array<{
 		id: string;
 		name: string;
@@ -265,6 +295,7 @@ export interface JobAdvertCompleteFormData extends JobPositionAdvertFormData {
 	}>;
 	newFeedbackFieldName: string;
 	newFeedbackFieldType: string;
+	required_documents?: RequiredDocument[];
 }
 
 export interface ICompanyEmail {
@@ -449,6 +480,14 @@ export interface IInterview {
 	location: string;
 	interview_time: string;
 	interview_type: IInterviewType;
+}
+
+export interface RequiredDocument {
+	id: number;
+	document_name: string;
+	description?: string;
+	is_optional: boolean;
+	content_object?: string;
 }
 
 export interface IInterviewFormData {

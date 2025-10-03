@@ -17,6 +17,7 @@ import {
 	MoreHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiPost } from "@/lib/apiRequest";
 
 import apiRequest from "@/lib/apiRequest";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ import {
 	IEmployee,
 	IFeedbackField,
 	IInterviewStage,
+	RequiredDocument,
 	IInterviewStageFormData,
 	IJobPosition,
 	JobAdvertCompleteFormData,
@@ -135,6 +137,7 @@ export default function JobAdvertsPage() {
 		advert_type: "external" as JobAdvertTypes,
 		level: 0,
 		interviewers: [],
+		required_documents: [],
 	});
 
 	// Separate form data for interview stages
@@ -173,6 +176,13 @@ export default function JobAdvertsPage() {
 	const selectedBranch = useSelector(selectSelectedBranch);
 	const dispatch = useDispatch();
 	const savedJobAdvertForm = useSelector(selectJobAdvertForm);
+
+	const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
+	const [newDocument, setNewDocument] = useState<Omit<RequiredDocument, "id">>({
+		document_name: "",
+		description: "",
+		is_optional: false,
+	});
 
 	useDocumentTitle("JOB OPENINGS");
 
@@ -476,7 +486,10 @@ export default function JobAdvertsPage() {
 				advert_type: formData.advert_type,
 				level: formData.level,
 				interviewers: formData.interviewers,
+				required_documents: requiredDocuments.map(({ id, ...doc }) => doc),
 			};
+
+			console.log("Sending payload:", createData); // to debug
 
 			const response = await createJobPositionAdvert({
 				institutionId: selectedInstitution.id,
@@ -499,6 +512,28 @@ export default function JobAdvertsPage() {
 		router.back();
 	};
 
+	// add document
+
+	const addDocument = () => {
+		if (!newDocument.document_name.trim()) return;
+
+		const documentToAdd: RequiredDocument = {
+			...newDocument,
+			id: Date.now().toString(),
+		};
+
+		setRequiredDocuments((prev) => [...prev, documentToAdd]);
+		setNewDocument({
+			document_name: "",
+			description: "",
+			is_optional: false,
+		});
+	};
+
+	const removeDocument = (documentId: string) => {
+		setRequiredDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
+	};
+
 	const handleClearForm = () => {
 		const defaultFormData: JobPositionAdvertFormData = {
 			job_position: 0,
@@ -508,6 +543,7 @@ export default function JobAdvertsPage() {
 			advert_type: "external" as JobAdvertTypes,
 			level: 0,
 			interviewers: [],
+			required_documents: [],
 		};
 
 		setFormData(defaultFormData);
@@ -517,6 +553,7 @@ export default function JobAdvertsPage() {
 		setSelectedInterviewers([]);
 		setNewFeedbackFieldName("");
 		setNewFeedbackFieldType("Number");
+		setRequiredDocuments([]);
 
 		// Clear from Redux
 		dispatch(clearJobAdvertForm());
@@ -594,6 +631,7 @@ export default function JobAdvertsPage() {
 				selectedInterviewers: updatedSelectedInterviewers,
 				newFeedbackFieldName,
 				newFeedbackFieldType,
+				required_documents: requiredDocuments,
 			};
 
 			dispatch(saveJobAdvertForm(completeFormData));
@@ -719,6 +757,7 @@ export default function JobAdvertsPage() {
 					</div>
 				</div>
 				{/* Step 1: General Job Information */}
+
 				{step === 1 && (
 					<div className="space-y-4 sm:space-y-6">
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -863,9 +902,8 @@ export default function JobAdvertsPage() {
 										)
 									}
 									className={`
-                    
-                    					${errors.number_of_employees_expected ? "border-destructive" : ""}
-                  			`}
+            ${errors.number_of_employees_expected ? "border-destructive" : ""}
+          `}
 								/>
 								{errors.number_of_employees_expected && (
 									<p className="text-xs sm:text-sm text-destructive mt-1">
@@ -919,6 +957,130 @@ export default function JobAdvertsPage() {
 							/>
 						</div>
 
+						{/* Required Documents Section */}
+						<div className="space-y-4">
+							<label className="block text-xs sm:text-sm md:text-base font-medium text-gray-800 mb-2">
+								Required Documents
+							</label>
+							<p className="text-xs text-gray-500 mb-4">
+								Add documents that applicants need to submit with their application.
+							</p>
+
+							{/* Add New Document Form */}
+							<div className="bg-gray-50 p-4 rounded-lg space-y-3">
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<label className="block text-xs font-medium text-gray-700 mb-1">
+											Document Name *
+										</label>
+										<Input
+											placeholder="e.g., Resume, Cover Letter, Certificates"
+											value={newDocument.document_name}
+											onChange={(e) =>
+												setNewDocument((prev) => ({
+													...prev,
+													document_name: e.target.value,
+												}))
+											}
+											className="text-xs"
+										/>
+									</div>
+									<div className="flex items-center space-x-2">
+										<input
+											type="checkbox"
+											id="is_optional"
+											checked={newDocument.is_optional}
+											onChange={(e) =>
+												setNewDocument((prev) => ({
+													...prev,
+													is_optional: e.target.checked,
+												}))
+											}
+											className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+										/>
+										<label htmlFor="is_optional" className="text-xs font-medium text-gray-700">
+											Optional Document
+										</label>
+									</div>
+								</div>
+
+								<div>
+									<label className="block text-xs font-medium text-gray-700 mb-1">
+										Description
+									</label>
+									<Input
+										placeholder="Describe what this document should include..."
+										value={newDocument.description}
+										onChange={(e) =>
+											setNewDocument((prev) => ({
+												...prev,
+												description: e.target.value,
+											}))
+										}
+										className="text-xs"
+									/>
+								</div>
+
+								<Button
+									type="button"
+									onClick={addDocument}
+									disabled={!newDocument.document_name.trim()}
+									className="flex rounded-full w-full max-w-sm items-center gap-2 px-6 lg:px-8 "
+									size="sm"
+								>
+									<Plus className="h-3 w-3 mr-1" />
+									Add Document
+								</Button>
+							</div>
+
+							{/* Documents List */}
+							{requiredDocuments.length > 0 && (
+								<div className="space-y-3">
+									<h4 className="text-sm font-medium text-gray-800">Added Documents:</h4>
+									{requiredDocuments.map((doc, index) => (
+										<div
+											key={doc.id}
+											className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200"
+										>
+											<div className="flex-1">
+												<div className="flex items-center space-x-2">
+													<span className="font-medium text-sm">{doc.document_name}</span>
+													{doc.is_optional && (
+														<Badge
+															variant="outline"
+															className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200"
+														>
+															Optional
+														</Badge>
+													)}
+													{!doc.is_optional && (
+														<Badge
+															variant="outline"
+															className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+														>
+															Required
+														</Badge>
+													)}
+												</div>
+												{doc.description && (
+													<p className="text-xs text-gray-600 mt-1">{doc.description}</p>
+												)}
+											</div>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={() => removeDocument(doc.id!)}
+												className="text-red-600 hover:text-red-700 hover:bg-red-50"
+											>
+												<Trash2 className="h-3 w-3" />
+											</Button>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+
 						{/* Next Button */}
 						<div className="mt-8 flex justify-between gap-8">
 							<Button
@@ -937,6 +1099,7 @@ export default function JobAdvertsPage() {
 						</div>
 					</div>
 				)}
+
 				{/* Step 2: Interview Stages Setup */}
 				{step === 2 && (
 					<div className="space-y-6 sm:space-y-8">

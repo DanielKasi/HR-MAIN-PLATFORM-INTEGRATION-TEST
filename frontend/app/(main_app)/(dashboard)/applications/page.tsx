@@ -7,6 +7,8 @@ import type {
 	JobPositionAdvert,
 	IInterviewType,
 	ICountry,
+	RequiredDocument,
+	FormDataState,
 } from "@/types/types.utils";
 import type {
 	IInterviewStage,
@@ -142,10 +144,19 @@ const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
 ];
 
 export default function ApplicationsPage() {
+	const router = useRouter();
+	const dispatch = useDispatch();
+
+	const userData = useSelector(selectUser);
+	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const selectedBranch = useSelector(selectSelectedBranch);
+	const savedApplicationForm = useSelector(selectApplicationForm);
+
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const [applications, setApplications] = useState<JobApplication[]>([]);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>([]);
@@ -159,6 +170,9 @@ export default function ApplicationsPage() {
 	);
 
 	const [isFetchingInterviewData, setIsFetchingInterviewData] = useState(false);
+	const [selectedJobRequiredDocuments, setSelectedJobRequiredDocuments] = useState<
+		RequiredDocument[]
+	>([]);
 
 	// const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
@@ -376,7 +390,6 @@ export default function ApplicationsPage() {
 		"application_date",
 	);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-	const userData = useSelector(selectUser);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(5);
 
@@ -402,7 +415,6 @@ export default function ApplicationsPage() {
 		count: 0,
 	});
 
-	const router = useRouter();
 	const handleSort = (field: "application_date" | "posted_date") => {
 		if (sortField === field) {
 			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -411,25 +423,14 @@ export default function ApplicationsPage() {
 			setSortDirection("asc");
 		}
 	};
-	const selectedInstitution = useSelector(selectSelectedInstitution);
-	const selectedBranch = useSelector(selectSelectedBranch);
-	const dispatch = useDispatch();
-	const savedApplicationForm = useSelector(selectApplicationForm);
 
-	const [formData, setFormData] = useState<
-		Omit<JobApplicationFormData, "resume"> & {
-			resume: File | null;
-			cover_letter?: File | null;
-			address_latitude?: string;
-			address_longitude?: string;
-			recommended_by?: number;
-		}
-	>({
+	const [formData, setFormData] = useState<JobApplicationFormData>({
 		job_position_advert: 0,
 		applicant_name: "",
 		applicant_email: "",
 		applicant_phone: "",
-		resume: null,
+		resume: undefined, // Change from null to undefined
+		cover_letter: undefined, // Change from null to undefined
 		status: "new",
 		gender: "male",
 		state: "",
@@ -441,6 +442,8 @@ export default function ApplicationsPage() {
 		recommended_by: undefined,
 		application_date: new Date().toISOString().split("T")[0],
 		created_by: userData?.id || 0,
+		required_document_files: {},
+		selectedJobRequiredDocuments: [], // Already correct
 	});
 
 	// Separate state for the country selector
@@ -477,8 +480,8 @@ export default function ApplicationsPage() {
 				applicant_name: savedApplicationForm.applicant_name,
 				applicant_email: savedApplicationForm.applicant_email,
 				applicant_phone: savedApplicationForm.applicant_phone || "",
-				resume: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
-				cover_letter: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
+				// Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
+				// Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
 				status: savedApplicationForm.status || "new",
 				gender: savedApplicationForm.gender,
 				state: savedApplicationForm.state || "",
@@ -491,6 +494,7 @@ export default function ApplicationsPage() {
 				application_date:
 					savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
 				created_by: savedApplicationForm.created_by || userData?.id || 0,
+				required_document_files: savedApplicationForm.required_document_files || {},
 			});
 
 			// Set the selected country for the CountrySelect component
@@ -514,7 +518,7 @@ export default function ApplicationsPage() {
 				address_longitude: applicationLocation.latitude,
 			};
 
-			dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
+			dispatch(saveApplicationForm({ ...updatedFormData })); // Cannot serialize File object in Redux
 		}
 	}, [applicationLocation]);
 
@@ -787,18 +791,33 @@ export default function ApplicationsPage() {
 
 		setFormData(updatedFormData);
 
-		dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
+		dispatch(saveApplicationForm({ ...updatedFormData })); // Cannot serialize File object in Redux
 	};
 
 	const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
 		const updatedFormData = {
 			...formData,
-			[field]: file,
+			[field]: file || undefined, // Convert null to undefined
 		};
-
 		setFormData(updatedFormData);
 	};
 
+	const handleDocumentFileChange = (documentName: string, file: File | null) => {
+		setFormData((prev) => {
+			const updatedFiles = { ...prev.required_document_files };
+
+			if (file) {
+				updatedFiles[documentName] = file;
+			} else {
+				delete updatedFiles[documentName];
+			}
+
+			return {
+				...prev,
+				required_document_files: updatedFiles,
+			};
+		});
+	};
 	const handleAddressCoordinatesChange = (lat: string, lon: string) => {
 		setApplicationLocation({ latitude: lat, longitude: lon });
 	};
@@ -809,8 +828,8 @@ export default function ApplicationsPage() {
 			applicant_name: "",
 			applicant_email: "",
 			applicant_phone: "",
-			resume: null,
-			cover_letter: undefined,
+			resume: undefined, // Change from null to undefined
+			cover_letter: undefined, // Change from null to undefined
 			status: "new" as const,
 			gender: "male" as const,
 			state: "",
@@ -822,10 +841,13 @@ export default function ApplicationsPage() {
 			recommended_by: undefined,
 			application_date: new Date().toISOString().split("T")[0],
 			created_by: userData?.id || 0,
+			required_document_files: {},
+			selectedJobRequiredDocuments: [], // Add this to match JobApplicationFormData
 		};
 
 		setFormData(defaultFormData);
 		setSelectedCountry(null);
+		setSelectedJobRequiredDocuments([]);
 		setError(null);
 
 		// Clear from Redux
@@ -869,103 +891,107 @@ export default function ApplicationsPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
-
-		// Simple validation checks
-		if (!formData.applicant_name.trim()) {
-			setError("Please enter the applicant's name");
-
-			return;
-		}
-
-		if (!formData.applicant_email.trim()) {
-			setError("Please enter the applicant's email");
-
-			return;
-		}
-
-		if (!formData.address.trim()) {
-			setError("Please enter the applicant's address");
-
-			return;
-		}
-
-		if (!selectedCountry) {
-			setError("Please select a country");
-
-			return;
-		}
-
-		if (formData.job_position_advert === 0) {
-			setError("Please select a job position");
-
-			return;
-		}
-
-		if (formData.source === "head_hunt" && !formData.recommended_by) {
-			setError("Please select which employee head hunted this candidate");
-
-			return;
-		}
-
-		if (!formData.resume) {
-			setError("Please upload a resume");
-
-			return;
-		}
-
-		if (!selectedInstitution || !selectedBranch) {
-			setError("Missing organization or branch information");
-
-			return;
-		}
-
-		if (!userData?.id) {
-			setError("User information not available. Please refresh and try again.");
-
-			return;
-		}
-
 		setIsSubmitting(true);
 
 		try {
+			// Basic validation
+			if (!formData.applicant_name.trim()) {
+				throw new Error("Please enter the applicant's name");
+			}
+
+			if (!formData.applicant_email.trim()) {
+				throw new Error("Please enter the applicant's email");
+			}
+
+			if (!formData.address.trim()) {
+				throw new Error("Please enter the applicant's address");
+			}
+
+			if (!selectedCountry) {
+				throw new Error("Please select a country");
+			}
+
+			if (formData.job_position_advert === 0) {
+				throw new Error("Please select a job position");
+			}
+
+			if (formData.source === "head_hunt" && !formData.recommended_by) {
+				throw new Error("Please select which employee head hunted this candidate");
+			}
+
+			if (!selectedInstitution || !selectedBranch) {
+				throw new Error("Missing organization or branch information");
+			}
+
+			if (!userData?.id) {
+				throw new Error("User information not available. Please refresh and try again.");
+			}
+
+			// Validate required documents
+			if (selectedJobRequiredDocuments.length > 0) {
+				const missingRequiredDocs = selectedJobRequiredDocuments.filter(
+					(doc) => !doc.is_optional && !formData.required_document_files?.[doc.document_name],
+				);
+
+				if (missingRequiredDocs.length > 0) {
+					throw new Error(
+						`Please upload all required documents: ${missingRequiredDocs
+							.map((doc) => doc.document_name)
+							.join(", ")}`,
+					);
+				}
+			}
+
+			// Prepare the data for API call
 			const applicationData: JobApplicationFormData = {
-				...formData,
-				resume: formData.resume,
+				job_position_advert: formData.job_position_advert,
+				applicant_name: formData.applicant_name.trim(),
+				applicant_email: formData.applicant_email.trim(),
+				applicant_phone: formData.applicant_phone?.trim() || undefined,
+				resume: formData.resume || undefined,
 				cover_letter: formData.cover_letter || undefined,
-				applicant_phone: formData.applicant_phone || undefined,
-				state: formData.state || undefined,
+				status: formData.status,
+				gender: formData.gender,
+				state: formData.state?.trim() || undefined,
+				address: formData.address.trim(),
+				address_latitude: formData.address_latitude || undefined,
+				address_longitude: formData.address_longitude || undefined,
+				country: selectedCountry.name.common,
+				source: formData.source,
 				application_date: formData.application_date,
-				address: formData.address,
-				country: selectedCountry?.name.common || "",
 				created_by: userData.id,
-				recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined, // Add this line
+				recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined,
+				required_document_files: formData.required_document_files,
+				selectedJobRequiredDocuments: selectedJobRequiredDocuments, // Include here
 			};
 
+			console.log("📤 Submitting application data:", {
+				job_position: applicationData.job_position_advert,
+				applicant: applicationData.applicant_name,
+				email: applicationData.applicant_email,
+				documentCount: selectedJobRequiredDocuments.length,
+				hasResume: !!applicationData.resume,
+				hasCoverLetter: !!applicationData.cover_letter,
+			});
+
+			// Call the API with application data
 			const newApplication = await createJobApplication({
 				institutionId: selectedInstitution.id,
 				applicationData,
 			});
 
 			if (newApplication) {
-				// Maintain sorted order when adding new application
-				setApplications((prev) => {
-					const updated = [newApplication, ...prev];
-
-					return updated.sort(
-						(a, b) =>
-							new Date(b.application_date).getTime() - new Date(a.application_date).getTime(),
-					);
-				});
-
+				// Success - reset form and show success message
 				setIsCreateDialogOpen(false);
 				resetFiltersAndShowNewApplication();
+
+				// Reset form to initial state
 				setFormData({
 					job_position_advert: 0,
 					applicant_name: "",
 					applicant_email: "",
 					applicant_phone: "",
-					resume: null,
-					cover_letter: undefined,
+
 					status: "new",
 					gender: "male",
 					state: "",
@@ -974,33 +1000,71 @@ export default function ApplicationsPage() {
 					address_longitude: "",
 					country: "",
 					source: "website",
+					recommended_by: undefined,
 					application_date: new Date().toISOString().split("T")[0],
 					created_by: userData.id,
-					recommended_by: undefined,
+					required_document_files: {},
 				});
-				setSelectedCountry(null);
-				clearAllFilters();
-				toast.success("Application created successfully!");
-				refreshTableRef.current?.();
 
-				// Clear the saved form data from Redux on successful submission
+				setSelectedCountry(null);
+				setSelectedJobRequiredDocuments([]);
+				clearAllFilters();
+
+				toast.success("Application created successfully!");
+
+				// Refresh the applications table
+				if (refreshTableRef.current) {
+					refreshTableRef.current();
+				}
+
+				// Clear the saved form data from Redux
 				dispatch(clearApplicationForm());
 			} else {
-				setError("Failed to create application");
+				throw new Error("Failed to create application - no response from server");
 			}
 		} catch (err: any) {
-			if (err?.response?.data?.message) {
-				setError(err.response.data.message);
+			console.error(" Submission error:", err);
+
+			// Handle different error types
+			if (err?.response?.data) {
+				const errorData = err.response.data;
+				if (typeof errorData === "object") {
+					if (errorData.non_field_errors) {
+						setError(errorData.non_field_errors.join(", "));
+					} else if (errorData.detail) {
+						setError(errorData.detail);
+					} else {
+						// Field-specific errors
+						const fieldErrors = Object.entries(errorData)
+							.map(
+								([field, messages]) =>
+									`${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`,
+							)
+							.join("; ");
+						setError(fieldErrors || "Please check all fields and try again.");
+					}
+				} else if (typeof errorData === "string") {
+					setError(errorData);
+				} else {
+					setError("An error occurred while creating the application.");
+				}
 			} else if (err?.message) {
 				setError(err.message);
 			} else {
-				setError("Failed to create application. Please check all fields and try again.");
+				setError("Failed to create application. Please check your connection and try again.");
 			}
+
+			// Scroll to error message
+			setTimeout(() => {
+				const errorElement = document.getElementById("error-alert");
+				if (errorElement) {
+					errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+				}
+			}, 100);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
-
 	const handleSubmitInterviews = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!selectedInstitution || !userData) {
@@ -2318,6 +2382,9 @@ export default function ApplicationsPage() {
 																		handleInputChange("job_position_advert", Number(advert.id));
 																		setJpFilterText("");
 																		setJobPositionDropdownOpen(false);
+																		setSelectedJobRequiredDocuments(
+																			advert.required_documents || [],
+																		);
 																	}}
 																>
 																	<div className="flex flex-col">
@@ -2486,7 +2553,6 @@ export default function ApplicationsPage() {
 										Address *
 									</label>
 									<div className="relative">
-										{/* <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" /> */}
 										<LocationAutocomplete
 											value={formData.address}
 											onChange={(value) => handleInputChange("address", value)}
@@ -2528,7 +2594,6 @@ export default function ApplicationsPage() {
 										<EmployeeSearchableSelect
 											value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
 											onValueChange={(values) => {
-												// console.log("\n\n Values changed with values : ", values);
 												const selectedValue = Array.isArray(values) ? values[0] : values;
 
 												handleInputChange(
@@ -2582,77 +2647,80 @@ export default function ApplicationsPage() {
 								</div>
 							</div>
 
-							{/* File Upload Row */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* CV Upload */}
-								<div className="space-y-2">
-									<label htmlFor="cv-upload" className="block text-sm font-medium text-gray-800">
-										Curriculum Vitae / Resume *
-									</label>
-									<div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-										<input
-											id="cv-upload"
-											type="file"
-											accept=".pdf,.doc,.docx"
-											className="sr-only"
-											onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-											required
-										/>
-										<label
-											htmlFor="cv-upload"
-											className="flex flex-col items-center cursor-pointer"
-										>
-											<Upload className="h-10 w-10 text-primary mb-2" />
-											<span className="text-sm font-medium text-primary">
-												Click to Upload or drag and drop
-											</span>
-											<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-										</label>
-										{formData.resume && (
-											<p className="text-sm text-gray-700 mt-2 flex items-center">
-												<FileText className="mr-1 h-3 w-3" />
-												{formData.resume.name}
-											</p>
-										)}
-									</div>
-								</div>
+							{/* Dynamic Required Documents Section */}
+							<div className="space-y-4">
+								<h3 className="text-lg font-medium text-gray-800">Required Documents</h3>
 
-								{/* Cover Letter Upload */}
-								<div className="space-y-2">
-									<label
-										htmlFor="cover-letter-upload"
-										className="block text-sm font-medium text-gray-800"
-									>
-										Cover Letter
-									</label>
-									<div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-										<input
-											id="cover-letter-upload"
-											type="file"
-											accept=".pdf,.doc,.docx"
-											className="sr-only"
-											onChange={(e) =>
-												handleFileChange("cover_letter", e.target.files?.[0] || null)
-											}
-										/>
-										<label
-											htmlFor="cover-letter-upload"
-											className="flex flex-col items-center cursor-pointer"
-										>
-											<Upload className="h-10 w-10 text-primary mb-2" />
-											<span className="text-sm font-medium text-primary">
-												Click to Upload or drag and drop
-											</span>
-											<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-										</label>
-										{formData.cover_letter && (
-											<p className="text-sm text-gray-700 mt-2 flex items-center">
-												<FileText className="mr-1 h-3 w-3" />
-												{formData.cover_letter.name}
-											</p>
-										)}
+								{/* Job-specific required documents */}
+								{selectedJobRequiredDocuments.length === 0 ? (
+									<div className="text-center py-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50">
+										<FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+										<p className="text-sm text-gray-600">
+											No additional documents required for this position
+										</p>
 									</div>
-								</div>
+								) : (
+									<div className="space-y-4">
+										{selectedJobRequiredDocuments.map((doc, index) => (
+											<div key={doc.id || index} className="space-y-2">
+												<div className="flex items-center justify-between">
+													<Label
+														htmlFor={`document-${index}`}
+														className="text-sm font-medium text-gray-800"
+													>
+														{doc.document_name}
+														{!doc.is_optional && <span className="text-red-500 ml-1">*</span>}
+													</Label>
+													{doc.is_optional && (
+														<Badge
+															variant="outline"
+															className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200"
+														>
+															Optional
+														</Badge>
+													)}
+												</div>
+
+												{doc.description && (
+													<p className="text-sm text-gray-600 mb-2">{doc.description}</p>
+												)}
+
+												<div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+													<input
+														id={`document-${index}`}
+														type="file"
+														accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+														className="sr-only"
+														onChange={(e) => {
+															handleDocumentFileChange(
+																doc.document_name,
+																e.target.files?.[0] || null,
+															);
+														}}
+														required={!doc.is_optional}
+													/>
+													<label
+														htmlFor={`document-${index}`}
+														className="flex flex-col items-center cursor-pointer w-full"
+													>
+														<Upload className="h-6 w-6 text-primary mb-2" />
+														<span className="text-sm font-medium text-primary">
+															Click to Upload {doc.document_name}
+														</span>
+														<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
+													</label>
+
+													{formData.required_document_files?.[doc.document_name] && (
+														<p className="text-sm text-gray-700 mt-2 flex items-center">
+															<FileText className="mr-1 h-3 w-3" />
+															{formData.required_document_files[doc.document_name].name}
+														</p>
+													)}
+												</div>
+											</div>
+										))}
+									</div>
+								)}
 							</div>
 						</div>
 

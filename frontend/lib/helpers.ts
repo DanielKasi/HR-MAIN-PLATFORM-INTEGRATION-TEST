@@ -228,11 +228,10 @@ export const downloadFile = (filePath: string, fileName: string) => {
 };
 
 export const getFileUrl = (filePath: string) => {
-	if (filePath.startsWith("http")) {
+	if (filePath?.startsWith("http")) {
 		return filePath;
 	}
 	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
 	return `${baseUrl}${filePath}`;
 };
 

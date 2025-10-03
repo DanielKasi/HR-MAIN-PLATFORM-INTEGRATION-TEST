@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast } from "sonner";
+// import api from "@/lib/apiRequest";
+import { apiPost } from "@/lib/apiRequest";
 
 import apiRequest from "./apiRequest";
 import { forceUrlToHttps } from "./helpers";
@@ -581,18 +583,64 @@ export const createJobApplication = async ({
 }): Promise<JobApplication | null> => {
 	const formData = new FormData();
 
-	// Log what we're appending to FormData
+	// Append normal fields
 	Object.entries(applicationData).forEach(([key, value]) => {
-		if (value !== undefined && value !== null) {
-			formData.append(key, value as any);
+		if (
+			value !== undefined &&
+			value !== null &&
+			key !== "required_document_files" &&
+			key !== "selectedJobRequiredDocuments"
+		) {
+			formData.append(key, value.toString());
 		}
 	});
-	const response = await apiRequest.post(
-		`recruitment/institution/${institutionId}/job-application/`,
-		formData,
-	);
 
-	return response.data as JobApplication;
+	// Build documents array
+	const documentsPayload: any[] = [];
+
+	if (
+		applicationData.required_document_files &&
+		applicationData.selectedJobRequiredDocuments?.length
+	) {
+		applicationData.selectedJobRequiredDocuments.forEach((doc, index) => {
+			const file = applicationData.required_document_files?.[doc.document_name];
+			if (file instanceof File) {
+				const documentEntry = {
+					required_document: {
+						id: doc.id,
+						document_name: doc.document_name,
+						description: doc.description || "",
+						is_optional: doc.is_optional,
+						content_object: doc.content_object || "",
+					},
+					is_active: true,
+					created_by: applicationData.created_by,
+					job_advert_application: 0,
+				};
+
+				// Push the metadata (backend expects nested object)
+				documentsPayload.push(documentEntry);
+
+				// Attach the file separately (indexed so backend links it)
+				formData.append(`documents[${index}].file`, file);
+			}
+		});
+	}
+
+	// Append JSON-ified documents metadata
+	formData.append("documents", JSON.stringify(documentsPayload));
+
+	// send request
+	const response = await fetch(`/institutions/${institutionId}/applications/`, {
+		method: "POST",
+		body: formData,
+	});
+
+	if (!response.ok) {
+		throw new Error("Failed to create job application");
+	}
+
+	return (await response.json()) as JobApplication;
 };
 
 // Fetch all job applications for a specific institution
@@ -751,21 +799,23 @@ export const createJobPositionAdvert = async ({
 	advertData: JobPositionAdvertFormData;
 }): Promise<JobPositionAdvert | null> => {
 	try {
-		const formData = new FormData();
+		console.log("Sending advert data:", JSON.stringify(advertData, null, 2));
 
-		Object.entries(advertData).forEach(([key, value]) => {
-			if (value !== undefined && value !== null) {
-				formData.append(key, value.toString());
-			}
-		});
-
-		const response = await apiRequest.post(
+		const response = await apiPost(
 			`recruitment/institution/${institutionId}/job-advert/`,
-			formData,
+			advertData,
 		);
 
+		console.log("API Response:", response.data);
 		return response.data as JobPositionAdvert;
 	} catch (error: any) {
+		console.error("API Error Details:", {
+			status: error?.response?.status,
+			statusText: error?.response?.statusText,
+			data: error?.response?.data,
+			message: error?.message,
+		});
+
 		if (error?.response?.status === 404 || error?.response?.status === 400) {
 			throw error;
 		}
