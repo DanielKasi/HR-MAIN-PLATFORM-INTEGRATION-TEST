@@ -120,7 +120,7 @@ class EducationSerializer(serializers.ModelSerializer):
         queryset=QualificationAward.objects.all(),
         source='qualification',
         write_only=True,
-        required=True
+        required=False
     )
     employee = serializers.PrimaryKeyRelatedField(
         queryset=Employee.objects.all(),
