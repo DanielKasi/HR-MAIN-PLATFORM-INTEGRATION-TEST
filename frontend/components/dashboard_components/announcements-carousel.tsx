@@ -77,7 +77,7 @@ const AnnouncementCarousel: React.FC = () => {
 		return (
 			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
-					<CardTitle className="text-lg font-medium">Notices</CardTitle>
+					<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 					<Link href="/announcements">
 						<ChevronRight className="w-4 h-4 text-gray-400" />
 					</Link>
