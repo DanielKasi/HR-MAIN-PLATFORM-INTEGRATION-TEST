@@ -127,7 +127,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	useEffect(() => {
 		const handleActivity = (e: MouseEvent) => {
 			if (announcementForAcknowledgment) {
-				console.log("\n\n Announcement requires acknowledgment, ignoring activity");
 				e.stopPropagation();
 				e.preventDefault();
 				return;

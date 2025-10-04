@@ -77,12 +77,12 @@ const AnnouncementCarousel: React.FC = () => {
 		return (
 			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
-					<CardTitle className="text-lg font-medium">Announcements</CardTitle>
+					<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 					<Link href="/announcements">
 						<ChevronRight className="w-4 h-4 text-gray-400" />
 					</Link>
 				</CardHeader>
-				<div className="px-6 text-sm text-gray-600">No announcements available</div>
+				<div className="px-6 text-sm text-gray-600">No notices available</div>
 			</Card>
 		);
 	}
@@ -90,7 +90,7 @@ const AnnouncementCarousel: React.FC = () => {
 	return (
 		<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full overflow-hidden">
 			<CardHeader className="flex flex-row items-center justify-between py-2">
-				<CardTitle className="text-lg font-medium">Announcement</CardTitle>
+				<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 				<Link href="/announcements">
 					<ChevronRight className="w-4 h-4 text-gray-400" />
 				</Link>

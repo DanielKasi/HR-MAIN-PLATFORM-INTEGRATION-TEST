@@ -80,7 +80,7 @@ export default function AnnouncementListPage() {
 		try {
 			setDeleting(true);
 			await ANNOUNCEMENTS_API.delete({ id: announcementToDelete.id });
-			showSuccessToast("Announcement submitted for deletion approval!");
+			showSuccessToast("Notice submitted for deletion approval!");
 			setAnnouncements((prev) => prev.filter((ann) => ann.id !== announcementToDelete.id));
 		} catch (err) {
 			showErrorToast({ error: err, defaultMessage: "Failed to delete announcement" });
@@ -106,12 +106,12 @@ export default function AnnouncementListPage() {
 	return (
 		<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Announcements</h1>
+				<h1 className="text-2xl font-bold">Notices</h1>
 				<div className="flex items-center justify-end gap-4">
 					<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_CREATE_ANNOUNCEMENTS}>
 						<Button onClick={() => router.push("/announcements/create")} className="rounded-xl">
 							<Plus className="h-4 w-4 mr-2" />
-							Create Announcement
+							Create Notice
 						</Button>
 					</ProtectedComponent>
 				</div>
