@@ -31,7 +31,6 @@ export default function AnnouncementDetailsPage() {
 			try {
 				setLoading(true);
 				const data = await ANNOUNCEMENTS_API.getById({ id: announcementId });
-				console.log("Announcement data:", data);
 				setAnnouncement(data);
 			} catch (err) {
 				showErrorToast({ error: err, defaultMessage: "Failed to fetch announcement" });
@@ -49,10 +48,10 @@ export default function AnnouncementDetailsPage() {
 		try {
 			setDeleting(true);
 			await ANNOUNCEMENTS_API.delete({ id: announcement.id });
-			showSuccessToast("Announcement submitted for deletion approval!");
+			showSuccessToast("Notice submitted for deletion approval!");
 			router.push("/announcements");
 		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to delete announcement" });
+			showErrorToast({ error: err, defaultMessage: "Failed to delete notice" });
 		} finally {
 			setDeleting(false);
 			setDeleteConfirmOpen(false);
@@ -65,10 +64,10 @@ export default function AnnouncementDetailsPage() {
 		return (
 			<div className="p-6 space-y-6 bg-white rounded-lg min-h-screen">
 				<div className="text-center py-12">
-					<p className="text-muted-foreground mb-4">Announcement not found</p>
+					<p className="text-muted-foreground mb-4">Notice not found</p>
 					<Link href="/announcements">
 						<Button variant="outline" className="rounded-xl">
-							Back to Announcements
+							Back to Notices
 						</Button>
 					</Link>
 				</div>
