@@ -424,7 +424,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						if (!open) {
 							handleCancelLogout();
 						} else {
-							setShowLogoutDialog(open);
+							setShowLogoutDialog(true);
 						}
 					}}
 				>

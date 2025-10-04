@@ -90,8 +90,10 @@ const EmployeeAttendanceHistory = () => {
 			attendanceRecords
 				.filter((r) => r.check_in_time && r.check_out_time)
 				.reduce((acc, r) => {
-					const checkIn = new Date(`2000-01-01T${r.check_in_time}`);
-					const checkOut = new Date(`2000-01-01T${r.check_out_time}`);
+					const checkIn = new Date(`${new Date().toISOString().split("T")[0]}T${r.check_in_time}`);
+					const checkOut = new Date(
+						`${new Date().toISOString().split("T")[0]}T${r.check_out_time}`,
+					);
 					const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
 
 					return acc + hours;
@@ -101,7 +103,6 @@ const EmployeeAttendanceHistory = () => {
 
 	const formatTime = (timeString: string) => {
 		if (!timeString) return "Unknown";
-
 		return timeString;
 	};
 
@@ -128,8 +129,8 @@ const EmployeeAttendanceHistory = () => {
 	const calculateWorkHours = (checkIn: string, checkOut: string | null) => {
 		if (!checkIn || !checkOut) return "Unknown";
 
-		const checkInTime = new Date(`2000-01-01T${checkIn}`);
-		const checkOutTime = new Date(`2000-01-01T${checkOut}`);
+		const checkInTime = new Date(`${new Date().toISOString().split("T")[0]}T${checkIn}`);
+		const checkOutTime = new Date(`${new Date().toISOString().split("T")[0]}T${checkOut}`);
 		const diffMs = checkOutTime.getTime() - checkInTime.getTime();
 		const diffHours = diffMs / (1000 * 60 * 60);
 
@@ -159,8 +160,8 @@ const EmployeeAttendanceHistory = () => {
 	// Helper to calculate work hours in seconds
 	function calculateWorkSeconds(checkIn: string | null, checkOut: string | null) {
 		if (!checkIn || !checkOut) return null;
-		const inTime = new Date(`2000-01-01T${checkIn}`);
-		const outTime = new Date(`2000-01-01T${checkOut}`);
+		const inTime = new Date(`${new Date().toISOString().split("T")[0]}T${checkIn}`);
+		const outTime = new Date(`${new Date().toISOString().split("T")[0]}T${checkOut}`);
 
 		return Math.max(0, Math.floor((outTime.getTime() - inTime.getTime()) / 1000));
 	}
