@@ -80,7 +80,7 @@ export default function AnnouncementListPage() {
 		try {
 			setDeleting(true);
 			await ANNOUNCEMENTS_API.delete({ id: announcementToDelete.id });
-			showSuccessToast("Notice submitted for deletion approval!");
+			showSuccessToast("Notice deleted successfully !");
 			setAnnouncements((prev) => prev.filter((ann) => ann.id !== announcementToDelete.id));
 		} catch (err) {
 			showErrorToast({ error: err, defaultMessage: "Failed to delete announcement" });

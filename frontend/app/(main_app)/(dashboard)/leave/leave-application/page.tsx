@@ -34,11 +34,8 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -61,17 +58,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LeaveApplicationsAPI, getLeaveTypes, getLeavePolicies } from "@/lib/utils";
-import {
-	ILeaveRequest,
-	ILeaveRequestFormData,
-	ILeaveType,
-	ILeavePolicy,
-	ILeaveBalance,
-} from "@/types/types.utils";
+import { LeaveApplicationsAPI, getLeaveTypes } from "@/lib/utils";
+import { ILeaveRequest, ILeaveType } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
-import { handleDownload, getFileUrl, getFileName } from "@/lib/helpers";
 import { TableSkeleton } from "@/components/common/skeletons/table-skeleton";
 import { PaginatedTableWrapper } from "@/components/common/tables/paginated-table-wrapper";
 import ProtectedComponent from "@/components/ProtectedComponent";
@@ -92,12 +81,7 @@ const DURATION_TYPES = [
 	{ value: "hourly", label: "Hourly" },
 ];
 
-const LeaveApplicationComponent = () => {
-	const [leavePolicies, setLeavePolicies] = useState<ILeavePolicy[]>([]);
-	const [leaveBalances, setLeaveBalances] = useState<ILeaveBalance[]>([]);
-	const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const [editingApplication, setEditingApplication] = useState<ILeaveRequest | null>(null);
+const LeaveApplicationsPage = () => {
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [leaveTypeFilter, setLeaveTypeFilter] = useState<string>("all");
 	const [searchTerm, setSearchTerm] = useState("");
@@ -108,23 +92,11 @@ const LeaveApplicationComponent = () => {
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 	const router = useRouter();
 
-	// Success handlers for CRUD operations
-	const handleCreateSuccess = (newApplication: ILeaveRequest) => {
-		toast.success("Leave application created successfully");
-		refreshTableRef.current?.();
-	};
-
-	const handleUpdateSuccess = (updatedApplication: ILeaveRequest) => {
-		toast.success("Leave application updated successfully");
-		refreshTableRef.current?.();
-	};
-
 	const handleDeleteSuccess = () => {
 		toast.success("Leave application deleted successfully");
 		refreshTableRef.current?.();
 	};
 
-	// Fetch functions for PaginatedTableWrapper
 	const fetchFirstPage = async (search?: string) => {
 		if (!selectedInstitution?.id) {
 			return { results: [], count: 0, next: null, previous: null };
@@ -135,7 +107,7 @@ const LeaveApplicationComponent = () => {
 			page: 1,
 			search,
 			status: statusFilter !== "all" ? statusFilter : undefined,
-			leaveType: leaveTypeFilter !== "all" ? leaveTypeFilter : undefined,
+			leave_type_id: leaveTypeFilter !== "all" ? leaveTypeFilter : undefined,
 			ordering: ordering || undefined,
 		});
 	};
@@ -154,17 +126,6 @@ const LeaveApplicationComponent = () => {
 		type: "approve",
 		applicationId: "",
 		applicationName: "",
-	});
-
-	const [formData, setFormData] = useState({
-		employee: "",
-		leave_type: "",
-		start_date: "",
-		end_date: "",
-		duration_type: "full_day",
-		reason: "",
-		handover_notes: "",
-		supporting_document: null as File | null,
 	});
 
 	const getEmployeeName = (employee: ILeaveRequest["employee"]): string => {
@@ -187,294 +148,22 @@ const LeaveApplicationComponent = () => {
 		return "Unknown Leave Type";
 	};
 
-	const getApproverName = (approvedBy: ILeaveRequest["approved_by"]): string => {
-		return (approvedBy as any)?.fullname || (approvedBy as any)?.email || "Not Approved";
-	};
-
-	const renderSupportingDocumentName = (document: string | File | undefined): string => {
-		if (!document) return "Document";
-
-		if (typeof document === "string") {
-			const filename = document.split("/").pop() || document;
-
-			return filename.split("?")[0];
-		} else if (document instanceof File) {
-			return document.name || "Document";
-		}
-
-		return "Document";
-	};
-
-	const calculateDaysBetween = (startDate: string, endDate: string): number => {
-		if (!startDate || !endDate) return 0;
-		const start = new Date(startDate);
-		const end = new Date(endDate);
-		const diffTime = Math.abs(end.getTime() - start.getTime());
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-		return diffDays;
-	};
-
-	const getSelectedLeaveType = () => {
-		if (!formData.leave_type) return null;
-
-		return leaveTypes.find((type) => type.id.toString() === formData.leave_type);
-	};
-
-	const getSelectedLeavePolicy = () => {
-		if (!formData.leave_type) return null;
-
-		return leavePolicies.find((policy) => policy.leave_type.toString() === formData.leave_type);
-	};
-
-	const getSelectedLeaveBalance = () => {
-		if (!formData.employee || !formData.leave_type) return null;
-
-		return leaveBalances.find((balance) => balance.leave_type.toString() === formData.leave_type);
-	};
-
-	const validateLeaveApplication = () => {
-		const validations = [];
-		const selectedLeaveType = getSelectedLeaveType();
-		const selectedPolicy = getSelectedLeavePolicy();
-		const selectedBalance = getSelectedLeaveBalance();
-		const requestedDays = calculateDaysBetween(formData.start_date, formData.end_date);
-
-		if (
-			!formData.employee ||
-			!formData.leave_type ||
-			!formData.start_date ||
-			!formData.end_date ||
-			!formData.reason
-		) {
-			validations.push({
-				type: "error",
-				message: "Please fill in all required fields",
-			});
-		}
-
-		if (formData.start_date && formData.end_date) {
-			const startDate = new Date(formData.start_date);
-			const endDate = new Date(formData.end_date);
-			const today = new Date();
-
-			if (endDate < startDate) {
-				validations.push({
-					type: "error",
-					message: "End date cannot be before start date",
-				});
-			}
-
-			if (selectedPolicy) {
-				const daysDifference = Math.ceil(
-					(startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-				);
-
-				if (daysDifference < selectedPolicy.min_notice_days) {
-					validations.push({
-						type: "error",
-						message: `Minimum ${selectedPolicy.min_notice_days} days notice required. Please select a start date at least ${selectedPolicy.min_notice_days} days from today.`,
-					});
-				}
-			}
-
-			if (
-				selectedPolicy?.max_consecutive_days &&
-				requestedDays > selectedPolicy.max_consecutive_days
-			) {
-				validations.push({
-					type: "error",
-					message: `Maximum ${selectedPolicy.max_consecutive_days} consecutive days allowed for this leave type. You requested ${requestedDays} days.`,
-				});
-			}
-
-			if (selectedBalance && requestedDays > Number(selectedBalance.available_days)) {
-				validations.push({
-					type: "error",
-					message: `Insufficient leave balance. You have ${selectedBalance.available_days} days available, but requested ${requestedDays} days.`,
-				});
-			}
-
-			if (selectedBalance && requestedDays > Number(selectedBalance.available_days) * 0.8) {
-				validations.push({
-					type: "warning",
-					message: `This request will use ${Math.round((requestedDays / Number(selectedBalance.allocated_days)) * 100)}% of your annual leave balance.`,
-				});
-			}
-		}
-
-		// Validate supporting document if required
-		if (
-			selectedLeaveType?.requires_document &&
-			!formData.supporting_document &&
-			!editingApplication?.supporting_document
-		) {
-			validations.push({
-				type: "error",
-				message: "A supporting document is required for this leave type.",
-			});
-		}
-
-		return validations;
-	};
-
-	const getApprovalInfo = () => {
-		const selectedPolicy = getSelectedLeavePolicy();
-
-		if (!selectedPolicy) return null;
-
-		const approvals = [];
-
-		if (selectedPolicy.requires_manager_approval) approvals.push("Manager");
-		if (selectedPolicy.requires_hr_approval) approvals.push("HR");
-
-		return {
-			approvals,
-			message:
-				approvals.length > 0
-					? `This application requires approval from: ${approvals.join(" and ")}`
-					: "No approvals required for this leave type",
-		};
-	};
-
 	useEffect(() => {
-		const fetchData = async () => {
-			if (!selectedInstitution?.id) {
-				return;
-			}
-
-			try {
-				const [leaveTypesData, policiesData] = await Promise.all([
-					getLeaveTypes({ institutionId: selectedInstitution.id }),
-					getLeavePolicies({ institutionId: selectedInstitution.id }),
-				]);
-
-				const activeLeaveTypes = leaveTypesData?.filter((type) => type.is_active !== false) || [];
-
-				setLeaveTypes(activeLeaveTypes);
-				setLeavePolicies(policiesData || []);
-			} catch (error) {
-				toast.error("Failed to load data");
-				setLeaveTypes([]);
-				setLeavePolicies([]);
-			}
-		};
-
 		fetchData();
-	}, [selectedInstitution?.id]);
+	}, [selectedInstitution]);
 
-	const handleAddApplication = async () => {
+	const fetchData = async () => {
 		if (!selectedInstitution?.id) {
-			toast.error("Institution ID is required");
-
 			return;
 		}
-
-		const validations = validateLeaveApplication();
-		const errors = validations.filter((v) => v.type === "error");
-
-		if (errors.length > 0) {
-			toast.error(errors[0].message);
-
-			return;
-		}
-
-		const warnings = validations.filter((v) => v.type === "warning");
-
-		if (warnings.length > 0) {
-			warnings.forEach((warning) => toast.warning(warning.message));
-		}
-
-		setIsSubmitting(true);
 		try {
-			const applicationData: ILeaveRequestFormData = {
-				employee: parseInt(formData.employee),
-				leave_type: parseInt(formData.leave_type),
-				start_date: formData.start_date,
-				end_date: formData.end_date,
-				duration_type: formData.duration_type,
-				reason: formData.reason,
-				handover_notes: formData.handover_notes,
-				status: "pending",
-			};
+			const leaveTypesData = await getLeaveTypes({ institutionId: selectedInstitution.id });
+			const activeLeaveTypes = leaveTypesData?.filter((type) => type.is_active !== false) || [];
 
-			if (formData.supporting_document) {
-				applicationData.supporting_document = formData.supporting_document;
-			}
-
-			const newApplication = await LeaveApplicationsAPI.create({
-				institutionId: selectedInstitution.id,
-				leaveApplicationData: applicationData,
-			});
-
-			if (newApplication) {
-				handleCreateSuccess(newApplication);
-				resetForm();
-				setIsAddDialogOpen(false);
-			} else {
-				toast.error("Failed to create leave application");
-			}
-		} catch (error: any) {
-			let errorMessage =
-				error?.message || error?.detail || "An error occurred while creating the leave application";
-
-			toast.error(errorMessage);
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	const handleUpdateApplication = async () => {
-		if (!editingApplication) return;
-
-		if (!selectedInstitution?.id) {
-			toast.error("Institution ID is required");
-
-			return;
-		}
-
-		const validations = validateLeaveApplication();
-		const errors = validations.filter((v) => v.type === "error");
-
-		if (errors.length > 0) {
-			toast.error(errors[0].message);
-
-			return;
-		}
-
-		setIsSubmitting(true);
-		try {
-			const applicationData: Partial<ILeaveRequestFormData> = {
-				employee: parseInt(formData.employee),
-				leave_type: parseInt(formData.leave_type),
-				start_date: formData.start_date,
-				end_date: formData.end_date,
-				duration_type: formData.duration_type,
-				reason: formData.reason,
-				handover_notes: formData.handover_notes,
-			};
-
-			if (formData.supporting_document) {
-				applicationData.supporting_document = formData.supporting_document;
-			}
-
-			const updatedApplication = await LeaveApplicationsAPI.update({
-				leaveApplicationId: editingApplication.id?.toString() || "",
-				leaveApplicationData: applicationData,
-			});
-
-			if (updatedApplication) {
-				handleUpdateSuccess(updatedApplication);
-				resetForm();
-				setIsEditDialogOpen(false);
-				setEditingApplication(null);
-			} else {
-				toast.error("Failed to update leave application");
-			}
+			setLeaveTypes(activeLeaveTypes);
 		} catch (error) {
-			toast.error("An error occurred while updating the leave application");
-		} finally {
-			setIsSubmitting(false);
+			toast.error("Failed to load data");
+			setLeaveTypes([]);
 		}
 	};
 
@@ -579,50 +268,6 @@ const LeaveApplicationComponent = () => {
 		}
 	};
 
-	const handleEditApplication = (application: ILeaveRequest) => {
-		setEditingApplication(application);
-
-		const formatDateForInput = (dateString: string) => {
-			if (!dateString) return "";
-			const date = new Date(dateString);
-
-			return date.toISOString().split("T")[0];
-		};
-
-		setFormData({
-			employee:
-				typeof application.employee === "object" && application.employee !== null
-					? (application.employee as any).id?.toString() || ""
-					: String(application.employee || ""),
-			leave_type:
-				typeof application.leave_type === "object" && application.leave_type !== null
-					? (application.leave_type as any).id?.toString() || ""
-					: String(application.leave_type || ""),
-			start_date: formatDateForInput(application.start_date),
-			end_date: formatDateForInput(application.end_date),
-			duration_type: application.duration_type || "full_day",
-			reason: application.reason || "",
-			handover_notes: application.handover_notes || "",
-			supporting_document: null,
-		});
-
-		setIsEditDialogOpen(true);
-	};
-	const resetForm = () => {
-		setFormData({
-			employee: "",
-			leave_type: "",
-			start_date: "",
-			end_date: "",
-			duration_type: "full_day",
-			reason: "",
-			handover_notes: "",
-			supporting_document: null,
-		});
-
-		setEditingApplication(null);
-	};
-
 	const getStatusColor = (status: string) => {
 		const colors = {
 			pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
@@ -658,120 +303,6 @@ const LeaveApplicationComponent = () => {
 		return colors[category as keyof typeof colors] || "bg-gray-50 text-gray-700 border-gray-200";
 	};
 
-	const renderDateFields = (isEdit = false) => {
-		const selectedPolicy = getSelectedLeavePolicy();
-		const selectedBalance = getSelectedLeaveBalance();
-		const requestedDays = calculateDaysBetween(formData.start_date, formData.end_date);
-		const validations = validateLeaveApplication();
-		const approvalInfo = getApprovalInfo();
-
-		return (
-			<>
-				<div className="space-y-2">
-					<Label
-						htmlFor={isEdit ? "edit-start_date" : "start_date"}
-						className="text-sm font-medium"
-					>
-						Start Date *
-					</Label>
-					<Input
-						id={isEdit ? "edit-start_date" : "start_date"}
-						type="date"
-						value={formData.start_date}
-						onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-						className="focus:ring-orange-500 focus:border-orange-500"
-						disabled={isSubmitting}
-						min={
-							new Date(Date.now() + (selectedPolicy?.min_notice_days || 10) * 24 * 60 * 60 * 1000)
-								.toISOString()
-								.split("T")[0]
-						}
-					/>
-					{selectedPolicy && (
-						<p className="text-xs text-blue-600">
-							<Info className="h-3 w-3 inline mr-1" />
-							Minimum {selectedPolicy.min_notice_days} days notice required
-						</p>
-					)}
-				</div>
-
-				<div className="space-y-2">
-					<Label htmlFor={isEdit ? "edit-end_date" : "end_date"} className="text-sm font-medium">
-						End Date *
-					</Label>
-					<Input
-						id={isEdit ? "edit-end_date" : "end_date"}
-						type="date"
-						value={formData.end_date}
-						onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-						className="focus:ring-orange-500 focus:border-orange-500"
-						disabled={isSubmitting}
-						min={formData.start_date}
-					/>
-					{formData.start_date && formData.end_date && requestedDays > 0 && (
-						<div className="text-xs space-y-1">
-							<p className="text-gray-600">
-								<Calendar className="h-3 w-3 inline mr-1" />
-								Duration: {requestedDays} {requestedDays === 1 ? "day" : "days"}
-							</p>
-							{selectedBalance && (
-								<p className="text-blue-600">
-									Available balance: {selectedBalance.available_days} days
-								</p>
-							)}
-						</div>
-					)}
-				</div>
-
-				{selectedPolicy && (
-					<div className="md:col-span-2 space-y-2">
-						<div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-							<h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
-								<Info className="h-4 w-4 mr-2" />
-								Leave Policy Information
-							</h4>
-							<div className="space-y-1 text-xs text-blue-700">
-								<p>• Notice Period: {selectedPolicy.min_notice_days} days minimum</p>
-								{selectedPolicy.max_consecutive_days && (
-									<p>• Maximum Consecutive Days: {selectedPolicy.max_consecutive_days} days</p>
-								)}
-								{approvalInfo && <p>• {approvalInfo.message}</p>}
-							</div>
-						</div>
-					</div>
-				)}
-
-				{validations.length > 0 && (
-					<div className="md:col-span-2 space-y-2">
-						{validations.map((validation, index) => (
-							<div
-								key={index}
-								className={`flex items-start gap-2 p-3 rounded-lg ${
-									validation.type === "error"
-										? "bg-red-50 border border-red-200"
-										: "bg-amber-50 border border-amber-200"
-								}`}
-							>
-								{validation.type === "error" ? (
-									<AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-								) : (
-									<Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-								)}
-								<p
-									className={`text-sm font-medium ${
-										validation.type === "error" ? "text-red-800" : "text-amber-800"
-									}`}
-								>
-									{validation.message}
-								</p>
-							</div>
-						))}
-					</div>
-				)}
-			</>
-		);
-	};
-
 	if (!selectedInstitution?.id) {
 		return (
 			<div className="min-h-screen bg-white flex items-center justify-center">
@@ -802,19 +333,19 @@ const LeaveApplicationComponent = () => {
 				</div>
 
 				{/* Search and Filters */}
-				<div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-between">
-					<div className="relative">
+				<div className="flex flex-col sm:flex-row gap-4 items-center sm:items-center justify-start">
+					<div className="relative !w-full !max-w-md md:!max-w-lg">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
 						<Input
 							placeholder="Search leave applications..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-10"
+							className="pl-10 "
 						/>
 					</div>
 					<div className="flex gap-2">
 						<Select value={statusFilter} onValueChange={setStatusFilter}>
-							<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+							<SelectTrigger className="w-full sm:w-[130px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
 								<SelectValue placeholder="All Statuses" />
 							</SelectTrigger>
 							<SelectContent>
@@ -827,7 +358,7 @@ const LeaveApplicationComponent = () => {
 							</SelectContent>
 						</Select>
 						<Select value={leaveTypeFilter} onValueChange={setLeaveTypeFilter}>
-							<SelectTrigger className="w-full sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none">
+							<SelectTrigger className="w-full sm:w-[150px] border-none bg-transparent focus:outline-none focus:ring-0 shadow-none rounded-xl">
 								<SelectValue placeholder="All Leave Types" />
 							</SelectTrigger>
 							<SelectContent>
@@ -839,163 +370,6 @@ const LeaveApplicationComponent = () => {
 								))}
 							</SelectContent>
 						</Select>
-					</div>
-					<div className="flex items-center gap-2">
-						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_LEAVE_APPLICATIONS}>
-							<Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-								<DialogTrigger asChild>
-									<Button disabled={!selectedInstitution?.id} className="rounded-[12px]">
-										<Plus className="h-4 w-4 mr-2" />
-										New Application
-									</Button>
-								</DialogTrigger>
-								<DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-									<DialogHeader>
-										<DialogTitle className="text-xl font-semibold">
-											New Leave Application
-										</DialogTitle>
-										<DialogDescription>Submit a new leave application request.</DialogDescription>
-									</DialogHeader>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 items-end">
-										<div className="space-y-2">
-											<Label htmlFor="employee" className="text-sm font-medium">
-												Employee *
-											</Label>
-											<EmployeeSearchableSelect
-												value={[formData.employee]}
-												onValueChange={(value) =>
-													setFormData({ ...formData, employee: value.toString() })
-												}
-												disabled={isSubmitting}
-												placeholder="Search and select employee"
-												showEmployeeId={true}
-												showDepartment={false}
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label htmlFor="leave_type" className="text-sm font-medium">
-												Leave Type *
-											</Label>
-											<Select
-												value={formData.leave_type}
-												onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-												disabled={isSubmitting}
-											>
-												<SelectTrigger className="">
-													<SelectValue placeholder="Select leave type" />
-												</SelectTrigger>
-												<SelectContent>
-													{leaveTypes.length > 0 ? (
-														leaveTypes.map((type) => (
-															<SelectItem key={type.id} value={type.id.toString()}>
-																<div className="flex flex-col">
-																	<span>{type.name}</span>
-																	<span className="text-xs text-gray-500">
-																		{type.max_days_per_year} days/year • {type.category}
-																	</span>
-																</div>
-															</SelectItem>
-														))
-													) : (
-														<div className="px-2 py-1.5 text-sm text-gray-500">
-															No leave types available
-														</div>
-													)}
-												</SelectContent>
-											</Select>
-										</div>
-
-										{renderDateFields()}
-
-										<div className="space-y-2">
-											<Label htmlFor="duration_type" className="text-sm font-medium">
-												Duration Type
-											</Label>
-											<Select
-												value={formData.duration_type}
-												onValueChange={(value) =>
-													setFormData({ ...formData, duration_type: value })
-												}
-												disabled={isSubmitting}
-											>
-												<SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													{DURATION_TYPES.map((type) => (
-														<SelectItem key={type.value} value={type.value}>
-															{type.label}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-										<div className="space-y-2 md:col-span-2">
-											<Label htmlFor="reason" className="text-sm font-medium">
-												Reason *
-											</Label>
-											<Textarea
-												id="reason"
-												value={formData.reason}
-												onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-												rows={3}
-												className="focus:ring-orange-500 focus:border-orange-500"
-												disabled={isSubmitting}
-											/>
-										</div>
-										<div className="space-y-2 md:col-span-2">
-											<Label htmlFor="handover_notes" className="text-sm font-medium">
-												Handover Notes
-											</Label>
-											<Textarea
-												id="handover_notes"
-												value={formData.handover_notes}
-												onChange={(e) =>
-													setFormData({ ...formData, handover_notes: e.target.value })
-												}
-												rows={2}
-												placeholder="Work delegation and handover details..."
-												className="focus:ring-orange-500 focus:border-orange-500"
-												disabled={isSubmitting}
-											/>
-										</div>
-										{getSelectedLeaveType()?.requires_document && (
-											<div className="space-y-2 md:col-span-2">
-												<Label htmlFor="supporting_document" className="text-sm font-medium">
-													Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
-												</Label>
-												<Input
-													id="supporting_document"
-													type="file"
-													onChange={(e) =>
-														setFormData({
-															...formData,
-															supporting_document: e.target.files?.[0] || null,
-														})
-													}
-													className="focus:ring-orange-500 focus:border-orange-500"
-													disabled={isSubmitting}
-												/>
-												<p className="text-xs text-gray-500">
-													Upload any supporting documents (medical certificates, etc.)
-												</p>
-											</div>
-										)}
-									</div>
-									<Button
-										onClick={handleAddApplication}
-										disabled={
-											isSubmitting ||
-											!leaveTypes.length ||
-											validateLeaveApplication().filter((v) => v.type === "error").length > 0
-										}
-									>
-										{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-										{isSubmitting ? "Creating..." : "Submit Application"}
-									</Button>
-								</DialogContent>
-							</Dialog>
-						</ProtectedComponent>
 					</div>
 				</div>
 
@@ -1018,11 +392,6 @@ const LeaveApplicationComponent = () => {
 									<div className="text-center py-12">
 										<FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
 										<h3 className="text-lg font-semibold mb-2">No leave applications found</h3>
-										<p className="text-muted-foreground mb-4">
-											{searchTerm
-												? "No leave applications match your search."
-												: "Get started by creating your first leave application."}
-										</p>
 									</div>
 								);
 							}
@@ -1218,17 +587,6 @@ const LeaveApplicationComponent = () => {
 																		</ProtectedComponent>
 
 																		<ProtectedComponent
-																			permissionCode={PERMISSION_CODES.CAN_EDIT_LEAVE_APPLICATIONS}
-																		>
-																			<DropdownMenuItem
-																				onClick={() => handleEditApplication(application)}
-																			>
-																				<Edit className="h-4 w-4 mr-2" />
-																				Edit
-																			</DropdownMenuItem>
-																		</ProtectedComponent>
-
-																		<ProtectedComponent
 																			permissionCode={
 																				PERMISSION_CODES.CAN_DELETE_LEAVE_APPLICATIONS
 																			}
@@ -1275,160 +633,6 @@ const LeaveApplicationComponent = () => {
 					</PaginatedTableWrapper>
 				</div>
 			</div>
-
-			{/* Edit Dialog */}
-			<Dialog
-				open={isEditDialogOpen}
-				onOpenChange={(open) => {
-					setIsEditDialogOpen(open);
-					if (!open) {
-						resetForm();
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle className="text-xl font-semibold">Edit Leave Application</DialogTitle>
-						<DialogDescription>Make changes to the leave application.</DialogDescription>
-					</DialogHeader>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="edit-employee" className="text-sm font-medium">
-								Employee *
-							</Label>
-							<EmployeeSearchableSelect
-								value={[formData.employee]}
-								onValueChange={(value) => setFormData({ ...formData, employee: value.toString() })}
-								disabled={isSubmitting}
-								placeholder="Search and select employee"
-								showEmployeeId={true}
-								showDepartment={false}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="edit-leave_type" className="text-sm font-medium">
-								Leave Type *
-							</Label>
-							<Select
-								value={formData.leave_type}
-								onValueChange={(value) => setFormData({ ...formData, leave_type: value })}
-								disabled={isSubmitting}
-							>
-								<SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-									<SelectValue placeholder="Select leave type" />
-								</SelectTrigger>
-								<SelectContent>
-									{leaveTypes.map((type) => (
-										<SelectItem key={type.id} value={type.id.toString()}>
-											<div className="flex flex-col">
-												<span>{type.name}</span>
-												<span className="text-xs text-gray-500">
-													{type.max_days_per_year} days/year • {type.category}
-												</span>
-											</div>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						{renderDateFields(true)}
-
-						<div className="space-y-2">
-							<Label htmlFor="edit-duration_type" className="text-sm font-medium">
-								Duration Type
-							</Label>
-							<Select
-								value={formData.duration_type}
-								onValueChange={(value) => setFormData({ ...formData, duration_type: value })}
-								disabled={isSubmitting}
-							>
-								<SelectTrigger className="focus:ring-orange-500 focus:border-orange-500">
-									<SelectValue placeholder="Select duration type" />
-								</SelectTrigger>
-								<SelectContent>
-									{DURATION_TYPES.map((type) => (
-										<SelectItem key={type.value} value={type.value}>
-											{type.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="space-y-2 md:col-span-2">
-							<Label htmlFor="edit-reason" className="text-sm font-medium">
-								Reason *
-							</Label>
-							<Textarea
-								id="edit-reason"
-								value={formData.reason}
-								onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-								rows={3}
-								className="focus:ring-orange-500 focus:border-orange-500"
-								disabled={isSubmitting}
-								placeholder="Enter reason for leave..."
-							/>
-						</div>
-						<div className="space-y-2 md:col-span-2">
-							<Label htmlFor="edit-handover_notes" className="text-sm font-medium">
-								Handover Notes
-							</Label>
-							<Textarea
-								id="edit-handover_notes"
-								value={formData.handover_notes}
-								onChange={(e) => setFormData({ ...formData, handover_notes: e.target.value })}
-								rows={2}
-								className="focus:ring-orange-500 focus:border-orange-500"
-								disabled={isSubmitting}
-								placeholder="Work delegation and handover details..."
-							/>
-						</div>
-						{getSelectedLeaveType()?.requires_document && (
-							<div className="space-y-2 md:col-span-2">
-								<Label htmlFor="edit-supporting_document" className="text-sm font-medium">
-									Supporting Document {getSelectedLeaveType()?.requires_document ? "*" : ""}
-								</Label>
-								<Input
-									id="edit-supporting_document"
-									type="file"
-									onChange={(e) =>
-										setFormData({ ...formData, supporting_document: e.target.files?.[0] || null })
-									}
-									className="focus:ring-orange-500 focus:border-orange-500"
-									disabled={isSubmitting}
-								/>
-								<p className="text-xs text-gray-500">
-									Upload a new document to replace the existing one (if any)
-								</p>
-							</div>
-						)}
-						{editingApplication?.supporting_document &&
-							getSelectedLeaveType()?.requires_document && (
-								<div className="md:col-span-2">
-									<div className="p-2 bg-gray-50 rounded-lg border">
-										<Label className="text-xs font-medium text-gray-600">Current Document:</Label>
-										<div className="flex items-center gap-2 mt-1">
-											<FileText className="h-4 w-4 text-gray-600" />
-											<span className="text-sm text-gray-700">
-												{renderSupportingDocumentName(editingApplication.supporting_document)}
-											</span>
-										</div>
-									</div>
-								</div>
-							)}
-					</div>
-					<Button
-						onClick={handleUpdateApplication}
-						disabled={
-							isSubmitting ||
-							validateLeaveApplication().filter((v) => v.type === "error").length > 0
-						}
-					>
-						{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-						{isSubmitting ? "Updating..." : "Update Application"}
-					</Button>
-				</DialogContent>
-			</Dialog>
 
 			{/* Confirmation Dialog */}
 			<Dialog
@@ -1495,4 +699,4 @@ const LeaveApplicationComponent = () => {
 	);
 };
 
-export default LeaveApplicationComponent;
+export default LeaveApplicationsPage;

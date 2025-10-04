@@ -1014,7 +1014,7 @@ export type DurationType = "full_day" | "half_day" | "multiple_days";
 
 export interface ILeaveRequest {
 	id?: number | string;
-	employee: number;
+	employee?: number;
 	leave_type: number;
 	approved_by: number;
 	start_date: string;

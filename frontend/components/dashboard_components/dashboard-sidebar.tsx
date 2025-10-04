@@ -288,7 +288,7 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/leave" },
 				{ title: "Leave Types", href: "/leave/leave-types" },
-				{ title: "Assigned Leave", href: "#" },
+				{ title: "Assigned Leave", href: "/leave/leave-assignment" },
 				// { title: "Leave Allocation Request", href: "#" },
 				// { title: "Compensatory Leave Requests", href: "#" },
 				{ title: "Leave Policy", href: "/leave/leave-policy" },
