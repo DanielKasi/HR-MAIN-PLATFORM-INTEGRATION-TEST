@@ -99,6 +99,7 @@ class LeaveApplicationSerializer(BaseApprovableSerializer):
         end_date = attrs.get('end_date')
         employee = attrs.get('employee')
         leave_type = attrs.get('leave_type')
+        duration_type = attrs.get('duration_type', 'full_day')
         
         # Validate dates
         if start_date and end_date:
@@ -127,32 +128,44 @@ class LeaveApplicationSerializer(BaseApprovableSerializer):
         # Validate leave policy constraints
         if employee and leave_type and start_date:
             try:
+                # Fetch the active policy for the leave type
                 policy = LeavePolicy.objects.filter(leave_type=leave_type, is_active=True).first()
-                
-                # Check minimum notice period
-                notice_days = (start_date - timezone.now().date()).days
-                if notice_days < policy.min_notice_days:
-                    raise serializers.ValidationError(
-                        {"error": f"Minimum {policy.min_notice_days} days notice required"}
-                    )
-                
-                # Check maximum consecutive days
-                if policy.max_consecutive_days:
-                    total_days = LeaveCalculator.calculate_leave_days(
-                        start_date, end_date, attrs.get('duration_type', 'full_day')
-                    )
-                    if total_days > policy.max_consecutive_days:
-                        raise serializers.ValidationError(
-                            {"error": f"Maximum {policy.max_consecutive_days} consecutive days allowed"}
-                        )
-                
-                # Check probation period
-                if policy.applicable_after_probation_months > 0:
-                    if hasattr(employee, 'hire_date') and employee.hire_date:
-                        months_employed = (timezone.now().date() - employee.hire_date).days / 30.44
-                        if months_employed < policy.applicable_after_probation_months:
+
+                if policy:
+                    # Check minimum notice period
+                    if hasattr(policy, 'min_notice_days') and policy.min_notice_days is not None:
+                        notice_days = (start_date - timezone.now().date()).days
+                        if notice_days < policy.min_notice_days:
                             raise serializers.ValidationError(
-                                {"error": f"Leave available after {policy.applicable_after_probation_months} months of employment"}
+                                {"error": f"Minimum {policy.min_notice_days} days notice required"}
+                            )
+
+                    # Check maximum consecutive days
+                    if hasattr(policy, 'max_consecutive_days') and policy.max_consecutive_days is not None:
+                        try:
+                            total_days = LeaveCalculator.calculate_leave_days(
+                                start_date, end_date, duration_type
+                            )
+                            if total_days > policy.max_consecutive_days:
+                                raise serializers.ValidationError(
+                                    {"error": f"Maximum {policy.max_consecutive_days} consecutive days allowed"}
+                                )
+                        except Exception as e:
+                            raise serializers.ValidationError(
+                                {"error": f"Error calculating leave days: {str(e)}"}
+                            )
+
+                    # Check probation period
+                    if hasattr(policy, 'applicable_after_probation_months') and policy.applicable_after_probation_months is not None and policy.applicable_after_probation_months > 0:
+                        if hasattr(employee, 'hire_date') and employee.hire_date:
+                            months_employed = (timezone.now().date() - employee.hire_date).days / 30.44
+                            if months_employed < policy.applicable_after_probation_months:
+                                raise serializers.ValidationError(
+                                    {"error": f"Leave available after {policy.applicable_after_probation_months} months of employment"}
+                                )
+                        else:
+                            raise serializers.ValidationError(
+                                {"error": "Employee hire date is required to check probation period"}
                             )
             
             except LeavePolicy.DoesNotExist:
