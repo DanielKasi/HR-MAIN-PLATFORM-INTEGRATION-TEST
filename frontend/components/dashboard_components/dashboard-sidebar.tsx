@@ -241,7 +241,7 @@ export default function DashboardSideBar() {
 						// },
 						{
 							title: "Organization Chart",
-							href: "#",
+							href: "/organization-chart",
 							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 						},
 					]
@@ -260,7 +260,7 @@ export default function DashboardSideBar() {
 						// { title: "Rotating Work Type Assign", href: "#" },
 						{ title: "Disciplinary Actions", href: "/employees/discipline" },
 						// { title: "Policies", href: "#" },
-						{ title: "Organization Chart", href: "#" },
+						{ title: "Organization Chart", href: "/organization-chart" },
 					],
 			// requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 		},
