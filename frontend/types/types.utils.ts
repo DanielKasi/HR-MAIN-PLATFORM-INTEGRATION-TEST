@@ -350,6 +350,14 @@ export interface IPayslip {
 	items: IPayrollItems;
 }
 
+export interface IRecentHire {
+	name: string;
+	position: string;
+	department: string;
+	status: "active";
+	created_at: string;
+}
+
 export interface IRecruitmentDashboard {
 	total_job_positions: number;
 	active_job_positions: number;
@@ -380,6 +388,7 @@ export interface IRecruitmentDashboard {
 		date: string;
 		count: number;
 	}>;
+	recent_hires: IRecentHire[];
 }
 
 export interface DashboardError {
@@ -387,6 +396,19 @@ export interface DashboardError {
 }
 
 export type DashboardResponse = IProjectDashboard | DashboardError;
+
+export interface ILatecomer {
+	employee: string;
+	department: string;
+	timein: string;
+}
+
+export interface IFailedSpotcheckToday {
+	employee: string;
+	department: string;
+	time: string;
+	status: string;
+}
 export interface IAttendanceDashboard {
 	spot_checks_by_status: { [key: string]: number } | { [key: string]: number }[];
 	total_attendance_records: number;
@@ -394,14 +416,19 @@ export interface IAttendanceDashboard {
 		status: string;
 		count: number;
 	}>;
+	attendance_over_time: Array<{ month: string; late: number; early: number; leave: number }>;
 	average_overtime_hours: number;
 	average_late_minutes: number;
 	average_early_checkout_minutes: number;
 	spot_check_response_rate: number;
-	attendance_over_time: Array<{
-		month: string;
-		count: number;
-	}>;
+	employees_expected_today?: number;
+	employees_present_today?: number;
+	employees_late_today?: number;
+	employees_absent_today?: number;
+	spotchecks_pass_rate?: number;
+	spotchecks_failure_rate?: number;
+	late_comers_today: ILatecomer[];
+	failed_spotchecks_today: IFailedSpotcheckToday[];
 }
 
 export interface IFeedbackField {

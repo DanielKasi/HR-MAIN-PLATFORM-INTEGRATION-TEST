@@ -27,6 +27,7 @@ export default function RecruitmentDashboard() {
 		average_time_to_hire_days: 0,
 		applications_sources: [],
 		applications_over_time: [],
+		recent_hires: [],
 	});
 	const [loading, setLoading] = useState(true);
 
@@ -152,7 +153,9 @@ export default function RecruitmentDashboard() {
 			</div>
 
 			{/* Bottom Row */}
-			{data.applications_over_time.length > 0 && <RecentHiresTable className="!border-none" />}
+			{data.applications_over_time.length > 0 && (
+				<RecentHiresTable data={data.recent_hires} className="!border-none" />
+			)}
 		</main>
 	);
 }
