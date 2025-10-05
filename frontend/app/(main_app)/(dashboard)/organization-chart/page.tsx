@@ -16,6 +16,22 @@ import apiRequest from "@/lib/apiRequest";
 
 import type { IOrganizationNode, IOrganizationChart } from "@/types/types.utils";
 
+// Extended interface to match your API response
+interface IApiPosition {
+	id: number;
+	name: string;
+	description: string;
+	department: number;
+	reports_to: number | null;
+	subordinates: IApiPosition[];
+	salary_min: string;
+	salary_max: string;
+	job_position_status: string;
+	approval_status: string;
+	created_at: string;
+	updated_at: string;
+}
+
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -26,6 +42,52 @@ export default function OrganizationChartPage() {
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
+	// Data transformation functions
+	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
+		// Build hierarchy recursively using the subordinates array
+		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
+			return {
+				id: position.id,
+				name: position.name,
+				position: position.name, // Using name as position
+				department: `Department ${position.department}`,
+				profile_picture: undefined, // Changed from null to undefined
+				subordinates: position.subordinates?.map(buildHierarchy) || [],
+				subordinate_count: position.subordinates?.length || 0,
+			};
+		};
+
+		// Find root nodes (positions with no reports_to)
+		const rootNodes = positions.filter((pos) => pos.reports_to === null);
+
+		// Create virtual root if multiple root nodes exist
+		const virtualRoot: IOrganizationNode = {
+			id: -1,
+			name: selectedInstitution?.institution_name || "Organization",
+			position: "Root",
+			department: "Executive",
+			profile_picture: undefined, // Changed from null to undefined
+			subordinates: rootNodes.map(buildHierarchy),
+			subordinate_count: rootNodes.length,
+		};
+
+		// Calculate levels
+		const calculateLevels = (node: IOrganizationNode): number => {
+			if (!node.subordinates || node.subordinates.length === 0) return 1;
+			return 1 + Math.max(...node.subordinates.map(calculateLevels));
+		};
+
+		// Calculate unique departments
+		const uniqueDepartments = new Set(positions.map((p) => p.department)).size;
+
+		return {
+			root: virtualRoot,
+			total_employees: positions.length,
+			total_departments: uniqueDepartments,
+			levels: calculateLevels(virtualRoot),
+		};
+	};
+
 	const fetchOrganizationChart = async () => {
 		if (!selectedInstitution) {
 			toast.error("No organization selected");
@@ -35,16 +97,24 @@ export default function OrganizationChartPage() {
 		setLoading(true);
 		try {
 			const response = await apiRequest.get("/institution/organization-chart/");
-			setChartData(response.data as IOrganizationChart);
 
-			// Auto-expand first level
-			if (response.data?.root?.subordinates) {
-				const firstLevelIds = response.data.root.subordinates.map(
+			console.log("API Response:", response.data); // Debug log
+
+			// Transform API data to match expected format
+			const transformedData = transformToOrganizationChart(response.data.results);
+			setChartData(transformedData);
+
+			console.log("Transformed Data:", transformedData); // Debug log
+
+			// Auto-expand first level (virtual root's direct subordinates)
+			if (transformedData?.root?.subordinates) {
+				const firstLevelIds = transformedData.root.subordinates.map(
 					(node: IOrganizationNode) => node.id,
 				);
 				setExpandedNodes(new Set(firstLevelIds));
 			}
 		} catch (error) {
+			console.error("Error fetching organization chart:", error);
 			showErrorToast({ error, defaultMessage: "Failed to load organization chart" });
 		} finally {
 			setLoading(false);
@@ -86,15 +156,17 @@ export default function OrganizationChartPage() {
 	const renderNode = (node: IOrganizationNode, level: number = 0) => {
 		const hasSubordinates = node.subordinates && node.subordinates.length > 0;
 		const isExpanded = expandedNodes.has(node.id);
+		const isVirtualRoot = node.id === -1;
 
 		return (
 			<div key={node.id} className="relative">
 				{/* Node Card */}
 				<Card
 					className={`
-						shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer
-						${level === 0 ? "border-2 border-primary" : ""}
-					`}
+            shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer
+            ${level === 0 ? "border-2 border-primary" : ""}
+            ${isVirtualRoot ? "bg-primary/5 border-primary/30" : ""}
+          `}
 					onClick={() => hasSubordinates && toggleNode(node.id)}
 				>
 					<CardContent className="p-4">
@@ -115,7 +187,7 @@ export default function OrganizationChartPage() {
 							{/* Details */}
 							<div className="flex-1 min-w-0">
 								<h3 className="font-semibold text-sm truncate">{node.name}</h3>
-								{node.position && (
+								{node.position && !isVirtualRoot && (
 									<p className="text-xs text-muted-foreground truncate">{node.position}</p>
 								)}
 								{node.department && (
@@ -123,6 +195,9 @@ export default function OrganizationChartPage() {
 										<Building2 className="h-3 w-3" />
 										{node.department}
 									</p>
+								)}
+								{isVirtualRoot && (
+									<p className="text-xs text-primary font-medium mt-1">Organization Root</p>
 								)}
 								{hasSubordinates && (
 									<p className="text-xs text-primary font-medium mt-2">
@@ -214,7 +289,7 @@ export default function OrganizationChartPage() {
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="text-2xl font-bold">{chartData.total_employees}</div>
-									<p className="text-sm text-muted-foreground">Total Employees</p>
+									<p className="text-sm text-muted-foreground">Total Positions</p>
 								</div>
 								<Users className="h-8 w-8 text-primary" />
 							</div>
