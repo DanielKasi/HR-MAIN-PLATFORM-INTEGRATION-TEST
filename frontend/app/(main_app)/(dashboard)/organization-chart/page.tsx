@@ -14,26 +14,16 @@ import { showErrorToast } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import apiRequest from "@/lib/apiRequest";
 
-import type { IOrganizationNode, IOrganizationChart } from "@/types/types.utils";
-
-// Extended interface to match your API response
-interface IApiPosition {
-	id: number;
-	name: string;
-	description: string;
-	department: number;
-	reports_to: number | null;
-	subordinates: IApiPosition[];
-	salary_min: string;
-	salary_max: string;
-	job_position_status: string;
-	approval_status: string;
-	created_at: string;
-	updated_at: string;
-}
+import type {
+	IOrganizationNode,
+	IOrganizationChart,
+	IApiPosition,
+	IDefaultData,
+} from "@/types/types.utils";
 
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);
+	const [defaultData, setDefaultData] = useState<IDefaultData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
 
@@ -42,31 +32,63 @@ export default function OrganizationChartPage() {
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
-	// Data transformation functions
+	const fetchDefaultData = async () => {
+		try {
+			const response = await apiRequest.get("/institution/default-data/");
+			console.log("Default data response:", response.data);
+			setDefaultData(response.data);
+			return response.data;
+		} catch (error) {
+			console.error("Error fetching default data:", error);
+			return null;
+		}
+	};
+
+	// Get department name from default data or fallback
+	const getDepartmentName = (departmentId: number): string => {
+		if (defaultData?.departments) {
+			const department = defaultData.departments.find((dept) => dept.id === departmentId);
+			if (department) {
+				return department.name;
+			}
+		}
+
+		// Fallback mapping for known departments
+		const fallbackMap: { [key: number]: string } = {
+			81: "Human Resources",
+			82: "Information Technology",
+			83: "Finance",
+			84: "Operations",
+		};
+
+		return fallbackMap[departmentId] || `Department ${departmentId}`;
+	};
+
 	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
-		// Build hierarchy recursively using the subordinates array
+		console.log("Transforming with department data:", defaultData?.departments);
+
 		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
+			const departmentName = getDepartmentName(position.department);
+
 			return {
 				id: position.id,
 				name: position.name,
-				position: position.name, // Using name as position
-				department: `Department ${position.department}`,
-				profile_picture: undefined, // Changed from null to undefined
+				position: position.name,
+				department: departmentName,
+				profile_picture: undefined,
 				subordinates: position.subordinates?.map(buildHierarchy) || [],
 				subordinate_count: position.subordinates?.length || 0,
 			};
 		};
 
-		// Find root nodes (positions with no reports_to)
 		const rootNodes = positions.filter((pos) => pos.reports_to === null);
 
-		// Create virtual root if multiple root nodes exist
 		const virtualRoot: IOrganizationNode = {
 			id: -1,
 			name: selectedInstitution?.institution_name || "Organization",
-			position: "Root",
+			position: "CEO/Executive",
 			department: "Executive",
-			profile_picture: undefined, // Changed from null to undefined
+			profile_picture: undefined,
 			subordinates: rootNodes.map(buildHierarchy),
 			subordinate_count: rootNodes.length,
 		};
@@ -77,8 +99,8 @@ export default function OrganizationChartPage() {
 			return 1 + Math.max(...node.subordinates.map(calculateLevels));
 		};
 
-		// Calculate unique departments
-		const uniqueDepartments = new Set(positions.map((p) => p.department)).size;
+		// Calculate unique departments using proper names
+		const uniqueDepartments = new Set(positions.map((p) => getDepartmentName(p.department))).size;
 
 		return {
 			root: virtualRoot,
@@ -96,15 +118,16 @@ export default function OrganizationChartPage() {
 
 		setLoading(true);
 		try {
-			const response = await apiRequest.get("/institution/organization-chart/");
+			// Fetch default data first, then organization chart
+			const [defaultDataResponse, chartResponse] = await Promise.all([
+				fetchDefaultData(),
+				apiRequest.get("/institution/organization-chart/"),
+			]);
 
-			console.log("API Response:", response.data); // Debug log
+			console.log("Organization chart response:", chartResponse.data);
 
-			// Transform API data to match expected format
-			const transformedData = transformToOrganizationChart(response.data.results);
+			const transformedData = transformToOrganizationChart(chartResponse.data.results);
 			setChartData(transformedData);
-
-			console.log("Transformed Data:", transformedData); // Debug log
 
 			// Auto-expand first level (virtual root's direct subordinates)
 			if (transformedData?.root?.subordinates) {
@@ -197,7 +220,7 @@ export default function OrganizationChartPage() {
 									</p>
 								)}
 								{isVirtualRoot && (
-									<p className="text-xs text-primary font-medium mt-1">Organization Root</p>
+									<p className="text-xs text-primary font-medium mt-1">Executive Leadership</p>
 								)}
 								{hasSubordinates && (
 									<p className="text-xs text-primary font-medium mt-2">

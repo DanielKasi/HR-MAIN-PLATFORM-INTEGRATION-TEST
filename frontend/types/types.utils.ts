@@ -532,6 +532,27 @@ export interface IOrganizationChart {
 	levels: number;
 }
 
+export interface IDefaultData {
+	departments?: Array<{ id: number; name: string }>;
+
+	[key: string]: any;
+}
+
+export interface IApiPosition {
+	id: number;
+	name: string;
+	description: string;
+	department: number;
+	reports_to: number | null;
+	subordinates: IApiPosition[];
+	salary_min: string;
+	salary_max: string;
+	job_position_status: string;
+	approval_status: string;
+	created_at: string;
+	updated_at: string;
+}
+
 export type IGender = "male" | "female" | "other";
 export type IMaritalStatus = "single" | "married" | "divorced" | "widowed";
 

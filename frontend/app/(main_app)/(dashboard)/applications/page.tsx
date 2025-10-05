@@ -2707,7 +2707,6 @@ export default function ApplicationsPage() {
 														<span className="text-sm font-medium text-primary">
 															Click to Upload {doc.document_name}
 														</span>
-														<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
 													</label>
 
 													{formData.required_document_files?.[doc.document_name] && (
