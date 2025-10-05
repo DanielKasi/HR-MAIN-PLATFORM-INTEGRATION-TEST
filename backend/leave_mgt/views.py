@@ -231,6 +231,8 @@ class LeaveApplicationListCreateAPIView(APIView, SortableAPIMixin):
         employee_id = request.query_params.get("employee_id")
         status_filter = request.query_params.get("status")
         leave_type_id = request.query_params.get("leave_type_id")
+        assigned_filter = request.query_params.get("assigned")
+        user_id = request.query_params.get("user_id", None)
 
         if employee_id:
             queryset = queryset.filter(employee_id=employee_id)
@@ -238,6 +240,13 @@ class LeaveApplicationListCreateAPIView(APIView, SortableAPIMixin):
             queryset = queryset.filter(status=status_filter)
         if leave_type_id:
             queryset = queryset.filter(leave_type_id=leave_type_id)
+        if assigned_filter == "true":
+            queryset = queryset.filter(
+                employee__user__id__ne=F("created_by__id"),
+                created_by__isnull=False
+            )   
+        if user_id:
+            queryset = queryset.filter(created_by__id=user_id)    
 
         queryset = queryset.order_by("-start_date", "-created_at")
 
