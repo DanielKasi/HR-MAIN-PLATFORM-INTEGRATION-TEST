@@ -229,7 +229,7 @@ export const downloadFile = (filePath: string, fileName: string) => {
 
 export const getFileUrl = (filePath: string) => {
 	if (!filePath) {
-		return "";
+		return "#";
 	}
 	if (filePath.startsWith("http")) {
 		return filePath;
