@@ -14,26 +14,7 @@ import { showErrorToast } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import apiRequest from "@/lib/apiRequest";
 
-interface IOrganizationNode {
-	id: number;
-	name: string;
-	position?: string;
-	department?: string;
-	employee_id?: string;
-	email?: string;
-	phone_number?: string;
-	profile_picture?: string;
-	reports_to?: number;
-	subordinates?: IOrganizationNode[];
-	subordinate_count?: number;
-}
-
-interface IOrganizationChart {
-	root: IOrganizationNode;
-	total_employees: number;
-	total_departments: number;
-	levels: number;
-}
+import type { IOrganizationNode, IOrganizationChart } from "@/types/types.utils";
 
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);

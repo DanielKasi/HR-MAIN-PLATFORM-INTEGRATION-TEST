@@ -511,6 +511,27 @@ export interface User {
 	permissions?: string;
 }
 
+export interface IOrganizationNode {
+	id: number;
+	name: string;
+	position?: string;
+	department?: string;
+	employee_id?: string;
+	email?: string;
+	phone_number?: string;
+	profile_picture?: string;
+	reports_to?: number;
+	subordinates?: IOrganizationNode[];
+	subordinate_count?: number;
+}
+
+export interface IOrganizationChart {
+	root: IOrganizationNode;
+	total_employees: number;
+	total_departments: number;
+	levels: number;
+}
+
 export type IGender = "male" | "female" | "other";
 export type IMaritalStatus = "single" | "married" | "divorced" | "widowed";
 
