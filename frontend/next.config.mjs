@@ -1,4 +1,10 @@
 let userConfig = undefined;
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Polyfill __dirname for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 try {
 	// try to import ESM first
@@ -28,6 +34,7 @@ const nextConfig = {
 		parallelServerBuildTraces: true,
 		parallelServerCompiles: true,
 	},
+	outputFileTracingRoot: path.join(__dirname, "./")
 };
 
 if (userConfig) {
