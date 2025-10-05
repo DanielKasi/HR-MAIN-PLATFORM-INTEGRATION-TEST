@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { AttendanceAPI, fetchAttendanceData, showErrorToast } from "@/lib/utils";
 import { IAttendance, IEmployee } from "@/types/types.utils";
 import { selectSelectedInstitution } from "@/store/auth/selectors";
-import { AttendanceRecordsTable } from "@/components/attendance/attendance-records-table";
+import { AttendanceRecordsTable } from "@/components/attendance/_components/attendance-records-table";
 import { CheckInModal } from "../checkin-modal";
 import { CheckOutModal } from "../checkout-modal";
 import { getCurrentUserLocation, isToday } from "@/lib/helpers";
@@ -162,35 +162,20 @@ const SingleEmployeeAttendance: React.FC<SingleEmployeeAttendanceProps> = ({
 						<TableHeader>
 							<TableRow>
 								<TableHead>Date</TableHead>
-								<TableHead>Name</TableHead>
-								<TableHead>Early checkout</TableHead>
-								<TableHead>Late</TableHead>
-								<TableHead>Worked hours</TableHead>
+								<TableHead>Checkin Time</TableHead>
+								<TableHead>Checkout Time</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{
 								<TableRow key={employee.id} className="hover:bg-gray-50">
 									<TableCell>{selectedDate}</TableCell>
-									<TableCell>
-										<div className="flex flex-col">
-											<Link
-												href={`/employees/attendance/${employee.id}`}
-												className="font-semibold text-blue-600 hover:underline"
-											>
-												{employee.user?.fullname || "Unknown"}
-											</Link>
-											<span className="text-xs text-gray-400" />
-										</div>
+
+									<TableCell className="min-w-[6rem]">
+										<span>{selectedAttendanceRecord?.check_in_time}</span>
 									</TableCell>
 									<TableCell className="min-w-[6rem]">
-										<span>{selectedAttendanceRecord?.early_checkout_minutes || 0} minutes</span>
-									</TableCell>
-									<TableCell className="min-w-[6rem]">
-										<span>{selectedAttendanceRecord?.late_minutes || 0} minutes</span>
-									</TableCell>
-									<TableCell className="min-w-[6rem]">
-										<span>{selectedAttendanceRecord?.worked_hours || 0} hours</span>
+										<span>{selectedAttendanceRecord?.check_out_time}</span>
 									</TableCell>
 								</TableRow>
 							}

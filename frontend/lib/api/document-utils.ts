@@ -199,20 +199,17 @@ export const DOCUMENT_REQUESTS_API = {
 		return response.data as IDocumentRequest;
 	},
 	uploadDocument: async ({
-		requestEmployeeId,
 		data,
-		thisEmployee,
+		matchingEmployeeRequest,
 	}: {
-		requestEmployeeId: number;
-		thisEmployee: number;
+		matchingEmployeeRequest: number;
 		data: { file: File; remarks?: string };
 	}) => {
 		const formData = new FormData();
 		formData.append("file", data.file);
-		formData.append("document_request_employee", thisEmployee.toString());
 		if (data.remarks) formData.append("remarks", data.remarks);
 		const response = await apiRequest.post(
-			`employee/document-requests/employee/${requestEmployeeId}/upload/`,
+			`employee/document-requests/employee/${matchingEmployeeRequest}/upload/`,
 			formData,
 		);
 		return response.data;

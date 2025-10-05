@@ -45,6 +45,7 @@ export interface ISignature {
 		email: string;
 	};
 	signature_image_url: string;
+	signature?: string;
 }
 
 export interface ISignatureFormData {

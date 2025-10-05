@@ -14,7 +14,7 @@ import { DepartmentTreemap } from "@/components/dashboard-new/department-treemap
 import { PayrollByDepartment } from "@/components/dashboard-new/payroll-by-department";
 import { EmployeeCountChart } from "@/components/dashboard-new/employee-count-chart";
 import { GenderDistribution } from "@/components/dashboard-new/gender-distribution";
-import { SimpleCalendarWidget } from "@/components/calendar-widget";
+import { MinimalCalendar } from "@/components/calendar-widget";
 import { EventsAndHolidaysWidget } from "@/components/dashboard-new/events-and-holidays";
 import { institutionAPI, showErrorToast } from "@/lib/utils";
 import { selectSelectedInstitution, selectUser } from "@/store/auth/selectors";
@@ -145,7 +145,7 @@ export default function Dashboard() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 					{/* Main Content */}
-					<div className="lg:col-span-3 space-y-4">
+					<div className="lg:col-span-3 flex flex-col gap-6">
 						{/* Metrics and Calendar Row */}
 						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 							<div className="md:col-span-4">
@@ -195,11 +195,13 @@ export default function Dashboard() {
 
 					{/* Sidebar */}
 					<div className="flex flex-col gap-4 lg:col-span-1">
-						<div className="max-h-[6.5rem]">
+						<div className="min-h-[14rem]">
 							<AnnouncementCarousel />
 						</div>
-						<SimpleCalendarWidget className="!min-h-[24rem] !max-h-[30rem] !h-full" />
-						<EventsAndHolidaysWidget className="!max-h-[20rem] !h-full overflow-y-auto" />
+						<div className="">
+							<MinimalCalendar />
+						</div>
+						<EventsAndHolidaysWidget className="!max-h-[500px] !h-full overflow-y-auto" />
 					</div>
 				</div>
 

@@ -109,8 +109,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	const [canViewSettings, setCanViewSettings] = useState(false);
 	const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
 	const [InstitutionId, setInstitutionId] = useState<string | null>(null);
 	// const [isPathLoading, setIsPathLoading] = useState(false);
 
@@ -129,7 +127,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 	useEffect(() => {
 		const handleActivity = (e: MouseEvent) => {
 			if (announcementForAcknowledgment) {
-				console.log("\n\n Announcement requires acknowledgment, ignoring activity");
 				e.stopPropagation();
 				e.preventDefault();
 				return;
@@ -427,7 +424,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						if (!open) {
 							handleCancelLogout();
 						} else {
-							setShowLogoutDialog(open);
+							setShowLogoutDialog(true);
 						}
 					}}
 				>

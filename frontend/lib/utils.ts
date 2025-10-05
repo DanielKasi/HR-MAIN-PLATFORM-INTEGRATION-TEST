@@ -583,7 +583,6 @@ export const createJobApplication = async ({
 }): Promise<JobApplication | null> => {
 	const formData = new FormData();
 
-	// Append normal fields
 	Object.entries(applicationData).forEach(([key, value]) => {
 		if (
 			value !== undefined &&
@@ -595,55 +594,31 @@ export const createJobApplication = async ({
 		}
 	});
 
-	// Build documents array
-	const documentsPayload: any[] = [];
-
+	
 	if (
 		applicationData.required_document_files &&
 		applicationData.selectedJobRequiredDocuments?.length
 	) {
-		applicationData.selectedJobRequiredDocuments.forEach((doc, index) => {
+		applicationData.selectedJobRequiredDocuments.forEach((doc) => {
 			const file = applicationData.required_document_files?.[doc.document_name];
 			if (file instanceof File) {
-				const documentEntry = {
-					required_document: {
-						id: doc.id,
-						document_name: doc.document_name,
-						description: doc.description || "",
-						is_optional: doc.is_optional,
-						content_object: doc.content_object || "",
-					},
-					is_active: true,
-					created_by: applicationData.created_by,
-					job_advert_application: 0,
-				};
-
-				// Push the metadata (backend expects nested object)
-				documentsPayload.push(documentEntry);
-
-				// Attach the file separately (indexed so backend links it)
-				formData.append(`documents[${index}].file`, file);
+				formData.append(`document_${doc.id}`, file);
 			}
 		});
 	}
 
-	// Append JSON-ified documents metadata
-	formData.append("documents", JSON.stringify(documentsPayload));
+	
+	const response = await apiPost(
+		`/recruitment/institution/${institutionId}/job-application/`,
+		formData,
+		{
+			"Content-Type": "multipart/form-data",
+		},
+	);
 
-	// send request
-	const response = await fetch(`/institutions/${institutionId}/applications/`, {
-		method: "POST",
-		body: formData,
-	});
-
-	if (!response.ok) {
-		throw new Error("Failed to create job application");
-	}
-
-	return (await response.json()) as JobApplication;
+	return response.data as JobApplication;
 };
 
-// Fetch all job applications for a specific institution
 export const getJobApplications = async ({
 	institutionId,
 }: {
@@ -1510,16 +1485,7 @@ export const bulkCreateEmployees = async ({
 	return response.data;
 };
 
-export const getPaginatedEmployees = async ({
-	institutionId,
-	page = 1,
-	search,
-	ordering,
-	positionSearch,
-	departmentSearch,
-	minSalary,
-	maxSalary,
-}: {
+export const getPaginatedEmployees = async (params: {
 	institutionId: number;
 	page?: number;
 	search?: string;
@@ -1528,41 +1494,20 @@ export const getPaginatedEmployees = async ({
 	departmentSearch?: string;
 	minSalary?: string;
 	maxSalary?: string;
+	employees_under?: number;
 }) => {
-	const params = new URLSearchParams({
-		page: page.toString(),
+	const urlParams = new URLSearchParams({});
+
+	Object.entries(params).forEach(([key, value]) => {
+		if (value && key !== "institutionId") {
+			urlParams.append(key, value.toString());
+		}
 	});
 
-	if (positionSearch) {
-		params.append("position_search", positionSearch);
-	}
-	if (departmentSearch) {
-		params.append("department_search", departmentSearch);
-	}
-	if (minSalary) {
-		params.append("min_salary", minSalary);
-	}
-
-	if (maxSalary) {
-		params.append("max_salary", maxSalary);
-	}
-	if (search) {
-		params.append("search", search);
-	}
-	ordering && params.append("ordering", ordering);
-	const endpoint = `employee/${institutionId}/employee/?${params.toString()}`;
+	const endpoint = `employee/${params.institutionId}/employee/?${urlParams.toString()}`;
 	const response = await apiRequest.get(endpoint);
 
 	return response.data as IPaginatedResponse<IEmployee>;
-};
-
-export const getPaginatedAssetHistoriesFromUrl = async ({
-	url,
-}: {
-	url: string;
-}): Promise<IPaginatedResponse<IAssetHistory>> => {
-	const response = await apiRequest.get(forceUrlToHttps(url));
-	return response.data as IPaginatedResponse<IAssetHistory>;
 };
 
 export const getPaginatedEmployeesFromUrl = async ({
@@ -1755,6 +1700,15 @@ export const getEmployeeById = async ({ employeeId }: { employeeId: number | str
 				"Failed to fetch employee",
 		);
 	}
+};
+
+export const getPaginatedAssetHistoriesFromUrl = async ({
+	url,
+}: {
+	url: string;
+}): Promise<IPaginatedResponse<IAssetHistory>> => {
+	const response = await apiRequest.get(forceUrlToHttps(url));
+	return response.data as IPaginatedResponse<IAssetHistory>;
 };
 
 // Helper function to get roles for an institution
@@ -3053,38 +3007,27 @@ export const LeaveApplicationsAPI = {
 		return getLeaveApplications({ institutionId, employeeId });
 	},
 
-	getPaginated: async ({
-		institutionId,
-		page = 1,
-		search,
-		status,
-		leaveType,
-		ordering,
-	}: {
+	getPaginated: async (params: {
 		institutionId: number;
 		page?: number;
 		search?: string;
 		status?: string;
-		leaveType?: string;
+		leave_type_id?: string;
 		ordering?: string;
+		assigned?: boolean;
+		assigned_by?: number;
 	}): Promise<IPaginatedResponse<ILeaveRequest>> => {
 		try {
-			const params = new URLSearchParams({
-				page: page.toString(),
+			const urlParams = new URLSearchParams({});
+
+			Object.entries(params).forEach(([key, value]) => {
+				if (value && key !== "institutionId") {
+					urlParams.append(key, value.toString());
+				}
 			});
 
-			if (search) {
-				params.append("search", search);
-			}
-			if (status && status !== "all") {
-				params.append("status", status);
-			}
-			if (leaveType && leaveType !== "all") {
-				params.append("leave_type_id", leaveType);
-			}
-			ordering && params.append("ordering", ordering);
 			const response = await apiRequest.get(
-				`leave-mgt/${institutionId}/leave-applications/?${params.toString()}`,
+				`leave-mgt/${params.institutionId}/leave-applications/?${params.toString()}`,
 			);
 
 			return response.data as IPaginatedResponse<ILeaveRequest>;
@@ -6870,6 +6813,11 @@ export const EMPLOYEE_API = {
 		return response as ICompanyEmail;
 	},
 
+	resendWelcomeEmail: async ({ employee_id }: { employee_id: number }) => {
+		await apiRequest.post(`/employee/resend-welcome-email/${employee_id}/`, {
+			employee: employee_id,
+		});
+	},
 	hourAccount: {
 		getPaginated: async (params: { page?: number; search?: string; ordering?: string }) => {
 			const urlParams = new URLSearchParams();

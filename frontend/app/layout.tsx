@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 						<AnnouncementAcknowledgementPopup />
 						<LogoutWarningPopup />
 						<>{children}</>
-						<Toaster duration={10000} position={"top-right"} />
+						<Toaster closeButton duration={10000} position={"top-right"} />
 					</Providers>
 				</ThemeProvider>
 			</body>

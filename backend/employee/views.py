@@ -304,7 +304,6 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
     def _apply_filters(self, queryset, query_params):
         """Apply all filters to the queryset"""
         
-        # Search filter
         search_query = query_params.get("search")
         if search_query:
             queryset = queryset.filter(
@@ -320,48 +319,39 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
                 Q(skills__icontains=search_query)
             )
 
-        # Department filter
         department_id = query_params.get("department_id")
         if department_id:
             queryset = queryset.filter(department_id=department_id)
 
-        # Position filter
         position_id = query_params.get("position_id")
         if position_id:
             queryset = queryset.filter(position_id=position_id)
 
-        # Work type filter
         work_type_id = query_params.get("work_type_id")
         if work_type_id:
             queryset = queryset.filter(work_type_id=work_type_id)
 
-        # Employee type filter
         employee_type_id = query_params.get("employee_type_id")
         if employee_type_id:
             queryset = queryset.filter(employee_type_id=employee_type_id)
 
-        # Payroll branch filter
         payroll_branch_id = query_params.get("payroll_branch_id")
         if payroll_branch_id:
             queryset = queryset.filter(payroll_branch_id=payroll_branch_id)
 
-        # Gender filter
         gender = query_params.get("gender")
         if gender and gender in ['male', 'female', 'other']:
             queryset = queryset.filter(gender=gender)
 
-        # Marital status filter
         marital_status = query_params.get("marital_status")
         if marital_status and marital_status in ['single', 'married', 'divorced', 'widowed']:
             queryset = queryset.filter(marital_status=marital_status)
 
-        # Has children filter
         has_children = query_params.get("has_children")
         if has_children is not None:
             has_children_bool = has_children.lower() in ['true', '1', 'yes']
             queryset = queryset.filter(has_children=has_children_bool)
 
-        # Salary range filters
         salary_min = query_params.get("salary_min")
         if salary_min:
             try:
@@ -376,7 +366,6 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             except ValueError:
                 pass
 
-        # Date of joining filters
         date_of_joining_from = query_params.get("date_of_joining_from")
         if date_of_joining_from:
             try:
@@ -393,7 +382,6 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             except ValueError:
                 pass
 
-        # Age filters (calculated from date_of_birth)
         age_min = query_params.get("age_min")
         age_max = query_params.get("age_max")
         
@@ -403,7 +391,6 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             if age_min:
                 try:
                     age_min_int = int(age_min)
-                    # Calculate the birth date for minimum age
                     max_birth_date = date(today.year - age_min_int, today.month, today.day)
                     queryset = queryset.filter(date_of_birth__lte=max_birth_date)
                 except ValueError:
@@ -412,12 +399,23 @@ class EmployeeListAPIView(APIView, SortableAPIMixin):
             if age_max:
                 try:
                     age_max_int = int(age_max)
-                    # Calculate the birth date for maximum age
                     min_birth_date = date(today.year - age_max_int - 1, today.month, today.day)
                     queryset = queryset.filter(date_of_birth__gt=min_birth_date)
                 except ValueError:
                     pass
 
+        employees_under = query_params.get("employees_under")
+        user_id = query_params.get("user_id")
+        if employees_under and employees_under.lower() in ['true', '1', 'yes'] and user_id:
+            try:
+                user_employee = Employee.objects.get(user_id=user_id)
+                user_job_position = user_employee.position
+                if user_job_position:
+                    queryset = queryset.filter(position__reports_to=user_job_position)
+            except Employee.DoesNotExist:
+                queryset = queryset.none()
+            except ValueError:
+                pass
 
         return queryset
 
@@ -477,6 +475,91 @@ class EmployeeDetailAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+class ResendWelcomeLink(APIView):
+    @extend_schema(
+        tags=["Employee Management"],
+        summary="Resend welcome email to employee",
+        description="Resends the welcome email to an employee. Generates a new password if the user hasn't verified their email yet.",
+        parameters=[
+            OpenApiParameter(
+                name="employee_id",  # Changed from "id" to match URL parameter
+                type=int,
+                location=OpenApiParameter.PATH,
+                description="Employee ID",
+                required=True,
+            )
+        ],
+        request=None,
+        responses={
+            200: {
+                "description": "Welcome email sent successfully",
+                "examples": {
+                    "success": {
+                        "summary": "Email sent",
+                        "value": {
+                            "detail": "Welcome email has been resent successfully.",
+                            "email": "employee@example.com"
+                        }
+                    }
+                }
+            },
+            404: {
+                "description": "Employee not found",
+                "examples": {
+                    "not_found": {
+                        "summary": "Employee doesn't exist",
+                        "value": {"detail": "Employee not found."}
+                    }
+                }
+            },
+            400: {
+                "description": "Bad request",
+                "examples": {
+                    "already_verified": {
+                        "summary": "Email already verified",
+                        "value": {"detail": "Employee has already verified their email."}
+                    }
+                }
+            },
+            500: {"description": "Server error"},
+        },
+    )
+    def post(self, request, employee_id):  # Added 'self' here
+        try:
+            employee = Employee.objects.select_related('user').get(id=employee_id)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )   
+        
+        user = employee.user
+
+        # Generate new password
+        new_password = generate_compliant_password()
+        user.set_password(new_password)
+        user.welcome_email_sent = True
+        user.save()
+
+        # Get company name
+        company_name = request.user.profile.institution.institution_name
+
+        # Send welcome email
+        send_employee_welcome_email.delay_on_commit(
+            request.get_host(),
+            user.email,
+            user.fullname,
+            new_password,
+            company_name=company_name,
+        )
+
+        return Response(
+            {
+                "detail": "Welcome email has been resent successfully.",
+                "email": user.email
+            },
+            status=status.HTTP_200_OK
+        )
 
 class EmployeeCreateAPIView(APIView):
     def parse_nested_multipart(self, query_dict):
@@ -769,11 +852,6 @@ class EmployeeCreateAPIView(APIView):
 
     @transaction.atomic
     def handle_bulk_upload(self, request):
-        import logging
-        import pandas as pd
-        from datetime import date, datetime
-        from django.core.exceptions import ValidationError
-        from django.core.validators import validate_email
 
         logger = logging.getLogger(__name__)
 

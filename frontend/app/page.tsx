@@ -75,7 +75,7 @@ export default function HomePage() {
 							<div className="flex flex-col gap-3">
 								<Button
 									variant="ghost"
-									className="text-myblack hover:bg-gray-50 justify-start"
+									className="text-myblack hover:bg-gray-50 justify-center"
 									asChild
 								>
 									<Link href="/login">Login</Link>
@@ -98,20 +98,22 @@ export default function HomePage() {
 								<span className="text-myblack">Transform the Way You </span>
 								<span className="text-primary">Manage Your Workforce</span>
 							</h1>
-							<p className="mx-auto max-w-3xl text-base md:text-lg text-gray-700 md:whitespace-nowrap">
+							<p className="mx-auto w-full max-w-3xl lg:max-w-3xl text-base md:text-lg text-gray-700 lg:whitespace-nowrap">
 								PERACOSOFT empowers organizations to streamline HR processes, enhance employee
 								engagement, and
 								<br className="hidden md:block" />
 								drive business growth through intelligent workforce management solutions.
 							</p>
 						</div>
-						<Button
-							size="lg"
-							className="bg-primary hover:bg-primary text-white px-8 py-6 text-lg rounded-full shadow-lg"
-						>
-							Get Started Free
-							<ArrowRight className="ml-2 h-5 w-5" />
-						</Button>
+						<Link href="/signup" className="flex justify-center">
+							<Button
+								size="lg"
+								className="bg-primary hover:bg-primary text-white px-8 py-6 text-lg rounded-full shadow-lg"
+							>
+								Get Started Free
+								<ArrowRight className="ml-2 h-5 w-5" />
+							</Button>
+						</Link>
 					</div>
 				</div>
 

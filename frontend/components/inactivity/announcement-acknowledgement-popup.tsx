@@ -19,6 +19,12 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 	const dispatch = useDispatch();
 
 	useEffect(() => {
+		return () => {
+			dispatch(clearAcknowledgmentRequiredAnnouncement());
+		};
+	}, []);
+
+	useEffect(() => {
 		if (announcement) {
 			fetchAcknowledgment();
 			// Trigger animation after mount
@@ -111,12 +117,12 @@ const AnnouncementAcknowledgementPopup: React.FC = () => {
 					<div className="inline-block">
 						<h2 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-2">
 							<span className="inline-block w-8 h-px bg-gradient-to-r from-transparent to-blue-600" />
-							Important Announcement
+							Important Notice
 							<span className="inline-block w-8 h-px bg-gradient-to-l from-transparent to-blue-600" />
 						</h2>
 					</div>
 					<p className="text-gray-600 text-sm">
-						Please review and acknowledge this announcement to continue
+						Please review and acknowledge this notice to continue
 					</p>
 				</div>
 

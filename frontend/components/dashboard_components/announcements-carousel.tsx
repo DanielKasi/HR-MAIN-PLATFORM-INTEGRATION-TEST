@@ -10,8 +10,8 @@ import { ANNOUNCEMENTS_API } from "@/lib/api/announcements.utils";
 import { IAnnouncement } from "@/types/announcements.types";
 import { showErrorToast } from "@/lib/utils";
 import CardSkeleton from "@/components/common/skeletons/card-skeleton";
-import { Badge } from "../ui/badge";
 import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/helpers";
 
 const AnnouncementCarousel: React.FC = () => {
 	const currentInstitution = useSelector(selectSelectedInstitution);
@@ -75,53 +75,57 @@ const AnnouncementCarousel: React.FC = () => {
 
 	if (announcements.length === 0) {
 		return (
-			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-[6.5rem]">
+			<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full">
 				<CardHeader className="flex flex-row items-center justify-between py-2">
-					<CardTitle className="text-lg font-medium">Announcements</CardTitle>
+					<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 					<Link href="/announcements">
 						<ChevronRight className="w-4 h-4 text-gray-400" />
 					</Link>
 				</CardHeader>
-				<div className="px-6 text-sm text-gray-600">No announcements available</div>
+				<div className="px-6 text-sm text-gray-600">No notices available</div>
 			</Card>
 		);
 	}
 
-	//   const displayedAnnouncements = announcements.slice(0, 3);
-
 	return (
-		<Card className="md:col-span-2 shadow-sm border-none bg-white !h-[6.5rem] overflow-hidden">
+		<Card className="md:col-span-2 shadow-sm border-none bg-white !h-full overflow-hidden">
 			<CardHeader className="flex flex-row items-center justify-between py-2">
-				<CardTitle className="text-lg font-medium">Announcements</CardTitle>
+				<CardTitle className="text-lg font-medium">Notice Board</CardTitle>
 				<Link href="/announcements">
 					<ChevronRight className="w-4 h-4 text-gray-400" />
 				</Link>
 			</CardHeader>
 			<div
-				className="relative h-[2.5rem] overflow-hidden cursor-pointer"
+				className="relative overflow-hidden cursor-pointer h-full max-h-[calc(100%-5.5rem)]"
 				onClick={() => router.push(`/announcements/${announcements[currentIndex].id}`)}
 			>
 				<div
-					className="flex transition-transform duration-500 ease-in-out"
+					className="flex transition-transform duration-500 ease-in-out "
 					style={{ transform: `translateX(-${currentIndex * 100}%)` }}
 				>
 					{announcements.map((announcement) => (
 						<div key={announcement.id} className="min-w-full px-6 text-sm">
-							<div className="flex items-center justify-between gap-4">
+							<p className="flex items-center justify-between gap-4 mb-4">
 								<span className="truncate text-gray-600">
 									<strong>{announcement.title}</strong>
 								</span>
-							</div>
-							<p className="truncate text-sm text-gray-600">
-								{announcement.content?.substring(0, 50) +
-									(announcement.content && announcement.content.length > 50 ? "..." : "")}
 							</p>
+							<div className="min-h-[4rem]">
+								<p className="text-sm text-gray-600 line-clamp-3">{announcement.content}</p>
+							</div>
+							{announcement.created_at && (
+								<div className="flex items-center justify-between gap-4 mt-4">
+									<span className="text-xs text-gray-600">
+										{formatDate(announcement.created_at)}
+									</span>
+								</div>
+							)}
 						</div>
 					))}
 				</div>
 			</div>
 			{announcements.length && (
-				<div className="flex items-center justify-center z-10 gap-2 mt-2">
+				<div className="flex items-center justify-center min-h-10 z-100 gap-2 mt-2 mb-2">
 					{announcements.slice(0, 3).map((_, index) => (
 						<button
 							key={index}

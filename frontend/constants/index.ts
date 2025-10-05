@@ -137,6 +137,14 @@ export enum PERMISSION_CODES {
 	CAN_DELETE_LEAVE_APPLICATIONS = "can_delete_leave_applications",
 	CAN_APPROVE_LEAVE_APPLICATIONS = "can_approve_leave_applications",
 	CAN_REJECT_LEAVE_APPLICATIONS = "can_reject_leave_applications",
+
+	CAN_VIEW_LEAVE_ASSIGNMENTS = "can_view_leave_assignments",
+	CAN_VIEW_ALL_LEAVE_ASSIGNMENTS = "can_view_all_leave_assignments",
+	CAN_EDIT_LEAVE_ASSIGNMENTS = "can_edit_leave_assignments",
+	CAN_DELETE_LEAVE_ASSIGNMENTS = "can_delete_leave_assignments",
+	CAN_APPROVE_LEAVE_ASSIGNMENTS = "can_approve_leave_assignments",
+	CAN_REJECT_LEAVE_ASSIGNMENTS = "can_reject_leave_assignments",
+
 	CAN_MANAGE_LEAVE_TYPES = "can_manage_leave_types",
 	CAN_CREATE_LEAVE_BALANCES = "can_create_leave_balances",
 	CAN_VIEW_LEAVE_BALANCES = "can_view_leave_balances",

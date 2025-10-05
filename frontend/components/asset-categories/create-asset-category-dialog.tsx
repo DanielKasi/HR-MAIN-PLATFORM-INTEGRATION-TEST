@@ -1,6 +1,6 @@
 "use client";
 
-import type { IAssetCategory, IAssetCategoryFormData } from "@/types/types.utils";
+import { IAssetCategoryFormData, IAssetCategory } from "@/types/assets.types";
 
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
