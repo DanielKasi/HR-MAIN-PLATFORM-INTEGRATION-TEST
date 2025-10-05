@@ -228,6 +228,9 @@ export const downloadFile = (filePath: string, fileName: string) => {
 };
 
 export const getFileUrl = (filePath: string) => {
+	if (!filePath) {
+		return "";
+	}
 	if (filePath.startsWith("http")) {
 		return filePath;
 	}
@@ -329,7 +332,7 @@ export const showBrowserNotification = ({ notification }: { notification: INotif
 		new Notification(notification.message, {
 			body: `${notification.id}: Received at ${new Date(notification.timestamp).toLocaleString()} `,
 			icon: "/icon.png", // Optional: Replace with your app's icon
-			tag: notification.id, // Prevents duplicate notifications
+			tag: notification.id.toString(), // Prevents duplicate notifications
 		});
 	};
 	document.body.appendChild(btn);

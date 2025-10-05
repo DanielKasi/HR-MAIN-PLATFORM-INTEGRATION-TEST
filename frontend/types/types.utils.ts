@@ -105,7 +105,7 @@ export interface IReportsToDetails {
 }
 
 export interface IJobPosition {
-	job_adverts: any;
+	job_adverts: JobPositionAdvert;
 	id: number;
 	name: string;
 	description?: string | null;
@@ -218,7 +218,7 @@ export type JobAdvertStatus =
 export type JobAdvertTypes = "internal" | "external" | "both";
 
 export interface JobPositionAdvert {
-	data: any;
+	// data: any;
 	job_position_details: IJobPosition;
 	id: number;
 	job_position: number; // Foreign key to JobPosition
