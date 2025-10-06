@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.contrib.admin.models import LogEntry
 from django.shortcuts import redirect
+from leave_mgt.models import LeaveApplication
 from settings.models import EmailProviderConfig
 from utilities.sortable_api import SortableAPIMixin
 from spotcheck.models import EmployeeSpotCheck
@@ -89,7 +90,7 @@ from django.db.models import F, ExpressionWrapper, DurationField
 from .tasks import send_employee_welcome_email
 import string
 import secrets
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Sum, FloatField
 import json
 from .utilities import activate_employee, create_company_email, deactivate_employee, delete_company_email, generate_email, generate_employee_excel, reset_email_password
 from collections import defaultdict
@@ -3822,6 +3823,30 @@ class AttendanceDashboardAPIView(APIView):
                         "type": "integer",
                         "description": "Total attendance records (last 30 days)",
                     },
+                    "absenteeism_rate": {
+                        "type": "number",
+                        "description": "Percentage of absenteeism in last 30 days",
+                    },
+                    "employees_expected_today": {
+                        "type": "integer",
+                        "description": "Number of employees expected to work today (excluding those on leave)",
+                    },
+                    "employees_present_today": {
+                        "type": "integer",
+                        "description": "Number of employees present today",
+                    },
+                    "employees_late_today": {
+                        "type": "integer",
+                        "description": "Number of employees late today",
+                    },
+                    "employees_absent_today": {
+                        "type": "integer",
+                        "description": "Number of employees absent today",
+                    },
+                    "employees_on_leave_today": {
+                        "type": "integer",
+                        "description": "Number of employees on leave today",
+                    },
                     "attendance_by_status": {
                         "type": "array",
                         "items": {
@@ -3849,6 +3874,14 @@ class AttendanceDashboardAPIView(APIView):
                         "type": "number",
                         "description": "Percentage of spot checks responded to",
                     },
+                    "spotchecks_pass_rate": {
+                        "type": "number",
+                        "description": "Percentage of spot checks passed today",
+                    },
+                    "spotchecks_failure_rate": {
+                        "type": "number",
+                        "description": "Percentage of spot checks failed today",
+                    },
                     "spot_checks_by_status": {
                         "type": "array",
                         "items": {
@@ -3860,16 +3893,78 @@ class AttendanceDashboardAPIView(APIView):
                         },
                         "description": "Spot check counts by status (last 30 days)",
                     },
+                    # "attendance_over_time": {
+                    #     "type": "array",
+                    #     "items": {
+                    #         "type": "object",
+                    #         "properties": {
+                    #             "date": {"type": "string"},
+                    #             "count": {"type": "integer"},
+                    #         },
+                    #     },
+                    #     "description": "Daily attendance records over the last 30 days",
+                    # },
                     "attendance_over_time": {
                         "type": "array",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "date": {"type": "string"},
-                                "count": {"type": "integer"},
+                                "month": {"type": "string"},
+                                "late": {"type": "number"},
+                                "early": {"type": "number"},
+                                "on_leave": {"type": "number"},
                             },
                         },
-                        "description": "Daily attendance records over the last 30 days",
+                        "description": "Monthly attendance trends over the last 30 days",
+                    },
+                    "department_wise_attendance": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "department": {"type": "string"},
+                                "on_time": {"type": "number"},
+                                "late": {"type": "number"},
+                                "absent": {"type": "number"},
+                            },
+                        },
+                        "description": "Department-wise attendance breakdown (today)",
+                    },
+                    "department_wise_overtime": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "department": {"type": "string"},
+                                "hours": {"type": "number"},
+                            },
+                        },
+                        "description": "Department-wise overtime hours (last 30 days)",
+                    },
+                    "late_comers_today": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "employee": {"type": "string"},
+                                "department": {"type": "string"},
+                                "timein": {"type": "string"},
+                            },
+                        },
+                        "description": "List of late employees today",
+                    },
+                    "failed_spotchecks_today": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "employee": {"type": "string"},
+                                "department": {"type": "string"},
+                                "time": {"type": "string"},
+                                "status": {"type": "string"},
+                            },
+                        },
+                        "description": "List of failed spot checks today",
                     },
                 },
             },
@@ -3884,9 +3979,48 @@ class AttendanceDashboardAPIView(APIView):
             return Response(
                 {"error": "User is not associated with any institution"}, status=400
             )
+        
+        today = timezone.now().date()
+        six_months_ago = today - timedelta(days=180)
+
+        # Get active employees in institution
+        active_employees = Employee.objects.filter(
+            department__institution=institution,
+            deleted_at__isnull=True,
+            is_active=True
+        )
+
+        # Today's attendance records
+        today_attendance = EmployeeAttendance.objects.filter(
+            employee__department__institution=institution,
+            date=today,
+            employee__deleted_at__isnull=True,
+        )
+
+        employees_present_today = today_attendance.filter(
+            Q(check_in_time__isnull=False) | Q(attendance_status='present')
+        ).count()
+
+        employees_late_today = today_attendance.filter(
+            late_minutes__gt=0
+        ).count()
+
+        # Employees expected today (active employees not on leave)
+        employees_expected_today = active_employees.count()
+
+        employees_on_leave_today = LeaveApplication.objects.filter(
+            employee__in=active_employees,
+            start_date__lte=today,
+            end_date__gte=today,
+            status='approved'
+        ).count()
+        employees_expected_today = employees_expected_today - employees_on_leave_today
+
+
+        employees_absent_today = employees_expected_today - employees_present_today
 
         # Filter by institution and last 30 days
-        thirty_days_ago = timezone.now() - timedelta(days=30)
+        thirty_days_ago = today - timedelta(days=30)
         attendance_records = EmployeeAttendance.objects.filter(
             employee__department__institution=institution,
             date__gte=thirty_days_ago,
@@ -3895,6 +4029,13 @@ class AttendanceDashboardAPIView(APIView):
 
         # Total attendance records
         total_attendance_records = attendance_records.count()
+
+        # Absenteeism rate (percentage of absent records)
+        total_expected_records = active_employees.count() * 30  # Approximate
+        if total_expected_records > 0:
+            absenteeism_rate = round((employees_absent_today / total_expected_records) * 100, 1)
+        else:
+            absenteeism_rate = 0.0
 
         # Attendance by status
         attendance_by_status = list(
@@ -3956,8 +4097,165 @@ class AttendanceDashboardAPIView(APIView):
             for item in attendance_over_time
         ]
 
+        # Attendance by status
+        attendance_by_status = list(
+            attendance_records.values("attendance_status")
+            .annotate(count=Count("id"))
+            .order_by("attendance_status")
+        )
+
+        # Average metrics
+        avg_overtime = attendance_records.aggregate(avg_overtime=Avg("overtime_hours"))[
+            "avg_overtime"
+        ]
+        average_overtime_hours = round(float(avg_overtime), 2) if avg_overtime else 0.0
+
+        avg_late = attendance_records.aggregate(avg_late=Avg("late_minutes"))[
+            "avg_late"
+        ]
+        average_late_minutes = round(avg_late) if avg_late else 0
+
+        avg_early_checkout = attendance_records.aggregate(
+            avg_early_checkout=Avg("early_checkout_minutes")
+        )["avg_early_checkout"]
+        average_early_checkout_minutes = (
+            round(avg_early_checkout) if avg_early_checkout else 0
+        )
+
+        # SPOT CHECKS
+        # Today's spot checks
+        spot_checks_today = EmployeeSpotCheck.objects.filter(
+            employee__department__institution=institution,
+            spotcheck_time__date=today,
+            employee__deleted_at__isnull=True,
+        )
+
+        # Last 30 days spot checks
+        spot_checks = EmployeeSpotCheck.objects.filter(
+            employee__department__institution=institution,
+            spotcheck_time__gte=thirty_days_ago,
+            employee__deleted_at__isnull=True,
+        )
+
+        total_spot_checks = spot_checks.count()
+        responded_spot_checks = spot_checks.filter(responded_at__isnull=False).count()
+        spot_check_response_rate = (
+            round((responded_spot_checks / total_spot_checks * 100), 1)
+            if total_spot_checks > 0
+            else 0.0
+        )
+
+        # Today's spot check rates
+        total_spot_checks_today = spot_checks_today.count()
+        passed_spot_checks_today = spot_checks_today.filter(
+            # Adjust this based on your actual spot check status field
+            status__status_name__in=['passed', 'completed', 'satisfactory']
+        ).count()
+        failed_spot_checks_today = spot_checks_today.filter(
+            status__status_name__in=['failed', 'unsatisfactory']
+        ).count()
+
+        spotchecks_pass_rate = (
+            round((passed_spot_checks_today / total_spot_checks_today * 100), 1)
+            if total_spot_checks_today > 0
+            else 0.0
+        )
+        spotchecks_failure_rate = (
+            round((failed_spot_checks_today / total_spot_checks_today * 100), 1)
+            if total_spot_checks_today > 0
+            else 0.0
+        )
+
+        # Spot checks by status (today)
+        spot_checks_by_status_today = spot_checks_today.values("status__status_name") \
+            .annotate(count=Count("id")) \
+            .order_by("status__status_name")
+        
+        # Convert to dictionary format
+        spot_checks_status_dict = {
+            item["status__status_name"]: item["count"] 
+            for item in spot_checks_by_status_today
+        }
+
+        # DEPARTMENT-WISE ATTENDANCE (Today)
+        department_attendance = []
+        departments = Department.objects.filter(institution=institution)
+        
+        for dept in departments:
+            dept_employees_today = today_attendance.filter(employee__department=dept)
+            dept_on_time = dept_employees_today.filter(late_minutes=0).count()
+            dept_late = dept_employees_today.filter(late_minutes__gt=0).count()
+            dept_absent = employees_expected_today - dept_employees_today.count()
+            
+            department_attendance.append({
+                "department": dept.name,
+                "on_time": dept_on_time,
+                "late": dept_late,
+                "absent": dept_absent
+            })
+
+        # DEPARTMENT-WISE OVERTIME (Last 30 days)
+        from django.db.models import Sum, FloatField
+        from django.db.models.functions import Cast
+
+        department_overtime = list(
+            attendance_records.values('employee__department__name')
+            .annotate(
+                total_overtime=Sum(
+                    Cast('overtime_hours', FloatField())
+                )
+            )
+            .order_by('employee__department__name')
+        )
+
+        department_overtime = [
+            {
+                "department": item["employee__department__name"],
+                "hours": round(float(item["total_overtime"] or 0), 2)
+            }
+            for item in department_overtime
+        ]
+
+        # LATE COMERS TODAY
+        late_comers_today = today_attendance.filter(late_minutes__gt=0) \
+            .select_related('employee__department') \
+            .values(
+                'employee__user__fullname',
+                'employee__department__name',
+                'check_in_time'
+            )[:10]  # Limit to top 10
+        
+        late_comers_list = [
+            {
+                "employee": item["employee__user__fullname"],
+                "department": item["employee__department__name"],
+                "timein": item["check_in_time"].strftime("%H:%M") if item["check_in_time"] else "N/A"
+            }
+            for item in late_comers_today
+        ]
+
+        # FAILED SPOTCHECKS TODAY
+        failed_spotchecks_list = []
+        failed_spotchecks = spot_checks_today.filter(
+            status__status_name__in=['failed', 'unsatisfactory']
+        ).select_related('employee__department', 'status')[:5] 
+        
+        for spotcheck in failed_spotchecks:
+            failed_spotchecks_list.append({
+                "employee": spotcheck.employee.user.fullname,
+                "department": spotcheck.employee.department.name,
+                "time": spotcheck.spotcheck_time.strftime("%H:%M"),
+                "status": spotcheck.status.status_name if spotcheck.status else "Failed"
+            })
+
         data = {
             "total_attendance_records": total_attendance_records,
+            "absenteeism_rate": absenteeism_rate,
+            "employees_expected_today": employees_expected_today,
+            "employees_present_today": employees_present_today,
+            "employees_late_today": employees_late_today,
+            "employees_absent_today": employees_absent_today,
+            "employees_on_leave_today": employees_on_leave_today,
             "attendance_by_status": [
                 {"status": item["attendance_status"], "count": item["count"]}
                 for item in attendance_by_status
@@ -3966,11 +4264,17 @@ class AttendanceDashboardAPIView(APIView):
             "average_late_minutes": average_late_minutes,
             "average_early_checkout_minutes": average_early_checkout_minutes,
             "spot_check_response_rate": spot_check_response_rate,
+            "spotchecks_pass_rate": spotchecks_pass_rate,
+            "spotchecks_failure_rate": spotchecks_failure_rate,
             "spot_checks_by_status": [
                 {"status": item["status__status_name"], "count": item["count"]}
                 for item in spot_checks_by_status
             ],
             "attendance_over_time": attendance_over_time,
+            "department_wise_attendance": department_attendance,
+            "department_wise_overtime": department_overtime,
+            "late_comers_today": late_comers_list,
+            "failed_spotchecks_today": failed_spotchecks_list,
         }
 
         return Response(data)

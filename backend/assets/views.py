@@ -1000,6 +1000,11 @@ class AssetHistoryDetailView(APIView):
                                 'current_holder_name': {'type': 'string', 'nullable': True},
                             }
                         }
+                    },
+                    'department_allocation': {
+                        'type': 'object',
+                        'properties': {'type': 'integer'},
+                        'description': 'Counts of allocated assets by department'
                     }
                 }
             }
@@ -1065,6 +1070,39 @@ class AssetsDashboardView(APIView):
             'returns': pending_returns,
             'total': pending_requests + pending_allocations + pending_returns
         }
+        # Get allocated assets and their current departments
+        department_allocation = {}
+        
+        try:
+            allocation_data = (
+                AssetAllocation.objects.filter(
+                    asset__institution=institution,
+                    allocation_status='allocated',
+                    deleted_at__isnull=True
+                )
+                .select_related(
+                    'allocated_to__user__employee__department'
+                )
+                .values('allocated_to__user__employee__department__department_name')
+                .annotate(count=Count('id'))
+            )
+            
+            # Convert to dictionary format
+            for item in allocation_data:
+                dept_name = item['allocated_to__user__employee__department__department_name']
+                if dept_name:
+                    department_allocation[dept_name] = item['count']
+                else:
+                    # Handle cases where department is null
+                    department_allocation['No Department'] = department_allocation.get('No Department', 0) + item['count']
+                    
+        except Exception as e:
+            print(f"Error: {e}")
+        
+        # If no data found after all methods, initialize with empty
+        if not department_allocation:
+            department_allocation = {'No Allocations': 0}
+
 
         # Recent assets (last 10, ordered by -id assuming no created_at; adjust if timestamps available)
         recent_assets = assets.order_by('-id')[:10]  # Use '-created_at' if available
@@ -1075,6 +1113,7 @@ class AssetsDashboardView(APIView):
             'asset_counts': asset_counts,
             'category_counts': category_counts,
             'pending_counts': pending_counts,
+            'department_allocation': department_allocation,
             'recent_assets': recent_assets_data
         }
 
