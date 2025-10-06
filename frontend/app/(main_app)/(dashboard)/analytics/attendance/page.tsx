@@ -23,6 +23,8 @@ export default function AttendanceDashboard() {
 		spot_check_response_rate: 5,
 		attendance_over_time: [],
 		spot_checks_by_status: {},
+		late_comers_today: [],
+		failed_spotchecks_today: [],
 	};
 	const getGroupCards1 = (data: IAttendanceDashboard) => [
 		{
@@ -156,10 +158,10 @@ export default function AttendanceDashboard() {
 
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 							{/* latecomers today */}
-							<LatecomersTable />
+							<LatecomersTable data={data.late_comers_today} />
 
 							{/*failed spotchecks today */}
-							<SpotchecksTable />
+							<SpotchecksTable data={data.failed_spotchecks_today} />
 						</div>
 
 						<Linechart

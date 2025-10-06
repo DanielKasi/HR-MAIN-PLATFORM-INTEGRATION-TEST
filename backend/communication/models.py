@@ -57,13 +57,22 @@ class Announcement(BaseApprovableModel):
     def save(self, *args, skip_notifications=False, **kwargs):
         print(f"Saving announcement {self.pk or 'new'}, is_new={self.pk is None}, skip_notifications={skip_notifications}")
         is_new = self.pk is None
+        # Check if announcement was previously inactive
+        was_inactive = False
+        if not is_new:
+            try:
+                existing = Announcement.objects.get(pk=self.pk)
+                was_inactive = not existing.is_active and self.is_active
+            except Announcement.DoesNotExist:
+                pass
+
         super().save(*args, **kwargs)  # Call the parent save method
 
         if skip_notifications:
             print(f"Skipping notifications for announcement {self.pk}")
             return
 
-        # Only send notifications if approved (optional, adjust based on your workflow)
+        # Send notifications if new or just became active
         if not self.is_active:
             print(f"Announcement {self.pk} is not active, skipping notifications")
             return

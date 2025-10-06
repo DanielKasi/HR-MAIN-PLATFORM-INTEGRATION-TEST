@@ -253,10 +253,6 @@ export default function DashboardSideBar() {
 							href: "/employees/document-requests",
 							requiredPermission: PERMISSION_CODES.CAN_VIEW_DOCUMENT_REQUESTS,
 						},
-						// {
-						// 	title: "Signatures",
-						// 	href: "/documents/signatures",
-						// },
 						{ title: "Shifts", href: "/employees/shift-requests" },
 						{ title: "Employee Types", href: "/employees/employee-types" },
 						{ title: "Work Types", href: "/employees/work-types" },
@@ -280,7 +276,7 @@ export default function DashboardSideBar() {
 				{ title: "Hour Account", href: "/employees/hour-count" },
 				{ title: "Work Records", href: "/employees/attendance/work-records" },
 				// { title: "Attendance Activities", href: "#" },
-				{ title: "Late Come Early Out", href: "#" },
+				{ title: "Late Come Early Out", href: "/employees/late-in-early-out" },
 				{ title: "My Attendances", href: "#" },
 			],
 			requiredPermission: PERMISSION_CODES.CAN_VIEW_ATTENDANCE_REPORTS,
@@ -292,7 +288,7 @@ export default function DashboardSideBar() {
 			submenu: [
 				{ title: "Analytics", href: "/analytics/leave" },
 				{ title: "Leave Types", href: "/leave/leave-types" },
-				{ title: "Assigned Leave", href: "#" },
+				{ title: "Assigned Leave", href: "/leave/leave-assignment" },
 				// { title: "Leave Allocation Request", href: "#" },
 				// { title: "Compensatory Leave Requests", href: "#" },
 				{ title: "Leave Policy", href: "/leave/leave-policy" },

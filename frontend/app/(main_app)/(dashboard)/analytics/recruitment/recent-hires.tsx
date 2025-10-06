@@ -1,20 +1,14 @@
 import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { IPaginatedResponse } from "@/types/types.utils";
+import { formatDate } from "@/lib/helpers";
+import { IPaginatedResponse, IRecentHire } from "@/types/types.utils";
 
 interface IRecentHireProps {
 	className?: string;
+	data: IRecentHire[];
 }
 
-interface IRecentHire {
-	name: string;
-	role: string;
-	department: string;
-	status: "active";
-	created_at: string;
-}
-
-export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
+export default function RecentHiresTable({ className = "", data }: IRecentHireProps) {
 	const columns: ColumnDef<IRecentHire>[] = [
 		{
 			key: "name",
@@ -23,8 +17,8 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 		},
 		{
 			key: "role",
-			header: <span>Role</span>,
-			cell: (props) => <span>{props.role}</span>,
+			header: <span>Position</span>,
+			cell: (props) => <span>{props.position}</span>,
 		},
 		{
 			key: "department",
@@ -43,7 +37,7 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 		{
 			key: "date",
 			header: <span>Date</span>,
-			cell: (props) => <span>{props.created_at}</span>,
+			cell: (props) => <span>{formatDate(props.created_at)}</span>,
 		},
 	];
 	return (
@@ -52,21 +46,16 @@ export default function RecentHiresTable({ className = "" }: IRecentHireProps) {
 			<CardContent>
 				<PaginatedTable
 					showFooter={false}
+					paginated={false}
 					skeletonRows={5}
 					columns={columns}
-					emptyState={[]}
+					emptyState={"No recent hires"}
 					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<IRecentHire>> {
 						return Promise.resolve({
-							count: 20,
-							next: "21",
-							previous: "0",
-							results: new Array(5).fill(null).map(() => ({
-								name: "Musoke Paul",
-								role: "Accountant",
-								department: "Finance",
-								status: "active",
-								created_at: new Date().toDateString(),
-							})),
+							count: data.length,
+							next: null,
+							previous: null,
+							results: data,
 						});
 					}}
 				></PaginatedTable>

@@ -29,21 +29,14 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { APPROVER_GROUPS_API } from "@/lib/api/approvals/utils";
-import RoleSearchableSelect from "@/components/selects/role-searchable-select";
-import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
+import { ApproverGroupCreateEditDialog } from "@/components/approvals/approver-group-create-dialog";
 
 export default function ApproverGroupsPage() {
 	const currentInstitution = useSelector(selectSelectedInstitution);
-
-	// // Data states
-	// const [approverGroups, setApproverGroups] = useState<ApproverGroup[]>([]);
-	// const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
-	// const [availableUsers, setAvailableUsers] = useState<UserProfile[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 
 	// Loading states
 	const tableRefreshRef = useRef<(() => void) | null>(null);
-	const [saving, setSaving] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 
 	// Dialog states
@@ -51,31 +44,22 @@ export default function ApproverGroupsPage() {
 	const [editingGroup, setEditingGroup] = useState<ApproverGroup | null>(null);
 	const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
 	const [viewingGroup, setViewingGroup] = useState<ApproverGroup | null>(null);
-	const [groupName, setGroupName] = useState("");
-	const [groupDescription, setGroupDescription] = useState("");
-	const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-	const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+	// const [groupName, setGroupName] = useState("");
+	// const [groupDescription, setGroupDescription] = useState("");
+	// const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+	// const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
 
 	// Delete confirmation states
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [groupToDelete, setGroupToDelete] = useState<ApproverGroup | null>(null);
 
-	// useEffect(() => {
-	//   loadUserRoles();
-	// }, [currentInstitution]);
-
 	const openCreateDialog = () => {
 		setEditingGroup(null);
-		resetForm();
 		setOpenDialog(true);
 	};
 
 	const openEditDialog = (group: ApproverGroup) => {
 		setEditingGroup(group);
-		setGroupName(group.name);
-		setGroupDescription(group.description || "");
-		setSelectedUserIds(group.users_display.map((u) => u.id));
-		setSelectedRoleIds(group.roles_display.map((r) => r.id));
 		setOpenDialog(true);
 	};
 
@@ -83,66 +67,12 @@ export default function ApproverGroupsPage() {
 		setViewingGroup(group);
 		setViewDetailsOpen(true);
 	};
-	const resetForm = () => {
-		setGroupName("");
-		setGroupDescription("");
-		setSelectedUserIds([]);
-		setSelectedRoleIds([]);
-	};
 
 	const closeDialog = () => {
 		setOpenDialog(false);
 		setEditingGroup(null);
-		resetForm();
 	};
 
-	const handleSave = async () => {
-		if (!currentInstitution) {
-			showErrorToast({ error: null, defaultMessage: "Missing institution" });
-
-			return;
-		}
-
-		if (!groupName.trim()) {
-			showErrorToast({ error: null, defaultMessage: "Group name is required" });
-
-			return;
-		}
-
-		if (selectedUserIds.length === 0 && selectedRoleIds.length === 0) {
-			showErrorToast({ error: null, defaultMessage: "Please select at least one user or role" });
-
-			return;
-		}
-
-		try {
-			setSaving(true);
-
-			const groupData: ApproverGroupFormData = {
-				institution: currentInstitution.id,
-				name: groupName,
-				description: groupDescription,
-				users: selectedUserIds,
-				roles: selectedRoleIds,
-			};
-
-			if (editingGroup) {
-				await APPROVER_GROUPS_API.update({ id: editingGroup.id, payload: groupData });
-				tableRefreshRef.current?.();
-				showSuccessToast("Approver group updated successfully!");
-			} else {
-				await APPROVER_GROUPS_API.create(groupData);
-				tableRefreshRef.current?.();
-				showSuccessToast("Approver group created successfully!");
-			}
-
-			closeDialog();
-		} catch (e: any) {
-			showErrorToast({ error: e, defaultMessage: "Failed to save approver group" });
-		} finally {
-			setSaving(false);
-		}
-	};
 	const handleDeleteClick = (group: ApproverGroup) => {
 		setGroupToDelete(group);
 		setDeleteConfirmOpen(true);
@@ -421,81 +351,15 @@ export default function ApproverGroupsPage() {
 				</DialogContent>
 			</Dialog>
 
-			{/* Create/Edit Dialog */}
-			<Dialog
+			<ApproverGroupCreateEditDialog
 				open={openDialog}
-				onOpenChange={(open) => {
-					if (!open) {
-						closeDialog();
-					}
-					setOpenDialog(open);
+				onOpenChange={setOpenDialog}
+				group={editingGroup}
+				onSave={() => {
+					tableRefreshRef.current?.();
+					closeDialog();
 				}}
-			>
-				<DialogContent className="sm:max-w-xl ">
-					<DialogHeader>
-						<DialogTitle>
-							{editingGroup ? "Edit Approver Group" : "Create Approver Group"}
-						</DialogTitle>
-					</DialogHeader>
-
-					<div className="space-y-6 py-4 max-h-[80vh] overflow-y-auto">
-						<div className="space-y-4">
-							<div>
-								<label className="block text-sm font-medium mb-2">
-									Group Name <span className="text-destructive">*</span>
-								</label>
-								<Input
-									placeholder="e.g., Finance Team, HR Managers..."
-									value={groupName}
-									onChange={(e) => setGroupName(e.target.value)}
-								/>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium mb-2">Description</label>
-								<Textarea
-									placeholder="Optional description of this approver group..."
-									value={groupDescription}
-									onChange={(e) => setGroupDescription(e.target.value)}
-									rows={2}
-								/>
-							</div>
-						</div>
-
-						<Separator />
-
-						<div className="grid md:grid-cols-2 gap-4 items-end">
-							<div>
-								<label className="block text-sm font-medium mb-2">Roles</label>
-
-								<RoleSearchableSelect
-									value={selectedRoleIds}
-									onValueChange={(values) => setSelectedRoleIds(values.map((val) => Number(val)))}
-									placeholder="Select roles..."
-									multiple={true}
-								/>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium mb-2">Users</label>
-
-								<UserProfileSearchableSelect
-									value={selectedUserIds}
-									onValueChange={(values) => setSelectedUserIds(values.map((val) => Number(val)))}
-									placeholder="Select users..."
-									multiple={true}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<DialogFooter className="space-x-2 mt-8">
-						<Button className="w-full rounded-full" onClick={handleSave} disabled={saving}>
-							{saving ? "Saving..." : editingGroup ? "Update Group" : "Create Group"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			/>
 
 			{/* Delete Confirmation Dialog */}
 			<ConfirmationDialog

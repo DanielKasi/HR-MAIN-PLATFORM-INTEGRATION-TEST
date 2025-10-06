@@ -22,6 +22,7 @@ export interface EmployeeSearchableSelectProps {
 	hideSelectedFromList?: boolean;
 	showSelectedItems?: boolean;
 	id?: string;
+	employees_under?: number;
 }
 
 export const EmployeeSearchableSelect = memo(
@@ -35,6 +36,7 @@ export const EmployeeSearchableSelect = memo(
 		triggerClassName,
 		multiple = false,
 		hideSelectedFromList = false,
+		employees_under,
 		id,
 	}: EmployeeSearchableSelectProps) => {
 		const currentInstitution = useSelector(selectSelectedInstitution);
@@ -49,7 +51,11 @@ export const EmployeeSearchableSelect = memo(
 				if (!currentInstitution) {
 					throw new Error("No institution found!");
 				}
-				return await getPaginatedEmployees({ institutionId: currentInstitution.id, ...query });
+				return await getPaginatedEmployees({
+					institutionId: currentInstitution.id,
+					employees_under,
+					...query,
+				});
 			},
 			[currentInstitution],
 		);

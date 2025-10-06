@@ -327,7 +327,7 @@ export default function UserProfilePage() {
 																			<td className="p-3">
 																				{record.check_in_time
 																					? new Date(
-																							`2000-01-01T${record.check_in_time}`,
+																							`${new Date().toISOString().split("T")[0]}T${record.check_in_time}`,
 																						).toLocaleTimeString("en-US", {
 																							hour: "numeric",
 																							minute: "2-digit",
@@ -338,7 +338,7 @@ export default function UserProfilePage() {
 																			<td className="p-3">
 																				{record.check_out_time
 																					? new Date(
-																							`2000-01-01T${record.check_out_time}`,
+																							`${new Date().toISOString().split("T")[0]}T${record.check_out_time}`,
 																						).toLocaleTimeString("en-US", {
 																							hour: "numeric",
 																							minute: "2-digit",

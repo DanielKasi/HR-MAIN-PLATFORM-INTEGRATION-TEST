@@ -255,6 +255,12 @@ export const APPROVAL_DOCUMENT_LEVELS_API = {
 	delete: async ({ id }: { id: number }) => {
 		await apiRequest.delete(`${BASE}/approval-document-levels/${id}/`);
 	},
+	reorder: async ({ sourceId, targetId }: { sourceId: number; targetId: number }) => {
+		return await apiRequest.post(`/approval/levels/reorder/`, {
+			source_level_id: sourceId,
+			target_level_id: targetId,
+		});
+	},
 };
 
 /* -------------------- APPROVER GROUPS -------------------- */
