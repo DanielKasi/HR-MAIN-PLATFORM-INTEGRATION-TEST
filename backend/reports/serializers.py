@@ -26,7 +26,7 @@ class ReportGenerateInputSerializer(serializers.Serializer):
     )
     format_type = serializers.ChoiceField(
         choices=['excel', 'pdf'],
-        help_text="Output format: 'excel' for XLSX or 'pdf' for PDF."
+        help_text="Output format_type: 'excel' for XLSX or 'pdf' for PDF."
     )
 
     def validate(self, attrs):

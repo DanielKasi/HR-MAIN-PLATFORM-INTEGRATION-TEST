@@ -253,6 +253,27 @@ class Employee(BaseApprovableModel):
     def get_institution(self):
         return self.department.institution
 
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            date_of_joining__range=(start_date, end_date)
+        ).select_related('user', 'position', 'department', 'payroll_branch', 'work_type', 'employee_type')
+        return list(queryset.values(
+            'name',
+            'employee_id',
+            'email',
+            'phone_number',
+            'position__name',
+            'department__name',
+            'payroll_branch__name',
+            'work_type__name',
+            'employee_type__name',
+            'date_of_joining',
+            'gender',
+            'marital_status',
+            'salary'
+        ))    
+
     # class Meta:
     #     constraints = [
     #         UniqueConstraint(
@@ -780,6 +801,20 @@ class DocumentRequestEmployee(SoftDeletableTimeStampedModel):
     def __str__(self):
         return f"{self.document_request.document_type} for {self.employee.name}"
 
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            document_request__created_at__range=(start_date, end_date)
+        ).select_related('employee', 'document_request')
+        return list(queryset.values(
+            'employee__name',
+            'document_request__document_type',
+            'document_request__document_format',
+            'status',
+            'document_request__due_date',
+            'document_request__created_at'
+        ))    
+
 class RequestedDocument(BaseApprovableModel):
 
     document_request_employee = models.ForeignKey(
@@ -914,6 +949,20 @@ class EmployeeShift(BaseApprovableModel):
 
     def get_institution(self):
         return self.employee.get_institution()
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            date__range=(start_date, end_date)
+        ).select_related('employee', 'shift')
+        return list(queryset.values(
+            'employee__name',
+            'shift__name',
+            'context',
+            'shift_status',
+            'date',
+            'created_at'
+        ))    
 
 
 class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
