@@ -12,6 +12,9 @@ import SpotchecksTable from "./spotchecks.table";
 import Linechart from "../_components/line.chart";
 import BarHChart from "../_components/barh.chart";
 import OvertimeTable from "./overtime.table";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function AttendanceDashboard() {
 	const initialData: IAttendanceDashboard = {
@@ -26,6 +29,7 @@ export default function AttendanceDashboard() {
 		late_comers_today: [],
 		failed_spotchecks_today: [],
 	};
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 	const getGroupCards1 = (data: IAttendanceDashboard) => [
 		{
 			title: "Absenteeism Rate",
@@ -62,7 +66,7 @@ export default function AttendanceDashboard() {
 	const getGroupCards2 = (data: IAttendanceDashboard) => [
 		{
 			title: "Employees Expected",
-			value: data.average_late_minutes,
+			value: data.average_late_minutes || 0,
 			color: "text-orange-600",
 			bg: "bg-orange-100",
 			icon: "hugeicons:user-multiple",
@@ -72,13 +76,13 @@ export default function AttendanceDashboard() {
 			title: "Present Today",
 			color: "text-emerald-600",
 			bg: "bg-emerald-100",
-			value: data.average_late_minutes,
+			value: data.average_late_minutes || 0,
 			icon: "hugeicons:calendar-user",
 			link: "#",
 		},
 		{
 			title: "Late Arrivals",
-			value: data.average_late_minutes,
+			value: data.average_late_minutes || 0,
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
 			icon: "hugeicons:clock-05",
@@ -86,14 +90,14 @@ export default function AttendanceDashboard() {
 		},
 		{
 			title: "Absent Today",
-			value: data.average_overtime_hours,
+			value: data.average_overtime_hours || 0,
 			color: "text-red-600",
 			bg: "bg-red-100",
 			icon: "hugeicons:user-minus-01",
 		},
 		{
 			title: "On Leave",
-			value: data.average_overtime_hours,
+			value: data.average_overtime_hours || 0,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:beach",
@@ -101,21 +105,21 @@ export default function AttendanceDashboard() {
 		},
 		{
 			title: "Spotchecks Today",
-			value: data.average_overtime_hours,
+			value: data.average_overtime_hours || 0,
 			color: "text-indigo-600",
 			bg: "bg-indigo-100",
 			icon: "hugeicons:location-user-02",
 		},
 		{
 			title: "Spotcheck Pass Rate",
-			value: data.average_overtime_hours,
+			value: data.average_overtime_hours || 0,
 			color: "text-green-600",
 			bg: "bg-green-100",
 			icon: "hugeicons:location-user-02",
 		},
 		{
 			title: "Overtime Hours",
-			value: data.average_overtime_hours,
+			value: data.average_overtime_hours || 0,
 			color: "text-blue-600",
 			bg: "bg-blue-100",
 			icon: "hugeicons:time-04",
@@ -129,10 +133,15 @@ export default function AttendanceDashboard() {
 				<div className="min-h-screen  p-6">
 					<div className="space-y-8">
 						{/* Header */}
-						<div className="space-y-4">
+						<div className="space-y-4 flex items-center justify-between">
 							<h1 className="text-4xl font-bold text-slate-900 text-balance">
 								Attendance Analytics
 							</h1>
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
+							</div>
 						</div>
 
 						{/* Key Metrics */}
@@ -158,10 +167,10 @@ export default function AttendanceDashboard() {
 
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 							{/* latecomers today */}
-							<LatecomersTable data={data.late_comers_today} />
+							<LatecomersTable data={data.late_comers_today || []} />
 
 							{/*failed spotchecks today */}
-							<SpotchecksTable data={data.failed_spotchecks_today} />
+							<SpotchecksTable data={data.failed_spotchecks_today || []} />
 						</div>
 
 						<Linechart
@@ -242,6 +251,11 @@ export default function AttendanceDashboard() {
 							<OvertimeTable />
 						</div>
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="attendance"
+					/>
 				</div>
 			)}
 		></LoadingComponent>

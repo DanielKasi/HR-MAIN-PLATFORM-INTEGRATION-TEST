@@ -348,3 +348,10 @@ export function isToday(dateString: string) {
 
 	return dateString === `${yyyy}-${mm}-${dd}`;
 }
+
+export const replaceUnderscore = (text: string) => {
+	if (!text) {
+		return "";
+	}
+	return text.replace(/_/g, "");
+};

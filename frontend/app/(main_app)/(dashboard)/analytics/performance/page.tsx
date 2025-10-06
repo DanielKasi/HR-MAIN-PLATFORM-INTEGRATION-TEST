@@ -12,8 +12,11 @@ import { PerformanceStatsCard } from "@/components/performance/common/performanc
 import { Button } from "@/components/ui/button";
 import PieChart from "../_components/pie.chart";
 import colors from "../_components/colors";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function PerformancePage() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+
 	const [analytics, setAnalytics] = useState<any>({
 		periods: {
 			total: 0,
@@ -163,13 +166,18 @@ export default function PerformancePage() {
 				{/* Header */}
 				<div className="mb-8">
 					<div className="flex items-center justify-between mb-4">
-						<div>
-							<h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-								Performance Management
-							</h1>
-							<p className="text-slate-600 text-lg mt-2">
-								Comprehensive OKR and 360-degree feedback system with gamification
-							</p>
+						<div className="flex items-center justify-end gap-8">
+							<div>
+								<h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+									Performance Management
+								</h1>
+								<p className="text-slate-600 text-lg mt-2">
+									Comprehensive OKR and 360-degree feedback system with gamification
+								</p>
+							</div>
+							<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+								Generate Reports
+							</Button>
 						</div>
 						<div className="flex-grow flex items-center justify-end">
 							{/* Quick Actions */}
@@ -240,6 +248,11 @@ export default function PerformancePage() {
 					))}
 				</div>
 			</div>
+			<ReportDialog
+				isOpen={isReportsDialogOpen}
+				onClose={() => setIsReportsDialogOpen(false)}
+				app="performance"
+			/>
 		</div>
 	);
 }

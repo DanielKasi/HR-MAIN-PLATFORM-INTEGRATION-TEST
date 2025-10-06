@@ -1,13 +1,13 @@
 import { ReactNode, useState, useEffect } from "react";
 
 type Props<T> = {
-	initialData: T;
+	initialData?: T;
 	fetchData: () => Promise<T>;
 	content: (data: T) => ReactNode;
 };
 
 export default function LoadingComponent<T>({ initialData, fetchData, content }: Props<T>) {
-	const [data, setData] = useState<T>(initialData);
+	const [data, setData] = useState<T | undefined>(initialData);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string>("");
 
