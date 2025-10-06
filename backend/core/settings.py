@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "communication",
     'django.contrib.sites',
     'helpdesk',
+    'reports',
     
 ]
 
