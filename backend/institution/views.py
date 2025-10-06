@@ -1818,6 +1818,7 @@ class InstitutionUserProfileAPIView(APIView):
         tags=["User Management"],
     )
     def patch(self, request, user_id):
+        print("Am here")
         if user_id:
             try:
                 user = Profile.objects.get(user_id=user_id)
