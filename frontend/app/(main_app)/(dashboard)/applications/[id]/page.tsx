@@ -130,6 +130,41 @@ export default function ApplicationViewPage() {
 		job_position_advert: 0,
 	});
 
+	// Add the handleDownload function
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		try {
+			// Get the file URL
+			const url = getFileUrl(fileUrl);
+
+			// Fetch the file as blob
+			const response = await fetch(url);
+			if (!response.ok) throw new Error("Failed to fetch file");
+
+			const blob = await response.blob();
+
+			// Create a blob URL and trigger download
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = blobUrl;
+			a.download = fileName || "document"; // Use provided filename or default
+
+			// Append to body, click, and cleanup
+			document.body.appendChild(a);
+			a.click();
+
+			// Cleanup
+			window.URL.revokeObjectURL(blobUrl);
+			document.body.removeChild(a);
+		} catch (error) {
+			console.error("Error downloading file:", error);
+			toast.error("Failed to download file");
+
+			// Fallback: open in new tab if download fails
+			window.open(getFileUrl(fileUrl), "_blank");
+		}
+	};
+
 	const updateStageFormData = (field: string, value: any) => {
 		setStageFormData((prev) => ({ ...prev, [field]: value }));
 		if (stageErrors[field]) {
@@ -495,7 +530,7 @@ export default function ApplicationViewPage() {
 					<p className="text-destructive mb-2">Failed to load document for preview</p>
 					<Button
 						onClick={() => {
-							downloadFile(document.file, document.required_document.document_name);
+							handleDownload(document.file, document.required_document.document_name);
 						}}
 					>
 						<Download className="h-4 w-4 mr-2" />
@@ -548,7 +583,7 @@ export default function ApplicationViewPage() {
 						</p>
 						<Button
 							onClick={() => {
-								downloadFile(document.file, document.required_document.document_name);
+								handleDownload(document.file, document.required_document.document_name);
 							}}
 						>
 							<Download className="h-4 w-4 mr-2" />
@@ -570,7 +605,7 @@ export default function ApplicationViewPage() {
 						</p>
 						<Button
 							onClick={() => {
-								downloadFile(document.file, document.required_document.document_name);
+								handleDownload(document.file, document.required_document.document_name);
 							}}
 						>
 							<Download className="h-4 w-4 mr-2" />
@@ -996,17 +1031,6 @@ export default function ApplicationViewPage() {
 																						{document.required_document.description}
 																					</p>
 																				)}
-																				<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-																					<span>
-																						Uploaded:{" "}
-																						{new Date(document.uploaded_at).toLocaleDateString()}
-																					</span>
-																					{document.file && (
-																						<span className="truncate">
-																							File: {getFileNameFromUrl(document.file)}
-																						</span>
-																					)}
-																				</div>
 																			</div>
 																		</div>
 																		<div className="flex items-center gap-2">
@@ -1031,7 +1055,7 @@ export default function ApplicationViewPage() {
 																						</DropdownMenuItem>
 																						<DropdownMenuItem
 																							onClick={() =>
-																								downloadFile(
+																								handleDownload(
 																									document.file,
 																									document.required_document.document_name,
 																								)
@@ -1289,22 +1313,10 @@ export default function ApplicationViewPage() {
 											{/* Document Info */}
 											<div className="grid grid-cols-2 gap-4 text-sm">
 												<div>
-													<span className="font-medium">Document Type:</span>{" "}
-													{previewDocument.document.required_document.document_name}
-												</div>
-												<div>
-													<span className="font-medium">Uploaded:</span>{" "}
-													{new Date(previewDocument.document.uploaded_at).toLocaleString()}
-												</div>
-												<div>
 													<span className="font-medium">Status:</span>{" "}
 													{previewDocument.document.required_document.is_optional
 														? "Optional"
 														: "Required"}
-												</div>
-												<div>
-													<span className="font-medium">File:</span>{" "}
-													{getFileNameFromUrl(previewDocument.document.file)}
 												</div>
 											</div>
 
@@ -1333,7 +1345,7 @@ export default function ApplicationViewPage() {
 												{previewDocument.document.file && (
 													<Button
 														onClick={() => {
-															downloadFile(
+															handleDownload(
 																previewDocument.document!.file,
 																previewDocument.document!.required_document.document_name,
 															);

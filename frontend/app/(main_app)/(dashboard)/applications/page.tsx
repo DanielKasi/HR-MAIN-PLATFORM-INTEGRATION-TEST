@@ -9,6 +9,8 @@ import type {
 	ICountry,
 	RequiredDocument,
 	FormDataState,
+	ApplicationDocument,
+	DocumentsDropdownProps,
 } from "@/types/types.utils";
 import type {
 	IInterviewStage,
@@ -143,6 +145,84 @@ const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
 	{ value: "in_person", label: "In person" },
 ];
 
+// Documents Dropdown Component
+const DocumentsDropdown: React.FC<DocumentsDropdownProps> = ({ documents, requiredCount }) => {
+	const [isOpen, setIsOpen] = useState(false);
+	const [selectedDocument, setSelectedDocument] = useState<ApplicationDocument | null>(null);
+	const [showIframe, setShowIframe] = useState(false);
+
+	const handleViewDocument = (doc: ApplicationDocument) => {
+		setSelectedDocument(doc);
+		setShowIframe(true);
+	};
+
+	return (
+		<>
+			<div className="relative">
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={() => setIsOpen(!isOpen)}
+					className="flex items-center gap-2"
+				>
+					<FileText className="h-3 w-3" />
+					Documents ({requiredCount})
+					{isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+				</Button>
+
+				{isOpen && (
+					<div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+						<div className="p-2 max-h-60 overflow-y-auto">
+							{documents.length === 0 ? (
+								<div className="text-center py-2 text-sm text-gray-500">No documents available</div>
+							) : (
+								documents.map((doc) => (
+									<div
+										key={doc.id}
+										className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
+										onClick={() => handleViewDocument(doc)}
+									>
+										<div className="flex items-center gap-2">
+											<FileText className="h-3 w-3 text-blue-600" />
+											<span className="text-sm">{doc.document_name}</span>
+										</div>
+										{doc.is_required && (
+											<Badge
+												variant="outline"
+												className="text-xs bg-red-50 text-red-700 border-red-200"
+											>
+												Required
+											</Badge>
+										)}
+									</div>
+								))
+							)}
+						</div>
+					</div>
+				)}
+			</div>
+
+			{/* Document Viewer Dialog */}
+			<Dialog open={showIframe} onOpenChange={setShowIframe}>
+				<DialogContent className="max-w-4xl h-[80vh]">
+					<DialogHeader>
+						<DialogTitle>{selectedDocument?.document_name}</DialogTitle>
+					</DialogHeader>
+					<div className="flex-1 h-full">
+						{selectedDocument && (
+							<iframe
+								src={selectedDocument.file_url}
+								className="w-full h-full border rounded"
+								title={selectedDocument.document_name}
+							/>
+						)}
+					</div>
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+};
+
 export default function ApplicationsPage() {
 	const router = useRouter();
 	const dispatch = useDispatch();
@@ -174,14 +254,12 @@ export default function ApplicationsPage() {
 		RequiredDocument[]
 	>([]);
 
-	// const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
 	const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
 	const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
 	const [isCreatingStage, setIsCreatingStage] = useState(false);
 	const [selectedApplicationForInterview, setSelectedApplicationForInterview] =
 		useState<JobApplication | null>(null);
-	// const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false);
 	const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{
 		type: "bulk" | "single";
 		isOpen: boolean;
@@ -196,7 +274,6 @@ export default function ApplicationsPage() {
 		interview_time: "",
 		feedback: {},
 	});
-	// const [isSchedulingInterview, setisSchedulingInterview] = useState(false);
 	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
 		name: "",
 		level: 1,
@@ -2200,31 +2277,50 @@ export default function ApplicationsPage() {
 															</div>
 														</TableCell>
 														<TableCell>
-															<div className="py-1 flex flex-col gap-2 items-start">
-																<Button variant="link" size="sm" className="h-auto p-0" asChild>
-																	<a
-																		href={getFileUrl(application.resume)}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-																	>
-																		<FileText className="h-3 w-3" />
-																		Resume
-																	</a>
-																</Button>
-																{application.cover_letter && (
-																	<Button variant="link" size="sm" className="h-auto p-0" asChild>
-																		<a
-																			href={getFileUrl(application.cover_letter)}
-																			target="_blank"
-																			rel="noopener noreferrer"
-																			className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-																		>
-																			<FileText className="h-3 w-3" />
-																			Cover Letter
-																		</a>
-																	</Button>
-																)}
+															<div className="py-1">
+																<DocumentsDropdown
+																	documents={[
+																		...(application.resume
+																			? [
+																					{
+																						id: application.id + 1,
+																						document_name: "Resume",
+																						file_url: getFileUrl(application.resume),
+																						uploaded_at: application.application_date,
+																						is_required: true,
+																					},
+																				]
+																			: []),
+																		...(application.cover_letter
+																			? [
+																					{
+																						id: application.id + 2,
+																						document_name: "Cover Letter",
+																						file_url: getFileUrl(application.cover_letter),
+																						uploaded_at: application.application_date,
+																						is_required: false,
+																					},
+																				]
+																			: []),
+																		// Add required documents from the job position
+																		...(application.required_documents || []).map(
+																			(doc: any, index: number) => ({
+																				id: application.id + 3 + index,
+																				document_name: doc.document_name,
+																				file_url: getFileUrl(doc.file),
+																				uploaded_at:
+																					doc.uploaded_at || application.application_date,
+																				is_required: !doc.is_optional,
+																			}),
+																		),
+																	]}
+																	requiredCount={
+																		(application.resume ? 1 : 0) +
+																		(application.required_documents || []).filter(
+																			(doc: any) => !doc.is_optional,
+																		).length
+																	}
+																/>
 															</div>
 														</TableCell>
 														<TableCell>
