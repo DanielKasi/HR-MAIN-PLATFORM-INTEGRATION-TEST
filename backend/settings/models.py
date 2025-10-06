@@ -106,4 +106,3 @@ class EmailProviderConfig(BaseApprovableModel):
     
     def get_institution(self):
         return self.institution 
-
