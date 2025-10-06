@@ -175,8 +175,8 @@ export default function DashboardSideBar() {
 				{ title: "Candidates", href: "/applications" },
 				{ title: "Interviews", href: "/job-interviews" },
 				// { title: "Recruitment", href: "#" },
-				{ title: "Open Jobs", href: "/job-adverts" },
-				{ title: "Stages", href: "/interview-stages" },
+				{ title: "Job opening", href: "/job-adverts" },
+				{ title: "Interview Stages", href: "/interview-stages" },
 				{ title: "Skill Zone", href: "/skill-zones" },
 				{ title: "Onboarding", href: "/on-boarding" },
 			],
@@ -241,7 +241,7 @@ export default function DashboardSideBar() {
 						// },
 						{
 							title: "Organization Chart",
-							href: "#",
+							href: "/organization-chart",
 							requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 						},
 					]
@@ -260,7 +260,7 @@ export default function DashboardSideBar() {
 						// { title: "Rotating Work Type Assign", href: "#" },
 						{ title: "Disciplinary Actions", href: "/employees/discipline" },
 						// { title: "Policies", href: "#" },
-						{ title: "Organization Chart", href: "#" },
+						{ title: "Organization Chart", href: "/organization-chart" },
 					],
 			// requiredPermission: PERMISSION_CODES.CAN_VIEW_EMPLOYEES,
 		},

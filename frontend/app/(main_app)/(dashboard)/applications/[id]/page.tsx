@@ -1,7 +1,12 @@
 "use client";
 
 import type { IInterviewStageFormData } from "@/types/types.utils";
-import type { JobApplication, IInterviewStage, IInterviewFormData } from "@/types/types.utils";
+import type {
+	JobApplication,
+	IInterviewStage,
+	IInterviewFormData,
+	JobApplicationDocument,
+} from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -23,6 +28,8 @@ import {
 	UserCheck,
 	Eye,
 	Users,
+	AlertCircle,
+	MoreVertical,
 } from "lucide-react";
 import { Plus, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -50,6 +57,12 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { createInterviewStage, showErrorToast } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
@@ -59,7 +72,7 @@ import {
 	getInterviewStages,
 	createInterview,
 } from "@/lib/utils";
-import { downloadFile } from "@/lib/helpers";
+import { downloadFile, getFileUrl } from "@/lib/helpers";
 import { selectUser } from "@/store/auth/selectors";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
@@ -84,7 +97,94 @@ const sourceLabels = {
 
 export default function ApplicationViewPage() {
 	const [showShortlistConfirm, setShowShortlistConfirm] = useState(false);
-	// ...
+	const [application, setApplication] = useState<JobApplication | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState("");
+	const [previewDocument, setPreviewDocument] = useState<{
+		isOpen: boolean;
+		document: JobApplicationDocument | null;
+	}>({
+		isOpen: false,
+		document: null,
+	});
+	const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [previewContent, setPreviewContent] = useState<string | null>(null);
+
+	const router = useRouter();
+	const params = useParams();
+	const applicationId = Number.parseInt(params?.id as string);
+	const currentUser = useSelector(selectUser);
+
+	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const selectedBranch = useSelector(selectSelectedBranch);
+	const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+	const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
+	const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
+	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
+	const [isCreatingStage, setIsCreatingStage] = useState(false);
+	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
+		name: "",
+		level: 1,
+		interviewers: [],
+		job_position_advert: 0,
+	});
+
+	// Add the handleDownload function
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		try {
+			// Get the file URL
+			const url = getFileUrl(fileUrl);
+
+			// Fetch the file as blob
+			const response = await fetch(url);
+			if (!response.ok) throw new Error("Failed to fetch file");
+
+			const blob = await response.blob();
+
+			// Create a blob URL and trigger download
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = blobUrl;
+			a.download = fileName || "document"; // Use provided filename or default
+
+			// Append to body, click, and cleanup
+			document.body.appendChild(a);
+			a.click();
+
+			// Cleanup
+			window.URL.revokeObjectURL(blobUrl);
+			document.body.removeChild(a);
+		} catch (error) {
+			console.error("Error downloading file:", error);
+			toast.error("Failed to download file");
+
+			// Fallback: open in new tab if download fails
+			window.open(getFileUrl(fileUrl), "_blank");
+		}
+	};
+
+	const updateStageFormData = (field: string, value: any) => {
+		setStageFormData((prev) => ({ ...prev, [field]: value }));
+		if (stageErrors[field]) {
+			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
+		}
+	};
+	const [stageErrors, setStageErrors] = useState<any>({});
+	const [interviewFormData, setInterviewFormData] = useState<IInterviewFormData>({
+		interview_stage: 0,
+		interview_date: "",
+		location: "",
+		interview_type: "in_person",
+		interview_time: "",
+		job_position_application: 0,
+		status: "scheduled",
+		feedback: {},
+		rating: undefined,
+	});
+	const [interviewErrors, setInterviewErrors] = useState<any>({});
+
 	// Handler for shortlisting
 	const handleShortlist = async () => {
 		if (!application) return;
@@ -113,49 +213,6 @@ export default function ApplicationViewPage() {
 			toast.error("Failed to shortlist application");
 		}
 	};
-
-	const [application, setApplication] = useState<JobApplication | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState("");
-
-	const router = useRouter();
-	const params = useParams();
-	const applicationId = Number.parseInt(params?.id as string);
-	const currentUser = useSelector(selectUser);
-
-	const selectedInstitution = useSelector(selectSelectedInstitution);
-	const selectedBranch = useSelector(selectSelectedBranch);
-	const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-	const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
-	const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
-	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
-	const [isCreatingStage, setIsCreatingStage] = useState(false);
-	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
-		name: "",
-		level: 1,
-		interviewers: [],
-		job_position_advert: 0,
-	});
-
-	const updateStageFormData = (field: string, value: any) => {
-		setStageFormData((prev) => ({ ...prev, [field]: value }));
-		if (stageErrors[field]) {
-			setStageErrors((prev: any) => ({ ...prev, [field]: undefined }));
-		}
-	};
-	const [stageErrors, setStageErrors] = useState<any>({});
-	const [interviewFormData, setInterviewFormData] = useState<IInterviewFormData>({
-		interview_stage: 0,
-		interview_date: "",
-		location: "",
-		interview_type: "in_person",
-		interview_time: "",
-		job_position_application: 0,
-		status: "scheduled",
-		feedback: {},
-		rating: undefined,
-	});
-	const [interviewErrors, setInterviewErrors] = useState<any>({});
 
 	const handleIndividualAction = async (applicationId: number, action: "reviewed" | "rejected") => {
 		try {
@@ -226,6 +283,7 @@ export default function ApplicationViewPage() {
 			toast.error("Failed to load interview data");
 		}
 	};
+
 	const handleScheduleInterview = async () => {
 		if (!application || !selectedInstitution) return;
 
@@ -325,9 +383,241 @@ export default function ApplicationViewPage() {
 		setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }));
 	};
 
+	// Enhanced file type detection for preview
+	const getFilePreviewType = (fileName: string): string => {
+		const extension = fileName.split(".").pop()?.toLowerCase() || "";
+
+		// Images
+		const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"];
+		if (imageExtensions.includes(extension)) return "image";
+
+		// PDFs
+		if (extension === "pdf") return "pdf";
+
+		// Text files
+		const textExtensions = ["txt", "csv", "json", "xml", "md", "log"];
+		if (textExtensions.includes(extension)) return "text";
+
+		// Office documents
+		const officeExtensions = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+		if (officeExtensions.includes(extension)) return "office";
+
+		// Code files
+		const codeExtensions = [
+			"js",
+			"jsx",
+			"ts",
+			"tsx",
+			"html",
+			"css",
+			"py",
+			"java",
+			"cpp",
+			"c",
+			"php",
+		];
+		if (codeExtensions.includes(extension)) return "code";
+
+		return "unknown";
+	};
+
+	// Document preview functions
+	const handlePreviewDocument = async (document: JobApplicationDocument) => {
+		if (!document.file) {
+			toast.error("No document available for preview");
+			return;
+		}
+
+		setPreviewDocument({
+			isOpen: true,
+			document,
+		});
+		setIsLoadingPreview(true);
+		setPreviewBlobUrl(null);
+		setPreviewContent(null);
+
+		try {
+			const fileName = getFileNameFromUrl(document.file);
+			const fileType = getFilePreviewType(fileName);
+			const fileUrl = getFileUrl(document.file);
+
+			// Fetch the file as blob to bypass download headers
+			const response = await fetch(fileUrl);
+			if (!response.ok) throw new Error("Failed to fetch document");
+
+			const blob = await response.blob();
+			const blobUrl = URL.createObjectURL(blob);
+			setPreviewBlobUrl(blobUrl);
+
+			// For text-based files, we can also read the content
+			if (fileType === "text" || fileType === "code") {
+				const text = await blob.text();
+				setPreviewContent(text);
+			}
+		} catch (error) {
+			console.error("Error loading document for preview:", error);
+			toast.error("Failed to load document for preview");
+		} finally {
+			setIsLoadingPreview(false);
+		}
+	};
+
+	// Clean up blob URLs
+	useEffect(() => {
+		return () => {
+			if (previewBlobUrl) {
+				URL.revokeObjectURL(previewBlobUrl);
+			}
+		};
+	}, [previewBlobUrl]);
+
+	const getFileIcon = (fileName: string) => {
+		const extension = fileName.split(".").pop()?.toLowerCase();
+		switch (extension) {
+			case "pdf":
+				return <FileText className="h-8 w-8 text-red-500" />;
+			case "doc":
+			case "docx":
+				return <FileText className="h-8 w-8 text-blue-500" />;
+			case "xls":
+			case "xlsx":
+				return <FileText className="h-8 w-8 text-green-500" />;
+			case "ppt":
+			case "pptx":
+				return <FileText className="h-8 w-8 text-orange-500" />;
+			case "jpg":
+			case "jpeg":
+			case "png":
+			case "gif":
+				return <FileText className="h-8 w-8 text-green-500" />;
+			default:
+				return <FileText className="h-8 w-8 text-gray-500" />;
+		}
+	};
+
+	const getFileNameFromUrl = (url: string) => {
+		return url.split("/").pop() || "document";
+	};
+
+	// Enhanced document preview - ALL IN-HOUSE
+	const renderDocumentPreview = (document: JobApplicationDocument) => {
+		if (!document.file) {
+			return (
+				<div className="text-center text-muted-foreground py-8">
+					<FileText className="h-16 w-16 mx-auto mb-4" />
+					<p>No document available for preview</p>
+				</div>
+			);
+		}
+
+		const fileName = getFileNameFromUrl(document.file);
+		const fileType = getFilePreviewType(fileName);
+
+		if (isLoadingPreview) {
+			return (
+				<div className="flex flex-col items-center justify-center h-64">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+					<span className="text-muted-foreground">Loading preview...</span>
+				</div>
+			);
+		}
+
+		// If we don't have a blob URL, something went wrong
+		if (!previewBlobUrl) {
+			return (
+				<div className="text-center py-8">
+					<AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+					<p className="text-destructive mb-2">Failed to load document for preview</p>
+					<Button
+						onClick={() => {
+							handleDownload(document.file, document.required_document.document_name);
+						}}
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Download File
+					</Button>
+				</div>
+			);
+		}
+
+		switch (fileType) {
+			case "pdf":
+				return (
+					<iframe
+						src={previewBlobUrl}
+						className="w-full h-[400px] border-0 rounded"
+						title={`Preview of ${document.required_document.document_name}`}
+					/>
+				);
+
+			case "image":
+				return (
+					<div className="flex justify-center items-center h-[400px]">
+						<img
+							src={previewBlobUrl}
+							alt={document.required_document.document_name}
+							className="max-w-full max-h-full object-contain"
+						/>
+					</div>
+				);
+
+			case "text":
+			case "code":
+				return (
+					<div className="w-full h-[400px] border rounded bg-white overflow-auto">
+						<pre className="p-4 text-sm whitespace-pre-wrap font-mono">
+							{previewContent || "Loading content..."}
+						</pre>
+					</div>
+				);
+
+			case "office":
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							Office documents cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(document.file, document.required_document.document_name);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download Document
+						</Button>
+					</div>
+				);
+
+			case "unknown":
+			default:
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							This file type cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(document.file, document.required_document.document_name);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download File
+						</Button>
+					</div>
+				);
+		}
+	};
+
 	useEffect(() => {
 		if (selectedInstitution?.id) {
-			// console.log("Interview stages:", getInterviewStages({ institutionId: selectedInstitution.id }));
 		}
 	}, [selectedInstitution?.id]);
 
@@ -705,65 +995,93 @@ export default function ApplicationViewPage() {
 										</TabsContent>
 
 										<TabsContent value="documents" className="space-y-6">
-											{/* Application Documents */}
+											{/* Required Application Documents */}
 											<Card>
 												<CardHeader>
 													<CardTitle className="flex items-center gap-2">
 														<FileText className="h-5 w-5" />
-														Application Documents
+														Required Application Documents
 													</CardTitle>
 												</CardHeader>
 												<CardContent className="space-y-4">
-													{application.resume && (
-														<div className="flex items-center justify-between p-4 border rounded-lg">
-															<div className="flex items-center gap-3">
-																<FileText className="h-8 w-8 text-blue-500" />
-																<div>
-																	<p className="font-medium">Resume</p>
-																	<p className="text-sm text-muted-foreground">
-																		{application.resume.split("/").pop()}
-																	</p>
-																</div>
-															</div>
-															<Button
-																variant="outline"
-																size="sm"
-																onClick={() => downloadFile(application.resume, "Resume")}
-															>
-																<Download className="h-4 w-4 md:mr-2" />
-																<span className="hidden md:inline">Download</span>
-															</Button>
+													{application.documents && application.documents.length > 0 ? (
+														<div className="space-y-4">
+															{application.documents
+																.filter((doc) => doc.is_active && !doc.deleted_at)
+																.map((document) => (
+																	<div
+																		key={document.id}
+																		className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+																	>
+																		<div className="flex items-center gap-3 flex-1">
+																			{getFileIcon(document.file)}
+																			<div className="flex-1 min-w-0">
+																				<div className="flex items-center gap-2">
+																					<p className="font-medium truncate">
+																						{document.required_document.document_name}
+																					</p>
+																					{document.required_document.is_optional && (
+																						<Badge variant="outline" className="text-xs">
+																							Optional
+																						</Badge>
+																					)}
+																				</div>
+																				{document.required_document.description && (
+																					<p className="text-sm text-muted-foreground truncate">
+																						{document.required_document.description}
+																					</p>
+																				)}
+																			</div>
+																		</div>
+																		<div className="flex items-center gap-2">
+																			{document.file ? (
+																				<DropdownMenu>
+																					<DropdownMenuTrigger asChild>
+																						<Button
+																							variant="ghost"
+																							size="sm"
+																							className="h-8 w-8 p-0"
+																						>
+																							<MoreVertical className="h-4 w-4" />
+																						</Button>
+																					</DropdownMenuTrigger>
+																					<DropdownMenuContent align="end">
+																						<DropdownMenuItem
+																							onClick={() => handlePreviewDocument(document)}
+																							className="flex items-center gap-2 cursor-pointer"
+																						>
+																							<Eye className="h-4 w-4" />
+																							Preview Document
+																						</DropdownMenuItem>
+																						<DropdownMenuItem
+																							onClick={() =>
+																								handleDownload(
+																									document.file,
+																									document.required_document.document_name,
+																								)
+																							}
+																							className="flex items-center gap-2 cursor-pointer"
+																						>
+																							<Download className="h-4 w-4" />
+																							Download Document
+																						</DropdownMenuItem>
+																					</DropdownMenuContent>
+																				</DropdownMenu>
+																			) : (
+																				<Badge variant="secondary" className="text-xs">
+																					Not Uploaded
+																				</Badge>
+																			)}
+																		</div>
+																	</div>
+																))}
 														</div>
-													)}
-
-													{application.cover_letter && (
-														<div className="flex items-center justify-between p-4 border rounded-lg">
-															<div className="flex items-center gap-3">
-																<FileText className="h-8 w-8 text-green-500" />
-																<div>
-																	<p className="font-medium">Cover Letter</p>
-																	<p className="text-sm text-muted-foreground">
-																		{application.cover_letter.split("/").pop()}
-																	</p>
-																</div>
-															</div>
-															<Button
-																variant="outline"
-																size="sm"
-																onClick={() =>
-																	downloadFile(application.cover_letter!, "Cover Letter")
-																}
-															>
-																<Download className="h-4 w-4 md:mr-2" />
-																<span className="hidden md:inline">Download</span>
-															</Button>
-														</div>
-													)}
-
-													{!application.resume && !application.cover_letter && (
+													) : (
 														<div className="text-center py-8">
 															<FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-															<p className="text-muted-foreground">No documents available</p>
+															<p className="text-muted-foreground">
+																No documents available for this application
+															</p>
 														</div>
 													)}
 												</CardContent>
@@ -928,7 +1246,11 @@ export default function ApplicationViewPage() {
 											<div className="flex items-center justify-between">
 												<span className="text-sm text-muted-foreground">Documents</span>
 												<span className="text-sm font-medium">
-													{[application.resume, application.cover_letter].filter(Boolean).length}
+													{application.documents
+														? application.documents.filter(
+																(doc) => doc.is_active && !doc.deleted_at,
+															).length
+														: 0}
 												</span>
 											</div>
 
@@ -959,6 +1281,86 @@ export default function ApplicationViewPage() {
 								</div>
 							</div>
 						</ApprovableInstancePageLayout>
+
+						{/* Document Preview Dialog */}
+						<Dialog
+							open={previewDocument.isOpen}
+							onOpenChange={(open) => {
+								if (!open) {
+									setPreviewDocument({ isOpen: open, document: null });
+									if (previewBlobUrl) {
+										URL.revokeObjectURL(previewBlobUrl);
+										setPreviewBlobUrl(null);
+									}
+									setPreviewContent(null);
+								}
+							}}
+						>
+							<DialogContent className="max-w-4xl max-h-[90vh]">
+								<DialogHeader>
+									<DialogTitle>
+										{previewDocument.document?.required_document.document_name ||
+											"Document Preview"}
+									</DialogTitle>
+									<DialogDescription>
+										{previewDocument.document?.required_document.description}
+									</DialogDescription>
+								</DialogHeader>
+
+								<div className="flex-1 min-h-0">
+									{previewDocument.document && (
+										<div className="space-y-4">
+											{/* Document Info */}
+											<div className="grid grid-cols-2 gap-4 text-sm">
+												<div>
+													<span className="font-medium">Status:</span>{" "}
+													{previewDocument.document.required_document.is_optional
+														? "Optional"
+														: "Required"}
+												</div>
+											</div>
+
+											{/* Document Preview */}
+											<div className="border rounded-lg p-4 bg-muted/50">
+												<div className="flex justify-center items-center min-h-[400px]">
+													{renderDocumentPreview(previewDocument.document)}
+												</div>
+											</div>
+
+											{/* Action Buttons */}
+											<div className="flex justify-end gap-2 pt-4">
+												<Button
+													variant="outline"
+													onClick={() => {
+														setPreviewDocument({ isOpen: false, document: null });
+														if (previewBlobUrl) {
+															URL.revokeObjectURL(previewBlobUrl);
+															setPreviewBlobUrl(null);
+														}
+														setPreviewContent(null);
+													}}
+												>
+													Close
+												</Button>
+												{previewDocument.document.file && (
+													<Button
+														onClick={() => {
+															handleDownload(
+																previewDocument.document!.file,
+																previewDocument.document!.required_document.document_name,
+															);
+														}}
+													>
+														<Download className="h-4 w-4 mr-2" />
+														Download
+													</Button>
+												)}
+											</div>
+										</div>
+									)}
+								</div>
+							</DialogContent>
+						</Dialog>
 
 						<Dialog open={showShortlistConfirm} onOpenChange={setShowShortlistConfirm}>
 							<DialogContent>
@@ -1003,7 +1405,7 @@ export default function ApplicationViewPage() {
 								showTrigger={false}
 								title="Create Interview Stage"
 								description={`Create a new interview stage for{" "}
-											${application?.job_position_advert_job_details?.name || "this position"}.`}
+                          ${application?.job_position_advert_job_details?.name || "this position"}.`}
 							/>
 						)}
 						{/* Schedule Interview Dialog */}
