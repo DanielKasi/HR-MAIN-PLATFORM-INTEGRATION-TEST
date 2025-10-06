@@ -8,6 +8,6 @@ REPORT_CONFIG = {
     'interviews': JobInterview,
     'job openings': JobPositionAdvert,
     'onboarding': OnBoarding,
-    # 'skill zone': SkillZone,
+    'skill zone': SkillZone,
     'interview stages': InterviewStage,
 }

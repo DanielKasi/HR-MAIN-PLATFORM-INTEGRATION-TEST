@@ -95,6 +95,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeletableTimeStampedMod
             roles__role__user_roles__user=self
         ).values_list("permission_code", flat=True)
         return set(perms)
+    
+    def has_permission(self, perm_name):
+        """Check if user has a specific permission."""
+        if self.is_active and self.is_superuser:
+            return True
+        return perm_name in self.get_all_permissions()
 
     def has_perm(self, perm, obj=None):
         """Override Django's default has_perm method."""
