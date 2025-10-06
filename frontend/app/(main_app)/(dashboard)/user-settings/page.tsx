@@ -177,7 +177,7 @@ export default function SettingsPage() {
 									<button
 										key={tab.id}
 										onClick={() => setActiveTab(tab.id)}
-										className={`flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all whitespace-nowrap ${
+										className={`flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all whitespace-nowrap ${
 											activeTab === tab.id ? "bg-primary/10" : "text-gray-600 hover:bg-gray-100"
 										}`}
 									>
@@ -256,7 +256,7 @@ export default function SettingsPage() {
 									<div className="pt-4">
 										<Button
 											type="submit"
-											className={`w-full text-white font-medium h-12 rounded-lg transition-all ${
+											className={`w-full text-white font-medium h-12 rounded-2xl transition-all ${
 												isUpdating ? "opacity-80" : "opacity-100"
 											}`}
 											disabled={isUpdating}
@@ -314,7 +314,7 @@ export default function SettingsPage() {
 									/>
 
 									{confirmPassword && newPassword !== confirmPassword && (
-										<p className="text-red-500 text-sm mt-1 flex items-center gap-2 bg-red-50 p-2 rounded-lg">
+										<p className="text-red-500 text-sm mt-1 flex items-center gap-2 bg-red-50 p-2 rounded-2xl">
 											<span>Passwords do not match</span>
 										</p>
 									)}
@@ -322,7 +322,7 @@ export default function SettingsPage() {
 									<div className="pt-2">
 										<Button
 											type="submit"
-											className={`w-full text-white font-medium h-12 rounded-lg transition-all ${
+											className={`w-full text-white font-medium h-12 rounded-2xl transition-all ${
 												isChangingPassword || !isPasswordFormValid()
 													? "opacity-50 cursor-not-allowed"
 													: "opacity-100"
