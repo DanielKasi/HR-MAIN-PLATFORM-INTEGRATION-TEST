@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db import models, transaction
 from io import BytesIO
 from weasyprint import HTML
-from django.db.models import UniqueConstraint, Q
+from django.db.models import UniqueConstraint, Q, Count
 from django.core.exceptions import ValidationError
 from approval.models import Approval, BaseApprovableModel
 
@@ -46,6 +46,21 @@ class OnBoarding(BaseApprovableModel):
             old_status = old_instance.status
 
         super().save(*args, **kwargs)
+
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            application__application_date__range=(start_date, end_date)
+        ).select_related('application')
+        return list(queryset.values(
+            'status',
+            'attended',
+            'remarks',
+            'application__applicant_name',
+            'application__applicant_email',
+            'application__status as application_status',
+            'application__application_date',
+        ).annotate(docs_count=Count('application__documents')))  
 
     def get_institution(self):
         return self.application.job_position_advert.job_position.department.institution

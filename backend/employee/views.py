@@ -1271,7 +1271,7 @@ class EmployeeCreateAPIView(APIView):
                     row_errors["user.email"] = {"error": "Email cannot be empty."}
                 else:
                     try:
-                        validate_email(email)
+                        print(email)
                     except ValidationError:
                         row_errors["user.email"] = {"error": f"Invalid email format: {email}"}
                     else:
@@ -1685,7 +1685,6 @@ class EmployeeCreateAPIView(APIView):
                 if "company_email" in group.columns and pd.notna(first_row["company_email"]) and str(first_row["company_email"]).strip():
                     company_email = str(first_row["company_email"]).strip()
                     try:
-                        validate_email(company_email)
                         new_company_email_data = {
                             "email": company_email,
                             "provider": None,
