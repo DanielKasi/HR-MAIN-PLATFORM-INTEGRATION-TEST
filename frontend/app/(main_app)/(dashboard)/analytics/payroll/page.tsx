@@ -9,8 +9,13 @@ import BarHChart from "../_components/barh.chart";
 import { IPayrollDashboard } from "@/types/payroll.types";
 import { getPayrollDashboard } from "@/lib/utils";
 import PayrollTable from "./payroll.table";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function PayrollDashboard() {
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+
 	const initialData: IPayrollDashboard = {
 		total_payroll_amount: 0,
 		total_gross_payroll: 0,
@@ -96,10 +101,15 @@ export default function PayrollDashboard() {
 				<div className="min-h-screen bg-gray-50 p-6">
 					<div className="space-y-8">
 						{/* Header */}
-						<div className="gap-4 flex">
+						<div className="flex flex-col md:flex-row items-center justify-between gap-8">
 							<h1 className="flex-grow text-4xl font-bold text-slate-900 text-balance">
 								Payroll Analytics
 							</h1>
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
+							</div>
 						</div>
 
 						{/* Key Metrics */}
@@ -159,6 +169,11 @@ export default function PayrollDashboard() {
 
 						<PayrollTable />
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="payroll"
+					/>
 				</div>
 			)}
 		></LoadingComponent>

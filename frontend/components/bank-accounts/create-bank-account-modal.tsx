@@ -140,7 +140,7 @@ export function BankAccountFormModal({
 
 				<form onSubmit={handleSubmit} className="space-y-6">
 					<div className="space-y-4">
-						<BankAccountSearchableSelect
+						<BankTypeSearchableSelect
 							value={[formData.institution_bank]}
 							onValueChange={(values) => {
 								if (values.length) {

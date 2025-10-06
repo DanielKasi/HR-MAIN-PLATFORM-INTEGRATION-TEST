@@ -1,57 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { getAssetDashboard } from "@/lib/utils";
+import { getAssetDashboard, showErrorToast } from "@/lib/utils";
 import { AssetsData } from "@/types/assets.types";
 import StatsCard from "../_components/stats.card";
 import Piechart from "../_components/pie.chart";
 import colors from "../_components/colors";
-import BarVChart from "../_components/barv.chart";
 import RecentAssetsTable from "./assets.table";
 import LoadingComponent from "@/components/LoadingComponent";
 import BarHChart from "../_components/barh.chart";
+import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/dialogs/reports-dialog";
 
 export default function AssetsDashboard() {
-	const initialData: AssetsData = {
-		asset_counts: {
-			available: 1,
-			allocated: 2,
-			maintenance: 3,
-			decommissioned: 4,
-			total: 10,
-		},
-		category_counts: {
-			total: 6,
-			additionalProp1: 1,
-			additionalProp2: 2,
-			additionalProp3: 3,
-		},
-		pending_counts: {
-			requests: 1,
-			allocations: 2,
-			returns: 3,
-			total: 6,
-		},
-		recent_assets: [
-			{
-				id: 1,
-				institution: 1,
-				asset_name: "sdfsdf",
-				batch_number: "sdfsdf",
-				serial_number: "sdfsdf",
-				category: null,
-				description: "sdfsdfds",
-				status: "available",
-				is_active: true,
-				created_at: "01-JAN-2020",
-				updated_at: "02-JUL-2024",
-				created_by: 1,
-				current_holder: 1,
-			},
-		],
-	};
+	const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 
 	const getCards = (data: AssetsData) => [
 		{
@@ -89,7 +51,6 @@ export default function AssetsDashboard() {
 
 	return (
 		<LoadingComponent
-			initialData={initialData}
 			fetchData={getAssetDashboard}
 			//fetchData={() => Promise.resolve(initialData)}
 			content={(data) => (
@@ -101,10 +62,11 @@ export default function AssetsDashboard() {
 								<h1 className="text-3xl font-bold text-balance">Assets Dashboard</h1>
 								<p className="text-muted-foreground">Manage and track your company assets</p>
 							</div>
-							{/* <Button className="bg-primary hover:bg-primary/90">
-            <Package className="h-4 w-4 mr-2" />
-            Add Asset
-          </Button> */}
+							<div className="flex items-center justify-end gap-8">
+								<Button className="rounded-xl" onClick={() => setIsReportsDialogOpen(true)}>
+									Generate Reports
+								</Button>
+							</div>
 						</div>
 
 						{/* Key Metrics Cards */}
@@ -172,6 +134,11 @@ export default function AssetsDashboard() {
 							{data?.recent_assets?.length && <RecentAssetsTable data={data.recent_assets} />}
 						</div>
 					</div>
+					<ReportDialog
+						isOpen={isReportsDialogOpen}
+						onClose={() => setIsReportsDialogOpen(false)}
+						app="assets"
+					/>
 				</div>
 			)}
 		></LoadingComponent>
