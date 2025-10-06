@@ -594,7 +594,6 @@ export const createJobApplication = async ({
 		}
 	});
 
-	
 	if (
 		applicationData.required_document_files &&
 		applicationData.selectedJobRequiredDocuments?.length
@@ -607,7 +606,6 @@ export const createJobApplication = async ({
 		});
 	}
 
-	
 	const response = await apiPost(
 		`/recruitment/institution/${institutionId}/job-application/`,
 		formData,

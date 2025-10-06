@@ -9,8 +9,6 @@ import type {
 	ICountry,
 	RequiredDocument,
 	FormDataState,
-	ApplicationDocument,
-	DocumentsDropdownProps,
 } from "@/types/types.utils";
 import type {
 	IInterviewStage,
@@ -45,6 +43,8 @@ import {
 	CalendarDays,
 	Loader2,
 	Loader,
+	ChevronRight,
+	Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
@@ -122,6 +122,7 @@ import FixedLoader from "@/components/fixed-loader";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const statusColors = {
 	new: "bg-blue-100 text-blue-800",
@@ -145,80 +146,350 @@ const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
 	{ value: "in_person", label: "In person" },
 ];
 
-// Documents Dropdown Component
-const DocumentsDropdown: React.FC<DocumentsDropdownProps> = ({ documents, requiredCount }) => {
-	const [isOpen, setIsOpen] = useState(false);
-	const [selectedDocument, setSelectedDocument] = useState<ApplicationDocument | null>(null);
-	const [showIframe, setShowIframe] = useState(false);
+// Helper function to extract file name from URL
+const getFileNameFromUrl = (url: string) => {
+	return url.split("/").pop() || "document";
+};
 
-	const handleViewDocument = (doc: ApplicationDocument) => {
-		setSelectedDocument(doc);
-		setShowIframe(true);
+// Enhanced Document Preview Dialog
+// Update the DocumentPreviewDialog to accept handleDownload as a prop
+// Enhanced Document Preview Dialog
+const DocumentPreviewDialog = ({
+	isOpen,
+	onClose,
+	documentUrl,
+	documentName,
+	handleDownload,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	documentUrl: string;
+	documentName: string;
+	handleDownload: (fileUrl: string, fileName: string) => Promise<void>;
+}) => {
+	const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [previewContent, setPreviewContent] = useState<string | null>(null);
+
+	// Enhanced file type detection for preview
+	const getFilePreviewType = (fileName: string): string => {
+		const extension = fileName.split(".").pop()?.toLowerCase() || "";
+
+		// Images
+		const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"];
+		if (imageExtensions.includes(extension)) return "image";
+
+		// PDFs
+		if (extension === "pdf") return "pdf";
+
+		// Text files
+		const textExtensions = ["txt", "csv", "json", "xml", "md", "log"];
+		if (textExtensions.includes(extension)) return "text";
+
+		// Office documents
+		const officeExtensions = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+		if (officeExtensions.includes(extension)) return "office";
+
+		// Code files
+		const codeExtensions = [
+			"js",
+			"jsx",
+			"ts",
+			"tsx",
+			"html",
+			"css",
+			"py",
+			"java",
+			"cpp",
+			"c",
+			"php",
+		];
+		if (codeExtensions.includes(extension)) return "code";
+
+		return "unknown";
+	};
+
+	// Load document for preview
+	const loadDocumentForPreview = async () => {
+		if (!documentUrl) return;
+
+		setIsLoadingPreview(true);
+		setPreviewBlobUrl(null);
+		setPreviewContent(null);
+
+		try {
+			const fileName = getFileNameFromUrl(documentUrl);
+			const fileType = getFilePreviewType(fileName);
+			const fileUrl = getFileUrl(documentUrl);
+
+			// Fetch the file as blob to bypass download headers
+			const response = await fetch(fileUrl);
+			if (!response.ok) throw new Error("Failed to fetch document");
+
+			const blob = await response.blob();
+			const blobUrl = URL.createObjectURL(blob);
+			setPreviewBlobUrl(blobUrl);
+
+			// For text-based files, we can also read the content
+			if (fileType === "text" || fileType === "code") {
+				const text = await blob.text();
+				setPreviewContent(text);
+			}
+		} catch (error) {
+			console.error("Error loading document for preview:", error);
+			toast.error("Failed to load document for preview");
+		} finally {
+			setIsLoadingPreview(false);
+		}
+	};
+
+	// Clean up blob URLs
+	useEffect(() => {
+		return () => {
+			if (previewBlobUrl) {
+				URL.revokeObjectURL(previewBlobUrl);
+			}
+		};
+	}, [previewBlobUrl]);
+
+	// Load document when dialog opens
+	useEffect(() => {
+		if (isOpen && documentUrl) {
+			loadDocumentForPreview();
+		}
+	}, [isOpen, documentUrl]);
+
+	// Enhanced document preview rendering - THIS IS THE MISSING FUNCTION
+	const renderDocumentPreview = () => {
+		if (!documentUrl) {
+			return (
+				<div className="text-center text-muted-foreground py-8">
+					<FileText className="h-16 w-16 mx-auto mb-4" />
+					<p>No document available for preview</p>
+				</div>
+			);
+		}
+
+		const fileName = getFileNameFromUrl(documentUrl);
+		const fileType = getFilePreviewType(fileName);
+
+		if (isLoadingPreview) {
+			return (
+				<div className="flex flex-col items-center justify-center h-64">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+					<span className="text-muted-foreground">Loading preview...</span>
+				</div>
+			);
+		}
+
+		// If we don't have a blob URL, something went wrong
+		if (!previewBlobUrl) {
+			return (
+				<div className="text-center py-8">
+					<AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+					<p className="text-destructive mb-2">Failed to load document for preview</p>
+					<Button
+						onClick={() => {
+							handleDownload(documentUrl, documentName);
+						}}
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Download File
+					</Button>
+				</div>
+			);
+		}
+
+		switch (fileType) {
+			case "pdf":
+				return (
+					<iframe
+						src={previewBlobUrl}
+						className="w-full h-full border-0 rounded"
+						title={`Preview of ${documentName}`}
+					/>
+				);
+
+			case "image":
+				return (
+					<div className="flex justify-center items-center h-full">
+						<img
+							src={previewBlobUrl}
+							alt={documentName}
+							className="max-w-full max-h-full object-contain"
+						/>
+					</div>
+				);
+
+			case "text":
+			case "code":
+				return (
+					<div className="w-full h-full border rounded bg-white overflow-auto">
+						<pre className="p-4 text-sm whitespace-pre-wrap font-mono">
+							{previewContent || "Loading content..."}
+						</pre>
+					</div>
+				);
+
+			case "office":
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							Office documents cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download Document
+						</Button>
+					</div>
+				);
+
+			case "unknown":
+			default:
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							This file type cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download File
+						</Button>
+					</div>
+				);
+		}
 	};
 
 	return (
-		<>
-			<div className="relative">
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={() => setIsOpen(!isOpen)}
-					className="flex items-center gap-2"
-				>
-					<FileText className="h-3 w-3" />
-					Documents ({requiredCount})
-					{isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-				</Button>
+		<Dialog open={isOpen} onOpenChange={onClose}>
+			<DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+				<DialogHeader>
+					<DialogTitle>{documentName}</DialogTitle>
+				</DialogHeader>
+				<div className="flex-1 min-h-0">{renderDocumentPreview()}</div>
+				<div className="flex justify-end gap-2 pt-4 border-t">
+					<Button variant="outline" onClick={onClose}>
+						Close
+					</Button>
+					{documentUrl && (
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download
+						</Button>
+					)}
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
+};
 
-				{isOpen && (
-					<div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-						<div className="p-2 max-h-60 overflow-y-auto">
-							{documents.length === 0 ? (
-								<div className="text-center py-2 text-sm text-gray-500">No documents available</div>
-							) : (
-								documents.map((doc) => (
-									<div
-										key={doc.id}
-										className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
-										onClick={() => handleViewDocument(doc)}
-									>
-										<div className="flex items-center gap-2">
-											<FileText className="h-3 w-3 text-blue-600" />
-											<span className="text-sm">{doc.document_name}</span>
-										</div>
-										{doc.is_required && (
-											<Badge
-												variant="outline"
-												className="text-xs bg-red-50 text-red-700 border-red-200"
+// Enhanced Required Documents Cell
+// Enhanced Required Documents Cell
+// Update the RequiredDocumentsCell component to accept handleDownload as a prop
+const RequiredDocumentsCell = ({
+	application,
+	handleDownload,
+}: {
+	application: JobApplication;
+	handleDownload: (fileUrl: string, fileName: string) => Promise<void>;
+}) => {
+	const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
+	const documents = application.documents || [];
+
+	if (documents.length === 0) {
+		return <div className="text-sm text-muted-foreground">No documents</div>;
+	}
+
+	return (
+		<>
+			<Popover>
+				<PopoverTrigger asChild>
+					<Button variant="outline" size="sm" className="gap-2">
+						<FileText className="h-4 w-4" />
+						{documents.length} {documents.length === 1 ? "Document" : "Documents"}
+						<ChevronRight className="h-3 w-3" />
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent className="w-80 p-0" align="start">
+					<div className="p-2">
+						<div className="text-sm font-medium mb-2 px-2">Required Documents</div>
+						<div className="space-y-1">
+							{documents.map((doc) => (
+								<div
+									key={doc.id}
+									className="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
+								>
+									<div className="flex items-center gap-2 flex-1 min-w-0">
+										<FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+										<span className="text-sm truncate flex-1">
+											{doc.required_document.document_name}
+										</span>
+									</div>
+									<div className="flex items-center gap-1 flex-shrink-0">
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-8 w-8 p-0"
+											onClick={() =>
+												setPreviewDoc({
+													url: doc.file,
+													name: doc.required_document.document_name,
+												})
+											}
+											title="Preview document"
+										>
+											<Eye className="h-3 w-3" />
+										</Button>
+										{doc.file && (
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-8 w-8 p-0"
+												onClick={() =>
+													handleDownload(doc.file, doc.required_document.document_name)
+												}
+												title="Download document"
 											>
-												Required
-											</Badge>
+												<Download className="h-3 w-3" />
+											</Button>
 										)}
 									</div>
-								))
-							)}
+								</div>
+							))}
 						</div>
 					</div>
-				)}
-			</div>
+				</PopoverContent>
+			</Popover>
 
-			{/* Document Viewer Dialog */}
-			<Dialog open={showIframe} onOpenChange={setShowIframe}>
-				<DialogContent className="max-w-4xl h-[80vh]">
-					<DialogHeader>
-						<DialogTitle>{selectedDocument?.document_name}</DialogTitle>
-					</DialogHeader>
-					<div className="flex-1 h-full">
-						{selectedDocument && (
-							<iframe
-								src={selectedDocument.file_url}
-								className="w-full h-full border rounded"
-								title={selectedDocument.document_name}
-							/>
-						)}
-					</div>
-				</DialogContent>
-			</Dialog>
+			{previewDoc && (
+				<DocumentPreviewDialog
+					isOpen={true}
+					onClose={() => setPreviewDoc(null)}
+					documentUrl={previewDoc.url}
+					documentName={previewDoc.name}
+					handleDownload={handleDownload}
+				/>
+			)}
 		</>
 	);
 };
@@ -296,6 +567,41 @@ export default function ApplicationsPage() {
 
 	const [interviewErrors, setInterviewErrors] = useState<any>({});
 	const [ordering, setOrdering] = useState("");
+
+	// Add the handleDownload function
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		try {
+			// Get the file URL
+			const url = getFileUrl(fileUrl);
+
+			// Fetch the file as blob
+			const response = await fetch(url);
+			if (!response.ok) throw new Error("Failed to fetch file");
+
+			const blob = await response.blob();
+
+			// Create a blob URL and trigger download
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = blobUrl;
+			a.download = fileName || "document"; // Use provided filename or default
+
+			// Append to body, click, and cleanup
+			document.body.appendChild(a);
+			a.click();
+
+			// Cleanup
+			window.URL.revokeObjectURL(blobUrl);
+			document.body.removeChild(a);
+		} catch (error) {
+			console.error("Error downloading file:", error);
+			toast.error("Failed to download file");
+
+			// Fallback: open in new tab if download fails
+			window.open(getFileUrl(fileUrl), "_blank");
+		}
+	};
 
 	const updateInterviewFormData = (field: string, value: any) => {
 		setInterviewFormData((prev) => ({ ...prev, [field]: value }));
@@ -407,7 +713,6 @@ export default function ApplicationsPage() {
 				interview_type: interviewFormData.interview_type,
 				status: interviewFormData.status || "scheduled",
 				feedback: interviewFormData.feedback || undefined,
-				rating: interviewFormData.rating || undefined,
 				created_by: userData.id,
 			};
 
@@ -586,7 +891,7 @@ export default function ApplicationsPage() {
 			setFormData((prev) => ({
 				...prev,
 				address_latitude: applicationLocation.latitude,
-				address_longitude: applicationLocation.longitude,
+				address_longitude: applicationLocation.latitude,
 			}));
 
 			const updatedFormData = {
@@ -905,8 +1210,7 @@ export default function ApplicationsPage() {
 			applicant_name: "",
 			applicant_email: "",
 			applicant_phone: "",
-			resume: undefined, // Change from null to undefined
-			cover_letter: undefined, // Change from null to undefined
+
 			status: "new" as const,
 			gender: "male" as const,
 			state: "",
@@ -1595,18 +1899,6 @@ export default function ApplicationsPage() {
 		}
 	};
 
-	const handleConfirmAction = async () => {
-		if (confirmAction.applicationId && confirmAction.action) {
-			await executeAction(confirmAction.applicationId, confirmAction.action);
-			setConfirmAction({
-				isOpen: false,
-				applicationId: null,
-				applicantName: "",
-				action: null,
-			});
-		}
-	};
-
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString("en-US", {
 			year: "numeric",
@@ -2277,51 +2569,10 @@ export default function ApplicationsPage() {
 															</div>
 														</TableCell>
 														<TableCell>
-															<div className="py-1">
-																<DocumentsDropdown
-																	documents={[
-																		...(application.resume
-																			? [
-																					{
-																						id: application.id + 1,
-																						document_name: "Resume",
-																						file_url: getFileUrl(application.resume),
-																						uploaded_at: application.application_date,
-																						is_required: true,
-																					},
-																				]
-																			: []),
-																		...(application.cover_letter
-																			? [
-																					{
-																						id: application.id + 2,
-																						document_name: "Cover Letter",
-																						file_url: getFileUrl(application.cover_letter),
-																						uploaded_at: application.application_date,
-																						is_required: false,
-																					},
-																				]
-																			: []),
-																		// Add required documents from the job position
-																		...(application.required_documents || []).map(
-																			(doc: any, index: number) => ({
-																				id: application.id + 3 + index,
-																				document_name: doc.document_name,
-																				file_url: getFileUrl(doc.file),
-																				uploaded_at:
-																					doc.uploaded_at || application.application_date,
-																				is_required: !doc.is_optional,
-																			}),
-																		),
-																	]}
-																	requiredCount={
-																		(application.resume ? 1 : 0) +
-																		(application.required_documents || []).filter(
-																			(doc: any) => !doc.is_optional,
-																		).length
-																	}
-																/>
-															</div>
+															<RequiredDocumentsCell
+																application={application}
+																handleDownload={handleDownload}
+															/>{" "}
 														</TableCell>
 														<TableCell>
 															<DropdownMenu>
@@ -2539,7 +2790,7 @@ export default function ApplicationsPage() {
 								</div>
 							</div>
 
-							{/* Second Row - Name and Gender */}
+							{/* Second Row - Name and gender */}
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<div className="space-y-2">
 									<label
@@ -2865,7 +3116,7 @@ export default function ApplicationsPage() {
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={handleConfirmAction}
+							onClick={handleConfirmBulkAction}
 							className={
 								confirmAction.action === "rejected" ? "bg-destructive hover:bg-destructive/90" : ""
 							}
