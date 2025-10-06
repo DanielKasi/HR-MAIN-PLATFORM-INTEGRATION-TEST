@@ -1,7 +1,12 @@
 "use client";
 
 import type { IInterviewStageFormData } from "@/types/types.utils";
-import type { JobApplication, IInterviewStage, IInterviewFormData } from "@/types/types.utils";
+import type {
+	JobApplication,
+	IInterviewStage,
+	IInterviewFormData,
+	JobApplicationDocument,
+} from "@/types/types.utils";
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -84,39 +89,16 @@ const sourceLabels = {
 
 export default function ApplicationViewPage() {
 	const [showShortlistConfirm, setShowShortlistConfirm] = useState(false);
-	// ...
-	// Handler for shortlisting
-	const handleShortlist = async () => {
-		if (!application) return;
-		try {
-			const updateData: {
-				applicationId: number;
-				status: string;
-				shortlisted_by?: number;
-			} = {
-				applicationId: application.id,
-				status: "shortlisted",
-			};
-
-			// Add the current user as the one who shortlisted
-			if (currentUser?.id) {
-				updateData.shortlisted_by = currentUser.id;
-			}
-
-			await updateJobApplicationStatus(updateData);
-			setApplication({ ...application, status: "shortlisted" });
-			toast.success("Application shortlisted successfully");
-
-			// Refresh the application data to get updated user details
-			await fetchApplication();
-		} catch (error) {
-			toast.error("Failed to shortlist application");
-		}
-	};
-
 	const [application, setApplication] = useState<JobApplication | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [previewDocument, setPreviewDocument] = useState<{
+		isOpen: boolean;
+		document: JobApplicationDocument | null;
+	}>({
+		isOpen: false,
+		document: null,
+	});
 
 	const router = useRouter();
 	const params = useParams();
@@ -156,6 +138,35 @@ export default function ApplicationViewPage() {
 		rating: undefined,
 	});
 	const [interviewErrors, setInterviewErrors] = useState<any>({});
+
+	// Handler for shortlisting
+	const handleShortlist = async () => {
+		if (!application) return;
+		try {
+			const updateData: {
+				applicationId: number;
+				status: string;
+				shortlisted_by?: number;
+			} = {
+				applicationId: application.id,
+				status: "shortlisted",
+			};
+
+			// Add the current user as the one who shortlisted
+			if (currentUser?.id) {
+				updateData.shortlisted_by = currentUser.id;
+			}
+
+			await updateJobApplicationStatus(updateData);
+			setApplication({ ...application, status: "shortlisted" });
+			toast.success("Application shortlisted successfully");
+
+			// Refresh the application data to get updated user details
+			await fetchApplication();
+		} catch (error) {
+			toast.error("Failed to shortlist application");
+		}
+	};
 
 	const handleIndividualAction = async (applicationId: number, action: "reviewed" | "rejected") => {
 		try {
@@ -226,6 +237,7 @@ export default function ApplicationViewPage() {
 			toast.error("Failed to load interview data");
 		}
 	};
+
 	const handleScheduleInterview = async () => {
 		if (!application || !selectedInstitution) return;
 
@@ -323,6 +335,36 @@ export default function ApplicationViewPage() {
 	const updateInterviewFormData = (field: string, value: any) => {
 		setInterviewFormData((prev) => ({ ...prev, [field]: value }));
 		setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }));
+	};
+
+	// Document preview functions
+	const handlePreviewDocument = (document: JobApplicationDocument) => {
+		setPreviewDocument({
+			isOpen: true,
+			document,
+		});
+	};
+
+	const getFileIcon = (fileName: string) => {
+		const extension = fileName.split(".").pop()?.toLowerCase();
+		switch (extension) {
+			case "pdf":
+				return <FileText className="h-8 w-8 text-red-500" />;
+			case "doc":
+			case "docx":
+				return <FileText className="h-8 w-8 text-blue-500" />;
+			case "jpg":
+			case "jpeg":
+			case "png":
+			case "gif":
+				return <FileText className="h-8 w-8 text-green-500" />;
+			default:
+				return <FileText className="h-8 w-8 text-gray-500" />;
+		}
+	};
+
+	const getFileNameFromUrl = (url: string) => {
+		return url.split("/").pop() || "document";
 	};
 
 	useEffect(() => {
@@ -705,69 +747,159 @@ export default function ApplicationViewPage() {
 										</TabsContent>
 
 										<TabsContent value="documents" className="space-y-6">
-											{/* Application Documents */}
+											{/* Required Application Documents */}
 											<Card>
 												<CardHeader>
 													<CardTitle className="flex items-center gap-2">
 														<FileText className="h-5 w-5" />
-														Application Documents
+														Required Application Documents
 													</CardTitle>
 												</CardHeader>
 												<CardContent className="space-y-4">
-													{application.resume && (
-														<div className="flex items-center justify-between p-4 border rounded-lg">
-															<div className="flex items-center gap-3">
-																<FileText className="h-8 w-8 text-blue-500" />
-																<div>
-																	<p className="font-medium">Resume</p>
-																	<p className="text-sm text-muted-foreground">
-																		{application.resume.split("/").pop()}
-																	</p>
-																</div>
-															</div>
-															<Button
-																variant="outline"
-																size="sm"
-																onClick={() => downloadFile(application.resume, "Resume")}
-															>
-																<Download className="h-4 w-4 md:mr-2" />
-																<span className="hidden md:inline">Download</span>
-															</Button>
+													{application.documents && application.documents.length > 0 ? (
+														<div className="space-y-4">
+															{application.documents
+																.filter((doc) => doc.is_active && !doc.deleted_at)
+																.map((document) => (
+																	<div
+																		key={document.id}
+																		className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+																	>
+																		<div className="flex items-center gap-3 flex-1">
+																			{getFileIcon(document.file)}
+																			<div className="flex-1 min-w-0">
+																				<div className="flex items-center gap-2">
+																					<p className="font-medium truncate">
+																						{document.required_document.document_name}
+																					</p>
+																					{document.required_document.is_optional && (
+																						<Badge variant="outline" className="text-xs">
+																							Optional
+																						</Badge>
+																					)}
+																				</div>
+																				{document.required_document.description && (
+																					<p className="text-sm text-muted-foreground truncate">
+																						{document.required_document.description}
+																					</p>
+																				)}
+																				<div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+																					<span>
+																						Uploaded:{" "}
+																						{new Date(document.uploaded_at).toLocaleDateString()}
+																					</span>
+																					{document.file && (
+																						<span className="truncate">
+																							File: {getFileNameFromUrl(document.file)}
+																						</span>
+																					)}
+																				</div>
+																			</div>
+																		</div>
+																		<div className="flex items-center gap-2">
+																			{document.file && (
+																				<>
+																					<Button
+																						variant="outline"
+																						size="sm"
+																						onClick={() => handlePreviewDocument(document)}
+																						title="Preview document"
+																					>
+																						<Eye className="h-4 w-4" />
+																					</Button>
+																					<Button
+																						variant="outline"
+																						size="sm"
+																						onClick={() =>
+																							downloadFile(
+																								document.file,
+																								document.required_document.document_name,
+																							)
+																						}
+																						title="Download document"
+																					>
+																						<Download className="h-4 w-4" />
+																					</Button>
+																				</>
+																			)}
+																			{!document.file && (
+																				<Badge variant="secondary" className="text-xs">
+																					Not Uploaded
+																				</Badge>
+																			)}
+																		</div>
+																	</div>
+																))}
 														</div>
-													)}
-
-													{application.cover_letter && (
-														<div className="flex items-center justify-between p-4 border rounded-lg">
-															<div className="flex items-center gap-3">
-																<FileText className="h-8 w-8 text-green-500" />
-																<div>
-																	<p className="font-medium">Cover Letter</p>
-																	<p className="text-sm text-muted-foreground">
-																		{application.cover_letter.split("/").pop()}
-																	</p>
-																</div>
-															</div>
-															<Button
-																variant="outline"
-																size="sm"
-																onClick={() =>
-																	downloadFile(application.cover_letter!, "Cover Letter")
-																}
-															>
-																<Download className="h-4 w-4 md:mr-2" />
-																<span className="hidden md:inline">Download</span>
-															</Button>
-														</div>
-													)}
-
-													{!application.resume && !application.cover_letter && (
+													) : (
 														<div className="text-center py-8">
 															<FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-															<p className="text-muted-foreground">No documents available</p>
+															<p className="text-muted-foreground">
+																No documents available for this application
+															</p>
 														</div>
 													)}
 												</CardContent>
 											</Card>
+
+											{/* Legacy Documents Section (Resume & Cover Letter) */}
+											{(application.resume || application.cover_letter) && (
+												<Card>
+													<CardHeader>
+														<CardTitle className="flex items-center gap-2">
+															<FileText className="h-5 w-5" />
+															Additional Documents
+														</CardTitle>
+													</CardHeader>
+													<CardContent className="space-y-4">
+														{application.resume && (
+															<div className="flex items-center justify-between p-4 border rounded-lg">
+																<div className="flex items-center gap-3">
+																	<FileText className="h-8 w-8 text-blue-500" />
+																	<div>
+																		<p className="font-medium">Resume</p>
+																		<p className="text-sm text-muted-foreground">
+																			{application.resume.split("/").pop()}
+																		</p>
+																	</div>
+																</div>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() => downloadFile(application.resume, "Resume")}
+																>
+																	<Download className="h-4 w-4 md:mr-2" />
+																	<span className="hidden md:inline">Download</span>
+																</Button>
+															</div>
+														)}
+
+														{application.cover_letter && (
+															<div className="flex items-center justify-between p-4 border rounded-lg">
+																<div className="flex items-center gap-3">
+																	<FileText className="h-8 w-8 text-green-500" />
+																	<div>
+																		<p className="font-medium">Cover Letter</p>
+																		<p className="text-sm text-muted-foreground">
+																			{application.cover_letter.split("/").pop()}
+																		</p>
+																	</div>
+																</div>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() =>
+																		downloadFile(application.cover_letter!, "Cover Letter")
+																	}
+																>
+																	<Download className="h-4 w-4 md:mr-2" />
+																	<span className="hidden md:inline">Download</span>
+																</Button>
+															</div>
+														)}
+													</CardContent>
+												</Card>
+											)}
 										</TabsContent>
 									</Tabs>
 								</div>
@@ -928,7 +1060,11 @@ export default function ApplicationViewPage() {
 											<div className="flex items-center justify-between">
 												<span className="text-sm text-muted-foreground">Documents</span>
 												<span className="text-sm font-medium">
-													{[application.resume, application.cover_letter].filter(Boolean).length}
+													{application.documents
+														? application.documents.filter(
+																(doc) => doc.is_active && !doc.deleted_at,
+															).length
+														: 0}
 												</span>
 											</div>
 
@@ -959,6 +1095,93 @@ export default function ApplicationViewPage() {
 								</div>
 							</div>
 						</ApprovableInstancePageLayout>
+
+						{/* Document Preview Dialog */}
+						<Dialog
+							open={previewDocument.isOpen}
+							onOpenChange={(open) => setPreviewDocument({ isOpen: open, document: null })}
+						>
+							<DialogContent className="max-w-4xl max-h-[90vh]">
+								<DialogHeader>
+									<DialogTitle>
+										{previewDocument.document?.required_document.document_name ||
+											"Document Preview"}
+									</DialogTitle>
+									<DialogDescription>
+										{previewDocument.document?.required_document.description}
+									</DialogDescription>
+								</DialogHeader>
+
+								<div className="flex-1 min-h-0">
+									{previewDocument.document && (
+										<div className="space-y-4">
+											{/* Document Info */}
+											<div className="grid grid-cols-2 gap-4 text-sm">
+												<div>
+													<span className="font-medium">Document Type:</span>{" "}
+													{previewDocument.document.required_document.document_name}
+												</div>
+												<div>
+													<span className="font-medium">Uploaded:</span>{" "}
+													{new Date(previewDocument.document.uploaded_at).toLocaleString()}
+												</div>
+												<div>
+													<span className="font-medium">Status:</span>{" "}
+													{previewDocument.document.required_document.is_optional
+														? "Optional"
+														: "Required"}
+												</div>
+												<div>
+													<span className="font-medium">File:</span>{" "}
+													{getFileNameFromUrl(previewDocument.document.file)}
+												</div>
+											</div>
+
+											{/* Document Preview */}
+											<div className="border rounded-lg p-4 bg-muted/50">
+												<div className="flex justify-center items-center min-h-[400px]">
+													{previewDocument.document.file ? (
+														<iframe
+															src={previewDocument.document.file}
+															className="w-full h-[400px] border-0 rounded"
+															title={`Preview of ${previewDocument.document.required_document.document_name}`}
+														/>
+													) : (
+														<div className="text-center text-muted-foreground">
+															<FileText className="h-16 w-16 mx-auto mb-4" />
+															<p>No document available for preview</p>
+														</div>
+													)}
+												</div>
+											</div>
+
+											{/* Action Buttons */}
+											<div className="flex justify-end gap-2 pt-4">
+												<Button
+													variant="outline"
+													onClick={() => setPreviewDocument({ isOpen: false, document: null })}
+												>
+													Close
+												</Button>
+												{previewDocument.document.file && (
+													<Button
+														onClick={() => {
+															downloadFile(
+																previewDocument.document!.file,
+																previewDocument.document!.required_document.document_name,
+															);
+														}}
+													>
+														<Download className="h-4 w-4 mr-2" />
+														Download
+													</Button>
+												)}
+											</div>
+										</div>
+									)}
+								</div>
+							</DialogContent>
+						</Dialog>
 
 						<Dialog open={showShortlistConfirm} onOpenChange={setShowShortlistConfirm}>
 							<DialogContent>

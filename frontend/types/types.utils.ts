@@ -175,6 +175,8 @@ export interface JobApplication {
 	country: string;
 	source: "website" | "referral" | "job_board" | "social_media" | "head_hunt" | "other";
 	created_by: number;
+	// Add documents array
+	documents: JobApplicationDocument[];
 }
 
 export interface JobApplicationFormData {
@@ -284,9 +286,23 @@ export interface JobPositionAdvertFormData {
 	advert_type?: JobAdvertTypes;
 	required_documents?: Array<{
 		document_name: string;
-		description: string;
+		description?: string;
 		is_optional: boolean;
 	}>;
+}
+
+export interface JobApplicationDocument {
+	id: number;
+	required_document: RequiredDocument;
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+	is_active: boolean;
+	file: string;
+	uploaded_at: string;
+	created_by: number;
+	updated_by: number;
+	job_advert_application: number;
 }
 
 // Extended form data that includes interview stages setup
