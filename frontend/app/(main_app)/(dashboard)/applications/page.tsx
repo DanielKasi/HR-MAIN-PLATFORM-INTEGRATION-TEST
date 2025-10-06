@@ -7,6 +7,8 @@ import type {
 	JobPositionAdvert,
 	IInterviewType,
 	ICountry,
+	RequiredDocument,
+	FormDataState,
 } from "@/types/types.utils";
 import type {
 	IInterviewStage,
@@ -41,6 +43,8 @@ import {
 	CalendarDays,
 	Loader2,
 	Loader,
+	ChevronRight,
+	Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Icon } from "@iconify/react";
@@ -118,6 +122,7 @@ import FixedLoader from "@/components/fixed-loader";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const statusColors = {
 	new: "bg-blue-100 text-blue-800",
@@ -141,11 +146,368 @@ const interviewTypes: Array<{ value: IInterviewType; label: string }> = [
 	{ value: "in_person", label: "In person" },
 ];
 
+// Helper function to extract file name from URL
+const getFileNameFromUrl = (url: string) => {
+	return url.split("/").pop() || "document";
+};
+
+// Enhanced Document Preview Dialog
+// Update the DocumentPreviewDialog to accept handleDownload as a prop
+// Enhanced Document Preview Dialog
+const DocumentPreviewDialog = ({
+	isOpen,
+	onClose,
+	documentUrl,
+	documentName,
+	handleDownload,
+}: {
+	isOpen: boolean;
+	onClose: () => void;
+	documentUrl: string;
+	documentName: string;
+	handleDownload: (fileUrl: string, fileName: string) => Promise<void>;
+}) => {
+	const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [previewContent, setPreviewContent] = useState<string | null>(null);
+
+	// Enhanced file type detection for preview
+	const getFilePreviewType = (fileName: string): string => {
+		const extension = fileName.split(".").pop()?.toLowerCase() || "";
+
+		// Images
+		const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"];
+		if (imageExtensions.includes(extension)) return "image";
+
+		// PDFs
+		if (extension === "pdf") return "pdf";
+
+		// Text files
+		const textExtensions = ["txt", "csv", "json", "xml", "md", "log"];
+		if (textExtensions.includes(extension)) return "text";
+
+		// Office documents
+		const officeExtensions = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+		if (officeExtensions.includes(extension)) return "office";
+
+		// Code files
+		const codeExtensions = [
+			"js",
+			"jsx",
+			"ts",
+			"tsx",
+			"html",
+			"css",
+			"py",
+			"java",
+			"cpp",
+			"c",
+			"php",
+		];
+		if (codeExtensions.includes(extension)) return "code";
+
+		return "unknown";
+	};
+
+	// Load document for preview
+	const loadDocumentForPreview = async () => {
+		if (!documentUrl) return;
+
+		setIsLoadingPreview(true);
+		setPreviewBlobUrl(null);
+		setPreviewContent(null);
+
+		try {
+			const fileName = getFileNameFromUrl(documentUrl);
+			const fileType = getFilePreviewType(fileName);
+			const fileUrl = getFileUrl(documentUrl);
+
+			// Fetch the file as blob to bypass download headers
+			const response = await fetch(fileUrl);
+			if (!response.ok) throw new Error("Failed to fetch document");
+
+			const blob = await response.blob();
+			const blobUrl = URL.createObjectURL(blob);
+			setPreviewBlobUrl(blobUrl);
+
+			// For text-based files, we can also read the content
+			if (fileType === "text" || fileType === "code") {
+				const text = await blob.text();
+				setPreviewContent(text);
+			}
+		} catch (error) {
+			console.error("Error loading document for preview:", error);
+			toast.error("Failed to load document for preview");
+		} finally {
+			setIsLoadingPreview(false);
+		}
+	};
+
+	// Clean up blob URLs
+	useEffect(() => {
+		return () => {
+			if (previewBlobUrl) {
+				URL.revokeObjectURL(previewBlobUrl);
+			}
+		};
+	}, [previewBlobUrl]);
+
+	// Load document when dialog opens
+	useEffect(() => {
+		if (isOpen && documentUrl) {
+			loadDocumentForPreview();
+		}
+	}, [isOpen, documentUrl]);
+
+	// Enhanced document preview rendering - THIS IS THE MISSING FUNCTION
+	const renderDocumentPreview = () => {
+		if (!documentUrl) {
+			return (
+				<div className="text-center text-muted-foreground py-8">
+					<FileText className="h-16 w-16 mx-auto mb-4" />
+					<p>No document available for preview</p>
+				</div>
+			);
+		}
+
+		const fileName = getFileNameFromUrl(documentUrl);
+		const fileType = getFilePreviewType(fileName);
+
+		if (isLoadingPreview) {
+			return (
+				<div className="flex flex-col items-center justify-center h-64">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+					<span className="text-muted-foreground">Loading preview...</span>
+				</div>
+			);
+		}
+
+		// If we don't have a blob URL, something went wrong
+		if (!previewBlobUrl) {
+			return (
+				<div className="text-center py-8">
+					<AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+					<p className="text-destructive mb-2">Failed to load document for preview</p>
+					<Button
+						onClick={() => {
+							handleDownload(documentUrl, documentName);
+						}}
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Download File
+					</Button>
+				</div>
+			);
+		}
+
+		switch (fileType) {
+			case "pdf":
+				return (
+					<iframe
+						src={previewBlobUrl}
+						className="w-full h-full border-0 rounded"
+						title={`Preview of ${documentName}`}
+					/>
+				);
+
+			case "image":
+				return (
+					<div className="flex justify-center items-center h-full">
+						<img
+							src={previewBlobUrl}
+							alt={documentName}
+							className="max-w-full max-h-full object-contain"
+						/>
+					</div>
+				);
+
+			case "text":
+			case "code":
+				return (
+					<div className="w-full h-full border rounded bg-white overflow-auto">
+						<pre className="p-4 text-sm whitespace-pre-wrap font-mono">
+							{previewContent || "Loading content..."}
+						</pre>
+					</div>
+				);
+
+			case "office":
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							Office documents cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download Document
+						</Button>
+					</div>
+				);
+
+			case "unknown":
+			default:
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							This file type cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download File
+						</Button>
+					</div>
+				);
+		}
+	};
+
+	return (
+		<Dialog open={isOpen} onOpenChange={onClose}>
+			<DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+				<DialogHeader>
+					<DialogTitle>{documentName}</DialogTitle>
+				</DialogHeader>
+				<div className="flex-1 min-h-0">{renderDocumentPreview()}</div>
+				<div className="flex justify-end gap-2 pt-4 border-t">
+					<Button variant="outline" onClick={onClose}>
+						Close
+					</Button>
+					{documentUrl && (
+						<Button
+							onClick={() => {
+								handleDownload(documentUrl, documentName);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download
+						</Button>
+					)}
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+// Enhanced Required Documents Cell
+// Enhanced Required Documents Cell
+// Update the RequiredDocumentsCell component to accept handleDownload as a prop
+const RequiredDocumentsCell = ({
+	application,
+	handleDownload,
+}: {
+	application: JobApplication;
+	handleDownload: (fileUrl: string, fileName: string) => Promise<void>;
+}) => {
+	const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string } | null>(null);
+	const documents = application.documents || [];
+
+	if (documents.length === 0) {
+		return <div className="text-sm text-muted-foreground">No documents</div>;
+	}
+
+	return (
+		<>
+			<Popover>
+				<PopoverTrigger asChild>
+					<Button variant="outline" size="sm" className="gap-2">
+						<FileText className="h-4 w-4" />
+						{documents.length} {documents.length === 1 ? "Document" : "Documents"}
+						<ChevronRight className="h-3 w-3" />
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent className="w-80 p-0" align="start">
+					<div className="p-2">
+						<div className="text-sm font-medium mb-2 px-2">Required Documents</div>
+						<div className="space-y-1">
+							{documents.map((doc) => (
+								<div
+									key={doc.id}
+									className="flex items-center justify-between p-2 hover:bg-muted/50 rounded"
+								>
+									<div className="flex items-center gap-2 flex-1 min-w-0">
+										<FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+										<span className="text-sm truncate flex-1">
+											{doc.required_document.document_name}
+										</span>
+									</div>
+									<div className="flex items-center gap-1 flex-shrink-0">
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-8 w-8 p-0"
+											onClick={() =>
+												setPreviewDoc({
+													url: doc.file,
+													name: doc.required_document.document_name,
+												})
+											}
+											title="Preview document"
+										>
+											<Eye className="h-3 w-3" />
+										</Button>
+										{doc.file && (
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-8 w-8 p-0"
+												onClick={() =>
+													handleDownload(doc.file, doc.required_document.document_name)
+												}
+												title="Download document"
+											>
+												<Download className="h-3 w-3" />
+											</Button>
+										)}
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				</PopoverContent>
+			</Popover>
+
+			{previewDoc && (
+				<DocumentPreviewDialog
+					isOpen={true}
+					onClose={() => setPreviewDoc(null)}
+					documentUrl={previewDoc.url}
+					documentName={previewDoc.name}
+					handleDownload={handleDownload}
+				/>
+			)}
+		</>
+	);
+};
+
 export default function ApplicationsPage() {
+	const router = useRouter();
+	const dispatch = useDispatch();
+
+	const userData = useSelector(selectUser);
+	const selectedInstitution = useSelector(selectSelectedInstitution);
+	const selectedBranch = useSelector(selectSelectedBranch);
+	const savedApplicationForm = useSelector(selectApplicationForm);
+
 	const refreshTableRef = useRef<(() => void) | null>(null);
 	const [applications, setApplications] = useState<JobApplication[]>([]);
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
+
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [filteredApplications, setFilteredApplications] = useState<JobApplication[]>([]);
@@ -159,15 +521,16 @@ export default function ApplicationsPage() {
 	);
 
 	const [isFetchingInterviewData, setIsFetchingInterviewData] = useState(false);
+	const [selectedJobRequiredDocuments, setSelectedJobRequiredDocuments] = useState<
+		RequiredDocument[]
+	>([]);
 
-	// const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 	const [showCreateStageDialog, setShowCreateStageDialog] = useState(false);
 	const [interviewStages, setInterviewStages] = useState<IInterviewStage[]>([]);
 	const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
 	const [isCreatingStage, setIsCreatingStage] = useState(false);
 	const [selectedApplicationForInterview, setSelectedApplicationForInterview] =
 		useState<JobApplication | null>(null);
-	// const [showBulkScheduleDialog, setShowBulkScheduleDialog] = useState(false);
 	const [showScheduleInterviewDialog, setShowScheduleInterviewDialog] = useState<{
 		type: "bulk" | "single";
 		isOpen: boolean;
@@ -182,7 +545,6 @@ export default function ApplicationsPage() {
 		interview_time: "",
 		feedback: {},
 	});
-	// const [isSchedulingInterview, setisSchedulingInterview] = useState(false);
 	const [stageFormData, setStageFormData] = useState<IInterviewStageFormData>({
 		name: "",
 		level: 1,
@@ -205,6 +567,41 @@ export default function ApplicationsPage() {
 
 	const [interviewErrors, setInterviewErrors] = useState<any>({});
 	const [ordering, setOrdering] = useState("");
+
+	// Add the handleDownload function
+	const handleDownload = async (fileUrl: string, fileName: string) => {
+		try {
+			// Get the file URL
+			const url = getFileUrl(fileUrl);
+
+			// Fetch the file as blob
+			const response = await fetch(url);
+			if (!response.ok) throw new Error("Failed to fetch file");
+
+			const blob = await response.blob();
+
+			// Create a blob URL and trigger download
+			const blobUrl = window.URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.style.display = "none";
+			a.href = blobUrl;
+			a.download = fileName || "document"; // Use provided filename or default
+
+			// Append to body, click, and cleanup
+			document.body.appendChild(a);
+			a.click();
+
+			// Cleanup
+			window.URL.revokeObjectURL(blobUrl);
+			document.body.removeChild(a);
+		} catch (error) {
+			console.error("Error downloading file:", error);
+			toast.error("Failed to download file");
+
+			// Fallback: open in new tab if download fails
+			window.open(getFileUrl(fileUrl), "_blank");
+		}
+	};
 
 	const updateInterviewFormData = (field: string, value: any) => {
 		setInterviewFormData((prev) => ({ ...prev, [field]: value }));
@@ -316,7 +713,6 @@ export default function ApplicationsPage() {
 				interview_type: interviewFormData.interview_type,
 				status: interviewFormData.status || "scheduled",
 				feedback: interviewFormData.feedback || undefined,
-				rating: interviewFormData.rating || undefined,
 				created_by: userData.id,
 			};
 
@@ -376,7 +772,6 @@ export default function ApplicationsPage() {
 		"application_date",
 	);
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-	const userData = useSelector(selectUser);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [itemsPerPage] = useState(5);
 
@@ -402,7 +797,6 @@ export default function ApplicationsPage() {
 		count: 0,
 	});
 
-	const router = useRouter();
 	const handleSort = (field: "application_date" | "posted_date") => {
 		if (sortField === field) {
 			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -411,25 +805,14 @@ export default function ApplicationsPage() {
 			setSortDirection("asc");
 		}
 	};
-	const selectedInstitution = useSelector(selectSelectedInstitution);
-	const selectedBranch = useSelector(selectSelectedBranch);
-	const dispatch = useDispatch();
-	const savedApplicationForm = useSelector(selectApplicationForm);
 
-	const [formData, setFormData] = useState<
-		Omit<JobApplicationFormData, "resume"> & {
-			resume: File | null;
-			cover_letter?: File | null;
-			address_latitude?: string;
-			address_longitude?: string;
-			recommended_by?: number;
-		}
-	>({
+	const [formData, setFormData] = useState<JobApplicationFormData>({
 		job_position_advert: 0,
 		applicant_name: "",
 		applicant_email: "",
 		applicant_phone: "",
-		resume: null,
+		resume: undefined, // Change from null to undefined
+		cover_letter: undefined, // Change from null to undefined
 		status: "new",
 		gender: "male",
 		state: "",
@@ -441,6 +824,8 @@ export default function ApplicationsPage() {
 		recommended_by: undefined,
 		application_date: new Date().toISOString().split("T")[0],
 		created_by: userData?.id || 0,
+		required_document_files: {},
+		selectedJobRequiredDocuments: [], // Already correct
 	});
 
 	// Separate state for the country selector
@@ -477,8 +862,8 @@ export default function ApplicationsPage() {
 				applicant_name: savedApplicationForm.applicant_name,
 				applicant_email: savedApplicationForm.applicant_email,
 				applicant_phone: savedApplicationForm.applicant_phone || "",
-				resume: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
-				cover_letter: null, // Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
+				// Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
+				// Cannot serialize File object in Redux, so will always be undefined at read time from Redux Store
 				status: savedApplicationForm.status || "new",
 				gender: savedApplicationForm.gender,
 				state: savedApplicationForm.state || "",
@@ -491,6 +876,7 @@ export default function ApplicationsPage() {
 				application_date:
 					savedApplicationForm.application_date || new Date().toISOString().split("T")[0],
 				created_by: savedApplicationForm.created_by || userData?.id || 0,
+				required_document_files: savedApplicationForm.required_document_files || {},
 			});
 
 			// Set the selected country for the CountrySelect component
@@ -505,7 +891,7 @@ export default function ApplicationsPage() {
 			setFormData((prev) => ({
 				...prev,
 				address_latitude: applicationLocation.latitude,
-				address_longitude: applicationLocation.longitude,
+				address_longitude: applicationLocation.latitude,
 			}));
 
 			const updatedFormData = {
@@ -514,7 +900,7 @@ export default function ApplicationsPage() {
 				address_longitude: applicationLocation.latitude,
 			};
 
-			dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
+			dispatch(saveApplicationForm({ ...updatedFormData })); // Cannot serialize File object in Redux
 		}
 	}, [applicationLocation]);
 
@@ -787,18 +1173,33 @@ export default function ApplicationsPage() {
 
 		setFormData(updatedFormData);
 
-		dispatch(saveApplicationForm({ ...updatedFormData, cover_letter: null, resume: null })); // Cannot serialize File object in Redux
+		dispatch(saveApplicationForm({ ...updatedFormData })); // Cannot serialize File object in Redux
 	};
 
 	const handleFileChange = (field: "resume" | "cover_letter", file: File | null) => {
 		const updatedFormData = {
 			...formData,
-			[field]: file,
+			[field]: file || undefined, // Convert null to undefined
 		};
-
 		setFormData(updatedFormData);
 	};
 
+	const handleDocumentFileChange = (documentName: string, file: File | null) => {
+		setFormData((prev) => {
+			const updatedFiles = { ...prev.required_document_files };
+
+			if (file) {
+				updatedFiles[documentName] = file;
+			} else {
+				delete updatedFiles[documentName];
+			}
+
+			return {
+				...prev,
+				required_document_files: updatedFiles,
+			};
+		});
+	};
 	const handleAddressCoordinatesChange = (lat: string, lon: string) => {
 		setApplicationLocation({ latitude: lat, longitude: lon });
 	};
@@ -809,8 +1210,7 @@ export default function ApplicationsPage() {
 			applicant_name: "",
 			applicant_email: "",
 			applicant_phone: "",
-			resume: null,
-			cover_letter: undefined,
+
 			status: "new" as const,
 			gender: "male" as const,
 			state: "",
@@ -822,10 +1222,13 @@ export default function ApplicationsPage() {
 			recommended_by: undefined,
 			application_date: new Date().toISOString().split("T")[0],
 			created_by: userData?.id || 0,
+			required_document_files: {},
+			selectedJobRequiredDocuments: [], // Add this to match JobApplicationFormData
 		};
 
 		setFormData(defaultFormData);
 		setSelectedCountry(null);
+		setSelectedJobRequiredDocuments([]);
 		setError(null);
 
 		// Clear from Redux
@@ -869,103 +1272,107 @@ export default function ApplicationsPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
-
-		// Simple validation checks
-		if (!formData.applicant_name.trim()) {
-			setError("Please enter the applicant's name");
-
-			return;
-		}
-
-		if (!formData.applicant_email.trim()) {
-			setError("Please enter the applicant's email");
-
-			return;
-		}
-
-		if (!formData.address.trim()) {
-			setError("Please enter the applicant's address");
-
-			return;
-		}
-
-		if (!selectedCountry) {
-			setError("Please select a country");
-
-			return;
-		}
-
-		if (formData.job_position_advert === 0) {
-			setError("Please select a job position");
-
-			return;
-		}
-
-		if (formData.source === "head_hunt" && !formData.recommended_by) {
-			setError("Please select which employee head hunted this candidate");
-
-			return;
-		}
-
-		if (!formData.resume) {
-			setError("Please upload a resume");
-
-			return;
-		}
-
-		if (!selectedInstitution || !selectedBranch) {
-			setError("Missing organization or branch information");
-
-			return;
-		}
-
-		if (!userData?.id) {
-			setError("User information not available. Please refresh and try again.");
-
-			return;
-		}
-
 		setIsSubmitting(true);
 
 		try {
+			// Basic validation
+			if (!formData.applicant_name.trim()) {
+				throw new Error("Please enter the applicant's name");
+			}
+
+			if (!formData.applicant_email.trim()) {
+				throw new Error("Please enter the applicant's email");
+			}
+
+			if (!formData.address.trim()) {
+				throw new Error("Please enter the applicant's address");
+			}
+
+			if (!selectedCountry) {
+				throw new Error("Please select a country");
+			}
+
+			if (formData.job_position_advert === 0) {
+				throw new Error("Please select a job position");
+			}
+
+			if (formData.source === "head_hunt" && !formData.recommended_by) {
+				throw new Error("Please select which employee head hunted this candidate");
+			}
+
+			if (!selectedInstitution || !selectedBranch) {
+				throw new Error("Missing organization or branch information");
+			}
+
+			if (!userData?.id) {
+				throw new Error("User information not available. Please refresh and try again.");
+			}
+
+			// Validate required documents
+			if (selectedJobRequiredDocuments.length > 0) {
+				const missingRequiredDocs = selectedJobRequiredDocuments.filter(
+					(doc) => !doc.is_optional && !formData.required_document_files?.[doc.document_name],
+				);
+
+				if (missingRequiredDocs.length > 0) {
+					throw new Error(
+						`Please upload all required documents: ${missingRequiredDocs
+							.map((doc) => doc.document_name)
+							.join(", ")}`,
+					);
+				}
+			}
+
+			// Prepare the data for API call
 			const applicationData: JobApplicationFormData = {
-				...formData,
-				resume: formData.resume,
+				job_position_advert: formData.job_position_advert,
+				applicant_name: formData.applicant_name.trim(),
+				applicant_email: formData.applicant_email.trim(),
+				applicant_phone: formData.applicant_phone?.trim() || undefined,
+				resume: formData.resume || undefined,
 				cover_letter: formData.cover_letter || undefined,
-				applicant_phone: formData.applicant_phone || undefined,
-				state: formData.state || undefined,
+				status: formData.status,
+				gender: formData.gender,
+				state: formData.state?.trim() || undefined,
+				address: formData.address.trim(),
+				address_latitude: formData.address_latitude || undefined,
+				address_longitude: formData.address_longitude || undefined,
+				country: selectedCountry.name.common,
+				source: formData.source,
 				application_date: formData.application_date,
-				address: formData.address,
-				country: selectedCountry?.name.common || "",
 				created_by: userData.id,
-				recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined, // Add this line
+				recommended_by: formData.source === "head_hunt" ? formData.recommended_by : undefined,
+				required_document_files: formData.required_document_files,
+				selectedJobRequiredDocuments: selectedJobRequiredDocuments, // Include here
 			};
 
+			console.log("📤 Submitting application data:", {
+				job_position: applicationData.job_position_advert,
+				applicant: applicationData.applicant_name,
+				email: applicationData.applicant_email,
+				documentCount: selectedJobRequiredDocuments.length,
+				hasResume: !!applicationData.resume,
+				hasCoverLetter: !!applicationData.cover_letter,
+			});
+
+			// Call the API with application data
 			const newApplication = await createJobApplication({
 				institutionId: selectedInstitution.id,
 				applicationData,
 			});
 
 			if (newApplication) {
-				// Maintain sorted order when adding new application
-				setApplications((prev) => {
-					const updated = [newApplication, ...prev];
-
-					return updated.sort(
-						(a, b) =>
-							new Date(b.application_date).getTime() - new Date(a.application_date).getTime(),
-					);
-				});
-
+				// Success - reset form and show success message
 				setIsCreateDialogOpen(false);
 				resetFiltersAndShowNewApplication();
+
+				// Reset form to initial state
 				setFormData({
 					job_position_advert: 0,
 					applicant_name: "",
 					applicant_email: "",
 					applicant_phone: "",
-					resume: null,
-					cover_letter: undefined,
+
 					status: "new",
 					gender: "male",
 					state: "",
@@ -974,33 +1381,71 @@ export default function ApplicationsPage() {
 					address_longitude: "",
 					country: "",
 					source: "website",
+					recommended_by: undefined,
 					application_date: new Date().toISOString().split("T")[0],
 					created_by: userData.id,
-					recommended_by: undefined,
+					required_document_files: {},
 				});
-				setSelectedCountry(null);
-				clearAllFilters();
-				toast.success("Application created successfully!");
-				refreshTableRef.current?.();
 
-				// Clear the saved form data from Redux on successful submission
+				setSelectedCountry(null);
+				setSelectedJobRequiredDocuments([]);
+				clearAllFilters();
+
+				toast.success("Application created successfully!");
+
+				// Refresh the applications table
+				if (refreshTableRef.current) {
+					refreshTableRef.current();
+				}
+
+				// Clear the saved form data from Redux
 				dispatch(clearApplicationForm());
 			} else {
-				setError("Failed to create application");
+				throw new Error("Failed to create application - no response from server");
 			}
 		} catch (err: any) {
-			if (err?.response?.data?.message) {
-				setError(err.response.data.message);
+			console.error(" Submission error:", err);
+
+			// Handle different error types
+			if (err?.response?.data) {
+				const errorData = err.response.data;
+				if (typeof errorData === "object") {
+					if (errorData.non_field_errors) {
+						setError(errorData.non_field_errors.join(", "));
+					} else if (errorData.detail) {
+						setError(errorData.detail);
+					} else {
+						// Field-specific errors
+						const fieldErrors = Object.entries(errorData)
+							.map(
+								([field, messages]) =>
+									`${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`,
+							)
+							.join("; ");
+						setError(fieldErrors || "Please check all fields and try again.");
+					}
+				} else if (typeof errorData === "string") {
+					setError(errorData);
+				} else {
+					setError("An error occurred while creating the application.");
+				}
 			} else if (err?.message) {
 				setError(err.message);
 			} else {
-				setError("Failed to create application. Please check all fields and try again.");
+				setError("Failed to create application. Please check your connection and try again.");
 			}
+
+			// Scroll to error message
+			setTimeout(() => {
+				const errorElement = document.getElementById("error-alert");
+				if (errorElement) {
+					errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+				}
+			}, 100);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
-
 	const handleSubmitInterviews = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!selectedInstitution || !userData) {
@@ -1451,18 +1896,6 @@ export default function ApplicationsPage() {
 			if (action === "shortlisted") {
 				setIndividualLoadingStates((prev) => ({ ...prev, [applicationId]: false }));
 			}
-		}
-	};
-
-	const handleConfirmAction = async () => {
-		if (confirmAction.applicationId && confirmAction.action) {
-			await executeAction(confirmAction.applicationId, confirmAction.action);
-			setConfirmAction({
-				isOpen: false,
-				applicationId: null,
-				applicantName: "",
-				action: null,
-			});
 		}
 	};
 
@@ -2136,32 +2569,10 @@ export default function ApplicationsPage() {
 															</div>
 														</TableCell>
 														<TableCell>
-															<div className="py-1 flex flex-col gap-2 items-start">
-																<Button variant="link" size="sm" className="h-auto p-0" asChild>
-																	<a
-																		href={getFileUrl(application.resume)}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-																	>
-																		<FileText className="h-3 w-3" />
-																		Resume
-																	</a>
-																</Button>
-																{application.cover_letter && (
-																	<Button variant="link" size="sm" className="h-auto p-0" asChild>
-																		<a
-																			href={getFileUrl(application.cover_letter)}
-																			target="_blank"
-																			rel="noopener noreferrer"
-																			className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-																		>
-																			<FileText className="h-3 w-3" />
-																			Cover Letter
-																		</a>
-																	</Button>
-																)}
-															</div>
+															<RequiredDocumentsCell
+																application={application}
+																handleDownload={handleDownload}
+															/>{" "}
 														</TableCell>
 														<TableCell>
 															<DropdownMenu>
@@ -2318,6 +2729,9 @@ export default function ApplicationsPage() {
 																		handleInputChange("job_position_advert", Number(advert.id));
 																		setJpFilterText("");
 																		setJobPositionDropdownOpen(false);
+																		setSelectedJobRequiredDocuments(
+																			advert.required_documents || [],
+																		);
 																	}}
 																>
 																	<div className="flex flex-col">
@@ -2376,7 +2790,7 @@ export default function ApplicationsPage() {
 								</div>
 							</div>
 
-							{/* Second Row - Name and Gender */}
+							{/* Second Row - Name and gender */}
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 								<div className="space-y-2">
 									<label
@@ -2486,7 +2900,6 @@ export default function ApplicationsPage() {
 										Address *
 									</label>
 									<div className="relative">
-										{/* <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground z-10" /> */}
 										<LocationAutocomplete
 											value={formData.address}
 											onChange={(value) => handleInputChange("address", value)}
@@ -2528,7 +2941,6 @@ export default function ApplicationsPage() {
 										<EmployeeSearchableSelect
 											value={formData.recommended_by ? [formData.recommended_by.toString()] : []}
 											onValueChange={(values) => {
-												// console.log("\n\n Values changed with values : ", values);
 												const selectedValue = Array.isArray(values) ? values[0] : values;
 
 												handleInputChange(
@@ -2582,77 +2994,79 @@ export default function ApplicationsPage() {
 								</div>
 							</div>
 
-							{/* File Upload Row */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* CV Upload */}
-								<div className="space-y-2">
-									<label htmlFor="cv-upload" className="block text-sm font-medium text-gray-800">
-										Curriculum Vitae / Resume *
-									</label>
-									<div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-										<input
-											id="cv-upload"
-											type="file"
-											accept=".pdf,.doc,.docx"
-											className="sr-only"
-											onChange={(e) => handleFileChange("resume", e.target.files?.[0] || null)}
-											required
-										/>
-										<label
-											htmlFor="cv-upload"
-											className="flex flex-col items-center cursor-pointer"
-										>
-											<Upload className="h-10 w-10 text-primary mb-2" />
-											<span className="text-sm font-medium text-primary">
-												Click to Upload or drag and drop
-											</span>
-											<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-										</label>
-										{formData.resume && (
-											<p className="text-sm text-gray-700 mt-2 flex items-center">
-												<FileText className="mr-1 h-3 w-3" />
-												{formData.resume.name}
-											</p>
-										)}
-									</div>
-								</div>
+							{/* Dynamic Required Documents Section */}
+							<div className="space-y-4">
+								<h3 className="text-lg font-medium text-gray-800">Required Documents</h3>
 
-								{/* Cover Letter Upload */}
-								<div className="space-y-2">
-									<label
-										htmlFor="cover-letter-upload"
-										className="block text-sm font-medium text-gray-800"
-									>
-										Cover Letter
-									</label>
-									<div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
-										<input
-											id="cover-letter-upload"
-											type="file"
-											accept=".pdf,.doc,.docx"
-											className="sr-only"
-											onChange={(e) =>
-												handleFileChange("cover_letter", e.target.files?.[0] || null)
-											}
-										/>
-										<label
-											htmlFor="cover-letter-upload"
-											className="flex flex-col items-center cursor-pointer"
-										>
-											<Upload className="h-10 w-10 text-primary mb-2" />
-											<span className="text-sm font-medium text-primary">
-												Click to Upload or drag and drop
-											</span>
-											<span className="text-xs text-gray-500">(Max. File size: 25 MB)</span>
-										</label>
-										{formData.cover_letter && (
-											<p className="text-sm text-gray-700 mt-2 flex items-center">
-												<FileText className="mr-1 h-3 w-3" />
-												{formData.cover_letter.name}
-											</p>
-										)}
+								{/* Job-specific required documents */}
+								{selectedJobRequiredDocuments.length === 0 ? (
+									<div className="text-center py-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50">
+										<FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+										<p className="text-sm text-gray-600">
+											No additional documents required for this position
+										</p>
 									</div>
-								</div>
+								) : (
+									<div className="space-y-4">
+										{selectedJobRequiredDocuments.map((doc, index) => (
+											<div key={doc.id || index} className="space-y-2">
+												<div className="flex items-center justify-between">
+													<Label
+														htmlFor={`document-${index}`}
+														className="text-sm font-medium text-gray-800"
+													>
+														{doc.document_name}
+														{!doc.is_optional && <span className="text-red-500 ml-1">*</span>}
+													</Label>
+													{doc.is_optional && (
+														<Badge
+															variant="outline"
+															className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200"
+														>
+															Optional
+														</Badge>
+													)}
+												</div>
+
+												{doc.description && (
+													<p className="text-sm text-gray-600 mb-2">{doc.description}</p>
+												)}
+
+												<div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-md bg-gray-50 text-center cursor-pointer hover:border-gray-400 transition-colors duration-200">
+													<input
+														id={`document-${index}`}
+														type="file"
+														accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+														className="sr-only"
+														onChange={(e) => {
+															handleDocumentFileChange(
+																doc.document_name,
+																e.target.files?.[0] || null,
+															);
+														}}
+														required={!doc.is_optional}
+													/>
+													<label
+														htmlFor={`document-${index}`}
+														className="flex flex-col items-center cursor-pointer w-full"
+													>
+														<Upload className="h-6 w-6 text-primary mb-2" />
+														<span className="text-sm font-medium text-primary">
+															Click to Upload {doc.document_name}
+														</span>
+													</label>
+
+													{formData.required_document_files?.[doc.document_name] && (
+														<p className="text-sm text-gray-700 mt-2 flex items-center">
+															<FileText className="mr-1 h-3 w-3" />
+															{formData.required_document_files[doc.document_name].name}
+														</p>
+													)}
+												</div>
+											</div>
+										))}
+									</div>
+								)}
 							</div>
 						</div>
 
@@ -2702,7 +3116,7 @@ export default function ApplicationsPage() {
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
-							onClick={handleConfirmAction}
+							onClick={handleConfirmBulkAction}
 							className={
 								confirmAction.action === "rejected" ? "bg-destructive hover:bg-destructive/90" : ""
 							}

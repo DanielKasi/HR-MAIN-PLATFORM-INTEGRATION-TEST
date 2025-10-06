@@ -15,6 +15,7 @@ import {
 	User,
 	FileText,
 	X,
+	Paperclip,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -455,6 +456,56 @@ export default function JobAdvertDetailsPage() {
 									</Card>
 								)}
 							</div>
+
+							{/* Required Documents Section */}
+							{jobAdvert.required_documents && jobAdvert.required_documents.length > 0 && (
+								<>
+									<Separator />
+									<div>
+										<h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+											<Paperclip className="h-5 w-5" />
+											Required Documents
+										</h3>
+										<Card>
+											<CardContent className="p-4">
+												<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+													{jobAdvert.required_documents.map((doc: any, index: number) => (
+														<div
+															key={index}
+															className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+														>
+															<div className="flex-shrink-0">
+																<FileText className="h-5 w-5 text-primary" />
+															</div>
+															<div className="flex-1 min-w-0">
+																<p className="text-sm font-medium truncate">
+																	{doc.name ||
+																		doc.document_name ||
+																		doc.title ||
+																		`Document ${index + 1}`}
+																</p>
+																{doc.description && (
+																	<p className="text-xs text-muted-foreground truncate">
+																		{doc.description}
+																	</p>
+																)}
+																{doc.is_mandatory !== undefined && (
+																	<Badge
+																		variant={doc.is_mandatory ? "default" : "secondary"}
+																		className="mt-1 text-xs"
+																	>
+																		{doc.is_mandatory ? "Required" : "Optional"}
+																	</Badge>
+																)}
+															</div>
+														</div>
+													))}
+												</div>
+											</CardContent>
+										</Card>
+									</div>
+								</>
+							)}
 
 							{/* Extra Information */}
 							{jobAdvert.extra_information && (

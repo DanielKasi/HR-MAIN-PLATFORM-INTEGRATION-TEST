@@ -235,7 +235,6 @@ export const getFileUrl = (filePath: string) => {
 		return filePath;
 	}
 	const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-
 	return `${baseUrl}${filePath}`;
 };
 
