@@ -814,4 +814,17 @@ class SkillZone(BaseApprovableModel):
         return f"SkillZone: {self.candidate.applicant_name} ({self.candidate.job_position_advert.job_position.name})"
     
     def get_institution(self):
-        return self.candidate.job_position_advert.job_position.department.institution    
+        return self.candidate.job_position_advert.job_position.department.institution   
+ 
+    @classmethod
+    def get_report_data(cls, start_date, end_date):
+        queryset = cls.objects.filter(
+            created_at__range=(start_date, end_date)
+        ).select_related('candidate__job_position_advert__job_position')
+        return list(queryset.values(
+            'candidate__applicant_name',
+            'candidate__job_position_advert__job_position__name',
+            'created_at',
+            'potential_value',
+        ))
+    
