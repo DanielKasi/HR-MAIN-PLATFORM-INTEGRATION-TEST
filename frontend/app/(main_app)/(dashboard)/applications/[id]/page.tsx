@@ -28,6 +28,7 @@ import {
 	UserCheck,
 	Eye,
 	Users,
+	AlertCircle,
 } from "lucide-react";
 import { Plus, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +65,7 @@ import {
 	getInterviewStages,
 	createInterview,
 } from "@/lib/utils";
-import { downloadFile } from "@/lib/helpers";
+import { downloadFile, getFileUrl } from "@/lib/helpers";
 import { selectUser } from "@/store/auth/selectors";
 import { ApprovalWorkflow } from "@/components/approvals/approval-workflow";
 import { CreateInterviewStageDialog } from "@/components/dialogs/create-interview-stage-dialog";
@@ -99,6 +100,9 @@ export default function ApplicationViewPage() {
 		isOpen: false,
 		document: null,
 	});
+	const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [previewContent, setPreviewContent] = useState<string | null>(null);
 
 	const router = useRouter();
 	const params = useParams();
@@ -337,13 +341,93 @@ export default function ApplicationViewPage() {
 		setInterviewErrors((prev: any) => ({ ...prev, [field]: undefined }));
 	};
 
+	// Enhanced file type detection for preview
+	const getFilePreviewType = (fileName: string): string => {
+		const extension = fileName.split(".").pop()?.toLowerCase() || "";
+
+		// Images
+		const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"];
+		if (imageExtensions.includes(extension)) return "image";
+
+		// PDFs
+		if (extension === "pdf") return "pdf";
+
+		// Text files
+		const textExtensions = ["txt", "csv", "json", "xml", "md", "log"];
+		if (textExtensions.includes(extension)) return "text";
+
+		// Office documents
+		const officeExtensions = ["doc", "docx", "xls", "xlsx", "ppt", "pptx"];
+		if (officeExtensions.includes(extension)) return "office";
+
+		// Code files
+		const codeExtensions = [
+			"js",
+			"jsx",
+			"ts",
+			"tsx",
+			"html",
+			"css",
+			"py",
+			"java",
+			"cpp",
+			"c",
+			"php",
+		];
+		if (codeExtensions.includes(extension)) return "code";
+
+		return "unknown";
+	};
+
 	// Document preview functions
-	const handlePreviewDocument = (document: JobApplicationDocument) => {
+	const handlePreviewDocument = async (document: JobApplicationDocument) => {
+		if (!document.file) {
+			toast.error("No document available for preview");
+			return;
+		}
+
 		setPreviewDocument({
 			isOpen: true,
 			document,
 		});
+		setIsLoadingPreview(true);
+		setPreviewBlobUrl(null);
+		setPreviewContent(null);
+
+		try {
+			const fileName = getFileNameFromUrl(document.file);
+			const fileType = getFilePreviewType(fileName);
+			const fileUrl = getFileUrl(document.file);
+
+			// Fetch the file as blob to bypass download headers
+			const response = await fetch(fileUrl);
+			if (!response.ok) throw new Error("Failed to fetch document");
+
+			const blob = await response.blob();
+			const blobUrl = URL.createObjectURL(blob);
+			setPreviewBlobUrl(blobUrl);
+
+			// For text-based files, we can also read the content
+			if (fileType === "text" || fileType === "code") {
+				const text = await blob.text();
+				setPreviewContent(text);
+			}
+		} catch (error) {
+			console.error("Error loading document for preview:", error);
+			toast.error("Failed to load document for preview");
+		} finally {
+			setIsLoadingPreview(false);
+		}
 	};
+
+	// Clean up blob URLs
+	useEffect(() => {
+		return () => {
+			if (previewBlobUrl) {
+				URL.revokeObjectURL(previewBlobUrl);
+			}
+		};
+	}, [previewBlobUrl]);
 
 	const getFileIcon = (fileName: string) => {
 		const extension = fileName.split(".").pop()?.toLowerCase();
@@ -353,6 +437,12 @@ export default function ApplicationViewPage() {
 			case "doc":
 			case "docx":
 				return <FileText className="h-8 w-8 text-blue-500" />;
+			case "xls":
+			case "xlsx":
+				return <FileText className="h-8 w-8 text-green-500" />;
+			case "ppt":
+			case "pptx":
+				return <FileText className="h-8 w-8 text-orange-500" />;
 			case "jpg":
 			case "jpeg":
 			case "png":
@@ -367,9 +457,125 @@ export default function ApplicationViewPage() {
 		return url.split("/").pop() || "document";
 	};
 
+	// Enhanced document preview - ALL IN-HOUSE
+	const renderDocumentPreview = (document: JobApplicationDocument) => {
+		if (!document.file) {
+			return (
+				<div className="text-center text-muted-foreground py-8">
+					<FileText className="h-16 w-16 mx-auto mb-4" />
+					<p>No document available for preview</p>
+				</div>
+			);
+		}
+
+		const fileName = getFileNameFromUrl(document.file);
+		const fileType = getFilePreviewType(fileName);
+
+		if (isLoadingPreview) {
+			return (
+				<div className="flex flex-col items-center justify-center h-64">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+					<span className="text-muted-foreground">Loading preview...</span>
+				</div>
+			);
+		}
+
+		// If we don't have a blob URL, something went wrong
+		if (!previewBlobUrl) {
+			return (
+				<div className="text-center py-8">
+					<AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+					<p className="text-destructive mb-2">Failed to load document for preview</p>
+					<Button
+						onClick={() => {
+							downloadFile(document.file, document.required_document.document_name);
+						}}
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Download File
+					</Button>
+				</div>
+			);
+		}
+
+		switch (fileType) {
+			case "pdf":
+				return (
+					<iframe
+						src={previewBlobUrl}
+						className="w-full h-[400px] border-0 rounded"
+						title={`Preview of ${document.required_document.document_name}`}
+					/>
+				);
+
+			case "image":
+				return (
+					<div className="flex justify-center items-center h-[400px]">
+						<img
+							src={previewBlobUrl}
+							alt={document.required_document.document_name}
+							className="max-w-full max-h-full object-contain"
+						/>
+					</div>
+				);
+
+			case "text":
+			case "code":
+				return (
+					<div className="w-full h-[400px] border rounded bg-white overflow-auto">
+						<pre className="p-4 text-sm whitespace-pre-wrap font-mono">
+							{previewContent || "Loading content..."}
+						</pre>
+					</div>
+				);
+
+			case "office":
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							Office documents cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								downloadFile(document.file, document.required_document.document_name);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download Document
+						</Button>
+					</div>
+				);
+
+			case "unknown":
+			default:
+				return (
+					<div className="text-center py-8">
+						<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+						<p className="text-muted-foreground mb-2">
+							This file type cannot be previewed directly in the browser.
+						</p>
+						<p className="text-sm text-muted-foreground mb-4">
+							Please download the file to view it using appropriate software.
+						</p>
+						<Button
+							onClick={() => {
+								downloadFile(document.file, document.required_document.document_name);
+							}}
+						>
+							<Download className="h-4 w-4 mr-2" />
+							Download File
+						</Button>
+					</div>
+				);
+		}
+	};
+
 	useEffect(() => {
 		if (selectedInstitution?.id) {
-			// console.log("Interview stages:", getInterviewStages({ institutionId: selectedInstitution.id }));
 		}
 	}, [selectedInstitution?.id]);
 
@@ -841,65 +1047,6 @@ export default function ApplicationViewPage() {
 													)}
 												</CardContent>
 											</Card>
-
-											{/* Legacy Documents Section (Resume & Cover Letter) */}
-											{(application.resume || application.cover_letter) && (
-												<Card>
-													<CardHeader>
-														<CardTitle className="flex items-center gap-2">
-															<FileText className="h-5 w-5" />
-															Additional Documents
-														</CardTitle>
-													</CardHeader>
-													<CardContent className="space-y-4">
-														{application.resume && (
-															<div className="flex items-center justify-between p-4 border rounded-lg">
-																<div className="flex items-center gap-3">
-																	<FileText className="h-8 w-8 text-blue-500" />
-																	<div>
-																		<p className="font-medium">Resume</p>
-																		<p className="text-sm text-muted-foreground">
-																			{application.resume.split("/").pop()}
-																		</p>
-																	</div>
-																</div>
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() => downloadFile(application.resume, "Resume")}
-																>
-																	<Download className="h-4 w-4 md:mr-2" />
-																	<span className="hidden md:inline">Download</span>
-																</Button>
-															</div>
-														)}
-
-														{application.cover_letter && (
-															<div className="flex items-center justify-between p-4 border rounded-lg">
-																<div className="flex items-center gap-3">
-																	<FileText className="h-8 w-8 text-green-500" />
-																	<div>
-																		<p className="font-medium">Cover Letter</p>
-																		<p className="text-sm text-muted-foreground">
-																			{application.cover_letter.split("/").pop()}
-																		</p>
-																	</div>
-																</div>
-																<Button
-																	variant="outline"
-																	size="sm"
-																	onClick={() =>
-																		downloadFile(application.cover_letter!, "Cover Letter")
-																	}
-																>
-																	<Download className="h-4 w-4 md:mr-2" />
-																	<span className="hidden md:inline">Download</span>
-																</Button>
-															</div>
-														)}
-													</CardContent>
-												</Card>
-											)}
 										</TabsContent>
 									</Tabs>
 								</div>
@@ -1099,7 +1246,16 @@ export default function ApplicationViewPage() {
 						{/* Document Preview Dialog */}
 						<Dialog
 							open={previewDocument.isOpen}
-							onOpenChange={(open) => setPreviewDocument({ isOpen: open, document: null })}
+							onOpenChange={(open) => {
+								if (!open) {
+									setPreviewDocument({ isOpen: open, document: null });
+									if (previewBlobUrl) {
+										URL.revokeObjectURL(previewBlobUrl);
+										setPreviewBlobUrl(null);
+									}
+									setPreviewContent(null);
+								}
+							}}
 						>
 							<DialogContent className="max-w-4xl max-h-[90vh]">
 								<DialogHeader>
@@ -1140,18 +1296,7 @@ export default function ApplicationViewPage() {
 											{/* Document Preview */}
 											<div className="border rounded-lg p-4 bg-muted/50">
 												<div className="flex justify-center items-center min-h-[400px]">
-													{previewDocument.document.file ? (
-														<iframe
-															src={previewDocument.document.file}
-															className="w-full h-[400px] border-0 rounded"
-															title={`Preview of ${previewDocument.document.required_document.document_name}`}
-														/>
-													) : (
-														<div className="text-center text-muted-foreground">
-															<FileText className="h-16 w-16 mx-auto mb-4" />
-															<p>No document available for preview</p>
-														</div>
-													)}
+													{renderDocumentPreview(previewDocument.document)}
 												</div>
 											</div>
 
@@ -1159,7 +1304,14 @@ export default function ApplicationViewPage() {
 											<div className="flex justify-end gap-2 pt-4">
 												<Button
 													variant="outline"
-													onClick={() => setPreviewDocument({ isOpen: false, document: null })}
+													onClick={() => {
+														setPreviewDocument({ isOpen: false, document: null });
+														if (previewBlobUrl) {
+															URL.revokeObjectURL(previewBlobUrl);
+															setPreviewBlobUrl(null);
+														}
+														setPreviewContent(null);
+													}}
 												>
 													Close
 												</Button>
@@ -1226,7 +1378,7 @@ export default function ApplicationViewPage() {
 								showTrigger={false}
 								title="Create Interview Stage"
 								description={`Create a new interview stage for{" "}
-											${application?.job_position_advert_job_details?.name || "this position"}.`}
+                          ${application?.job_position_advert_job_details?.name || "this position"}.`}
 							/>
 						)}
 						{/* Schedule Interview Dialog */}
