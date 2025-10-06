@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, OpenApiParameter
 from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from datetime import datetime, date
 import pandas as pd
 from reportlab.lib.pagesizes import letter
@@ -80,87 +81,68 @@ class ReportGenerateView(APIView):
         tags=["Reports"],
         description="Generate a report (Excel or PDF) filtered by date range. All params required.",
         parameters=[
-            {
-                "name": "app",
-                "in": "query",
-                "required": True,
-                "description": 'App name (e.g., "recruitment")',
-                "schema": {
-                    "type": "string",
-                    "enum": list(build_reports_registry().keys()),
-                },
-            },
-            {
-                "name": "report_type",
-                "in": "query",
-                "required": True,
-                "description": 'Report type (e.g., "onboardings")',
-                "schema": {"type": "string"},
-            },
-            {
-                "name": "start_date",
-                "in": "query",
-                "required": True,
-                "description": "Start date (YYYY-MM-DD)",
-                "schema": {"type": "string", "format": "date"},
-            },
-            {
-                "name": "end_date",
-                "in": "query",
-                "required": True,
-                "description": "End date (YYYY-MM-DD)",
-                "schema": {"type": "string", "format": "date"},
-            },
-            {
-                "name": "format",
-                "in": "query",
-                "required": True,
-                "description": "Output format",
-                "schema": {"type": "string", "enum": ["excel", "pdf"]},
-            },
+            OpenApiParameter(
+                name='app',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='App name (e.g., "recruitment")',
+                required=True,
+            ),
+            OpenApiParameter(
+                name='report_type',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Report type (e.g., "onboardings")',
+                required=True,
+            ),
+            OpenApiParameter(
+                name='start_date',
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description='Start date (YYYY-MM-DD)',
+                required=True,
+            ),
+            OpenApiParameter(
+                name='end_date',
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description='End date (YYYY-MM-DD)',
+                required=True,
+            ),
+            OpenApiParameter(
+                name='format_type',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Output format',
+                required=True,
+                enum=['excel', 'pdf'],
+            ),
         ],
         responses={
             200: OpenApiResponse(description="Generated report file (Excel or PDF)."),
-            400: OpenApiResponse(
-                description="Validation error (e.g., invalid params/dates)."
-            ),
+            400: OpenApiResponse(description="Validation error (e.g., invalid params/dates)."),
             204: OpenApiResponse(description="No data found."),
             500: OpenApiResponse(description="Generation failed."),
         },
-        examples=[
-            OpenApiExample(
-                "Onboardings Report",
-                summary="Example for recruitment onboardings.",
-                value={
-                    "app": "recruitment",
-                    "report_type": "onboardings",
-                    "start_date": "2024-01-01",
-                    "end_date": "2024-12-31",
-                    "format": "excel",
-                },
-                request_only=True,
-            )
-        ],
     )
     def get(self, request):
-
         serializer = ReportGenerateInputSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)  # Raises 400 on error
+        serializer.is_valid(raise_exception=True)
 
-        # data = serializer.validated_data
-        data = request.query_params
+        # Use validated_data
+        data = serializer.validated_data
         app_name = data["app"]
         report_type = data["report_type"]
         start_date = data["start_date"]
         end_date = data["end_date"]
-        format_type = data["format_type"]
+        format_type = data["format_type"]  # This matches your serializer field name
 
         try:
             model_class = get_report_config(app_name, report_type)
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Convert dates if needed (classmethod handles date/datetime)
+        # Convert dates if needed
         if isinstance(start_date, date):
             start_date = datetime.combine(start_date, datetime.min.time())
         if isinstance(end_date, date):
@@ -179,7 +161,7 @@ class ReportGenerateView(APIView):
             return HttpResponse("No data found for the selected period", status=204)
 
         filename_prefix = f"{app_name}_{report_type}"
-        print("Here")
+        
         if format_type == "excel":
             return self.generate_excel(report_data, filename_prefix)
         elif format_type == "pdf":
