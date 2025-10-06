@@ -17,7 +17,7 @@ from institution.models import (
     InstitutionBankAccount,
     Branch,
     InstitutionWorkingDays,
-    TaxRuleCategory,
+    # TaxRuleCategory,
 )
 from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.sync_permissions()
-        self.create_default_tax_categories()
+        # self.create_default_tax_categories()
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_approval_actions()
@@ -137,57 +137,57 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(f"  ❌ Errors: {error_count}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Employee names synced successfully!"))
 
-    def create_default_tax_categories(self):
-        """Create default tax rule categories (Resident and Non-Resident)"""
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating default tax categories...\n")
-        )
+    # def create_default_tax_categories(self):
+    #     """Create default tax rule categories (Resident and Non-Resident)"""
+    #     self.stdout.write(
+    #         self.style.MIGRATE_HEADING("\n⏳ Creating default tax categories...\n")
+    #     )
         
-        default_categories = [
-            {
-                "name": "Resident",
-                "description": "Tax rules applicable to resident employees"
-            },
-            {
-                "name": "Non-Resident",
-                "description": "Tax rules applicable to non-resident employees"
-            }
-        ]
+    #     default_categories = [
+    #         {
+    #             "name": "Resident",
+    #             "description": "Tax rules applicable to resident employees"
+    #         },
+    #         {
+    #             "name": "Non-Resident",
+    #             "description": "Tax rules applicable to non-resident employees"
+    #         }
+    #     ]
         
-        valid_category_names = set()
-        created_count = 0
-        updated_count = 0
+    #     valid_category_names = set()
+    #     created_count = 0
+    #     updated_count = 0
         
-        for category_data in default_categories:
-            tax_category, created = TaxRuleCategory.objects.update_or_create(
-                name=category_data["name"],
-                defaults={"description": category_data["description"]}
-            )
-            valid_category_names.add(category_data["name"])
+    #     for category_data in default_categories:
+    #         tax_category, created = TaxRuleCategory.objects.update_or_create(
+    #             name=category_data["name"],
+    #             defaults={"description": category_data["description"]}
+    #         )
+    #         valid_category_names.add(category_data["name"])
             
-            if created:
-                created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"  ✅ Created tax category: {tax_category.name}")
-                )
-            else:
-                updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(f"  ♻️ Updated tax category: {tax_category.name}")
-                )
+    #         if created:
+    #             created_count += 1
+    #             self.stdout.write(
+    #                 self.style.SUCCESS(f"  ✅ Created tax category: {tax_category.name}")
+    #             )
+    #         else:
+    #             updated_count += 1
+    #             self.stdout.write(
+    #                 self.style.NOTICE(f"  ♻️ Updated tax category: {tax_category.name}")
+    #             )
         
-        # Optional: Remove any tax categories not in the default list
-        deleted_categories, _ = TaxRuleCategory.objects.exclude(
-            name__in=valid_category_names
-        ).delete()
+    #     # Optional: Remove any tax categories not in the default list
+    #     deleted_categories, _ = TaxRuleCategory.objects.exclude(
+    #         name__in=valid_category_names
+    #     ).delete()
         
-        # Summary
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Tax Categories Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
-        if deleted_categories > 0:
-            self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_categories}"))
-        self.stdout.write(self.style.SUCCESS("\n🎉 Tax categories synced successfully!"))
+    #     # Summary
+    #     self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Tax Categories Summary"))
+    #     self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
+    #     self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
+    #     if deleted_categories > 0:
+    #         self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_categories}"))
+    #     self.stdout.write(self.style.SUCCESS("\n🎉 Tax categories synced successfully!"))
 
     def create_default_performance_data(self):
         """Create default PerformanceConcernType and PIPSupportResourceType for all institutions"""

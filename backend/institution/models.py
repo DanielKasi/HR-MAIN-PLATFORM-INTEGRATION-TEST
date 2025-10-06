@@ -240,6 +240,39 @@ class Institution(SoftDeletableTimeStampedModel):
         else:
             raise Exception(f"Zoom token error: {response.text}")
 
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        country_changed = False
+        
+        # Track if country is changing
+        if not is_new:
+            original = Institution.objects.get(pk=self.pk)
+            country_changed = original.country_code != self.country_code
+
+        super().save(*args, **kwargs)
+
+        # Create/update tax rules on creation or country change
+        if is_new or country_changed:
+            self._create_or_update_tax_rules()
+
+    def _create_or_update_tax_rules(self):
+        """Create tax rules using existing endpoint logic"""
+        try:
+            # Use the same logic that's in your InstitutionListAPIView
+            from .views import InstitutionListAPIView
+            view = InstitutionListAPIView()
+            
+            # Reuse the tax creation method from your view
+            if hasattr(view, 'create_or_update_tax_rules'):
+                view.create_or_update_tax_rules(self, self.institution_owner)
+            else:
+                # Fallback to direct utility call
+                from .utils import TaxRuleManager
+                TaxRuleManager.create_country_tax_rules(self)
+                
+            logger.info(f"Tax rules created/updated for {self.institution_name}")
+        except Exception as e:
+            logger.error(f"Error in auto tax rule creation: {str(e)}")
 
 class InstitutionKYCDocument(models.Model):
     institution = models.ForeignKey(
