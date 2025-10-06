@@ -32,15 +32,97 @@ export default function OrganizationChartPage() {
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
+	// Fetch all departments by handling pagination
+	const fetchAllDepartments = async () => {
+		const allDepartments: any[] = [];
+		let nextUrl: string | null = "/institution/departments/";
+
+		try {
+			while (nextUrl) {
+				console.log("Fetching departments from:", nextUrl);
+				const response = await apiRequest.get(nextUrl);
+
+				// Check if response has results (paginated) or is a direct array
+				if (response.data.results && Array.isArray(response.data.results)) {
+					allDepartments.push(...response.data.results);
+					nextUrl = response.data.next;
+
+					// Handle full URL
+					if (nextUrl && nextUrl.startsWith("http")) {
+						const url = new URL(nextUrl);
+						nextUrl = `/institution/departments/${url.search}`;
+					} else if (nextUrl && nextUrl.includes("/api/")) {
+						nextUrl = nextUrl.replace("/api/", "/");
+					}
+				} else if (Array.isArray(response.data)) {
+					// Direct array response (not paginated)
+					allDepartments.push(...response.data);
+					nextUrl = null;
+				} else {
+					// Unknown format
+					console.warn("Unexpected department response format:", response.data);
+					nextUrl = null;
+				}
+			}
+
+			console.log(`Total departments fetched: ${allDepartments.length}`, allDepartments);
+			return allDepartments;
+		} catch (error) {
+			console.error("Error fetching departments:", error);
+			return [];
+		}
+	};
+
 	const fetchDefaultData = async () => {
 		try {
 			const response = await apiRequest.get("/institution/default-data/");
 			console.log("Default data response:", response.data);
-			setDefaultData(response.data);
-			return response.data;
+
+			// The response is an object with dynamic keys, extract departments
+			// The structure might be { "departments": [...], "otherKey": [...], ... }
+			let departments: any[] = [];
+
+			if (response.data) {
+				// Check if there's a 'departments' key
+				if (response.data.departments && Array.isArray(response.data.departments)) {
+					departments = response.data.departments;
+				}
+				// Otherwise, check all keys for array values that look like departments
+				else {
+					const keys = Object.keys(response.data);
+					for (const key of keys) {
+						const value = response.data[key];
+						// If it's an array and has items with 'id' and 'name', likely departments
+						if (Array.isArray(value) && value.length > 0 && value[0].id && value[0].name) {
+							departments = [...departments, ...value];
+						}
+					}
+				}
+			}
+
+			// If still no departments, try fetching from departments endpoint
+			if (departments.length === 0) {
+				console.log("No departments in default-data, trying departments endpoint...");
+				departments = await fetchAllDepartments();
+			}
+
+			const processedData = { departments };
+
+			console.log("Processed default data with departments:", processedData);
+			setDefaultData(processedData);
+			return processedData;
 		} catch (error) {
 			console.error("Error fetching default data:", error);
-			return null;
+			// Fallback: try departments endpoint
+			try {
+				const departments = await fetchAllDepartments();
+				const processedData = { departments };
+				setDefaultData(processedData);
+				return processedData;
+			} catch (fallbackError) {
+				console.error("Error fetching departments fallback:", fallbackError);
+				return null;
+			}
 		}
 	};
 
@@ -53,22 +135,86 @@ export default function OrganizationChartPage() {
 			}
 		}
 
-		// Fallback mapping for known departments
+		// Extended fallback mapping for all known departments
 		const fallbackMap: { [key: number]: string } = {
 			81: "Human Resources",
 			82: "Information Technology",
 			83: "Finance",
 			84: "Operations",
+			85: "Marketing",
+			86: "Sales",
+			87: "Research & Development",
+			88: "Customer Service",
+			89: "Legal",
+			90: "Facilities",
 		};
 
 		return fallbackMap[departmentId] || `Department ${departmentId}`;
 	};
 
+	// Fetch all positions by handling pagination
+	const fetchAllPositions = async (): Promise<IApiPosition[]> => {
+		const allPositions: IApiPosition[] = [];
+		let nextUrl: string | null = "/institution/organization-chart/";
+
+		try {
+			while (nextUrl) {
+				console.log("Fetching positions from:", nextUrl);
+				const response = await apiRequest.get(nextUrl);
+
+				// Add the results from this page
+				if (response.data.results && Array.isArray(response.data.results)) {
+					allPositions.push(...response.data.results);
+					console.log(
+						`Fetched ${response.data.results.length} positions. Total so far: ${allPositions.length}`,
+					);
+				}
+
+				// Check if there's a next page
+				nextUrl = response.data.next;
+
+				// If nextUrl is a full URL, extract just the query params and add to base endpoint
+				if (nextUrl) {
+					if (nextUrl.startsWith("http")) {
+						const url = new URL(nextUrl);
+						// Extract only the query params (e.g., ?page=2)
+						nextUrl = `/institution/organization-chart/${url.search}`;
+					}
+					// If it already has the endpoint path, make sure it doesn't duplicate /api/
+					else if (nextUrl.includes("/api/")) {
+						nextUrl = nextUrl.replace("/api/", "/");
+					}
+				}
+			}
+
+			console.log(`Total positions fetched: ${allPositions.length}`);
+			return allPositions;
+		} catch (error) {
+			console.error("Error fetching all positions:", error);
+			throw error;
+		}
+	};
+
 	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
 		console.log("Transforming with department data:", defaultData?.departments);
+		console.log("Total positions to transform:", positions.length);
+
+		// Count all unique positions including nested subordinates
+		const countAllPositions = (position: IApiPosition): number => {
+			let count = 1; // Count this position
+			if (position.subordinates && position.subordinates.length > 0) {
+				position.subordinates.forEach((sub) => {
+					count += countAllPositions(sub);
+				});
+			}
+			return count;
+		};
 
 		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
 			const departmentName = getDepartmentName(position.department);
+			console.log(
+				`Position: ${position.name}, Department ID: ${position.department}, Name: ${departmentName}`,
+			);
 
 			return {
 				id: position.id,
@@ -82,6 +228,14 @@ export default function OrganizationChartPage() {
 		};
 
 		const rootNodes = positions.filter((pos) => pos.reports_to === null);
+		console.log("Root nodes found:", rootNodes.length);
+
+		// Calculate total positions by counting all nested positions
+		const totalPositions = rootNodes.reduce((total, rootNode) => {
+			return total + countAllPositions(rootNode);
+		}, 0);
+
+		console.log("Total positions including subordinates:", totalPositions);
 
 		const virtualRoot: IOrganizationNode = {
 			id: -1,
@@ -104,7 +258,7 @@ export default function OrganizationChartPage() {
 
 		return {
 			root: virtualRoot,
-			total_employees: positions.length,
+			total_employees: totalPositions,
 			total_departments: uniqueDepartments,
 			levels: calculateLevels(virtualRoot),
 		};
@@ -118,15 +272,16 @@ export default function OrganizationChartPage() {
 
 		setLoading(true);
 		try {
-			// Fetch default data first, then organization chart
-			const [defaultDataResponse, chartResponse] = await Promise.all([
-				fetchDefaultData(),
-				apiRequest.get("/institution/organization-chart/"),
-			]);
+			// Fetch default data first and wait for it to be set
+			const fetchedDefaultData = await fetchDefaultData();
 
-			console.log("Organization chart response:", chartResponse.data);
+			// Fetch all positions (handling pagination)
+			const allPositions = await fetchAllPositions();
 
-			const transformedData = transformToOrganizationChart(chartResponse.data.results);
+			console.log("All positions fetched:", allPositions.length);
+			console.log("Default data departments:", fetchedDefaultData?.departments);
+
+			const transformedData = transformToOrganizationChart(allPositions);
 			setChartData(transformedData);
 
 			// Auto-expand first level (virtual root's direct subordinates)
