@@ -17,7 +17,10 @@ from institution.models import (
     InstitutionBankAccount,
     Branch,
     InstitutionWorkingDays,
-    TaxRuleCategory,
+    InstitutionTax, 
+    InstitutionTaxRule,
+    TaxRuleCategory 
+    
 )
 from employee.models import Employee, QualificationAward
 from settings.models import SystemDay
@@ -27,7 +30,7 @@ from calendar2.models import Calendar, Event
 from performance.models import PerformanceConcernType, PIPSupportResourceType
 
 class Command(BaseCommand):
-    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, and delete inactive employees"
+    help = "Add/sync permissions, systems, discipline types, approval actions, system days, bank info, awards, birthday events, performance data, resend welcome emails, sync employee names, delete inactive employees, and create tax rules"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -53,141 +56,143 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.sync_permissions()
-        self.create_default_tax_categories()
+        # self.create_default_tax_categories()
         self.sync_systems()
         self.sync_discipline_types()
         self.sync_approval_actions()
         self.create_default_system_days()
         self.create_default_bank_info()
-        self.create_default_performance_data()  # Add this new method call
-        self.sync_employee_names()
-        self.create_birthday_events()
+        self.create_default_performance_data()  
+        self.create_tax_rules_for_institutions()  
+        # self.sync_employee_names()
+        # self.create_birthday_events()
         # self.resend_welcome_emails(kwargs["reset_password"], kwargs.get("employee_ids"))
         self.delete_inactive_employees(kwargs["dry_run"], kwargs["no_confirm"])
 
-    def sync_employee_names(self):
-        """Sync employee.name with user.fullname for all existing employees"""
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Syncing employee names with user fullnames...\n")
-        )
-        
-        # Get all employees with associated users
-        employees = Employee.objects.filter(
-            user__isnull=False,
-            deleted_at__isnull=True
-        ).select_related('user')
-        
-        if not employees.exists():
-            self.stdout.write(
-                self.style.NOTICE("No employees with users found to sync names.")
-            )
+    def create_tax_rules_for_institutions(self):
+        """Create tax rule categories globally and tax rules per institution based on country_code"""
+        filepath = os.path.join(settings.BASE_DIR, "utilities", "tax_rules.json")
+        if not os.path.exists(filepath):
+            self.stdout.write(self.style.ERROR(f"Tax rules file not found at {filepath}"))
             return
         
-        updated_count = 0
-        skipped_count = 0
-        error_count = 0
+        with open(filepath, "r") as file:
+            tax_data = json.load(file)
         
-        for employee in employees:
-            try:
-                # Check if user has a fullname and if it's different from employee.name
-                if not employee.user.fullname:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"  ⏭️ Skipping employee ID {employee.id}: User has no fullname"
-                        )
-                    )
-                    skipped_count += 1
-                    continue
-                
-                # Check if name needs updating
-                if employee.name == employee.user.fullname:
-                    self.stdout.write(
-                        self.style.NOTICE(
-                            f"  ♻️ Employee '{employee.user.fullname}' already has correct name"
-                        )
-                    )
-                    skipped_count += 1
-                    continue
-                
-                # Update the employee name
-                old_name = employee.name
-                employee.name = employee.user.fullname
-                employee.save(update_fields=['name'])
-                
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"  ✅ Updated employee name: '{old_name or 'None'}' → '{employee.name}'"
-                    )
-                )
-                updated_count += 1
-                
-            except Exception as e:
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"  ❌ Error updating employee ID {employee.id}: {str(e)}"
-                    )
-                )
-                error_count += 1
-        
-        # Summary
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Employee Names Sync Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ✅ Updated: {updated_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ♻️ Skipped: {skipped_count}"))
-        if error_count > 0:
-            self.stdout.write(self.style.NOTICE(f"  ❌ Errors: {error_count}"))
-        self.stdout.write(self.style.SUCCESS("\n🎉 Employee names synced successfully!"))
-
-    def create_default_tax_categories(self):
-        """Create default tax rule categories (Resident and Non-Resident)"""
         self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating default tax categories...\n")
+            self.style.MIGRATE_HEADING("\n⏳ Creating tax rule categories and rules for institutions...\n")
         )
         
-        default_categories = [
-            {
-                "name": "Resident",
-                "description": "Tax rules applicable to resident employees"
-            },
-            {
-                "name": "Non-Resident",
-                "description": "Tax rules applicable to non-resident employees"
-            }
-        ]
+        global_data = tax_data.get("global", {})
+        residency_categories = global_data.get("residency_category", [])
         
-        valid_category_names = set()
-        created_count = 0
-        updated_count = 0
-        
-        for category_data in default_categories:
-            tax_category, created = TaxRuleCategory.objects.update_or_create(
-                name=category_data["name"],
-                defaults={"description": category_data["description"]}
+        created_categories = 0
+        updated_categories = 0
+        for cat_data in residency_categories:
+            category, created = TaxRuleCategory.objects.update_or_create(
+                code=cat_data["code"],
+                defaults={
+                    "name": cat_data["name"],
+                    "description": cat_data["description"],
+                }
             )
-            valid_category_names.add(category_data["name"])
-            
             if created:
-                created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"  ✅ Created tax category: {tax_category.name}")
-                )
+                created_categories += 1
+                self.stdout.write(self.style.SUCCESS(f"  ✅ Created tax rule category: {category.name} ({category.code})"))
             else:
-                updated_count += 1
-                self.stdout.write(
-                    self.style.NOTICE(f"  ♻️ Updated tax category: {tax_category.name}")
-                )
+                updated_categories += 1
+                self.stdout.write(self.style.NOTICE(f"  ♻️ Updated tax rule category: {category.name} ({category.code})"))
         
-        # Optional: Remove any tax categories not in the default list
-        deleted_categories, _ = TaxRuleCategory.objects.exclude(
-            name__in=valid_category_names
-        ).delete()
+        self.stdout.write(self.style.NOTICE(f"Tax Rule Categories: Created {created_categories}, Updated {updated_categories}"))
+        
+        institutions = Institution.objects.all()
+        total_taxes_created = 0
+        total_taxes_updated = 0
+        total_rules_created = 0
+        total_rules_updated = 0
+        
+        for institution in institutions:
+            country_code = getattr(institution, 'country_code', None)  
+            if not country_code:
+                self.stdout.write(self.style.WARNING(f"  ⏭️ Skipping {institution.institution_name}: No country_code"))
+                continue
+            
+            if country_code not in tax_data:
+                self.stdout.write(self.style.WARNING(f"  ⏭️ Skipping {institution.institution_name}: No tax data for {country_code}"))
+                continue
+            
+            country_data = tax_data[country_code]
+            taxes = country_data.get("taxes", [])
+            
+            self.stdout.write(f"Processing tax rules for {institution.institution_name} ({country_code})")
+            
+            for tax_data_item in taxes:
+                tax_name = tax_data_item["tax_name"]
+                tax_status = tax_data_item["tax_status"]
+                
+                tax_obj, tax_created = InstitutionTax.objects.update_or_create(
+                    institution=institution,
+                    tax_name=tax_name,
+                    defaults={"tax_status": tax_status}
+                )
+                
+                if tax_created:
+                    total_taxes_created += 1
+                    self.stdout.write(self.style.SUCCESS(f"  ✅ Created tax: {tax_name}"))
+                else:
+                    total_taxes_updated += 1
+                    self.stdout.write(self.style.NOTICE(f"  ♻️ Updated tax: {tax_name}"))
+                
+                rules = tax_data_item.get("rules", [])
+                rule_created_count = 0
+                rule_updated_count = 0
+                for rule_data in rules:
+                    try:
+                        category_code = rule_data.get("tax_rule_category")
+                        if category_code:
+                            category, _ = TaxRuleCategory.objects.get_or_create(
+                                code=category_code,
+                                defaults={"name": category_code}  
+                            )
+                        else:
+                            category = None
+                        
+                        rule_obj, rule_created = InstitutionTaxRule.objects.update_or_create(
+                            institution_tax=tax_obj,
+                            tax_rule_name=rule_data["tax_rule_name"],
+                            defaults={
+                                "tax_rule_description": rule_data["tax_rule_description"],
+                                "tax_rule_percentage": rule_data.get("tax_rule_percentage"),
+                                "tax_rule_fixed_amount": rule_data.get("tax_rule_fixed_amount"),
+                                "tax_rule_formula": rule_data.get("tax_rule_formula"),
+                                "salary_from": rule_data.get("salary_from"),
+                                "salary_to": rule_data.get("salary_to"),
+                                "tax_rule_category": category,
+                                "taxable_income_source": rule_data.get("taxable_income_source"),  # Optional, if in JSON
+                            }
+                        )
+                        
+                        if rule_created:
+                            rule_created_count += 1
+                            total_rules_created += 1
+                        else:
+                            rule_updated_count += 1
+                            total_rules_updated += 1
+                            
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"    ❌ Error creating rule '{rule_data.get('tax_rule_name', 'Unknown')}': {str(e)}"))
+                
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f"    └─ Rules for {tax_name}: Created {rule_created_count}, Updated {rule_updated_count}"
+                    )
+                )
         
         # Summary
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Tax Categories Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ♻️ Updated: {updated_count}"))
-        if deleted_categories > 0:
-            self.stdout.write(self.style.NOTICE(f"  🧹 Removed: {deleted_categories}"))
-        self.stdout.write(self.style.SUCCESS("\n🎉 Tax categories synced successfully!"))
+        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Tax Rules Summary"))
+        self.stdout.write(self.style.NOTICE(f"  🏛️ Taxes - Created: {total_taxes_created}, Updated: {total_taxes_updated}"))
+        self.stdout.write(self.style.NOTICE(f"  📜 Rules - Created: {total_rules_created}, Updated: {total_rules_updated}"))
+        self.stdout.write(self.style.SUCCESS("\n🎉 Tax rules created successfully!"))
 
     def create_default_performance_data(self):
         """Create default PerformanceConcernType and PIPSupportResourceType for all institutions"""
@@ -350,69 +355,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE(f"  🎯 Performance Concern Types - Created: {total_concern_created}, Updated: {total_concern_updated}"))
         self.stdout.write(self.style.NOTICE(f"  🛠️ PIP Support Resource Types - Created: {total_resource_created}, Updated: {total_resource_updated}"))
         self.stdout.write(self.style.SUCCESS("\n🎉 Performance data created successfully!"))
-
-    def create_birthday_events(self):
-        self.stdout.write(
-            self.style.MIGRATE_HEADING("\n⏳ Creating birthday events for existing employees...\n")
-        )
-        employees = Employee.objects.filter(
-            date_of_birth__isnull=False,
-            deleted_at__isnull=True,
-            is_active=True
-        ).select_related('user__profile', 'department__institution')
-        created_count = 0
-        skipped_count = 0
-        for employee in employees:
-            if not employee.user or not hasattr(employee.user, 'profile') or not employee.user.profile:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  ⏭️ Skipping employee {employee.user.fullname if employee.user else 'Unnamed'}: No user or profile"
-                    )
-                )
-                skipped_count += 1
-                continue
-            institution = employee.get_institution()
-            if not institution:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  ⏭️ Skipping employee {employee.user.fullname}: No institution"
-                    )
-                )
-                skipped_count += 1
-                continue
-            existing_events = Event.objects.filter(
-                is_birthday=True,
-                institution=institution
-            ).filter(specific_employees=employee.user.profile)
-            if existing_events.count() > 1:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  ⚠️ Multiple birthday events found for {employee.user.fullname}. Deleting extras."
-                    )
-                )
-                for event in existing_events[1:]:
-                    event.delete()
-                skipped_count += 1
-                continue
-            elif existing_events.exists():
-                self.stdout.write(
-                    self.style.NOTICE(
-                        f"  ♻️ Birthday event already exists for {employee.user.fullname}"
-                    )
-                )
-                skipped_count += 1
-                continue
-            employee.create_birthday_event()
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"  ✅ Created birthday event for {employee.user.fullname}"
-                )
-            )
-            created_count += 1
-        self.stdout.write("\n" + self.style.MIGRATE_LABEL("📋 Birthday Events Summary"))
-        self.stdout.write(self.style.NOTICE(f"  ➕ Created: {created_count}"))
-        self.stdout.write(self.style.NOTICE(f"  ⏭️ Skipped: {skipped_count}"))
-        self.stdout.write(self.style.SUCCESS("\n🎉 Birthday events created successfully!"))
 
     def delete_inactive_employees(self, dry_run, no_confirm):
         self.stdout.write(

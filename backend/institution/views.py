@@ -665,9 +665,31 @@ class InstitutionListAPIView(APIView):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
 
-                # Create global defaults (employee types and work types)
+                # Create global defaults (employee types, work types, and tax rule categories)
                 global_data = defaults.get("global", {})
                 logger.info(f"Global data found: {bool(global_data)}")
+
+                # Create Tax Rule Categories from residency_category
+                residency_categories_data = global_data.get("residency_category", [])
+                logger.info(f"Creating {len(residency_categories_data)} tax rule categories")
+
+                for cat_data in residency_categories_data:
+                    try:
+                        category, created = TaxRuleCategory.objects.update_or_create(
+                            code=cat_data["code"],
+                            defaults={
+                                "name": cat_data["name"],
+                                "description": cat_data["description"],
+                            }
+                        )
+                        if created:
+                            logger.info(f"Created tax rule category: {category.name} ({category.code})")
+                        else:
+                            logger.info(f"Updated tax rule category: {category.name} ({category.code})")
+                    except Exception as e:
+                        logger.error(
+                            f"Error creating/updating tax rule category {cat_data.get('name', 'Unknown')}: {str(e)}"
+                        )
 
                 # Create Employee Types
                 employee_types_data = global_data.get("employee_types", [])
@@ -728,6 +750,16 @@ class InstitutionListAPIView(APIView):
                                     # Create a copy to avoid modifying the original data
                                     rule_data_copy = rule_data.copy()
 
+                                    # Resolve tax_rule_category code to actual instance
+                                    category_code = rule_data_copy.pop("tax_rule_category", None)
+                                    category = None
+                                    if category_code:
+                                        try:
+                                            category = TaxRuleCategory.objects.get(code=category_code)
+                                            logger.info(f"Resolved category for rule: {category.name} ({category_code})")
+                                        except TaxRuleCategory.DoesNotExist:
+                                            logger.warning(f"TaxRuleCategory with code '{category_code}' not found; setting to None")
+
                                     # Convert string values to Decimal where applicable
                                     decimal_fields = [
                                         "tax_rule_percentage",
@@ -753,8 +785,12 @@ class InstitutionListAPIView(APIView):
                                     tax_rule = InstitutionTaxRule.objects.create(
                                         institution_tax=tax,
                                         created_by=request.user,  # Add created_by
+                                        tax_rule_category=category,
+                                        taxable_income_source=rule_data_copy.pop("taxable_income_source", None),  # Optional
                                         **rule_data_copy,
                                     )
+
+                                    logger.info(f"Created tax rule: {tax_rule.tax_rule_name}")
 
                                 except Exception as e:
                                     logger.error(
