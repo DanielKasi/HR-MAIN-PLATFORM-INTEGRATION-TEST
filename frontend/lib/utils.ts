@@ -189,10 +189,11 @@ import { IEmployeeDashboard, IWorkHourCount } from "@/types/employee.types";
 import { IProjectDashboard } from "@/types/project.type";
 import { AssetsData } from "@/types/assets.types";
 
-import { Role, UserProfile } from "@/types/user.types";
+import { IUser, Role, UserProfile } from "@/types/user.types";
 
 import { MAIN_DOMAIN_URL } from "@/constants";
 import keys from "@/components/projects/tasks/keys";
+import { number } from "zod";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -7879,6 +7880,10 @@ export const usersAPI = {
 		const response = await apiRequest.get(`/institution/profile/${institutionId}/`);
 
 		return response.data as IPaginatedResponse<UserProfile>;
+	},
+	update: async ({ userId, updateData }: { userId: number; updateData: Partial<IUser> }) => {
+		const response = await apiRequest.patch(`user/${userId}/`, updateData);
+		return response.data as { message: string; user: IUser };
 	},
 };
 
