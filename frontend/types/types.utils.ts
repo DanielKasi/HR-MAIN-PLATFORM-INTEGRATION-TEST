@@ -225,6 +225,20 @@ export interface FormDataState {
 	required_document_files: Record<string, File>;
 }
 
+//organization-chart
+export interface IOrganisationFormData {
+	institutionName: string;
+	institutionEmail: string;
+	firstPhoneNumber: string;
+	secondPhoneNumber: string;
+	description: string;
+	location: string;
+	latitude: string;
+	longitude: string;
+	departments: IDepartment[];
+	institutionLogo?: File | null;
+}
+
 // Extended application form data that includes additional fields
 export interface JobApplicationCompleteFormData extends JobApplicationFormData {
 	// Additional form fields
