@@ -29,6 +29,7 @@ import {
 	Eye,
 	Users,
 	AlertCircle,
+	MoreVertical,
 } from "lucide-react";
 import { Plus, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -56,6 +57,12 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { createInterviewStage, showErrorToast } from "@/lib/utils";
 import { EmployeeSearchableSelect } from "@/components/selects/employee-searchable-select";
 import { selectSelectedInstitution, selectSelectedBranch } from "@/store/auth/selectors";
@@ -1003,32 +1010,40 @@ export default function ApplicationViewPage() {
 																			</div>
 																		</div>
 																		<div className="flex items-center gap-2">
-																			{document.file && (
-																				<>
-																					<Button
-																						variant="outline"
-																						size="sm"
-																						onClick={() => handlePreviewDocument(document)}
-																						title="Preview document"
-																					>
-																						<Eye className="h-4 w-4" />
-																					</Button>
-																					<Button
-																						variant="outline"
-																						size="sm"
-																						onClick={() =>
-																							downloadFile(
-																								document.file,
-																								document.required_document.document_name,
-																							)
-																						}
-																						title="Download document"
-																					>
-																						<Download className="h-4 w-4" />
-																					</Button>
-																				</>
-																			)}
-																			{!document.file && (
+																			{document.file ? (
+																				<DropdownMenu>
+																					<DropdownMenuTrigger asChild>
+																						<Button
+																							variant="ghost"
+																							size="sm"
+																							className="h-8 w-8 p-0"
+																						>
+																							<MoreVertical className="h-4 w-4" />
+																						</Button>
+																					</DropdownMenuTrigger>
+																					<DropdownMenuContent align="end">
+																						<DropdownMenuItem
+																							onClick={() => handlePreviewDocument(document)}
+																							className="flex items-center gap-2 cursor-pointer"
+																						>
+																							<Eye className="h-4 w-4" />
+																							Preview Document
+																						</DropdownMenuItem>
+																						<DropdownMenuItem
+																							onClick={() =>
+																								downloadFile(
+																									document.file,
+																									document.required_document.document_name,
+																								)
+																							}
+																							className="flex items-center gap-2 cursor-pointer"
+																						>
+																							<Download className="h-4 w-4" />
+																							Download Document
+																						</DropdownMenuItem>
+																					</DropdownMenuContent>
+																				</DropdownMenu>
+																			) : (
 																				<Badge variant="secondary" className="text-xs">
 																					Not Uploaded
 																				</Badge>
