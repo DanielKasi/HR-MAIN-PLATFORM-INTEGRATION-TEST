@@ -27,8 +27,6 @@ export default function OrganizationChartPage() {
 	const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
 	const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
 
-	useDocumentTitle("ORGANIZATION CHART");
-
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
 
@@ -156,7 +154,6 @@ export default function OrganizationChartPage() {
 			id: -1,
 			name: selectedInstitution?.institution_name || "Organization",
 			position: "CEO/Executive",
-			department: "Executive",
 			profile_picture: undefined,
 			subordinates: rootNodes.map(buildHierarchy),
 			subordinate_count: rootNodes.length,
