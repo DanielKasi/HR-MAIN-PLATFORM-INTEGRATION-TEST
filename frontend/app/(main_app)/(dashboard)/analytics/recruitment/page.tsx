@@ -165,14 +165,11 @@ export default function RecruitmentDashboard() {
 			{data.applications_over_time.length > 0 && (
 				<RecentHiresTable data={data.recent_hires} className="!border-none" />
 			)}
-<<<<<<< HEAD
-=======
 			<ReportDialog
 				isOpen={isReportsDialogOpen}
 				onClose={() => setIsReportsDialogOpen(false)}
 				app="recruitment"
 			/>
->>>>>>> 8a8e9680bb6f09fe4de2e3daebf88f6dc38065cb
 		</main>
 	);
 }

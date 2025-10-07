@@ -167,17 +167,10 @@ export default function AttendanceDashboard() {
 
 						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 							{/* latecomers today */}
-<<<<<<< HEAD
-							<LatecomersTable data={data.late_comers_today} />
-
-							{/*failed spotchecks today */}
-							<SpotchecksTable data={data.failed_spotchecks_today} />
-=======
 							<LatecomersTable data={data.late_comers_today || []} />
 
 							{/*failed spotchecks today */}
 							<SpotchecksTable data={data.failed_spotchecks_today || []} />
->>>>>>> 8a8e9680bb6f09fe4de2e3daebf88f6dc38065cb
 						</div>
 
 						<Linechart
