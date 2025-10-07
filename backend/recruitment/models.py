@@ -214,9 +214,11 @@ class JobPositionAdvert(BaseApprovableModel):
         return f"{self.job_position.name} - {self.job_position_advert_status} ({self.published_date})"
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            published_date__range=(start_date, end_date)
+            published_date__range=(start_date, end_date),
+            job_position__department__institution=institution,
+            **filters
         ).select_related('job_position')
         return list(queryset.values(
             'job_position__name',
@@ -379,9 +381,11 @@ class JobAdvertApplication(SoftDeletableTimeStampedModel):
             self.send_application_received_email()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            application_date__range=(start_date, end_date)
+            application_date__range=(start_date, end_date),
+            job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('job_position_advert__job_position')
         return list(queryset.values(
             'applicant_name',
@@ -505,9 +509,11 @@ class InterviewStage(BaseApprovableModel):
         return self.job_position_advert.job_position.department.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            job_position_advert__published_date__range=(start_date, end_date)
+            job_position_advert__published_date__range=(start_date, end_date),
+            job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('job_position_advert__job_position')
         return list(queryset.values(
             'name',
@@ -578,9 +584,11 @@ class JobInterview(BaseApprovableModel):
             self._create_interview_event()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            interview_date__range=(start_date, end_date)
+            interview_date__range=(start_date, end_date),
+            job_position_application__job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('job_position_application', 'interview_stage')
         return list(queryset.values(
             'job_position_application__applicant_name',
@@ -817,9 +825,11 @@ class SkillZone(BaseApprovableModel):
         return self.candidate.job_position_advert.job_position.department.institution   
  
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            candidate__job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('candidate__job_position_advert__job_position')
         return list(queryset.values(
             'candidate__applicant_name',

@@ -33,9 +33,11 @@ class Period(BaseApprovableModel):
         return self.institution 
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            start_date__range=(start_date, end_date)
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'name',
@@ -73,9 +75,11 @@ class Objectives(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date__range=(start_date, end_date)
+            date__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution', 'managers', 'key_result').prefetch_related('assignees')
         return list(queryset.values(
             'name',
@@ -214,9 +218,11 @@ class KeyResult(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'title',
@@ -242,9 +248,11 @@ class Feedback360(BaseApprovableModel):
         return self.reviewer.payroll_branch.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            submission_date__range=(start_date, end_date)
+            submission_date__range=(start_date, end_date),
+            period__institution=institution,
+            **filters
         ).select_related('reviewer', 'given_by', 'period')
         return list(queryset.values(
             'reviewer__name',
@@ -278,9 +286,11 @@ class EmployeeBonusPoint(BaseApprovableModel):
         return self.employee.payroll_branch.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date__range=(start_date, end_date)
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'bonus_point_setting', 'period')
         return list(queryset.values(
             'employee__name',
@@ -411,9 +421,11 @@ class Meeting(BaseApprovableModel):
         return f"{self.title} on {self.start_time.date()}"
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            start_time__range=(start_date, end_date)
+            start_time__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution', 'organizer').prefetch_related('participants')
         return list(queryset.values(
             'title',
@@ -718,9 +730,11 @@ class PerformanceImprovementPlan(BaseApprovableModel):
         return self.employee.payroll_branch.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            start_date__range=(start_date, end_date)
+            start_date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'document_template').prefetch_related('issues', 'support_resources', 'objectives')
         return list(queryset.values(
             'employee__name',

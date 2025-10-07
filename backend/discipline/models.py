@@ -82,9 +82,11 @@ class DisciplinaryAction(BaseApprovableModel):
         return f"{employee_name} - {self.discipline_type.name} ({self.incident_date})"
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            incident_date__range=(start_date, end_date)
+            incident_date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'discipline_type', 'reported_by', 'assigned_to')
         return list(queryset.values(
             'employee__name',

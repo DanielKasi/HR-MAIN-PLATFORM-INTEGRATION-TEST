@@ -51,13 +51,14 @@ class LeaveType(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'name',
-            'institution__name',
             'category',
             'max_days_per_year',
             'carry_forward_allowed',
@@ -209,16 +210,16 @@ class LeaveBalance(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
-        # Convert start_date and end_date to year for filtering
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         start_year, end_year = start_date.year, end_date.year
         queryset = cls.objects.filter(
-            year__range=(start_year, end_year)
+            year__range=(start_year, end_year),
+            institution=institution,
+            **filters
         ).select_related('employee', 'leave_type', 'institution')
         return list(queryset.values(
             'employee__name',
             'leave_type__name',
-            'institution__name',
             'year',
             'allocated_days',
             'used_days',
@@ -295,14 +296,15 @@ class LeaveApplication(BaseApprovableModel):
         return f"{self.employee.user.fullname} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            start_date__range=(start_date, end_date)
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('employee', 'leave_type', 'institution', 'approved_by')
         return list(queryset.values(
             'employee__name',
             'leave_type__name',
-            'institution__name',
             'start_date',
             'end_date',
             'duration_type',

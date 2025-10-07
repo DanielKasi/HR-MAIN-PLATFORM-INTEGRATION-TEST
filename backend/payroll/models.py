@@ -235,9 +235,11 @@ class EmployeeAllowance(BaseApprovableModel):
         return recurrence_count
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            effective_from__range=(start_date, end_date)
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'allowance_type')
         return list(queryset.values(
             'employee__name',
@@ -379,9 +381,11 @@ class EmployeeDeduction(BaseApprovableModel):
         return recurrence_count
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            effective_from__range=(start_date, end_date)
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'deduction_type')
         return list(queryset.values(
             'employee__name',
@@ -454,9 +458,11 @@ class EmployeeTax(BaseApprovableModel):
         return Decimal(0.00)
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            effective_from__range=(start_date, end_date)
+            effective_from__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'institution_tax')
         return list(queryset.values(
             'employee__name',
@@ -511,9 +517,11 @@ class EmployeePenalty(BaseApprovableModel):
         super().save(*args, **kwargs)
         
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date__range=(start_date, end_date)
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'attendance', 'spot_check')
         return list(queryset.values(
             'employee__name',
@@ -804,9 +812,11 @@ class PayrollPeriod(BaseApprovableModel):
         ordering = ["-start_date"]
         
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            start_date__range=(start_date, end_date)
+            start_date__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'name',
@@ -1025,9 +1035,11 @@ class Payslip(BaseApprovableModel):
         self.save()
         
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            payroll_period__start_date__range=(start_date, end_date)
+            payroll_period__start_date__range=(start_date, end_date),
+            payroll_period__institution=institution,
+            **filters
         ).select_related('employee', 'payroll_period')
         return list(queryset.values(
             'employee__name',

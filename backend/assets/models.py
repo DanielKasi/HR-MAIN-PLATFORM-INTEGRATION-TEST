@@ -43,9 +43,11 @@ class AssetCategory(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'category_name',
@@ -193,9 +195,11 @@ class Asset(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            category__institution=institution,
+            **filters
         ).select_related('institution', 'category', 'current_holder')
         return list(queryset.values(
             'asset_name',
@@ -264,9 +268,11 @@ class AssetRequest(BaseApprovableModel):
         return self.asset.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            requester__institution=institution,
+            **filters
         ).select_related('asset', 'requester')
         return list(queryset.values(
             'asset__asset_name',
@@ -398,9 +404,11 @@ class AssetAllocation(BaseApprovableModel):
         return self.asset.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            allocatd_to__institution=institution,
+            **filters
         ).select_related('asset', 'allocated_to', 'responding_to_request', 'allocated_by')
         return list(queryset.values(
             'asset__asset_name',
@@ -471,9 +479,11 @@ class AssetReturn(BaseApprovableModel):
         super().save(*args, **kwargs)
         
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            allocation__allocated_to__institution=institution,
+            **filters
         ).select_related('asset', 'allocation')
         return list(queryset.values(
             'asset__asset_name',
@@ -554,9 +564,11 @@ class AssetHistory(SoftDeletableTimeStampedModel):
     notes = models.TextField(blank=True, null=True)
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            asset__category__institution=institution,
+            **filters
         ).select_related('asset', 'performed_by', 'affected_user')
         return list(queryset.values(
             'asset__asset_name',
