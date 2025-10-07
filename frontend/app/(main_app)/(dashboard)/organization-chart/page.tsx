@@ -3,8 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { ArrowLeft, Users, Building2, RefreshCw, Download } from "lucide-react";
+import { ArrowLeft, Users, Building2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { OrganizationChart } from "primereact/organizationchart";
+import "primereact/resources/themes/saga-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,18 +22,15 @@ import type {
 	IOrganizationNode,
 	IOrganizationChart,
 	IApiPosition,
-	IDefaultData,
 	IDepartment,
 } from "@/types/types.utils";
 
 export default function OrganizationChartPage() {
 	const [chartData, setChartData] = useState<IOrganizationChart | null>(null);
-	// const [defaultData, setDefaultData] = useState<IDefaultData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
 	const [allDepartments, setAllDepartments] = useState<IDepartment[]>([]);
-
-	useDocumentTitle("ORGANIZATION CHART");
+	const [primeChartData, setPrimeChartData] = useState<any[]>([]);
 
 	const router = useRouter();
 	const selectedInstitution = useSelector(selectSelectedInstitution);
@@ -38,9 +39,16 @@ export default function OrganizationChartPage() {
 		fetchOrganizationChart();
 	}, [selectedInstitution]);
 
-	const fetchAllDepartments = async () => {
+	useEffect(() => {
+		if (chartData?.root) {
+			const primeData = transformToPrimeReactData(chartData.root);
+			setPrimeChartData(primeData);
+		}
+	}, [expandedNodes, chartData]);
+
+	const fetchAllDepartments = async (): Promise<IDepartment[]> => {
 		if (!selectedInstitution) {
-			return;
+			return [];
 		}
 		const allDepartments: IDepartment[] = [];
 		let nextUrl: string | null = `/institution/${selectedInstitution.id}/department/`;
@@ -49,12 +57,10 @@ export default function OrganizationChartPage() {
 			while (nextUrl) {
 				const response = await apiRequest.get(nextUrl);
 
-				// Check if response has results (paginated) or is a direct array
 				if (response.data.results && Array.isArray(response.data.results)) {
 					allDepartments.push(...response.data.results);
 					nextUrl = response.data.next;
 
-					// Handle full URL
 					if (nextUrl && nextUrl.startsWith("http")) {
 						const url = new URL(nextUrl);
 						nextUrl = `/institution/${selectedInstitution.id}/department/${url.search}`;
@@ -76,69 +82,14 @@ export default function OrganizationChartPage() {
 		}
 	};
 
-	// const fetchDefaultData = async () => {
-	// 	try {
-	// 		const response = await apiRequest.get("/institution/default-data/");
-	// 		console.log("Default data response:", response.data);
-
-	// 		// The response is an object with dynamic keys, extract departments
-	// 		// The structure might be { "departments": [...], "otherKey": [...], ... }
-	// 		let departments: IDepartment[] = [];
-
-	// 		if (response.data) {
-	// 			// Check if there's a 'departments' key
-	// 			if (response.data.departments && Array.isArray(response.data.departments)) {
-	// 				departments = response.data.departments;
-	// 			}
-	// 			// Otherwise, check all keys for array values that look like departments
-	// 			else {
-	// 				const keys = Object.keys(response.data);
-	// 				for (const key of keys) {
-	// 					const value = response.data[key];
-	// 					// If it's an array and has items with 'id' and 'name', likely departments
-	// 					if (Array.isArray(value) && value.length > 0 && value[0].id && value[0].name) {
-	// 						departments = [...departments, ...value];
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-
-	// 		// If still no departments, try fetching from departments endpoint
-	// 		if (departments.length === 0) {
-	// 			console.log("No departments in default-data, trying departments endpoint...");
-	// 			departments = await fetchAllDepartments();
-	// 		}
-
-	// 		const processedData = { departments };
-
-	// 		console.log("Processed default data with departments:", processedData);
-	// 		setDefaultData(processedData);
-	// 		return processedData;
-	// 	} catch (error) {
-	// 		console.error("Error fetching default data:", error);
-	// 		// Fallback: try departments endpoint
-	// 		try {
-	// 			const departments = await fetchAllDepartments();
-	// 			const processedData = { departments };
-	// 			setDefaultData(processedData);
-	// 			return processedData;
-	// 		} catch (fallbackError) {
-	// 			console.error("Error fetching departments fallback:", fallbackError);
-	// 			return null;
-	// 		}
-	// 	}
-	// };
-
-	// Get department name from default data or fallback
-	const getDepartmentName = (departmentId: number): string => {
-		const department = allDepartments.find((dept) => dept.id === departmentId);
+	const getDepartmentName = (departmentId: number, departments: IDepartment[]): string => {
+		const department = departments.find((dept) => dept.id === departmentId);
 		if (department) {
 			return department.name;
 		}
 		return "Unknown department";
 	};
 
-	// Fetch all positions by handling pagination
 	const fetchAllPositions = async (): Promise<IApiPosition[]> => {
 		const allPositions: IApiPosition[] = [];
 		let nextUrl: string | null = "/institution/organization-chart/";
@@ -146,23 +97,17 @@ export default function OrganizationChartPage() {
 		while (nextUrl) {
 			const response = await apiRequest.get(nextUrl);
 
-			// Add the results from this page
 			if (response.data.results && Array.isArray(response.data.results)) {
 				allPositions.push(...response.data.results);
 			}
 
-			// Check if there's a next page
 			nextUrl = response.data.next;
 
-			// If nextUrl is a full URL, extract just the query params and add to base endpoint
 			if (nextUrl) {
 				if (nextUrl.startsWith("http")) {
 					const url = new URL(nextUrl);
-					// Extract only the query params (e.g., ?page=2)
 					nextUrl = `/institution/organization-chart/${url.search}`;
-				}
-				// If it already has the endpoint path, make sure it doesn't duplicate /api/
-				else if (nextUrl.includes("/api/")) {
+				} else if (nextUrl.includes("/api/")) {
 					nextUrl = nextUrl.replace("/api/", "/");
 				}
 			}
@@ -171,10 +116,12 @@ export default function OrganizationChartPage() {
 		return allPositions;
 	};
 
-	const transformToOrganizationChart = (positions: IApiPosition[]): IOrganizationChart => {
-		// Count all unique positions including nested subordinates
+	const transformToOrganizationChart = (
+		positions: IApiPosition[],
+		departments: IDepartment[],
+	): IOrganizationChart => {
 		const countAllPositions = (position: IApiPosition): number => {
-			let count = 1; // Count this position
+			let count = 1;
 			if (position.subordinates && position.subordinates.length > 0) {
 				position.subordinates.forEach((sub) => {
 					count += countAllPositions(sub);
@@ -184,7 +131,7 @@ export default function OrganizationChartPage() {
 		};
 
 		const buildHierarchy = (position: IApiPosition): IOrganizationNode => {
-			const departmentName = getDepartmentName(position.department);
+			const departmentName = getDepartmentName(position.department, departments);
 
 			return {
 				id: position.id,
@@ -199,7 +146,6 @@ export default function OrganizationChartPage() {
 
 		const rootNodes = positions.filter((pos) => pos.reports_to === null);
 
-		// Calculate total positions by counting all nested positions
 		const totalPositions = rootNodes.reduce((total, rootNode) => {
 			return total + countAllPositions(rootNode);
 		}, 0);
@@ -208,20 +154,19 @@ export default function OrganizationChartPage() {
 			id: -1,
 			name: selectedInstitution?.institution_name || "Organization",
 			position: "CEO/Executive",
-			department: "Executive",
 			profile_picture: undefined,
 			subordinates: rootNodes.map(buildHierarchy),
 			subordinate_count: rootNodes.length,
 		};
 
-		// Calculate levels
 		const calculateLevels = (node: IOrganizationNode): number => {
 			if (!node.subordinates || node.subordinates.length === 0) return 1;
 			return 1 + Math.max(...node.subordinates.map(calculateLevels));
 		};
 
-		// Calculate unique departments using proper names
-		const uniqueDepartments = new Set(positions.map((p) => getDepartmentName(p.department))).size;
+		const uniqueDepartments = new Set(
+			positions.map((p) => getDepartmentName(p.department, departments)),
+		).size;
 
 		return {
 			root: virtualRoot,
@@ -229,6 +174,26 @@ export default function OrganizationChartPage() {
 			total_departments: uniqueDepartments,
 			levels: calculateLevels(virtualRoot),
 		};
+	};
+
+	const transformToPrimeReactData = (node: IOrganizationNode): any[] => {
+		const transformNode = (currentNode: IOrganizationNode): any => {
+			return {
+				label: currentNode.name,
+				expanded: expandedNodes.has(currentNode.id),
+				data: {
+					id: currentNode.id,
+					name: currentNode.name,
+					position: currentNode.position,
+					department: currentNode.department,
+					profile_picture: currentNode.profile_picture,
+					subordinate_count: currentNode.subordinate_count,
+				},
+				children: currentNode.subordinates?.map(transformNode) || [],
+			};
+		};
+
+		return [transformNode(node)];
 	};
 
 	const fetchOrganizationChart = async () => {
@@ -239,17 +204,15 @@ export default function OrganizationChartPage() {
 
 		setLoading(true);
 		try {
-			await fetchAllDepartments();
+			const departments = await fetchAllDepartments();
 			const allPositions = await fetchAllPositions();
 
-			const transformedData = transformToOrganizationChart(allPositions);
+			const transformedData = transformToOrganizationChart(allPositions, departments);
 			setChartData(transformedData);
 
-			// Auto-expand first level (virtual root's direct subordinates)
-			if (transformedData?.root?.subordinates) {
-				const firstLevelIds = transformedData.root.subordinates.map(
-					(node: IOrganizationNode) => node.id,
-				);
+			if (transformedData?.root) {
+				const firstLevelIds =
+					transformedData.root.subordinates?.map((node: IOrganizationNode) => node.id) || [];
 				setExpandedNodes(new Set(firstLevelIds));
 			}
 		} catch (error) {
@@ -259,7 +222,9 @@ export default function OrganizationChartPage() {
 		}
 	};
 
-	const toggleNode = (nodeId: number) => {
+	const toggleNode = (nodeData: any) => {
+		const nodeId = nodeData.data.id;
+
 		setExpandedNodes((prev) => {
 			const newSet = new Set(prev);
 			if (newSet.has(nodeId)) {
@@ -287,81 +252,61 @@ export default function OrganizationChartPage() {
 		setExpandedNodes(new Set());
 	};
 
-	const renderNode = (node: IOrganizationNode, level: number = 0) => {
-		const hasSubordinates = node.subordinates && node.subordinates.length > 0;
-		const isExpanded = expandedNodes.has(node.id);
-		const isVirtualRoot = node.id === -1;
+	const nodeTemplate = (node: any) => {
+		const isVirtualRoot = node.data.id === -1;
+		const hasSubordinates = node.children && node.children.length > 0;
 
 		return (
-			<div key={node.id} className="relative">
-				{/* Node Card */}
-				<Card
-					className={`
-            shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer
-            ${level === 0 ? "border-2 border-primary" : ""}
-            ${isVirtualRoot ? "bg-primary/5 border-primary/30" : ""}
-          `}
-					onClick={() => hasSubordinates && toggleNode(node.id)}
-				>
-					<CardContent className="p-4">
-						<div className="flex items-start gap-3">
-							{/* Avatar */}
-							<div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-								{node.profile_picture ? (
-									<img
-										src={node.profile_picture}
-										alt={node.name}
-										className="w-full h-full rounded-full object-cover"
-									/>
-								) : (
-									<Users className="h-6 w-6 text-primary" />
-								)}
-							</div>
-
-							{/* Details */}
-							<div className="flex-1 min-w-0">
-								<h3 className="font-semibold text-sm truncate">{node.name}</h3>
-								{node.position && !isVirtualRoot && (
-									<p className="text-xs text-muted-foreground truncate">{node.position}</p>
-								)}
-								{node.department && (
-									<p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-1">
-										<Building2 className="h-3 w-3" />
-										{node.department}
-									</p>
-								)}
-								{isVirtualRoot && (
-									<p className="text-xs text-primary font-medium mt-1">Executive Leadership</p>
-								)}
-								{hasSubordinates && (
-									<p className="text-xs text-primary font-medium mt-2">
-										{node.subordinate_count || node.subordinates?.length} direct report
-										{(node.subordinate_count || node.subordinates?.length) !== 1 ? "s" : ""}
-									</p>
-								)}
-							</div>
-
-							{/* Expand/Collapse Indicator */}
-							{hasSubordinates && (
-								<div className="flex-shrink-0">
-									<div
-										className={`transform transition-transform ${isExpanded ? "rotate-90" : ""}`}
-									>
-										▶
-									</div>
-								</div>
+			<Card
+				className={`
+          shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer
+          ${node.level === 0 ? "border-2 border-primary" : ""}
+          ${isVirtualRoot ? "bg-primary/5 border-primary/30" : ""}
+          min-w-[200px] mx-2
+        `}
+				onClick={() => {
+					if (hasSubordinates) {
+						toggleNode(node);
+					}
+				}}
+			>
+				<CardContent className="p-4">
+					<div className="flex items-start gap-3">
+						<div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+							{node.data.profile_picture ? (
+								<img
+									src={node.data.profile_picture}
+									alt={node.data.name}
+									className="w-full h-full rounded-full object-cover"
+								/>
+							) : (
+								<Users className="h-6 w-6 text-primary" />
 							)}
 						</div>
-					</CardContent>
-				</Card>
-
-				{/* Subordinates */}
-				{hasSubordinates && isExpanded && (
-					<div className="ml-8 mt-4 space-y-4 border-l-2 border-muted pl-4">
-						{node.subordinates?.map((subordinate) => renderNode(subordinate, level + 1))}
+						<div className="flex-1 min-w-0">
+							<h3 className="font-semibold text-sm truncate">{node.data.name}</h3>
+							{!isVirtualRoot && node.data.position && (
+								<p className="text-xs text-muted-foreground truncate">{node.data.position}</p>
+							)}
+							{node.data.department && (
+								<p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-1">
+									<Building2 className="h-3 w-3" />
+									{node.data.department}
+								</p>
+							)}
+							{isVirtualRoot && (
+								<p className="text-xs text-primary font-medium mt-1">Executive Leadership</p>
+							)}
+							{hasSubordinates && (
+								<p className="text-xs text-primary font-medium mt-2">
+									{node.data.subordinate_count || node.children.length} direct report
+									{(node.data.subordinate_count || node.children.length) !== 1 ? "s" : ""}
+								</p>
+							)}
+						</div>
 					</div>
-				)}
-			</div>
+				</CardContent>
+			</Card>
 		);
 	};
 
@@ -387,7 +332,6 @@ export default function OrganizationChartPage() {
 
 	return (
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
-			{/* Header */}
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
 				<div className="flex items-center gap-2">
 					<Button
@@ -412,14 +356,19 @@ export default function OrganizationChartPage() {
 						<RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
 						Refresh
 					</Button>
+					<Button variant="outline" size="sm" onClick={expandAll}>
+						Expand All
+					</Button>
+					<Button variant="outline" size="sm" onClick={collapseAll}>
+						Collapse All
+					</Button>
 				</div>
 			</div>
 
-			{/* Stats Cards */}
 			{chartData && (
-				<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 					<Card className="shadow-sm">
-						<CardContent className="p-4">
+						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="text-2xl font-bold">{chartData.total_employees}</div>
@@ -430,7 +379,7 @@ export default function OrganizationChartPage() {
 						</CardContent>
 					</Card>
 					<Card className="shadow-sm">
-						<CardContent className="p-4">
+						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<div className="text-2xl font-bold">{allDepartments.length || 0}</div>
@@ -440,36 +389,14 @@ export default function OrganizationChartPage() {
 							</div>
 						</CardContent>
 					</Card>
-					<Card className="shadow-sm">
-						<CardContent className="p-4">
-							<div className="flex items-center justify-between">
-								<div>
-									<div className="text-2xl font-bold">{chartData.levels}</div>
-									<p className="text-sm text-muted-foreground">Hierarchy Levels</p>
-								</div>
-								<div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-									<span className="text-primary font-bold">#{chartData.levels}</span>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
 				</div>
 			)}
 
-			{/* Controls */}
-			<div className="flex gap-2 mb-6">
-				<Button variant="outline" size="sm" onClick={expandAll}>
-					Expand All
-				</Button>
-				<Button variant="outline" size="sm" onClick={collapseAll}>
-					Collapse All
-				</Button>
-			</div>
-
-			{/* Organization Chart */}
-			<div className="bg-muted/30 rounded-lg p-6 overflow-auto">
-				{chartData?.root ? (
-					<div className="max-w-4xl mx-auto">{renderNode(chartData.root)}</div>
+			<div className="bg-muted/30 rounded-lg p-6 overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
+				{primeChartData.length > 0 ? (
+					<div className="min-w-max">
+						<OrganizationChart value={primeChartData} nodeTemplate={nodeTemplate} />
+					</div>
 				) : (
 					<div className="text-center py-12">
 						<Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
