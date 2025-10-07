@@ -416,7 +416,7 @@ export interface IRecentHire {
 	position: string;
 	department: string;
 	status: "active";
-	created_at: string;
+	date_of_joining: string;
 }
 
 export interface IRecruitmentDashboard {
