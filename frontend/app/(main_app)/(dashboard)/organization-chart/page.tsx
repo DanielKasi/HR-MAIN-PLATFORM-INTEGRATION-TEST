@@ -41,7 +41,7 @@ export default function OrganizationChartPage() {
 
 	useEffect(() => {
 		if (chartData?.root) {
-			const primeData = [transformToPrimeReactData(chartData.root)];
+			const primeData = transformToPrimeReactData(chartData.root);
 			setPrimeChartData(primeData);
 		}
 	}, [expandedNodes, chartData]);
@@ -176,20 +176,24 @@ export default function OrganizationChartPage() {
 		};
 	};
 
-	const transformToPrimeReactData = (node: IOrganizationNode): any => {
-		return {
-			key: node.id,
-			data: {
-				id: node.id,
-				name: node.name,
-				position: node.position,
-				department: node.department,
-				profile_picture: node.profile_picture,
-				subordinate_count: node.subordinate_count,
-			},
-			children: node.subordinates?.map(transformToPrimeReactData) || [],
-			expanded: expandedNodes.has(node.id),
+	const transformToPrimeReactData = (node: IOrganizationNode): any[] => {
+		const transformNode = (currentNode: IOrganizationNode): any => {
+			return {
+				label: currentNode.name,
+				expanded: expandedNodes.has(currentNode.id),
+				data: {
+					id: currentNode.id,
+					name: currentNode.name,
+					position: currentNode.position,
+					department: currentNode.department,
+					profile_picture: currentNode.profile_picture,
+					subordinate_count: currentNode.subordinate_count,
+				},
+				children: currentNode.subordinates?.map(transformNode) || [],
+			};
 		};
+
+		return [transformNode(node)];
 	};
 
 	const fetchOrganizationChart = async () => {
@@ -258,6 +262,7 @@ export default function OrganizationChartPage() {
           shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer
           ${node.level === 0 ? "border-2 border-primary" : ""}
           ${isVirtualRoot ? "bg-primary/5 border-primary/30" : ""}
+          min-w-[200px] mx-2
         `}
 				onClick={() => {
 					if (hasSubordinates) {
@@ -351,6 +356,12 @@ export default function OrganizationChartPage() {
 						<RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
 						Refresh
 					</Button>
+					<Button variant="outline" size="sm" onClick={expandAll}>
+						Expand All
+					</Button>
+					<Button variant="outline" size="sm" onClick={collapseAll}>
+						Collapse All
+					</Button>
 				</div>
 			</div>
 
@@ -380,15 +391,6 @@ export default function OrganizationChartPage() {
 					</Card>
 				</div>
 			)}
-
-			<div className="flex gap-2 mb-6">
-				<Button variant="outline" size="sm" onClick={expandAll}>
-					Expand All
-				</Button>
-				<Button variant="outline" size="sm" onClick={collapseAll}>
-					Collapse All
-				</Button>
-			</div>
 
 			<div className="bg-muted/30 rounded-lg p-6 overflow-x-auto overflow-y-auto max-h-[calc(100vh-400px)]">
 				{primeChartData.length > 0 ? (
