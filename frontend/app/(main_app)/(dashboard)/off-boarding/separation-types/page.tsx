@@ -121,7 +121,7 @@ export default function SeparationPolicyTypesPage() {
 	}, [selectedInstitution?.id]);
 
 	const handleCreateSuccess = (newPolicyType: ISeparationType) => {
-		toast.success("Policy type created successfully");
+		toast.success("Separation type created successfully");
 		if (from) {
 			// Redirect to the page specified in the "from" query param
 			router.push(from);
@@ -133,13 +133,13 @@ export default function SeparationPolicyTypesPage() {
 	const handleUpdateSuccess = (updatedPolicyType: ISeparationType) => {
 		setIsEditDialogOpen(false);
 		setEditingPolicyType(null);
-		toast.success("Policy type updated successfully");
+		toast.success("Separation type updated successfully");
 		refreshTableRef.current?.();
 	};
 
 	const handleDeleteSuccess = (deletedId: number) => {
 		setPolicyTypeToDelete(null);
-		toast.success("Policy type deleted successfully");
+		toast.success("Separation type deleted successfully");
 		refreshTableRef.current?.();
 	};
 
@@ -158,14 +158,14 @@ export default function SeparationPolicyTypesPage() {
 				await SeparationPolicyTypesAPI.create({
 					policyTypeData: { ...values },
 				});
-				handleCreateSuccess({} as ISeparationType); // We don't have the created policy type here, but the refresh will show it
+				handleCreateSuccess({} as ISeparationType); // We don't have the created separation type here, but the refresh will show it
 			}
 			form.reset();
 			setEditingPolicyType(null);
 			setIsEditDialogOpen(false);
 		} catch (error) {
 			toast.error(
-				editingPolicyType ? "Failed to update policy type" : "Failed to create policy type",
+				editingPolicyType ? "Failed to update separation type" : "Failed to create separation type",
 			);
 		}
 	};
@@ -175,7 +175,7 @@ export default function SeparationPolicyTypesPage() {
 			await SeparationPolicyTypesAPI.delete(policyType.id);
 			handleDeleteSuccess(policyType.id);
 		} catch (error) {
-			toast.error("Failed to delete policy type");
+			toast.error("Failed to delete separation type");
 		}
 	};
 
@@ -203,7 +203,7 @@ export default function SeparationPolicyTypesPage() {
 		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8">
 			<div className="flex justify-between items-center mb-6">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Separation Policy Types</h1>
+					<h1 className="text-3xl font-bold tracking-tight">Separation Types</h1>
 				</div>
 			</div>
 
@@ -215,7 +215,7 @@ export default function SeparationPolicyTypesPage() {
 							<div className="relative flex-1 max-w-sm">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
 								<Input
-									placeholder="Search policy types..."
+									placeholder="Search separation types..."
 									value={searchTerm}
 									onChange={(e) => setSearchTerm(e.target.value)}
 									className="pl-10"
@@ -233,13 +233,13 @@ export default function SeparationPolicyTypesPage() {
 									<DialogTrigger asChild>
 										<Button>
 											<Plus className="h-4 w-4 mr-2" />
-											Add Policy Type
+											Add Separation Type
 										</Button>
 									</DialogTrigger>
 									<DialogContent>
 										<DialogHeader>
-											<DialogTitle>Add New Policy Type</DialogTitle>
-											<DialogDescription>Create a new separation policy type</DialogDescription>
+											<DialogTitle>Add New Separation Type</DialogTitle>
+											<DialogDescription>Create a new separation type</DialogDescription>
 										</DialogHeader>
 										<Form {...form}>
 											<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -250,7 +250,7 @@ export default function SeparationPolicyTypesPage() {
 														<FormItem>
 															<FormLabel>Type Name</FormLabel>
 															<FormControl>
-																<Input placeholder="Enter policy type name" {...field} />
+																<Input placeholder="Enter separation type name" {...field} />
 															</FormControl>
 															<FormMessage />
 														</FormItem>
@@ -333,7 +333,7 @@ export default function SeparationPolicyTypesPage() {
 													)}
 												/>
 												<DialogFooter>
-													<Button type="submit">Create Policy Type</Button>
+													<Button type="submit">Create Separation Type</Button>
 												</DialogFooter>
 											</form>
 										</Form>
@@ -358,8 +358,8 @@ export default function SeparationPolicyTypesPage() {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Edit Policy Type</DialogTitle>
-						<DialogDescription>Update the details of this separation policy type</DialogDescription>
+						<DialogTitle>Edit Separation Type</DialogTitle>
+						<DialogDescription>Update the details of this separation type</DialogDescription>
 					</DialogHeader>
 					<Form {...form}>
 						<form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -370,7 +370,7 @@ export default function SeparationPolicyTypesPage() {
 									<FormItem>
 										<FormLabel>Type Name</FormLabel>
 										<FormControl>
-											<Input placeholder="Enter policy type name" {...field} />
+											<Input placeholder="Enter separation type name" {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -458,7 +458,7 @@ export default function SeparationPolicyTypesPage() {
 										<div className="space-y-0.5">
 											<FormLabel className="text-base">Active Status</FormLabel>
 											<FormDescription>
-												Determine if this policy type is currently active
+												Determine if this separation type is currently active
 											</FormDescription>
 										</div>
 										<FormControl>
@@ -468,7 +468,7 @@ export default function SeparationPolicyTypesPage() {
 								)}
 							/>
 							<DialogFooter>
-								<Button type="submit">Update Policy Type</Button>
+								<Button type="submit">Update Separation Type</Button>
 							</DialogFooter>
 						</form>
 					</Form>
@@ -507,11 +507,7 @@ export default function SeparationPolicyTypesPage() {
 
 								if (!data || data.results.length === 0) {
 									return (
-										<div className="text-center py-8 text-gray-500">
-											{searchTerm
-												? "No policy types found matching your search criteria"
-												: "No separation policy types found. Create one to get started."}
-										</div>
+										<div className="text-center py-8 text-gray-500">No separation types found</div>
 									);
 								}
 
@@ -637,10 +633,9 @@ export default function SeparationPolicyTypesPage() {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete Policy Type</DialogTitle>
+						<DialogTitle>Delete Separation Type</DialogTitle>
 						<DialogDescription>
-							Are you sure you want to delete this separation policy type? This action cannot be
-							undone.
+							Are you sure you want to delete this separation type? This action cannot be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
