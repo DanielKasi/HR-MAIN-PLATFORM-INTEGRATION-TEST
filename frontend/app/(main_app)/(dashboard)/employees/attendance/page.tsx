@@ -12,6 +12,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ProtectedComponent from "@/components/ProtectedComponent";
 import { PERMISSION_CODES } from "@/constants";
+import ProtectedPage from "@/components/ProtectedPage";
 
 const AttendancePage = () => {
 	const [loading, setLoading] = useState(true);
@@ -81,33 +82,23 @@ const AttendancePage = () => {
 	}
 
 	return (
-		<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
-			<div className="w-full">
-				<div className="mb-8">
-					<div className="flex flex-col w-full">
-						<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
+		<ProtectedPage permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
+			<div className="flex flex-col w-full h-full p-3 sm:p-4 md:p-6 lg:p-8 bg-white rounded-lg py-8 min-h-screen">
+				<div className="w-full">
+					<div className="mb-8">
+						<div className="flex flex-col w-full">
 							<div className="flex items-center justify-between w-full gap-8">
 								<h1 className="text-xl md:text-3xl font-bold text-gray-900 mb-2">
 									Employee Attendance
 								</h1>
-								<Button
-									size="sm"
-									onClick={handleViewAttendance}
-									className="flex items-center gap-2  text-white px-4 py-2 rounded-lg shadow-sm transition-colors"
-								>
-									<Eye className="w-4 h-4" />
-									<span className="hidden sm:inline">View work records</span>
-								</Button>
 							</div>
-						</ProtectedComponent>
-						<p className="text-muted-foreground">Manage daily attendance for your organization</p>
+							<p className="text-muted-foreground">Manage daily attendance for your organization</p>
+						</div>
 					</div>
-				</div>
-				<ProtectedComponent permissionCode={PERMISSION_CODES.CAN_VIEW_ATTENDANCE_RECORDS}>
 					<EmployeeAttendance scope={{ type: "default" }} />
-				</ProtectedComponent>
+				</div>
 			</div>
-		</div>
+		</ProtectedPage>
 	);
 };
 

@@ -256,16 +256,18 @@ class Institution(SoftDeletableTimeStampedModel):
             self._create_or_update_tax_rules()
 
     def _create_or_update_tax_rules(self):
+        """Create tax rules using existing endpoint logic"""
         try:
+            # Use the same logic that's in your InstitutionListAPIView
             from .views import InstitutionListAPIView
-
             view = InstitutionListAPIView()
             
             # Reuse the tax creation method from your view
             if hasattr(view, 'create_or_update_tax_rules'):
-                from .utils import TaxRuleManager
                 view.create_or_update_tax_rules(self, self.institution_owner)
             else:
+                # Fallback to direct utility call
+                from .utils import TaxRuleManager
                 TaxRuleManager.create_country_tax_rules(self)
                 
             logger.info(f"Tax rules created/updated for {self.institution_name}")
@@ -372,6 +374,7 @@ class InstitutionTax(BaseApprovableModel):
 class TaxRuleCategory(models.Model):
     name = models.CharField(max_length=100, blank=False)
     description = models.TextField(blank=True, null=True)
+    code = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
     def __str__(self):
         return self.name

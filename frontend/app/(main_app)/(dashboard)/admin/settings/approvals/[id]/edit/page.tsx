@@ -4,50 +4,32 @@ import type {
 	ApprovalDocument,
 	ApprovalDocumentLevel,
 	ApprovalDocumentFormData,
-	ApprovalDocumentLevelFormData,
 	Action,
-	ApproverGroup,
-	ApproverGroupFormData,
 } from "@/types/approvals.types";
 
-import { UserProfile, Role } from "@/types/user.types";
-
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import {
-	ArrowLeft,
-	Plus,
-	CheckCircle2,
-	Users,
-	Shield,
-	FileText,
-	Trash2,
-	Save,
-	Edit,
-	MoreHorizontal,
-} from "lucide-react";
+import { ArrowLeft, Plus, CheckCircle2, Users, FileText, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { selectSelectedInstitution } from "@/store/auth/selectors";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-	DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+	DndContext,
+	closestCenter,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { ApprovalLevelCard } from "@/components/approvals/approval-level-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { MultiSelectPopover } from "@/components/common/multi-select-popover";
 import FixedLoader from "@/components/fixed-loader";
-import { getRoles, PROFILES_API, showErrorToast, showSuccessToast } from "@/lib/utils";
+import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
@@ -55,23 +37,17 @@ import {
 	ACTIONS_API,
 	APPROVAL_DOCUMENT_LEVELS_API,
 	APPROVAL_DOCUMENTS_API,
-	APPROVER_GROUPS_API,
 } from "@/lib/api/approvals/utils";
-import UserProfileSearchableSelect from "@/components/selects/user-profile-searchable-select";
-import ApproverGroupSearchableSelect from "@/components/selects/approver-groups-searchable-select";
-import RoleSearchableSelect from "@/components/selects/role-searchable-select";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
+import { ApprovalLevelCreateEditDialog } from "@/components/approvals/approvel-level-create-edit-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ApprovalEditPage() {
 	const params = useParams();
-	const router = useRouter();
 	const approvalId = params.id as string;
 	const currentInstitution = useSelector(selectSelectedInstitution);
+
+	const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
 	// Data states
 	const [approvalDocument, setApprovalDocument] = useState<ApprovalDocument | null>(null);
@@ -84,8 +60,6 @@ export default function ApprovalEditPage() {
 	// Loading states
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [savingLevel, setSavingLevel] = useState(false);
-	const [savingApproverGroup, setSavingApproverGroup] = useState(false);
 
 	// Error state
 	const [error, setError] = useState<string>("");
@@ -93,23 +67,13 @@ export default function ApprovalEditPage() {
 	// Level dialog states
 	const [openLevelDialog, setOpenLevelDialog] = useState(false);
 	const [editingLevel, setEditingLevel] = useState<ApprovalDocumentLevel | null>(null);
-	const [newLevelName, setNewLevelName] = useState("");
-	const [newLevelDescription, setNewLevelDescription] = useState("");
-	const [selectedApproverGroupIds, setSelectedApproverGroupIds] = useState<number[]>([]);
-	const [selectedOverriderGroupIds, setSelectedOverriderGroupIds] = useState<number[]>([]);
-
-	const [selectedParticularApproverUsersIds, setSelectedParticularApproverUsersIds] = useState<
-		number[]
-	>([]);
-	const [selectedParticularOverriderUsersIds, setSelectedParticularOverriderUsersIds] = useState<
-		number[]
-	>([]);
-	// ApproverGroup creation dialog states
-	const [openApproverGroupDialog, setOpenApproverGroupDialog] = useState(false);
-	const [newGroupName, setNewGroupName] = useState("");
-	const [newGroupDescription, setNewGroupDescription] = useState("");
-	const [selectedGroupUserIds, setSelectedGroupUserIds] = useState<number[]>([]);
-	const [selectedGroupRoleIds, setSelectedGroupRoleIds] = useState<number[]>([]);
+	const [reorderConfirmOpen, setReorderConfirmOpen] = useState(false);
+	const [reorderPayload, setReorderPayload] = useState<{
+		sourceId: number;
+		targetId: number;
+	} | null>(null);
+	const [reordering, setReordering] = useState(false);
+	const [activeLevelId, setActiveLevelId] = useState<number | null>(null);
 
 	// Confirmation dialog states
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -117,36 +81,40 @@ export default function ApprovalEditPage() {
 	const [deletingLevel, setDeletingLevel] = useState(false);
 
 	useEffect(() => {
-		loadData();
+		handleFetchData();
 	}, [approvalId, currentInstitution]);
 
-	const loadData = async () => {
+	const handleFetchData = async () => {
 		if (!currentInstitution) {
 			return;
 		}
 		try {
 			setLoading(true);
-			const [documentRes, actionsRes] = await Promise.all([
-				APPROVAL_DOCUMENTS_API.fetchById({ id: Number.parseInt(approvalId) }),
-				ACTIONS_API.fetchActions(),
-			]);
-
-			const normalizedActions = Array.isArray(actionsRes)
-				? actionsRes
-				: Array.isArray((actionsRes as any).results)
-					? (actionsRes as any).results
-					: [];
-
-			setApprovalDocument(documentRes);
-			setActions(normalizedActions);
-			setDocumentDescription(documentRes.description || "");
-			setSelectedActionIds(documentRes.actions?.map((a) => a.id) || []);
+			await fetchData();
 		} catch (e: any) {
 			showErrorToast({ error: e, defaultMessage: "Failed to load approval data" });
 			setError(e?.message || "Failed to load approval data");
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	const fetchData = async () => {
+		const [documentRes, actionsRes] = await Promise.all([
+			APPROVAL_DOCUMENTS_API.fetchById({ id: Number.parseInt(approvalId) }),
+			ACTIONS_API.fetchActions(),
+		]);
+
+		const normalizedActions = Array.isArray(actionsRes)
+			? actionsRes
+			: Array.isArray((actionsRes as any).results)
+				? (actionsRes as any).results
+				: [];
+
+		setApprovalDocument(documentRes);
+		setActions(normalizedActions);
+		setDocumentDescription(documentRes.description || "");
+		setSelectedActionIds(documentRes.actions?.map((a) => a.id) || []);
 	};
 
 	const toggleAction = (id: number) => {
@@ -183,129 +151,18 @@ export default function ApprovalEditPage() {
 		}
 	};
 
-	const createNewApproverGroup = async () => {
-		if (!currentInstitution) {
-			toast.error("Missing institution");
-
-			return;
-		}
-
-		if (!newGroupName.trim()) {
-			toast.error("Group name is required");
-
-			return;
-		}
-
-		if (selectedGroupUserIds.length === 0 && selectedGroupRoleIds.length === 0) {
-			toast.error("Please select at least one user or role for the approver group");
-
-			return;
-		}
-
-		try {
-			setSavingApproverGroup(true);
-
-			const groupData: ApproverGroupFormData = {
-				institution: currentInstitution.id,
-				name: newGroupName,
-				description: newGroupDescription,
-				users: selectedGroupUserIds,
-				roles: selectedGroupRoleIds,
-			};
-
-			const createdGroup = await APPROVER_GROUPS_API.create(groupData);
-			resetApproverGroupDialog();
-			showSuccessToast("Approver group created successfully!");
-		} catch (e: any) {
-			showErrorToast({ error: e, defaultMessage: "Failed to create approver group" });
-		} finally {
-			setSavingApproverGroup(false);
-		}
-	};
-
-	const resetApproverGroupDialog = () => {
-		setOpenApproverGroupDialog(false);
-		setNewGroupName("");
-		setNewGroupDescription("");
-		setSelectedGroupUserIds([]);
-		setSelectedGroupRoleIds([]);
-	};
-
-	const openEditLevelDialog = (level?: ApprovalDocumentLevel) => {
-		if (level) {
-			setEditingLevel(level);
-			setNewLevelName(level.name || "Unknown ");
-			setNewLevelDescription(level.description || "");
-			setSelectedApproverGroupIds(
-				level.approvers_detail
-					?.map((approver) => approver.approver_group?.id)
-					.filter((id): id is number => id !== undefined) || [],
-			);
-
-			setSelectedOverriderGroupIds(
-				level.overriders_detail
-					?.map((overrider) => overrider.approver_group?.id)
-					.filter((id): id is number => id !== undefined) || [],
-			);
-		}
+	const openEditLevelDialog = (level: ApprovalDocumentLevel) => {
 		setOpenLevelDialog(true);
 	};
 
-	const saveLevel = async () => {
-		if (!approvalDocument) {
-			toast.error("No approval document found");
-
-			return;
-		}
-
-		if (!newLevelName.trim()) {
-			toast.error("Level name is required");
-
-			return;
-		}
-
-		if (selectedApproverGroupIds.length === 0) {
-			toast.error("Please select at least one approver group");
-
-			return;
-		}
-
-		try {
-			setSavingLevel(true);
-
-			const levelData: ApprovalDocumentLevelFormData = {
-				name: newLevelName,
-				description: newLevelDescription,
-				approvers: selectedApproverGroupIds,
-				overriders: selectedOverriderGroupIds,
-				approval_document: approvalDocument.id,
-				approver_users: selectedParticularApproverUsersIds,
-				overrider_users: selectedParticularOverriderUsersIds,
-			};
-
-			if (editingLevel) {
-				await APPROVAL_DOCUMENT_LEVELS_API.update({ id: editingLevel.id, payload: levelData });
-				showSuccessToast("Approval level updated successfully!");
-			} else {
-				await APPROVAL_DOCUMENT_LEVELS_API.create(levelData);
-				showSuccessToast("Approval level created successfully!");
-			}
-			loadData();
-			resetLevelDialog();
-		} catch (e: any) {
-			showErrorToast({ error: e, defaultMessage: "Failed to save approval level" });
-		} finally {
-			setSavingLevel(false);
-		}
+	const handleSaveLevel = async () => {
+		resetLevelDialog();
+		handleFetchData();
 	};
 
 	const resetLevelDialog = () => {
 		setOpenLevelDialog(false);
 		setEditingLevel(null);
-		setNewLevelName("");
-		setNewLevelDescription("");
-		setSelectedApproverGroupIds([]);
-		setSelectedOverriderGroupIds([]);
 	};
 
 	const handleDeleteLevel = (levelId: number) => {
@@ -319,7 +176,7 @@ export default function ApprovalEditPage() {
 		try {
 			setDeletingLevel(true);
 			await APPROVAL_DOCUMENT_LEVELS_API.delete({ id: levelToDelete });
-			await loadData();
+			await handleFetchData();
 			showSuccessToast("Approval level deleted successfully!");
 		} catch (e: any) {
 			showErrorToast({ error: e, defaultMessage: "Failed to delete approval level" });
@@ -333,6 +190,53 @@ export default function ApprovalEditPage() {
 	const cancelDeleteLevel = () => {
 		setDeleteConfirmOpen(false);
 		setLevelToDelete(null);
+	};
+
+	const handleDragEnd = (event: any) => {
+		if (!approvalDocument) {
+			return;
+		}
+		const { active, over } = event;
+
+		if (!over || active.id === over.id) {
+			setActiveLevelId(null);
+			return;
+		}
+
+		const oldIndex = approvalDocument.levels.findIndex((l) => l.id === active.id);
+		const newIndex = approvalDocument.levels.findIndex((l) => l.id === over.id);
+
+		if (oldIndex === -1 || newIndex === -1) return;
+
+		// Get source and target IDs
+		const sourceId = active.id as number;
+		const targetId = over.id as number;
+
+		// Show confirmation
+		setReorderPayload({ sourceId, targetId });
+		setReorderConfirmOpen(true);
+
+		setActiveLevelId(null);
+	};
+
+	const handleReorder = async () => {
+		if (!reorderPayload || !approvalDocument) return;
+
+		try {
+			setReordering(true);
+			await APPROVAL_DOCUMENT_LEVELS_API.reorder({
+				sourceId: reorderPayload.sourceId,
+				targetId: reorderPayload.targetId,
+			});
+			showSuccessToast("Approval levels reordered successfully!");
+			await fetchData();
+		} catch (e: any) {
+			showErrorToast({ error: e, defaultMessage: "Failed to reorder levels" });
+		} finally {
+			setReordering(false);
+			setReorderConfirmOpen(false);
+			setReorderPayload(null);
+		}
 	};
 
 	if (loading) {
@@ -444,7 +348,7 @@ export default function ApprovalEditPage() {
 							/>
 						</div>
 						<div className="flex items-center w-full justify-end">
-							<Button onClick={saveApprovalDocument} disabled={saving}>
+							<Button className="rounded-xl" onClick={saveApprovalDocument} disabled={saving}>
 								<Save className="h-4 w-4 mr-2" />
 								{saving ? "Saving..." : "Save Changes"}
 							</Button>
@@ -465,324 +369,65 @@ export default function ApprovalEditPage() {
 									Manage sequential approval levels with approver groups
 								</p>
 							</div>
-							<Button size="sm" onClick={() => openEditLevelDialog()}>
+							<Button
+								className="rounded-xl"
+								size="sm"
+								onClick={() => {
+									resetLevelDialog();
+									setOpenLevelDialog(true);
+								}}
+							>
 								<Plus className="h-4 w-4 mr-2" />
 								Add Level
 							</Button>
 						</div>
 					</CardHeader>
-
-					<CardContent>
-						{approvalDocument.levels.length === 0 ? (
-							<div className="text-center py-8 text-muted-foreground">
-								<Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-								<p className="mb-2">No approval levels created yet</p>
-								<p className="text-sm">Create levels to define your approval workflow</p>
-							</div>
+					<CardContent className="w-full overflow-x-hidden">
+						{reordering ? (
+							<>
+								<div className="space-y-3 bg-transparent animate-pulse">
+									{approvalDocument.levels.map((level, index) => (
+										<Skeleton key={index} className="h-48 w-full rounded bg-gray-200" />
+									))}
+								</div>
+							</>
 						) : (
-							<div className="space-y-3">
-								{approvalDocument.levels.map((level, index) => (
-									<div key={level.id} className="border rounded-lg p-4">
-										<div className="flex items-start justify-between mb-3">
-											<div>
-												<div className="flex items-center gap-2">
-													<Badge variant="outline" className="text-xs">
-														Level {index + 1}
-													</Badge>
-													<span className="font-medium">{level.name}</span>
-												</div>
-												{level.description && (
-													<p className="text-sm text-muted-foreground mt-1">{level.description}</p>
-												)}
-											</div>
-											<div className="flex gap-2">
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button className="" variant={"ghost"} size={"icon"}>
-															<MoreHorizontal />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent>
-														<DropdownMenuItem
-															className="cursor-pointer"
-															onClick={() => openEditLevelDialog(level)}
-														>
-															<Edit className="h-4 w-4 mr-2" /> Edit
-														</DropdownMenuItem>
-														<DropdownMenuItem
-															className="text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-															onClick={() => handleDeleteLevel(level.id)}
-															disabled={deletingLevel}
-														>
-															<Trash2 className="h-4 w-4 mr-2" /> Delete
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</div>
-										</div>
-
-										<div className="grid md:grid-cols-2 gap-4 text-sm">
-											<div>
-												<div className="flex items-center gap-1 mb-1">
-													<CheckCircle2 className="h-3 w-3 text-green-600" />
-													<span className="font-medium">Approver Groups</span>
-												</div>
-												<div className="text-muted-foreground">
-													{level.approvers_detail?.length || 0}{" "}
-													{`group${level.approvers_detail?.length > 1 ? "s" : ""} assigned`}
-												</div>
-												{level.approvers_detail && level.approvers_detail.length && (
-													<div className="mt-1 flex flex-wrap gap-1">
-														{level.approvers_detail.map((approver) => (
-															<Badge key={approver.id} variant="secondary" className="text-xs">
-																{approver.approver_group?.name || "Unknown group"}
-															</Badge>
-														))}
-													</div>
-												)}
-											</div>
-
-											<div>
-												<div className="flex items-center gap-1 mb-1">
-													<Shield className="h-3 w-3 text-orange-600" />
-													<span className="font-medium">Overrider Groups</span>
-												</div>
-												<div className="text-muted-foreground">
-													{level.overriders_detail?.length || 0}{" "}
-													{`group${level.overriders_detail?.length > 1 ? "s" : ""} assigned`}
-												</div>
-												{level.overriders_detail && level.overriders_detail.length > 0 && (
-													<div className="mt-1 flex flex-wrap gap-1">
-														{level.overriders_detail.map((overrider) => (
-															<Badge key={overrider.id} variant="outline" className="text-xs">
-																{overrider.approver_group?.name || "Unknow group"}
-															</Badge>
-														))}
-													</div>
-												)}
-											</div>
-										</div>
+							<DndContext
+								sensors={sensors}
+								collisionDetection={closestCenter}
+								onDragEnd={handleDragEnd}
+							>
+								<SortableContext
+									items={approvalDocument.levels.map((l) => l.id)}
+									strategy={verticalListSortingStrategy}
+								>
+									<div className="space-y-3">
+										{approvalDocument.levels.map((level, index) => (
+											<ApprovalLevelCard
+												key={level.id}
+												level={level}
+												index={index}
+												totalLevels={approvalDocument.levels.length}
+												onEdit={openEditLevelDialog}
+												onDelete={handleDeleteLevel}
+											/>
+										))}
 									</div>
-								))}
-							</div>
+								</SortableContext>
+							</DndContext>
 						)}
 					</CardContent>
 				</Card>
 			</div>
 
 			{/* Level Dialog */}
-			<Dialog
+			<ApprovalLevelCreateEditDialog
 				open={openLevelDialog}
-				onOpenChange={(open) => {
-					if (!open) {
-						resetLevelDialog();
-					} else {
-						setOpenLevelDialog(false);
-					}
-				}}
-			>
-				<DialogContent className="sm:max-w-2xl">
-					<DialogHeader>
-						<DialogTitle>
-							{editingLevel ? "Edit Approval Level" : "Create Approval Level"}
-						</DialogTitle>
-					</DialogHeader>
-
-					<div className="space-y-6 py-4  max-h-[80vh] overflow-y-auto px-2">
-						{/* Basic Info */}
-						<div className="space-y-4">
-							<div>
-								<label className="block text-sm font-medium mb-2">
-									Level Name <span className="text-destructive">*</span>
-								</label>
-								<Input
-									placeholder="e.g., Manager Approval, HR Review..."
-									value={newLevelName}
-									onChange={(e) => setNewLevelName(e.target.value)}
-								/>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium mb-2">Description</label>
-								<Textarea
-									placeholder="Optional description of this approval level..."
-									value={newLevelDescription}
-									onChange={(e) => setNewLevelDescription(e.target.value)}
-									rows={2}
-								/>
-							</div>
-						</div>
-
-						<Separator />
-
-						{/* Approver Groups Section */}
-						<div className="space-y-4">
-							<div className="flex items-center justify-between">
-								<div className="flex items-center gap-2">
-									<CheckCircle2 className="h-5 w-5 text-green-600" />
-									<h4 className="font-medium">Approver Groups</h4>
-									<Badge variant="secondary" className="text-xs">
-										Required
-									</Badge>
-								</div>
-								<Dialog open={openApproverGroupDialog} onOpenChange={setOpenApproverGroupDialog}>
-									<DialogTrigger asChild>
-										<Button variant="outline" size="sm">
-											<Plus className="h-4 w-4 mr-2" />
-											Create Group
-										</Button>
-									</DialogTrigger>
-									<DialogContent className="sm:max-w-xl">
-										<DialogHeader>
-											<DialogTitle>Create Approver Group</DialogTitle>
-										</DialogHeader>
-
-										<div className="space-y-4 py-4">
-											<div>
-												<label className="block text-sm font-medium mb-2">
-													Group Name <span className="text-destructive">*</span>
-												</label>
-												<Input
-													placeholder="e.g., Finance Team, HR Managers..."
-													value={newGroupName}
-													onChange={(e) => setNewGroupName(e.target.value)}
-												/>
-											</div>
-
-											<div>
-												<label className="block text-sm font-medium mb-2">Description</label>
-												<Textarea
-													placeholder="Optional description of this approver group..."
-													value={newGroupDescription}
-													onChange={(e) => setNewGroupDescription(e.target.value)}
-													rows={2}
-												/>
-											</div>
-
-											<Separator />
-
-											<div className="grid md:grid-cols-2 gap-4">
-												<div>
-													<label className="block text-sm font-medium mb-2">Roles</label>
-
-													<RoleSearchableSelect
-														placeholder="Select roles..."
-														value={selectedGroupRoleIds}
-														onValueChange={(values) => {
-															if (values.length) {
-																setSelectedGroupRoleIds(values.map(Number));
-															}
-														}}
-													/>
-												</div>
-
-												<div>
-													<label className="block text-sm font-medium mb-2">Users</label>
-
-													<UserProfileSearchableSelect
-														placeholder="Select users..."
-														value={selectedGroupUserIds}
-														onValueChange={(values) => {
-															if (values.length) {
-																setSelectedGroupUserIds(values.map(Number));
-															}
-														}}
-													/>
-												</div>
-											</div>
-										</div>
-
-										<DialogFooter>
-											<Button variant="outline" onClick={resetApproverGroupDialog}>
-												Cancel
-											</Button>
-											<Button onClick={createNewApproverGroup} disabled={savingApproverGroup}>
-												{savingApproverGroup ? "Creating..." : "Create Group"}
-											</Button>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium mb-2">Select Approver Groups</label>
-
-								<ApproverGroupSearchableSelect
-									value={selectedApproverGroupIds}
-									placeholder="Select approver groups..."
-									onValueChange={(values) => {
-										if (values.length) {
-											setSelectedApproverGroupIds(values.map(Number));
-										}
-									}}
-								/>
-							</div>
-						</div>
-
-						<div>
-							<label className="block text-sm font-medium mb-2">
-								Select Particular Approver Users
-							</label>
-							<UserProfileSearchableSelect
-								value={selectedParticularApproverUsersIds}
-								onValueChange={(values) =>
-									setSelectedParticularApproverUsersIds(values.map((val) => Number(val)))
-								}
-								placeholder="Select particular approver users..."
-								multiple={true}
-							/>
-						</div>
-						<Separator />
-
-						{/* Overrider Groups Section */}
-						<div className="space-y-4">
-							<div className="flex items-center gap-2">
-								<Shield className="h-5 w-5 text-orange-600" />
-								<h4 className="font-medium">Overrider Groups</h4>
-								<Badge variant="outline" className="text-xs">
-									Optional
-								</Badge>
-							</div>
-							<p className="text-sm text-muted-foreground">
-								Approver groups that can override this approval level
-							</p>
-
-							<div>
-								<label className="block text-sm font-medium mb-2">Select Overrider Groups</label>
-
-								<ApproverGroupSearchableSelect
-									value={selectedOverriderGroupIds}
-									placeholder="Select overrider groups..."
-									onValueChange={(values) => {
-										if (values.length) {
-											setSelectedOverriderGroupIds(values.map(Number));
-										}
-									}}
-								/>
-							</div>
-						</div>
-						<div>
-							<label className="block text-sm font-medium mb-2">
-								Select Particular Overrider Users
-							</label>
-							<UserProfileSearchableSelect
-								value={selectedParticularOverriderUsersIds}
-								onValueChange={(values) =>
-									setSelectedParticularOverriderUsersIds(values.map((val) => Number(val)))
-								}
-								placeholder="Select particular overrider users..."
-								multiple={true}
-							/>
-						</div>
-					</div>
-
-					<DialogFooter>
-						<Button onClick={saveLevel} className="w-full rounded-full" disabled={savingLevel}>
-							{savingLevel ? "Saving..." : editingLevel ? "Update Level" : "Create Level"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+				onOpenChange={setOpenLevelDialog}
+				approvalDocumentId={approvalDocument.id}
+				level={editingLevel}
+				onSave={handleSaveLevel}
+			/>
 
 			{/* Confirmation Dialog */}
 			<ConfirmationDialog
@@ -794,6 +439,20 @@ export default function ApprovalEditPage() {
 				confirmText="Delete"
 				cancelText="Cancel"
 				disabled={deletingLevel}
+			/>
+
+			<ConfirmationDialog
+				isOpen={reorderConfirmOpen}
+				onClose={() => {
+					setReorderConfirmOpen(false);
+					setReorderPayload(null);
+				}}
+				onConfirm={handleReorder}
+				title="Reorder Approval Levels"
+				description={`Are you sure you want to move this level to a new position? This will update the approval workflow sequence.`}
+				confirmText="Confirm Reorder"
+				cancelText="Cancel"
+				disabled={reordering}
 			/>
 		</div>
 	);

@@ -1,19 +1,14 @@
 import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { IPaginatedResponse } from "@/types/types.utils";
+import { ILatecomer, IPaginatedResponse } from "@/types/types.utils";
 
 interface Props {
 	className?: string;
+	data: ILatecomer[];
 }
 
-interface Latecomer {
-	employee: string;
-	department: string;
-	timein: string;
-}
-
-export default function LatecomersTable({ className = "" }: Props) {
-	const columns: ColumnDef<Latecomer>[] = [
+export default function LatecomersTable({ className = "", data }: Props) {
+	const columns: ColumnDef<ILatecomer>[] = [
 		{
 			key: "employee",
 			header: <span>Employees</span>,
@@ -41,16 +36,12 @@ export default function LatecomersTable({ className = "" }: Props) {
 					skeletonRows={5}
 					columns={columns}
 					emptyState={[]}
-					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<Latecomer>> {
+					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<ILatecomer>> {
 						return Promise.resolve({
-							count: 20,
-							next: "21",
-							previous: "0",
-							results: new Array(5).fill(null).map(() => ({
-								employee: "John Doe",
-								department: "Finance",
-								timein: "9:12 am",
-							})),
+							count: data.length,
+							next: null,
+							previous: null,
+							results: data,
 						});
 					}}
 				></PaginatedTable>

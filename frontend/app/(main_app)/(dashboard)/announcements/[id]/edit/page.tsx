@@ -115,7 +115,7 @@ export default function AnnouncementEditPage() {
 		try {
 			setSaving(true);
 			await ANNOUNCEMENTS_API.update({ id: announcementId, data: dataToSend });
-			showSuccessToast("Announcement updated successfully!");
+			showSuccessToast("Notice updated successfully!");
 			router.push(`/announcements/${announcementId}`);
 		} catch (err) {
 			showErrorToast({ error: err, defaultMessage: "Failed to update announcement" });
@@ -135,7 +135,7 @@ export default function AnnouncementEditPage() {
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
 					</Link>
-					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Edit Announcement</h1>
+					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Edit Notice</h1>
 				</div>
 			</div>
 
@@ -151,7 +151,7 @@ export default function AnnouncementEditPage() {
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label>Announcement Type (Optional)</Label>
+						<Label>Notice Type (Optional)</Label>
 						<ContentTypeSearchableSelect
 							value={[formData.announcement_type?.toString() || ""]}
 							onValueChange={(values) => {
@@ -167,7 +167,7 @@ export default function AnnouncementEditPage() {
 					<div className="space-y-2">
 						<Label>Content *</Label>
 						<Textarea
-							placeholder="Announcement details..."
+							placeholder="Notice details..."
 							value={formData.content}
 							onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
 							className="rounded-2xl"
@@ -205,7 +205,7 @@ export default function AnnouncementEditPage() {
 						Cancel
 					</Button>
 					<Button className="rounded-full w-full max-w-xs" onClick={handleUpdate} disabled={saving}>
-						{saving ? "Updating..." : "Update Announcement"}
+						{saving ? "Updating..." : "Update Notice"}
 					</Button>
 				</div>
 			</div>

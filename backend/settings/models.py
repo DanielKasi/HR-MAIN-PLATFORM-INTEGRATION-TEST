@@ -1,5 +1,6 @@
 from django.db import models
 from approval.models import BaseApprovableModel
+from institution.models import Institution
 from slugify import slugify
 from django.utils import timezone
 from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField
@@ -45,7 +46,7 @@ class MeetingIntegration(BaseApprovableModel):
         ('google_meet', 'Google Meet'),
         ('microsoft_teams', 'Microsoft Teams'),
     ]
-    institution = models.ForeignKey('institution.Institution', on_delete=models.PROTECT, related_name='meeting_integrations')
+    institution = models.ForeignKey(Institution, on_delete=models.PROTECT, related_name='meeting_integrations')
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES)
     api_key = EncryptedCharField(max_length=255, blank=True, null=True)
     api_secret = EncryptedCharField(max_length=255, blank=True, null=True)
@@ -105,4 +106,3 @@ class EmailProviderConfig(BaseApprovableModel):
     
     def get_institution(self):
         return self.institution 
-

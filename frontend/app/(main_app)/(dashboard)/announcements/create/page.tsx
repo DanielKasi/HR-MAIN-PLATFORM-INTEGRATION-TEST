@@ -77,10 +77,10 @@ export default function AnnouncementCreatePage() {
 		try {
 			setSaving(true);
 			await ANNOUNCEMENTS_API.create({ data: dataToSend });
-			showSuccessToast("Announcement created successfully!");
+			showSuccessToast("Notice created successfully!");
 			router.push(`/announcements`);
 		} catch (err) {
-			showErrorToast({ error: err, defaultMessage: "Failed to create announcement" });
+			showErrorToast({ error: err, defaultMessage: "Failed to create notice" });
 		} finally {
 			setSaving(false);
 		}
@@ -95,7 +95,7 @@ export default function AnnouncementCreatePage() {
 							<ArrowLeft className="h-4 w-4" />
 						</Button>
 					</Link>
-					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Create Announcement</h1>
+					<h1 className="text-xl md:text-2xl lg:text-3xl font-semibold">Create Notice</h1>
 				</div>
 			</div>
 
@@ -111,7 +111,7 @@ export default function AnnouncementCreatePage() {
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label>Announcement Type (Optional)</Label>
+						<Label>Notice Type (Optional)</Label>
 						<ContentTypeSearchableSelect
 							value={[formData.announcement_type || ""]}
 							onValueChange={(values) => {
@@ -127,7 +127,7 @@ export default function AnnouncementCreatePage() {
 					<div className="space-y-2">
 						<Label>Content *</Label>
 						<Textarea
-							placeholder="Announcement details..."
+							placeholder="Notice details..."
 							value={formData.content}
 							onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
 							className="rounded-2xl"
@@ -158,7 +158,7 @@ export default function AnnouncementCreatePage() {
 				</div>
 				<div className="flex justify-end gap-2">
 					<Button className="rounded-full w-full max-w-xs" onClick={handleCreate} disabled={saving}>
-						{saving ? "Creating..." : "Create Announcement"}
+						{saving ? "Creating..." : "Create Notice"}
 					</Button>
 				</div>
 			</div>

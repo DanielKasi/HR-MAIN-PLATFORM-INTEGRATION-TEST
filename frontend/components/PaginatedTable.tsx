@@ -151,7 +151,7 @@ export function PaginatedTable<T, Q = unknown>({
 	}, [...deps]);
 
 	return (
-		<div className={cn("space-y-4 h-full !min-h-[60svh]", className)}>
+		<div className={cn("space-y-4 h-full !min-h-[30svh]", className)}>
 			<Table className={cn(tableClassName, "mb-auto")}>
 				<TableHeader>
 					<TableRow className="border-b bg-muted/30">

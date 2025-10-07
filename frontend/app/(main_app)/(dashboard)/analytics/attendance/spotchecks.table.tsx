@@ -1,20 +1,14 @@
 import { ColumnDef, PaginatedTable } from "@/components/PaginatedTable";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { IPaginatedResponse } from "@/types/types.utils";
+import { IFailedSpotcheckToday, IPaginatedResponse } from "@/types/types.utils";
 
 interface Props {
 	className?: string;
+	data: IFailedSpotcheckToday[];
 }
 
-interface Employee {
-	employee: string;
-	department: string;
-	time: string;
-	status: string;
-}
-
-export default function SpotchecksTable({ className = "" }: Props) {
-	const columns: ColumnDef<Employee>[] = [
+export default function SpotchecksTable({ className = "", data }: Props) {
+	const columns: ColumnDef<IFailedSpotcheckToday>[] = [
 		{
 			key: "employee",
 			header: <span>Employees</span>,
@@ -47,17 +41,14 @@ export default function SpotchecksTable({ className = "" }: Props) {
 					skeletonRows={5}
 					columns={columns}
 					emptyState={[]}
-					fetchFirstPage={function (query?: unknown): Promise<IPaginatedResponse<Employee>> {
+					fetchFirstPage={function (
+						query?: unknown,
+					): Promise<IPaginatedResponse<IFailedSpotcheckToday>> {
 						return Promise.resolve({
-							count: 20,
-							next: "21",
-							previous: "0",
-							results: new Array(5).fill(null).map(() => ({
-								employee: "John Doe",
-								department: "Finance",
-								time: "9:12 am",
-								status: "Missed",
-							})),
+							count: data.length,
+							next: null,
+							previous: null,
+							results: data,
 						});
 					}}
 				></PaginatedTable>

@@ -1127,7 +1127,7 @@ class PayrollAnalyticsAPI(APIView):
                 response=inline_serializer(
                     name='PayrollSummaryResponse',
                     fields={
-                        'payroll_period': serializers.UUIDField(), # Corrected this line to match the field type
+                        # 'payroll_period': serializers.UUIDField(), 
                         'overall_financials': serializers.DictField(
                             help_text="Total financial amounts for the period.",
                             child=serializers.FloatField(),
@@ -1277,7 +1277,7 @@ class PayrollAnalyticsAPI(APIView):
             })
 
         response_data = {
-            "payroll_period": serializers.UUIDField().to_representation(payroll_period.id),
+            # "payroll_period": serializers.UUIDField().to_representation(payroll_period.id),
             "overall_financials": {k: round(float(v), 2) for k, v in overall_financials.items()},
             "cost_breakdown_percentages": cost_breakdown_percentages,
             "average_metrics": {k: round(float(v), 2) for k, v in average_metrics.items()},
@@ -1459,14 +1459,14 @@ class PayrollDashboardAPIView(APIView):
             )
             .order_by('-total_amount')
         )
-        penalty_breakdown = [
-            {
-                'penalty_type': dict(PENALTY_TYPES).get(item['penalty_type'], item['penalty_type']),
-                'count': item['count'],
-                'total_amount': float(item['total_amount'] or 0)
-            }
-            for item in penalty_breakdown
-        ]
+        # penalty_breakdown = [
+        #     {
+        #         'penalty_type': dict(PENALTY_TYPES).get(item['penalty_type'], item['penalty_type']),
+        #         'count': item['count'],
+        #         'total_amount': float(item['total_amount'] or 0)
+        #     }
+        #     for item in penalty_breakdown
+        # ]
 
         # Allowances vs Deductions
         allowances_deductions = payslips.aggregate(
@@ -1504,25 +1504,25 @@ class PayrollDashboardAPIView(APIView):
             })
 
         # Payroll periods summary
-        payroll_periods = PayrollPeriod.objects.filter(
-            institution=institution,
-            start_date__year=current_year,
-            deleted_at__isnull=True
-        )
+        # payroll_periods = PayrollPeriod.objects.filter(
+        #     institution=institution,
+        #     start_date__year=current_year,
+        #     deleted_at__isnull=True
+        # )
         
-        periods_summary = payroll_periods.aggregate(
-            total_periods=Count('id'),
-            processed_periods=Count('id', filter=Q(is_processed=True))
-        )
+        # periods_summary = payroll_periods.aggregate(
+        #     total_periods=Count('id'),
+        #     processed_periods=Count('id', filter=Q(is_processed=True))
+        # )
         
-        latest_period = payroll_periods.order_by('-start_date').first()
+        # latest_period = payroll_periods.order_by('-start_date').first()
         
-        payroll_periods_summary = {
-            'total_periods': periods_summary['total_periods'] or 0,
-            'processed_periods': periods_summary['processed_periods'] or 0,
-            'pending_periods': (periods_summary['total_periods'] or 0) - (periods_summary['processed_periods'] or 0),
-            'latest_period': latest_period.name if latest_period else 'No periods found'
-        }
+        # payroll_periods_summary = {
+        #     'total_periods': periods_summary['total_periods'] or 0,
+        #     'processed_periods': periods_summary['processed_periods'] or 0,
+        #     'pending_periods': (periods_summary['total_periods'] or 0) - (periods_summary['processed_periods'] or 0),
+        #     'latest_period': latest_period.name if latest_period else 'No periods found'
+        # }
 
         data = {
             'total_payroll_amount': total_payroll_amount,
@@ -1532,10 +1532,10 @@ class PayrollDashboardAPIView(APIView):
             'average_gross_salary': average_gross_salary,
             'total_penalties_amount': total_penalties_amount,
             'total_penalties_count': total_penalties_count,
-            'penalty_breakdown': penalty_breakdown,
+            # 'penalty_breakdown': penalty_breakdown,
             'allowances_vs_deductions': allowances_vs_deductions,
             'payroll_over_time': payroll_over_time,
-            'payroll_periods_summary': payroll_periods_summary,
+            # 'payroll_periods_summary': payroll_periods_summary,
         }
 
         return Response(data)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ColumnDef, PaginatedTable } from "../PaginatedTable";
 import { SIGNATURES_API } from "@/lib/api/document-utils";
@@ -8,7 +8,7 @@ import { showErrorToast, showSuccessToast } from "@/lib/utils";
 import { ISignature, ISignatureFormData } from "@/types/documents.types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SignaturePad from "@/app/(main_app)/(dashboard)/documents/signatures/_components/signature-pad";
-import { Trash2, Edit, FileSignature, Plus, MoreHorizontal } from "lucide-react";
+import { Trash2, Edit, FileSignature, Plus, MoreHorizontal, Eye } from "lucide-react";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { IEmployee } from "@/types/types.utils";
 import { useSelector } from "react-redux";
@@ -25,60 +25,50 @@ interface EmployeeSignaturesProps {
 }
 
 export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps) {
-	const [signatures, setSignatures] = useState<ISignature[]>([]);
-	const [totalSignatures, setTotalSignatures] = useState(0);
-	const [loading, setLoading] = useState(false);
 	const [showSignaturePad, setShowSignaturePad] = useState(false);
-	const [editingSignature, setEditingSignature] = useState<ISignature | null>(null);
+	const [selectedSignature, setSelectedSignature] = useState<ISignature | null>(null);
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [signatureToDelete, setSignatureToDelete] = useState<number | null>(null);
 	const currentUser = useSelector(selectUser);
-
-	const fetchSignatures = useCallback(async (page: number = 1) => {
-		if (!currentUser) {
-			throw new Error("No user found");
-		}
-		const response = await SIGNATURES_API.getPaginated({ page });
-		return response;
-	}, []);
+	const refreshRef = useRef<(() => void) | null>(null);
+	const [canvasMode, setCanvasMode] = useState<"view" | "edit" | "create">("create");
 
 	const handleCreateSignature = async (signatureDataString: string) => {
 		if (!currentUser) {
 			showErrorToast({ error: null, defaultMessage: "No user found" });
-			return;
+			throw new Error("No user found");
 		}
-		try {
-			const data: ISignatureFormData = {
-				user: currentUser.id,
-				signature: signatureDataString,
-			};
-			await SIGNATURES_API.create({ data });
-			showSuccessToast("Signature created successfully!");
-			fetchSignatures();
-			setShowSignaturePad(false);
-		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to create signature" });
-		}
+		// try {
+		const data: ISignatureFormData = {
+			user: currentUser.id,
+			signature: signatureDataString,
+		};
+		await SIGNATURES_API.create({ data });
+		showSuccessToast("Signature created successfully!");
+		refreshRef.current?.();
+		setShowSignaturePad(false);
+		// } catch (error: any) {
+		// 	showErrorToast({ error, defaultMessage: "Failed to create signature" });
+		// }
 	};
 
 	const handleUpdateSignature = async (signatureDataString: string) => {
-		if (!editingSignature || !currentUser) {
+		if (!selectedSignature || !currentUser) {
 			showErrorToast({ error: null, defaultMessage: "No signature or user selected" });
-			return;
+			throw new Error("No user found");
 		}
-		try {
-			const data: Partial<ISignatureFormData> = {
-				user: currentUser.id,
-				signature: signatureDataString,
-			};
-			await SIGNATURES_API.update({ id: editingSignature.id, data });
-			showSuccessToast("Signature updated successfully!");
-			fetchSignatures();
-			setShowSignaturePad(false);
-			setEditingSignature(null);
-		} catch (error: any) {
-			showErrorToast({ error, defaultMessage: "Failed to update signature" });
-		}
+		// try {
+		const data: Partial<ISignatureFormData> = {
+			user: currentUser.id,
+			signature: signatureDataString,
+		};
+		await SIGNATURES_API.update({ id: selectedSignature.id, data });
+		showSuccessToast("Signature updated successfully!");
+		setShowSignaturePad(false);
+		refreshRef.current?.();
+		// } catch (error: any) {
+		// 	showErrorToast({ error, defaultMessage: "Failed to update signature" });
+		// }
 	};
 
 	const handleDeleteSignature = async () => {
@@ -86,7 +76,7 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 		try {
 			await SIGNATURES_API.delete({ id: signatureToDelete });
 			showSuccessToast("Signature deleted successfully!");
-			fetchSignatures();
+			refreshRef.current?.();
 			setDeleteConfirmOpen(false);
 			setSignatureToDelete(null);
 		} catch (error: any) {
@@ -118,8 +108,20 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 						<DropdownMenuItem
 							className=""
 							onClick={() => {
-								setEditingSignature(item);
+								setSelectedSignature(item);
 								setShowSignaturePad(true);
+								setCanvasMode("view");
+							}}
+						>
+							<Eye className="h-4 w-4 mr-2" />
+							View
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							className=""
+							onClick={() => {
+								setSelectedSignature(item);
+								setShowSignaturePad(true);
+								setCanvasMode("edit");
 							}}
 						>
 							<Edit className="h-4 w-4 mr-2" />
@@ -148,8 +150,9 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 				{currentUser && employee.user?.id === currentUser.id && (
 					<Button
 						onClick={() => {
-							setEditingSignature(null);
+							setSelectedSignature(null);
 							setShowSignaturePad(true);
+							setCanvasMode("create");
 						}}
 						size={"sm"}
 						className="rounded-full"
@@ -173,16 +176,19 @@ export default function EmployeeSignatures({ employee }: EmployeeSignaturesProps
 							<p className="text-muted-foreground">No signatures found</p>
 						</div>
 					}
+					refreshRef={refreshRef}
 				/>
 				<Dialog open={showSignaturePad} onOpenChange={setShowSignaturePad}>
 					<DialogContent className="sm:max-w-[500px] rounded-2xl">
 						<DialogHeader>
-							<DialogTitle>{editingSignature ? "Edit Signature" : "Create Signature"}</DialogTitle>
+							<DialogTitle>{selectedSignature ? "Edit Signature" : "Create Signature"}</DialogTitle>
 						</DialogHeader>
 						<SignaturePad
 							isOpen={showSignaturePad}
 							onOpenChange={setShowSignaturePad}
-							onSave={editingSignature ? handleUpdateSignature : handleCreateSignature}
+							mode={canvasMode}
+							signatureData={selectedSignature}
+							onSave={selectedSignature ? handleUpdateSignature : handleCreateSignature}
 						/>
 					</DialogContent>
 				</Dialog>

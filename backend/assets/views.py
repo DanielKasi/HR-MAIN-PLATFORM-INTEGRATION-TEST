@@ -1070,40 +1070,47 @@ class AssetsDashboardView(APIView):
             'returns': pending_returns,
             'total': pending_requests + pending_allocations + pending_returns
         }
+
+
         # Get allocated assets and their current departments
+        from employee.models import Employee
+        
+        allocated_assets = AssetAllocation.objects.filter(
+            asset__institution=institution,
+            allocation_status='allocated',
+            deleted_at__isnull=True
+        ).select_related('allocated_to__user')
+
         department_allocation = {}
-        
-        try:
-            allocation_data = (
-                AssetAllocation.objects.filter(
-                    asset__institution=institution,
-                    allocation_status='allocated',
-                    deleted_at__isnull=True
-                )
-                .select_related(
-                    'allocated_to__user__employee__department'
-                )
-                .values('allocated_to__user__employee__department__department_name')
-                .annotate(count=Count('id'))
-            )
+
+        # Extract user IDs from allocations
+        user_ids = []
+        for alloc in allocated_assets:
+            if alloc.allocated_to and alloc.allocated_to.user:
+                user_ids.append(alloc.allocated_to.user_id)
+
+        if user_ids:
+            # Get employees and their departments
+            employees = Employee.objects.filter(user_id__in=user_ids).select_related('department')
             
-            # Convert to dictionary format
-            for item in allocation_data:
-                dept_name = item['allocated_to__user__employee__department__department_name']
-                if dept_name:
-                    department_allocation[dept_name] = item['count']
+            # Create user to department mapping
+            user_to_dept = {}
+            for emp in employees:
+                dept_name = emp.department.name if emp.department else 'No Department'
+                user_to_dept[emp.user_id] = dept_name
+            
+            # Count allocations by department
+            for allocation in allocated_assets:
+                if allocation.allocated_to and allocation.allocated_to.user:
+                    user_id = allocation.allocated_to.user_id
+                    dept_name = user_to_dept.get(user_id, 'No Department')
                 else:
-                    # Handle cases where department is null
-                    department_allocation['No Department'] = department_allocation.get('No Department', 0) + item['count']
-                    
-        except Exception as e:
-            print(f"Error: {e}")
-        
-        # If no data found after all methods, initialize with empty
-        if not department_allocation:
+                    dept_name = 'No Department'
+                
+                department_allocation[dept_name] = department_allocation.get(dept_name, 0) + 1
+        else:
             department_allocation = {'No Allocations': 0}
-
-
+            
         # Recent assets (last 10, ordered by -id assuming no created_at; adjust if timestamps available)
         recent_assets = assets.order_by('-id')[:10]  # Use '-created_at' if available
         recent_assets_data = AssetSerializer(recent_assets, many=True).data
