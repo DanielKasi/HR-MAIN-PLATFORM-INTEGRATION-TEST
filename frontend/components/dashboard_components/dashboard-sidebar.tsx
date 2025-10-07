@@ -345,7 +345,7 @@ export default function DashboardSideBar() {
 			icon: <Icon icon="hugeicons:inbox-upload" className="!w-6 !h-6" width="28" height="28" />,
 			submenu: [
 				{ title: "Analytics", href: "/analytics/offboarding" },
-				{ title: "Exit Process", href: "#" },
+				{ title: "Exit Process", href: "/off-boarding/exit-process" },
 				{ title: "Resignation Letters", href: "#" },
 				{ title: "Offboarding Stages", href: "/off-boarding/stages" },
 				{ title: "Separation Types", href: "/off-boarding/separation-types" },
