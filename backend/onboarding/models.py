@@ -48,9 +48,11 @@ class OnBoarding(BaseApprovableModel):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            application__application_date__range=(start_date, end_date)
+            application__application_date__range=(start_date, end_date),
+            application__job_position_advert__job_position__department__institution=institution,
+            **filters
         ).select_related('application')
         return list(queryset.values(
             'status',
@@ -92,9 +94,11 @@ class OffboardingStage(BaseApprovableModel):
         return self.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution')
         return list(queryset.values(
             'stage_name',
@@ -136,9 +140,11 @@ class InstitutionEmployeeSeparationTypes(BaseApprovableModel):
     def get_institution(self):
         return self.institution
     
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            institution=institution,
+            **filters
         ).select_related('institution').prefetch_related('supported_stages')
         return list(queryset.values(
             'separation_type',
@@ -178,9 +184,11 @@ class InstitutionSeparationPolicy(BaseApprovableModel):
         return self.separation_type.institution
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            separation_type__institution=institution,
+            **filters
         ).select_related('separation_type', 'separation_type__institution')
         return list(queryset.values(
             'policy_name',
@@ -260,9 +268,11 @@ class EmployeeSeparation(models.Model):
                 self.employee.user.save()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            effective_date__range=(start_date, end_date)
+            effective_date__range=(start_date, end_date),
+            employe_separation_type__institution=institution,
+            **filters
         ).select_related('employee_separation_type', 'employee', 'initiated_by')
         return list(queryset.values(
             'employee__user__fullname',
@@ -345,9 +355,11 @@ class ResignationRequest(BaseApprovableModel):
                 self.separation.save()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            separation__employe_separation_type__institution=institution,
+            **filters
         ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
         return list(queryset.values(
             'separation__employee__user__fullname',
@@ -436,9 +448,11 @@ class TerminationInitiation(BaseApprovableModel):
                 self.separation.save()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
+            created_at__range=(start_date, end_date),
+            separation__employe_separation_type__institution=institution,
+            **filters
         ).select_related('separation', 'separation__employee', 'separation__employee_separation_type')
         return list(queryset.values(
             'separation__employee__user__fullname',

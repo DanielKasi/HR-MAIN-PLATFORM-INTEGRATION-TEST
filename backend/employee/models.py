@@ -254,9 +254,11 @@ class Employee(BaseApprovableModel):
         return self.department.institution
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date_of_joining__range=(start_date, end_date)
+            date_of_joining__range=(start_date, end_date),
+            department__institution=institution,
+            **filters
         ).select_related('user', 'position', 'department', 'payroll_branch', 'work_type', 'employee_type')
         return list(queryset.values(
             'name',
@@ -802,9 +804,11 @@ class DocumentRequestEmployee(SoftDeletableTimeStampedModel):
         return f"{self.document_request.document_type} for {self.employee.name}"
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            document_request__created_at__range=(start_date, end_date)
+            document_request__created_at__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'document_request')
         return list(queryset.values(
             'employee__name',
@@ -951,9 +955,11 @@ class EmployeeShift(BaseApprovableModel):
         return self.employee.get_institution()
 
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date__range=(start_date, end_date)
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee', 'shift')
         return list(queryset.values(
             'employee__name',
@@ -993,7 +999,7 @@ class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
         return f"{self.employee.user.fullname} - {self.year}-{self.month:02d}"
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         # Convert start_date and end_date to year/month for filtering
         start_year, start_month = start_date.year, start_date.month
         end_year, end_month = end_date.year, end_date.month
@@ -1002,7 +1008,9 @@ class EmployeeMonthlyHourAccount(SoftDeletableTimeStampedModel):
             year__gte=start_year,
             year__lte=end_year,
             month__gte=start_month,
-            month__lte=end_month
+            month__lte=end_month,
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee')
         return list(queryset.values(
             'employee__name',
@@ -1070,9 +1078,11 @@ class EmployeeAttendance(BaseApprovableModel):
         return self.employee.get_institution()
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            date__range=(start_date, end_date)
+            date__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
         ).select_related('employee')
         return list(queryset.values(
             'employee__name',
@@ -1368,10 +1378,12 @@ class EmployeeContract(BaseApprovableModel):
         return f"Contract {self.contract_reference} "
     
     @classmethod
-    def get_report_data(cls, start_date, end_date):
+    def get_report_data(cls, start_date, end_date, institution, **filters):
         queryset = cls.objects.filter(
-            created_at__range=(start_date, end_date)
-        ).select_related('employee')
+            created_at__range=(start_date, end_date),
+            employee__department__institution=institution,
+            **filters
+        ).select_related("employee")
         return list(queryset.values(
             'employee__name',
             'contract_reference',
